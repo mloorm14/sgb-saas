@@ -18,7 +18,7 @@ Plataforma 100% web diseñada para la modernización de bibliotecas instituciona
 
 ### Requisitos previos
 * Node.js v18+
-* Java 17+
+* Java 21+
 * PostgreSQL 15+
 
 ### Pasos
