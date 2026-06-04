@@ -9,7 +9,7 @@ Plataforma 100% web diseñada para la modernización de bibliotecas instituciona
 
 ## 🚀 Tecnologías
 * **Frontend:** Angular 17+ / Tailwind CSS
-* **Backend:** Spring Boot 3 / Java 17
+* **Backend:** Spring Boot 3 / Java 21
 * **Base de Datos:** PostgreSQL 15+
 * **IA Integrada:** Gemini 2.0 Flash API
 
