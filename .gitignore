@@ -1,0 +1,18 @@
+# Backend Spring Boot
+backend-springboot/target/
+backend-springboot/.mvn/
+*.class
+
+# Frontend Angular
+frontend-angular/node_modules/
+frontend-angular/dist/
+frontend-angular/.angular/
+
+# Entornos y secretos
+.env
+*.log
+
+# IDEs
+.idea/
+.vscode/
+*.iml
