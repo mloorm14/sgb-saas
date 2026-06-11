@@ -1,6 +1,6 @@
 # Backend Spring Boot
 backend-springboot/target/
-backend-springboot/.mvn/
+backend-springboot/.mvn/wrapper/maven-wrapper.jar
 *.class
 
 # Frontend Angular
