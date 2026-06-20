@@ -108,9 +108,9 @@ class LibroServiceTest {
                 2008,
                 null,
                 null,
-                1L,
-                1L,
-                1L,
+                1,
+                1,
+                1,
                 1,
                 1
         );

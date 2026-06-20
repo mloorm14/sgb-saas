@@ -6,8 +6,6 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.OffsetDateTime;
-
 @Data
 @NoArgsConstructor
 @Entity
@@ -16,18 +14,10 @@ public class EstadoLibro {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @NotBlank
-    @Size(max = 40)
-    @Column(nullable = false, unique = true, length = 40)
+    @Size(max = 30)
+    @Column(nullable = false, unique = true, length = 30)
     private String nombre;
-
-    @Column(name = "creado_en", updatable = false)
-    private OffsetDateTime creadoEn;
-
-    @PrePersist
-    private void antesDeGuardar() {
-        this.creadoEn = OffsetDateTime.now();
-    }
 }

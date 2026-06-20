@@ -24,13 +24,13 @@ public record LibroRequestDTO(
         String portadaUrl,
 
         @NotNull(message = "La editorial es obligatoria")
-        Long editorialId,
+        Integer editorialId,
 
         @NotNull(message = "El idioma es obligatorio")
-        Long idiomaId,
+        Integer idiomaId,
 
         @NotNull(message = "El estado es obligatorio")
-        Long estadoId,
+        Integer estadoId,
 
         @NotNull
         @Min(0)
