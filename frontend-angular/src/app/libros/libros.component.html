@@ -1,0 +1,142 @@
+<div style="padding:2rem;max-width:1100px;margin:0 auto">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+    <h2 style="color:#005c2f;margin:0">Catálogo de Libros — SGB-SaaS</h2>
+    <div style="display:flex;gap:10px">
+      <button (click)="abrirFormularioCrear()"
+        style="padding:8px 16px;background:#005c2f;color:white;border:none;border-radius:4px;cursor:pointer">
+        + Nuevo libro
+      </button>
+      <button (click)="cerrarSesion()"
+        style="padding:8px 16px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer">
+        Cerrar sesión
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="errorMsg" style="color:red;margin-bottom:1rem">{{ errorMsg }}</div>
+  <div *ngIf="cargando" style="text-align:center;padding:2rem">Cargando libros...</div>
+
+  <!-- TABLA DE LIBROS -->
+  <table *ngIf="!cargando" style="width:100%;border-collapse:collapse;font-size:14px">
+    <thead>
+      <tr style="background:#005c2f;color:white">
+        <th style="padding:10px;text-align:left">ID</th>
+        <th style="padding:10px;text-align:left">ISBN</th>
+        <th style="padding:10px;text-align:left">Título</th>
+        <th style="padding:10px;text-align:left">Año</th>
+        <th style="padding:10px;text-align:left">Stock</th>
+        <th style="padding:10px;text-align:left">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let libro of libros; let i = index"
+        [style.background]="i % 2 === 0 ? '#f9f9f9' : 'white'">
+        <td style="padding:10px">{{ libro.id }}</td>
+        <td style="padding:10px">{{ libro.isbn }}</td>
+        <td style="padding:10px">{{ libro.titulo }}</td>
+        <td style="padding:10px">{{ libro.anioPublicacion }}</td>
+        <td style="padding:10px">{{ libro.stockDisponible }}/{{ libro.stockTotal }}</td>
+        <td style="padding:10px;display:flex;gap:8px">
+          <button (click)="abrirFormularioEditar(libro)"
+            style="padding:4px 10px;background:#2980b9;color:white;border:none;border-radius:4px;cursor:pointer">
+            Editar
+          </button>
+          <button (click)="eliminarLibro(libro.id)"
+            style="padding:4px 10px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer">
+            Eliminar
+          </button>
+        </td>
+      </tr>
+      <tr *ngIf="libros.length === 0">
+        <td colspan="6" style="text-align:center;padding:2rem;color:#888">No hay libros registrados</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- PAGINACION -->
+  <div style="display:flex;justify-content:center;align-items:center;gap:16px;margin-top:1rem">
+    <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
+      style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
+      ← Anterior
+    </button>
+    <span style="font-size:14px">Página {{ currentPage + 1 }} de {{ totalPages }}</span>
+    <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
+      style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
+      Siguiente →
+    </button>
+  </div>
+
+  <!-- FORMULARIO CREAR/EDITAR -->
+  <div *ngIf="mostrarFormulario"
+    style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999">
+    <div style="background:white;padding:2rem;border-radius:8px;width:100%;max-width:500px">
+      <h3 style="color:#005c2f;margin-top:0">{{ modoEdicion ? 'Editar libro' : 'Nuevo libro' }}</h3>
+
+      <form [formGroup]="form" (ngSubmit)="guardarLibro()">
+
+        <div style="margin-bottom:1rem">
+          <label style="display:block;font-size:13px;margin-bottom:4px">ISBN</label>
+          <input formControlName="isbn" type="text"
+            style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"/>
+        </div>
+
+        <div style="margin-bottom:1rem">
+          <label style="display:block;font-size:13px;margin-bottom:4px">Título</label>
+          <input formControlName="titulo" type="text"
+            style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"/>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem">
+          <div>
+            <label style="display:block;font-size:13px;margin-bottom:4px">Año publicación</label>
+            <input formControlName="anioPublicacion" type="number"
+              style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"/>
+          </div>
+          <div>
+            <label style="display:block;font-size:13px;margin-bottom:4px">Stock total</label>
+            <input formControlName="stockTotal" type="number"
+              style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"/>
+          </div>
+        </div>
+
+        <div style="margin-bottom:1rem">
+          <label style="display:block;font-size:13px;margin-bottom:4px">Stock disponible</label>
+          <input formControlName="stockDisponible" type="number"
+            style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"/>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:1rem">
+          <div>
+            <label style="display:block;font-size:13px;margin-bottom:4px">Editorial ID</label>
+            <input formControlName="editorialId" type="number"
+              style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"/>
+          </div>
+          <div>
+            <label style="display:block;font-size:13px;margin-bottom:4px">Idioma ID</label>
+            <input formControlName="idiomaId" type="number"
+              style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"/>
+          </div>
+          <div>
+            <label style="display:block;font-size:13px;margin-bottom:4px">Estado ID</label>
+            <input formControlName="estadoId" type="number"
+              style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"/>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button type="button" (click)="cerrarFormulario()"
+            style="padding:8px 16px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
+            Cancelar
+          </button>
+          <button type="submit" [disabled]="form.invalid"
+            style="padding:8px 16px;background:#005c2f;color:white;border:none;border-radius:4px;cursor:pointer">
+            {{ modoEdicion ? 'Actualizar' : 'Crear' }}
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div>
