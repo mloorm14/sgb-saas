@@ -1,4 +1,4 @@
-package com.uteq.backend;
+package com.uteq.backend.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;

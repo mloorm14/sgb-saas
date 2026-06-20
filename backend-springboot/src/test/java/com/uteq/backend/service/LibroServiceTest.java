@@ -105,11 +105,14 @@ class LibroServiceTest {
         return new LibroRequestDTO(
                 "Clean Code",
                 "978-1234567890",
-                "Robert C. Martin",
                 2008,
                 null,
                 null,
-                null
+                1L,
+                1L,
+                1L,
+                1,
+                1
         );
     }
 }
