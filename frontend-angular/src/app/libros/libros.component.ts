@@ -23,7 +23,7 @@ export class LibrosComponent implements OnInit {
   libroSeleccionadoId: number | null = null;
   form: FormGroup;
 
-  private apiUrl = 'http://localhost:8080/api';
+  private apiUrl = 'http://localhost:8080/api/v1';
 
   constructor(
     private http: HttpClient,
