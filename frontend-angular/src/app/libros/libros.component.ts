@@ -36,6 +36,7 @@ export class LibrosComponent implements OnInit {
       titulo: ['', [Validators.required]],
       anioPublicacion: ['', [Validators.required]],
       stockTotal: ['', [Validators.required]],
+      stockDisponible: ['', [Validators.required]],
       editorialId: ['', [Validators.required]],
       idiomaId: ['', [Validators.required]],
       estadoId: ['', [Validators.required]]
@@ -92,6 +93,7 @@ export class LibrosComponent implements OnInit {
       titulo: libro.titulo,
       anioPublicacion: libro.anioPublicacion,
       stockTotal: libro.stockTotal,
+      stockDisponible: libro.stockDisponible,
       editorialId: libro.editorialId,
       idiomaId: libro.idiomaId,
       estadoId: libro.estadoId
