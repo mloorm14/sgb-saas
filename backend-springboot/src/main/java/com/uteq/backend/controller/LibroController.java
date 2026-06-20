@@ -24,7 +24,7 @@ public class LibroController {
 
     // ── GET /api/v1/libros?page=0&size=10 ────────────────
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE')")
     public ResponseEntity<Page<LibroResponseDTO>> listar(
             @PageableDefault(size = 10, sort = "titulo") Pageable pageable) {
         return ResponseEntity.ok(libroService.listar(pageable));
@@ -32,14 +32,14 @@ public class LibroController {
 
     // ── GET /api/v1/libros/{id} ───────────────────────────
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE')")
     public ResponseEntity<LibroResponseDTO> buscar(@PathVariable Long id) {
         return ResponseEntity.ok(libroService.buscarPorId(id));
     }
 
     // ── POST /api/v1/libros ───────────────────────────────
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
     public ResponseEntity<LibroResponseDTO> crear(
             @Valid @RequestBody LibroRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -48,7 +48,7 @@ public class LibroController {
 
     // ── PUT /api/v1/libros/{id} ───────────────────────────
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
     public ResponseEntity<LibroResponseDTO> actualizar(
             @PathVariable Long id,
             @Valid @RequestBody LibroRequestDTO dto) {
@@ -57,7 +57,7 @@ public class LibroController {
 
     // ── DELETE /api/v1/libros/{id} ────────────────────────
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         libroService.eliminar(id);
         return ResponseEntity.noContent().build();
