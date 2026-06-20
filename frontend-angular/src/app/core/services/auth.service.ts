@@ -28,6 +28,14 @@ export class AuthService {
   }
 
   logout(): void {
+    // Llama al backend para agregar el JTI a la blacklist de Redis
+    this.http.post(`${this.apiUrl}/auth/logout`, {}).subscribe({
+      next: () => this.clearSession(),
+      error: () => this.clearSession() // limpia igual aunque falle la llamada
+    });
+  }
+
+  private clearSession(): void {
     this.accessToken = null;
     this.router.navigate(['/login']);
   }
