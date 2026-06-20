@@ -11,7 +11,7 @@ Plataforma 100% web diseñada para la modernización de bibliotecas instituciona
 ## 🚀 Tecnologías
 
 - **Frontend:** Angular 17 / Tailwind CSS
-- **Backend:** Spring Boot 4.0.6 / Java 21 / Spring Security 6
+- **Backend:** Spring Boot 4.0.6 / Java 21 / Spring Security 7.x
 - **Base de datos:** PostgreSQL 16
 - **Caché y Auth:** Redis 7 (lista negra de tokens JWT)
 - **Migraciones:** Flyway 9
