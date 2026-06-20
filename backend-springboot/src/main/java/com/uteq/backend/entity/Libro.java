@@ -36,7 +36,7 @@ public class Libro {
     private String portadaUrl;
 
     @Column(name = "anio_publicacion", nullable = false, columnDefinition = "SMALLINT")
-    private Integer anioPublicacion;
+    private Short anioPublicacion;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "editorial_id", nullable = false)
@@ -51,10 +51,10 @@ public class Libro {
     private EstadoLibro estado;
 
     @Column(name = "stock_total", nullable = false, columnDefinition = "SMALLINT")
-    private Integer stockTotal = 1;
+    private Short stockTotal = (short) 1;
 
     @Column(name = "stock_disponible", nullable = false, columnDefinition = "SMALLINT")
-    private Integer stockDisponible = 1;
+    private Short stockDisponible = (short) 1;
 
     @Column(nullable = false)
     private Boolean activo = true;
