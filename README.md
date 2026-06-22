@@ -62,7 +62,7 @@ Autenticación stateless basada en **JWT (HS256)**: `accessToken` de corta durac
 |------------------|-------------------------------------------|
 |Frontend (Angular)|<http://localhost:4200>                    |
 |API Backend       |<http://localhost:8080>                    |
-|Swagger UI        |<http://localhost:8080/api/swagger-ui.html>|
+|Swagger UI        |<http://localhost:8080/swagger-ui.html>    |
 |Actuator health   |<http://localhost:8080/actuator/health>    |
 |PostgreSQL        |localhost:5432                             |
 |Redis             |localhost:6379                             |
@@ -71,7 +71,7 @@ Autenticación stateless basada en **JWT (HS256)**: `accessToken` de corta durac
 
 ```
 sgb-saas/
-├── backend-springboot/   # API REST: Spring Boot 3 + JPA + Security + JWT
+├── backend-springboot/   # API REST: Spring Boot 4.0.6 + JPA + Security + JWT
 ├── frontend-angular/      # SPA Angular 17
 ├── database/
 │   └── migrations/        # Scripts versionados de Flyway (V1__, V2__, ...)
