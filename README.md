@@ -55,6 +55,14 @@ Autenticación stateless basada en **JWT (HS256)**: `accessToken` de corta durac
    ```bash
    docker compose ps
    ```
+1. Ejecutar las pruebas unitarias (sin Docker, requiere Java 21):
+   
+   ```bash
+   cd backend-springboot
+   ./mvnw test
+   ```
+   
+   NOTA: en Windows usar `mvnw.cmd` en lugar de `./mvnw`
 
 ### Acceso a la aplicación
 
