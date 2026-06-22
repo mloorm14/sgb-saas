@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional
 public class LibroService {
 
     private final LibroRepository libroRepo;
@@ -51,6 +50,7 @@ public class LibroService {
     }
 
     @CacheEvict(value = "libros", allEntries = true)
+    @Transactional
     public LibroResponseDTO crear(LibroRequestDTO dto) {
         if (libroRepo.existsByIsbn(dto.isbn())) {
             throw new IllegalArgumentException(
@@ -61,6 +61,7 @@ public class LibroService {
     }
 
     @CacheEvict(value = "libros", allEntries = true)
+    @Transactional
     public LibroResponseDTO actualizar(Long id, LibroRequestDTO dto) {
         Libro libro = libroRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -86,6 +87,7 @@ public class LibroService {
     }
 
     @CacheEvict(value = "libros", allEntries = true)
+    @Transactional
     public void eliminar(Long id) {
         Libro libro = libroRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
