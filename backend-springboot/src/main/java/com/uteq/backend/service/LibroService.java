@@ -18,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class LibroService {
 
+    private static final String LIBRO_NO_ENCONTRADO = "Libro no encontrado con id: ";
+
     private final LibroRepository libroRepo;
     private final EditorialRepository editorialRepo;
     private final IdiomaRepository idiomaRepo;
@@ -46,7 +48,7 @@ public class LibroService {
                 .filter(Libro::getActivo)
                 .map(this::toDTO)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "Libro no encontrado con id: " + id));
+                        LIBRO_NO_ENCONTRADO + id));
     }
 
     @CacheEvict(value = "libros", allEntries = true)
@@ -65,7 +67,7 @@ public class LibroService {
     public LibroResponseDTO actualizar(Long id, LibroRequestDTO dto) {
         Libro libro = libroRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "Libro no encontrado con id: " + id));
+                        LIBRO_NO_ENCONTRADO + id));
         if (libroRepo.existsByIsbnAndIdNot(dto.isbn(), id)) {
             throw new IllegalArgumentException(
                     "ISBN ya usado por otro libro: " + dto.isbn());
@@ -91,7 +93,7 @@ public class LibroService {
     public void eliminar(Long id) {
         Libro libro = libroRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "Libro no encontrado con id: " + id));
+                        LIBRO_NO_ENCONTRADO + id));
         libro.setActivo(false);
         libroRepo.save(libro);
     }
