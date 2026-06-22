@@ -8,6 +8,7 @@ import com.uteq.backend.repository.EstadoLibroRepository;
 import com.uteq.backend.repository.IdiomaRepository;
 import com.uteq.backend.repository.LibroRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -49,6 +50,7 @@ public class LibroService {
                         "Libro no encontrado con id: " + id));
     }
 
+    @CacheEvict(value = "libros", allEntries = true)
     public LibroResponseDTO crear(LibroRequestDTO dto) {
         if (libroRepo.existsByIsbn(dto.isbn())) {
             throw new IllegalArgumentException(
@@ -58,6 +60,7 @@ public class LibroService {
         return toDTO(libroRepo.save(fromDTO(dto)));
     }
 
+    @CacheEvict(value = "libros", allEntries = true)
     public LibroResponseDTO actualizar(Long id, LibroRequestDTO dto) {
         Libro libro = libroRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -82,6 +85,7 @@ public class LibroService {
         return toDTO(libroRepo.save(libro));
     }
 
+    @CacheEvict(value = "libros", allEntries = true)
     public void eliminar(Long id) {
         Libro libro = libroRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -106,9 +110,12 @@ public class LibroService {
                 l.getResumen(),
                 l.getPortadaUrl(),
                 l.getAnioPublicacion() != null ? l.getAnioPublicacion().intValue() : null,
-                l.getEditorial()  != null ? l.getEditorial().getNombre()  : null,
-                l.getIdioma()     != null ? l.getIdioma().getNombre()     : null,
-                l.getEstado()     != null ? l.getEstado().getNombre()     : null,
+                l.getEditorial()  != null ? l.getEditorial().getId()     : null,
+                l.getEditorial()  != null ? l.getEditorial().getNombre() : null,
+                l.getIdioma()     != null ? l.getIdioma().getId()        : null,
+                l.getIdioma()     != null ? l.getIdioma().getNombre()    : null,
+                l.getEstado()     != null ? l.getEstado().getId()        : null,
+                l.getEstado()     != null ? l.getEstado().getNombre()    : null,
                 l.getStockTotal()      != null ? l.getStockTotal().intValue()      : null,
                 l.getStockDisponible() != null ? l.getStockDisponible().intValue() : null,
                 l.getActivo(),
