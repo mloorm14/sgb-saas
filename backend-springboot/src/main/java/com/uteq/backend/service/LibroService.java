@@ -72,9 +72,9 @@ public class LibroService {
         libro.setIsbn(dto.isbn());
         libro.setResumen(dto.resumen());
         libro.setPortadaUrl(dto.portadaUrl());
-        libro.setAnioPublicacion(dto.anioPublicacion());
-        libro.setStockTotal(dto.stockTotal());
-        libro.setStockDisponible(dto.stockDisponible());
+        libro.setAnioPublicacion(dto.anioPublicacion().shortValue());
+        libro.setStockTotal(dto.stockTotal().shortValue());
+        libro.setStockDisponible(dto.stockDisponible().shortValue());
         libro.setEditorial(dto.editorialId() != null ? editorialRepo.getReferenceById(dto.editorialId()) : null);
         libro.setIdioma(dto.idiomaId() != null ? idiomaRepo.getReferenceById(dto.idiomaId()) : null);
         libro.setEstado(dto.estadoId() != null ? estadoRepo.getReferenceById(dto.estadoId()) : null);
@@ -105,12 +105,12 @@ public class LibroService {
                 l.getIsbn(),
                 l.getResumen(),
                 l.getPortadaUrl(),
-                l.getAnioPublicacion(),
+                l.getAnioPublicacion() != null ? l.getAnioPublicacion().intValue() : null,
                 l.getEditorial()  != null ? l.getEditorial().getNombre()  : null,
                 l.getIdioma()     != null ? l.getIdioma().getNombre()     : null,
                 l.getEstado()     != null ? l.getEstado().getNombre()     : null,
-                l.getStockTotal(),
-                l.getStockDisponible(),
+                l.getStockTotal()      != null ? l.getStockTotal().intValue()      : null,
+                l.getStockDisponible() != null ? l.getStockDisponible().intValue() : null,
                 l.getActivo(),
                 l.getCreadoEn()
         );
@@ -122,9 +122,9 @@ public class LibroService {
         l.setIsbn(dto.isbn());
         l.setResumen(dto.resumen());
         l.setPortadaUrl(dto.portadaUrl());
-        l.setAnioPublicacion(dto.anioPublicacion());
-        l.setStockTotal(dto.stockTotal());
-        l.setStockDisponible(dto.stockDisponible());
+        l.setAnioPublicacion(dto.anioPublicacion().shortValue());
+        l.setStockTotal(dto.stockTotal().shortValue());
+        l.setStockDisponible(dto.stockDisponible().shortValue());
         l.setEditorial(editorialRepo.getReferenceById(dto.editorialId()));
         l.setIdioma(idiomaRepo.getReferenceById(dto.idiomaId()));
         l.setEstado(estadoRepo.getReferenceById(dto.estadoId()));
