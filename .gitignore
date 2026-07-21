@@ -12,6 +12,9 @@ frontend-angular/.angular/
 .env
 *.log
 
+# Artefacto de build (ver scripts/build-init-sql.sh) — se regenera en make up
+db/init/
+
 # IDEs
 .idea/
 .vscode/
