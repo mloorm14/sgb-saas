@@ -219,6 +219,9 @@ CREATE TABLE prestamos (
 
 CREATE TABLE multas (
     id               BIGSERIAL PRIMARY KEY,
+    -- DECISIÓN PENDIENTE: confirmar si UNIQUE es correcto o si un préstamo
+    -- puede generar más de una multa (ej. daño + atraso por separado).
+    -- Pendiente de confirmación de negocio (Marlon) — no tocar hasta entonces.
     prestamo_id      BIGINT NOT NULL UNIQUE REFERENCES prestamos(id) ON DELETE RESTRICT,
     monto            NUMERIC(8,2) NOT NULL CHECK (monto > 0),
     estado_multa_id  INTEGER NOT NULL REFERENCES estados_multa(id),
@@ -230,6 +233,13 @@ CREATE TABLE multas (
 -- ============================================================================
 -- MÓDULO 4: EXPERIENCIA DEL LECTOR (2 tablas)
 -- ============================================================================
+-- NOTA: favoritos y sugerencias_adquisicion exigen usuario_id NOT NULL en
+-- ambas tablas — a propósito, no es un descuido. Ambas funcionalidades
+-- requieren usuario autenticado; el portal anónimo (visitante sin login,
+-- solo landing + catálogo público) NO tiene persistencia de favoritos ni
+-- puede enviar sugerencias de adquisición. Es una decisión de producto ya
+-- tomada implícitamente por el diseño del schema; se documenta aquí para
+-- que quede explícita.
 CREATE TABLE favoritos (
     usuario_id  BIGINT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
     libro_id    BIGINT NOT NULL REFERENCES libros(id)   ON DELETE CASCADE,
