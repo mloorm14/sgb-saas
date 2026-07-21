@@ -54,6 +54,7 @@ services:
       DB_PASSWORD: changeme
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      CACHE_LIBROS_TTL_SECONDS: ${CACHE_LIBROS_TTL_SECONDS:-300}
       JWT_SECRET: ${JWT_SECRET}
       # Sobreescribe el default de application.yml (filesystem:../database/migrations,
       # pensado para `mvnw`/jar local): dentro del contenedor el cwd es /app
