@@ -44,6 +44,16 @@ spring:
 server:
   port: 8080
 
+app:
+  cache:
+    libros:
+      # TTL del cache Redis del listado de libros (@Cacheable("libros") en
+      # LibroService.listar(), GET /api/v1/libros), en segundos. Config
+      # externa (no hardcodeada en Java) -- ver RedisConfig y
+      # docs/adr/adr-008-ttl-cache-libros.md. Se invalida antes de tiempo
+      # via @CacheEvict en crear/actualizar/eliminar de LibroService.
+      ttl-seconds: ${CACHE_LIBROS_TTL_SECONDS:300}
+
 security:
   jwt:
     secret: ${JWT_SECRET:CAMBIAR_EN_PRODUCCION_MIN_256_BITS}
