@@ -17,8 +17,25 @@ spring:
         default_schema: public
   flyway:
     enabled: true
-    locations: classpath:db/migration
+    # Fuente única: database/migrations/ en la raíz del repo (ya no una
+    # copia duplicada en src/main/resources/db/migration/). Ruta relativa
+    # al cwd del proceso: backend-springboot/ para `mvnw`/jar local (de ahí
+    # "../"), o /app en el contenedor Docker, donde docker-compose.yml
+    # sobreescribe este valor vía SPRING_FLYWAY_LOCATIONS (ver Dockerfile,
+    # que copia database/migrations a /app/database/migrations).
+    locations: filesystem:../database/migrations
     baseline-on-migrate: true
+    # IMPORTANTE (mantenimiento): baseline-on-migrate SOLO se activa cuando
+    # el schema ya tiene tablas pero no existe flyway_schema_history (caso
+    # real: DB creada desde db/schema.sql vía docker-entrypoint-initdb.d,
+    # que ya nace en el estado final). Sin baseline-version explícito,
+    # Flyway bautiza en la versión 1 por defecto y luego SÍ intenta
+    # ejecutar V2+, chocando contra tablas que ya existen. baseline-version
+    # debe ser siempre la migración más alta cuyos cambios ya estén
+    # reflejados en db/schema.sql — subirlo cada vez que se agregue una
+    # migración nueva Y se regenere el snapshot para incluirla (ver
+    # docs/adr/adr-006-estrategia-schema-reproducible.md). Actualmente: V2.
+    baseline-version: 2
   data:
     redis:
       host: ${REDIS_HOST:localhost}
