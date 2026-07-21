@@ -2,8 +2,10 @@ package com.uteq.backend;
 
 import com.uteq.backend.repository.EditorialRepository;
 import com.uteq.backend.repository.EstadoLibroRepository;
+import com.uteq.backend.repository.EstadoUsuarioRepository;
 import com.uteq.backend.repository.IdiomaRepository;
 import com.uteq.backend.repository.LibroRepository;
+import com.uteq.backend.repository.RolRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,6 +40,12 @@ class BackendApplicationTests {
 
     @MockitoBean
     private EstadoLibroRepository estadoLibroRepository;
+
+    @MockitoBean
+    private RolRepository rolRepository;
+
+    @MockitoBean
+    private EstadoUsuarioRepository estadoUsuarioRepository;
 
     @Test
     void contextLoads() {

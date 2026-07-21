@@ -2,6 +2,7 @@ package com.uteq.backend.service;
 
 import com.uteq.backend.dto.LibroRequestDTO;
 import com.uteq.backend.dto.LibroResponseDTO;
+import com.uteq.backend.entity.EstadoLibro;
 import com.uteq.backend.entity.Libro;
 import com.uteq.backend.repository.EditorialRepository;
 import com.uteq.backend.repository.EstadoLibroRepository;
@@ -22,6 +23,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -67,15 +69,17 @@ class LibroServiceTest {
                 .hasMessageContaining("99");
     }
 
-    // ── Test 4: soft delete desactiva el libro ────────────
+    // ── Test 4: soft delete mueve el libro a estado DADO_DE_BAJA ──
     @Test
-    void eliminar_cuandoExiste_desactivaLibro() {
+    void eliminar_cuandoExiste_loMarcaDadoDeBaja() {
         Libro libro = libroConId();
+        EstadoLibro dadoDeBaja = estadoConNombre("DADO_DE_BAJA");
         given(libroRepo.findById(1L)).willReturn(Optional.of(libro));
+        given(estadoRepo.findByNombre("DADO_DE_BAJA")).willReturn(Optional.of(dadoDeBaja));
 
         libroService.eliminar(1L);
 
-        assertThat(libro.getActivo()).isFalse();
+        assertThat(libro.getEstado()).isEqualTo(dadoDeBaja);
         verify(libroRepo).save(libro);
     }
 
@@ -83,7 +87,7 @@ class LibroServiceTest {
     @Test
     void listar_retornaPaginaDeLibros() {
         Page<Libro> pagina = new PageImpl<>(List.of(libroConId()));
-        given(libroRepo.findByActivoTrue(any())).willReturn(pagina);
+        given(libroRepo.findByEstado_Nombre(anyString(), any())).willReturn(pagina);
 
         Page<LibroResponseDTO> resultado = libroService.listar(Pageable.unpaged());
 
@@ -97,8 +101,15 @@ class LibroServiceTest {
         libro.setId(1L);
         libro.setTitulo("Clean Code");
         libro.setIsbn("978-1234567890");
-        libro.setActivo(true);
+        libro.setEstado(estadoConNombre("ACTIVO"));
         return libro;
+    }
+
+    private EstadoLibro estadoConNombre(String nombre) {
+        EstadoLibro estado = new EstadoLibro();
+        estado.setId(1);
+        estado.setNombre(nombre);
+        return estado;
     }
 
     private LibroRequestDTO requestDTO() {
