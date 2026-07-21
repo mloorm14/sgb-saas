@@ -100,6 +100,21 @@ Convención de commits: [Conventional Commits](https://www.conventionalcommits.o
 
 *En desarrollo (se actualizará en la Entrega 2).*
 
+## 🔑 Credenciales de desarrollo
+
+Al inicializar la base de datos con `db/schema.sql` + `db/seed.sql` (montados
+en `docker-entrypoint-initdb.d/`), se crea un usuario administrador de
+desarrollo:
+
+| Campo      | Valor                     |
+|------------|---------------------------|
+| Correo     | `admin@sgb-saas.local`    |
+| Contraseña | `Admin123!`               |
+| Rol        | `ADMIN`                   |
+
+⚠️ Solo para entornos locales de desarrollo. Nunca usar estas credenciales
+en un entorno con datos reales o accesible públicamente.
+
 ## 📄 Estado del proyecto
 
 **Entrega 1B (Junio 2026):** módulo de autenticación JWT + CRUD de `Libro` con Spring Data JPA, Flyway, Redis y Docker Compose. Ver `docs/` para el informe técnico completo.
