@@ -4,7 +4,11 @@ import com.uteq.backend.dto.LoginRequestDTO;
 import com.uteq.backend.dto.RegistroRequestDTO;
 import com.uteq.backend.dto.TokenResponseDTO;
 import com.uteq.backend.dto.UsuarioResponseDTO;
+import com.uteq.backend.entity.EstadoUsuario;
+import com.uteq.backend.entity.Rol;
 import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.EstadoUsuarioRepository;
+import com.uteq.backend.repository.RolRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import com.uteq.backend.security.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -16,13 +20,21 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
+    private static final String ROL_POR_DEFECTO = "LECTOR";
+    private static final String ESTADO_INICIAL = "ACTIVO";
+
     private final UsuarioRepository usuarioRepository;
+    private final RolRepository rolRepository;
+    private final EstadoUsuarioRepository estadoUsuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -33,14 +45,24 @@ public class AuthService {
             throw new CorreoYaRegistradoException("El correo ya está registrado: " + dto.correo());
         });
 
+        Rol rolLector = rolRepository.findByNombre(ROL_POR_DEFECTO)
+                .orElseThrow(() -> new IllegalStateException("Catalogo roles sin fila '" + ROL_POR_DEFECTO + "'"));
+        EstadoUsuario estadoActivo = estadoUsuarioRepository.findByNombre(ESTADO_INICIAL)
+                .orElseThrow(() -> new IllegalStateException("Catalogo estados_usuario sin fila '" + ESTADO_INICIAL + "'"));
+
         Instant ahora = Instant.now();
+        Set<Rol> roles = new HashSet<>();
+        roles.add(rolLector);
+
         Usuario usuario = Usuario.builder()
                 .nombre(dto.nombre())
+                .apellido(dto.apellido())
                 .correo(dto.correo())
                 .passwordHash(passwordEncoder.encode(dto.password()))
-                .rol("ROLE_LECTOR")
-                .activo(true)
-                .creadoEn(ahora)
+                .estado(estadoActivo)
+                .correoVerificado(false)
+                .roles(roles)
+                .fechaRegistro(ahora)
                 .actualizadoEn(ahora)
                 .build();
 
@@ -93,6 +115,9 @@ public class AuthService {
     }
 
     private UsuarioResponseDTO mapToUsuarioResponseDTO(Usuario usuario) {
-        return new UsuarioResponseDTO(usuario.getId(), usuario.getNombre(), usuario.getCorreo(), usuario.getRol());
+        List<String> roles = usuario.getRoles().stream()
+                .map(Rol::getNombre)
+                .toList();
+        return new UsuarioResponseDTO(usuario.getId(), usuario.getNombre(), usuario.getCorreo(), roles);
     }
 }

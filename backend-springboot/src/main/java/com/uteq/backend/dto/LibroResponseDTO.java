@@ -18,6 +18,6 @@ public record LibroResponseDTO(
         String estado,
         Integer stockTotal,
         Integer stockDisponible,
-        Boolean activo,
-        OffsetDateTime creadoEn
+        String ubicacionFisica,
+        OffsetDateTime fechaRegistro
 ) {}

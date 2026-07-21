@@ -2,6 +2,7 @@ package com.uteq.backend.service;
 
 import com.uteq.backend.dto.LibroRequestDTO;
 import com.uteq.backend.dto.LibroResponseDTO;
+import com.uteq.backend.entity.EstadoLibro;
 import com.uteq.backend.entity.Libro;
 import com.uteq.backend.repository.EditorialRepository;
 import com.uteq.backend.repository.EstadoLibroRepository;
@@ -19,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class LibroService {
 
     private static final String LIBRO_NO_ENCONTRADO = "Libro no encontrado con id: ";
+    private static final String ESTADO_ACTIVO = "ACTIVO";
+    private static final String ESTADO_DADO_DE_BAJA = "DADO_DE_BAJA";
 
     private final LibroRepository libroRepo;
     private final EditorialRepository editorialRepo;
@@ -38,14 +41,14 @@ public class LibroService {
     @Cacheable("libros")
     @Transactional(readOnly = true)
     public Page<LibroResponseDTO> listar(Pageable pageable) {
-        return libroRepo.findByActivoTrue(pageable)
+        return libroRepo.findByEstado_Nombre(ESTADO_ACTIVO, pageable)
                 .map(this::toDTO);
     }
 
     @Transactional(readOnly = true)
     public LibroResponseDTO buscarPorId(Long id) {
         return libroRepo.findById(id)
-                .filter(Libro::getActivo)
+                .filter(l -> l.getEstado() != null && ESTADO_ACTIVO.equals(l.getEstado().getNombre()))
                 .map(this::toDTO)
                 .orElseThrow(() -> new EntityNotFoundException(
                         LIBRO_NO_ENCONTRADO + id));
@@ -94,7 +97,10 @@ public class LibroService {
         Libro libro = libroRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
                         LIBRO_NO_ENCONTRADO + id));
-        libro.setActivo(false);
+        EstadoLibro estadoDadoDeBaja = estadoRepo.findByNombre(ESTADO_DADO_DE_BAJA)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Catalogo estados_libro sin fila '" + ESTADO_DADO_DE_BAJA + "'"));
+        libro.setEstado(estadoDadoDeBaja);
         libroRepo.save(libro);
     }
 
@@ -122,8 +128,8 @@ public class LibroService {
                 l.getEstado()     != null ? l.getEstado().getNombre()    : null,
                 l.getStockTotal()      != null ? l.getStockTotal().intValue()      : null,
                 l.getStockDisponible() != null ? l.getStockDisponible().intValue() : null,
-                l.getActivo(),
-                l.getCreadoEn()
+                l.getUbicacionFisica(),
+                l.getFechaRegistro()
         );
     }
 
