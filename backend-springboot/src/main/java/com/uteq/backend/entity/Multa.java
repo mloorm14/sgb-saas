@@ -53,7 +53,9 @@ public class Multa {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "prestamo_id", nullable = false, unique = true)
+    // Sin unique=true: un préstamo puede generar más de una multa (ej. daño
+    // + atraso por separado) -- ver V3__multas_multiples_por_prestamo.sql.
+    @Column(name = "prestamo_id", nullable = false)
     private Long prestamoId;
 
     @Column(name = "monto", nullable = false, precision = 8, scale = 2)
