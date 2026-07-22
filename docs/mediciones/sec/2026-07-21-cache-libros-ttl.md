@@ -1,6 +1,17 @@
 # Evidencia — TTL del cache Redis "libros" en configuración externa
 
-**Fecha**: 2026-07-21
+**Fecha**: 2026-07-21 (verificación inicial, sección 2) y
+2026-07-22T01:29:45Z ISO 8601 UTC (repetición con cabeceras completas,
+sección 2.1 — timestamp real tomado del header `Date` de la respuesta).
+**Commit**: `cabf563` (`feat(cache): declara TTL del cache "libros" en
+configuracion externa` — este mismo archivo se agregó en ese commit).
+**Versiones de herramientas**:
+- Docker 29.5.3 (build d1c06ef)
+- Docker Compose v5.1.4
+- curl 8.18.0 (libcurl/8.18.0)
+- Backend: Java 21.0.11 (Eclipse Temurin), Maven 3.9.12, Spring Boot 4.0.6, Spring Data Redis (spring-data-commons 4.0.5)
+- PostgreSQL 16.14 (imagen `postgres:16-alpine`)
+- Redis 7.4.9 (imagen `redis:7-alpine`)
 **Entorno**: mismo stack Docker Compose local de la evidencia de cookies
 (`docs/mediciones/sec/2026-07-21-cookie-refresh-token.md`), tras
 `docker compose up -d --build backend`.
@@ -52,6 +63,36 @@ La segunda llamada es ~5.5x más rápida (30ms vs 170ms) y el cuerpo de la
 respuesta es byte-a-byte idéntico al de la primera — confirma que la
 segunda llamada se sirvió desde Redis, no desde una nueva consulta a
 Postgres.
+
+## 2.1. Repetición con cabeceras completas (timestamp verificable)
+
+Misma secuencia (usuario LECTOR nuevo, key de cache limpiada antes),
+capturando cabeceras y cuerpo por separado
+(`curl -s -D headers.txt -o body.json -w "BODY_BYTES:%{size_download} TIME:%{time_total}s"`):
+
+```
+=== Llamada 1 (miss) ===
+BODY_BYTES:2368 TIME:0.020099s
+HTTP/1.1 200
+...
+Date: Wed, 22 Jul 2026 01:29:45 GMT
+
+=== Llamada 2 (HIT esperado) ===
+BODY_BYTES:2368 TIME:0.011993s
+HTTP/1.1 200
+...
+Date: Wed, 22 Jul 2026 01:29:45 GMT
+
+=== cuerpos identicos? ===
+IDENTICOS
+=== TTL ===
+300
+```
+
+Mismo tamaño de body exacto (2368 bytes) en ambas llamadas, cuerpos
+idénticos byte a byte, TTL recién fijado en 300 (igual al default de
+`CACHE_LIBROS_TTL_SECONDS`). Confirma el mismo comportamiento que la
+sección 2, con evidencia timestamped de forma verificable.
 
 ## 3. Key y TTL en Redis tras las dos llamadas
 

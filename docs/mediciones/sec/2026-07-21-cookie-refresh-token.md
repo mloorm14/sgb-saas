@@ -1,6 +1,18 @@
 # Evidencia — cookie HttpOnly+Secure+SameSite=Strict del refreshToken
 
-**Fecha**: 2026-07-21
+**Fecha**: 2026-07-21T11:41:23Z (ISO 8601, UTC — timestamp real tomado del
+header `Date` de la respuesta de login en la sección 1 de abajo; la ventana
+completa de comandos de este archivo corre entre 11:41:04Z y 11:45:49Z el
+mismo día).
+**Commit**: `1dfc4f8` (`feat(security): cookie HttpOnly+Secure+SameSite=Strict
+para refreshToken` — este mismo archivo se agregó en ese commit).
+**Versiones de herramientas**:
+- Docker 29.5.3 (build d1c06ef)
+- Docker Compose v5.1.4
+- curl 8.18.0 (libcurl/8.18.0)
+- Backend: Java 21.0.11 (Eclipse Temurin), Maven 3.9.12, Spring Boot 4.0.6, Spring Security 7.0.5
+- PostgreSQL 16.14 (imagen `postgres:16-alpine`)
+- Redis 7.4.9 (imagen `redis:7-alpine`)
 **Entorno**: stack Docker Compose local (`docker compose up -d --build backend`,
 sin volumen limpio — solo se reconstruyó/reinició el servicio `backend`
 tras los cambios de código). Backend arrancó healthy, Flyway validó 3
@@ -149,6 +161,30 @@ El logout invalida el `accessToken` en la blacklist de Redis (comportamiento
 preexistente, ver `ADR-003-jwt-redis.md`) **y además** limpia la cookie del
 refresh token (`Max-Age=0`, `Expires` en el pasado) — el navegador la
 elimina inmediatamente.
+
+### Verificación explícita: el body de /logout no filtra el refreshToken
+
+Repetido el 2026-07-22T01:29:02Z contra el mismo backend, capturando el
+cuerpo de la respuesta por separado de las cabeceras
+(`curl -s -D - -o body.txt -w "BODY_BYTES:%{size_download}"`):
+
+```
+HTTP/1.1 204
+Set-Cookie: refreshToken=; Path=/api/auth; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly; SameSite=Strict
+...
+Date: Wed, 22 Jul 2026 01:29:02 GMT
+
+BODY_BYTES:0
+```
+
+`BODY_BYTES:0` — el archivo de body queda vacío (0 bytes), consistente con
+`204 No Content` (que por RFC 9110 no debe llevar cuerpo). No hay ningún
+resto del `refreshToken` en la respuesta de logout: no puede haberlo,
+porque `AuthController.logout()` devuelve `ResponseEntity.noContent()...build()`,
+sin cuerpo alguno, independientemente de `@JsonIgnore` en `TokenResponseDTO`
+(ese DTO ni siquiera se construye en el flujo de logout). También se
+verificó el body de `/login` en la sección 1: solo contiene `accessToken`,
+`expiresIn` y `tokenType` — ningún campo `refreshToken`.
 
 ## Nota sobre el atributo `Secure` en desarrollo local
 
