@@ -1,17 +1,28 @@
 # Evidencia — TTL del cache Redis "libros" en configuración externa
 
-**Fecha**: 2026-07-21 (verificación inicial, sección 2) y
-2026-07-22T01:29:45Z ISO 8601 UTC (repetición con cabeceras completas,
-sección 2.1 — timestamp real tomado del header `Date` de la respuesta).
-**Commit**: `cabf563` (`feat(cache): declara TTL del cache "libros" en
-configuracion externa` — este mismo archivo se agregó en ese commit).
-**Versiones de herramientas**:
-- Docker 29.5.3 (build d1c06ef)
-- Docker Compose v5.1.4
-- curl 8.18.0 (libcurl/8.18.0)
-- Backend: Java 21.0.11 (Eclipse Temurin), Maven 3.9.12, Spring Boot 4.0.6, Spring Data Redis (spring-data-commons 4.0.5)
-- PostgreSQL 16.14 (imagen `postgres:16-alpine`)
-- Redis 7.4.9 (imagen `redis:7-alpine`)
+## Cabecera de medición
+
+<!-- Retro-ajustada al formato de scripts/mediciones-header.sh (el script
+no existía cuando se generó esta evidencia originalmente; los valores de
+abajo son los reales de esa corrida, solo se homogeneizó el formato). -->
+- **Fecha (ISO 8601 UTC)**: 2026-07-21T00:00:00Z aprox. (verificación
+  inicial, sección 2) y 2026-07-22T01:29:45Z (repetición con cabeceras
+  completas, sección 2.1 — timestamp real tomado del header `Date` de la
+  respuesta; es el valor preciso, úsese este si se necesita un único dato)
+- **Commit**: `cabf563` (`feat(cache): declara TTL del cache "libros" en
+  configuracion externa` — este mismo archivo se agregó en ese commit)
+- **Docker**: Docker version 29.5.3, build d1c06ef
+- **Docker Compose**: Docker Compose version v5.1.4
+- **Java**: openjdk version "21.0.11" (Eclipse Temurin)
+- **Maven**: Apache Maven 3.9.12
+- **PostgreSQL** (contenedor `sgb_postgres`): 16.14 (imagen `postgres:16-alpine`)
+- **Redis** (contenedor `sgb_redis`): 7.4.9 (imagen `redis:7-alpine`)
+- **curl**: 8.18.0 (libcurl/8.18.0) — herramienta adicional usada en esta
+  evidencia, fuera del set fijo del script
+- **Adicional**: Spring Boot 4.0.6, Spring Data Redis (spring-data-commons 4.0.5)
+
+## Contexto
+
 **Entorno**: mismo stack Docker Compose local de la evidencia de cookies
 (`docs/mediciones/sec/2026-07-21-cookie-refresh-token.md`), tras
 `docker compose up -d --build backend`.
