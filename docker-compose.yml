@@ -1,8 +1,8 @@
 services:
   postgres:
-    # TODO(entrega-final): pinar por digest sha256 antes de la entrega final.
-    # Ver docs/DIGESTS-PENDIENTES.md para el comando exacto de obtencion.
-    image: postgres:16-alpine
+    # Pinado por digest sha256 (ver docs/DIGESTS-LOG.md): postgres:16-alpine,
+    # obtenido con `docker pull` + `docker inspect` el 2026-07-22.
+    image: postgres@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
     container_name: sgb_postgres
     environment:
       POSTGRES_DB: sgb_db
@@ -28,9 +28,9 @@ services:
       retries: 5
 
   redis:
-    # TODO(entrega-final): pinar por digest sha256 antes de la entrega final.
-    # Ver docs/DIGESTS-PENDIENTES.md para el comando exacto de obtencion.
-    image: redis:7-alpine
+    # Pinado por digest sha256 (ver docs/DIGESTS-LOG.md): redis:7-alpine,
+    # obtenido con `docker pull` + `docker inspect` el 2026-07-22.
+    image: redis@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
     container_name: sgb_redis
     ports:
       - "6379:6379"
