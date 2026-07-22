@@ -1,18 +1,28 @@
 # Evidencia — cookie HttpOnly+Secure+SameSite=Strict del refreshToken
 
-**Fecha**: 2026-07-21T11:41:23Z (ISO 8601, UTC — timestamp real tomado del
-header `Date` de la respuesta de login en la sección 1 de abajo; la ventana
-completa de comandos de este archivo corre entre 11:41:04Z y 11:45:49Z el
-mismo día).
-**Commit**: `1dfc4f8` (`feat(security): cookie HttpOnly+Secure+SameSite=Strict
-para refreshToken` — este mismo archivo se agregó en ese commit).
-**Versiones de herramientas**:
-- Docker 29.5.3 (build d1c06ef)
-- Docker Compose v5.1.4
-- curl 8.18.0 (libcurl/8.18.0)
-- Backend: Java 21.0.11 (Eclipse Temurin), Maven 3.9.12, Spring Boot 4.0.6, Spring Security 7.0.5
-- PostgreSQL 16.14 (imagen `postgres:16-alpine`)
-- Redis 7.4.9 (imagen `redis:7-alpine`)
+## Cabecera de medición
+
+<!-- Retro-ajustada al formato de scripts/mediciones-header.sh (el script
+no existía cuando se generó esta evidencia originalmente el 2026-07-21;
+los valores de abajo son los reales de esa corrida, solo se homogeneizó
+el formato, no el contenido). -->
+- **Fecha (ISO 8601 UTC)**: 2026-07-21T11:41:23Z (timestamp real tomado del
+  header `Date` de la respuesta de login en la sección 1 de abajo; la
+  ventana completa de comandos de este archivo corre entre 11:41:04Z y
+  11:45:49Z el mismo día)
+- **Commit**: `1dfc4f8` (`feat(security): cookie HttpOnly+Secure+SameSite=Strict
+  para refreshToken` — este mismo archivo se agregó en ese commit)
+- **Docker**: Docker version 29.5.3, build d1c06ef
+- **Docker Compose**: Docker Compose version v5.1.4
+- **Java**: openjdk version "21.0.11" (Eclipse Temurin)
+- **Maven**: Apache Maven 3.9.12
+- **PostgreSQL** (contenedor `sgb_postgres`): 16.14 (imagen `postgres:16-alpine`)
+- **Redis** (contenedor `sgb_redis`): 7.4.9 (imagen `redis:7-alpine`)
+- **curl**: 8.18.0 (libcurl/8.18.0) — herramienta adicional usada en esta
+  evidencia, fuera del set fijo del script (login/refresh/logout vía HTTP)
+
+## Contexto
+
 **Entorno**: stack Docker Compose local (`docker compose up -d --build backend`,
 sin volumen limpio — solo se reconstruyó/reinició el servicio `backend`
 tras los cambios de código). Backend arrancó healthy, Flyway validó 3
