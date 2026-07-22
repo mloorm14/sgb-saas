@@ -5,6 +5,47 @@
 El TTL del cache Redis `"libros"` se declara en configuración externa
 (`application.yml` / `.env`), no hardcodeado en Java.
 
+## Contexto ampliado — por qué Redis como capa de cache de aplicación
+
+Antes de entrar en el TTL específico del cache `"libros"` (el resto de
+este ADR), vale documentar la decisión de nivel superior que ese detalle
+da por hecha: **por qué Redis es la capa de cache de aplicación de
+SGB-SaaS en general**, no solo para este endpoint puntual.
+
+Redis ya estaba presente en la pila antes de esta decisión, pero por un
+motivo distinto: `ADR-003-jwt-redis.md` lo introduce como almacén de la
+blacklist de tokens JWT revocados. Ese es un caso de uso de
+"almacenamiento de estado de sesión con TTL automático", mientras que el
+cache del catálogo es un caso de uso de "cache de lectura frecuente,
+invalidada por escritura conocida o por expiración" — arquitecturalmente
+distintos aunque compartan el mismo motor.
+
+**Opciones consideradas para el cache de aplicación:**
+
+- **Cache en memoria del proceso Java (ej. Caffeine, `ConcurrentHashMap`
+  manual):** descartado porque no sobrevive un reinicio del contenedor
+  `backend` (aceptable) pero, más importante, no se comparte entre
+  réplicas si el backend llegara a escalarse horizontalmente — cada
+  instancia tendría su propia copia potencialmente desincronizada, sin
+  forma de invalidar todas a la vez desde `@CacheEvict`.
+- **No cachear y aceptar la latencia de Postgres en cada lectura del
+  catálogo:** descartado — el catálogo es la operación de lectura más
+  frecuente del sistema (ver escenario de "Eficiencia de desempeño" en
+  `docs/arquitectura/ISO25010.md`) y no tiene razón de negocio para
+  variar entre segundos.
+- **Redis (elegido):** ya es una dependencia de infraestructura obligada
+  por ADR-003 (mismo `docker-compose.yml`, mismo healthcheck); usarlo
+  también como cache de aplicación no añade una pieza de infraestructura
+  nueva que mantener, solo un segundo propósito sobre la misma instancia.
+  Spring Cache Abstraction (`@Cacheable`/`@CacheEvict`) se integra de
+  forma nativa vía `spring-boot-starter-data-redis` sin código adicional
+  de bajo nivel.
+
+Esta decisión de nivel superior (Redis como cache de aplicación) es lo
+que hace posible todo el detalle de TTL que sigue en el resto de este
+ADR; el resto del documento asume esta elección ya tomada y se enfoca en
+el TTL específico del cache `"libros"`.
+
 ## Context
 
 La guía de la Tercera Entrega (A.1) exige que el cache Redis del endpoint
@@ -106,4 +147,5 @@ consecutivas a `GET /api/v1/libros` y confirmación de la key + TTL con
 - `backend-springboot/src/main/java/com/uteq/backend/config/RedisConfig.java`
 - `backend-springboot/src/main/java/com/uteq/backend/service/LibroService.java`
 - [[ADR-003-jwt-redis]] (mismo Redis, decisión de blacklist independiente)
+- [[ADR-001-tecnologia]] (elección de la pila principal; remite aquí para el detalle de Redis como cache)
 - `docs/mediciones/sec/` (evidencia cruda de `redis-cli TTL`)
