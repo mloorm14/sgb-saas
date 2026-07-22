@@ -217,12 +217,13 @@ CREATE TABLE prestamos (
     estado_prestamo_id          INTEGER NOT NULL REFERENCES estados_prestamo(id)
 );
 
+-- DECISIÓN DE NEGOCIO (resuelta): un préstamo SÍ puede generar más de una
+-- multa (ej. daño al libro + atraso, registrados por separado). Por eso
+-- prestamo_id NO lleva UNIQUE -- ver database/migrations/V3__multas_multiples_por_prestamo.sql
+-- para el DROP CONSTRAINT sobre bases ya existentes con el UNIQUE previo.
 CREATE TABLE multas (
     id               BIGSERIAL PRIMARY KEY,
-    -- DECISIÓN PENDIENTE: confirmar si UNIQUE es correcto o si un préstamo
-    -- puede generar más de una multa (ej. daño + atraso por separado).
-    -- Pendiente de confirmación de negocio (Marlon) — no tocar hasta entonces.
-    prestamo_id      BIGINT NOT NULL UNIQUE REFERENCES prestamos(id) ON DELETE RESTRICT,
+    prestamo_id      BIGINT NOT NULL REFERENCES prestamos(id) ON DELETE RESTRICT,
     monto            NUMERIC(8,2) NOT NULL CHECK (monto > 0),
     estado_multa_id  INTEGER NOT NULL REFERENCES estados_multa(id),
     fecha_generada   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
