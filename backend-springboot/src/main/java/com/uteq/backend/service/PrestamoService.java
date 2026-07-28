@@ -78,10 +78,19 @@ public class PrestamoService {
                 .toList();
     }
 
+    private static final int LIMITE_REPORTE_DEFAULT = 10;
+
     @Transactional(readOnly = true)
     public List<LibroMasPrestadoResponseDTO> reporteLibrosMasPrestados(
             Integer limite, OffsetDateTime desde, OffsetDateTime hasta) {
-        return prestamoProcRepo.fnReporteLibrosMasPrestados(limite, desde, hasta).stream()
+        // El DEFAULT 10 de fn_reporte_libros_mas_prestados solo se activa
+        // cuando el parámetro se omite POR COMPLETO de la llamada SQL. La
+        // @Query nativeQuery de PrestamoProcedureRepository siempre envía
+        // los 3 parámetros nombrados, así que un null explícito produce
+        // "LIMIT NULL" en Postgres = sin límite, no el default esperado.
+        // Se aplica el default aquí para que el comportamiento.
+        Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
+        return prestamoProcRepo.fnReporteLibrosMasPrestados(limiteEfectivo, desde, hasta).stream()
                 .map(this::toDTO)
                 .toList();
     }
