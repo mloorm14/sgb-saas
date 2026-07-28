@@ -23,7 +23,6 @@ import java.time.OffsetDateTime;
 public class ReservacionService {
 
     private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado: ";
-    private static final String ESTADO_NO_ENCONTRADO = "Estado de reservación no encontrado: ";
     private static final String ESTADO_INICIAL = "PENDIENTE";
     private static final String ROL_LECTOR = "LECTOR";
 
@@ -52,21 +51,27 @@ public class ReservacionService {
                         "Un LECTOR solo puede reservar para sí mismo.");
             }
         }
+        return toDTO(reservacionRepo.save(fromDTO(dto)));
+    }
 
+    private Reservacion fromDTO(ReservacionRequestDTO dto) {
+        // Se usa IllegalStateException: si falta la fila
+        // PENDIENTE en estados_reservacion es un problema de seed/configuración
+        // del sistema, no un error del cliente -- mismo criterio que
+        // LibroService.eliminar() con el catálogo estados_libro.
         EstadoReservacion estadoInicial = estadoReservacionRepo.findByNombre(ESTADO_INICIAL)
-                .orElseThrow(() -> new EntityNotFoundException(ESTADO_NO_ENCONTRADO + ESTADO_INICIAL));
+                .orElseThrow(() -> new IllegalStateException(
+                        "Catálogo estados_reservacion sin fila '" + ESTADO_INICIAL + "'"));
 
         OffsetDateTime ahora = OffsetDateTime.now();
 
-        Reservacion reservacion = new Reservacion();
-        reservacion.setUsuarioId(dto.usuarioId());
-        reservacion.setLibroId(dto.libroId());
-        reservacion.setEstadoReservacionId(estadoInicial.getId());
-        reservacion.setFechaReserva(ahora);
-        reservacion.setFechaLimiteRetiro(ahora.plusDays(DIAS_LIMITE_RETIRO));
-
-        Reservacion guardada = reservacionRepo.save(reservacion);
-        return toDTO(guardada);
+        Reservacion r = new Reservacion();
+        r.setUsuarioId(dto.usuarioId());
+        r.setLibroId(dto.libroId());
+        r.setEstadoReservacionId(estadoInicial.getId());
+        r.setFechaReserva(ahora);
+        r.setFechaLimiteRetiro(ahora.plusDays(DIAS_LIMITE_RETIRO));
+        return r;
     }
 
     @Transactional(readOnly = true)
