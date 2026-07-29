@@ -26,7 +26,7 @@ export class AuthService {
   constructor(private http: HttpClient, private router: Router) {}
 
   login(correo: string, password: string): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/auth/login`, { correo, password }).pipe(
+    return this.http.post<any>(`${this.apiUrl}/auth/login`, { correo, password }, { withCredentials: true }).pipe(
       tap(response => {
         this.accessToken = response.accessToken;
       })
@@ -39,7 +39,7 @@ export class AuthService {
 
   logout(): void {
     // Llama al backend para agregar el JTI a la blacklist de Redis
-    this.http.post(`${this.apiUrl}/auth/logout`, {}).subscribe({
+    this.http.post(`${this.apiUrl}/auth/logout`, {}, { withCredentials: true }).subscribe({
       next: () => this.clearSession(),
       error: () => this.clearSession() // limpia igual aunque falle la llamada
     });
