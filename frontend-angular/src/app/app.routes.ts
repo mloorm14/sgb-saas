@@ -6,6 +6,7 @@ import { LibrosComponent } from './libros/libros.component';
 import { PrestamosLectorComponent } from './prestamos-lector/prestamos-lector.component';
 import { PrestamosGestionComponent } from './prestamos-gestion/prestamos-gestion.component';
 import { ReservacionesComponent } from './reservaciones/reservaciones.component';
+import { MultasComponent } from './multas/multas.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -15,5 +16,6 @@ export const routes: Routes = [
   { path: 'prestamos', component: PrestamosLectorComponent, canActivate: [authGuard] },
   { path: 'prestamos/gestion', component: PrestamosGestionComponent, canActivate: [authGuard] },
   { path: 'reservaciones', component: ReservacionesComponent, canActivate: [authGuard] },
+  { path: 'multas', component: MultasComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: 'login' }
 ];
