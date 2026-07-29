@@ -45,6 +45,17 @@ export class AuthService {
     });
   }
 
+  // Se llama desde jwt.interceptor.ts ANTES de desloguear en un 401
+  // fuera de /auth/. El refreshToken viaja solo, el navegador la
+  // adjunta desde la cookie HttpOnly gracias a withCredentials.
+  refresh(): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/auth/refresh`, {}, { withCredentials: true }).pipe(
+      tap(response => {
+        this.accessToken = response.accessToken;
+      })
+    );
+  }
+
   private clearSession(): void {
     this.accessToken = null;
     this.router.navigate(['/login']);
