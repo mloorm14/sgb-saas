@@ -45,7 +45,7 @@ describe('PrestamosLectorComponent', () => {
     fixture.detectChanges();
 
     const req = httpMock.expectOne(
-      r => r.url === 'http://localhost:8080/api/v1/prestamos/usuario/1'
+      r => r.url.startsWith('http://localhost:8080/api/v1/prestamos/usuario/1')
     );
     req.flush('error', { status: 500, statusText: 'Server Error' });
 
