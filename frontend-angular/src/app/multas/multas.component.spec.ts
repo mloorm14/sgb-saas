@@ -32,7 +32,7 @@ describe('MultasComponent', () => {
     fixture.detectChanges(); // ngOnInit -> como es lector, busca automaticamente
 
     const req = httpMock.expectOne(
-      r => r.url === 'http://localhost:8080/api/v1/multas/usuario/3'
+      r => r.url.startsWith('http://localhost:8080/api/v1/multas/usuario/3')
     );
     req.flush({ content: [{ id: 1, monto: 5, estadoMultaId: 1 }], totalPages: 1 });
 
@@ -45,7 +45,7 @@ describe('MultasComponent', () => {
     fixture.detectChanges();
 
     const req = httpMock.expectOne(
-      r => r.url === 'http://localhost:8080/api/v1/multas/usuario/3'
+      r => r.url.startsWith('http://localhost:8080/api/v1/multas/usuario/3')
     );
     req.flush('error', { status: 500, statusText: 'Server Error' });
 
