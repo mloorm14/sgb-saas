@@ -210,14 +210,19 @@ Validado contra un volumen Postgres vacío (`docker compose down -v` +
 disponibles en una sola pasada de inicialización (evidencia en la sección
 "Validación" arriba y en el resumen de la conversación).
 
-## Pendiente (seguimiento obligatorio para el prompt de Cajas)
+## Cerrado — verificación en runtime de los 3 procedimientos multi-OUT
 
-Los 3 procedimientos con múltiples parámetros OUT resueltos vía
-`@NamedStoredProcedureQuery` (`sp_registrar_devolucion`, `sp_pagar_multa`,
-`sp_anular_multa`, ver `MultaProcedureRepository`/`PrestamoProcedureRepository`)
-compilan pero **no están verificados en runtime** contra Hibernate/pgjdbc —
-es un área conocida como frágil en esa combinación específica. El prompt
-que arme la capa de servicio (Cajas) debe incluir, como condición para dar
-por cerrada la integración, un test de integración explícito
-(`@SpringBootTest` contra Postgres real o Testcontainers) que invoque estos
-3 procedimientos de punta a punta — no basta con que el código compile.
+Los 3 procedimientos con múltiples parámetros OUT (`sp_registrar_devolucion`,
+`sp_pagar_multa`, `sp_anular_multa`) compilaban vía
+`@NamedStoredProcedureQuery` pero no estaban verificados en runtime contra
+Hibernate/pgjdbc — área conocida como frágil en esa combinación específica.
+
+`PrestamoMultaProcedureIntegrationTest` (test de integración real contra
+Postgres, no mocks) confirmó el fallo en la primera ejecución. Se migraron
+los 5 métodos afectados en `MultaProcedureRepository`/
+`PrestamoProcedureRepository`/`ReservacionProcedureRepository` de
+`@Procedure`/`@NamedStoredProcedureQuery` a `@Query(nativeQuery = true)`,
+y la misma suite confirmó los 6 escenarios en verde
+(`Tests run: 6, Failures: 0, Errors: 0`). Ver evidencia completa en
+`docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md` y
+el cambio de decisión reflejado en `docs/adr/adr-013-acceso-datos-orm-sp.md`.
