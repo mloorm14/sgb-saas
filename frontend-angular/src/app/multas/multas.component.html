@@ -1,0 +1,97 @@
+<div style="padding:2rem;max-width:1100px;margin:0 auto">
+
+  <h2 style="color:#005c2f;margin:0 0 1.5rem 0">
+    {{ esLector ? 'Mis multas' : 'Gestión de multas' }}
+  </h2>
+
+  <!-- BUSQUEDA POR USUARIO: solo bibliotecario/gerente -->
+  <div *ngIf="!esLector" style="display:flex;gap:12px;align-items:flex-end;margin-bottom:1.5rem">
+    <div>
+      <label style="display:block;font-size:13px;margin-bottom:4px">Ver multas del usuario ID</label>
+      <input [(ngModel)]="usuarioIdBusqueda" [ngModelOptions]="{standalone: true}" type="number"
+        style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
+    </div>
+    <button (click)="buscarMultas()"
+      style="padding:8px 16px;background:#2980b9;color:white;border:none;border-radius:4px;cursor:pointer">
+      Buscar
+    </button>
+  </div>
+
+  <div *ngIf="errorMsg" style="color:red;margin-bottom:1rem">{{ errorMsg }}</div>
+  <div *ngIf="cargando" style="text-align:center;padding:2rem">Cargando multas...</div>
+
+  <table *ngIf="!cargando && multas.length > 0" style="width:100%;border-collapse:collapse;font-size:14px">
+    <thead>
+      <tr style="background:#005c2f;color:white">
+        <th style="padding:10px;text-align:left">ID</th>
+        <th style="padding:10px;text-align:left">Monto</th>
+        <th style="padding:10px;text-align:left">Fecha generada</th>
+        <th style="padding:10px;text-align:left">Estado</th>
+        <th style="padding:10px;text-align:left" *ngIf="puedeGestionar">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let multa of multas; let i = index"
+        [style.background]="i % 2 === 0 ? '#f9f9f9' : 'white'">
+        <td style="padding:10px">{{ multa.id }}</td>
+        <td style="padding:10px">{{ multa.monto | currency }}</td>
+        <td style="padding:10px">{{ multa.fechaGenerada | date:'short' }}</td>
+        <td style="padding:10px">{{ multa.estadoMultaId }}</td>
+        <td style="padding:10px;display:flex;gap:8px" *ngIf="puedeGestionar">
+          <button (click)="pagarMulta(multa.id)"
+            style="padding:4px 10px;background:#005c2f;color:white;border:none;border-radius:4px;cursor:pointer">
+            Pagar
+          </button>
+          <button *ngIf="puedeAnular" (click)="abrirModalAnular(multa.id)"
+            style="padding:4px 10px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer">
+            Anular
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="!cargando && multas.length === 0" style="text-align:center;padding:2rem;color:#888">
+    No hay multas pendientes
+  </div>
+
+  <!-- El lector no puede pagar ni anular desde la UI: solo consulta -->
+  <div *ngIf="esLector && multas.length > 0" style="margin-top:1rem;color:#666;font-size:13px">
+    Para regularizar una multa pendiente, acercate a la biblioteca.
+  </div>
+
+  <div *ngIf="multas.length > 0" style="display:flex;justify-content:center;align-items:center;gap:16px;margin-top:1rem">
+    <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
+      style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
+      ← Anterior
+    </button>
+    <span style="font-size:14px">Página {{ currentPage + 1 }} de {{ totalPages }}</span>
+    <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
+      style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
+      Siguiente →
+    </button>
+  </div>
+
+  <!-- MODAL ANULAR: motivo obligatorio -->
+  <div *ngIf="mostrarModalAnular"
+    style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999">
+    <div style="background:white;padding:2rem;border-radius:8px;width:100%;max-width:450px">
+      <h3 style="color:#c0392b;margin-top:0">Anular multa</h3>
+      <label style="display:block;font-size:13px;margin-bottom:4px">Motivo (obligatorio)</label>
+      <textarea [(ngModel)]="motivoAnulacion" [ngModelOptions]="{standalone: true}" rows="3"
+        style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"></textarea>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:1rem">
+        <button type="button" (click)="cerrarModalAnular()"
+          style="padding:8px 16px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
+          Cancelar
+        </button>
+        <button type="button" [disabled]="!motivoAnulacion.trim()" (click)="confirmarAnulacion()"
+          style="padding:8px 16px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer">
+          Confirmar anulación
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
