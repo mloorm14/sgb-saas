@@ -1,0 +1,86 @@
+<div style="padding:2rem;max-width:1100px;margin:0 auto">
+
+  <h2 style="color:#005c2f;margin:0 0 1.5rem 0">
+    {{ esLector ? 'Mis reservaciones' : 'Gestión de reservaciones' }}
+  </h2>
+
+  <!-- FORMULARIO CREAR -->
+  <div style="background:#f9f9f9;padding:1.5rem;border-radius:8px;margin-bottom:2rem">
+    <h3 style="margin-top:0;font-size:16px">Nueva reservación</h3>
+    <div *ngIf="errorMsgCrear" style="color:red;margin-bottom:1rem">{{ errorMsgCrear }}</div>
+
+    <form [formGroup]="formCrear" (ngSubmit)="crearReservacion()" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+      <div *ngIf="!esLector">
+        <label style="display:block;font-size:13px;margin-bottom:4px">Usuario ID</label>
+        <input formControlName="usuarioId" type="number"
+          style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px">Libro ID</label>
+        <input formControlName="libroId" type="number"
+          style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
+      </div>
+      <button type="submit" [disabled]="formCrear.invalid"
+        style="padding:8px 16px;background:#005c2f;color:white;border:none;border-radius:4px;cursor:pointer">
+        Reservar
+      </button>
+    </form>
+  </div>
+
+  <!-- BUSQUEDA POR USUARIO: solo bibliotecario/gerente, el lector ya ve lo suyo automaticamente -->
+  <div *ngIf="!esLector" style="display:flex;gap:12px;align-items:flex-end;margin-bottom:1.5rem">
+    <div>
+      <label style="display:block;font-size:13px;margin-bottom:4px">Ver reservaciones del usuario ID</label>
+      <input [(ngModel)]="usuarioIdBusqueda" [ngModelOptions]="{standalone: true}" type="number"
+        style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
+    </div>
+    <button (click)="buscarReservaciones()"
+      style="padding:8px 16px;background:#2980b9;color:white;border:none;border-radius:4px;cursor:pointer">
+      Buscar
+    </button>
+  </div>
+
+  <div *ngIf="errorMsg" style="color:red;margin-bottom:1rem">{{ errorMsg }}</div>
+  <div *ngIf="cargando" style="text-align:center;padding:2rem">Cargando reservaciones...</div>
+
+  <table *ngIf="!cargando && reservaciones.length > 0" style="width:100%;border-collapse:collapse;font-size:14px">
+    <thead>
+      <tr style="background:#005c2f;color:white">
+        <th style="padding:10px;text-align:left">ID</th>
+        <th style="padding:10px;text-align:left" *ngIf="!esLector">Usuario</th>
+        <th style="padding:10px;text-align:left">Libro</th>
+        <th style="padding:10px;text-align:left">Fecha reserva</th>
+        <th style="padding:10px;text-align:left">Límite de retiro</th>
+        <th style="padding:10px;text-align:left">Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let r of reservaciones; let i = index"
+        [style.background]="i % 2 === 0 ? '#f9f9f9' : 'white'">
+        <td style="padding:10px">{{ r.id }}</td>
+        <td style="padding:10px" *ngIf="!esLector">{{ r.usuarioId }}</td>
+        <td style="padding:10px">{{ r.libroId }}</td>
+        <td style="padding:10px">{{ r.fechaReserva | date:'short' }}</td>
+        <td style="padding:10px">{{ r.fechaLimiteRetiro | date:'short' }}</td>
+        <td style="padding:10px">{{ r.estadoReservacionId }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="!cargando && reservaciones.length === 0" style="text-align:center;padding:2rem;color:#888">
+    No hay reservaciones registradas
+  </div>
+
+  <div *ngIf="reservaciones.length > 0" style="display:flex;justify-content:center;align-items:center;gap:16px;margin-top:1rem">
+    <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
+      style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
+      ← Anterior
+    </button>
+    <span style="font-size:14px">Página {{ currentPage + 1 }} de {{ totalPages }}</span>
+    <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
+      style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
+      Siguiente →
+    </button>
+  </div>
+
+</div>
