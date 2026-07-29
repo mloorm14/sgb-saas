@@ -5,10 +5,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.NamedStoredProcedureQueries;
-import jakarta.persistence.NamedStoredProcedureQuery;
-import jakarta.persistence.ParameterMode;
-import jakarta.persistence.StoredProcedureParameter;
+// import jakarta.persistence.NamedStoredProcedureQueries; -- ya no se usa,
+// ver bloque comentado abajo (sp_pagar_multa/sp_anular_multa ahora se
+// invocan vía @Query nativa en MultaProcedureRepository).
+// import jakarta.persistence.NamedStoredProcedureQuery;
+// import jakarta.persistence.ParameterMode;
+// import jakarta.persistence.StoredProcedureParameter;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -21,28 +23,34 @@ import java.time.OffsetDateTime;
  * se expone como identificador plano (mismo criterio que {@link Prestamo})
  * para mantener el repositorio CRUD libre de joins.
  */
-@NamedStoredProcedureQueries({
-        @NamedStoredProcedureQuery(
-                name = "Multa.pagarMulta",
-                procedureName = "sp_pagar_multa",
-                parameters = {
-                        @StoredProcedureParameter(mode = ParameterMode.IN, name = "p_multa_id", type = Long.class),
-                        @StoredProcedureParameter(mode = ParameterMode.OUT, name = "o_multa_id", type = Long.class),
-                        @StoredProcedureParameter(mode = ParameterMode.OUT, name = "o_usuario_desbloqueado", type = Boolean.class)
-                }
-        ),
-        @NamedStoredProcedureQuery(
-                name = "Multa.anularMulta",
-                procedureName = "sp_anular_multa",
-                parameters = {
-                        @StoredProcedureParameter(mode = ParameterMode.IN, name = "p_multa_id", type = Long.class),
-                        @StoredProcedureParameter(mode = ParameterMode.IN, name = "p_motivo", type = String.class),
-                        @StoredProcedureParameter(mode = ParameterMode.IN, name = "p_rol_ejecutor", type = String.class),
-                        @StoredProcedureParameter(mode = ParameterMode.OUT, name = "o_multa_id", type = Long.class),
-                        @StoredProcedureParameter(mode = ParameterMode.OUT, name = "o_usuario_desbloqueado", type = Boolean.class)
-                }
-        )
-})
+// ── CÓDIGO ANTERIOR (no usar, dejado como referencia histórica) ──
+// Reemplazado por @Query nativa en MultaProcedureRepository.spPagarMulta/
+// spAnularMulta tras el fallo documentado en
+// docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md
+// (@Procedure generaba sintaxis "=>" que pgjdbc no soporta -- bug conocido
+// de Hibernate 6.2+/7.x, ver spring-projects/spring-data-jpa#3393).
+// @NamedStoredProcedureQueries({
+//         @NamedStoredProcedureQuery(
+//                 name = "Multa.pagarMulta",
+//                 procedureName = "sp_pagar_multa",
+//                 parameters = {
+//                         @StoredProcedureParameter(mode = ParameterMode.IN, name = "p_multa_id", type = Long.class),
+//                         @StoredProcedureParameter(mode = ParameterMode.OUT, name = "o_multa_id", type = Long.class),
+//                         @StoredProcedureParameter(mode = ParameterMode.OUT, name = "o_usuario_desbloqueado", type = Boolean.class)
+//                 }
+//         ),
+//         @NamedStoredProcedureQuery(
+//                 name = "Multa.anularMulta",
+//                 procedureName = "sp_anular_multa",
+//                 parameters = {
+//                         @StoredProcedureParameter(mode = ParameterMode.IN, name = "p_multa_id", type = Long.class),
+//                         @StoredProcedureParameter(mode = ParameterMode.IN, name = "p_motivo", type = String.class),
+//                         @StoredProcedureParameter(mode = ParameterMode.IN, name = "p_rol_ejecutor", type = String.class),
+//                         @StoredProcedureParameter(mode = ParameterMode.OUT, name = "o_multa_id", type = Long.class),
+//                         @StoredProcedureParameter(mode = ParameterMode.OUT, name = "o_usuario_desbloqueado", type = Boolean.class)
+//                 }
+//         )
+// })
 @Data
 @NoArgsConstructor
 @Entity
