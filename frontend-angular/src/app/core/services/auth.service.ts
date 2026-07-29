@@ -3,6 +3,16 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 
+interface JwtPayload {
+  sub: string;
+  correo: string;
+  roles: string[];
+  rol: string;
+  jti: string;
+  iat: number;
+  exp: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -46,5 +56,42 @@ export class AuthService {
 
   isLoggedIn(): boolean {
     return this.accessToken !== null;
+  }
+
+  // --- Lectura del payload del JWT (sub, roles) ---
+  // No es una nueva fuente de verdad de autorización: el backend
+  // siempre re-valida rol/permiso en cada request (JwtAuthFilter +
+  // UserDetailsServiceImpl). Esto es solo para decidir qué botones
+  // mostrar en el template, igual que LibrosComponent decide qué
+  // acciones ofrecer.
+  private decodePayload(): JwtPayload | null {
+    if (!this.accessToken) return null;
+    try {
+      const base64 = this.accessToken.split('.')[1];
+      const json = decodeURIComponent(
+        atob(base64.replace(/-/g, '+').replace(/_/g, '/'))
+          .split('')
+          .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(json);
+    } catch {
+      return null;
+    }
+  }
+
+  getUserId(): number | null {
+    const payload = this.decodePayload();
+    return payload ? Number(payload.sub) : null;
+  }
+
+  getRoles(): string[] {
+    const payload = this.decodePayload();
+    return payload?.roles ?? [];
+  }
+
+  hasRole(...roles: string[]): boolean {
+    const misRoles = this.getRoles();
+    return roles.some(r => misRoles.includes(r));
   }
 }
