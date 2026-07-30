@@ -2,6 +2,7 @@ package com.uteq.backend.exception;
 
 import com.uteq.backend.service.CorreoYaRegistradoException;
 import com.uteq.backend.service.LoginRateLimitExcedidoException;
+import com.uteq.backend.service.RefreshTokenInvalidoException;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +53,20 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(LoginRateLimitExcedidoException.class)
     public ProblemDetail handleLoginRateLimitExcedido(LoginRateLimitExcedidoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
+    }
+
+    // AuthService.refresh() lanza esto cuando el refreshToken de la cookie
+    // es invalido/expirado (JwtService.validateToken devuelve false) o
+    // cuando el correo que codifica ya no resuelve a un usuario existente.
+    // Antes de este handler, ambos casos eran una RuntimeException sin
+    // @ExceptionHandler dedicado, caian en handleGenerica y respondian 500
+    // -- ocultando lo que en realidad es una sesion no autorizada (401),
+    // no un error interno del servidor. Mismo mensaje generico en ambos
+    // casos (no distingue "token invalido" de "usuario no encontrado")
+    // para no filtrar informacion sobre si una cuenta existe.
+    @ExceptionHandler(RefreshTokenInvalidoException.class)
+    public ProblemDetail handleRefreshTokenInvalido(RefreshTokenInvalidoException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
     // UserDetailsServiceImpl marca accountLocked=true cuando

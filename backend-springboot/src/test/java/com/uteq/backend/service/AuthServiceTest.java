@@ -236,4 +236,33 @@ class AuthServiceTest {
         assertEquals("nuevo-access-token", resultado.accessToken());
         assertSame(refreshTokenDePrueba, resultado.refreshToken());
     }
+
+    // Antes de este fix, un refreshToken invalido/expirado lanzaba una
+    // RuntimeException generica que GlobalExceptionHandler no capturaba de
+    // forma especifica -- caia en el handler generico y respondia 500 en
+    // vez de 401. Ver GlobalExceptionHandler.handleRefreshTokenInvalido.
+    @Test
+    void refreshConTokenInvalido_lanzaRefreshTokenInvalidoException() {
+        String refreshTokenDePrueba = "refresh-token-invalido";
+
+        when(jwtService.validateToken(refreshTokenDePrueba)).thenReturn(false);
+
+        assertThrows(RefreshTokenInvalidoException.class, () -> authService.refresh(refreshTokenDePrueba));
+
+        verify(usuarioRepository, never()).findByCorreo(any());
+    }
+
+    // Caso borde: el token es valido (firma/expiracion correctas) pero el
+    // correo que codifica ya no resuelve a un usuario existente (ej. cuenta
+    // eliminada). Mismo tratamiento que un token invalido -- 401, no 500.
+    @Test
+    void refreshConUsuarioNoEncontrado_lanzaRefreshTokenInvalidoException() {
+        String refreshTokenDePrueba = "refresh-token-de-usuario-eliminado";
+
+        when(jwtService.validateToken(refreshTokenDePrueba)).thenReturn(true);
+        when(jwtService.extractCorreo(refreshTokenDePrueba)).thenReturn("fantasma@uteq.edu.ec");
+        when(usuarioRepository.findByCorreo("fantasma@uteq.edu.ec")).thenReturn(Optional.empty());
+
+        assertThrows(RefreshTokenInvalidoException.class, () -> authService.refresh(refreshTokenDePrueba));
+    }
 }

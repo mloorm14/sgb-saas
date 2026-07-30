@@ -164,12 +164,12 @@ public class AuthService {
 
     public TokenResponseDTO refresh(String refreshToken) {
         if (!jwtService.validateToken(refreshToken)) {
-            throw new RuntimeException("Refresh token inválido");
+            throw new RefreshTokenInvalidoException("Refresh token inválido o expirado. Inicie sesión nuevamente.");
         }
 
         String correo = jwtService.extractCorreo(refreshToken);
         Usuario usuario = usuarioRepository.findByCorreo(correo)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + correo));
+                .orElseThrow(() -> new RefreshTokenInvalidoException("Refresh token inválido o expirado. Inicie sesión nuevamente."));
 
         String nuevoAccessToken = jwtService.generateToken(usuario);
 
