@@ -1,6 +1,7 @@
 package com.uteq.backend.exception;
 
 import com.uteq.backend.service.CorreoYaRegistradoException;
+import com.uteq.backend.service.LoginRateLimitExcedidoException;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     public ProblemDetail handleBadCredentials(BadCredentialsException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
+    }
+
+    // OWASP A07 (Bloque C.2): LoginRateLimiter.estaBloqueado() -> AuthService
+    // lanza esto ANTES de intentar autenticar, cuando correo+IP ya agotaron
+    // los intentos fallidos permitidos en la ventana vigente. Ver
+    // docs/mediciones/sec/2026-07-30-owasp-a07-fallo-identificacion-autenticacion.md
+    // para el gap original (6/6 intentos devolvían 401 sin límite) que esto cierra.
+    @ExceptionHandler(LoginRateLimitExcedidoException.class)
+    public ProblemDetail handleLoginRateLimitExcedido(LoginRateLimitExcedidoException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
     }
 
     // UserDetailsServiceImpl marca accountLocked=true cuando
