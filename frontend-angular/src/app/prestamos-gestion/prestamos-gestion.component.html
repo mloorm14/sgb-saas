@@ -1,0 +1,94 @@
+<div style="padding:2rem;max-width:1100px;margin:0 auto">
+
+  <h2 style="color:#005c2f;margin:0 0 1.5rem 0">Gestión de préstamos</h2>
+
+  <!-- FORMULARIO CREAR -->
+  <div style="background:#f9f9f9;padding:1.5rem;border-radius:8px;margin-bottom:2rem">
+    <h3 style="margin-top:0;font-size:16px">Registrar nuevo préstamo</h3>
+    <div *ngIf="errorMsgCrear" style="color:red;margin-bottom:1rem">{{ errorMsgCrear }}</div>
+
+    <form [formGroup]="formCrear" (ngSubmit)="crearPrestamo()" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px">Usuario ID</label>
+        <input formControlName="usuarioId" type="number"
+          style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px">Libro ID</label>
+        <input formControlName="libroId" type="number"
+          style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px">Días de préstamo</label>
+        <input formControlName="diasPrestamo" type="number"
+          style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
+      </div>
+      <button type="submit" [disabled]="formCrear.invalid"
+        style="padding:8px 16px;background:#005c2f;color:white;border:none;border-radius:4px;cursor:pointer">
+        Crear préstamo
+      </button>
+    </form>
+  </div>
+
+  <!-- BUSQUEDA POR USUARIO -->
+  <div style="display:flex;gap:12px;align-items:flex-end;margin-bottom:1.5rem">
+    <div>
+      <label style="display:block;font-size:13px;margin-bottom:4px">Ver préstamos del usuario ID</label>
+      <input [(ngModel)]="usuarioIdBusqueda" [ngModelOptions]="{standalone: true}" type="number"
+        style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
+    </div>
+    <button (click)="buscarPrestamos()"
+      style="padding:8px 16px;background:#2980b9;color:white;border:none;border-radius:4px;cursor:pointer">
+      Buscar
+    </button>
+  </div>
+
+  <div *ngIf="errorMsg" style="color:red;margin-bottom:1rem">{{ errorMsg }}</div>
+  <div *ngIf="cargando" style="text-align:center;padding:2rem">Cargando préstamos...</div>
+
+  <table *ngIf="!cargando && prestamos.length > 0" style="width:100%;border-collapse:collapse;font-size:14px">
+    <thead>
+      <tr style="background:#005c2f;color:white">
+        <th style="padding:10px;text-align:left">ID</th>
+        <th style="padding:10px;text-align:left">Usuario</th>
+        <th style="padding:10px;text-align:left">Libro</th>
+        <th style="padding:10px;text-align:left">Devolución estimada</th>
+        <th style="padding:10px;text-align:left">Devolución real</th>
+        <th style="padding:10px;text-align:left">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let prestamo of prestamos; let i = index"
+        [style.background]="i % 2 === 0 ? '#f9f9f9' : 'white'">
+        <td style="padding:10px">{{ prestamo.id }}</td>
+        <td style="padding:10px">{{ prestamo.usuarioId }}</td>
+        <td style="padding:10px">{{ prestamo.libroId }}</td>
+        <td style="padding:10px">{{ prestamo.fechaDevolucionEstimada | date:'short' }}</td>
+        <td style="padding:10px">{{ prestamo.fechaDevolucionReal ? (prestamo.fechaDevolucionReal | date:'short') : '—' }}</td>
+        <td style="padding:10px">
+          <button *ngIf="!prestamo.fechaDevolucionReal" (click)="registrarDevolucion(prestamo.id)"
+            style="padding:4px 10px;background:#2980b9;color:white;border:none;border-radius:4px;cursor:pointer">
+            Registrar devolución
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="!cargando && usuarioIdBusqueda && prestamos.length === 0" style="text-align:center;padding:2rem;color:#888">
+    Ese usuario no tiene préstamos registrados
+  </div>
+
+  <div *ngIf="prestamos.length > 0" style="display:flex;justify-content:center;align-items:center;gap:16px;margin-top:1rem">
+    <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
+      style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
+      ← Anterior
+    </button>
+    <span style="font-size:14px">Página {{ currentPage + 1 }} de {{ totalPages }}</span>
+    <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
+      style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
+      Siguiente →
+    </button>
+  </div>
+
+</div>
