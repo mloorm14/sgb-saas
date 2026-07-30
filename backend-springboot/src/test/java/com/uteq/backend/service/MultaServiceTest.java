@@ -1,0 +1,136 @@
+package com.uteq.backend.service;
+
+import com.uteq.backend.dto.MultaAccionResponseDTO;
+import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.MultaProcedureRepository;
+import com.uteq.backend.repository.MultaRepository;
+import com.uteq.backend.repository.UsuarioRepository;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
+class MultaServiceTest {
+
+    @Mock MultaRepository multaRepo;
+    @Mock MultaProcedureRepository multaProcRepo;
+    @Mock UsuarioRepository usuarioRepo;
+
+    @InjectMocks MultaService multaService;
+
+    // ── Test 1: pagar multa invoca el SP y traduce el Map ────
+    @Test
+    void pagar_invocaProcedimientoYRetornaDTO() {
+        Map<String, Object> mapaResultado = new HashMap<>();
+        mapaResultado.put("o_multa_id", 7L);
+        mapaResultado.put("o_usuario_desbloqueado", true);
+        given(multaProcRepo.spPagarMulta(7L)).willReturn(mapaResultado);
+
+        MultaAccionResponseDTO resultado = multaService.pagar(7L);
+
+        assertThat(resultado.multaId()).isEqualTo(7L);
+        assertThat(resultado.usuarioDesbloqueado()).isTrue();
+    }
+
+    // ── Test 2: pagar multa que NO desbloquea al usuario (tiene otras pendientes) ──
+    @Test
+    void pagar_conOtrasMultasPendientes_noDesbloqueaUsuario() {
+        Map<String, Object> mapaResultado = new HashMap<>();
+        mapaResultado.put("o_multa_id", 8L);
+        mapaResultado.put("o_usuario_desbloqueado", false);
+        given(multaProcRepo.spPagarMulta(8L)).willReturn(mapaResultado);
+
+        MultaAccionResponseDTO resultado = multaService.pagar(8L);
+
+        assertThat(resultado.usuarioDesbloqueado()).isFalse();
+    }
+
+    // ── Test 3: anular con rol GERENTE -> resuelve rolEjecutor del token, no del body ──
+    @Test
+    void anular_conRolGerente_resuelveRolDesdeAuthentication() {
+        Authentication auth = authComoRol("gerente@uteq.edu.ec", "GERENTE");
+        Map<String, Object> mapaResultado = new HashMap<>();
+        mapaResultado.put("o_multa_id", 9L);
+        mapaResultado.put("o_usuario_desbloqueado", true);
+        given(multaProcRepo.spAnularMulta(9L, "Error administrativo", "GERENTE"))
+                .willReturn(mapaResultado);
+
+        MultaAccionResponseDTO resultado = multaService.anular(9L, "Error administrativo", auth);
+
+        assertThat(resultado.multaId()).isEqualTo(9L);
+        // Verifica explícitamente que el rol enviado al SP es el de la
+        // authority real ("GERENTE"), no un valor que hubiera podido venir
+        // de un campo del body (que ni siquiera existe en el DTO).
+        verify(multaProcRepo).spAnularMulta(9L, "Error administrativo", "GERENTE");
+    }
+
+    // ── Test 4: anular con rol ADMIN también es válido ────────
+    @Test
+    void anular_conRolAdmin_resuelveRolAdmin() {
+        Authentication auth = authComoRol("admin@uteq.edu.ec", "ADMIN");
+        Map<String, Object> mapaResultado = new HashMap<>();
+        mapaResultado.put("o_multa_id", 12L);
+        mapaResultado.put("o_usuario_desbloqueado", false);
+        given(multaProcRepo.spAnularMulta(12L, "Duplicado", "ADMIN"))
+                .willReturn(mapaResultado);
+
+        multaService.anular(12L, "Duplicado", auth);
+
+        verify(multaProcRepo).spAnularMulta(12L, "Duplicado", "ADMIN");
+    }
+
+    // ── Test 5: anular sin rol válido -> defensa en profundidad, denegado ──
+    // (Escenario que en teoría @PreAuthorize del controller ya bloquea,
+    // pero el service lo revalida por su cuenta -- ver Javadoc de
+    // MultaService.resolverRolAnulacion.)
+    @Test
+    void anular_sinRolGerenteOAdmin_lanzaAccesoDenegado() {
+        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+
+        assertThatThrownBy(() -> multaService.anular(9L, "motivo", auth))
+                .isInstanceOf(AuthorizationDeniedException.class);
+    }
+
+    // ── Test 6: acceso denegado cuando un LECTOR pide multas de otro usuario ──
+    @Test
+    void listarPorUsuario_cuandoLectorPideOtroUsuario_lanzaAccesoDenegado() {
+        Authentication auth = authComoRol("lector@uteq.edu.ec", "LECTOR");
+        given(usuarioRepo.findByCorreo("lector@uteq.edu.ec"))
+                .willReturn(Optional.of(usuarioConId(1L)));
+
+        assertThatThrownBy(() -> multaService.listarPorUsuario(2L, auth, null))
+                .isInstanceOf(AuthorizationDeniedException.class);
+    }
+
+    // ── Helpers ────────────────────────────────────────────
+    private Authentication authComoRol(String correo, String rol) {
+        Authentication auth = mock(Authentication.class);
+        lenient().when(auth.getName()).thenReturn(correo);
+        lenient().doReturn(List.of(new SimpleGrantedAuthority("ROLE_" + rol)))
+                .when(auth).getAuthorities();
+        return auth;
+    }
+
+    private Usuario usuarioConId(Long id) {
+        Usuario usuario = new Usuario();
+        usuario.setId(id);
+        return usuario;
+    }
+}
