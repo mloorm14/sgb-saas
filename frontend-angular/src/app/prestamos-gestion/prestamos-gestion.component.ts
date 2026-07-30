@@ -29,7 +29,7 @@ export class PrestamosGestionComponent {
     this.formCrear = this.fb.group({
       usuarioId: ['', [Validators.required]],
       libroId: ['', [Validators.required]],
-      dias: ['', [Validators.required, Validators.min(1)]]
+      diasPrestamo: ['', [Validators.required, Validators.min(1)]]
     });
   }
 
