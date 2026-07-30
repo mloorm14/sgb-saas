@@ -55,6 +55,14 @@ app:
       # docs/adr/adr-008-ttl-cache-libros.md. Se invalida antes de tiempo
       # via @CacheEvict en crear/actualizar/eliminar de LibroService.
       ttl-seconds: ${CACHE_LIBROS_TTL_SECONDS:300}
+  security:
+    login:
+      # OWASP A07 (Bloque C.2): ventana de tiempo (segundos) y maximo de
+      # intentos fallidos de login por combinacion correo+IP antes de
+      # responder 429 -- ver LoginRateLimiter. Config externa, mismo
+      # criterio que app.cache.libros.ttl-seconds.
+      rate-limit-window-seconds: ${LOGIN_RATE_LIMIT_WINDOW_SECONDS:900}
+      max-attempts: ${LOGIN_MAX_ATTEMPTS:5}
 
 security:
   jwt:

@@ -55,6 +55,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       CACHE_LIBROS_TTL_SECONDS: ${CACHE_LIBROS_TTL_SECONDS:-300}
+      LOGIN_RATE_LIMIT_WINDOW_SECONDS: ${LOGIN_RATE_LIMIT_WINDOW_SECONDS:-900}
+      LOGIN_MAX_ATTEMPTS: ${LOGIN_MAX_ATTEMPTS:-5}
       JWT_SECRET: ${JWT_SECRET}
       # Sobreescribe el default de application.yml (filesystem:../database/migrations,
       # pensado para `mvnw`/jar local): dentro del contenedor el cwd es /app
