@@ -1,5 +1,6 @@
 package com.uteq.backend;
 
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.EditorialRepository;
 import com.uteq.backend.repository.EstadoLibroRepository;
 import com.uteq.backend.repository.EstadoReservacionRepository;
@@ -78,6 +79,12 @@ class BackendApplicationTests {
 
     @MockitoBean
     private MultaProcedureRepository multaProcedureRepository;
+
+    // OWASP A09 (Bloque C.2): AuthService.registrarAuditoria() ahora
+    // depende de este repositorio -- mismo motivo que el resto de mocks de
+    // esta clase, DataJpaRepositoriesAutoConfiguration sigue excluido.
+    @MockitoBean
+    private BitacoraAuditoriaRepository bitacoraAuditoriaRepository;
 
     @Test
     void contextLoads() {
