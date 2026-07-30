@@ -32,7 +32,7 @@ describe('ReservacionesComponent', () => {
     fixture.detectChanges(); // ngOnInit -> como es lector, busca automaticamente
 
     const req = httpMock.expectOne(
-      r => r.url === 'http://localhost:8080/api/v1/reservaciones/usuario/2'
+      r => r.url.startsWith('http://localhost:8080/api/v1/reservaciones/usuario/2')
     );
     req.flush({ content: [{ id: 1, libroId: 9, estadoReservacionId: 1 }], totalPages: 1 });
 
