@@ -69,11 +69,16 @@ Spring Data (`@Procedure`/`@NamedStoredProcedureQuery` o
 Aceptado e implementado. Los 7 objetos están aplicados y probados
 manualmente contra una instancia real de PostgreSQL 16 (ver la sección
 "Validación" de `docs/basedatos/CATALOGO-SP.md` para el detalle completo
-de casos cubiertos). Pendiente de seguimiento (ya documentado en el
-catálogo, no en este ADR): verificación en runtime de los 3
-procedimientos con múltiples parámetros OUT resueltos vía
-`@NamedStoredProcedureQuery`, condición explícita para la integración
-de la capa de servicio de Préstamos.
+de casos cubiertos). El seguimiento que quedaba abierto —verificación en
+runtime de `sp_registrar_devolucion`, `sp_pagar_multa` y
+`sp_anular_multa`, los 3 procedimientos con múltiples parámetros OUT—
+ya se cerró: la primera ejecución real confirmó el fallo con
+`@NamedStoredProcedureQuery`; tras migrar a
+`@Query(nativeQuery = true)` los 6 escenarios de
+`PrestamoMultaProcedureIntegrationTest` pasan en verde. No cambia la
+decisión del ADR (SQL nativo para operaciones multi-tabla), solo el
+mecanismo de invocación de esos 5 métodos. Ver evidencia completa en
+`docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md`.
 
 ## Consequences
 
@@ -97,10 +102,10 @@ de la capa de servicio de Préstamos.
   un único patrón uniforme — mitigado documentando el criterio
   explícitamente aquí y en `docs/basedatos/CATALOGO-SP.md`.
 - Los procedimientos con múltiples parámetros OUT vía
-  `@NamedStoredProcedureQuery` son un área frágil conocida de la
-  combinación Hibernate/pgjdbc (ver "Pendiente" en
-  `docs/basedatos/CATALOGO-SP.md`) — requieren verificación de
-  integración explícita, no basta con que el código Java compile.
+  `@NamedStoredProcedureQuery` eran un área frágil conocida de la
+  combinación Hibernate/pgjdbc — confirmado en la práctica (fallaban en
+  runtime) y resuelto migrando a `@Query(nativeQuery = true)`, ver
+  Status arriba.
 
 ## Referencias
 
