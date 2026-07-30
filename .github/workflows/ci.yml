@@ -10,6 +10,46 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
+    # PrestamoMultaProcedureIntegrationTest es un @SpringBootTest real (sin
+    # mocks, ver su Javadoc) que necesita una base Postgres y una instancia
+    # de Redis alcanzables — igual que en desarrollo local vía
+    # `docker compose up -d postgres redis`. GitHub Actions no levanta
+    # docker-compose.yml por sí solo, así que se declaran acá como
+    # "service containers" equivalentes.
+    #
+    # Mismos digests sha256 que docker-compose.yml (ver docs/DIGESTS-LOG.md):
+    # se reutilizan a propósito, no un tag flotante como "postgres:16-alpine".
+    # La razón no es la misma que en producción (ahí es supply-chain/
+    # reproducibilidad de despliegue, ver adr-012-estrategia-despliegue.md) —
+    # acá es simplemente evitar que CI valide el código contra una versión
+    # de Postgres/Redis distinta de la que corre en desarrollo y en el
+    # stack real, lo que podría enmascarar o inventar diferencias de
+    # comportamiento entre entornos.
+    services:
+      postgres:
+        image: postgres@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
+        env:
+          POSTGRES_DB: sgb_db
+          POSTGRES_USER: sgb_user
+          POSTGRES_PASSWORD: changeme
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sgb_user -d sgb_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,6 +61,34 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      # El cliente psql no viene garantizado en la imagen de runner de
+      # GitHub Actions entre versiones -- se instala explícitamente en vez
+      # de asumir que ya está, para no depender de un detalle no
+      # documentado de la imagen ubuntu-latest.
+      - name: Instalar cliente psql
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends postgresql-client
+
+      # Misma fuente de verdad que desarrollo local (docker-compose.yml
+      # monta esto mismo en docker-entrypoint-initdb.d/): se genera el
+      # consolidado (schema + los 7 procedimientos/funciones + seed) con el
+      # mismo script que usa `make up`, y se aplica contra el servicio de
+      # Postgres de CI con psql -- no se reescribe ni se duplica el DDL acá.
+      - name: Inicializar esquema y procedimientos en Postgres (CI)
+        env:
+          PGPASSWORD: changeme
+        run: |
+          ./scripts/build-init-sql.sh
+          psql -h localhost -p 5432 -U sgb_user -d sgb_db -v ON_ERROR_STOP=1 -f db/init/01-consolidado.sql
+
+      # Host/puerto/usuario/password ya coinciden con los defaults de
+      # application.yml (DB_URL localhost:5432/sgb_db, DB_USER sgb_user,
+      # DB_PASSWORD changeme, REDIS_HOST/PORT localhost:6379) -- a
+      # diferencia de docker-compose.yml, donde el host es el nombre del
+      # servicio, un "service container" de GitHub Actions se expone en
+      # localhost del runner. No hace falta ningún override de variables
+      # de entorno para este step.
       - name: Build and run tests
         working-directory: ./backend-springboot
         run: ./mvnw -B clean verify
