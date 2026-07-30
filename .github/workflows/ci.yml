@@ -92,3 +92,11 @@ jobs:
       - name: Build and run tests
         working-directory: ./backend-springboot
         run: ./mvnw -B clean verify
+
+      # A.3.3: rechaza el commit si la matriz de trazabilidad tiene un
+      # requisito Must sin historia_usuario/caso_de_uso, o un requisito
+      # marcado como "verificado" sin una prueba automatizada real que lo
+      # respalde. Ver scripts/validate-traceability.sh para el detalle de
+      # las reglas.
+      - name: Validar matriz de trazabilidad
+        run: ./scripts/validate-traceability.sh
