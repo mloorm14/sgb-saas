@@ -2,9 +2,16 @@ package com.uteq.backend;
 
 import com.uteq.backend.repository.EditorialRepository;
 import com.uteq.backend.repository.EstadoLibroRepository;
+import com.uteq.backend.repository.EstadoReservacionRepository;
 import com.uteq.backend.repository.EstadoUsuarioRepository;
 import com.uteq.backend.repository.IdiomaRepository;
 import com.uteq.backend.repository.LibroRepository;
+import com.uteq.backend.repository.MultaProcedureRepository;
+import com.uteq.backend.repository.MultaRepository;
+import com.uteq.backend.repository.PrestamoProcedureRepository;
+import com.uteq.backend.repository.PrestamoRepository;
+import com.uteq.backend.repository.ReservacionProcedureRepository;
+import com.uteq.backend.repository.ReservacionRepository;
 import com.uteq.backend.repository.RolRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;
@@ -14,12 +21,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(properties = {
         "spring.autoconfigure.exclude=" +
-        "org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration," +
-        "org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration," +
-        "org.springframework.boot.data.jpa.autoconfigure.DataJpaRepositoriesAutoConfiguration," +
-        "org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration," +
-        "org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration," +
-        "org.springframework.boot.data.redis.autoconfigure.DataRedisReactiveAutoConfiguration"
+                "org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration," +
+                "org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration," +
+                "org.springframework.boot.data.jpa.autoconfigure.DataJpaRepositoriesAutoConfiguration," +
+                "org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration," +
+                "org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration," +
+                "org.springframework.boot.data.redis.autoconfigure.DataRedisReactiveAutoConfiguration"
 })
 class BackendApplicationTests {
 
@@ -46,6 +53,31 @@ class BackendApplicationTests {
 
     @MockitoBean
     private EstadoUsuarioRepository estadoUsuarioRepository;
+
+    // ── Repositories del módulo Préstamos/Reservaciones/Multas ──
+    // (agregados junto con feature/prestamos-backend; sin estos mocks el
+    // contexto no carga porque DataJpaRepositoriesAutoConfiguration está
+    // excluido arriba y no hay bean real para ningún JpaRepository/Repository).
+    @MockitoBean
+    private PrestamoRepository prestamoRepository;
+
+    @MockitoBean
+    private PrestamoProcedureRepository prestamoProcedureRepository;
+
+    @MockitoBean
+    private ReservacionRepository reservacionRepository;
+
+    @MockitoBean
+    private ReservacionProcedureRepository reservacionProcedureRepository;
+
+    @MockitoBean
+    private EstadoReservacionRepository estadoReservacionRepository;
+
+    @MockitoBean
+    private MultaRepository multaRepository;
+
+    @MockitoBean
+    private MultaProcedureRepository multaProcedureRepository;
 
     @Test
     void contextLoads() {
