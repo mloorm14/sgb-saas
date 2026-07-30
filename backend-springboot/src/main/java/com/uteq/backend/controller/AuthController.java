@@ -6,6 +6,7 @@ import com.uteq.backend.dto.TokenResponseDTO;
 import com.uteq.backend.dto.UsuarioResponseDTO;
 import com.uteq.backend.security.JwtService;
 import com.uteq.backend.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -39,8 +40,8 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponseDTO> login(@Valid @RequestBody LoginRequestDTO dto) {
-        TokenResponseDTO tokens = authService.login(dto);
+    public ResponseEntity<TokenResponseDTO> login(@Valid @RequestBody LoginRequestDTO dto, HttpServletRequest request) {
+        TokenResponseDTO tokens = authService.login(dto, obtenerIpOrigen(request));
         ResponseCookie cookie = buildRefreshCookie(tokens.refreshToken(), jwtService.getRefreshExpirationMs());
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
@@ -48,13 +49,25 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authHeader, HttpServletRequest request) {
         String token = authHeader.substring(BEARER_PREFIX.length());
-        authService.logout(token);
+        authService.logout(token, obtenerIpOrigen(request));
         ResponseCookie cookieLimpia = buildRefreshCookie("", 0);
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, cookieLimpia.toString())
                 .build();
+    }
+
+    // Bloque C.2 (OWASP A07/A09): IP real del cliente, usada para el rate
+    // limiter de login y el logging de eventos de autenticación. Se lee
+    // directo de request.getRemoteAddr() -- NO de X-Forwarded-For, que
+    // cualquier cliente puede falsificar libremente; este entorno no tiene
+    // un proxy reverso de confianza delante que lo sobreescriba con un
+    // valor fiable. Si en el futuro se agrega uno, este método es el único
+    // punto a ajustar (validar contra una lista de proxies de confianza
+    // antes de usarlo, no confiar en el header a ciegas).
+    private String obtenerIpOrigen(HttpServletRequest request) {
+        return request.getRemoteAddr();
     }
 
     // El refresh token viaja SOLO en la cookie HttpOnly (nunca en el body):
