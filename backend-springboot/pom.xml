@@ -106,6 +106,23 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- @WithMockUser / SecurityMockMvcRequestPostProcessors: necesario
+		     para testear @PreAuthorize a nivel de controller sin tener que
+		     generar un JWT real (ver LibroControllerSecurityTest). Version
+		     gestionada por spring-boot-starter-parent. -->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- @WebMvcTest: en Spring Boot 4 se movio a su propio modulo
+		     (org.springframework.boot.webmvc.test.autoconfigure), ya no
+		     viene incluido en spring-boot-test-autoconfigure. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-webmvc-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
