@@ -6,10 +6,12 @@ import com.uteq.backend.dto.TokenResponseDTO;
 import com.uteq.backend.entity.EstadoUsuario;
 import com.uteq.backend.entity.Rol;
 import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.EstadoUsuarioRepository;
 import com.uteq.backend.repository.RolRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import com.uteq.backend.security.JwtService;
+import com.uteq.backend.security.LoginRateLimiter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -43,6 +45,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
+    private static final String IP_DE_PRUEBA = "10.0.0.1";
+
     @Mock
     private UsuarioRepository usuarioRepository;
 
@@ -66,6 +70,12 @@ class AuthServiceTest {
 
     @Mock
     private EstadoUsuarioRepository estadoUsuarioRepository;
+
+    @Mock
+    private LoginRateLimiter loginRateLimiter;
+
+    @Mock
+    private BitacoraAuditoriaRepository bitacoraAuditoriaRepository;
 
     @InjectMocks
     private AuthService authService;
@@ -105,7 +115,7 @@ class AuthServiceTest {
         when(jwtService.generateRefreshToken(usuario)).thenReturn("refresh-token-de-prueba");
         when(jwtService.getExpirationMs()).thenReturn(3600000L);
 
-        TokenResponseDTO resultado = authService.login(dto);
+        TokenResponseDTO resultado = authService.login(dto, IP_DE_PRUEBA);
 
         assertNotNull(resultado);
         assertNotNull(resultado.accessToken());
@@ -116,6 +126,25 @@ class AuthServiceTest {
         assertEquals("Bearer", resultado.tokenType());
     }
 
+    // OWASP A07: un login exitoso debe resetear el contador de intentos
+    // fallidos de esa combinación correo+IP -- si no, un usuario que se
+    // equivocó una vez y luego acertó seguiría acumulando hacia el bloqueo.
+    @Test
+    void loginExitosoReseteaContadorDeRateLimit() {
+        Usuario usuario = usuarioDePrueba();
+        LoginRequestDTO dto = new LoginRequestDTO("lector@uteq.edu.ec", "password123");
+
+        when(usuarioRepository.findByCorreo("lector@uteq.edu.ec")).thenReturn(Optional.of(usuario));
+        when(jwtService.generateToken(usuario)).thenReturn("access-token-de-prueba");
+        when(jwtService.generateRefreshToken(usuario)).thenReturn("refresh-token-de-prueba");
+        when(jwtService.getExpirationMs()).thenReturn(3600000L);
+
+        authService.login(dto, IP_DE_PRUEBA);
+
+        verify(loginRateLimiter).resetear("lector@uteq.edu.ec", IP_DE_PRUEBA);
+        verify(bitacoraAuditoriaRepository).save(any());
+    }
+
     @Test
     void loginClaveIncorrecta() {
         LoginRequestDTO dto = new LoginRequestDTO("lector@uteq.edu.ec", "claveIncorrecta");
@@ -123,7 +152,43 @@ class AuthServiceTest {
         doThrow(new BadCredentialsException("Credenciales inválidas"))
                 .when(authenticationManager).authenticate(any());
 
-        assertThrows(BadCredentialsException.class, () -> authService.login(dto));
+        assertThrows(BadCredentialsException.class, () -> authService.login(dto, IP_DE_PRUEBA));
+    }
+
+    // OWASP A07: cada intento fallido debe incrementar el contador de esa
+    // combinación correo+IP -- sin esto, LoginRateLimiter.estaBloqueado()
+    // nunca llegaría al máximo configurado.
+    @Test
+    void loginFallidoIncrementaContadorDeRateLimit() {
+        LoginRequestDTO dto = new LoginRequestDTO("lector@uteq.edu.ec", "claveIncorrecta");
+
+        doThrow(new BadCredentialsException("Credenciales inválidas"))
+                .when(authenticationManager).authenticate(any());
+
+        assertThrows(BadCredentialsException.class, () -> authService.login(dto, IP_DE_PRUEBA));
+
+        verify(loginRateLimiter).registrarFallo("lector@uteq.edu.ec", IP_DE_PRUEBA);
+        verify(bitacoraAuditoriaRepository).save(any());
+    }
+
+    // OWASP A07: el escenario del 6to intento -- LoginRateLimiter ya
+    // reporta la combinación correo+IP como bloqueada (equivalente a un
+    // contador que llegó al máximo configurado, ver LoginRateLimiterTest
+    // para el límite en sí). AuthService debe responder con la excepción
+    // que GlobalExceptionHandler traduce a 429 SIN llamar a
+    // authenticationManager.authenticate() -- ni siquiera se intenta
+    // autenticar contra credenciales potencialmente correctas.
+    @Test
+    void loginBloqueadoPorRateLimitNoIntentaAutenticar() {
+        LoginRequestDTO dto = new LoginRequestDTO("lector@uteq.edu.ec", "password123");
+
+        when(loginRateLimiter.estaBloqueado("lector@uteq.edu.ec", IP_DE_PRUEBA)).thenReturn(true);
+        when(loginRateLimiter.segundosRestantes("lector@uteq.edu.ec", IP_DE_PRUEBA)).thenReturn(600L);
+
+        assertThrows(LoginRateLimitExcedidoException.class, () -> authService.login(dto, IP_DE_PRUEBA));
+
+        verify(authenticationManager, never()).authenticate(any());
+        verify(loginRateLimiter, never()).registrarFallo(any(), any());
     }
 
     @Test
@@ -150,9 +215,10 @@ class AuthServiceTest {
         when(jwtService.extractJti(token)).thenReturn(jti);
         when(jwtService.extractExpiration(token)).thenReturn(expiracionFutura);
 
-        authService.logout(token);
+        authService.logout(token, IP_DE_PRUEBA);
 
         verify(valueOperations).set(eq("blacklist:" + jti), eq("revoked"), anyLong(), eq(TimeUnit.SECONDS));
+        verify(bitacoraAuditoriaRepository).save(any());
     }
 
     @Test
