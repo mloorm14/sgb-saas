@@ -11,49 +11,79 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Test de integración REAL contra Postgres (no mocks) para los 3
- * procedimientos multi-OUT que docs/basedatos/CATALOGO-SP.md marca como
- * "compilan pero nunca se ejecutaron en runtime": sp_registrar_devolucion,
- * sp_pagar_multa, sp_anular_multa.
- * <p>
- * Requiere el stack Docker Compose levantado ({@code docker compose up -d
- * postgres redis} desde la raíz del repo) — application.yml por defecto ya
- * apunta a localhost:5432/sgb_db, así que un @SpringBootTest normal (sin
- * perfil especial) se conecta directo a esa base real.
- * <p>
- * @Transactional en la clase: cada @Test corre en su propia transacción,
- * revertida automáticamente al terminar -- no ensucia la base real entre
- * corridas. Los datos de prueba (usuario, libro) se crean vía JdbcTemplate
- * directo para tener control total sobre columnas NOT NULL que no expone
- * ningún service todavía (password_hash, editorial_id, idioma_id).
- * <p>
- * No hay infraestructura de test de integración previa en el proyecto
- * (verificado: pom.xml no tiene testcontainers). Este test usa Surefire
- * (mvnw test) porque no hay Failsafe configurado -- si el equipo quiere
- * separar unit tests de integración en fases de build distintas, hace
- * falta agregar maven-failsafe-plugin y renombrar esta clase a *IT, una
- * decisión de build que no tomé unilateralmente.
- */
-@SpringBootTest
+@SpringBootTest(properties = {
+        "spring.autoconfigure.exclude=" +
+                "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration," +
+                "org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration," +
+                "org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration",
+        "spring.jpa.hibernate.ddl-auto=none"
+})
 @Transactional
 class PrestamoMultaProcedureIntegrationTest {
+
+    static PostgreSQLContainer<?> postgres;
+
+    static {
+        postgres = new PostgreSQLContainer<>("postgres:16-alpine")
+                .withDatabaseName("sgb_db")
+                .withUsername("sgb_user")
+                .withPassword("changeme");
+        postgres.start();
+        initDatabase();
+    }
+
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+    }
 
     @Autowired JdbcTemplate jdbcTemplate;
     @Autowired PrestamoProcedureRepository prestamoProcRepo;
     @Autowired MultaProcedureRepository multaProcRepo;
     @Autowired EstadoUsuarioRepository estadoUsuarioRepo;
     @Autowired EstadoLibroRepository estadoLibroRepo;
+
+    private static void initDatabase() {
+        String base = System.getProperty("user.dir") + "/../db";
+        String[] scripts = {
+                "/schema.sql",
+                "/procs/sp_crear_prestamo.sql",
+                "/procs/sp_registrar_devolucion.sql",
+                "/procs/sp_pagar_multa.sql",
+                "/procs/sp_anular_multa.sql",
+                "/seed.sql"
+        };
+        try (Connection conn = DriverManager.getConnection(
+                postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword())) {
+            for (String script : scripts) {
+                String sql = new String(java.nio.file.Files.readAllBytes(
+                        java.nio.file.Paths.get(base + script)));
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute(sql);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to init DB", e);
+        }
+    }
 
     // ── Test 1: devolución con atraso -> genera multa y bloquea al usuario ──
     @Test
