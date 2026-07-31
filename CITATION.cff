@@ -9,12 +9,15 @@ authors:
   - family-names: "Cajas Ibarra"
     given-names: "Irvin Marcelo"
     affiliation: "Universidad Técnica Estatal de Quevedo"
+    orcid: "https://orcid.org/0009-0001-7308-1185"
   - family-names: "Loor Medranda"
     given-names: "Marlon Taylor"
     affiliation: "Universidad Técnica Estatal de Quevedo"
+    orcid: "https://orcid.org/0009-0006-6093-224X"
   - family-names: "Panama Murillo"
     given-names: "Moises Antonio"
     affiliation: "Universidad Técnica Estatal de Quevedo"
+    orcid: "https://orcid.org/0009-0009-8113-242X"
 version: "0.9.0-rc"
 # date-released se actualiza al valor real (YYYY-MM-DD) en el momento de
 # crear el tag correspondiente (ver docs/VERSIONING.md) — placeholder de
