@@ -1,5 +1,7 @@
 # Sistema de Gestión Bibliotecaria Web (SGB - SaaS) 📚
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21712467.svg)](https://doi.org/10.5281/zenodo.21712467)
+
 Plataforma 100% web diseñada para la modernización de bibliotecas institucionales y municipales, desarrollada como Proyecto Fin de Curso para la asignatura de Aplicaciones Web (2026-2027).
 
 ## 👥 Equipo de Desarrollo
