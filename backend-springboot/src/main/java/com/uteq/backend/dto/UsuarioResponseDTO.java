@@ -1,4 +1,6 @@
 package com.uteq.backend.dto;
 
-public record UsuarioResponseDTO(Long id, String nombre, String correo, String rol) {
+import java.util.List;
+
+public record UsuarioResponseDTO(Long id, String nombre, String correo, List<String> roles) {
 }

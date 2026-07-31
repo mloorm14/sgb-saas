@@ -3,7 +3,11 @@ package com.uteq.backend.service;
 import com.uteq.backend.dto.LoginRequestDTO;
 import com.uteq.backend.dto.RegistroRequestDTO;
 import com.uteq.backend.dto.TokenResponseDTO;
+import com.uteq.backend.entity.EstadoUsuario;
+import com.uteq.backend.entity.Rol;
 import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.EstadoUsuarioRepository;
+import com.uteq.backend.repository.RolRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import com.uteq.backend.security.JwtService;
 import org.junit.jupiter.api.Test;
@@ -20,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,19 +61,36 @@ class AuthServiceTest {
     @Mock
     private ValueOperations<String, String> valueOperations;
 
+    @Mock
+    private RolRepository rolRepository;
+
+    @Mock
+    private EstadoUsuarioRepository estadoUsuarioRepository;
+
     @InjectMocks
     private AuthService authService;
 
     private Usuario usuarioDePrueba() {
         Instant ahora = Instant.now();
+
+        EstadoUsuario activo = new EstadoUsuario();
+        activo.setId(1);
+        activo.setNombre("ACTIVO");
+
+        Rol lector = new Rol();
+        lector.setId(1);
+        lector.setNombre("LECTOR");
+
         return Usuario.builder()
                 .id(1L)
                 .nombre("Lector de Prueba")
+                .apellido("Apellido de Prueba")
                 .correo("lector@uteq.edu.ec")
                 .passwordHash("hash-encriptado")
-                .rol("ROLE_LECTOR")
-                .activo(true)
-                .creadoEn(ahora)
+                .estado(activo)
+                .correoVerificado(true)
+                .roles(Set.of(lector))
+                .fechaRegistro(ahora)
                 .actualizadoEn(ahora)
                 .build();
     }
@@ -108,7 +130,7 @@ class AuthServiceTest {
     void registroCorreoDuplicado() {
         Usuario usuarioExistente = usuarioDePrueba();
         RegistroRequestDTO dto = new RegistroRequestDTO(
-                "Nuevo Lector", "lector@uteq.edu.ec", "password123"
+                "Nuevo Lector", "Apellido Nuevo", "lector@uteq.edu.ec", "password123"
         );
 
         when(usuarioRepository.findByCorreo("lector@uteq.edu.ec")).thenReturn(Optional.of(usuarioExistente));

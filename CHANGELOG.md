@@ -1,0 +1,107 @@
+# Changelog
+
+Todos los cambios notables de este proyecto se documentan en este archivo,
+siguiendo la convención [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
+y [Semantic Versioning](docs/VERSIONING.md).
+
+Cada entrada referencia el hash corto del commit real donde ocurrió el
+cambio (`git show <hash>` para el detalle completo); no se listan cambios
+que no correspondan a un commit existente en el historial.
+
+## [Unreleased]
+
+Cambios acumulados desde el tag `v0.1.0-entrega-1b` (commit `1f89354`,
+cierre de Entrega 1B) hasta el estado actual de `main`, camino al tag
+objetivo `v0.9.0-rc` de esta Tercera Entrega.
+
+### Added
+
+- Modelo de datos completo del dominio: 26 tablas en `db/schema.sql` con
+  seed de administrador y libros de ejemplo (`fbee895`).
+- Entidades y repositorios JPA para préstamos, reservaciones y multas
+  (`8613192`).
+- 7 procedimientos/funciones almacenadas de PostgreSQL para el módulo de
+  préstamos, con carga automatizada vía `scripts/build-init-sql.sh`
+  (`c53edde`).
+- Soporte multi-rol en `UserDetailsServiceImpl`/`JwtService`, sobre el
+  modelo RBAC normalizado (`roles`, `usuario_roles`, `permisos`,
+  `rol_permisos`) (`7e75215`).
+- Constraints `CHECK` e índices en `reservaciones`/`prestamos` (`0776bc7`).
+- TTL configurable externamente (`CACHE_LIBROS_TTL_SECONDS`) para el
+  cache Redis del catálogo de libros (`cabf563`).
+- `scripts/mediciones-header.sh` y convención de plantilla/nombres para
+  evidencia en `docs/mediciones/` (`3381c29`, `65c9969`).
+- Configuración base de k6 (perfil de VUs/duración) para la prueba de
+  carga del Bloque C.1 (`4846ee8`).
+- `LICENSE` (MIT) (`468673e`).
+- 6 nuevos ADRs (`ADR-007` cookies JWT, `ADR-008` TTL de cache,
+  `ADR-009` licencia MIT, `ADR-010` autenticación JWT+RBAC, `ADR-011`
+  gestor de base de datos, `ADR-012` estrategia de despliegue,
+  `ADR-013` acceso a datos ORM+SP) y ampliación de `ADR-001` a la pila
+  principal completa (`6b58c89`, `239105d`, `468673e`, `4140488`,
+  `2ed3d2a`, `587e4c6`, `3f7f177`, `a38f3a4`), con índice de mapeo en
+  `docs/adr/README.md` (`5e05924`).
+- `docs/arquitectura/ISO25010.md` (tabla de atributos de calidad
+  ISO/IEC 25010) y `docs/arquitectura/workspace.dsl` (modelo C4 niveles
+  1-2 en Structurizr DSL) (`43caad0`, `83b4889`).
+- Bitácora de observaciones del equipo en `docs/observaciones/`
+  (`d162421`).
+
+### Changed
+
+- `Usuario`/`Libro` migrados de campos simples a modelo RBAC normalizado
+  (`roles`, `estados`) (`6609d80`).
+- `LibroService`: constante literal extraída, `moduleResolution` de
+  `tsconfig` corregido (`f8c4d60`).
+- Se permite más de una multa por préstamo, eliminando la restricción
+  `UNIQUE` previa sobre `multas.prestamo_id` (`e789c04`).
+- Imágenes base de Docker Compose pinadas por digest sha256 en vez de
+  tag flotante (`postgres`, `redis`, `eclipse-temurin` build/runtime,
+  `node`, `nginx`) (`b747ef0`).
+- Build context y ubicación de migraciones Flyway ajustados en el
+  contenedor `backend` (`6f0645f`); `.env.example` completado en
+  preparación del pinning de digests (`4b6dec7`).
+- Tests de `AuthServiceTest`/`LibroServiceTest` actualizados al modelo
+  RBAC (`81a06ec`).
+- Documentación de `db/roles-privilegios.sql` corregida (propuesta de
+  roles y privilegios) (`f45d481`); README actualizado con paso de
+  ejecución de tests (`072175f`).
+
+### Fixed
+
+- 10 issues de QA: Dockerfile del frontend, `.env.example`,
+  `GlobalExceptionHandler`, cache Redis, `@CacheEvict`, IDs en
+  `LibroResponseDTO`, loop del interceptor JWT, README, `pom.xml`
+  (`00ecff4`).
+- Dependencia incorrecta `redis-reactive` corregida a `redis`;
+  `@Transactional` explícito agregado en `LibroService` (`1c30b2e`).
+- Fuente única de migraciones Flyway unificada en
+  `database/migrations/` (antes duplicada) (`03821d7`).
+- `GlobalExceptionHandler` responde RFC 7807 (`ProblemDetail`) en todos
+  los handlers, incluyendo los que faltaban para `LockedException`
+  (cuenta bloqueada por multas → 423) y `DisabledException` (cuenta
+  inactiva → 403), que antes caían al catch-all genérico y devolvían
+  500 sin distinción (`0f1b980`).
+- Cache Redis del catálogo (`"libros"`) nunca servía una lectura real:
+  incompatibilidad entre `GenericJackson2JsonRedisSerializer` y
+  `Page`/`PageImpl` causaba una excepción no controlada en cada intento
+  de lectura del cache; corregido migrando ese cache a serialización
+  Java estándar (`cabf563`).
+
+### Security
+
+- `refreshToken` migrado de cuerpo JSON en texto plano a cookie
+  `HttpOnly`+`Secure`+`SameSite=Strict` con `path=/api/auth` (`1dfc4f8`).
+- `AuthorizationDeniedException` ahora responde 403 RFC 7807 en vez de
+  caer como 500 no controlado; se agrega logueo de errores 500
+  genuinos no controlados (`24ea873`).
+
+## [v0.1.0-entrega-1b] — 2026-06-20
+
+Cierre de la Entrega 1B (commit `1f89354`). Changelog detallado de esta
+versión y anteriores no reconstruido retroactivamente — fuera del
+alcance de esta tarea (Bloque E de la Tercera Entrega); el historial
+completo permanece disponible vía `git log`.
+
+[Unreleased]: https://github.com/mloorm14/sgb-saas/compare/v0.1.0-entrega-1b...HEAD
+[v0.1.0-entrega-1b]: https://github.com/mloorm14/sgb-saas/releases/tag/v0.1.0-entrega-1b

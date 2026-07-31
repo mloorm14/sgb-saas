@@ -1,0 +1,13 @@
+-- ============================================================================
+-- V3: Permite múltiples multas por préstamo
+-- ============================================================================
+-- Decisión de negocio (confirmada): un préstamo SÍ puede generar más de una
+-- multa (ej. daño al libro + atraso, registrados como dos filas separadas
+-- en `multas`). El UNIQUE original sobre multas.prestamo_id lo impedía.
+--
+-- Nombre real de la constraint verificado en vivo contra Postgres 16 (no
+-- asumido): Postgres nombra un UNIQUE inline de columna como
+-- <tabla>_<columna>_key por defecto, y así se confirmó con
+-- `\d multas` -> "multas_prestamo_id_key" UNIQUE CONSTRAINT, btree (prestamo_id).
+-- ============================================================================
+ALTER TABLE multas DROP CONSTRAINT multas_prestamo_id_key;

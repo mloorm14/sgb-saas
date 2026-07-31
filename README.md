@@ -55,6 +55,14 @@ Autenticación stateless basada en **JWT (HS256)**: `accessToken` de corta durac
    ```bash
    docker compose ps
    ```
+1. Ejecutar las pruebas unitarias (sin Docker, requiere Java 21):
+   
+   ```bash
+   cd backend-springboot
+   ./mvnw test
+   ```
+   
+   NOTA: en Windows usar `mvnw.cmd` en lugar de `./mvnw`
 
 ### Acceso a la aplicación
 
@@ -62,7 +70,7 @@ Autenticación stateless basada en **JWT (HS256)**: `accessToken` de corta durac
 |------------------|-------------------------------------------|
 |Frontend (Angular)|<http://localhost:4200>                    |
 |API Backend       |<http://localhost:8080>                    |
-|Swagger UI        |<http://localhost:8080/api/swagger-ui.html>|
+|Swagger UI        |<http://localhost:8080/swagger-ui.html>    |
 |Actuator health   |<http://localhost:8080/actuator/health>    |
 |PostgreSQL        |localhost:5432                             |
 |Redis             |localhost:6379                             |
@@ -71,7 +79,7 @@ Autenticación stateless basada en **JWT (HS256)**: `accessToken` de corta durac
 
 ```
 sgb-saas/
-├── backend-springboot/   # API REST: Spring Boot 3 + JPA + Security + JWT
+├── backend-springboot/   # API REST: Spring Boot 4.0.6 + JPA + Security + JWT
 ├── frontend-angular/      # SPA Angular 17
 ├── database/
 │   └── migrations/        # Scripts versionados de Flyway (V1__, V2__, ...)
@@ -91,6 +99,21 @@ Convención de commits: [Conventional Commits](https://www.conventionalcommits.o
 ## 🔗 URL del sistema desplegado
 
 *En desarrollo (se actualizará en la Entrega 2).*
+
+## 🔑 Credenciales de desarrollo
+
+Al inicializar la base de datos con `db/schema.sql` + `db/seed.sql` (montados
+en `docker-entrypoint-initdb.d/`), se crea un usuario administrador de
+desarrollo:
+
+| Campo      | Valor                     |
+|------------|---------------------------|
+| Correo     | `admin@sgb-saas.local`    |
+| Contraseña | `Admin123!`               |
+| Rol        | `ADMIN`                   |
+
+⚠️ Solo para entornos locales de desarrollo. Nunca usar estas credenciales
+en un entorno con datos reales o accesible públicamente.
 
 ## 📄 Estado del proyecto
 

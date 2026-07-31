@@ -2,12 +2,14 @@ package com.uteq.backend.service;
 
 import com.uteq.backend.dto.LibroRequestDTO;
 import com.uteq.backend.dto.LibroResponseDTO;
+import com.uteq.backend.entity.EstadoLibro;
 import com.uteq.backend.entity.Libro;
 import com.uteq.backend.repository.EditorialRepository;
 import com.uteq.backend.repository.EstadoLibroRepository;
 import com.uteq.backend.repository.IdiomaRepository;
 import com.uteq.backend.repository.LibroRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,8 +17,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional
 public class LibroService {
+
+    private static final String LIBRO_NO_ENCONTRADO = "Libro no encontrado con id: ";
+    private static final String ESTADO_ACTIVO = "ACTIVO";
+    private static final String ESTADO_DADO_DE_BAJA = "DADO_DE_BAJA";
 
     private final LibroRepository libroRepo;
     private final EditorialRepository editorialRepo;
@@ -36,19 +41,21 @@ public class LibroService {
     @Cacheable("libros")
     @Transactional(readOnly = true)
     public Page<LibroResponseDTO> listar(Pageable pageable) {
-        return libroRepo.findByActivoTrue(pageable)
+        return libroRepo.findByEstado_Nombre(ESTADO_ACTIVO, pageable)
                 .map(this::toDTO);
     }
 
     @Transactional(readOnly = true)
     public LibroResponseDTO buscarPorId(Long id) {
         return libroRepo.findById(id)
-                .filter(Libro::getActivo)
+                .filter(l -> l.getEstado() != null && ESTADO_ACTIVO.equals(l.getEstado().getNombre()))
                 .map(this::toDTO)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "Libro no encontrado con id: " + id));
+                        LIBRO_NO_ENCONTRADO + id));
     }
 
+    @CacheEvict(value = "libros", allEntries = true)
+    @Transactional
     public LibroResponseDTO crear(LibroRequestDTO dto) {
         if (libroRepo.existsByIsbn(dto.isbn())) {
             throw new IllegalArgumentException(
@@ -58,10 +65,12 @@ public class LibroService {
         return toDTO(libroRepo.save(fromDTO(dto)));
     }
 
+    @CacheEvict(value = "libros", allEntries = true)
+    @Transactional
     public LibroResponseDTO actualizar(Long id, LibroRequestDTO dto) {
         Libro libro = libroRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "Libro no encontrado con id: " + id));
+                        LIBRO_NO_ENCONTRADO + id));
         if (libroRepo.existsByIsbnAndIdNot(dto.isbn(), id)) {
             throw new IllegalArgumentException(
                     "ISBN ya usado por otro libro: " + dto.isbn());
@@ -82,11 +91,16 @@ public class LibroService {
         return toDTO(libroRepo.save(libro));
     }
 
+    @CacheEvict(value = "libros", allEntries = true)
+    @Transactional
     public void eliminar(Long id) {
         Libro libro = libroRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "Libro no encontrado con id: " + id));
-        libro.setActivo(false);
+                        LIBRO_NO_ENCONTRADO + id));
+        EstadoLibro estadoDadoDeBaja = estadoRepo.findByNombre(ESTADO_DADO_DE_BAJA)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Catalogo estados_libro sin fila '" + ESTADO_DADO_DE_BAJA + "'"));
+        libro.setEstado(estadoDadoDeBaja);
         libroRepo.save(libro);
     }
 
@@ -106,13 +120,16 @@ public class LibroService {
                 l.getResumen(),
                 l.getPortadaUrl(),
                 l.getAnioPublicacion() != null ? l.getAnioPublicacion().intValue() : null,
-                l.getEditorial()  != null ? l.getEditorial().getNombre()  : null,
-                l.getIdioma()     != null ? l.getIdioma().getNombre()     : null,
-                l.getEstado()     != null ? l.getEstado().getNombre()     : null,
+                l.getEditorial()  != null ? l.getEditorial().getId()     : null,
+                l.getEditorial()  != null ? l.getEditorial().getNombre() : null,
+                l.getIdioma()     != null ? l.getIdioma().getId()        : null,
+                l.getIdioma()     != null ? l.getIdioma().getNombre()    : null,
+                l.getEstado()     != null ? l.getEstado().getId()        : null,
+                l.getEstado()     != null ? l.getEstado().getNombre()    : null,
                 l.getStockTotal()      != null ? l.getStockTotal().intValue()      : null,
                 l.getStockDisponible() != null ? l.getStockDisponible().intValue() : null,
-                l.getActivo(),
-                l.getCreadoEn()
+                l.getUbicacionFisica(),
+                l.getFechaRegistro()
         );
     }
 

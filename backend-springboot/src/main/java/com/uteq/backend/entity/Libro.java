@@ -56,18 +56,19 @@ public class Libro {
     @Column(name = "stock_disponible", nullable = false, columnDefinition = "SMALLINT")
     private Short stockDisponible = (short) 1;
 
-    @Column(nullable = false)
-    private Boolean activo = true;
+    @Size(max = 50)
+    @Column(name = "ubicacion_fisica", length = 50)
+    private String ubicacionFisica;
 
-    @Column(name = "creado_en", updatable = false)
-    private OffsetDateTime creadoEn;
+    @Column(name = "fecha_registro", updatable = false)
+    private OffsetDateTime fechaRegistro;
 
     @Column(name = "actualizado_en")
     private OffsetDateTime actualizadoEn;
 
     @PrePersist
     private void antesDeGuardar() {
-        this.creadoEn = OffsetDateTime.now();
+        this.fechaRegistro = OffsetDateTime.now();
         this.actualizadoEn = OffsetDateTime.now();
     }
 

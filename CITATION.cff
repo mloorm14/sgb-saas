@@ -1,0 +1,34 @@
+# Citation File Format (CFF) 1.2.0 — https://citation-file-format.github.io/
+# Validado localmente con `cffconvert --validate` (ver commit de esta tarea
+# para el resultado exacto de esa validación).
+cff-version: 1.2.0
+message: "Si usa este software, por favor cítelo de la siguiente manera:"
+title: "SGB-SaaS: Sistema de Gestión Bibliotecaria Web"
+type: software
+authors:
+  - family-names: "Cajas Ibarra"
+    given-names: "Irvin Marcelo"
+    affiliation: "Universidad Técnica Estatal de Quevedo"
+  - family-names: "Loor Medranda"
+    given-names: "Marlon Taylor"
+    affiliation: "Universidad Técnica Estatal de Quevedo"
+  - family-names: "Panama Murillo"
+    given-names: "Moises Antonio"
+    affiliation: "Universidad Técnica Estatal de Quevedo"
+version: "0.9.0-rc"
+# date-released se actualiza al valor real (YYYY-MM-DD) en el momento de
+# crear el tag correspondiente (ver docs/VERSIONING.md) — placeholder de
+# hoy mientras tanto para que el archivo sea válido contra el esquema CFF
+# (date-released es un campo recomendado, no obligatorio, pero se deja
+# fijado para evitar un campo ausente sin explicación).
+date-released: "2026-07-22"
+license: MIT
+repository-code: "https://github.com/mloorm14/sgb-saas"
+keywords:
+  - biblioteca
+  - gestión bibliotecaria
+  - Spring Boot
+  - Angular
+  - PostgreSQL
+  - RBAC
+# doi: Pendiente: se completa tras generar el DOI en Zenodo (Bloque E.2, manual).

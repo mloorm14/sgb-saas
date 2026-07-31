@@ -1,5 +1,6 @@
 package com.uteq.backend.security;
 
+import com.uteq.backend.entity.Rol;
 import com.uteq.backend.entity.Usuario;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -10,11 +11,20 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Service
 public class JwtService {
+
+    // Orden de mayor a menor privilegio, usado solo para elegir el claim
+    // "rol" (singular) de retrocompatibilidad -- ver comentario en
+    // buildToken(). No afecta autorización real: JwtAuthFilter reconstruye
+    // las authorities en cada request vía UserDetailsServiceImpl (consulta
+    // fresca a la BD), nunca lee claims de rol del propio JWT.
+    private static final List<String> JERARQUIA_ROLES = List.of("ADMIN", "GERENTE", "BIBLIOTECARIO", "LECTOR");
 
     @Value("${security.jwt.secret}")
     private String secret;
@@ -27,6 +37,10 @@ public class JwtService {
 
     public long getExpirationMs() {
         return expirationMs;
+    }
+
+    public long getRefreshExpirationMs() {
+        return refreshExpirationMs;
     }
 
     private SecretKey getSigningKey() {
@@ -45,15 +59,37 @@ public class JwtService {
         Date now = new Date();
         Date expiration = new Date(now.getTime() + ttlMs);
 
+        List<String> roles = usuario.getRoles().stream()
+                .map(Rol::getNombre)
+                .toList();
+
         return Jwts.builder()
                 .subject(String.valueOf(usuario.getId()))
                 .claim("correo", usuario.getCorreo())
-                .claim("rol", usuario.getRol())
+                // Claim real para autorización: arreglo completo de roles.
+                .claim("roles", roles)
+                // DECISIÓN TEMPORAL DE RETROCOMPATIBILIDAD (TAREA 4.1): se
+                // conserva el claim singular "rol" (el de mayor privilegio
+                // según JERARQUIA_ROLES) solo por si algún código frontend
+                // ya existente lo lee. Eliminar este claim cuando el
+                // frontend (Panama) migre a leer "roles" (array) en su
+                // lugar -- no agregar más lógica que dependa de "rol"
+                // mientras tanto.
+                .claim("rol", rolPrincipal(roles))
                 .id(UUID.randomUUID().toString())
                 .issuedAt(now)
                 .expiration(expiration)
                 .signWith(getSigningKey(), Jwts.SIG.HS256)
                 .compact();
+    }
+
+    private String rolPrincipal(List<String> roles) {
+        return roles.stream()
+                .min(Comparator.comparingInt(nombre -> {
+                    int idx = JERARQUIA_ROLES.indexOf(nombre);
+                    return idx == -1 ? Integer.MAX_VALUE : idx;
+                }))
+                .orElse(null);
     }
 
     public boolean validateToken(String token) {

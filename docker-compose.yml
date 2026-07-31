@@ -1,8 +1,8 @@
-version: "3.9"
-
 services:
   postgres:
-    image: postgres:16-alpine
+    # Pinado por digest sha256 (ver docs/DIGESTS-LOG.md): postgres:16-alpine,
+    # obtenido con `docker pull` + `docker inspect` el 2026-07-22.
+    image: postgres@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
     container_name: sgb_postgres
     environment:
       POSTGRES_DB: sgb_db
@@ -12,6 +12,15 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      # Snapshot reproducible (ver docs/adr/adr-006-estrategia-schema-reproducible.md):
+      # solo se ejecuta en la primera inicialización de un volumen vacío.
+      # Se monta db/init/ (generado por scripts/build-init-sql.sh a partir
+      # de schema.sql + procs/*.sql + seed.sql concatenados) y NO el
+      # directorio db/ completo: PostgreSQL no recorre subdirectorios de
+      # docker-entrypoint-initdb.d/, así que db/procs/ nunca se ejecutaría
+      # si se montara db/ tal cual. `make up` regenera db/init/ antes de
+      # levantar el contenedor — ver Makefile.
+      - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sgb_user -d sgb_db"]
       interval: 10s
@@ -19,7 +28,9 @@ services:
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    # Pinado por digest sha256 (ver docs/DIGESTS-LOG.md): redis:7-alpine,
+    # obtenido con `docker pull` + `docker inspect` el 2026-07-22.
+    image: redis@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
     container_name: sgb_redis
     ports:
       - "6379:6379"
@@ -30,7 +41,12 @@ services:
       retries: 5
 
   backend:
-    build: ./backend-springboot
+    # Contexto = raíz del repo (no ./backend-springboot): el Dockerfile
+    # necesita copiar también database/migrations/ (fuente única de Flyway,
+    # ver application.yml — ya no se duplica dentro de src/main/resources/).
+    build:
+      context: .
+      dockerfile: backend-springboot/Dockerfile
     container_name: sgb_backend
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/sgb_db
@@ -38,7 +54,12 @@ services:
       DB_PASSWORD: changeme
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      CACHE_LIBROS_TTL_SECONDS: ${CACHE_LIBROS_TTL_SECONDS:-300}
       JWT_SECRET: ${JWT_SECRET}
+      # Sobreescribe el default de application.yml (filesystem:../database/migrations,
+      # pensado para `mvnw`/jar local): dentro del contenedor el cwd es /app
+      # y el Dockerfile copia database/migrations a /app/database/migrations.
+      SPRING_FLYWAY_LOCATIONS: filesystem:database/migrations
     ports:
       - "8080:8080"
     depends_on:
