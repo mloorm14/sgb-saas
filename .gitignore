@@ -19,3 +19,8 @@ db/init/
 .idea/
 .vscode/
 *.iml
+
+# Artefactos de compilacion LaTeX (regenerables con pdflatex; el .pdf final si se versiona)
+*.aux
+*.out
+*.toc
