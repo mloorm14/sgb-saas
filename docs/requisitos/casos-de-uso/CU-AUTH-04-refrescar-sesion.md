@@ -38,15 +38,15 @@
 - **1a.** No hay cookie `refreshToken` en la request: el sistema
   rechaza con error 400 (`IllegalArgumentException`, "Falta la cookie
   refreshToken").
-- **3a.** El `refreshToken` es inválido o ya expiró: el sistema lo
-  rechaza — **limitación conocida**: hoy esto lanza una
-  `RuntimeException` genérica que no tiene un `@ExceptionHandler`
-  dedicado en `GlobalExceptionHandler`, así que cae en el handler
-  genérico y responde `500` en vez de un `401`/`403` semánticamente
-  más correcto. El interceptor del frontend igual interpreta cualquier
-  fallo del refresh como "no se pudo renovar" y desloguea al usuario,
-  así que el comportamiento observable para el usuario es correcto,
-  pero el código de estado HTTP no es el ideal — candidato a mejora
-  futura (agregar un `@ExceptionHandler` específico para refresh
-  inválido), no corregido como parte de este relevamiento de
-  requisitos.
+- **3a.** El `refreshToken` es inválido o ya expiró: el sistema
+  rechaza con error 401 (`RefreshTokenInvalidoException`, mensaje
+  genérico que no distingue "token inválido" de "usuario no
+  encontrado", para no filtrar si una cuenta existe). **Corregido** —
+  hasta el fix documentado en
+  `docs/mediciones/sec/2026-07-30-refresh-token-invalido-fix-401.md`
+  esto respondía `500` (`RuntimeException` genérica sin
+  `@ExceptionHandler` dedicado). El interceptor del frontend ya
+  interpretaba cualquier fallo del refresh como "no se pudo renovar" y
+  desloguea al usuario en ambos casos, así que el comportamiento
+  observable para el usuario no cambió — lo que se corrigió fue el
+  código de estado HTTP real.
