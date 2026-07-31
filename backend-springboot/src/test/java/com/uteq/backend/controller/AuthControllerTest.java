@@ -21,6 +21,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -143,6 +145,53 @@ class AuthControllerTest {
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isTooManyRequests());
+    }
+
+    // Bloque C.4 (TAREA 5): GlobalExceptionHandler.handleLocked/handleDisabled
+    // no tenian ningun test que los ejercitara de verdad -- el estado
+    // BLOQUEADO_POR_MULTA/INACTIVO ya se verifico en vivo y tiene test
+    // permanente a nivel de UserDetailsServiceImplTest, pero la traduccion a
+    // 423/403 con ProblemDetail solo ocurria en produccion, nunca en un test.
+    @Test
+    void login_cuentaBloqueadaPorMulta_devuelve423ProblemDetail() throws Exception {
+        LoginRequestDTO dto = new LoginRequestDTO("bloqueado@uteq.edu.ec", "password123");
+        when(authService.login(any(), anyString()))
+                .thenThrow(new LockedException("Cuenta bloqueada por multas pendientes"));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isLocked())
+                .andExpect(jsonPath("$.detail").value(containsString("multas")));
+    }
+
+    @Test
+    void login_cuentaInactiva_devuelve403ProblemDetail() throws Exception {
+        LoginRequestDTO dto = new LoginRequestDTO("inactivo@uteq.edu.ec", "password123");
+        when(authService.login(any(), anyString()))
+                .thenThrow(new DisabledException("Cuenta inactiva"));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.detail").value(containsString("inactiva")));
+    }
+
+    // Bloque C.4 (TAREA 5): GlobalExceptionHandler.handleValidation tampoco
+    // tenia ningun test -- @Valid en RegistroRequestDTO ya existia, pero
+    // nada ejercitaba el camino real de "datos invalidos -> 400 con mapa de
+    // errores por campo".
+    @Test
+    void registro_datosInvalidos_devuelve400ConErroresPorCampo() throws Exception {
+        RegistroRequestDTO dto = new RegistroRequestDTO("", "", "no-es-un-correo", "corta");
+
+        mockMvc.perform(post("/api/auth/registro")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errores.correo").exists())
+                .andExpect(jsonPath("$.errores.password").exists());
     }
 
     @Test
