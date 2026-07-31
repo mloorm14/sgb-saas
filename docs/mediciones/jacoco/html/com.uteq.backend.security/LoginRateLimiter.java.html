@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LoginRateLimiter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.security</a> &gt; <span class="el_source">LoginRateLimiter.java</span></div><h1>LoginRateLimiter.java</h1><pre class="source lang-java linenums">package com.uteq.backend.security;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Component;
+
+import java.time.Duration;
+
+/**
+ * Contador de intentos fallidos de login en Redis, para OWASP A07 (Bloque
+ * C.2 -- ver docs/mediciones/sec/2026-07-30-owasp-a07-fallo-identificacion-autenticacion.md
+ * para el gap original que esto cierra).
+ * &lt;p&gt;
+ * Clave compuesta por {@code correo + ip} (no solo {@code correo}) a
+ * propósito: si la clave fuera solo el correo, un atacante podría agotar el
+ * cupo de intentos de la CUENTA DE OTRA PERSONA fallando login repetidas
+ * veces contra su correo desde IPs propias, bloqueando al dueño legítimo de
+ * esa cuenta sin necesidad de conocer su contraseña -- un vector de
+ * denegación de servicio nuevo, peor que el problema que se está
+ * resolviendo. Con la clave combinada, el contador de la IP real del
+ * usuario legítimo nunca se ve afectado por intentos fallidos originados en
+ * IPs ajenas contra el mismo correo.
+ * &lt;p&gt;
+ * Limitación aceptada y documentada (no resuelta acá): un atacante que
+ * controle múltiples IPs (proxies/botnet) puede seguir intentando fuerza
+ * bruta contra un mismo correo rotando de IP cada {@code maxAttempts}
+ * intentos -- cada combinación correo+IP tiene su propio cupo independiente.
+ * Mitigar esto requeriría una capa adicional (reputación de IP, CAPTCHA,
+ * límite global por correo con ventana más laxa) fuera del alcance de esta
+ * entrega; se documenta como riesgo aceptado, no como algo resuelto.
+ */
+@Component
+@RequiredArgsConstructor
+public class LoginRateLimiter {
+
+    private static final String KEY_PREFIX = &quot;login-attempts:&quot;;
+
+    private final RedisTemplate&lt;String, String&gt; redisTemplate;
+
+    @Value(&quot;${app.security.login.max-attempts}&quot;)
+    private int maxAttempts;
+
+    @Value(&quot;${app.security.login.rate-limit-window-seconds}&quot;)
+    private long rateLimitWindowSeconds;
+
+    public boolean estaBloqueado(String correo, String ip) {
+<span class="fc" id="L48">        String valor = redisTemplate.opsForValue().get(key(correo, ip));</span>
+<span class="fc bfc" id="L49" title="All 4 branches covered.">        return valor != null &amp;&amp; Long.parseLong(valor) &gt;= maxAttempts;</span>
+    }
+
+    /**
+     * Incrementa el contador. El TTL de la ventana se fija solo en el
+     * primer intento fallido (cuando el contador pasa de 0 a 1) -- así la
+     * ventana es una ventana fija desde el primer fallo, no se renueva en
+     * cada intento subsiguiente (evita que un atacante lento mantenga el
+     * bloqueo indefinidamente fallando un intento cada pocos minutos).
+     */
+    public void registrarFallo(String correo, String ip) {
+<span class="fc" id="L60">        String llave = key(correo, ip);</span>
+<span class="fc" id="L61">        Long nuevoValor = redisTemplate.opsForValue().increment(llave);</span>
+<span class="pc bpc" id="L62" title="1 of 4 branches missed.">        if (nuevoValor != null &amp;&amp; nuevoValor == 1L) {</span>
+<span class="fc" id="L63">            redisTemplate.expire(llave, Duration.ofSeconds(rateLimitWindowSeconds));</span>
+        }
+<span class="fc" id="L65">    }</span>
+
+    public void resetear(String correo, String ip) {
+<span class="fc" id="L68">        redisTemplate.delete(key(correo, ip));</span>
+<span class="fc" id="L69">    }</span>
+
+    /**
+     * Segundos restantes de la ventana de bloqueo, para informar al
+     * usuario cuánto debe esperar. Devuelve el TTL de la ventana completa
+     * si por alguna razón Redis no expone un TTL preciso (ej. -1/-2 de
+     * {@code getExpire}), en vez de un número negativo confuso.
+     */
+    public long segundosRestantes(String correo, String ip) {
+<span class="nc" id="L78">        Long ttl = redisTemplate.getExpire(key(correo, ip));</span>
+<span class="nc bnc" id="L79" title="All 4 branches missed.">        return (ttl == null || ttl &lt; 0) ? rateLimitWindowSeconds : ttl;</span>
+    }
+
+    private String key(String correo, String ip) {
+<span class="fc" id="L83">        return KEY_PREFIX + correo + &quot;:&quot; + ip;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

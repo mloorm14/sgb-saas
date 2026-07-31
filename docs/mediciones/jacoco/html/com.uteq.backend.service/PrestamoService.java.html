@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PrestamoService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.service</a> &gt; <span class="el_source">PrestamoService.java</span></div><h1>PrestamoService.java</h1><pre class="source lang-java linenums">package com.uteq.backend.service;
+
+import com.uteq.backend.dto.DevolucionResponseDTO;
+import com.uteq.backend.dto.LibroMasPrestadoResponseDTO;
+import com.uteq.backend.dto.PrestamoActivoResponseDTO;
+import com.uteq.backend.dto.PrestamoRequestDTO;
+import com.uteq.backend.dto.PrestamoResponseDTO;
+import com.uteq.backend.entity.Prestamo;
+import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.PrestamoProcedureRepository;
+import com.uteq.backend.repository.PrestamoRepository;
+import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.repository.projection.LibroMasPrestadoProjection;
+import com.uteq.backend.repository.projection.PrestamoActivoProjection;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class PrestamoService {
+
+    private static final String PRESTAMO_NO_ENCONTRADO = &quot;Préstamo no encontrado con id: &quot;;
+    private static final String USUARIO_NO_ENCONTRADO = &quot;Usuario no encontrado: &quot;;
+    private static final String ROL_LECTOR = &quot;LECTOR&quot;;
+
+    private final PrestamoRepository prestamoRepo;
+    private final PrestamoProcedureRepository prestamoProcRepo;
+    private final UsuarioRepository usuarioRepo;
+
+    public PrestamoService(PrestamoRepository prestamoRepo,
+                           PrestamoProcedureRepository prestamoProcRepo,
+<span class="fc" id="L42">                           UsuarioRepository usuarioRepo) {</span>
+<span class="fc" id="L43">        this.prestamoRepo = prestamoRepo;</span>
+<span class="fc" id="L44">        this.prestamoProcRepo = prestamoProcRepo;</span>
+<span class="fc" id="L45">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L46">    }</span>
+
+    @Transactional
+    public PrestamoResponseDTO crear(PrestamoRequestDTO dto, Authentication authentication) {
+<span class="fc" id="L50">        Long bibliotecarioId = resolverIdPorCorreo(authentication.getName());</span>
+<span class="fc" id="L51">        Long prestamoId = prestamoProcRepo.spCrearPrestamo(</span>
+<span class="fc" id="L52">                dto.usuarioId(), dto.libroId(), bibliotecarioId, dto.diasPrestamo());</span>
+<span class="fc" id="L53">        Prestamo prestamo = prestamoRepo.findById(prestamoId)</span>
+<span class="pc" id="L54">                .orElseThrow(() -&gt; new EntityNotFoundException(PRESTAMO_NO_ENCONTRADO + prestamoId));</span>
+<span class="fc" id="L55">        return toDTO(prestamo);</span>
+    }
+
+    @Transactional
+    public DevolucionResponseDTO registrarDevolucion(Long prestamoId) {
+<span class="fc" id="L60">        Map&lt;String, Object&gt; resultado = prestamoProcRepo.spRegistrarDevolucion(prestamoId);</span>
+<span class="fc" id="L61">        return new DevolucionResponseDTO(</span>
+<span class="fc" id="L62">                (Long) resultado.get(&quot;o_prestamo_id&quot;),</span>
+<span class="fc" id="L63">                (Boolean) resultado.get(&quot;o_hubo_multa&quot;),</span>
+<span class="fc" id="L64">                (BigDecimal) resultado.get(&quot;o_monto_multa&quot;));</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Page&lt;PrestamoResponseDTO&gt; listarPorUsuario(Long usuarioId, Authentication authentication, Pageable pageable) {
+<span class="nc" id="L69">        validarAccesoUsuario(usuarioId, authentication);</span>
+<span class="nc" id="L70">        return prestamoRepo.findByUsuarioId(usuarioId, pageable).map(this::toDTO);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;PrestamoActivoResponseDTO&gt; listarActivosPorUsuario(Long usuarioId, Authentication authentication) {
+<span class="nc" id="L75">        validarAccesoUsuario(usuarioId, authentication);</span>
+<span class="nc" id="L76">        return prestamoProcRepo.fnListarPrestamosActivosPorUsuario(usuarioId).stream()</span>
+<span class="nc" id="L77">                .map(this::toDTO)</span>
+<span class="nc" id="L78">                .toList();</span>
+    }
+
+    private static final int LIMITE_REPORTE_DEFAULT = 10;
+
+    @Transactional(readOnly = true)
+    public List&lt;LibroMasPrestadoResponseDTO&gt; reporteLibrosMasPrestados(
+            Integer limite, OffsetDateTime desde, OffsetDateTime hasta) {
+        // El DEFAULT 10 de fn_reporte_libros_mas_prestados solo se activa
+        // cuando el parámetro se omite POR COMPLETO de la llamada SQL. La
+        // @Query nativeQuery de PrestamoProcedureRepository siempre envía
+        // los 3 parámetros nombrados, así que un null explícito produce
+        // &quot;LIMIT NULL&quot; en Postgres = sin límite, no el default esperado.
+        // Se aplica el default aquí para que el comportamiento.
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;</span>
+<span class="fc" id="L93">        return prestamoProcRepo.fnReporteLibrosMasPrestados(limiteEfectivo, desde, hasta).stream()</span>
+<span class="fc" id="L94">                .map(this::toDTO)</span>
+<span class="fc" id="L95">                .toList();</span>
+    }
+
+    // ── &quot;Propio vs cualquiera&quot;: LECTOR solo puede pedir su propio
+    // usuarioId; BIBLIOTECARIO/GERENTE no tienen restricción (mismo
+    // patrón descrito en docs/reparto-entrega-3/cajas-backend/INSTRUCCIONES.md,
+    // sección 1). ──
+    private void validarAccesoUsuario(Long usuarioIdSolicitado, Authentication authentication) {
+<span class="fc" id="L103">        boolean esLector = authentication.getAuthorities().stream()</span>
+<span class="fc" id="L104">                .map(GrantedAuthority::getAuthority)</span>
+<span class="fc" id="L105">                .anyMatch(rol -&gt; rol.equals(&quot;ROLE_&quot; + ROL_LECTOR));</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">        if (!esLector) {</span>
+<span class="nc" id="L107">            return;</span>
+        }
+<span class="fc" id="L109">        Long idPropio = resolverIdPorCorreo(authentication.getName());</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        if (!idPropio.equals(usuarioIdSolicitado)) {</span>
+<span class="fc" id="L111">            throw new AuthorizationDeniedException(</span>
+                    &quot;Un LECTOR solo puede consultar sus propios préstamos.&quot;);
+        }
+<span class="nc" id="L114">    }</span>
+
+    private Long resolverIdPorCorreo(String correo) {
+<span class="fc" id="L117">        Usuario usuario = usuarioRepo.findByCorreo(correo)</span>
+<span class="pc" id="L118">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo));</span>
+<span class="fc" id="L119">        return usuario.getId();</span>
+    }
+
+    private PrestamoResponseDTO toDTO(Prestamo p) {
+<span class="fc" id="L123">        return new PrestamoResponseDTO(</span>
+<span class="fc" id="L124">                p.getId(),</span>
+<span class="fc" id="L125">                p.getUsuarioId(),</span>
+<span class="fc" id="L126">                p.getLibroId(),</span>
+<span class="fc" id="L127">                p.getBibliotecarioId(),</span>
+<span class="fc" id="L128">                p.getReservacionId(),</span>
+<span class="fc" id="L129">                p.getFechaPrestamo(),</span>
+<span class="fc" id="L130">                p.getFechaDevolucionEstimada(),</span>
+<span class="fc" id="L131">                p.getFechaDevolucionReal(),</span>
+<span class="fc" id="L132">                p.getRenovacionesRealizadas(),</span>
+<span class="fc" id="L133">                p.getEstadoPrestamoId());</span>
+    }
+
+    private PrestamoActivoResponseDTO toDTO(PrestamoActivoProjection p) {
+<span class="nc" id="L137">        return new PrestamoActivoResponseDTO(</span>
+<span class="nc" id="L138">                p.getPrestamoId(),</span>
+<span class="nc" id="L139">                p.getLibroTitulo(),</span>
+<span class="nc" id="L140">                p.getLibroIsbn(),</span>
+<span class="nc" id="L141">                p.getFechaPrestamo(),</span>
+<span class="nc" id="L142">                p.getFechaDevolucionEstimada(),</span>
+<span class="nc" id="L143">                p.getDiasRestantes(),</span>
+<span class="nc" id="L144">                p.getEstadoNombre());</span>
+    }
+
+    private LibroMasPrestadoResponseDTO toDTO(LibroMasPrestadoProjection p) {
+<span class="nc" id="L148">        return new LibroMasPrestadoResponseDTO(</span>
+<span class="nc" id="L149">                p.getLibroId(),</span>
+<span class="nc" id="L150">                p.getTitulo(),</span>
+<span class="nc" id="L151">                p.getIsbn(),</span>
+<span class="nc" id="L152">                p.getTotalPrestamos());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

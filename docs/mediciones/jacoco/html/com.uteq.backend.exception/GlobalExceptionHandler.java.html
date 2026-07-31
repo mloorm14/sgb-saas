@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GlobalExceptionHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.exception</a> &gt; <span class="el_source">GlobalExceptionHandler.java</span></div><h1>GlobalExceptionHandler.java</h1><pre class="source lang-java linenums">package com.uteq.backend.exception;
+
+import com.uteq.backend.service.CorreoYaRegistradoException;
+import com.uteq.backend.service.LoginRateLimitExcedidoException;
+import com.uteq.backend.service.RefreshTokenInvalidoException;
+import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
+import org.springframework.jdbc.UncategorizedSQLException;
+
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Todas las respuestas de error se devuelven como {@link ProblemDetail}
+ * (RFC 7807), requisito de la guía (A.1). Spring fija automáticamente el
+ * status HTTP de la respuesta a partir de {@code ProblemDetail.getStatus()}
+ * y serializa con Content-Type {@code application/problem+json}.
+ */
+@RestControllerAdvice
+<span class="fc" id="L34">public class GlobalExceptionHandler {</span>
+
+<span class="fc" id="L36">    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);</span>
+
+    @ExceptionHandler(CorreoYaRegistradoException.class)
+    public ProblemDetail handleCorreoYaRegistrado(CorreoYaRegistradoException ex) {
+<span class="nc" id="L40">        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());</span>
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ProblemDetail handleBadCredentials(BadCredentialsException ex) {
+<span class="nc" id="L45">        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, &quot;Credenciales inválidas&quot;);</span>
+    }
+
+    // OWASP A07 (Bloque C.2): LoginRateLimiter.estaBloqueado() -&gt; AuthService
+    // lanza esto ANTES de intentar autenticar, cuando correo+IP ya agotaron
+    // los intentos fallidos permitidos en la ventana vigente. Ver
+    // docs/mediciones/sec/2026-07-30-owasp-a07-fallo-identificacion-autenticacion.md
+    // para el gap original (6/6 intentos devolvían 401 sin límite) que esto cierra.
+    @ExceptionHandler(LoginRateLimitExcedidoException.class)
+    public ProblemDetail handleLoginRateLimitExcedido(LoginRateLimitExcedidoException ex) {
+<span class="nc" id="L55">        return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());</span>
+    }
+
+    // AuthService.refresh() lanza esto cuando el refreshToken de la cookie
+    // es invalido/expirado (JwtService.validateToken devuelve false) o
+    // cuando el correo que codifica ya no resuelve a un usuario existente.
+    // Antes de este handler, ambos casos eran una RuntimeException sin
+    // @ExceptionHandler dedicado, caian en handleGenerica y respondian 500
+    // -- ocultando lo que en realidad es una sesion no autorizada (401),
+    // no un error interno del servidor. Mismo mensaje generico en ambos
+    // casos (no distingue &quot;token invalido&quot; de &quot;usuario no encontrado&quot;)
+    // para no filtrar informacion sobre si una cuenta existe.
+    @ExceptionHandler(RefreshTokenInvalidoException.class)
+    public ProblemDetail handleRefreshTokenInvalido(RefreshTokenInvalidoException ex) {
+<span class="nc" id="L69">        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());</span>
+    }
+
+    // UserDetailsServiceImpl marca accountLocked=true cuando
+    // estados_usuario.nombre = BLOQUEADO_POR_MULTA. 423 Locked distingue
+    // este caso de una contraseña incorrecta: el usuario necesita
+    // regularizar su multa, no reintentar la clave.
+    @ExceptionHandler(LockedException.class)
+    public ProblemDetail handleLocked(LockedException ex) {
+<span class="nc" id="L78">        return ProblemDetail.forStatusAndDetail(HttpStatus.LOCKED,</span>
+                &quot;Cuenta bloqueada por multas pendientes. Regularice su situación para continuar.&quot;);
+    }
+
+    // UserDetailsServiceImpl marca disabled=true cuando estados_usuario.nombre
+    // es INACTIVO o PENDIENTE_VERIFICACION.
+    @ExceptionHandler(DisabledException.class)
+    public ProblemDetail handleDisabled(DisabledException ex) {
+<span class="nc" id="L86">        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,</span>
+                &quot;Cuenta inactiva o pendiente de verificación.&quot;);
+    }
+
+    // @PreAuthorize (método, AOP) lanza esto DESPUÉS de que el filtro de
+    // Spring Security ya dejó pasar la request (usuario autenticado, pero
+    // sin el rol requerido para ESTE método). Sin este handler caía en
+    // handleGenerica -&gt; 500, ocultando un 403 real de control de acceso
+    // (hallazgo detectado al verificar en vivo TAREA 2 con una cuenta ADMIN
+    // que no está en la lista de roles de LibroController.listar()).
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ProblemDetail handleAuthorizationDenied(AuthorizationDeniedException ex) {
+<span class="fc" id="L98">        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,</span>
+                &quot;No tiene permisos para realizar esta acción.&quot;);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
+<span class="nc" id="L104">        Map&lt;String, String&gt; detalles = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {</span>
+<span class="nc" id="L106">            detalles.put(fieldError.getField(), fieldError.getDefaultMessage());</span>
+<span class="nc" id="L107">        }</span>
+
+<span class="nc" id="L109">        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, &quot;Datos inválidos&quot;);</span>
+<span class="nc" id="L110">        problem.setProperty(&quot;errores&quot;, detalles);</span>
+<span class="nc" id="L111">        return problem;</span>
+    }
+
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ProblemDetail handleNotFound(EntityNotFoundException ex) {
+<span class="nc" id="L116">        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());</span>
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
+<span class="nc" id="L121">        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());</span>
+    }
+
+    // Los SPs con efectos secundarios (sp_crear_prestamo, sp_registrar_devolucion,
+    // sp_pagar_multa, sp_anular_multa, sp_expirar_reservaciones_vencidas) lanzan
+    // RAISE EXCEPTION ... USING ERRCODE = 'LBxxx' (ver docs/basedatos/CATALOGO-SP.md).
+    // Postgres/JDBC no reconoce esos SQLSTATE custom, así que Hibernate los envuelve
+    // en DataAccessException genérica -&gt; sin este handler, caían todos a
+    // handleGenerica -&gt; 500, ocultando el error real de negocio (ej. &quot;préstamo ya
+    // devuelto&quot; se veía como un 500 genérico en vez de un 409).
+    @ExceptionHandler({
+            InvalidDataAccessResourceUsageException.class,
+            UncategorizedSQLException.class,
+            DataAccessException.class
+    })
+    public ProblemDetail handleStoredProcedureError(Exception ex) {
+<span class="nc" id="L137">        Throwable causa = ex;</span>
+<span class="nc bnc" id="L138" title="All 4 branches missed.">        while (causa != null &amp;&amp; !(causa instanceof SQLException)) {</span>
+<span class="nc" id="L139">            causa = causa.getCause();</span>
+        }
+
+<span class="nc bnc" id="L142" title="All 2 branches missed.">        if (causa instanceof SQLException sqlEx) {</span>
+<span class="nc" id="L143">            String sqlState = sqlEx.getSQLState();</span>
+<span class="nc bnc" id="L144" title="All 4 branches missed.">            HttpStatus status = switch (sqlState) {</span>
+<span class="nc" id="L145">                case &quot;LB404&quot; -&gt; HttpStatus.NOT_FOUND;</span>
+<span class="nc" id="L146">                case &quot;LB409&quot; -&gt; HttpStatus.CONFLICT;</span>
+<span class="nc" id="L147">                case &quot;LB422&quot; -&gt; HttpStatus.UNPROCESSABLE_ENTITY;</span>
+<span class="nc" id="L148">                default -&gt; null;</span>
+            };
+<span class="nc bnc" id="L150" title="All 2 branches missed.">            if (status != null) {</span>
+<span class="nc" id="L151">                return ProblemDetail.forStatusAndDetail(status, sqlEx.getMessage());</span>
+            }
+        }
+
+<span class="nc" id="L155">        log.error(&quot;Error no controlado en procedimiento almacenado&quot;, ex);</span>
+<span class="nc" id="L156">        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, &quot;Error interno del servidor&quot;);</span>
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ProblemDetail handleGenerica(Exception ex) {
+        // Sin este log, un 500 no deja ningún rastro server-side: el cliente
+        // recibe el detail genérico (correcto, no debe filtrar detalles
+        // internos) pero el equipo no tiene forma de diagnosticar la causa.
+<span class="nc" id="L164">        log.error(&quot;Error no controlado&quot;, ex);</span>
+<span class="nc" id="L165">        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, &quot;Error interno del servidor&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
