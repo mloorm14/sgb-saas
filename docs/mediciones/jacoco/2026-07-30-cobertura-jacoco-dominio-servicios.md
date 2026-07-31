@@ -1,5 +1,12 @@
 # Evidencia — Bloque C.4: cobertura JaCoCo del dominio/servicios de la API
 
+**Registro histórico — NO vigente.** Este archivo documenta el hallazgo
+original (53.69% líneas, 5 clases de auth casi sin cobertura real) que
+motivó el trabajo de
+`2026-07-30-cobertura-jacoco-clases-seguridad-vigente.md`. Para el número
+de cobertura actual (75.85%), ver ese archivo — este se conserva sin
+editar como evidencia de cuál era el estado antes del fix.
+
 ## Cabecera de medición
 
 - **Fecha (ISO 8601 UTC)**: 2026-07-31T00:44:31Z

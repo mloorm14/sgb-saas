@@ -35,27 +35,27 @@ public class AuthController {
 
     @PostMapping(&quot;/registro&quot;)
     public ResponseEntity&lt;UsuarioResponseDTO&gt; registro(@Valid @RequestBody RegistroRequestDTO dto) {
-<span class="nc" id="L38">        UsuarioResponseDTO usuario = authService.registrar(dto);</span>
-<span class="nc" id="L39">        return ResponseEntity.status(HttpStatus.CREATED).body(usuario);</span>
+<span class="fc" id="L38">        UsuarioResponseDTO usuario = authService.registrar(dto);</span>
+<span class="fc" id="L39">        return ResponseEntity.status(HttpStatus.CREATED).body(usuario);</span>
     }
 
     @PostMapping(&quot;/login&quot;)
     public ResponseEntity&lt;TokenResponseDTO&gt; login(@Valid @RequestBody LoginRequestDTO dto, HttpServletRequest request) {
-<span class="nc" id="L44">        TokenResponseDTO tokens = authService.login(dto, obtenerIpOrigen(request));</span>
-<span class="nc" id="L45">        ResponseCookie cookie = buildRefreshCookie(tokens.refreshToken(), jwtService.getRefreshExpirationMs());</span>
-<span class="nc" id="L46">        return ResponseEntity.ok()</span>
-<span class="nc" id="L47">                .header(HttpHeaders.SET_COOKIE, cookie.toString())</span>
-<span class="nc" id="L48">                .body(tokens);</span>
+<span class="fc" id="L44">        TokenResponseDTO tokens = authService.login(dto, obtenerIpOrigen(request));</span>
+<span class="fc" id="L45">        ResponseCookie cookie = buildRefreshCookie(tokens.refreshToken(), jwtService.getRefreshExpirationMs());</span>
+<span class="fc" id="L46">        return ResponseEntity.ok()</span>
+<span class="fc" id="L47">                .header(HttpHeaders.SET_COOKIE, cookie.toString())</span>
+<span class="fc" id="L48">                .body(tokens);</span>
     }
 
     @PostMapping(&quot;/logout&quot;)
     public ResponseEntity&lt;Void&gt; logout(@RequestHeader(&quot;Authorization&quot;) String authHeader, HttpServletRequest request) {
-<span class="nc" id="L53">        String token = authHeader.substring(BEARER_PREFIX.length());</span>
-<span class="nc" id="L54">        authService.logout(token, obtenerIpOrigen(request));</span>
-<span class="nc" id="L55">        ResponseCookie cookieLimpia = buildRefreshCookie(&quot;&quot;, 0);</span>
-<span class="nc" id="L56">        return ResponseEntity.noContent()</span>
-<span class="nc" id="L57">                .header(HttpHeaders.SET_COOKIE, cookieLimpia.toString())</span>
-<span class="nc" id="L58">                .build();</span>
+<span class="fc" id="L53">        String token = authHeader.substring(BEARER_PREFIX.length());</span>
+<span class="fc" id="L54">        authService.logout(token, obtenerIpOrigen(request));</span>
+<span class="fc" id="L55">        ResponseCookie cookieLimpia = buildRefreshCookie(&quot;&quot;, 0);</span>
+<span class="fc" id="L56">        return ResponseEntity.noContent()</span>
+<span class="fc" id="L57">                .header(HttpHeaders.SET_COOKIE, cookieLimpia.toString())</span>
+<span class="fc" id="L58">                .build();</span>
     }
 
     // Bloque C.2 (OWASP A07/A09): IP real del cliente, usada para el rate
@@ -67,7 +67,7 @@ public class AuthController {
     // punto a ajustar (validar contra una lista de proxies de confianza
     // antes de usarlo, no confiar en el header a ciegas).
     private String obtenerIpOrigen(HttpServletRequest request) {
-<span class="nc" id="L70">        return request.getRemoteAddr();</span>
+<span class="fc" id="L70">        return request.getRemoteAddr();</span>
     }
 
     // El refresh token viaja SOLO en la cookie HttpOnly (nunca en el body):
@@ -79,15 +79,15 @@ public class AuthController {
     @PostMapping(&quot;/refresh&quot;)
     public ResponseEntity&lt;TokenResponseDTO&gt; refresh(
             @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshTokenCookie) {
-<span class="nc bnc" id="L82" title="All 4 branches missed.">        if (refreshTokenCookie == null || refreshTokenCookie.isBlank()) {</span>
-<span class="nc" id="L83">            throw new IllegalArgumentException(&quot;Falta la cookie &quot; + REFRESH_COOKIE_NAME);</span>
+<span class="pc bpc" id="L82" title="1 of 4 branches missed.">        if (refreshTokenCookie == null || refreshTokenCookie.isBlank()) {</span>
+<span class="fc" id="L83">            throw new IllegalArgumentException(&quot;Falta la cookie &quot; + REFRESH_COOKIE_NAME);</span>
         }
 
-<span class="nc" id="L86">        TokenResponseDTO tokens = authService.refresh(refreshTokenCookie);</span>
-<span class="nc" id="L87">        ResponseCookie cookie = buildRefreshCookie(tokens.refreshToken(), jwtService.getRefreshExpirationMs());</span>
-<span class="nc" id="L88">        return ResponseEntity.ok()</span>
-<span class="nc" id="L89">                .header(HttpHeaders.SET_COOKIE, cookie.toString())</span>
-<span class="nc" id="L90">                .body(tokens);</span>
+<span class="fc" id="L86">        TokenResponseDTO tokens = authService.refresh(refreshTokenCookie);</span>
+<span class="fc" id="L87">        ResponseCookie cookie = buildRefreshCookie(tokens.refreshToken(), jwtService.getRefreshExpirationMs());</span>
+<span class="fc" id="L88">        return ResponseEntity.ok()</span>
+<span class="fc" id="L89">                .header(HttpHeaders.SET_COOKIE, cookie.toString())</span>
+<span class="fc" id="L90">                .body(tokens);</span>
     }
 
     // path=&quot;/api/auth&quot; limita el envío de la cookie a los endpoints de
@@ -95,13 +95,13 @@ public class AuthController {
     // docs/adr/adr-007-cookies-jwt.md para el resto de decisiones de diseño
     // (por qué solo el refreshToken migra a cookie, no el accessToken).
     private ResponseCookie buildRefreshCookie(String valor, long maxAgeMs) {
-<span class="nc" id="L98">        return ResponseCookie.from(REFRESH_COOKIE_NAME, valor)</span>
-<span class="nc" id="L99">                .httpOnly(true)</span>
-<span class="nc" id="L100">                .secure(true)</span>
-<span class="nc" id="L101">                .sameSite(&quot;Strict&quot;)</span>
-<span class="nc" id="L102">                .path(&quot;/api/auth&quot;)</span>
-<span class="nc" id="L103">                .maxAge(Duration.ofMillis(maxAgeMs))</span>
-<span class="nc" id="L104">                .build();</span>
+<span class="fc" id="L98">        return ResponseCookie.from(REFRESH_COOKIE_NAME, valor)</span>
+<span class="fc" id="L99">                .httpOnly(true)</span>
+<span class="fc" id="L100">                .secure(true)</span>
+<span class="fc" id="L101">                .sameSite(&quot;Strict&quot;)</span>
+<span class="fc" id="L102">                .path(&quot;/api/auth&quot;)</span>
+<span class="fc" id="L103">                .maxAge(Duration.ofMillis(maxAgeMs))</span>
+<span class="fc" id="L104">                .build();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
