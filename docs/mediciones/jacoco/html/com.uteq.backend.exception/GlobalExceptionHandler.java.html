@@ -37,12 +37,12 @@ import java.util.Map;
 
     @ExceptionHandler(CorreoYaRegistradoException.class)
     public ProblemDetail handleCorreoYaRegistrado(CorreoYaRegistradoException ex) {
-<span class="nc" id="L40">        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());</span>
+<span class="fc" id="L40">        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());</span>
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ProblemDetail handleBadCredentials(BadCredentialsException ex) {
-<span class="nc" id="L45">        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, &quot;Credenciales inválidas&quot;);</span>
+<span class="fc" id="L45">        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, &quot;Credenciales inválidas&quot;);</span>
     }
 
     // OWASP A07 (Bloque C.2): LoginRateLimiter.estaBloqueado() -&gt; AuthService
@@ -52,7 +52,7 @@ import java.util.Map;
     // para el gap original (6/6 intentos devolvían 401 sin límite) que esto cierra.
     @ExceptionHandler(LoginRateLimitExcedidoException.class)
     public ProblemDetail handleLoginRateLimitExcedido(LoginRateLimitExcedidoException ex) {
-<span class="nc" id="L55">        return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());</span>
+<span class="fc" id="L55">        return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());</span>
     }
 
     // AuthService.refresh() lanza esto cuando el refreshToken de la cookie
@@ -66,7 +66,7 @@ import java.util.Map;
     // para no filtrar informacion sobre si una cuenta existe.
     @ExceptionHandler(RefreshTokenInvalidoException.class)
     public ProblemDetail handleRefreshTokenInvalido(RefreshTokenInvalidoException ex) {
-<span class="nc" id="L69">        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());</span>
+<span class="fc" id="L69">        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());</span>
     }
 
     // UserDetailsServiceImpl marca accountLocked=true cuando
@@ -75,7 +75,7 @@ import java.util.Map;
     // regularizar su multa, no reintentar la clave.
     @ExceptionHandler(LockedException.class)
     public ProblemDetail handleLocked(LockedException ex) {
-<span class="nc" id="L78">        return ProblemDetail.forStatusAndDetail(HttpStatus.LOCKED,</span>
+<span class="fc" id="L78">        return ProblemDetail.forStatusAndDetail(HttpStatus.LOCKED,</span>
                 &quot;Cuenta bloqueada por multas pendientes. Regularice su situación para continuar.&quot;);
     }
 
@@ -83,7 +83,7 @@ import java.util.Map;
     // es INACTIVO o PENDIENTE_VERIFICACION.
     @ExceptionHandler(DisabledException.class)
     public ProblemDetail handleDisabled(DisabledException ex) {
-<span class="nc" id="L86">        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,</span>
+<span class="fc" id="L86">        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,</span>
                 &quot;Cuenta inactiva o pendiente de verificación.&quot;);
     }
 
@@ -101,14 +101,14 @@ import java.util.Map;
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
-<span class="nc" id="L104">        Map&lt;String, String&gt; detalles = new HashMap&lt;&gt;();</span>
-<span class="nc bnc" id="L105" title="All 2 branches missed.">        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {</span>
-<span class="nc" id="L106">            detalles.put(fieldError.getField(), fieldError.getDefaultMessage());</span>
-<span class="nc" id="L107">        }</span>
+<span class="fc" id="L104">        Map&lt;String, String&gt; detalles = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {</span>
+<span class="fc" id="L106">            detalles.put(fieldError.getField(), fieldError.getDefaultMessage());</span>
+<span class="fc" id="L107">        }</span>
 
-<span class="nc" id="L109">        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, &quot;Datos inválidos&quot;);</span>
-<span class="nc" id="L110">        problem.setProperty(&quot;errores&quot;, detalles);</span>
-<span class="nc" id="L111">        return problem;</span>
+<span class="fc" id="L109">        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, &quot;Datos inválidos&quot;);</span>
+<span class="fc" id="L110">        problem.setProperty(&quot;errores&quot;, detalles);</span>
+<span class="fc" id="L111">        return problem;</span>
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
@@ -118,7 +118,7 @@ import java.util.Map;
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
-<span class="nc" id="L121">        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());</span>
+<span class="fc" id="L121">        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());</span>
     }
 
     // Los SPs con efectos secundarios (sp_crear_prestamo, sp_registrar_devolucion,

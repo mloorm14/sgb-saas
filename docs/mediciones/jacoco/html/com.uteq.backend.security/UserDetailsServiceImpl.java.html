@@ -30,10 +30,10 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String correo) throws UsernameNotFoundException {
-<span class="nc" id="L33">        Usuario usuario = usuarioRepository.findByCorreo(correo)</span>
-<span class="nc" id="L34">                .orElseThrow(() -&gt; new UsernameNotFoundException(&quot;Usuario no encontrado con correo: &quot; + correo));</span>
+<span class="fc" id="L33">        Usuario usuario = usuarioRepository.findByCorreo(correo)</span>
+<span class="fc" id="L34">                .orElseThrow(() -&gt; new UsernameNotFoundException(&quot;Usuario no encontrado con correo: &quot; + correo));</span>
 
-<span class="nc" id="L36">        String estadoNombre = usuario.getEstado().getNombre();</span>
+<span class="fc" id="L36">        String estadoNombre = usuario.getEstado().getNombre();</span>
 
         // roles.nombre en la BD no lleva prefijo (&quot;LECTOR&quot;, no &quot;ROLE_LECTOR&quot;).
         // User.builder().roles(...) de Spring Security antepone &quot;ROLE_&quot;
@@ -41,17 +41,17 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         // (&quot;hasAnyRole('LECTOR', ...)&quot;) ya existentes en LibroController,
         // que también comparan anteponiendo &quot;ROLE_&quot; a lo que reciben.
         // Ambos lados deben coincidir en anteponer el prefijo una sola vez.
-<span class="nc" id="L44">        String[] roles = usuario.getRoles().stream()</span>
-<span class="nc" id="L45">                .map(Rol::getNombre)</span>
-<span class="nc" id="L46">                .toArray(String[]::new);</span>
+<span class="fc" id="L44">        String[] roles = usuario.getRoles().stream()</span>
+<span class="fc" id="L45">                .map(Rol::getNombre)</span>
+<span class="fc" id="L46">                .toArray(String[]::new);</span>
 
-<span class="nc" id="L48">        return User.builder()</span>
-<span class="nc" id="L49">                .username(usuario.getCorreo())</span>
-<span class="nc" id="L50">                .password(usuario.getPasswordHash())</span>
-<span class="nc" id="L51">                .roles(roles)</span>
-<span class="nc" id="L52">                .accountLocked(ESTADO_BLOQUEADO_POR_MULTA.equals(estadoNombre))</span>
-<span class="nc" id="L53">                .disabled(ESTADOS_DESHABILITADOS.contains(estadoNombre))</span>
-<span class="nc" id="L54">                .build();</span>
+<span class="fc" id="L48">        return User.builder()</span>
+<span class="fc" id="L49">                .username(usuario.getCorreo())</span>
+<span class="fc" id="L50">                .password(usuario.getPasswordHash())</span>
+<span class="fc" id="L51">                .roles(roles)</span>
+<span class="fc" id="L52">                .accountLocked(ESTADO_BLOQUEADO_POR_MULTA.equals(estadoNombre))</span>
+<span class="fc" id="L53">                .disabled(ESTADOS_DESHABILITADOS.contains(estadoNombre))</span>
+<span class="fc" id="L54">                .build();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
