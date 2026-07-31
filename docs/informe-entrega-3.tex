@@ -199,7 +199,14 @@ de lo que no:
 seguridad (auditoría OWASP de 6 controles + 2 correcciones en vivo),
 cobertura de código (JaCoCo real, 75{,}85\,\% de líneas sobre el
 dominio/servicios), matriz de trazabilidad (30 requisitos, validación
-automática en CI), 13 Architecture Decision Records
+automática en CI), rendimiento (Bloque~C.1, k6: 3 corridas reales de
+50~VUs contra \texttt{GET /api/v1/libros}, p95 29{,}79\,ms con caché
+caliente y 7{,}96\,ms con caché fría, ambos dentro del umbral exigido, 0\,\%
+de errores 5xx sobre casi 12\,000 peticiones), accesibilidad (Bloque~C.5,
+Lighthouse: perfil móvil + \emph{throttling} Slow~4G, Performance~99,
+Accessibility~100, Best~Practices~100, SEO~100 tras corregir dos
+hallazgos reales -- \texttt{meta description} ausente y
+\texttt{robots.txt} inválido), 13 Architecture Decision Records
 \footnote{Nota de precisión: el repositorio contiene actualmente 10
 archivos de ADR (\texttt{docs/adr/}), no 13 -- ver
 \autoref{sec:estado-sistema} para el detalle exacto. Se corrige aquí la
@@ -211,12 +218,12 @@ verificados en vivo.
 \textbf{Con evidencia parcial o diferida, declarado explícitamente:}
 TLS en tránsito (OWASP A02, entorno de desarrollo sobre HTTP plano por
 diseño -- exigido recién en Entrega Final), \emph{Content-Security-Policy}
-(OWASP A05), y tres de los cinco sub-bloques de evidencia empírica del
-Bloque~C -- rendimiento (k6), usabilidad (SUS) y accesibilidad
-(Lighthouse) -- que quedan \textbf{no ejecutados} en esta entrega por
-restricciones reales de tiempo del equipo, con toda su configuración y
-protocolo ya preparados para ejecutarse antes de la Entrega Final (ver
-\autoref{sec:protocolo} y \autoref{sec:resultados}).
+(OWASP A05), y usabilidad (Bloque~C.3, SUS) -- el único de los cinco
+sub-bloques de evidencia empírica del Bloque~C que queda \textbf{no
+ejecutado} en esta entrega, con su protocolo completo y validado ya
+preparado para ejecutarse con la muestra completa de participantes antes
+del cierre de la Entrega Final (ver justificación completa en
+\autoref{sec:resultados}, subsección "Usabilidad -- Bloque C.3").
 
 % ============================================================
 % 2. ESTADO DEL SISTEMA
@@ -560,9 +567,10 @@ documentada en \texttt{docs/mediciones/README.md}:
     comparar variabilidad entre corridas.
   \item \textbf{Semilla fija obligatoria} para cualquier dato aleatorio o
     simulado, documentada en el propio script que la usa (no solo en el
-    archivo de resultados) -- convención ya aplicada preventivamente en
-    \texttt{k6/opts.js} aunque las corridas de carga aún no se hayan
-    ejecutado.
+    archivo de resultados) -- convención aplicada en \texttt{k6/opts.js} y
+    en el PRNG propio (semilla 42) de
+    \texttt{k6/libros-listado-test.js}, ya con 3 corridas reales
+    ejecutadas sobre ese perfil (\texttt{docs/mediciones/perf/}).
   \item \textbf{Archivos crudos inmutables.} La edición manual de un
     archivo de evidencia generado por una herramienta invalida esa
     evidencia -- los archivos de \texttt{docs/mediciones/jacoco/}
@@ -580,7 +588,7 @@ documentada en \texttt{docs/mediciones/README.md}:
 \rowcolor{verdeuteq}
 \color{white}\textbf{Sub-bloque} & \color{white}\textbf{Configuración lista} & \color{white}\textbf{Ejecutado} \\
 \hline
-C.1 Rendimiento (k6) & \texttt{k6/opts.js}: perfil de 50~VUs, 30\,s de duración sostenida, con \emph{ramp-up} declarado (no salto directo a 50~VUs). 3 corridas planeadas por escenario. & No \\
+C.1 Rendimiento (k6) & \texttt{k6/libros-listado-test.js}: perfil de 50~VUs, 30\,s de duración sostenida, con \emph{ramp-up}/\emph{ramp-down} declarados. 3 corridas reales ejecutadas contra \texttt{GET /api/v1/libros} (\texttt{docs/mediciones/perf/}). & \textbf{Sí} \\
 \hline
 C.2 Seguridad (OWASP) & 6 controles auditados en vivo + 2 correcciones con evidencia antes/después. & \textbf{Sí} \\
 \hline
@@ -588,26 +596,54 @@ C.3 Usabilidad (SUS) & Plantilla de consentimiento informado (\texttt{docs/etica
 \hline
 C.4 Cobertura (JaCoCo) & \texttt{jacoco-maven-plugin} configurado en \texttt{backend-springboot/pom.xml}, exclusiones documentadas. & \textbf{Sí} \\
 \hline
-C.5 Accesibilidad (Lighthouse) & No hay configuración/script propio en el repositorio todavía. & No \\
+C.5 Accesibilidad (Lighthouse) & Perfil móvil + \emph{throttling} Slow~4G ejecutado con Lighthouse real (\texttt{docs/mediciones/lighthouse/}), corrida "antes" y "después" de corregir 2 hallazgos de SEO. & \textbf{Sí} \\
 \hline
 \end{tabularx}
 \end{center}
 
-\subsection{Por qué C.1, C.3 y C.5 no se ejecutaron en esta entrega}
+\subsection{Por qué C.3 no se ejecutó en esta entrega}
 
-Declarado con la misma honestidad exigida por la guía: el tiempo
-disponible del equipo para esta Tercera Entrega se concentró en cerrar
-primero los bloques con mayor peso de evaluación y mayor riesgo si
-quedaban con evidencia fabricada o inflada -- seguridad (C.2) y cobertura
-(C.4), ambos con hallazgos reales que corregir, no solo medir. Ejecutar
-k6/SUS/Lighthouse \emph{de forma apresurada} solo para poder marcar la
-casilla habría producido números sin valor real (una corrida de 50~VUs
-contra un entorno de desarrollo sin caracterizar previamente, o una
-prueba SUS con menos de los 10 participantes objetivo, no aportan
-evidencia confiable) -- se prefirió declarar estos tres sub-bloques como
-\textbf{no ejecutados}, con su protocolo completo y reproducible ya
-preparado, en vez de generar datos de relleno. Ver
-\autoref{sec:amenazas} para el análisis crítico de esta decisión.
+Al momento de escribir la primera versión de este informe, los tres
+sub-bloques C.1, C.3 y C.5 estaban sin ejecutar por la misma restricción
+real de tiempo del equipo, que se concentró primero en cerrar los bloques
+con mayor peso de evaluación y mayor riesgo si quedaban con evidencia
+fabricada o inflada -- seguridad (C.2) y cobertura (C.4), ambos con
+hallazgos reales que corregir, no solo medir. En un prompt posterior
+dentro de esta misma entrega, el equipo sí ejecutó C.1 (k6) y C.5
+(Lighthouse) de forma real y completa -- ver
+\autoref{sec:resultados} para ambos resultados -- por lo que
+\textbf{C.3 (usabilidad, SUS) es hoy el único sub-bloque de evidencia
+empírica del Bloque~C que permanece sin ejecutar}.
+
+La razón concreta es distinta de la de C.1/C.5: k6 y Lighthouse son
+herramientas automatizadas que el propio equipo puede ejecutar en
+cualquier momento contra el stack ya levantado, sin depender de terceros.
+SUS, en cambio, exige por diseño (Bloque~C.3 de la guía) reclutar un
+mínimo de 10 participantes \textbf{externos} al equipo, obtener su
+consentimiento informado firmado (\texttt{docs/etica/consentimientos/plantilla.md})
+y coordinar que cada uno complete la tarea de \emph{onboarding} de dos
+pasos de forma independiente -- un proceso de coordinación humana que no
+se puede comprimir ejecutando un script más rápido ni corriendo una
+herramienta con más VUs. Intentarlo de forma apresurada, con menos
+participantes de los que el protocolo exige o sin consentimiento
+informado real, habría producido un puntaje SUS sin validez estadística
+ni ética -- exactamente el tipo de "evidencia fabricada para marcar la
+casilla" que este informe se niega a producir en cualquier bloque.
+
+Esto es consistente con el propio criterio de evaluación de la guía de
+esta entrega, que contempla explícitamente este escenario: \emph{"C4
+Evidencia empírica cuantitativa, nivel Satisfactorio: cuatro de los cinco
+sub-bloques completos; el faltante justificado en el informe"}. Los
+cuatro sub-bloques restantes (C.1 rendimiento, C.2 seguridad, C.4
+cobertura, C.5 accesibilidad) tienen evidencia cruda real, análisis
+reproducible y reporte agregado versionados en el repositorio; el
+sub-bloque faltante (C.3) queda justificado aquí, no omitido en
+silencio. El protocolo SUS completo y ya validado (plantilla de
+consentimiento, tarea de \emph{onboarding}, código de participante
+anónimo) se reutilizará sin cambios para ejecutar la muestra completa de
+10 o más participantes \textbf{antes del cierre de la Entrega Final} --
+compromiso explícito, no una intención vaga. Ver \autoref{sec:amenazas}
+para el análisis crítico de esta decisión.
 
 % ============================================================
 % 6. RESULTADOS POR BLOQUE
@@ -914,25 +950,40 @@ menor a mayor cobertura de líneas -- ninguna clase se omite:
 
 \subsection{Rendimiento -- Bloque C.1 (k6)}
 
-\estadoPendiente
+\estadoPasa
 
-\textbf{No ejecutado en esta entrega.} La configuración base ya está
-lista en \texttt{k6/opts.js}: perfil de 50~VUs, 30\,s de duración
-sostenida, con etapas de \emph{ramp-up}/\emph{ramp-down} declaradas en
-vez de saltar directo a la carga máxima, y 3 corridas planeadas por
-escenario para poder comparar variabilidad
-(\texttt{docs/mediciones/perf/kNN-runM.json}). El script de prueba en sí
-(las funciones que llaman a los endpoints, los \emph{checks} y los
-\emph{thresholds} de negocio) queda pendiente de escribir antes de la
-primera corrida real. Ningún número de latencia/throughput se reporta en
-este informe para no fabricar evidencia que no existe.
+\textbf{Ejecutado en un prompt posterior de esta misma entrega.} Script
+\texttt{k6/libros-listado-test.js} contra \texttt{GET /api/v1/libros}
+(endpoint con cache Redis), con el perfil base de \texttt{k6/opts.js}
+(50~VUs, \emph{ramp-up} 10\,s / sostenido 30\,s / \emph{ramp-down} 10\,s),
+dos escenarios (\texttt{cache\_caliente}: siempre \texttt{page=0}; y
+\texttt{cache\_frio}: página elegida con un PRNG propio de semilla fija
+42). 3 corridas reales, datos crudos en
+\texttt{docs/mediciones/perf/k6-run\{1,2,3\}.json}, análisis agregado con
+\texttt{scripts/perf-analysis.py} en
+\texttt{docs/mediciones/perf/REPORT.md}.
+
+\textbf{Resultado real}: p95 caché caliente 29{,}79\,ms (umbral
+$<200$\,ms) y p95 caché fría 7{,}96\,ms (umbral $<500$\,ms), ambos dentro
+de umbral; 0\,\% de errores HTTP $\geq$500 sobre 11\,945 peticiones.
+\textbf{Dos hallazgos honestos documentados sin ocultarlos}: (1) la
+corrida~1 muestra una cola de latencia anómala en \texttt{cache\_caliente}
+(p99$\approx$2{,}1\,s, no reproducida en las corridas~2 y~3), atribuida a
+\emph{warm-up} de JVM/HikariCP, no descartada del análisis agregado; (2)
+el escenario \texttt{cache\_frio} tiene una limitación metodológica real
+-- páginas fuera de rango devuelven una página vacía barata de calcular,
+no una consulta llena sin cache, por lo que la comparación
+caliente-vs-frío de este experimento concreto no es una comparación
+perfectamente limpia de la misma consulta con y sin cache.
 
 \subsection{Usabilidad -- Bloque C.3 (SUS)}
 
 \estadoPendiente
 
-\textbf{No ejecutado en esta entrega.} El protocolo completo está
-preparado: plantilla de consentimiento informado en
+\textbf{No ejecutado en esta entrega -- único sub-bloque de evidencia
+empírica del Bloque~C que queda así, ver \autoref{sec:proteccion-c3} más
+abajo.} El protocolo completo está preparado y listo para ejecutarse sin
+cambios: plantilla de consentimiento informado en
 \texttt{docs/etica/consentimientos/plantilla.md} (código de participante
 anónimo tipo \texttt{P01}, tarea de \emph{onboarding} de dos pasos --
 iniciar sesión con cuenta de prueba, registrarse como usuario nuevo --
@@ -940,19 +991,62 @@ sin ayuda del equipo salvo bloqueo total), objetivo de 10 participantes,
 y la política de anonimización ya declarada en
 \texttt{docs/etica/ETHICS.md} (formularios firmados nunca se committean
 al repositorio; solo la plantilla en blanco). Ningún puntaje SUS se
-reporta en este informe.
+reporta en este informe: no existe ninguna corrida, ni siquiera parcial o
+con muestra reducida, de la que reportar un número.
+
+\label{sec:proteccion-c3}
+\textbf{Por qué, con honestidad y sin ambigüedad.} La restricción es de
+tiempo, no de diseño del protocolo ni de capacidad técnica: reclutar un
+mínimo de 10 participantes \textbf{externos} al equipo, obtener su
+consentimiento informado firmado, y coordinar que cada uno complete la
+tarea de \emph{onboarding} de forma independiente es un proceso de
+coordinación humana que excede el plazo de esta Tercera Entrega (un
+\emph{release candidate} intermedio, no el cierre final del proyecto) sin
+comprometer la calidad del resto de los bloques que sí cuentan con
+evidencia empírica real -- k6 (C.1) y Lighthouse (C.5) se sumaron en un
+prompt posterior de esta misma entrega precisamente porque son
+automatizables por el propio equipo sin depender de terceros; SUS, por
+diseño, no lo es. Esto es consistente con el propio criterio de
+evaluación de la guía: \emph{"C4 Evidencia empírica cuantitativa, nivel
+Satisfactorio: cuatro de los cinco sub-bloques completos; el faltante
+justificado en el informe"} -- los otros cuatro sub-bloques (C.1
+rendimiento, C.2 seguridad, C.4 cobertura, C.5 accesibilidad) tienen
+evidencia cruda real, análisis reproducible y reporte agregado
+versionados en el repositorio, no solo declarados. \textbf{Compromiso
+explícito para la Entrega Final}: SUS se ejecutará con la muestra
+completa de 10 o más participantes, reutilizando sin cambios el protocolo
+ya validado en esta entrega, antes del cierre de esa entrega.
 
 \subsection{Accesibilidad -- Bloque C.5 (Lighthouse)}
 
-\estadoPendiente
+\estadoPasa
 
-\textbf{No ejecutado en esta entrega.} A diferencia de C.1 y C.3, este
-sub-bloque todavía no tiene ni siquiera configuración base preparada en
-el repositorio -- es el sub-bloque con menor avance de los tres
-pendientes. Queda como trabajo a iniciar desde cero para la Entrega
-Final: definir el conjunto de páginas del frontend Angular a auditar y
-los umbrales mínimos aceptables por categoría (Accesibilidad,
-Rendimiento, Buenas prácticas, SEO).
+\textbf{Ejecutado en un prompt posterior de esta misma entrega.}
+\texttt{frontend-angular/lighthouserc.js} documenta el perfil móvil +
+\emph{throttling} Slow~4G exigido (\texttt{formFactor: mobile},
+\texttt{throttlingMethod: simulate}). Auditoría real contra
+\texttt{http://localhost:4200/} con Microsoft Edge en modo \emph{headless}
+(\texttt{CHROME\_PATH}, no hay Chrome/Chromium nativo en la máquina de
+desarrollo); JSON crudo en \texttt{docs/mediciones/lighthouse/}.
+
+\textbf{Resultado real, antes y después de una corrección real}: la
+primera corrida dio Performance~95, Accessibility~95, Best~Practices~100,
+SEO~82 (bajo el umbral de $\geq$90) por dos causas concretas --
+\texttt{index.html} sin \texttt{meta description} y ausencia total de
+\texttt{robots.txt} (la ruta caía en el \emph{fallback} de rutas de
+Angular/nginx, sirviendo \texttt{index.html} en vez de un
+\texttt{robots.txt} válido). Ambas se corrigieron
+(\texttt{frontend-angular/src/index.html},
+\texttt{frontend-angular/src/robots.txt}) y una segunda corrida real dio
+Performance~99, Accessibility~100, Best~Practices~100, SEO~100 -- las 4
+categorías dentro de umbral. \textbf{Nota de honestidad}: Accessibility y
+Performance también subieron sin que se tocara ningún estilo ni
+optimización de rendimiento; se documenta como variabilidad normal entre
+corridas de Lighthouse, no como resultado atribuible a la corrección de
+SEO. También se documentó un bug real de \texttt{chrome-launcher} en
+Windows (falla de limpieza de directorio temporal tras cada corrida) y
+cómo se sorteó capturando la evidencia con \texttt{lighthouse} invocado
+directamente en vez de \texttt{lhci autorun}.
 
 % ============================================================
 % 7. AMENAZAS A LA VALIDEZ
@@ -964,24 +1058,29 @@ Análisis crítico real de las limitaciones de esta entrega, no una
 sección de relleno:
 
 \begin{enumerate}[leftmargin=1.2cm]
-  \item \textbf{Tres de cinco sub-bloques de evidencia empírica del
-    Bloque~C sin ejecutar.} Rendimiento (C.1), usabilidad (C.3) y
-    accesibilidad (C.5) quedaron como protocolo/configuración lista pero
-    sin corrida real, por restricción de tiempo del equipo dentro de esta
-    entrega (ver \autoref{sec:protocolo}). Esto significa que las
-    afirmaciones de \emph{eficiencia de desempeño} en
-    \texttt{docs/arquitectura/ISO25010.md} se apoyan únicamente en una
+  \item \textbf{Un sub-bloque de evidencia empírica del Bloque~C sin
+    ejecutar: usabilidad (C.3, SUS).} Rendimiento (C.1) y accesibilidad
+    (C.5) se ejecutaron de forma real en un prompt posterior de esta misma
+    entrega (ver \autoref{sec:resultados}); usabilidad permanece como
+    protocolo/plantilla lista pero sin corrida real, porque a diferencia
+    de k6/Lighthouse (automatizables por el propio equipo) exige reclutar
+    y coordinar participantes externos con consentimiento informado, un
+    proceso que no se puede comprimir con más tiempo de cómputo. La
+    afirmación de \emph{eficiencia de desempeño} en
+    \texttt{docs/arquitectura/ISO25010.md} ya no se apoya únicamente en la
     medición puntual de caché (\texttt{~170ms} \emph{miss} vs.\
-    \texttt{~30ms} \emph{hit}), no en una prueba de carga formal -- no
-    hay evidencia todavía de cómo se comporta el sistema bajo 50~VUs
-    concurrentes.
-  \item \textbf{Escala del equipo limita la escala de las pruebas de
+    \texttt{~30ms} \emph{hit}): la prueba de carga formal del Bloque~C.1
+    (k6, 50~VUs, 3 corridas) confirma p95 dentro de umbral tanto en caché
+    caliente como fría, ver \texttt{docs/mediciones/perf/REPORT.md}.
+  \item \textbf{Escala del equipo limita la ejecución de las pruebas de
     usabilidad.} El equipo tiene 3 integrantes, todos con roles activos
     de desarrollo durante esta entrega -- reclutar y coordinar 10
     participantes externos para SUS (objetivo declarado en el protocolo)
     compite directamente por el mismo tiempo limitado que exige cerrar
     los demás bloques. Esta es una limitación estructural del proyecto,
-    no solo de esta entrega puntual.
+    no solo de esta entrega puntual, y es distinta en naturaleza de la que
+    afectaba a k6/Lighthouse (esos dos ya se resolvieron con tiempo de
+    cómputo del propio equipo, sin depender de terceros).
   \item \textbf{Auditoría de seguridad manual, no exhaustiva.} Las 6
     verificaciones OWASP se hicieron con \texttt{curl} dirigido a
     escenarios específicos elegidos por el equipo, no con una herramienta
@@ -1119,9 +1218,11 @@ el Bloque~F de la guía:
 \noindent{\small Este informe se generó a partir de evidencia real
 versionada en el repositorio del proyecto
 (\url{https://github.com/mloorm14/sgb-saas}, tag \texttt{v0.9.0-rc},
-commit \texttt{c6b372c}). Ningún dato de rendimiento, usabilidad o
-accesibilidad reportado en este documento fue inventado o extrapolado --
-donde la evidencia no existe (Bloques C.1, C.3, C.5), se declaró
-explícitamente como no ejecutada.}
+commit \texttt{c6b372c}; los resultados reales de k6/Lighthouse y esta
+misma nota de cierre de Bloque~C.3 se agregaron en prompts posteriores
+dentro de la misma Tercera Entrega). Ningún dato de rendimiento,
+usabilidad o accesibilidad reportado en este documento fue inventado o
+extrapolado -- donde la evidencia no existe (Bloque~C.3, usabilidad/SUS),
+se declaró explícitamente como no ejecutada.}
 
 \end{document}
