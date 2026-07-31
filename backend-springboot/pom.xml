@@ -175,6 +175,45 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- Bloque C.4: cobertura de dominio/servicios. Se excluyen del
+			     analisis las clases que no aportan valor real medido con
+			     cobertura de linea/rama:
+			     - dto/**: records planos sin logica (solo transporte de datos).
+			     - entity/**: entidades JPA con @Data (getters/setters generados
+			       por Lombok), sin metodos de negocio propios.
+			     - config/**: clases @Configuration que solo definen beans
+			       (wiring de framework), no logica de negocio testeable de forma
+			       aislada; probarlas de verdad requeriria un contexto Spring
+			       completo, que ya cubren los tests de arranque/integracion.
+			     - BackendApplication: punto de entrada (main), sin logica. -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.12</version>
+				<configuration>
+					<excludes>
+						<exclude>com/uteq/backend/dto/**</exclude>
+						<exclude>com/uteq/backend/entity/**</exclude>
+						<exclude>com/uteq/backend/config/**</exclude>
+						<exclude>com/uteq/backend/BackendApplication.class</exclude>
+					</excludes>
+				</configuration>
+				<executions>
+					<execution>
+						<id>jacoco-prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>jacoco-report</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 

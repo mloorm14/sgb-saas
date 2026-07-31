@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MultaService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.service</a> &gt; <span class="el_source">MultaService.java</span></div><h1>MultaService.java</h1><pre class="source lang-java linenums">package com.uteq.backend.service;
+
+import com.uteq.backend.dto.MultaAccionResponseDTO;
+import com.uteq.backend.dto.MultaResponseDTO;
+import com.uteq.backend.entity.Multa;
+import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.MultaProcedureRepository;
+import com.uteq.backend.repository.MultaRepository;
+import com.uteq.backend.repository.UsuarioRepository;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
+import java.util.Set;
+
+@Service
+public class MultaService {
+
+    private static final String USUARIO_NO_ENCONTRADO = &quot;Usuario no encontrado: &quot;;
+    private static final String ROL_LECTOR = &quot;LECTOR&quot;;
+
+    // Únicos roles que sp_anular_multa acepta como p_rol_ejecutor (ver
+    // db/procs/sp_anular_multa.sql: &quot;IF p_rol_ejecutor &lt;&gt; 'GERENTE' AND
+    // p_rol_ejecutor &lt;&gt; 'ADMIN' THEN RAISE ... LB422&quot;). El @PreAuthorize
+    // del controller ya restringe el endpoint a estos 2 roles, pero se
+    // revalida acá como defensa en profundidad y para resolver CUÁL de
+    // los dos usar si el usuario tuviera ambos.
+<span class="fc" id="L34">    private static final Set&lt;String&gt; ROLES_ANULACION = Set.of(&quot;GERENTE&quot;, &quot;ADMIN&quot;);</span>
+
+    private final MultaRepository multaRepo;
+    private final MultaProcedureRepository multaProcRepo;
+    private final UsuarioRepository usuarioRepo;
+
+    public MultaService(MultaRepository multaRepo,
+                        MultaProcedureRepository multaProcRepo,
+<span class="fc" id="L42">                        UsuarioRepository usuarioRepo) {</span>
+<span class="fc" id="L43">        this.multaRepo = multaRepo;</span>
+<span class="fc" id="L44">        this.multaProcRepo = multaProcRepo;</span>
+<span class="fc" id="L45">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L46">    }</span>
+
+    @Transactional(readOnly = true)
+    public Page&lt;MultaResponseDTO&gt; listarPorUsuario(Long usuarioId, Authentication authentication, Pageable pageable) {
+<span class="nc" id="L50">        validarAccesoUsuario(usuarioId, authentication);</span>
+<span class="nc" id="L51">        return multaRepo.findByUsuarioId(usuarioId, pageable).map(this::toDTO);</span>
+    }
+
+    @Transactional
+    public MultaAccionResponseDTO pagar(Long multaId) {
+<span class="fc" id="L56">        Map&lt;String, Object&gt; resultado = multaProcRepo.spPagarMulta(multaId);</span>
+<span class="fc" id="L57">        return new MultaAccionResponseDTO(</span>
+<span class="fc" id="L58">                (Long) resultado.get(&quot;o_multa_id&quot;),</span>
+<span class="fc" id="L59">                (Boolean) resultado.get(&quot;o_usuario_desbloqueado&quot;));</span>
+    }
+
+    @Transactional
+    public MultaAccionResponseDTO anular(Long multaId, String motivo, Authentication authentication) {
+<span class="fc" id="L64">        String rolEjecutor = resolverRolAnulacion(authentication);</span>
+<span class="fc" id="L65">        Map&lt;String, Object&gt; resultado = multaProcRepo.spAnularMulta(multaId, motivo, rolEjecutor);</span>
+<span class="fc" id="L66">        return new MultaAccionResponseDTO(</span>
+<span class="fc" id="L67">                (Long) resultado.get(&quot;o_multa_id&quot;),</span>
+<span class="fc" id="L68">                (Boolean) resultado.get(&quot;o_usuario_desbloqueado&quot;));</span>
+    }
+
+    // ── p_rol_ejecutor SIEMPRE desde las authorities reales del token,
+    // nunca desde el body del request (ver Javadoc de AnulacionMultaRequestDTO). ──
+    private String resolverRolAnulacion(Authentication authentication) {
+<span class="fc" id="L74">        return authentication.getAuthorities().stream()</span>
+<span class="fc" id="L75">                .map(GrantedAuthority::getAuthority)</span>
+<span class="fc" id="L76">                .filter(rol -&gt; rol.startsWith(&quot;ROLE_&quot;))</span>
+<span class="fc" id="L77">                .map(rol -&gt; rol.substring(&quot;ROLE_&quot;.length()))</span>
+<span class="fc" id="L78">                .filter(ROLES_ANULACION::contains)</span>
+<span class="fc" id="L79">                .findFirst()</span>
+<span class="fc" id="L80">                .orElseThrow(() -&gt; new AuthorizationDeniedException(</span>
+                        &quot;Solo GERENTE o ADMIN puede anular multas.&quot;));
+    }
+
+    // ── &quot;Propio vs cualquiera&quot;, mismo patrón que PrestamoService/ReservacionService. ──
+    private void validarAccesoUsuario(Long usuarioIdSolicitado, Authentication authentication) {
+<span class="fc" id="L86">        boolean esLector = authentication.getAuthorities().stream()</span>
+<span class="fc" id="L87">                .map(GrantedAuthority::getAuthority)</span>
+<span class="fc" id="L88">                .anyMatch(rol -&gt; rol.equals(&quot;ROLE_&quot; + ROL_LECTOR));</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        if (!esLector) {</span>
+<span class="nc" id="L90">            return;</span>
+        }
+<span class="fc" id="L92">        Long idPropio = resolverIdPorCorreo(authentication.getName());</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">        if (!idPropio.equals(usuarioIdSolicitado)) {</span>
+<span class="fc" id="L94">            throw new AuthorizationDeniedException(</span>
+                    &quot;Un LECTOR solo puede consultar sus propias multas.&quot;);
+        }
+<span class="nc" id="L97">    }</span>
+
+    private Long resolverIdPorCorreo(String correo) {
+<span class="fc" id="L100">        Usuario usuario = usuarioRepo.findByCorreo(correo)</span>
+<span class="pc" id="L101">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo));</span>
+<span class="fc" id="L102">        return usuario.getId();</span>
+    }
+
+    private MultaResponseDTO toDTO(Multa m) {
+<span class="nc" id="L106">        return new MultaResponseDTO(</span>
+<span class="nc" id="L107">                m.getId(),</span>
+<span class="nc" id="L108">                m.getPrestamoId(),</span>
+<span class="nc" id="L109">                m.getMonto(),</span>
+<span class="nc" id="L110">                m.getEstadoMultaId(),</span>
+<span class="nc" id="L111">                m.getFechaGenerada(),</span>
+<span class="nc" id="L112">                m.getFechaPagada(),</span>
+<span class="nc" id="L113">                m.getObservaciones());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -13,6 +13,12 @@ de que alguien recuerde el formato cada vez.
 - `docs/mediciones/perf/` — resultados de pruebas de carga/rendimiento
   (k6 — Bloque C.1). Aún no tiene archivos: se crea con la primera
   corrida real (`make bench` referencia esta carpeta desde ya).
+- `docs/mediciones/jacoco/` — reporte de cobertura del backend (Bloque
+  C.4): `report.xml`/`report.csv` (salida cruda de `jacoco-maven-plugin`)
+  y `html/` (reporte navegable completo), regenerados con cada corrida
+  real de `./mvnw clean verify` en `backend-springboot/`. El `.md` de
+  evidencia con el análisis va suelto en la misma carpeta, mismo criterio
+  de nombre que el resto (`YYYY-MM-DD-descripcion-corta.md`).
 - Otras subcarpetas se agregan según el tipo de medición (ej. `docs/mediciones/sus/`
   si se hace una encuesta System Usability Scale), siguiendo el mismo
   criterio: una subcarpeta por tipo de evidencia, no todo suelto en la raíz.

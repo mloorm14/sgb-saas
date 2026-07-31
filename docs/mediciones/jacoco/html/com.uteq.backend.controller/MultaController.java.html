@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MultaController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.controller</a> &gt; <span class="el_source">MultaController.java</span></div><h1>MultaController.java</h1><pre class="source lang-java linenums">package com.uteq.backend.controller;
+
+import com.uteq.backend.dto.AnulacionMultaRequestDTO;
+import com.uteq.backend.dto.MultaAccionResponseDTO;
+import com.uteq.backend.dto.MultaResponseDTO;
+import com.uteq.backend.service.MultaService;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping(&quot;/api/v1/multas&quot;)
+public class MultaController {
+
+    private final MultaService multaService;
+
+<span class="fc" id="L22">    public MultaController(MultaService multaService) {</span>
+<span class="fc" id="L23">        this.multaService = multaService;</span>
+<span class="fc" id="L24">    }</span>
+
+    // ── GET /api/v1/multas/usuario/{usuarioId} ────────────
+    @GetMapping(&quot;/usuario/{usuarioId}&quot;)
+    @PreAuthorize(&quot;hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE')&quot;)
+    public ResponseEntity&lt;Page&lt;MultaResponseDTO&gt;&gt; listarPorUsuario(
+            @PathVariable Long usuarioId,
+            Authentication authentication,
+            @PageableDefault(size = 10, sort = &quot;fechaGenerada&quot;) Pageable pageable) {
+<span class="nc" id="L33">        return ResponseEntity.ok(</span>
+<span class="nc" id="L34">                multaService.listarPorUsuario(usuarioId, authentication, pageable));</span>
+    }
+
+    // ── POST /api/v1/multas/{id}/pago ─────────────────────
+    @PostMapping(&quot;/{id}/pago&quot;)
+    @PreAuthorize(&quot;hasAnyRole('BIBLIOTECARIO','GERENTE')&quot;)
+    public ResponseEntity&lt;MultaAccionResponseDTO&gt; pagar(@PathVariable Long id) {
+<span class="nc" id="L41">        return ResponseEntity.ok(multaService.pagar(id));</span>
+    }
+
+    // ── POST /api/v1/multas/{id}/anulacion ────────────────
+    @PostMapping(&quot;/{id}/anulacion&quot;)
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;MultaAccionResponseDTO&gt; anular(
+            @PathVariable Long id,
+            @Valid @RequestBody AnulacionMultaRequestDTO dto,
+            Authentication authentication) {
+<span class="nc" id="L51">        return ResponseEntity.ok(multaService.anular(id, dto.motivo(), authentication));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
