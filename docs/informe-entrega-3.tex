@@ -1,0 +1,1127 @@
+\documentclass[12pt,a4paper]{article}
+
+% ===== PAQUETES =====
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{colortbl}
+\usepackage{tabularx}
+\usepackage{parskip}
+\usepackage{multirow}
+
+% ===== GEOMETRÍA =====
+\geometry{
+  top=2.5cm, bottom=2.5cm,
+  left=3cm,  right=2.5cm
+}
+
+% ===== COLORES =====
+\definecolor{verdeuteq}{RGB}{0,92,47}
+\definecolor{verdelight}{RGB}{0,128,64}
+\definecolor{javacolor}{RGB}{200,95,20}
+\definecolor{sqlcolor}{RGB}{0,100,180}
+\definecolor{angularcolor}{RGB}{221,30,40}
+\definecolor{owaspborder}{RGB}{180,130,0}
+\definecolor{gapcolor}{RGB}{200,120,0}
+\definecolor{pendientecolor}{RGB}{130,130,130}
+\definecolor{grisclaro}{RGB}{240,240,240}
+
+% ===== HYPERREF =====
+\hypersetup{
+  colorlinks=true,
+  linkcolor=verdeuteq,
+  urlcolor=verdelight,
+  citecolor=verdeuteq,
+  pdftitle={SGB-SaaS -- Tercera Entrega -- Consolidacion, Reproducibilidad y Evidencia Empirica},
+  pdfauthor={Cajas Ibarra Irvin Marcelo, Loor Medranda Marlon Taylor, Panama Murillo Moises Antonio -- UTEQ}
+}
+
+% ===== ENCABEZADOS =====
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[L]{\small SGB-SaaS --- Tercera Entrega}
+\fancyhead[R]{\small \texttt{v0.9.0-rc}}
+\fancyfoot[C]{\thepage}
+
+\titleformat{\section}{\normalfont\Large\bfseries\color{verdeuteq}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries\color{verdeuteq}}{\thesubsection}{0.6em}{}
+
+% ===== BADGES =====
+\newcommand{\badgeJAVA}{\colorbox{javacolor}{\color{white}\small\bfseries\ Java 21 / Spring Boot 4\ }}
+\newcommand{\badgeSQL}{\colorbox{sqlcolor}{\color{white}\small\bfseries\ PostgreSQL 16\ }}
+\newcommand{\badgeOWASP}{\colorbox{verdeuteq}{\color{white}\small\bfseries\ OWASP\ }}
+\newcommand{\badgeANGULAR}{\colorbox{angularcolor}{\color{white}\small\bfseries\ Angular 17\ }}
+\newcommand{\badgeREDIS}{\colorbox{owaspborder}{\color{white}\small\bfseries\ Redis 7\ }}
+
+% ===== ESTADOS (badges de tabla) =====
+\newcommand{\estadoPasa}{\colorbox{verdelight}{\color{white}\small\bfseries\ PASA\ }}
+\newcommand{\estadoCorregido}{\colorbox{verdeuteq}{\color{white}\small\bfseries\ CORREGIDO\ }}
+\newcommand{\estadoGap}{\colorbox{gapcolor}{\color{white}\small\bfseries\ GAP CONOCIDO\ }}
+\newcommand{\estadoPendiente}{\colorbox{pendientecolor}{\color{white}\small\bfseries\ NO EJECUTADO\ }}
+\newcommand{\estadoVerificado}{\colorbox{verdelight}{\color{white}\small\bfseries\ verificado\ }}
+\newcommand{\estadoImplementado}{\colorbox{sqlcolor}{\color{white}\small\bfseries\ implementado\ }}
+\newcommand{\estadoPend}{\colorbox{gapcolor}{\color{white}\small\bfseries\ pendiente\ }}
+
+% Nota honesta (caja resaltada). Nota tecnica: NO usar un entorno tabularx
+% de una sola columna X para esto -- un segundo entorno tabularx mas
+% adelante en el documento revienta con "Missing }"/"Misplaced \noalign"
+% (bug real de interaccion entre dos tabularx con distinta cantidad de
+% columnas, confirmado aislando el caso minimo). Se usa colorbox+parbox
+% en su lugar, sin entorno reutilizable (un solo uso en todo el documento).
+
+\begin{document}
+
+% ============================================================
+% PORTADA
+% ============================================================
+\thispagestyle{empty}
+\begin{titlepage}
+\centering
+\vspace*{1cm}
+
+{\large\bfseries Universidad Técnica Estatal de Quevedo (UTEQ)}\\[0.2cm]
+{\normalsize Facultad de Ciencias de la Computación y Diseño Digital}\\[0.1cm]
+{\normalsize Carrera de Ingeniería de Software}\\[0.1cm]
+{\normalsize Asignatura: Aplicaciones Web --- Período académico 2026--2027}\\[1.5cm]
+
+\rule{0.8\linewidth}{1pt}\\[0.4cm]
+{\Large\bfseries\color{verdeuteq} Sistema de Gestión Bibliotecaria Web (SGB-SaaS)}\\[0.3cm]
+{\large Tercera Entrega --- Consolidación, Reproducibilidad Automática\\ y Evidencia Empírica Cuantitativa}\\[0.4cm]
+\rule{0.8\linewidth}{1pt}\\[1cm]
+
+\begin{center}
+\badgeJAVA\quad\badgeANGULAR\quad\badgeSQL\quad\badgeREDIS\quad\badgeOWASP
+\end{center}
+
+\vspace{1cm}
+
+{\normalsize\bfseries Integrantes:}\\[0.2cm]
+\begin{tabular}{ll}
+Cajas Ibarra Irvin Marcelo & C.I.: 1251039606 \\
+Loor Medranda Marlon Taylor & C.I.: 0928087469 \\
+Panama Murillo Moises Antonio & C.I.: 1251334544 \\
+\end{tabular}\\[1cm]
+
+{\normalsize\bfseries Docente:}\\
+Ing. Gleiston Cicerón Guerrero Ulloa, Ph.D.\\[1cm]
+
+{\normalsize\bfseries Fecha de cierre:}\\
+24 de julio de 2026\\[1cm]
+
+{\normalsize\bfseries Repositorio:}\\
+\url{https://github.com/mloorm14/sgb-saas} \quad --- \quad Rama: \texttt{main}\\[0.5cm]
+
+{\normalsize\bfseries Tag de esta entrega:} \texttt{v0.9.0-rc} (release candidate)\\[0.2cm]
+{\small Commit tagueado (completo):}\\
+{\small\texttt{c6b372c9cdaee878ae5be004a00835bec4e3245a}}\\[0.1cm]
+{\small Commit (corto): \texttt{c6b372c}}\\[0.5cm]
+
+{\normalsize\bfseries DOI:}\\
+{\small pendiente de asignación (ver \texttt{README.md} tras publicación en Zenodo)}\\[1cm]
+
+\vfill
+{\small SOFT-R-A --- 5to Nivel --- Proyecto Fin de Curso (PFC), Tercera Entrega}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ============================================================
+% 1. RESUMEN EJECUTIVO
+% ============================================================
+\section{Resumen ejecutivo}
+
+SGB-SaaS es un sistema web de gestión bibliotecaria construido como
+Proyecto Fin de Curso (PFC) de la asignatura Aplicaciones Web, con una
+arquitectura de tres capas: frontend SPA en Angular~17, backend API REST
+en Spring Boot~4.0.6 (Java~21), persistencia en PostgreSQL~16 y una capa
+de caché/blacklist de tokens en Redis~7. El sistema modela el ciclo
+completo de una biblioteca institucional: catálogo de libros, préstamos,
+reservaciones, multas y administración de usuarios bajo control de
+acceso basado en roles (RBAC).
+
+Esta Tercera Entrega consolida el trabajo iniciado en la Entrega~1B
+(tag \texttt{v0.1.0-entrega-1b}) sobre cinco frentes concretos:
+
+\begin{enumerate}[leftmargin=1.2cm]
+  \item \textbf{RBAC normalizado.} El antiguo campo de texto libre
+    \texttt{rol} se reemplazó por un modelo relacional completo
+    (\texttt{roles}, \texttt{usuario\_roles}, \texttt{permisos},
+    \texttt{rol\_permisos}) con cuatro roles (\texttt{LECTOR},
+    \texttt{BIBLIOTECARIO}, \texttt{GERENTE}, \texttt{ADMIN}) aplicados
+    consistentemente vía \texttt{@PreAuthorize} en cada endpoint
+    (ADR-010).
+  \item \textbf{Estrategia híbrida de acceso a datos.} Las operaciones
+    CRUD elementales usan Spring Data JPA; las operaciones con lógica de
+    negocio transaccional multi-tabla (registrar devolución, pagar
+    multa, anular multa, crear préstamo) se implementan como
+    procedimientos almacenados de PostgreSQL, documentados en
+    \texttt{docs/basedatos/CATALOGO-SP.md} y formalizados en ADR-013.
+  \item \textbf{Módulo funcional de Préstamos, Reservaciones y Multas.}
+    Construido sobre el modelo de datos normalizado, con 5 procedimientos
+    almacenados propios y su correspondiente capa de controladores REST
+    (\texttt{PrestamoController}, \texttt{ReservacionController},
+    \texttt{MultaController}).
+  \item \textbf{Seguridad reforzada mediante auditoría activa.} No solo
+    se documentó la postura de seguridad frente a OWASP Top~10 --
+    se ejecutaron 6 auditorías en vivo contra el stack real, y dos
+    hallazgos verdaderos que esas auditorías destaparon
+    (ausencia de rate limiting en login, ausencia total de logging de
+    eventos de autenticación) se corrigieron dentro de esta misma
+    entrega, con evidencia de antes/después.
+  \item \textbf{Reproducibilidad automática.} Scripts dedicados
+    (\texttt{scripts/mediciones-header.sh},
+    \texttt{scripts/validate-traceability.sh},
+    \texttt{scripts/build-init-sql.sh}) garantizan que cualquier
+    evidencia nueva capture versiones exactas de herramientas y que la
+    matriz de trazabilidad se valide automáticamente en CI.
+\end{enumerate}
+
+\subsection*{Estado real, sin maquillar}
+
+Con la misma honestidad que exige la guía de esta entrega (Bloque~B.2:
+``la edición manual de un archivo crudo de mediciones invalida la
+evidencia''), este informe distingue explícitamente lo que se completó
+de lo que no:
+
+\textbf{Completo, con evidencia real verificable:}
+seguridad (auditoría OWASP de 6 controles + 2 correcciones en vivo),
+cobertura de código (JaCoCo real, 75{,}85\,\% de líneas sobre el
+dominio/servicios), matriz de trazabilidad (30 requisitos, validación
+automática en CI), 13 Architecture Decision Records
+\footnote{Nota de precisión: el repositorio contiene actualmente 10
+archivos de ADR (\texttt{docs/adr/}), no 13 -- ver
+\autoref{sec:estado-sistema} para el detalle exacto. Se corrige aquí la
+cifra en vez de repetir un número que no coincide con el estado real del
+repositorio, siguiendo el mismo criterio de honestidad que exige el resto
+de esta entrega.}, licencia MIT, colección Postman con 39 requests
+verificados en vivo.
+
+\textbf{Con evidencia parcial o diferida, declarado explícitamente:}
+TLS en tránsito (OWASP A02, entorno de desarrollo sobre HTTP plano por
+diseño -- exigido recién en Entrega Final), \emph{Content-Security-Policy}
+(OWASP A05), y tres de los cinco sub-bloques de evidencia empírica del
+Bloque~C -- rendimiento (k6), usabilidad (SUS) y accesibilidad
+(Lighthouse) -- que quedan \textbf{no ejecutados} en esta entrega por
+restricciones reales de tiempo del equipo, con toda su configuración y
+protocolo ya preparados para ejecutarse antes de la Entrega Final (ver
+\autoref{sec:protocolo} y \autoref{sec:resultados}).
+
+% ============================================================
+% 2. ESTADO DEL SISTEMA
+% ============================================================
+\section{Estado del sistema}
+\label{sec:estado-sistema}
+
+\subsection{Pila tecnológica}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\rowcolor{verdeuteq}
+\color{white}\textbf{Capa} & \color{white}\textbf{Tecnología} & \color{white}\textbf{Rol} \\
+\hline
+Frontend & Angular 17 (TypeScript) & SPA, formularios reactivos, sesión en memoria \\
+\hline
+Backend & Spring Boot 4.0.6 / Java 21 & API REST, JWT+RBAC, lógica de negocio \\
+\hline
+Base de datos & PostgreSQL 16 & 26 tablas, 7 procedimientos/funciones SQL \\
+\hline
+Caché/Sesión & Redis 7 & Blacklist de JWT revocados, caché del catálogo \\
+\hline
+Orquestación & Docker Compose & 4 contenedores, imágenes pinadas por digest \\
+\hline
+\end{tabular}
+\end{center}
+
+La elección de cada componente de esta pila, con alternativas
+consideradas y descartadas, está formalizada en ADR-001 (pila principal),
+ADR-011 (PostgreSQL sobre MySQL/MongoDB) y ADR-012 (Docker Compose sobre
+Kubernetes) -- este informe no duplica ese detalle, remite a
+\texttt{docs/adr/} para el razonamiento completo de cada decisión.
+
+\subsection{Módulos funcionales}
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{Auth} (\texttt{/api/auth/*}): registro, login, logout,
+    refresco de \texttt{accessToken} vía cookie \texttt{HttpOnly}.
+    Rate limiting de intentos fallidos (Redis, 5 intentos / 900\,s) y
+    bitácora de auditoría (\texttt{bitacora\_auditoria}) para
+    \texttt{LOGIN\_OK}/\texttt{LOGIN\_FAIL}/\texttt{LOGOUT}.
+  \item \textbf{Libros} (\texttt{/api/v1/libros}): CRUD completo vía
+    Spring Data JPA, caché Redis de la operación de listado con TTL
+    configurable externamente (\texttt{CACHE\_LIBROS\_TTL\_SECONDS}).
+  \item \textbf{Préstamos} (\texttt{/api/v1/prestamos}): creación y
+    devolución vía procedimientos almacenados transaccionales
+    (\texttt{sp\_crear\_prestamo}, \texttt{sp\_registrar\_devolucion}),
+    listados por usuario, reporte de libros más prestados.
+  \item \textbf{Reservaciones} (\texttt{/api/v1/reservaciones}): creación
+    y listado por usuario; expiración automática de reservaciones
+    vencidas vía \texttt{ReservacionScheduler} (job programado).
+  \item \textbf{Multas} (\texttt{/api/v1/multas}): listado, pago y
+    anulación (\texttt{sp\_pagar\_multa}, \texttt{sp\_anular\_multa}),
+    esta última restringida a \texttt{GERENTE}/\texttt{ADMIN}
+    exclusivamente.
+\end{itemize}
+
+\subsection{Inventario de endpoints y roles requeridos}
+
+Inventario completo de los 19 endpoints REST del backend, verificado
+línea por línea contra los 5 \texttt{@RestController} reales (no
+inferido) -- misma fuente usada para construir
+\texttt{docs/postman/coleccion.json}.
+
+\begin{center}
+\small
+\begin{longtable}{|l|l|l|}
+\hline
+\rowcolor{verdeuteq}
+\color{white}\textbf{Método y ruta} & \color{white}\textbf{Roles} & \color{white}\textbf{Controller} \\
+\hline
+\endhead
+\texttt{POST /api/auth/registro} & público & \texttt{AuthController} \\ \hline
+\texttt{POST /api/auth/login} & público & \texttt{AuthController} \\ \hline
+\texttt{POST /api/auth/refresh} & público (cookie) & \texttt{AuthController} \\ \hline
+\texttt{POST /api/auth/logout} & autenticado & \texttt{AuthController} \\ \hline
+\texttt{GET /api/v1/libros} & LECTOR+ & \texttt{LibroController} \\ \hline
+\texttt{GET /api/v1/libros/\{id\}} & LECTOR+ & \texttt{LibroController} \\ \hline
+\texttt{POST /api/v1/libros} & BIBLIOTECARIO+ & \texttt{LibroController} \\ \hline
+\texttt{PUT /api/v1/libros/\{id\}} & BIBLIOTECARIO+ & \texttt{LibroController} \\ \hline
+\texttt{DELETE /api/v1/libros/\{id\}} & BIBLIOTECARIO+ & \texttt{LibroController} \\ \hline
+\texttt{POST /api/v1/prestamos} & BIBLIOTECARIO/GERENTE & \texttt{PrestamoController} \\ \hline
+\texttt{POST /api/v1/prestamos/\{id\}/devolucion} & BIBLIOTECARIO/GERENTE & \texttt{PrestamoController} \\ \hline
+\texttt{GET /api/v1/prestamos/usuario/\{id\}} & LECTOR/BIBLIOTECARIO/GERENTE & \texttt{PrestamoController} \\ \hline
+\texttt{GET /api/v1/prestamos/usuario/\{id\}/activos} & LECTOR/BIBLIOTECARIO/GERENTE & \texttt{PrestamoController} \\ \hline
+\texttt{GET /api/v1/prestamos/reportes/libros-mas-prestados} & BIBLIOTECARIO/GERENTE & \texttt{PrestamoController} \\ \hline
+\texttt{POST /api/v1/reservaciones} & LECTOR/BIBLIOTECARIO/GERENTE & \texttt{ReservacionController} \\ \hline
+\texttt{GET /api/v1/reservaciones/usuario/\{id\}} & LECTOR/BIBLIOTECARIO/GERENTE & \texttt{ReservacionController} \\ \hline
+\texttt{GET /api/v1/multas/usuario/\{id\}} & LECTOR/BIBLIOTECARIO/GERENTE & \texttt{MultaController} \\ \hline
+\texttt{POST /api/v1/multas/\{id\}/pago} & BIBLIOTECARIO/GERENTE & \texttt{MultaController} \\ \hline
+\texttt{POST /api/v1/multas/\{id\}/anulacion} & GERENTE/ADMIN & \texttt{MultaController} \\ \hline
+\end{longtable}
+\end{center}
+
+Nótese la asimetría deliberada: \texttt{LibroController} sí incluye
+\texttt{ADMIN} en sus 5 endpoints (fix aplicado en esta entrega, ver
+\autoref{sec:resultados}), pero \texttt{PrestamoController} y
+\texttt{ReservacionController} \textbf{no} -- un usuario exclusivamente
+\texttt{ADMIN} recibe 403 en esos dos controllers (verificado en vivo al
+construir la colección Postman). Se documenta esta inconsistencia real en
+vez de asumir que el mismo criterio se aplicó de forma pareja en todo el
+backend.
+
+\subsection{Decisiones arquitectónicas documentadas}
+
+El repositorio contiene \textbf{10 Architecture Decision Records}
+(\texttt{docs/adr/}), que cubren de forma completa los 6 temas
+obligatorios del Bloque~D de la guía (ver índice en
+\texttt{docs/adr/README.md}) más 2 ADRs adicionales no mapeados a esos
+temas obligatorios:
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{|l|X|}
+\hline
+\rowcolor{verdeuteq}
+\color{white}\textbf{ADR} & \color{white}\textbf{Decisión} \\
+\hline
+ADR-001 & Elección de la pila tecnológica principal \\
+ADR-003 & Redis para blacklist de tokens JWT revocados \\
+ADR-006 & Esquema reproducible (Flyway + \texttt{schema.sql}/\texttt{seed.sql}) \\
+ADR-007 & Cookies \texttt{HttpOnly} para JWT -- \texttt{refreshToken} migrado, \texttt{accessToken} pendiente \\
+ADR-008 & TTL del caché Redis del catálogo, en configuración externa \\
+ADR-009 & Licencia MIT del proyecto \\
+ADR-010 & JWT stateless + RBAC normalizado sobre un campo de rol simple \\
+ADR-011 & PostgreSQL como gestor de base de datos \\
+ADR-012 & Docker Compose como estrategia de despliegue \\
+ADR-013 & Estrategia híbrida de acceso a datos: CRUD-ORM + stored procedures \\
+\hline
+\end{tabularx}
+\end{center}
+
+Este informe referencia estas decisiones por su identificador cuando
+resulta relevante, sin reproducir su contenido completo -- el detalle de
+alternativas consideradas, consecuencias y trade-offs vive únicamente en
+cada ADR, para evitar que este documento y \texttt{docs/adr/} diverjan
+con el tiempo.
+
+% ============================================================
+% 3. ARQUITECTURA (C4)
+% ============================================================
+\section{Arquitectura del sistema (Modelo C4)}
+
+El modelo C4 de SGB-SaaS está versionado como código fuente en
+\texttt{docs/arquitectura/workspace.dsl} (Structurizr DSL), que
+reemplaza los diagramas estáticos sin fuente versionada de la Entrega~1A
+(\texttt{docs/diagramas/diagrama\_c4\_capa1.png} y
+\texttt{diagrama\_c4\_capa2.jpeg}).
+
+\subsection{Nivel 1 -- Contexto del sistema}
+
+Cinco actores interactúan con SGB-SaaS como caja negra: \textbf{Lector}
+(consulta catálogo, reserva, ve su historial), \textbf{Bibliotecario}
+(registra préstamos/devoluciones/multas), \textbf{Gerente} (administra
+personal, catálogos maestros y reportes), \textbf{Administrador}
+(configura parámetros del sistema -- rol que \emph{no existía} en el
+diseño de Entrega~1A, se agregó al normalizar RBAC) y
+\textbf{Visitante anónimo} (solo puede registrarse o iniciar sesión).
+
+\subsection{Nivel 2 -- Contenedores}
+
+Cuatro contenedores, alineados 1:1 con \texttt{docker-compose.yml}:
+Frontend Angular (SPA, sesión en memoria -- nunca \texttt{localStorage}),
+Backend Spring Boot (API REST, JWT+RBAC), PostgreSQL (26 tablas) y Redis
+(blacklist de JWT + caché de catálogo).
+
+\subsubsection*{Diferencias documentadas respecto al diseño original de Entrega 1A}
+
+El propio \texttt{workspace.dsl} documenta tres discrepancias reales
+entre el diseño original y el sistema implementado, en vez de dibujar
+capacidades que no existen:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{Gemini~2.0~Flash API y Google Books API} aparecían como
+    sistemas externos en el diseño de Entrega~1A. Se \textbf{retiraron}
+    del diagrama actual: no existe ninguna integración con ellos en el
+    código real del backend ni del frontend (verificado por búsqueda en
+    el código fuente).
+  \item \textbf{Catálogo público sin autenticación}: el diseño
+    contemplaba que el \emph{Visitante anónimo} pudiera navegar el
+    catálogo sin cuenta. En la implementación real,
+    \texttt{LibroController} exige rol \texttt{LECTOR} (o superior)
+    incluso para listar libros -- el visitante anónimo hoy solo puede
+    registrarse o iniciar sesión. Discrepancia real entre diseño e
+    implementación, documentada explícitamente en vez de ocultada.
+  \item \textbf{Contenedor Redis y rol Administrador}: ambos ausentes del
+    diagrama de Entrega~1A, agregados en esta entrega como consecuencia
+    directa de la normalización RBAC y de la revocación de tokens vía
+    blacklist.
+\end{itemize}
+
+\subsection{Nivel 3 -- Componentes}
+
+\textbf{Pendiente para la Entrega Final, por decisión explícita tomada
+durante el desarrollo de esta entrega} -- no es un olvido. El propio
+\texttt{workspace.dsl} documenta el motivo: el detalle fino de
+componentes del backend de Préstamos podía cambiar mientras el módulo
+seguía en desarrollo activo durante esta entrega, y construir el
+diagrama de Nivel~3 dos veces (una ahora, otra cuando el módulo se
+estabilizara) habría sido trabajo perdido. Con el módulo de
+Préstamos/Reservaciones/Multas ya completo y commiteado al cierre de
+esta entrega, el Nivel~3 puede construirse sobre una base estable en la
+Entrega Final.
+
+\par\vspace{0.3cm}\noindent\colorbox{grisclaro}{\parbox{0.94\linewidth}{\vspace{0.15cm}
+\textbf{Sobre la exportación a PNG.} Los diagramas C4 de Nivel~1 y
+Nivel~2 existen y están validados sintácticamente
+(\texttt{structurizr/cli validate}, exit code~0), pero \textbf{no se
+incluye una imagen PNG exportada en este informe}: la exportación a PNG
+está documentada como pendiente de integración al pipeline de CI
+(Bloque~B) directamente en los comentarios de cabecera de
+\texttt{docs/arquitectura/workspace.dsl}, que además deja documentado el
+procedimiento completo de dos pasos (Structurizr CLI~$\to$~PlantUML~$\to$~PNG,
+o revisión interactiva vía \texttt{structurizr/lite}) para cuando se
+integre. Los diagramas están disponibles en formato Structurizr DSL en
+\texttt{docs/arquitectura/workspace.dsl}, ejecutable/visualizable por
+cualquier evaluador con Docker.
+\vspace{0.15cm}}}\vspace{0.3cm}\par
+
+\subsection{Atributos de calidad (ISO/IEC 25010)}
+
+\texttt{docs/arquitectura/ISO25010.md} prioriza las 8 características de
+calidad de producto de la norma para el contexto específico de este
+proyecto (biblioteca universitaria de bajo volumen, no un sistema de alta
+concurrencia). De las 8, cinco se priorizan como \textbf{Alta}
+(Adecuación funcional, Usabilidad, Fiabilidad, Seguridad,
+Mantenibilidad, Portabilidad -- seis, en realidad, ver el documento
+fuente para el detalle exacto), con su estrategia concreta de mitigación
+citada junto al ADR correspondiente cuando existe uno. Un ejemplo
+representativo: \emph{Fiabilidad} se documenta honestamente como
+\textbf{parcialmente atendida} -- ADR-003 deja anotado que, si Redis cae,
+\texttt{JwtAuthFilter} queda sin forma de verificar revocaciones, y la
+decisión \emph{fail-open} vs.\ \emph{fail-closed} sigue \textbf{pendiente
+para producción}, no resuelta.
+
+% ============================================================
+% 4. MATRIZ DE TRAZABILIDAD
+% ============================================================
+\section{Matriz de trazabilidad}
+\label{sec:matriz}
+
+La matriz completa vive en \texttt{docs/trazabilidad/matriz.csv}
+(30 filas, columnas: \texttt{id\_requisito}, \texttt{tipo},
+\texttt{prioridad\_moscow}, \texttt{historia\_usuario},
+\texttt{caso\_de\_uso}, \texttt{modulo\_codigo}, \texttt{endpoint\_api},
+\texttt{prueba\_automatizada}, \texttt{tipo\_acceso},
+\texttt{evidencia\_empirica}, \texttt{estado}) y se valida
+automáticamente en cada corrida de CI vía
+\texttt{scripts/validate-traceability.sh}, que rechaza el build si algún
+requisito \texttt{Must} carece de historia de usuario o caso de uso, o si
+algún requisito marcado \texttt{verificado} carece de prueba automatizada
+real. Este informe no reproduce las 30 filas -- resume su estado
+agregado.
+
+\subsection{Resumen agregado}
+
+\begin{center}
+\begin{tabular}{|l|c|c|}
+\hline
+\rowcolor{verdeuteq}
+\color{white}\textbf{Dimensión} & \color{white}\textbf{Categoría} & \color{white}\textbf{Cantidad} \\
+\hline
+\multirow{2}{*}{Tipo} & Funcional & 16 \\
+ & No funcional & 14 \\
+\hline
+\multirow{2}{*}{Prioridad MoSCoW} & Must & 23 \\
+ & Should & 7 \\
+\hline
+\multirow{3}{*}{Estado} & verificado & 21 \\
+ & implementado & 7 \\
+ & pendiente & 2 \\
+\hline
+\textbf{Total} & & \textbf{30} \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Cruce prioridad $\times$ estado}
+
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\rowcolor{verdeuteq}
+\color{white}\textbf{Prioridad} & \color{white}\estadoVerificado & \color{white}\estadoImplementado & \color{white}\estadoPend \\
+\hline
+Must (23) & 21 & 2 & 0 \\
+Should (7) & 0 & 5 & 2 \\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Ningún requisito \texttt{Must} quedó \texttt{pendiente}}: los 23
+requisitos de prioridad más alta están al menos \texttt{implementado}
+(21 con evidencia empírica completa + prueba automatizada real, 2 con el
+código funcionando pero evidencia empírica parcial). Los únicos 2
+requisitos genuinamente \texttt{pendiente} son de prioridad
+\texttt{Should}: \texttt{REQ-NF-012} (transporte TLS, mapeado a OWASP
+A02) y \texttt{REQ-NF-014} (cabeceras de seguridad/CSP en
+\texttt{SecurityConfig} y \texttt{nginx.conf}, mapeado a OWASP A05) --
+ambos reclasificados explícitamente de \texttt{Must} a \texttt{Should}
+durante esta entrega, con el criterio de que un entorno de desarrollo
+sin exposición pública no justifica exigir TLS real hoy (la guía exige
+un entorno públicamente accesible con TLS recién en la Entrega Final).
+Este mapeo es consistente con el detalle completo del
+\autoref{sec:resultados}, subsección de Seguridad.
+
+\subsection{Trazabilidad de los dos fixes de seguridad de esta entrega}
+
+\texttt{REQ-F-005} y \texttt{REQ-F-006} (catálogo de libros) pasaron de
+\texttt{implementado} a \texttt{verificado} dentro de esta misma entrega,
+como consecuencia directa del fix de rol \texttt{ADMIN} en
+\texttt{LibroController} (ver \autoref{sec:resultados}): antes de ese
+fix, la evidencia empírica de esos dos requisitos era parcial porque el
+control de acceso real tenía un hueco no detectado hasta que se verificó
+en vivo con una cuenta exclusivamente \texttt{ADMIN}.
+
+% ============================================================
+% 5. PROTOCOLO EXPERIMENTAL
+% ============================================================
+\section{Protocolo experimental}
+\label{sec:protocolo}
+
+\subsection{Determinismo y reproducibilidad}
+
+Toda evidencia empírica de este proyecto sigue una convención fija,
+documentada en \texttt{docs/mediciones/README.md}:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{Cabecera obligatoria generada por script, no a mano.}
+    \texttt{scripts/mediciones-header.sh} captura, en el momento exacto
+    de la corrida: fecha ISO~8601~UTC real, hash corto del commit,
+    y versiones exactas de Docker, Docker Compose, Java, Maven,
+    PostgreSQL y Redis. Ningún archivo de evidencia completa esta
+    cabecera a mano ni copia la de otro archivo.
+  \item \textbf{Convención de nombres.} Evidencia puntual:
+    \texttt{YYYY-MM-DD-descripcion-corta.md}. Corridas de k6:
+    \texttt{kNN-runM.\{json,md\}}, donde \texttt{NN} identifica el
+    escenario y \texttt{M} el número de repetición -- nunca se
+    sobrescribe una corrida anterior con el mismo nombre, para poder
+    comparar variabilidad entre corridas.
+  \item \textbf{Semilla fija obligatoria} para cualquier dato aleatorio o
+    simulado, documentada en el propio script que la usa (no solo en el
+    archivo de resultados) -- convención ya aplicada preventivamente en
+    \texttt{k6/opts.js} aunque las corridas de carga aún no se hayan
+    ejecutado.
+  \item \textbf{Archivos crudos inmutables.} La edición manual de un
+    archivo de evidencia generado por una herramienta invalida esa
+    evidencia -- los archivos de \texttt{docs/mediciones/jacoco/}
+    (\texttt{report.xml}, \texttt{report.csv}, \texttt{html/}) son la
+    salida exacta de \texttt{jacoco-maven-plugin}, sin ningún ajuste
+    posterior.
+\end{itemize}
+
+\subsection{Estado de preparación por sub-bloque del Bloque C}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{|l|X|c|}
+\hline
+\rowcolor{verdeuteq}
+\color{white}\textbf{Sub-bloque} & \color{white}\textbf{Configuración lista} & \color{white}\textbf{Ejecutado} \\
+\hline
+C.1 Rendimiento (k6) & \texttt{k6/opts.js}: perfil de 50~VUs, 30\,s de duración sostenida, con \emph{ramp-up} declarado (no salto directo a 50~VUs). 3 corridas planeadas por escenario. & No \\
+\hline
+C.2 Seguridad (OWASP) & 6 controles auditados en vivo + 2 correcciones con evidencia antes/después. & \textbf{Sí} \\
+\hline
+C.3 Usabilidad (SUS) & Plantilla de consentimiento informado (\texttt{docs/etica/consentimientos/plantilla.md}), tarea de \emph{onboarding} de 2 pasos definida, código de participante anónimo (\texttt{P01}, \texttt{P02}, \ldots). Objetivo: 10 participantes. & No \\
+\hline
+C.4 Cobertura (JaCoCo) & \texttt{jacoco-maven-plugin} configurado en \texttt{backend-springboot/pom.xml}, exclusiones documentadas. & \textbf{Sí} \\
+\hline
+C.5 Accesibilidad (Lighthouse) & No hay configuración/script propio en el repositorio todavía. & No \\
+\hline
+\end{tabularx}
+\end{center}
+
+\subsection{Por qué C.1, C.3 y C.5 no se ejecutaron en esta entrega}
+
+Declarado con la misma honestidad exigida por la guía: el tiempo
+disponible del equipo para esta Tercera Entrega se concentró en cerrar
+primero los bloques con mayor peso de evaluación y mayor riesgo si
+quedaban con evidencia fabricada o inflada -- seguridad (C.2) y cobertura
+(C.4), ambos con hallazgos reales que corregir, no solo medir. Ejecutar
+k6/SUS/Lighthouse \emph{de forma apresurada} solo para poder marcar la
+casilla habría producido números sin valor real (una corrida de 50~VUs
+contra un entorno de desarrollo sin caracterizar previamente, o una
+prueba SUS con menos de los 10 participantes objetivo, no aportan
+evidencia confiable) -- se prefirió declarar estos tres sub-bloques como
+\textbf{no ejecutados}, con su protocolo completo y reproducible ya
+preparado, en vez de generar datos de relleno. Ver
+\autoref{sec:amenazas} para el análisis crítico de esta decisión.
+
+% ============================================================
+% 6. RESULTADOS POR BLOQUE
+% ============================================================
+\section{Resultados por bloque}
+\label{sec:resultados}
+
+\subsection{Seguridad (OWASP Top 10) -- Bloque C.2}
+
+Se auditaron 6 controles del OWASP Top~10:2021 en vivo contra el stack
+Docker real (\texttt{docker compose up -d --build}), documentados en
+\texttt{docs/mediciones/sec/}. Dos de los seis hallazgos iniciales eran
+gaps reales que \textbf{se corrigieron dentro de esta misma entrega},
+con evidencia de antes y después contra el mismo comando de verificación.
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{|l|X|c|}
+\hline
+\rowcolor{verdeuteq}
+\color{white}\textbf{Control} & \color{white}\textbf{Hallazgo} & \color{white}\textbf{Estado} \\
+\hline
+A01 -- Control de acceso roto &
+Acceso cruzado entre usuarios LECTOR (\texttt{GET~/api/v1/prestamos/usuario/\{id\}} de otro usuario) rechazado con 403 real. &
+\estadoPasa \\
+\hline
+A02 -- Fallos criptográficos &
+Sin TLS activo en el entorno de desarrollo (HTTP plano, \texttt{docker-compose.yml} sin proxy TLS) -- exigido recién en Entrega Final. Código sí declara \texttt{Secure}/\texttt{HttpOnly}/\texttt{SameSite=Strict} en la cookie del \texttt{refreshToken}, verificado en la respuesta real. &
+\estadoGap \\
+\hline
+A03 -- Inyección &
+Payloads \texttt{' OR '1'='1} y \texttt{'; DROP TABLE usuarios; --} en campos de texto libre de \texttt{/api/auth/registro}: se guardan literalmente como texto, la tabla \texttt{usuarios} permanece intacta (verificado con un login posterior). Todo el acceso a datos usa JPA parametrizado o SPs con parámetros nombrados. &
+\estadoPasa \\
+\hline
+A05 -- Configuración de seguridad &
+\texttt{X-Content-Type-Options}/\texttt{X-Frame-Options} presentes en backend y frontend. \texttt{Content-Security-Policy} ausente en ambos -- omisión de configuración real, independiente del gap de TLS. &
+\estadoGap \\
+\hline
+A07 -- Fallos de identificación y autenticación &
+Auditoría original: 6/6 intentos fallidos de login devolvían 401 sin ningún límite (sin \texttt{bucket4j} ni filtro de rate limiting). \textbf{Corregido}: \texttt{LoginRateLimiter} (Redis, clave \texttt{correo+IP}, 5 intentos / 900\,s) -- verificado en vivo: intentos 1--5 devuelven 401, el 6.\textsuperscript{o} devuelve 429 con tiempo de espera informado; reseteo confirmado tras un login exitoso. &
+\estadoCorregido \\
+\hline
+A09 -- Fallos de registro y monitoreo &
+Auditoría original: cero líneas de log y cero filas de auditoría en login exitoso o fallido (\texttt{grep} de \texttt{Logger}/\texttt{log.} en el flujo de autenticación: sin resultados). \textbf{Corregido}: logging de aplicación (\texttt{AuthService}) + \texttt{bitacora\_auditoria} (\texttt{LOGIN\_OK}/\texttt{LOGIN\_FAIL}/\texttt{LOGOUT}) con IP, timestamp y \texttt{sub}/correo -- verificado en vivo contra logs reales y la tabla real. &
+\estadoCorregido \\
+\hline
+\end{tabularx}
+\end{center}
+
+\subsubsection*{Evidencia cruda seleccionada}
+
+Los archivos completos de \texttt{docs/mediciones/sec/} incluyen cabeceras
+HTTP íntegras, comandos exactos y análisis de cada corrida; aquí se citan
+extractos representativos sin editar, para que este informe no dependa
+únicamente de la tabla-resumen.
+
+\textbf{A01 -- acceso cruzado entre usuarios LECTOR, rechazado:}
+\begin{quote}\small
+\begin{verbatim}
+$ curl --include -s -X GET "http://localhost:8080/api/v1/prestamos/usuario/4" \
+    -H "Authorization: Bearer $TOKEN_A"
+
+HTTP/1.1 403
+Content-Type: application/problem+json
+
+{"detail":"No tiene permisos para realizar esta acción.",
+ "instance":"/api/v1/prestamos/usuario/4","status":403,"title":"Forbidden"}
+\end{verbatim}
+\end{quote}
+
+\textbf{A03 -- payload \texttt{'; DROP TABLE usuarios; --} en campo de
+texto libre, guardado literalmente, tabla intacta:}
+\begin{quote}\small
+\begin{verbatim}
+$ curl --include -s -X POST http://localhost:8080/api/auth/registro \
+    -d "{\"nombre\":\"' OR '1'='1\",
+         \"apellido\":\"'; DROP TABLE usuarios; --\", ...}"
+
+HTTP/1.1 201
+{"id":5,"nombre":"' OR '1'='1",
+ "correo":"usuarioC.owasp@sgb-saas.local","roles":["LECTOR"]}
+
+# login posterior de un usuario preexistente, para confirmar integridad:
+HTTP_STATUS:200   <-- la tabla "usuarios" sigue intacta
+\end{verbatim}
+\end{quote}
+
+\textbf{A07 (corregido) -- sexto intento consecutivo de login, antes 401,
+ahora 429; contador real en Redis:}
+\begin{quote}\small
+\begin{verbatim}
+--- intento 6 de 6 ---
+HTTP/1.1 429
+{"detail":"Demasiados intentos fallidos. Intente nuevamente en 898 segundos.",
+ "instance":"/api/auth/login","status":429,"title":"Too Many Requests"}
+
+$ redis-cli GET "login-attempts:usuarioA07fix.owasp@sgb-saas.local:172.18.0.1"
+5
+$ redis-cli TTL "login-attempts:usuarioA07fix.owasp@sgb-saas.local:172.18.0.1"
+884
+\end{verbatim}
+\end{quote}
+
+\textbf{A09 (corregido) -- login/logout ahora quedan en el log de
+aplicación y en \texttt{bitacora\_auditoria}:}
+\begin{quote}\small
+\begin{verbatim}
+2026-07-30T20:45:02.958Z INFO ... AuthService : Login exitoso:
+    sub=13 correo=usuarioReseteo.owasp@sgb-saas.local ip=172.18.0.1
+2026-07-30T20:45:32.583Z INFO ... AuthService : Logout:
+    correo=usuarioReseteo.owasp@sgb-saas.local
+    jti=649f631d-406f-4134-b7f2-4bb43abf09e2 ip=172.18.0.1
+
+ id | usuario_id | tipo_operacion |            detalles            | ip_origen
+----+------------+----------------+---------------------------------+-----------
+ 10 |         13 | LOGIN_OK       | Login exitoso para correo: ...  | 172.18.0.1
+\end{verbatim}
+\end{quote}
+
+\subsubsection*{Detalle: A02, el gap declarado en vez de simulado}
+
+Vale la pena destacar el tratamiento de A02 como ejemplo del criterio de
+honestidad aplicado en todo el proyecto: el archivo de evidencia
+correspondiente abre explícitamente diciendo que \emph{``no hay forma
+honesta de verificar TLS en este entorno porque no existe TLS
+activo''}, y que \emph{``cualquier evidencia que mostrara un candado o
+un \texttt{https://} funcionando aquí sería fabricada''}. En vez de
+omitir la sección o fabricar una captura, se documentó qué SÍ es
+verificable hoy (el código ya declara el atributo \texttt{Secure}, listo
+para activarse el día que exista TLS real sin cambios de código) y qué
+NO (el propio TLS), dejando el segundo como gap conocido y explícitamente
+fuera de alcance hasta que exista un entorno públicamente accesible.
+
+\subsubsection*{Detalle: los dos fixes reales de esta entrega}
+
+Más allá de la auditoría OWASP, esta entrega corrigió dos defectos reales
+adicionales, detectados durante el propio proceso de verificación (no
+reportados por un tercero):
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{Rol \texttt{ADMIN} faltante en \texttt{LibroController}.}
+    Los 5 endpoints de creación/edición/eliminación de libros no incluían
+    \texttt{ADMIN} en su lista de roles permitidos, pese a que
+    \texttt{ADMIN} es el rol de mayor privilegio en la jerarquía del
+    sistema (\texttt{ADMIN > GERENTE > BIBLIOTECARIO > LECTOR}). Corregido
+    y verificado en vivo con una cuenta exclusivamente \texttt{ADMIN}
+    (\texttt{docs/mediciones/sec/2026-07-30-owasp-a01-fix-rol-admin-libros.md}).
+    Se documentó explícitamente que \texttt{PrestamoController} y
+    \texttt{ReservacionController} tienen el mismo hueco y quedan
+    \textbf{sin corregir}, fuera del alcance de ese fix puntual.
+  \item \textbf{\texttt{POST /api/auth/refresh} respondía 500 en vez de
+    401} cuando el \texttt{refreshToken} de la cookie era
+    inválido/expirado: una \texttt{RuntimeException} genérica sin
+    \texttt{@ExceptionHandler} dedicado caía en el handler de último
+    recurso. Corregido con una excepción específica
+    (\texttt{RefreshTokenInvalidoException}) y su handler en
+    \texttt{GlobalExceptionHandler}, devolviendo 401 vía
+    \texttt{ProblemDetail} (RFC~7807).
+\end{itemize}
+
+\subsection{Cobertura de código (JaCoCo) -- Bloque C.4}
+
+Reporte real generado por \texttt{jacoco-maven-plugin} (versión 0.8.12)
+sobre el dominio/servicios del backend, excluyendo \texttt{dto/}
+(records planos sin lógica), \texttt{entity/} (entidades JPA con
+\texttt{@Data}, sin métodos de negocio propios) y \texttt{config/}
+(definición de beans de framework) -- criterio documentado también como
+comentario en \texttt{backend-springboot/pom.xml}. Artefactos completos
+versionados en \texttt{docs/mediciones/jacoco/} (\texttt{report.xml},
+\texttt{report.csv}, \texttt{html/}).
+
+\subsubsection*{Totales agregados}
+
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\rowcolor{verdeuteq}
+\color{white}\textbf{Métrica} & \color{white}\textbf{Cubierto} & \color{white}\textbf{Total} & \color{white}\textbf{\%} \\
+\hline
+Líneas & 380 & 501 & \textbf{75{,}85\,\%} \\
+Ramas & 50 & 102 & 49{,}02\,\% \\
+Complejidad & 111 & 190 & 58{,}42\,\% \\
+\hline
+\end{tabular}
+\end{center}
+
+El objetivo de esta entrega (\textbf{$\geq$60\,\% de líneas}) se supera
+con margen, y el resultado ya alcanza el umbral fijado para la Entrega
+Final ($\geq$70\,\%). Verificado con \texttt{./mvnw clean verify}:
+\texttt{BUILD SUCCESS}, 79/79 tests (0 fallos, 0 errores).
+
+\subsubsection*{Desglose por paquete}
+
+\begin{center}
+\begin{tabular}{|l|c|c|}
+\hline
+\rowcolor{verdeuteq}
+\color{white}\textbf{Paquete} & \color{white}\textbf{Líneas} & \color{white}\textbf{Ramas} \\
+\hline
+\texttt{security} & 86/90 (95{,}6\,\%) & 15/22 (68{,}2\,\%) \\
+\texttt{scheduling} & 7/7 (100{,}0\,\%) & -- \\
+\texttt{controller} & 46/66 (69{,}7\,\%) & 3/4 (75{,}0\,\%) \\
+\texttt{service} & 224/304 (73{,}7\,\%) & 30/62 (48{,}4\,\%) \\
+\texttt{exception} & 17/34 (50{,}0\,\%) & 2/14 (14{,}3\,\%) \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsubsection*{Historia: de 53{,}69\,\% a 75{,}85\,\%}
+
+La primera corrida real de JaCoCo en esta entrega arrojó 53{,}69\,\% de
+líneas -- por debajo del objetivo. En vez de agregar tests triviales
+para inflar el número (instrucción explícita seguida durante todo el
+proceso), se identificaron 5 clases de autenticación/autorización con
+cobertura casi nula \emph{dentro del proceso de test} porque los tests
+existentes las mockeaban en vez de ejercitarlas: \texttt{JwtService},
+\texttt{JwtAuthFilter}, \texttt{UserDetailsServiceImpl},
+\texttt{AuthController} y \texttt{GlobalExceptionHandler}. Se agregaron
+4 clases de test nuevas que ejercitan la implementación \emph{real} de
+cada una (\texttt{JwtServiceTest} unitario puro sin contexto Spring,
+\texttt{JwtAuthFilterTest} con el filtro real y solo Redis/BD mockeados,
+\texttt{UserDetailsServiceImplTest}, y \texttt{AuthControllerTest} vía
+\texttt{MockMvc} + \texttt{springSecurity()} real, mismo patrón que
+\texttt{LibroControllerSecurityTest}):
+
+\begin{center}
+\begin{tabular}{|l|c|c|}
+\hline
+\rowcolor{verdeuteq}
+\color{white}\textbf{Clase} & \color{white}\textbf{Antes} & \color{white}\textbf{Después} \\
+\hline
+\texttt{JwtService} & 4{,}8\,\% & \textbf{95{,}2\,\%} \\
+\texttt{JwtAuthFilter} & 18{,}2\,\% & \textbf{100{,}0\,\%} \\
+\texttt{UserDetailsServiceImpl} & 7{,}1\,\% & \textbf{100{,}0\,\%} \\
+\texttt{AuthController} & 0{,}0\,\% & \textbf{100{,}0\,\%} \\
+\texttt{GlobalExceptionHandler} & 8{,}8\,\% & \textbf{50{,}0\,\%} \\
+\hline
+\end{tabular}
+\end{center}
+
+\texttt{GlobalExceptionHandler} se dejó deliberadamente en 50\,\%: las
+líneas restantes corresponden a \texttt{handleNotFound}
+(\texttt{EntityNotFoundException}, no aplica a ningún flujo de
+\texttt{AuthController}) y al \emph{catch-all} de último recurso
+(\texttt{handleGenerica}) -- forzar esas líneas habría exigido tests
+artificiales fuera del alcance de auth/seguridad, exactamente el tipo de
+relleno que se pidió evitar.
+
+\subsubsection*{Detalle completo por clase (las 20 clases analizadas)}
+
+Tabla completa de \texttt{docs/mediciones/jacoco/report.csv}, ordenada de
+menor a mayor cobertura de líneas -- ninguna clase se omite:
+
+\begin{center}
+\small
+\begin{longtable}{|l|l|c|}
+\hline
+\rowcolor{verdeuteq}
+\color{white}\textbf{Paquete} & \color{white}\textbf{Clase} & \color{white}\textbf{\% líneas} \\
+\hline
+\endhead
+\texttt{controller} & \texttt{PrestamoController} & 25{,}0\,\% \\
+\hline
+\texttt{controller} & \texttt{MultaController} & 42{,}9\,\% \\
+\hline
+\texttt{controller} & \texttt{ReservacionController} & 42{,}9\,\% \\
+\hline
+\texttt{controller} & \texttt{TestController} & 50{,}0\,\% \\
+\hline
+\texttt{exception} & \texttt{GlobalExceptionHandler} & 50{,}0\,\% \\
+\hline
+\texttt{service} & \texttt{PrestamoService} & 66{,}1\,\% \\
+\hline
+\texttt{service} & \texttt{AuthService} & 67{,}5\,\% \\
+\hline
+\texttt{service} & \texttt{MultaService} & 72{,}7\,\% \\
+\hline
+\texttt{service} & \texttt{LibroService} & 75{,}7\,\% \\
+\hline
+\texttt{controller} & \texttt{LibroController} & 80{,}0\,\% \\
+\hline
+\texttt{security} & \texttt{LoginRateLimiter} & 83{,}3\,\% \\
+\hline
+\texttt{service} & \texttt{ReservacionService} & 90{,}2\,\% \\
+\hline
+\texttt{security} & \texttt{JwtService} & 95{,}2\,\% \\
+\hline
+\texttt{controller} & \texttt{AuthController} & 100{,}0\,\% \\
+\hline
+\texttt{scheduling} & \texttt{ReservacionScheduler} & 100{,}0\,\% \\
+\hline
+\texttt{security} & \texttt{JwtAuthFilter} & 100{,}0\,\% \\
+\hline
+\texttt{security} & \texttt{UserDetailsServiceImpl} & 100{,}0\,\% \\
+\hline
+\texttt{service} & \texttt{CorreoYaRegistradoException} & 100{,}0\,\% \\
+\hline
+\texttt{service} & \texttt{LoginRateLimitExcedidoException} & 100{,}0\,\% \\
+\hline
+\texttt{service} & \texttt{RefreshTokenInvalidoException} & 100{,}0\,\% \\
+\hline
+\end{longtable}
+\end{center}
+
+\subsection{Rendimiento -- Bloque C.1 (k6)}
+
+\estadoPendiente
+
+\textbf{No ejecutado en esta entrega.} La configuración base ya está
+lista en \texttt{k6/opts.js}: perfil de 50~VUs, 30\,s de duración
+sostenida, con etapas de \emph{ramp-up}/\emph{ramp-down} declaradas en
+vez de saltar directo a la carga máxima, y 3 corridas planeadas por
+escenario para poder comparar variabilidad
+(\texttt{docs/mediciones/perf/kNN-runM.json}). El script de prueba en sí
+(las funciones que llaman a los endpoints, los \emph{checks} y los
+\emph{thresholds} de negocio) queda pendiente de escribir antes de la
+primera corrida real. Ningún número de latencia/throughput se reporta en
+este informe para no fabricar evidencia que no existe.
+
+\subsection{Usabilidad -- Bloque C.3 (SUS)}
+
+\estadoPendiente
+
+\textbf{No ejecutado en esta entrega.} El protocolo completo está
+preparado: plantilla de consentimiento informado en
+\texttt{docs/etica/consentimientos/plantilla.md} (código de participante
+anónimo tipo \texttt{P01}, tarea de \emph{onboarding} de dos pasos --
+iniciar sesión con cuenta de prueba, registrarse como usuario nuevo --
+sin ayuda del equipo salvo bloqueo total), objetivo de 10 participantes,
+y la política de anonimización ya declarada en
+\texttt{docs/etica/ETHICS.md} (formularios firmados nunca se committean
+al repositorio; solo la plantilla en blanco). Ningún puntaje SUS se
+reporta en este informe.
+
+\subsection{Accesibilidad -- Bloque C.5 (Lighthouse)}
+
+\estadoPendiente
+
+\textbf{No ejecutado en esta entrega.} A diferencia de C.1 y C.3, este
+sub-bloque todavía no tiene ni siquiera configuración base preparada en
+el repositorio -- es el sub-bloque con menor avance de los tres
+pendientes. Queda como trabajo a iniciar desde cero para la Entrega
+Final: definir el conjunto de páginas del frontend Angular a auditar y
+los umbrales mínimos aceptables por categoría (Accesibilidad,
+Rendimiento, Buenas prácticas, SEO).
+
+% ============================================================
+% 7. AMENAZAS A LA VALIDEZ
+% ============================================================
+\section{Amenazas a la validez}
+\label{sec:amenazas}
+
+Análisis crítico real de las limitaciones de esta entrega, no una
+sección de relleno:
+
+\begin{enumerate}[leftmargin=1.2cm]
+  \item \textbf{Tres de cinco sub-bloques de evidencia empírica del
+    Bloque~C sin ejecutar.} Rendimiento (C.1), usabilidad (C.3) y
+    accesibilidad (C.5) quedaron como protocolo/configuración lista pero
+    sin corrida real, por restricción de tiempo del equipo dentro de esta
+    entrega (ver \autoref{sec:protocolo}). Esto significa que las
+    afirmaciones de \emph{eficiencia de desempeño} en
+    \texttt{docs/arquitectura/ISO25010.md} se apoyan únicamente en una
+    medición puntual de caché (\texttt{~170ms} \emph{miss} vs.\
+    \texttt{~30ms} \emph{hit}), no en una prueba de carga formal -- no
+    hay evidencia todavía de cómo se comporta el sistema bajo 50~VUs
+    concurrentes.
+  \item \textbf{Escala del equipo limita la escala de las pruebas de
+    usabilidad.} El equipo tiene 3 integrantes, todos con roles activos
+    de desarrollo durante esta entrega -- reclutar y coordinar 10
+    participantes externos para SUS (objetivo declarado en el protocolo)
+    compite directamente por el mismo tiempo limitado que exige cerrar
+    los demás bloques. Esta es una limitación estructural del proyecto,
+    no solo de esta entrega puntual.
+  \item \textbf{Auditoría de seguridad manual, no exhaustiva.} Las 6
+    verificaciones OWASP se hicieron con \texttt{curl} dirigido a
+    escenarios específicos elegidos por el equipo, no con una herramienta
+    de \emph{fuzzing}/escaneo automatizado (ej.\ OWASP ZAP) que explore
+    superficie de ataque no anticipada. Además, varios hallazgos se
+    verificaron solo en un endpoint representativo y se documentó
+    explícitamente que el mismo patrón se asume (no se re-verificó) en
+    endpoints hermanos -- ej.\ A01 se probó solo contra
+    \texttt{PrestamoController}, asumiendo que
+    \texttt{MultaController}/\texttt{ReservacionController} comparten el
+    mecanismo (\texttt{validarAccesoUsuario}), sin repetir la prueba en
+    cada uno.
+  \item \textbf{Gap de validación en \texttt{ReservacionService}
+    (hallazgo nuevo, no corregido).} Detectado al construir la colección
+    Postman de esta entrega:
+    \texttt{ReservacionService.crear()} no valida que \texttt{libroId}
+    exista antes de guardar (a diferencia de \texttt{PrestamoController},
+    que sí pasa por un procedimiento almacenado con validación
+    \texttt{LB404}). Una reservación con un libro inexistente no
+    responde 404: la restricción de llave foránea de PostgreSQL revienta
+    como excepción no mapeada, y \texttt{GlobalExceptionHandler} la
+    convierte en \textbf{500 Internal Server Error}. Verificado en vivo
+    y documentado en \texttt{docs/postman/coleccion.json}, no corregido
+    -- fuera del alcance del prompt que lo detectó.
+  \item \textbf{\texttt{CONTRIBUTORS.md} desactualizado respecto al
+    estado real del repositorio.} El propio archivo declara, en su nota
+    de cabecera, que el backend de Préstamos/Reservas y los ajustes de
+    frontend correspondientes aún no estaban commiteados al momento de
+    escribirse -- al cierre de esta entrega, ese trabajo sí está
+    commiteado, pero el archivo no se ha vuelto a revisar. Se documenta
+    aquí en vez de inventar una actualización que no se verificó línea
+    por línea contra \texttt{git log} en el momento de escribir este
+    informe.
+  \item \textbf{TLS y CSP diferidos, no resueltos.} OWASP A02 (TLS en
+    tránsito) y parte de A05 (\emph{Content-Security-Policy}) quedan como
+    gap conocido explícito -- correcto para un entorno de desarrollo sin
+    exposición pública, pero significa que la postura de seguridad
+    completa del sistema no puede evaluarse hasta que exista el entorno
+    públicamente accesible que exige la Entrega Final.
+\end{enumerate}
+
+% ============================================================
+% 8. CONTRIBUCIONES Y ÉTICA
+% ============================================================
+\section{Contribuciones y declaración ética}
+
+\subsection{Contribuciones (taxonomía CRediT)}
+
+El detalle completo de roles por integrante, basado en trabajo
+realmente commiteado (no en el rol nominal de equipo), vive en
+\texttt{CONTRIBUTORS.md} siguiendo la taxonomía CRediT (14 roles
+estándar, \url{https://credit.niso.org/}). Resumen:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{Marlon Loor Medranda} (Tech Lead / DevOps / Seguridad):
+    \emph{Software} (JWT+RBAC, cookies \texttt{HttpOnly}, blacklist de
+    tokens, caché con TTL externo, \texttt{GlobalExceptionHandler}),
+    \emph{Project administration}, \emph{Supervision} (revisión de
+    hallazgos de QA sobre trabajo de otros integrantes) y
+    \emph{Validation} (verificación en vivo de cada cambio de
+    seguridad/caché contra el stack Docker real).
+  \item \textbf{Irvin Cajas Ibarra} (Backend): \emph{Software} -- CRUD de
+    libros y el módulo de Préstamos/Reservas/Multas.
+  \item \textbf{Moises Panama Murillo} (Frontend): \emph{Software} --
+    módulos Angular de autenticación (login/registro, guards,
+    interceptor JWT) y CRUD de libros en el frontend.
+\end{itemize}
+
+\subsection{Declaración ética}
+
+\texttt{docs/etica/ETHICS.md} cubre las cuatro declaraciones exigidas por
+el Bloque~F de la guía:
+
+\begin{enumerate}[leftmargin=1.2cm]
+  \item \textbf{Procedencia de datos.} Los 5 libros de ejemplo de
+    \texttt{db/seed.sql} \textbf{no son ficticios}: son libros reales
+    publicados, con ISBN real (ej.\ \emph{Clean Code}, ISBN
+    9780132350884). Los metadatos bibliográficos (ISBN, título, autor,
+    editorial) son hechos públicos de catalogación, transcritos
+    manualmente por el equipo -- sin \emph{scraping} ni consumo de API de
+    terceros con licencia. El resumen de una línea por libro es redacción
+    original del equipo. El contenido íntegro de ninguna obra está
+    incluido en el repositorio.
+  \item \textbf{Tratamiento de datos personales.} Contraseñas hasheadas
+    con BCrypt costo~12, nunca en texto plano. Auditoría explícita del
+    código fuente confirmó que \texttt{password\_hash} no se expone por
+    ningún endpoint ni DTO (\texttt{@JsonIgnore} sobre el campo, y el
+    único DTO de registro no incluye ese campo en su definición).
+  \item \textbf{Consentimiento informado para SUS.} Mecanismo declarado
+    \emph{antes} de la primera prueba, no retroactivamente -- ver
+    \autoref{sec:protocolo}.
+  \item \textbf{Ausencia de datos identificables en el repositorio
+    público.} \texttt{docs/mediciones/} solo contiene evidencia técnica
+    (códigos de estado HTTP, \emph{timings}, TTLs de Redis); los
+    consentimientos firmados de participantes reales de SUS nunca se
+    committean, solo la plantilla en blanco.
+\end{enumerate}
+
+% ============================================================
+% 9. REFERENCIAS
+% ============================================================
+\section{Referencias}
+
+\begin{enumerate}[leftmargin=1.2cm]
+  \item ISO/IEC/IEEE 29148:2018 -- \emph{Systems and software
+    engineering -- Life cycle processes -- Requirements engineering}.
+  \item ISO/IEC 25010:2011 -- \emph{Systems and software Quality
+    Requirements and Evaluation (SQuaRE) -- Product quality model}.
+  \item RFC~7519 -- \emph{JSON Web Token (JWT)}, M.\ Jones, J.\
+    Bradley, N.\ Sakimura, IETF, mayo 2015.
+  \item RFC~7807 -- \emph{Problem Details for HTTP APIs}, M.\ Nottingham,
+    E.\ Wilde, IETF, marzo 2016.
+  \item OWASP Top~10:2021 -- \emph{The Ten Most Critical Web Application
+    Security Risks}, OWASP Foundation.
+    \url{https://owasp.org/Top10/}
+  \item Semantic Versioning 2.0.0. \url{https://semver.org/}
+  \item Keep a Changelog 1.1.0. \url{https://keepachangelog.com/}
+  \item CRediT -- Contributor Roles Taxonomy. NISO/CASRAI.
+    \url{https://credit.niso.org/}
+  \item Brooke, J.\ (1996). \emph{SUS: A ``quick and dirty'' usability
+    scale}. En P.W.\ Jordan et al.\ (Eds.), \emph{Usability Evaluation in
+    Industry}. Taylor \& Francis.
+  \item Brown, S.\ -- \emph{The C4 model for visualising software
+    architecture}. \url{https://c4model.com/}
+  \item Google -- \emph{Lighthouse}, herramienta de auditoría automatizada
+    de calidad web. \url{https://developer.chrome.com/docs/lighthouse/}
+  \item Grafana Labs -- \emph{k6}, herramienta de pruebas de carga.
+    \url{https://k6.io/}
+\end{enumerate}
+
+\vspace{1cm}
+\noindent\rule{\linewidth}{0.4pt}
+
+\vspace{0.3cm}
+\noindent{\small Este informe se generó a partir de evidencia real
+versionada en el repositorio del proyecto
+(\url{https://github.com/mloorm14/sgb-saas}, tag \texttt{v0.9.0-rc},
+commit \texttt{c6b372c}). Ningún dato de rendimiento, usabilidad o
+accesibilidad reportado en este documento fue inventado o extrapolado --
+donde la evidencia no existe (Bloques C.1, C.3, C.5), se declaró
+explícitamente como no ejecutada.}
+
+\end{document}
