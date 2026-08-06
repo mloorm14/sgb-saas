@@ -1163,6 +1163,40 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Configuracion",
+      "description": "GET/PUT /api/v1/configuracion -- solo rol ADMIN. Parametros del sistema (dias_prestamo_default, max_renovaciones_default, minutos_reserva, monto_multa_diaria).",
+      "item": [
+        {
+          "name": "Listar configuracion (200, ADMIN)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" }
+            ],
+            "url": "{{base_url}}/api/v1/configuracion"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar clave (200, ADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"valor\": \"20\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/v1/configuracion/dias_prestamo_default"
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
