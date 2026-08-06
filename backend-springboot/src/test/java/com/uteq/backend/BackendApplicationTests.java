@@ -19,6 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import com.uteq.backend.repository.ConfiguracionSistemaRepository;
+
 
 @SpringBootTest(properties = {
         "spring.autoconfigure.exclude=" +
@@ -85,6 +87,9 @@ class BackendApplicationTests {
     // esta clase, DataJpaRepositoriesAutoConfiguration sigue excluido.
     @MockitoBean
     private BitacoraAuditoriaRepository bitacoraAuditoriaRepository;
+
+    @MockitoBean
+    private ConfiguracionSistemaRepository configuracionSistemaRepository;
 
     @Test
     void contextLoads() {
