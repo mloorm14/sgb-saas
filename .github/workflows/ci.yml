@@ -1,4 +1,4 @@
-name: CI - Backend
+name: CI
 
 on:
   push:
@@ -9,6 +9,22 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+
+    # Placeholders para variables que application.yml aun NO referencia hoy
+    # (${SMTP_HOST}, ${GEMINI_API_KEY}) pero que los Modulos 2/4 del roadmap
+    # (notificaciones por correo, chatbot Gemini) van a necesitar: Spring
+    # falla al levantar el ApplicationContext si una property referenciada
+    # con ${VAR} no tiene valor ni default. Se agregan ahora, en la rama de
+    # infraestructura, para no tener que tocar CI otra vez cuando esas ramas
+    # lleguen. En CI estos NUNCA deben ser credenciales reales: los tests de
+    # EmailService/GeminiClient se mockean (ver Modulos 2.9/4.9), no pegan a
+    # un SMTP o a Gemini de verdad.
+    env:
+      SMTP_HOST: localhost
+      SMTP_PORT: 3025
+      SMTP_USER: test
+      SMTP_PASS: test
+      GEMINI_API_KEY: dummy-key-para-ci
 
     # PrestamoMultaProcedureIntegrationTest es un @SpringBootTest real (sin
     # mocks, ver su Javadoc) que necesita una base Postgres y una instancia
@@ -100,3 +116,46 @@ jobs:
       # las reglas.
       - name: Validar matriz de trazabilidad
         run: ./scripts/validate-traceability.sh
+
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend-angular/package-lock.json
+
+      - name: Instalar dependencias
+        working-directory: ./frontend-angular
+        run: npm ci
+
+      # No hay "lint" en package.json todavia (el proyecto no tiene
+      # @angular-eslint instalado ni un builder "lint" en angular.json) --
+      # agregarlo implica una dependencia nueva y una decision de reglas de
+      # estilo que no es parte del alcance de esta rama (infraestructura de
+      # CI). Se deja marcado explicitamente como pendiente en vez de omitirlo
+      # en silencio, mismo criterio que "make bench"/"make audit" en el
+      # Makefile.
+      - name: Lint (pendiente)
+        working-directory: ./frontend-angular
+        run: |
+          echo "Pendiente: agregar @angular-eslint y el script 'lint' a package.json."
+
+      # --browsers=ChromeHeadless: 'ng test' por defecto abre Karma con un
+      # navegador interactivo, lo que cuelga cualquier runner de CI sin
+      # display. No hace falta un karma.conf.js propio (el proyecto usa el
+      # builder por defecto @angular-devkit/build-angular:karma, ver
+      # angular.json): el flag alcanza como override desde la CLI.
+      - name: Tests (modo headless)
+        working-directory: ./frontend-angular
+        run: npx ng test --watch=false --browsers=ChromeHeadless
+
+      - name: Build de producción
+        working-directory: ./frontend-angular
+        run: npx ng build
