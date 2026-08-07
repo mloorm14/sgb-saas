@@ -22,12 +22,21 @@ up:
 down:
 	docker compose down
 
-# make test: ejecuta la suite de pruebas del backend (Maven, incluye tests
-# de integracion via 'verify') y del frontend (Angular, modo single-run
-# sin watch, apto para CI).
-test:
+# make test: ejecuta la suite completa (backend + frontend). Delega en los
+# dos targets de abajo para que correr solo uno de los dos (mientras se
+# itera en un cambio que toca un solo lado) no obligue a esperar al otro.
+test: test-backend test-frontend
+
+# make test-backend: Maven, incluye tests de integracion via 'verify'.
+test-backend:
 	cd backend-springboot && ./mvnw -B clean verify
-	cd frontend-angular && npx ng test --watch=false
+
+# make test-frontend: Angular, modo single-run sin watch y navegador
+# headless -- mismo comando que corre .github/workflows/ci.yml (job
+# "frontend"), para que si pasa en la maquina de alguien tambien pase en
+# GitHub Actions.
+test-frontend:
+	cd frontend-angular && npx ng test --watch=false --browsers=ChromeHeadless
 
 # make bench: placeholder de pruebas de carga/rendimiento. Se implementara
 # en el Bloque C.1 con k6; por ahora solo informa el estado pendiente.
