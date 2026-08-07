@@ -62,6 +62,18 @@ services:
       # pensado para `mvnw`/jar local): dentro del contenedor el cwd es /app
       # y el Dockerfile copia database/migrations a /app/database/migrations.
       SPRING_FLYWAY_LOCATIONS: filesystem:database/migrations
+      # Módulos 2 (notificaciones por correo) y 4 (chatbot Gemini) del
+      # roadmap -- application.yml todavía no las referencia (${SMTP_HOST}
+      # etc.), así que hoy no hacen nada, pero se agregan ya en la rama de
+      # infraestructura para no volver a tocar docker-compose.yml cuando
+      # esas ramas lleguen. Sin valor real en .env, Docker Compose las deja
+      # vacías (no falla el arranque, a diferencia de Spring con ${VAR} sin
+      # default, ver el comentario equivalente en .github/workflows/ci.yml).
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     ports:
       - "8080:8080"
     depends_on:
