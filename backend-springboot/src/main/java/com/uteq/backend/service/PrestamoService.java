@@ -5,10 +5,15 @@ import com.uteq.backend.dto.LibroMasPrestadoResponseDTO;
 import com.uteq.backend.dto.PrestamoActivoResponseDTO;
 import com.uteq.backend.dto.PrestamoRequestDTO;
 import com.uteq.backend.dto.PrestamoResponseDTO;
+import com.uteq.backend.dto.RenovacionResponseDTO;
+import com.uteq.backend.entity.EstadoPrestamo;
 import com.uteq.backend.entity.Prestamo;
 import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.EstadoPrestamoRepository;
+import com.uteq.backend.repository.EstadoReservacionRepository;
 import com.uteq.backend.repository.PrestamoProcedureRepository;
 import com.uteq.backend.repository.PrestamoRepository;
+import com.uteq.backend.repository.ReservacionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import com.uteq.backend.repository.projection.LibroMasPrestadoProjection;
 import com.uteq.backend.repository.projection.PrestamoActivoProjection;
@@ -33,16 +38,39 @@ public class PrestamoService {
     private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado: ";
     private static final String ROL_LECTOR = "LECTOR";
 
+    // ── Constantes de renovar() ─────────────────────────────
+    private static final String ESTADO_DEVUELTO = "DEVUELTO";
+    private static final String ESTADO_RENOVADO = "RENOVADO";
+    // "Vigente" para efectos de bloquear una renovación: cualquier reserva
+    // que todavía pueda terminar en un retiro (no RETIRADA/EXPIRADA/
+    // CANCELADA). No existe un estado literal "ACTIVA" en estados_reservacion
+    // (ver db/seed.sql) -- son estos dos los que cuentan como "en curso".
+    private static final List<String> ESTADOS_RESERVA_VIGENTE = List.of("PENDIENTE", "LISTA_PARA_RETIRO");
+    private static final String CLAVE_DIAS_PRESTAMO_DEFAULT = "dias_prestamo_default";
+    private static final String CLAVE_MAX_RENOVACIONES_DEFAULT = "max_renovaciones_default";
+
     private final PrestamoRepository prestamoRepo;
     private final PrestamoProcedureRepository prestamoProcRepo;
     private final UsuarioRepository usuarioRepo;
+    private final EstadoPrestamoRepository estadoPrestamoRepo;
+    private final ReservacionRepository reservacionRepo;
+    private final EstadoReservacionRepository estadoReservacionRepo;
+    private final ConfiguracionSistemaService configuracionSistemaService;
 
     public PrestamoService(PrestamoRepository prestamoRepo,
                            PrestamoProcedureRepository prestamoProcRepo,
-                           UsuarioRepository usuarioRepo) {
+                           UsuarioRepository usuarioRepo,
+                           EstadoPrestamoRepository estadoPrestamoRepo,
+                           ReservacionRepository reservacionRepo,
+                           EstadoReservacionRepository estadoReservacionRepo,
+                           ConfiguracionSistemaService configuracionSistemaService) {
         this.prestamoRepo = prestamoRepo;
         this.prestamoProcRepo = prestamoProcRepo;
         this.usuarioRepo = usuarioRepo;
+        this.estadoPrestamoRepo = estadoPrestamoRepo;
+        this.reservacionRepo = reservacionRepo;
+        this.estadoReservacionRepo = estadoReservacionRepo;
+        this.configuracionSistemaService = configuracionSistemaService;
     }
 
     @Transactional
@@ -62,6 +90,96 @@ public class PrestamoService {
                 (Long) resultado.get("o_prestamo_id"),
                 (Boolean) resultado.get("o_hubo_multa"),
                 (BigDecimal) resultado.get("o_monto_multa"));
+    }
+
+    // ── POST /{id}/renovacion ────────────────────────────────
+    // Validaciones en Java (no un stored procedure nuevo, a diferencia de
+    // crear()/registrarDevolucion()): a esta altura del proyecto ya existe
+    // ConfiguracionSistemaService (dias_prestamo_default,
+    // max_renovaciones_default) y las 4 reglas de negocio son consultas y un
+    // UPDATE simple sobre una sola fila -- no requiere la atomicidad
+    // multi-tabla que sí justifica un SP como sp_registrar_devolucion
+    // (préstamo + multa + posible desbloqueo de usuario en una transacción).
+    //
+    // Orden de validación (cada una lanza una excepción distinta para que
+    // el cliente pueda distinguir el motivo del rechazo):
+    //   1. Préstamo no existe -> 404 (EntityNotFoundException)
+    //   2. Autorización: LECTOR solo sobre su propio préstamo -> 403
+    //   3. Ya devuelto -> 400 (no es "vencido" ni las otras 3 reglas
+    //      explícitas del alcance original, pero renovar algo ya cerrado no
+    //      tiene sentido de negocio y se rechaza igual)
+    //   4. Vencido (fecha_devolucion_estimada ya pasó) -> 409
+    //   5. Límite de renovaciones alcanzado -> 409
+    //   6. Reserva vigente de OTRO usuario sobre el mismo libro -> 409
+    @Transactional
+    public RenovacionResponseDTO renovar(Long prestamoId, Authentication authentication) {
+        Prestamo prestamo = prestamoRepo.findById(prestamoId)
+                .orElseThrow(() -> new EntityNotFoundException(PRESTAMO_NO_ENCONTRADO + prestamoId));
+
+        validarAccesoUsuario(prestamo.getUsuarioId(), authentication);
+
+        if (ESTADO_DEVUELTO.equals(nombreEstadoPrestamo(prestamo.getEstadoPrestamoId()))) {
+            throw new IllegalArgumentException(
+                    "El préstamo " + prestamoId + " ya fue devuelto, no se puede renovar.");
+        }
+
+        if (prestamo.getFechaDevolucionEstimada().isBefore(OffsetDateTime.now())) {
+            throw new PrestamoVencidoException(
+                    "El préstamo " + prestamoId + " está vencido, no se puede renovar.");
+        }
+
+        int maxRenovaciones = configuracionSistemaService.obtenerValorEntero(CLAVE_MAX_RENOVACIONES_DEFAULT);
+        if (prestamo.getRenovacionesRealizadas() >= maxRenovaciones) {
+            throw new LimiteRenovacionesExcedidoException(
+                    "El préstamo " + prestamoId + " ya alcanzó el máximo de "
+                            + maxRenovaciones + " renovaciones permitidas.");
+        }
+
+        if (existeReservaVigenteDeOtroUsuario(prestamo.getLibroId(), prestamo.getUsuarioId())) {
+            throw new MaterialReservadoException(
+                    "El libro del préstamo " + prestamoId
+                            + " tiene una reserva vigente de otro usuario.");
+        }
+
+        int diasPrestamo = configuracionSistemaService.obtenerValorEntero(CLAVE_DIAS_PRESTAMO_DEFAULT);
+        prestamo.setFechaDevolucionEstimada(OffsetDateTime.now().plusDays(diasPrestamo));
+        prestamo.setRenovacionesRealizadas((short) (prestamo.getRenovacionesRealizadas() + 1));
+        prestamo.setEstadoPrestamoId(idEstadoPrestamo(ESTADO_RENOVADO));
+        prestamoRepo.save(prestamo);
+
+        return new RenovacionResponseDTO(
+                prestamo.getId(),
+                prestamo.getFechaDevolucionEstimada(),
+                prestamo.getRenovacionesRealizadas(),
+                (short) (maxRenovaciones - prestamo.getRenovacionesRealizadas()));
+    }
+
+    private boolean existeReservaVigenteDeOtroUsuario(Long libroId, Long usuarioIdDuenoPrestamo) {
+        List<Integer> idsEstadosVigentes = ESTADOS_RESERVA_VIGENTE.stream()
+                .map(nombre -> estadoReservacionRepo.findByNombre(nombre)
+                        .orElseThrow(() -> new IllegalStateException(
+                                "Catálogo estados_reservacion sin fila '" + nombre + "'"))
+                        .getId())
+                .toList();
+        return reservacionRepo.existsByLibroIdAndEstadoReservacionIdInAndUsuarioIdNot(
+                libroId, idsEstadosVigentes, usuarioIdDuenoPrestamo);
+    }
+
+    // Se usa IllegalStateException para "fila de catálogo faltante": es un
+    // problema de seed/configuración del sistema, no un error del cliente
+    // -- mismo criterio que ReservacionService.fromDTO() con estados_reservacion.
+    private String nombreEstadoPrestamo(Integer estadoId) {
+        return estadoPrestamoRepo.findById(estadoId)
+                .map(EstadoPrestamo::getNombre)
+                .orElseThrow(() -> new IllegalStateException(
+                        "estado_prestamo_id " + estadoId + " no existe en el catálogo estados_prestamo"));
+    }
+
+    private Integer idEstadoPrestamo(String nombre) {
+        return estadoPrestamoRepo.findByNombre(nombre)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Catálogo estados_prestamo sin fila '" + nombre + "'"))
+                .getId();
     }
 
     @Transactional(readOnly = true)
