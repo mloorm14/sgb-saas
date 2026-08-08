@@ -1,7 +1,10 @@
 package com.uteq.backend.exception;
 
 import com.uteq.backend.service.CorreoYaRegistradoException;
+import com.uteq.backend.service.LimiteRenovacionesExcedidoException;
 import com.uteq.backend.service.LoginRateLimitExcedidoException;
+import com.uteq.backend.service.MaterialReservadoException;
+import com.uteq.backend.service.PrestamoVencidoException;
 import com.uteq.backend.service.RefreshTokenInvalidoException;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
@@ -114,6 +117,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EntityNotFoundException.class)
     public ProblemDetail handleNotFound(EntityNotFoundException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    // PrestamoService.renovar(): las 3 reglas de negocio que bloquean una
+    // renovación, cada una como su propia excepción para que el cliente
+    // pueda distinguir el motivo exacto del 409 sin parsear el mensaje.
+    @ExceptionHandler(PrestamoVencidoException.class)
+    public ProblemDetail handlePrestamoVencido(PrestamoVencidoException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(LimiteRenovacionesExcedidoException.class)
+    public ProblemDetail handleLimiteRenovacionesExcedido(LimiteRenovacionesExcedidoException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(MaterialReservadoException.class)
+    public ProblemDetail handleMaterialReservado(MaterialReservadoException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
