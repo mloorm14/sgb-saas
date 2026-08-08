@@ -5,6 +5,7 @@ import com.uteq.backend.dto.LibroMasPrestadoResponseDTO;
 import com.uteq.backend.dto.PrestamoActivoResponseDTO;
 import com.uteq.backend.dto.PrestamoRequestDTO;
 import com.uteq.backend.dto.PrestamoResponseDTO;
+import com.uteq.backend.dto.RenovacionResponseDTO;
 import com.uteq.backend.service.PrestamoService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -45,6 +46,16 @@ public class PrestamoController {
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
     public ResponseEntity<DevolucionResponseDTO> registrarDevolucion(@PathVariable Long id) {
         return ResponseEntity.ok(prestamoService.registrarDevolucion(id));
+    }
+
+    // ── POST /api/v1/prestamos/{id}/renovacion ────────────
+    // LECTOR solo su propio préstamo (verificado dentro de
+    // PrestamoService.renovar()); BIBLIOTECARIO/GERENTE/ADMIN, cualquiera.
+    @PostMapping("/{id}/renovacion")
+    @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')")
+    public ResponseEntity<RenovacionResponseDTO> renovar(
+            @PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(prestamoService.renovar(id, authentication));
     }
 
     // ── GET /api/v1/prestamos/usuario/{usuarioId}?page=0&size=10 ──
