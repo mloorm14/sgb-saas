@@ -3,10 +3,16 @@ package com.uteq.backend.service;
 import com.uteq.backend.dto.DevolucionResponseDTO;
 import com.uteq.backend.dto.PrestamoRequestDTO;
 import com.uteq.backend.dto.PrestamoResponseDTO;
+import com.uteq.backend.dto.RenovacionResponseDTO;
+import com.uteq.backend.entity.EstadoPrestamo;
+import com.uteq.backend.entity.EstadoReservacion;
 import com.uteq.backend.entity.Prestamo;
 import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.EstadoPrestamoRepository;
+import com.uteq.backend.repository.EstadoReservacionRepository;
 import com.uteq.backend.repository.PrestamoProcedureRepository;
 import com.uteq.backend.repository.PrestamoRepository;
+import com.uteq.backend.repository.ReservacionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +43,10 @@ class PrestamoServiceTest {
     @Mock PrestamoRepository prestamoRepo;
     @Mock PrestamoProcedureRepository prestamoProcRepo;
     @Mock UsuarioRepository usuarioRepo;
+    @Mock EstadoPrestamoRepository estadoPrestamoRepo;
+    @Mock ReservacionRepository reservacionRepo;
+    @Mock EstadoReservacionRepository estadoReservacionRepo;
+    @Mock ConfiguracionSistemaService configuracionSistemaService;
 
     @InjectMocks PrestamoService prestamoService;
 
@@ -113,6 +123,107 @@ class PrestamoServiceTest {
         verify(prestamoProcRepo).fnReporteLibrosMasPrestados(10, null, null);
     }
 
+    // ── Test 6: renovación exitosa ─────────────────────────
+    @Test
+    void renovar_prestamoVigenteSinRenovacionesPrevias_extiendeFecha() {
+        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Prestamo prestamo = prestamoConId(50L);
+        prestamo.setRenovacionesRealizadas((short) 0);
+        prestamo.setEstadoPrestamoId(1);
+        given(prestamoRepo.findById(50L)).willReturn(Optional.of(prestamo));
+        given(estadoPrestamoRepo.findById(1)).willReturn(Optional.of(estadoPrestamo(1, "ACTIVO")));
+        given(configuracionSistemaService.obtenerValorEntero("max_renovaciones_default")).willReturn(2);
+        given(estadoReservacionRepo.findByNombre("PENDIENTE"))
+                .willReturn(Optional.of(estadoReservacion(1, "PENDIENTE")));
+        given(estadoReservacionRepo.findByNombre("LISTA_PARA_RETIRO"))
+                .willReturn(Optional.of(estadoReservacion(2, "LISTA_PARA_RETIRO")));
+        given(reservacionRepo.existsByLibroIdAndEstadoReservacionIdInAndUsuarioIdNot(2L, List.of(1, 2), 1L))
+                .willReturn(false);
+        given(configuracionSistemaService.obtenerValorEntero("dias_prestamo_default")).willReturn(15);
+        given(estadoPrestamoRepo.findByNombre("RENOVADO")).willReturn(Optional.of(estadoPrestamo(2, "RENOVADO")));
+
+        RenovacionResponseDTO resultado = prestamoService.renovar(50L, auth);
+
+        assertThat(resultado.renovacionesRealizadas()).isEqualTo((short) 1);
+        assertThat(resultado.renovacionesRestantes()).isEqualTo((short) 1);
+        assertThat(prestamo.getEstadoPrestamoId()).isEqualTo(2);
+        verify(prestamoRepo).save(prestamo);
+    }
+
+    // ── Test 7: préstamo vencido ────────────────────────────
+    @Test
+    void renovar_prestamoVencido_lanzaExcepcion() {
+        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Prestamo prestamo = prestamoConId(51L);
+        prestamo.setEstadoPrestamoId(1);
+        prestamo.setFechaDevolucionEstimada(OffsetDateTime.now().minusDays(2));
+        given(prestamoRepo.findById(51L)).willReturn(Optional.of(prestamo));
+        given(estadoPrestamoRepo.findById(1)).willReturn(Optional.of(estadoPrestamo(1, "ACTIVO")));
+
+        assertThatThrownBy(() -> prestamoService.renovar(51L, auth))
+                .isInstanceOf(PrestamoVencidoException.class);
+    }
+
+    // ── Test 8: límite de renovaciones alcanzado ───────────
+    @Test
+    void renovar_limiteRenovacionesAlcanzado_lanzaExcepcion() {
+        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Prestamo prestamo = prestamoConId(52L);
+        prestamo.setEstadoPrestamoId(1);
+        prestamo.setRenovacionesRealizadas((short) 2);
+        given(prestamoRepo.findById(52L)).willReturn(Optional.of(prestamo));
+        given(estadoPrestamoRepo.findById(1)).willReturn(Optional.of(estadoPrestamo(1, "ACTIVO")));
+        given(configuracionSistemaService.obtenerValorEntero("max_renovaciones_default")).willReturn(2);
+
+        assertThatThrownBy(() -> prestamoService.renovar(52L, auth))
+                .isInstanceOf(LimiteRenovacionesExcedidoException.class);
+    }
+
+    // ── Test 9: material reservado por otro usuario ────────
+    @Test
+    void renovar_materialReservadoPorOtroUsuario_lanzaExcepcion() {
+        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Prestamo prestamo = prestamoConId(53L);
+        prestamo.setEstadoPrestamoId(1);
+        given(prestamoRepo.findById(53L)).willReturn(Optional.of(prestamo));
+        given(estadoPrestamoRepo.findById(1)).willReturn(Optional.of(estadoPrestamo(1, "ACTIVO")));
+        given(configuracionSistemaService.obtenerValorEntero("max_renovaciones_default")).willReturn(2);
+        given(estadoReservacionRepo.findByNombre("PENDIENTE"))
+                .willReturn(Optional.of(estadoReservacion(1, "PENDIENTE")));
+        given(estadoReservacionRepo.findByNombre("LISTA_PARA_RETIRO"))
+                .willReturn(Optional.of(estadoReservacion(2, "LISTA_PARA_RETIRO")));
+        given(reservacionRepo.existsByLibroIdAndEstadoReservacionIdInAndUsuarioIdNot(2L, List.of(1, 2), 1L))
+                .willReturn(true);
+
+        assertThatThrownBy(() -> prestamoService.renovar(53L, auth))
+                .isInstanceOf(MaterialReservadoException.class);
+    }
+
+    // ── Test 10: LECTOR intenta renovar un préstamo ajeno ──
+    @Test
+    void renovar_lectorIntentaRenovarPrestamoAjeno_lanzaAccesoDenegado() {
+        Authentication auth = authComoRol("lector@uteq.edu.ec", "LECTOR");
+        Prestamo prestamo = prestamoConId(54L); // usuarioId = 1L (ver helper)
+        given(prestamoRepo.findById(54L)).willReturn(Optional.of(prestamo));
+        given(usuarioRepo.findByCorreo("lector@uteq.edu.ec")).willReturn(Optional.of(usuarioConId(99L)));
+
+        assertThatThrownBy(() -> prestamoService.renovar(54L, auth))
+                .isInstanceOf(AuthorizationDeniedException.class);
+    }
+
+    // ── Test 11: préstamo ya devuelto ──────────────────────
+    @Test
+    void renovar_prestamoYaDevuelto_lanzaExcepcion() {
+        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Prestamo prestamo = prestamoConId(55L);
+        prestamo.setEstadoPrestamoId(3);
+        given(prestamoRepo.findById(55L)).willReturn(Optional.of(prestamo));
+        given(estadoPrestamoRepo.findById(3)).willReturn(Optional.of(estadoPrestamo(3, "DEVUELTO")));
+
+        assertThatThrownBy(() -> prestamoService.renovar(55L, auth))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
     // ── Helpers ────────────────────────────────────────────
     // lenient(): MockitoExtension usa strict stubbing por defecto -- un
     // test que solo llama getName() (ej. crear()) pero no getAuthorities()
@@ -151,5 +262,19 @@ class PrestamoServiceTest {
         prestamo.setFechaDevolucionEstimada(OffsetDateTime.now().plusDays(7));
         prestamo.setEstadoPrestamoId(1);
         return prestamo;
+    }
+
+    private EstadoPrestamo estadoPrestamo(Integer id, String nombre) {
+        EstadoPrestamo estado = new EstadoPrestamo();
+        estado.setId(id);
+        estado.setNombre(nombre);
+        return estado;
+    }
+
+    private EstadoReservacion estadoReservacion(Integer id, String nombre) {
+        EstadoReservacion estado = new EstadoReservacion();
+        estado.setId(id);
+        estado.setNombre(nombre);
+        return estado;
     }
 }
