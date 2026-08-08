@@ -969,6 +969,31 @@
             "description": "limite/desde/hasta son @RequestParam opcionales (desde/hasta en formato ISO_DATE_TIME). Requiere BIBLIOTECARIO/GERENTE. Verificado en vivo 2026-07-31."
           },
           "response": []
+        },
+        {
+          "name": "Renovar prestamo (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Renovacion exitosa (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" }
+            ],
+            "url": "{{base_url}}/api/v1/prestamos/{{prestamo_id}}/renovacion",
+            "description": "LECTOR solo puede renovar su propio prestamo; BIBLIOTECARIO/GERENTE/ADMIN cualquiera. Responde 409 (ProblemDetail) si esta vencido, si ya alcanzo el limite de renovaciones, o si el libro tiene una reserva vigente de otro usuario; 400 si ya fue devuelto."
+          },
+          "response": []
         }
       ]
     },
