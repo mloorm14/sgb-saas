@@ -42,9 +42,35 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+  # Módulo 2/9.5: SMTP_HOST/PORT/USER/PASS ya existían como variables de
+  # entorno desde la rama feature/ci-infraestructura (ci.yml, .env.example,
+  # docker-compose.yml), a la espera de esta configuración. Defaults
+  # razonables para dev local sin .env (igual criterio que DB_URL arriba);
+  # en CI, ci.yml sobreescribe SMTP_PORT a 3025 (puerto de GreenMail).
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USER:}
+    password: ${SMTP_PASS:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
 
 server:
   port: 8080
+
+# Módulo 2: notificaciones por correo.
+notificaciones:
+  remitente: no-reply@sgb-saas.local
+  # Ventana de anticipación con la que NotificacionVencimientoScheduler
+  # detecta préstamos por vencer (minutos antes de
+  # fecha_devolucion_estimada). Config externa, mismo criterio que
+  # app.cache.libros.ttl-seconds.
+  minutos-anticipacion-vencimiento: ${NOTIF_MINUTOS_ANTICIPACION_VENCIMIENTO:15}
 
 app:
   cache:
@@ -63,6 +89,10 @@ app:
       # criterio que app.cache.libros.ttl-seconds.
       rate-limit-window-seconds: ${LOGIN_RATE_LIMIT_WINDOW_SECONDS:900}
       max-attempts: ${LOGIN_MAX_ATTEMPTS:5}
+  verificacion-correo:
+    # Módulo 9.5: TTL del código de 6 dígitos en Redis, mismo mecanismo que
+    # app.security.login (ver VerificacionCorreoService/LoginRateLimiter).
+    ttl-minutes: ${VERIFICACION_CORREO_TTL_MINUTES:10}
 
 security:
   jwt:
