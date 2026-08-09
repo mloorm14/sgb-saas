@@ -39,7 +39,12 @@ public class AuthService {
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private static final String ROL_POR_DEFECTO = "LECTOR";
-    private static final String ESTADO_INICIAL = "ACTIVO";
+    // Módulo 9.5: ya no ACTIVO directo -- UserDetailsServiceImpl marca
+    // disabled=true para PENDIENTE_VERIFICACION, así que el login queda
+    // bloqueado (403, ver GlobalExceptionHandler#handleDisabled) hasta que
+    // verificarCorreo() lo pase a ESTADO_VERIFICADO.
+    private static final String ESTADO_INICIAL = "PENDIENTE_VERIFICACION";
+    private static final String ESTADO_VERIFICADO = "ACTIVO";
     private static final String TABLA_USUARIOS = "usuarios";
 
     private final UsuarioRepository usuarioRepository;
@@ -51,6 +56,7 @@ public class AuthService {
     private final RedisTemplate<String, String> redisTemplate;
     private final LoginRateLimiter loginRateLimiter;
     private final BitacoraAuditoriaRepository bitacoraAuditoriaRepository;
+    private final VerificacionCorreoService verificacionCorreoService;
 
     public UsuarioResponseDTO registrar(RegistroRequestDTO dto) {
         usuarioRepository.findByCorreo(dto.correo()).ifPresent(usuario -> {
@@ -59,7 +65,7 @@ public class AuthService {
 
         Rol rolLector = rolRepository.findByNombre(ROL_POR_DEFECTO)
                 .orElseThrow(() -> new IllegalStateException("Catalogo roles sin fila '" + ROL_POR_DEFECTO + "'"));
-        EstadoUsuario estadoActivo = estadoUsuarioRepository.findByNombre(ESTADO_INICIAL)
+        EstadoUsuario estadoPendienteVerificacion = estadoUsuarioRepository.findByNombre(ESTADO_INICIAL)
                 .orElseThrow(() -> new IllegalStateException("Catalogo estados_usuario sin fila '" + ESTADO_INICIAL + "'"));
 
         Instant ahora = Instant.now();
@@ -71,7 +77,7 @@ public class AuthService {
                 .apellido(dto.apellido())
                 .correo(dto.correo())
                 .passwordHash(passwordEncoder.encode(dto.password()))
-                .estado(estadoActivo)
+                .estado(estadoPendienteVerificacion)
                 .correoVerificado(false)
                 .roles(roles)
                 .fechaRegistro(ahora)
@@ -79,6 +85,34 @@ public class AuthService {
                 .build();
 
         Usuario guardado = usuarioRepository.save(usuario);
+
+        // Módulo 9.5: el usuario queda PENDIENTE_VERIFICACION (login
+        // bloqueado) hasta que confirme este código vía verificarCorreo().
+        verificacionCorreoService.generarYEnviarCodigo(guardado);
+
+        return mapToUsuarioResponseDTO(guardado);
+    }
+
+    // ── POST /api/auth/verificar-correo ───────────────────────
+    // No requiere estar autenticado (el usuario todavía no puede loguearse
+    // -- ver ESTADO_INICIAL): la identidad se comprueba con el código de un
+    // solo uso, no con un JWT.
+    public UsuarioResponseDTO verificarCorreo(String correo, String codigo, String ipOrigen) {
+        verificacionCorreoService.validar(correo, codigo);
+
+        Usuario usuario = usuarioRepository.findByCorreo(correo)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado: " + correo));
+        EstadoUsuario estadoActivo = estadoUsuarioRepository.findByNombre(ESTADO_VERIFICADO)
+                .orElseThrow(() -> new IllegalStateException("Catalogo estados_usuario sin fila '" + ESTADO_VERIFICADO + "'"));
+
+        usuario.setEstado(estadoActivo);
+        usuario.setCorreoVerificado(true);
+        usuario.setActualizadoEn(Instant.now());
+        Usuario guardado = usuarioRepository.save(usuario);
+
+        log.info("Correo verificado: correo={} ip={}", correo, ipOrigen);
+        registrarAuditoria(guardado.getId(), "CORREO_VERIFICADO", guardado.getId(),
+                "Correo verificado para: " + correo, ipOrigen);
 
         return mapToUsuarioResponseDTO(guardado);
     }
@@ -149,7 +183,7 @@ public class AuthService {
     // extra solo para la bitácora -- el correo intentado ya queda en
     // "detalles" para correlación manual si hace falta.
     private void registrarAuditoria(Long usuarioId, String tipoOperacion, Long registroId,
-                                     String detalles, String ipOrigen) {
+                                    String detalles, String ipOrigen) {
         BitacoraAuditoria evento = BitacoraAuditoria.builder()
                 .usuarioId(usuarioId)
                 .tipoOperacion(tipoOperacion)
