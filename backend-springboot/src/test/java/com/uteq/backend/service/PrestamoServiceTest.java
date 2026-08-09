@@ -50,6 +50,7 @@ class PrestamoServiceTest {
     @Mock EstadoReservacionRepository estadoReservacionRepo;
     @Mock ConfiguracionSistemaService configuracionSistemaService;
     @Mock CredencialQrService credencialQrService;
+    @Mock NotificacionService notificacionService;
 
     @InjectMocks PrestamoService prestamoService;
 
@@ -95,11 +96,32 @@ class PrestamoServiceTest {
                 "o_hubo_multa", true,
                 "o_monto_multa", new BigDecimal("2.50")
         ));
+        given(prestamoRepo.findById(11L)).willReturn(Optional.of(prestamoConId(11L)));
 
         DevolucionResponseDTO resultado = prestamoService.registrarDevolucion(11L);
 
         assertThat(resultado.huboMulta()).isTrue();
         assertThat(resultado.montoMulta()).isEqualTo(new BigDecimal("2.50"));
+        // Módulo 2: el dueño real del préstamo (usuarioId=1L, ver
+        // prestamoConId) es a quien se le debe notificar, no un id
+        // cualquiera.
+        verify(notificacionService).notificarMulta(1L, 11L, new BigDecimal("2.50"));
+    }
+
+    // Sin atraso no hay multa que notificar -- no debe ni consultarse el
+    // préstamo para esto.
+    @Test
+    void registrarDevolucion_sinAtraso_noNotificaMulta() {
+        Map<String, Object> mapaSinMulta = new HashMap<>();
+        mapaSinMulta.put("o_prestamo_id", 10L);
+        mapaSinMulta.put("o_hubo_multa", false);
+        mapaSinMulta.put("o_monto_multa", null);
+        given(prestamoProcRepo.spRegistrarDevolucion(10L)).willReturn(mapaSinMulta);
+
+        prestamoService.registrarDevolucion(10L);
+
+        verify(notificacionService, org.mockito.Mockito.never())
+                .notificarMulta(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 
     // ── Test 4: acceso denegado cuando un LECTOR pide el id de otro usuario ──
