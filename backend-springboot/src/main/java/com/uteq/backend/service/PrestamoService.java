@@ -56,6 +56,7 @@ public class PrestamoService {
     private final ReservacionRepository reservacionRepo;
     private final EstadoReservacionRepository estadoReservacionRepo;
     private final ConfiguracionSistemaService configuracionSistemaService;
+    private final CredencialQrService credencialQrService;
 
     public PrestamoService(PrestamoRepository prestamoRepo,
                            PrestamoProcedureRepository prestamoProcRepo,
@@ -63,7 +64,8 @@ public class PrestamoService {
                            EstadoPrestamoRepository estadoPrestamoRepo,
                            ReservacionRepository reservacionRepo,
                            EstadoReservacionRepository estadoReservacionRepo,
-                           ConfiguracionSistemaService configuracionSistemaService) {
+                           ConfiguracionSistemaService configuracionSistemaService,
+                           CredencialQrService credencialQrService) {
         this.prestamoRepo = prestamoRepo;
         this.prestamoProcRepo = prestamoProcRepo;
         this.usuarioRepo = usuarioRepo;
@@ -71,16 +73,36 @@ public class PrestamoService {
         this.reservacionRepo = reservacionRepo;
         this.estadoReservacionRepo = estadoReservacionRepo;
         this.configuracionSistemaService = configuracionSistemaService;
+        this.credencialQrService = credencialQrService;
     }
 
     @Transactional
     public PrestamoResponseDTO crear(PrestamoRequestDTO dto, Authentication authentication) {
+        Long usuarioId = resolverUsuarioId(dto);
         Long bibliotecarioId = resolverIdPorCorreo(authentication.getName());
         Long prestamoId = prestamoProcRepo.spCrearPrestamo(
-                dto.usuarioId(), dto.libroId(), bibliotecarioId, dto.diasPrestamo());
+                usuarioId, dto.libroId(), bibliotecarioId, dto.diasPrestamo());
         Prestamo prestamo = prestamoRepo.findById(prestamoId)
                 .orElseThrow(() -> new EntityNotFoundException(PRESTAMO_NO_ENCONTRADO + prestamoId));
         return toDTO(prestamo);
+    }
+
+    // Módulo 8 (credencial QR): resuelve el usuario del préstamo por
+    // credencialQrToken si vino en el body, o usa usuarioId directo si no.
+    // "tieneToken == tieneUsuarioId" cubre ambos casos inválidos con una
+    // sola condición: los dos presentes (true == true) Y los dos ausentes
+    // (false == false) son igual de inválidos -- debe venir EXACTAMENTE uno.
+    private Long resolverUsuarioId(PrestamoRequestDTO dto) {
+        boolean tieneToken = dto.credencialQrToken() != null;
+        boolean tieneUsuarioId = dto.usuarioId() != null;
+        if (tieneToken == tieneUsuarioId) {
+            throw new IllegalArgumentException(
+                    "Debe enviarse exactamente uno de: usuarioId o credencialQrToken.");
+        }
+        if (tieneToken) {
+            return credencialQrService.resolverPorToken(dto.credencialQrToken()).getId();
+        }
+        return dto.usuarioId();
     }
 
     @Transactional
