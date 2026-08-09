@@ -20,6 +20,7 @@ import lombok.NoArgsConstructor;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Mapea la tabla {@code usuarios} del schema normalizado (db/schema.sql):
@@ -70,6 +71,12 @@ public class Usuario {
 
     @Column(name = "identificacion_usuario", length = 20)
     private String identificacionUsuario;
+
+    // Modulo 8 (credencial QR): UUID generado una sola vez por la migracion
+    // V5, nunca reemplazado por la app. Es lo unico que el codigo QR codifica
+    // -- no el correo ni la identificacion en claro (ver CredencialQrService).
+    @Column(name = "credencial_qr_token", nullable = false, unique = true)
+    private UUID credencialQrToken;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "estado_id", nullable = false)
