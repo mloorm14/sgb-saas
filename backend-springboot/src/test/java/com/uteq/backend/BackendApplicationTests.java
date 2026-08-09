@@ -11,11 +11,13 @@ import com.uteq.backend.repository.IdiomaRepository;
 import com.uteq.backend.repository.LibroRepository;
 import com.uteq.backend.repository.MultaProcedureRepository;
 import com.uteq.backend.repository.MultaRepository;
+import com.uteq.backend.repository.NotificacionRepository;
 import com.uteq.backend.repository.PrestamoProcedureRepository;
 import com.uteq.backend.repository.PrestamoRepository;
 import com.uteq.backend.repository.ReservacionProcedureRepository;
 import com.uteq.backend.repository.ReservacionRepository;
 import com.uteq.backend.repository.RolRepository;
+import com.uteq.backend.repository.TipoNotificacionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -99,6 +101,17 @@ class BackendApplicationTests {
 
     @MockitoBean
     private ConfiguracionSistemaRepository configuracionSistemaRepository;
+
+    // Módulo 2 (notificaciones): NotificacionService depende de estos dos
+    // -- mismo motivo que el resto de mocks de esta clase
+    // (DataJpaRepositoriesAutoConfiguration sigue excluido arriba, así que
+    // cualquier JpaRepository nuevo sin @MockitoBean rompe contextLoads()
+    // con "No qualifying bean of type ...").
+    @MockitoBean
+    private NotificacionRepository notificacionRepository;
+
+    @MockitoBean
+    private TipoNotificacionRepository tipoNotificacionRepository;
 
     @Test
     void contextLoads() {
