@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -23,4 +24,14 @@ public interface ReservacionRepository extends JpaRepository<Reservacion, Long> 
     // los ids que arma PrestamoService a partir de EstadoReservacionRepository.
     boolean existsByLibroIdAndEstadoReservacionIdInAndUsuarioIdNot(
             Long libroId, List<Integer> estadosReservacionIds, Long usuarioId);
+
+    // Módulo 2: usada por ReservacionScheduler para saber CUÁLES
+    // reservaciones va a expirar sp_expirar_reservaciones_vencidas en la
+    // corrida actual -- la función solo devuelve un conteo (ver su
+    // Javadoc), así que esta consulta se ejecuta con el mismo filtro
+    // (estado IN (PENDIENTE, LISTA_PARA_RETIRO) AND fecha_limite_retiro <
+    // ahora) justo ANTES de invocar la función, para poder notificar
+    // individualmente antes de que el UPDATE masivo las marque EXPIRADA.
+    List<Reservacion> findByEstadoReservacionIdInAndFechaLimiteRetiroBefore(
+            List<Integer> estadosReservacionIds, OffsetDateTime ahora);
 }
