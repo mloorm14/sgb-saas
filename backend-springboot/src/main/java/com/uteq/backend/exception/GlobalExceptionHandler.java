@@ -1,5 +1,6 @@
 package com.uteq.backend.exception;
 
+import com.uteq.backend.service.CodigoVerificacionInvalidoException;
 import com.uteq.backend.service.CorreoYaRegistradoException;
 import com.uteq.backend.service.LimiteRenovacionesExcedidoException;
 import com.uteq.backend.service.LoginRateLimitExcedidoException;
@@ -135,6 +136,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaterialReservadoException.class)
     public ProblemDetail handleMaterialReservado(MaterialReservadoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    // Módulo 9.5: código de 6 dígitos incorrecto o ya expirado en Redis.
+    // 400 (no 401/403): no es un problema de autenticación ni de permisos,
+    // es un dato de entrada que no coincide con lo esperado.
+    @ExceptionHandler(CodigoVerificacionInvalidoException.class)
+    public ProblemDetail handleCodigoVerificacionInvalido(CodigoVerificacionInvalidoException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
