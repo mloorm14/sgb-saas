@@ -57,6 +57,7 @@ public class PrestamoService {
     private final EstadoReservacionRepository estadoReservacionRepo;
     private final ConfiguracionSistemaService configuracionSistemaService;
     private final CredencialQrService credencialQrService;
+    private final NotificacionService notificacionService;
 
     public PrestamoService(PrestamoRepository prestamoRepo,
                            PrestamoProcedureRepository prestamoProcRepo,
@@ -65,7 +66,8 @@ public class PrestamoService {
                            ReservacionRepository reservacionRepo,
                            EstadoReservacionRepository estadoReservacionRepo,
                            ConfiguracionSistemaService configuracionSistemaService,
-                           CredencialQrService credencialQrService) {
+                           CredencialQrService credencialQrService,
+                           NotificacionService notificacionService) {
         this.prestamoRepo = prestamoRepo;
         this.prestamoProcRepo = prestamoProcRepo;
         this.usuarioRepo = usuarioRepo;
@@ -74,6 +76,7 @@ public class PrestamoService {
         this.estadoReservacionRepo = estadoReservacionRepo;
         this.configuracionSistemaService = configuracionSistemaService;
         this.credencialQrService = credencialQrService;
+        this.notificacionService = notificacionService;
     }
 
     @Transactional
@@ -108,10 +111,21 @@ public class PrestamoService {
     @Transactional
     public DevolucionResponseDTO registrarDevolucion(Long prestamoId) {
         Map<String, Object> resultado = prestamoProcRepo.spRegistrarDevolucion(prestamoId);
+        Boolean huboMulta = (Boolean) resultado.get("o_hubo_multa");
+        BigDecimal montoMulta = (BigDecimal) resultado.get("o_monto_multa");
+
+        // Módulo 2: multas se crean dentro de sp_registrar_devolucion (no
+        // en MultaService -- ver Javadoc de MultaService, que solo lista/
+        // paga/anula multas ya existentes), así que este es el único punto
+        // de la aplicación donde se sabe, recién creada, que hubo una.
+        if (Boolean.TRUE.equals(huboMulta)) {
+            Prestamo prestamo = prestamoRepo.findById(prestamoId)
+                    .orElseThrow(() -> new EntityNotFoundException(PRESTAMO_NO_ENCONTRADO + prestamoId));
+            notificacionService.notificarMulta(prestamo.getUsuarioId(), prestamoId, montoMulta);
+        }
+
         return new DevolucionResponseDTO(
-                (Long) resultado.get("o_prestamo_id"),
-                (Boolean) resultado.get("o_hubo_multa"),
-                (BigDecimal) resultado.get("o_monto_multa"));
+                (Long) resultado.get("o_prestamo_id"), huboMulta, montoMulta);
     }
 
     // ── POST /{id}/renovacion ────────────────────────────────
