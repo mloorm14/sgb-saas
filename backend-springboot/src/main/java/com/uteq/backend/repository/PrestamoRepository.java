@@ -6,6 +6,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.OffsetDateTime;
+import java.util.List;
+
 /**
  * CRUD elemental sobre {@code prestamos}. Solo consultas derivadas de una
  * sola tabla (sin joins) — cualquier lectura que combine préstamos con
@@ -18,4 +21,11 @@ public interface PrestamoRepository extends JpaRepository<Prestamo, Long> {
     Page<Prestamo> findByUsuarioId(Long usuarioId, Pageable pageable);
 
     Page<Prestamo> findByEstadoPrestamoId(Integer estadoId, Pageable pageable);
+
+    // Usada por NotificacionVencimientoScheduler: préstamos vigentes
+    // (ACTIVO/RENOVADO -- estadoIds ya resueltos por el llamador, ver
+    // EstadoPrestamoRepository) cuya fecha_devolucion_estimada cae dentro
+    // de la ventana [ahora, ahora + minutos de anticipación configurados].
+    List<Prestamo> findByEstadoPrestamoIdInAndFechaDevolucionEstimadaBetween(
+            List<Integer> estadoPrestamoIds, OffsetDateTime desde, OffsetDateTime hasta);
 }
