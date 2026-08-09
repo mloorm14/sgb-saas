@@ -6,18 +6,66 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "base_url", "value": "http://localhost:8080", "type": "string" },
-    { "key": "access_token", "value": "", "type": "string" },
-    { "key": "lector_access_token", "value": "", "type": "string" },
-    { "key": "gerente_access_token", "value": "", "type": "string" },
-    { "key": "lector_correo", "value": "", "type": "string" },
-    { "key": "lector_password", "value": "", "type": "string" },
-    { "key": "gerente_correo", "value": "", "type": "string" },
-    { "key": "gerente_password", "value": "", "type": "string" },
-    { "key": "lector_usuario_id", "value": "", "type": "string" },
-    { "key": "libro_id_creado", "value": "", "type": "string" },
-    { "key": "prestamo_id_creado", "value": "", "type": "string" },
-    { "key": "multa_id", "value": "", "type": "string" }
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "lector_access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "gerente_access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "lector_correo",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "lector_password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "gerente_correo",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "gerente_password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "lector_usuario_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "libro_id_creado",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "prestamo_id_creado",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "multa_id",
+      "value": "",
+      "type": "string"
+    }
   ],
   "item": [
     {
@@ -45,12 +93,20 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"correo\": \"admin@sgb-saas.local\",\n  \"password\": \"Admin123!\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/auth/login",
             "description": "Usuario semilla de db/seed.sql (rol ADMIN unicamente). Captura access_token via pm.environment.set. Verificado en vivo 2026-07-31: 200, accessToken presente."
@@ -75,12 +131,20 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"correo\": \"admin@sgb-saas.local\",\n  \"password\": \"claveIncorrecta123\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/auth/login",
             "description": "AuthService.login() -> BadCredentialsException -> GlobalExceptionHandler.handleBadCredentials -> 401 ProblemDetail (mensaje generico, no distingue correo inexistente de clave incorrecta)."
@@ -105,12 +169,20 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"correo\": \"rate-limit-test@sgb-saas.local\",\n  \"password\": \"claveIncorrecta123\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/auth/login",
             "description": "OWASP A07 (LoginRateLimiter, ver docs/mediciones/sec/2026-07-30-owasp-a07-fallo-identificacion-autenticacion.md). Config real (application.yml): app.security.login.max-attempts=5, rate-limit-window-seconds=900 (15 min), clave Redis = correo+IP.\n\nNO se puede reproducir con un solo request: hay que ENVIAR ESTE MISMO REQUEST 6 VECES SEGUIDAS (Collection Runner, 6 iteraciones, o Send x6 manual) contra el MISMO correo -- los primeros 5 devuelven 401 (credenciales invalidas), el 6to devuelve 429. Usa un correo dedicado (no admin@sgb-saas.local) para no bloquear la cuenta admin del resto de la coleccion durante 15 minutos."
@@ -149,12 +221,20 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nombre\": \"Lector\",\n  \"apellido\": \"Postman\",\n  \"correo\": \"{{lector_correo}}\",\n  \"password\": \"{{lector_password}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/auth/registro",
             "description": "Correo generado dinamicamente en el pre-request script (timestamp) para poder re-correr la coleccion sin chocar con un correo ya registrado. Rol por defecto: LECTOR. Captura lector_usuario_id. Verificado en vivo 2026-07-31 (id 45)."
@@ -182,12 +262,20 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nombre\": \"\",\n  \"apellido\": \"\",\n  \"correo\": \"no-es-un-correo\",\n  \"password\": \"corta\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/auth/registro",
             "description": "IMPORTANTE: el enunciado de esta tarea pide cubrir '422 (validacion)', pero la API real usa 400 para violaciones de @Valid en el body (MethodArgumentNotValidException -> GlobalExceptionHandler.handleValidation -> 400 Bad Request, ver AuthControllerTest.registro_datosInvalidos_devuelve400ConErroresPorCampo). El 422 real de esta API es distinto: lo usan las reglas de negocio de los stored procedures (SQLSTATE LB422, ver docs/basedatos/CATALOGO-SP.md) -- ver 'Crear prestamo - usuario bloqueado por multa (422)' en la carpeta Prestamos para un 422 autentico. Verificado en vivo 2026-07-31: 400, errores.correo y errores.password presentes."
@@ -214,12 +302,20 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"correo\": \"{{lector_correo}}\",\n  \"password\": \"{{lector_password}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/auth/login",
             "description": "Requiere haber corrido antes 'Registro - Lector nuevo' en esta misma sesion del Runner (usa lector_correo/lector_password capturados ahi). Captura lector_access_token."
@@ -244,12 +340,20 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"correo\": \"{{lector_correo}}\",\n  \"password\": \"{{lector_password}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/auth/login",
             "description": "PASO MANUAL REQUERIDO antes de correr este request (no se puede bloquear una cuenta via API, es un cambio de estado directo en BD): ejecutar contra sgb_postgres, reemplazando el correo por el valor real de lector_correo capturado por 'Registro - Lector nuevo':\n\ndocker exec sgb_postgres psql -U sgb_user -d sgb_db -c \"UPDATE usuarios SET estado_id = (SELECT id FROM estados_usuario WHERE nombre = 'BLOQUEADO_POR_MULTA') WHERE correo = '<lector_correo>';\"\n\nUserDetailsServiceImpl marca accountLocked=true -> Spring Security lanza LockedException -> GlobalExceptionHandler.handleLocked -> 423 Locked. Verificado en vivo 2026-07-31. Para dejar la cuenta reutilizable, revertir con estado_id = (SELECT id FROM estados_usuario WHERE nombre='ACTIVO')."
@@ -284,12 +388,20 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nombre\": \"Gerente\",\n  \"apellido\": \"Postman\",\n  \"correo\": \"{{gerente_correo}}\",\n  \"password\": \"{{gerente_password}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/auth/registro",
             "description": "Se registra como LECTOR por defecto (no existe endpoint publico para crear un GERENTE, por diseno -- ver AuthService.ROL_POR_DEFECTO). El siguiente request documenta el paso manual de SQL para agregarle el rol GERENTE antes de iniciar sesion."
@@ -316,12 +428,20 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"correo\": \"{{gerente_correo}}\",\n  \"password\": \"{{gerente_password}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/auth/login",
             "description": "PASO MANUAL REQUERIDO antes de correr este request: PrestamoController/ReservacionController/MultaController exigen GERENTE o BIBLIOTECARIO para las operaciones de escritura, y el unico usuario semilla (admin@sgb-saas.local) solo tiene ADMIN -- confirmado en vivo que un token ADMIN puro recibe 403 en POST /api/v1/prestamos. Tras correr 'Registro - Gerente de prueba', ejecutar contra sgb_postgres (reemplazando el correo por el valor real de gerente_correo):\n\ndocker exec sgb_postgres psql -U sgb_user -d sgb_db -c \"INSERT INTO usuario_roles (usuario_id, rol_id) SELECT (SELECT id FROM usuarios WHERE correo = '<gerente_correo>'), (SELECT id FROM roles WHERE nombre = 'GERENTE');\"\n\nCaptura gerente_access_token. Verificado en vivo 2026-07-31."
@@ -346,7 +466,11 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Cookie", "value": "refreshToken=token-invalido-de-prueba-postman", "type": "text" }
+              {
+                "key": "Cookie",
+                "value": "refreshToken=token-invalido-de-prueba-postman",
+                "type": "text"
+              }
             ],
             "url": "{{base_url}}/api/auth/refresh",
             "description": "AuthService.refresh() -> jwtService.validateToken() falla -> RefreshTokenInvalidoException -> 401 ProblemDetail (ver docs/mediciones/sec/2026-07-30-refresh-token-invalido-fix-401.md). El header Cookie se fuerza manualmente porque no hay una cookie refreshToken real capturada por login en este flujo (TokenResponseDTO.refreshToken es @JsonIgnore en el body, solo viaja como Set-Cookie -- Postman la habria guardado automaticamente en su cookie jar si 'Login - Admin semilla' se corrio justo antes contra el mismo base_url; este header explicito garantiza el caso invalido sin depender de eso). Verificado en vivo 2026-07-31: 401."
@@ -371,7 +495,11 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
             ],
             "url": "{{base_url}}/api/auth/logout",
             "description": "Requiere Authorization con un access_token todavia valido. Tras correr esto, access_token queda en la blacklist de Redis (blacklist:<jti>) -- si vas a seguir usando la carpeta Libros con {{access_token}}, corre 'Login - Admin semilla' de nuevo despues de este request."
@@ -425,7 +553,11 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
             ],
             "url": "{{base_url}}/api/v1/libros?page=0&size=10",
             "description": "Accesible por LECTOR/BIBLIOTECARIO/GERENTE/ADMIN. Paginado (Pageable), sort por defecto 'titulo'."
@@ -451,7 +583,11 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
             ],
             "url": "{{base_url}}/api/v1/libros/1",
             "description": "Libro id=1 = 'Clean Code' (db/seed.sql). Verificado en vivo 2026-07-31."
@@ -476,7 +612,11 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
             ],
             "url": "{{base_url}}/api/v1/libros/999999",
             "description": "LibroService.buscarPorId() -> EntityNotFoundException -> 404. Verificado en vivo 2026-07-31: {\"detail\":\"Libro no encontrado con id: 999999\",...}."
@@ -526,13 +666,25 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" },
-              { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"titulo\": \"Libro de prueba Postman\",\n  \"isbn\": \"9781234567897\",\n  \"anioPublicacion\": 2020,\n  \"resumen\": \"Creado desde la coleccion Postman para pruebas\",\n  \"portadaUrl\": null,\n  \"editorialId\": 1,\n  \"idiomaId\": 1,\n  \"estadoId\": 1,\n  \"stockTotal\": 5,\n  \"stockDisponible\": 5\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/v1/libros",
             "description": "Requiere BIBLIOTECARIO/GERENTE/ADMIN -- confirmado con el fix de rol ADMIN de esta entrega (docs/mediciones/sec/2026-07-30-owasp-a01-fix-rol-admin-libros.md). editorialId=1 (Prentice Hall), idiomaId=1 (Español), estadoId=1 (ACTIVO libro) segun db/seed.sql. Captura libro_id_creado para 'Actualizar libro' y 'Eliminar libro'."
@@ -557,13 +709,25 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" },
-              { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"titulo\": \"Libro de prueba Postman (actualizado)\",\n  \"isbn\": \"9781234567897\",\n  \"anioPublicacion\": 2021,\n  \"resumen\": \"Actualizado desde la coleccion Postman\",\n  \"portadaUrl\": null,\n  \"editorialId\": 1,\n  \"idiomaId\": 1,\n  \"estadoId\": 1,\n  \"stockTotal\": 5,\n  \"stockDisponible\": 5\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/v1/libros/{{libro_id_creado}}",
             "description": "Requiere haber corrido antes 'Crear libro - Exito' en esta sesion (usa libro_id_creado)."
@@ -588,13 +752,25 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" },
-              { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"titulo\": \"\",\n  \"isbn\": \"x\",\n  \"anioPublicacion\": 3000,\n  \"resumen\": null,\n  \"portadaUrl\": null,\n  \"editorialId\": null,\n  \"idiomaId\": null,\n  \"estadoId\": null,\n  \"stockTotal\": -1,\n  \"stockDisponible\": -1\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/v1/libros",
             "description": "Viola varias reglas de LibroRequestDTO a la vez (@NotBlank titulo, @Pattern isbn, @Max anioPublicacion, @NotNull editorialId/idiomaId/estadoId, @Min stockTotal/stockDisponible) -> 400 con mapa de errores por campo. Mismo aclarado que en 'Registro - Datos invalidos': esto es 400, no 422 -- ver esa descripcion para el 422 real de esta API."
@@ -619,13 +795,25 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" },
-              { "key": "Authorization", "value": "Bearer {{lector_access_token}}", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lector_access_token}}",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"titulo\": \"No deberia crearse\",\n  \"isbn\": \"9789999999999\",\n  \"anioPublicacion\": 2020,\n  \"editorialId\": 1,\n  \"idiomaId\": 1,\n  \"estadoId\": 1,\n  \"stockTotal\": 1,\n  \"stockDisponible\": 1\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/v1/libros",
             "description": "@PreAuthorize(\"hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')\") -- LECTOR autenticado pero sin rol suficiente -> AuthorizationDeniedException -> 403 (mismo patron que LibroControllerSecurityTest.crear_conRolLector_sigueRechazado). Requiere lector_access_token de la carpeta Auth."
@@ -650,7 +838,11 @@
           "request": {
             "method": "DELETE",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
             ],
             "url": "{{base_url}}/api/v1/libros/{{libro_id_creado}}",
             "description": "Limpieza: elimina el libro creado por 'Crear libro - Exito' (no toca los libros de db/seed.sql). Correr al final de la carpeta."
@@ -683,13 +875,25 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" },
-              { "key": "Authorization", "value": "Bearer {{gerente_access_token}}", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gerente_access_token}}",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"usuarioId\": {{lector_usuario_id}},\n  \"libroId\": 1,\n  \"diasPrestamo\": 7\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/v1/prestamos",
             "description": "bibliotecarioId se resuelve del Authentication (GERENTE que ejecuta), no viaja en el body. libroId=1 ('Clean Code', stock disponible en seed). Captura prestamo_id_creado. Verificado en vivo 2026-07-31."
@@ -714,13 +918,25 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" },
-              { "key": "Authorization", "value": "Bearer {{gerente_access_token}}", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gerente_access_token}}",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"usuarioId\": {{lector_usuario_id}},\n  \"libroId\": 1,\n  \"diasPrestamo\": 7\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/v1/prestamos",
             "description": "ESTE es el 422 real de la API (no la validacion de @Valid, que es 400 -- ver nota en 'Registro - Datos invalidos'). Requiere el MISMO paso manual de SQL que 'Login - Cuenta bloqueada por multas' (bloquear al usuario lector_usuario_id / lector_correo con estado_id = BLOQUEADO_POR_MULTA). sp_crear_prestamo() -> RAISE EXCEPTION ... USING ERRCODE='LB422' -> GlobalExceptionHandler.handleStoredProcedureError -> 422 Unprocessable Entity. Verificado en vivo 2026-07-31: {\"detail\":\"ERROR: El usuario 45 esta bloqueado por multas pendientes...\",...}."
@@ -745,13 +961,25 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" },
-              { "key": "Authorization", "value": "Bearer {{gerente_access_token}}", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gerente_access_token}}",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"usuarioId\": {{lector_usuario_id}},\n  \"libroId\": 999999,\n  \"diasPrestamo\": 7\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/v1/prestamos",
             "description": "sp_crear_prestamo() -> libro no existe -> ERRCODE 'LB404' -> 404. Verificado en vivo 2026-07-31."
@@ -776,13 +1004,25 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" },
-              { "key": "Authorization", "value": "Bearer {{gerente_access_token}}", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gerente_access_token}}",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"usuarioId\": {{lector_usuario_id}},\n  \"libroId\": 1,\n  \"diasPrestamo\": 0\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/v1/prestamos",
             "description": "@Min(1) en diasPrestamo -> 400. Verificado en vivo 2026-07-31: {\"errores\":{\"diasPrestamo\":\"Los días de préstamo deben ser al menos 1\"}}."
@@ -807,13 +1047,25 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" },
-              { "key": "Authorization", "value": "Bearer {{lector_access_token}}", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lector_access_token}}",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"usuarioId\": {{lector_usuario_id}},\n  \"libroId\": 1,\n  \"diasPrestamo\": 7\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/v1/prestamos",
             "description": "@PreAuthorize(\"hasAnyRole('BIBLIOTECARIO','GERENTE')\") -- LECTOR no alcanza. Nota: ni siquiera ADMIN puro pasa este check (verificado en vivo: 403) -- PrestamoController tiene el mismo hueco de ADMIN que tenia LibroController antes del fix de esta entrega, deliberadamente NO corregido aqui (fuera de alcance, ver docs/mediciones/sec/2026-07-30-owasp-a01-fix-rol-admin-libros.md)."
@@ -838,7 +1090,11 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{gerente_access_token}}", "type": "text" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gerente_access_token}}",
+                "type": "text"
+              }
             ],
             "url": "{{base_url}}/api/v1/prestamos/{{prestamo_id_creado}}/devolucion",
             "description": "Requiere prestamo_id_creado de 'Crear prestamo - Exito'. Respuesta: DevolucionResponseDTO (prestamoId, huboMulta, montoMulta). Verificado en vivo 2026-07-31: huboMulta=false (devolucion el mismo dia, sin atraso)."
@@ -863,7 +1119,11 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{gerente_access_token}}", "type": "text" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gerente_access_token}}",
+                "type": "text"
+              }
             ],
             "url": "{{base_url}}/api/v1/prestamos/{{prestamo_id_creado}}/devolucion",
             "description": "Correr DESPUES de 'Registrar devolucion - Exito' contra el mismo prestamo_id_creado (doble devolucion). sp_registrar_devolucion() -> ERRCODE 'LB409' -> 409. Verificado en vivo 2026-07-31."
@@ -888,7 +1148,11 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{gerente_access_token}}", "type": "text" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gerente_access_token}}",
+                "type": "text"
+              }
             ],
             "url": "{{base_url}}/api/v1/prestamos/999999/devolucion",
             "description": "sp_registrar_devolucion() -> ERRCODE 'LB404' -> 404. Verificado en vivo 2026-07-31."
@@ -913,7 +1177,11 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{lector_access_token}}", "type": "text" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lector_access_token}}",
+                "type": "text"
+              }
             ],
             "url": "{{base_url}}/api/v1/prestamos/usuario/{{lector_usuario_id}}?page=0&size=10",
             "description": "LECTOR puede ver sus propios prestamos (PrestamoService valida que coincida con su propio id si el Authentication es LECTOR). Verificado en vivo 2026-07-31."
@@ -938,7 +1206,11 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{lector_access_token}}", "type": "text" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lector_access_token}}",
+                "type": "text"
+              }
             ],
             "url": "{{base_url}}/api/v1/prestamos/usuario/{{lector_usuario_id}}/activos",
             "description": "Devuelve List<PrestamoActivoResponseDTO> (sin paginar). Verificado en vivo 2026-07-31 (lista vacia tras haber devuelto el unico prestamo de prueba)."
@@ -963,7 +1235,11 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{gerente_access_token}}", "type": "text" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gerente_access_token}}",
+                "type": "text"
+              }
             ],
             "url": "{{base_url}}/api/v1/prestamos/reportes/libros-mas-prestados?limite=5",
             "description": "limite/desde/hasta son @RequestParam opcionales (desde/hasta en formato ISO_DATE_TIME). Requiere BIBLIOTECARIO/GERENTE. Verificado en vivo 2026-07-31."
@@ -988,7 +1264,11 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
             ],
             "url": "{{base_url}}/api/v1/prestamos/{{prestamo_id}}/renovacion",
             "description": "LECTOR solo puede renovar su propio prestamo; BIBLIOTECARIO/GERENTE/ADMIN cualquiera. Responde 409 (ProblemDetail) si esta vencido, si ya alcanzo el limite de renovaciones, o si el libro tiene una reserva vigente de otro usuario; 400 si ya fue devuelto."
@@ -1019,13 +1299,25 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" },
-              { "key": "Authorization", "value": "Bearer {{lector_access_token}}", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lector_access_token}}",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"usuarioId\": {{lector_usuario_id}},\n  \"libroId\": 2\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/v1/reservaciones",
             "description": "Un LECTOR solo puede reservar para si mismo (usuarioId debe coincidir con su propio id, ver ReservacionService.crear). libroId=2 = 'Refactoring...' (db/seed.sql). Verificado en vivo 2026-07-31."
@@ -1050,13 +1342,25 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" },
-              { "key": "Authorization", "value": "Bearer {{lector_access_token}}", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lector_access_token}}",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"usuarioId\": {{lector_usuario_id}},\n  \"libroId\": 999999\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/v1/reservaciones",
             "description": "HALLAZGO real detectado armando esta coleccion (2026-07-31), no corregido -- fuera de alcance de esta tarea. A diferencia de PrestamoController (que valida via sp_crear_prestamo con ERRCODE LB404), ReservacionService.crear() NO valida que libroId exista: guarda usuarioId/libroId como columnas Long planas sin pasar por un repositorio de Libro. La restriccion FK de Postgres revienta como excepcion no mapeada -> GlobalExceptionHandler.handleGenerica -> 500 Internal Server Error, en vez del 404 esperable. Verificado en vivo: {\"detail\":\"Error interno del servidor\",\"status\":500,...}. Vale la pena reportarlo como bug para la Entrega Final."
@@ -1081,7 +1385,11 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{lector_access_token}}", "type": "text" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lector_access_token}}",
+                "type": "text"
+              }
             ],
             "url": "{{base_url}}/api/v1/reservaciones/usuario/{{lector_usuario_id}}?page=0&size=10",
             "description": "LECTOR puede ver sus propias reservaciones. Verificado en vivo 2026-07-31."
@@ -1112,7 +1420,11 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{lector_access_token}}", "type": "text" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lector_access_token}}",
+                "type": "text"
+              }
             ],
             "url": "{{base_url}}/api/v1/multas/usuario/{{lector_usuario_id}}?page=0&size=10",
             "description": "LECTOR puede ver sus propias multas. Verificado en vivo 2026-07-31 (pagina vacia si el usuario de prueba nunca tuvo un prestamo con atraso)."
@@ -1124,7 +1436,11 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{gerente_access_token}}", "type": "text" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gerente_access_token}}",
+                "type": "text"
+              }
             ],
             "url": "{{base_url}}/api/v1/multas/{{multa_id}}/pago",
             "description": "NO hay forma de generar una multa PENDIENTE bajo demanda via API: sp_registrar_devolucion solo crea una si la devolucion llega despues de fecha_devolucion_estimada, y esta coleccion no puede simular el paso del tiempo. Para probar este request, setea manualmente la variable multa_id con el id de una multa PENDIENTE real (buscala con 'Listar multas por usuario' sobre un usuario que si tenga atraso, o insertala directo en BD para pruebas). Sin eso, este request fallara con 404 (multa_id vacio -> path invalido) -- se documenta la forma correcta en vez de fabricar un caso de exito falso."
@@ -1149,7 +1465,11 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{gerente_access_token}}", "type": "text" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gerente_access_token}}",
+                "type": "text"
+              }
             ],
             "url": "{{base_url}}/api/v1/multas/999999/pago",
             "description": "sp_pagar_multa() -> ERRCODE 'LB404' -> 404. Verificado en vivo 2026-07-31."
@@ -1174,13 +1494,25 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json", "type": "text" },
-              { "key": "Authorization", "value": "Bearer {{lector_access_token}}", "type": "text" }
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lector_access_token}}",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"motivo\": \"Intento de anulacion sin permisos (prueba Postman)\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/v1/multas/1/anulacion",
             "description": "@PreAuthorize(\"hasAnyRole('GERENTE','ADMIN')\") -- unico endpoint de escritura del sistema donde BIBLIOTECARIO tampoco alcanza (solo GERENTE/ADMIN). LECTOR -> 403. Verificado en vivo 2026-07-31 (con id=1 aunque no exista una multa real: @PreAuthorize se evalua ANTES que el body/SP, asi que el 403 llega sin tocar la BD)."
@@ -1198,7 +1530,11 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
             ],
             "url": "{{base_url}}/api/v1/configuracion"
           },
@@ -1209,15 +1545,49 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" },
-              { "key": "Content-Type", "value": "application/json", "type": "text" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"valor\": \"20\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{base_url}}/api/v1/configuracion/dias_prestamo_default"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Credencial QR",
+      "description": "Modulo 8: identificacion rapida en ventanilla. El QR NO reemplaza el login por correo -- es un metodo adicional para que el bibliotecario identifique al lector al crear un prestamo, sin escribir el usuarioId a mano.",
+      "item": [
+        {
+          "name": "Mi credencial QR (200, imagen PNG)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/credencial-qr/mi-credencial",
+            "description": "Solo LECTOR. Devuelve la imagen PNG del QR propio (nunca el de otro usuario, no hay parametro de id en la URL). El QR codifica solo un UUID, nunca el correo/cedula en claro."
           },
           "response": []
         }
