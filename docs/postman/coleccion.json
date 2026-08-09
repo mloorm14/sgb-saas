@@ -283,6 +283,84 @@
           "response": []
         },
         {
+          "name": "Verificar correo - Lector nuevo (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Verificacion de correo exitosa (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.id).to.eql(pm.environment.get('lector_usuario_id'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"{{lector_correo}}\",\n  \"codigo\": \"{{codigo_verificacion}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/auth/verificar-correo",
+            "description": "PASO MANUAL: no se puede automatizar en el Runner. El codigo de 6 digitos se envia por correo real (EmailService/VerificacionCorreoService, TTL 10 min en Redis) al buzon configurado en SMTP_*; hay que revisarlo y setear la variable de entorno codigo_verificacion en Postman antes de correr este request. Sin este paso, 'Login - Lector (200)' (siguiente request) devuelve 403: el usuario recien registrado queda PENDIENTE_VERIFICACION, no ACTIVO (ver Modulo 9.5)."
+          },
+          "response": []
+        },
+        {
+          "name": "Verificar correo - codigo incorrecto (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Codigo incorrecto devuelve 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"{{lector_correo}}\",\n  \"codigo\": \"000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/auth/verificar-correo",
+            "description": "CodigoVerificacionInvalidoException -> GlobalExceptionHandler.handleCodigoVerificacionInvalido -> 400. Correr ANTES de 'Verificar correo - Lector nuevo (200)': una vez validado el codigo correcto, VerificacionCorreoService lo borra de Redis (un solo uso) y este request pasaria a fallar por 'no se ha solicitado' en vez de 'codigo incorrecto', que es un mensaje distinto pero el mismo status 400."
+          },
+          "response": []
+        },
+        {
           "name": "Login - Lector (200)",
           "event": [
             {
@@ -318,7 +396,7 @@
               }
             },
             "url": "{{base_url}}/api/auth/login",
-            "description": "Requiere haber corrido antes 'Registro - Lector nuevo' en esta misma sesion del Runner (usa lector_correo/lector_password capturados ahi). Captura lector_access_token."
+            "description": "Requiere haber corrido antes 'Registro - Lector nuevo' Y 'Verificar correo - Lector nuevo (200)' en esta misma sesion del Runner (Modulo 9.5: el registro ya no deja al usuario ACTIVO de inmediato, ver PENDIENTE_VERIFICACION). Sin el paso de verificacion, este login devuelve 403 (DisabledException). Captura lector_access_token."
           },
           "response": []
         },
@@ -1588,6 +1666,72 @@
             ],
             "url": "{{base_url}}/api/v1/credencial-qr/mi-credencial",
             "description": "Solo LECTOR. Devuelve la imagen PNG del QR propio (nunca el de otro usuario, no hay parametro de id en la URL). El QR codifica solo un UUID, nunca el correo/cedula en claro."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notificaciones",
+      "description": "Modulo 2: alertas de vencimiento/multa/reserva caducada. Se generan solas via NotificacionVencimientoScheduler (cada minuto), PrestamoService.registrarDevolucion (multa) y ReservacionScheduler (reserva caducada) -- no hay endpoint para crearlas a mano, solo para listarlas.",
+      "item": [
+        {
+          "name": "Listar notificaciones de un usuario (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Listado paginado (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('content');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lector_access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/notificaciones/usuario/{{lector_usuario_id}}",
+            "description": "LECTOR consultando las suyas (mismo patron 'propio vs cualquiera' que MultaController). Puede venir vacio si todavia no se disparo ningun scheduler ni hubo multa/reserva caducada para este usuario -- no es un error, ver NotificacionServiceTest."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar notificaciones de OTRO usuario, siendo LECTOR (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Lector pidiendo otro usuario devuelve 403', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lector_access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/notificaciones/usuario/1",
+            "description": "AuthorizationDeniedException (NotificacionService.validarAccesoUsuario) -> 403. Asume que el usuario id=1 no es el propio lector_usuario_id logueado (usuario semilla admin en db/seed.sql)."
           },
           "response": []
         }
