@@ -1,5 +1,6 @@
 package com.uteq.backend.controller;
 
+import com.uteq.backend.dto.CodigoVerificacionRequestDTO;
 import com.uteq.backend.dto.LoginRequestDTO;
 import com.uteq.backend.dto.RegistroRequestDTO;
 import com.uteq.backend.dto.TokenResponseDTO;
@@ -37,6 +38,17 @@ public class AuthController {
     public ResponseEntity<UsuarioResponseDTO> registro(@Valid @RequestBody RegistroRequestDTO dto) {
         UsuarioResponseDTO usuario = authService.registrar(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(usuario);
+    }
+
+    // Módulo 9.5: sin @PreAuthorize / sin JWT -- el usuario recién
+    // registrado todavía no puede loguearse (ver AuthService.ESTADO_INICIAL),
+    // así que no hay token que exigir aquí. La identidad se prueba con el
+    // código de un solo uso, no con autenticación.
+    @PostMapping("/verificar-correo")
+    public ResponseEntity<UsuarioResponseDTO> verificarCorreo(
+            @Valid @RequestBody CodigoVerificacionRequestDTO dto, HttpServletRequest request) {
+        UsuarioResponseDTO usuario = authService.verificarCorreo(dto.correo(), dto.codigo(), obtenerIpOrigen(request));
+        return ResponseEntity.ok(usuario);
     }
 
     @PostMapping("/login")
