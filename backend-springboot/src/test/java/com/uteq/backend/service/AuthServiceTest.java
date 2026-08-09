@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -76,6 +77,9 @@ class AuthServiceTest {
 
     @Mock
     private BitacoraAuditoriaRepository bitacoraAuditoriaRepository;
+
+    @Mock
+    private VerificacionCorreoService verificacionCorreoService;
 
     @InjectMocks
     private AuthService authService;
@@ -201,6 +205,75 @@ class AuthServiceTest {
         when(usuarioRepository.findByCorreo("lector@uteq.edu.ec")).thenReturn(Optional.of(usuarioExistente));
 
         assertThrows(CorreoYaRegistradoException.class, () -> authService.registrar(dto));
+
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    // Módulo 9.5: ya no ACTIVO directo -- ver AuthService.ESTADO_INICIAL.
+    @Test
+    void registroExitoso_dejaAlUsuarioPendienteDeVerificacionYEnviaElCodigo() {
+        RegistroRequestDTO dto = new RegistroRequestDTO(
+                "Nuevo", "Lector", "nuevo@uteq.edu.ec", "password123");
+
+        EstadoUsuario pendienteVerificacion = new EstadoUsuario();
+        pendienteVerificacion.setId(4);
+        pendienteVerificacion.setNombre("PENDIENTE_VERIFICACION");
+
+        Rol lector = new Rol();
+        lector.setId(1);
+        lector.setNombre("LECTOR");
+
+        when(usuarioRepository.findByCorreo("nuevo@uteq.edu.ec")).thenReturn(Optional.empty());
+        when(rolRepository.findByNombre("LECTOR")).thenReturn(Optional.of(lector));
+        when(estadoUsuarioRepository.findByNombre("PENDIENTE_VERIFICACION")).thenReturn(Optional.of(pendienteVerificacion));
+        when(passwordEncoder.encode("password123")).thenReturn("hash-encriptado");
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> {
+            Usuario u = inv.getArgument(0);
+            u.setId(99L);
+            return u;
+        });
+
+        authService.registrar(dto);
+
+        var capturado = org.mockito.ArgumentCaptor.forClass(Usuario.class);
+        verify(usuarioRepository).save(capturado.capture());
+        assertEquals("PENDIENTE_VERIFICACION", capturado.getValue().getEstado().getNombre());
+        assertFalse(capturado.getValue().isCorreoVerificado());
+        verify(verificacionCorreoService).generarYEnviarCodigo(any(Usuario.class));
+    }
+
+    @Test
+    void verificarCorreo_codigoValido_activaAlUsuarioYMarcaCorreoVerificado() {
+        Usuario usuarioPendiente = usuarioDePrueba();
+        usuarioPendiente.setCorreoVerificado(false);
+
+        EstadoUsuario activo = new EstadoUsuario();
+        activo.setId(1);
+        activo.setNombre("ACTIVO");
+
+        when(usuarioRepository.findByCorreo("lector@uteq.edu.ec")).thenReturn(Optional.of(usuarioPendiente));
+        when(estadoUsuarioRepository.findByNombre("ACTIVO")).thenReturn(Optional.of(activo));
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        authService.verificarCorreo("lector@uteq.edu.ec", "123456", IP_DE_PRUEBA);
+
+        verify(verificacionCorreoService).validar("lector@uteq.edu.ec", "123456");
+        var capturado = org.mockito.ArgumentCaptor.forClass(Usuario.class);
+        verify(usuarioRepository).save(capturado.capture());
+        assertTrue(capturado.getValue().isCorreoVerificado());
+        verify(bitacoraAuditoriaRepository).save(any());
+    }
+
+    // El código inválido/expirado lo detecta VerificacionCorreoService --
+    // AuthService no debe intentar activar al usuario si esa validación
+    // lanza.
+    @Test
+    void verificarCorreo_codigoInvalido_noActivaAlUsuario() {
+        doThrow(new CodigoVerificacionInvalidoException("El código ingresado es incorrecto."))
+                .when(verificacionCorreoService).validar("lector@uteq.edu.ec", "000000");
+
+        assertThrows(CodigoVerificacionInvalidoException.class,
+                () -> authService.verificarCorreo("lector@uteq.edu.ec", "000000", IP_DE_PRUEBA));
 
         verify(usuarioRepository, never()).save(any());
     }
