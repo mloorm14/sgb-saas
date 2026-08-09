@@ -1,8 +1,10 @@
 package com.uteq.backend;
 
 import com.uteq.backend.repository.BitacoraAuditoriaRepository;
+import com.uteq.backend.repository.ConfiguracionSistemaRepository;
 import com.uteq.backend.repository.EditorialRepository;
 import com.uteq.backend.repository.EstadoLibroRepository;
+import com.uteq.backend.repository.EstadoPrestamoRepository;
 import com.uteq.backend.repository.EstadoReservacionRepository;
 import com.uteq.backend.repository.EstadoUsuarioRepository;
 import com.uteq.backend.repository.IdiomaRepository;
@@ -19,8 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import com.uteq.backend.repository.ConfiguracionSistemaRepository;
-
 
 @SpringBootTest(properties = {
         "spring.autoconfigure.exclude=" +
@@ -75,6 +75,15 @@ class BackendApplicationTests {
 
     @MockitoBean
     private EstadoReservacionRepository estadoReservacionRepository;
+
+    // Módulo 1 (renovación de préstamos): PrestamoService ahora también
+    // depende de EstadoPrestamoRepository -- faltaba este mock en
+    // feature/prestamos-avanzado, causaba
+    // "No qualifying bean of type 'EstadoPrestamoRepository'" en
+    // contextLoads() porque DataJpaRepositoriesAutoConfiguration sigue
+    // excluido arriba (mismo motivo que el resto de mocks de esta clase).
+    @MockitoBean
+    private EstadoPrestamoRepository estadoPrestamoRepository;
 
     @MockitoBean
     private MultaRepository multaRepository;
