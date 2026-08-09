@@ -54,6 +54,14 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
+		<!-- Envío de correo (Módulo 2: alertas de vencimiento/multa/reserva
+		     caducada; Módulo 9.5: código de verificación al registrarse).
+		     Ver EmailService - envuelve JavaMailSender y nunca propaga
+		     MailException como 500. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-database-postgresql</artifactId>
