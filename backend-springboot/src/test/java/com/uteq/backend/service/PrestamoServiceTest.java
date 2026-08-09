@@ -14,6 +14,7 @@ import com.uteq.backend.repository.PrestamoProcedureRepository;
 import com.uteq.backend.repository.PrestamoRepository;
 import com.uteq.backend.repository.ReservacionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -47,10 +49,11 @@ class PrestamoServiceTest {
     @Mock ReservacionRepository reservacionRepo;
     @Mock EstadoReservacionRepository estadoReservacionRepo;
     @Mock ConfiguracionSistemaService configuracionSistemaService;
+    @Mock CredencialQrService credencialQrService;
 
     @InjectMocks PrestamoService prestamoService;
 
-    // ── Test 1: creación exitosa ───────────────────────────
+    // ── Test 1: creación exitosa (usuarioId directo) ───────
     @Test
     void crear_conDatosValidos_invocaProcedimientoYRetornaDTO() {
         Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
@@ -60,7 +63,7 @@ class PrestamoServiceTest {
         given(prestamoRepo.findById(99L)).willReturn(Optional.of(prestamoConId(99L)));
 
         PrestamoResponseDTO resultado = prestamoService.crear(
-                new PrestamoRequestDTO(1L, 2L, 7), auth);
+                new PrestamoRequestDTO(1L, null, 2L, 7), auth);
 
         assertThat(resultado.id()).isEqualTo(99L);
         assertThat(resultado.usuarioId()).isEqualTo(1L);
@@ -221,6 +224,57 @@ class PrestamoServiceTest {
         given(estadoPrestamoRepo.findById(3)).willReturn(Optional.of(estadoPrestamo(3, "DEVUELTO")));
 
         assertThatThrownBy(() -> prestamoService.renovar(55L, auth))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    // ── Test 12: creación con credencial QR válida ──────────
+    @Test
+    void crear_conCredencialQrValida_resuelveUsuarioCorrecto() {
+        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        UUID token = UUID.randomUUID();
+        given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec"))
+                .willReturn(Optional.of(usuarioConId(5L)));
+        given(credencialQrService.resolverPorToken(token)).willReturn(usuarioConId(3L));
+        given(prestamoProcRepo.spCrearPrestamo(3L, 2L, 5L, 7)).willReturn(100L);
+        given(prestamoRepo.findById(100L)).willReturn(Optional.of(prestamoConId(100L)));
+
+        PrestamoResponseDTO resultado = prestamoService.crear(
+                new PrestamoRequestDTO(null, token, 2L, 7), auth);
+
+        assertThat(resultado.id()).isEqualTo(100L);
+        verify(prestamoProcRepo).spCrearPrestamo(3L, 2L, 5L, 7);
+    }
+
+    // ── Test 13: credencial QR que no resuelve a ningún usuario ──
+    @Test
+    void crear_conCredencialQrInexistente_lanza404() {
+        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        UUID token = UUID.randomUUID();
+        given(credencialQrService.resolverPorToken(token))
+                .willThrow(new EntityNotFoundException("Credencial QR no reconocida o usuario inactivo."));
+
+        assertThatThrownBy(() -> prestamoService.crear(
+                new PrestamoRequestDTO(null, token, 2L, 7), auth))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    // ── Test 14: usuarioId y credencialQrToken ambos presentes ──
+    @Test
+    void crear_conUsuarioIdYCredencialQrAmbosPresentes_lanzaExcepcion() {
+        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+
+        assertThatThrownBy(() -> prestamoService.crear(
+                new PrestamoRequestDTO(1L, UUID.randomUUID(), 2L, 7), auth))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    // ── Test 15: ni usuarioId ni credencialQrToken ───────────
+    @Test
+    void crear_sinUsuarioIdNiCredencialQr_lanzaExcepcion() {
+        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+
+        assertThatThrownBy(() -> prestamoService.crear(
+                new PrestamoRequestDTO(null, null, 2L, 7), auth))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
