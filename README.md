@@ -27,23 +27,33 @@ Video demo del sistema (2-3 min): [ver en Google Drive](https://drive.google.com
 - **IA Integrada:** Gemini 2.0 Flash API (Entrega 2)
 
 ---
-## 🔄 Flujo MVC — Ciclo de vida de una petición autenticada
+# Flujo MVC en Spring Boot 3 — SGB-SaaS
 
-![Diagrama de secuencia UML — Flujo MVC SGB](docs/diagramas/flujo-mvc-springboot.png)
+Diagrama de secuencia UML del ciclo de vida de una petición autenticada, trazado sobre el endpoint `GET /api/v1/reservaciones/usuario/{usuarioId}` con las clases reales del proyecto.
 
-[Ver diagrama en detalle](docs/diagramas/flujo-mvc-springboot.md)
+📎 **Diagrama:** [`docs/diagramas/flujo-mvc-springboot.png`](docs/diagramas/flujo-mvc-springboot.png)
 
-| # | Componente | Descripción |
-|---|---|---|
-| 1 | Angular `HttpClient` | Envía `GET /api/v1/libros` con `Authorization: Bearer [token]` |
-| 2 | Tomcat embebido | Recibe la conexión TCP, parsea el HTTP y crea `HttpServletRequest` |
-| 3 | `DispatcherServlet.doDispatch()` | Punto de entrada de Spring MVC; enruta la solicitud al `HandlerMapping` |
-| 4 | `JwtAuthFilter.doFilterInternal()` | Valida firma/expiración del token, consulta blacklist en Redis y establece el `SecurityContext` |
-| 5 | `RequestMappingHandlerMapping.getHandler()` | Localiza el método del controlador que coincide con la URL y el verbo HTTP |
-| 6 | `LibroController.listar()` | Recibe `Pageable` ya mapeado, delega al servicio |
-| 7 | `LibroService.listar()` | Lógica de negocio; `@Cacheable("libros")` + `@Transactional(readOnly=true)`; llama al repositorio |
-| 8 | `LibroRepository.findByEstado_Nombre()` | Spring Data JPA genera el SQL; Hibernate lo ejecuta contra PostgreSQL |
-| 9 | `MappingJackson2HttpMessageConverter.write()` | Serializa `Page<LibroResponseDTO>` a JSON dentro de `doDispatch()` antes de retornar |
+## Descripción de cada paso del flujo
+
+1. **Angular → JwtAuthFilter:** `ReservacionesComponent.cargarPagina()` envía `GET /api/v1/reservaciones/usuario/{usuarioId}?page&size` con el header `Authorization: Bearer <token>` (Tomcat recibe la conexión TCP y arma el `HttpServletRequest` de forma automática).
+2. **JwtAuthFilter (interno):** `JwtAuthFilter.doFilterInternal()` valida firma/expiración del JWT con `jwtService.validateToken(token)`.
+3. **JwtAuthFilter (interno):** revisa la blacklist en Redis con `redisTemplate.hasKey("blacklist:" + jti)`.
+4. **JwtAuthFilter → SecurityContext:** carga el usuario con `loadUserByUsername(correo)` y llama `SecurityContextHolder.getContext().setAuthentication(authToken)`.
+5. **JwtAuthFilter → DispatcherServlet:** `filterChain.doFilter()` continúa la cadena y entrega el control a `DispatcherServlet.doDispatch()`.
+6. **DispatcherServlet → HandlerMapping:** `getHandler(request)` resuelve que el método destino es `ReservacionController.listarPorUsuario()` (`RequestMappingHandlerMapping`).
+7. **DispatcherServlet → ReservacionController:** invoca `listarPorUsuario(usuarioId, Authentication, Pageable)`.
+8. **ReservacionController → ReservacionService:** llama `reservacionService.listarPorUsuario(usuarioId, authentication, pageable)`, anotado con `@Transactional(readOnly = true)` (Spring abre la transacción con `TransactionInterceptor`/`CglibAopProxy` antes de ejecutar el cuerpo del método).
+9. **ReservacionService (interno):** ejecuta `validarAccesoUsuario(usuarioId, authentication)`; si el usuario tiene rol `LECTOR`, solo puede consultar sus propias reservaciones (compara el id de la URL contra su propio id resuelto por correo).
+10. **ReservacionService → ReservacionRepository:** llama `findByUsuarioId(usuarioId, pageable)`.
+11. **ReservacionRepository → PostgreSQL:** Hibernate genera y ejecuta el `SELECT ... FROM reservaciones WHERE usuario_id = ? LIMIT ? OFFSET ?`.
+12. **PostgreSQL → ReservacionRepository:** la base de datos devuelve el `ResultSet` con las filas encontradas.
+13. **ReservacionRepository → ReservacionService:** Spring Data JPA mapea el resultado a `Page<Reservacion>` y lo retorna al servicio.
+14. **ReservacionService (interno):** convierte cada `Reservacion` de la página a `ReservacionResponseDTO` mediante `toDTO()`.
+15. **ReservacionService → ReservacionController:** retorna `Page<ReservacionResponseDTO>`.
+16. **ReservacionController → DispatcherServlet:** retorna `ResponseEntity<Page<ReservacionResponseDTO>>` con código `200 OK`.
+17. **DispatcherServlet (interno):** serializa el body a JSON con `MappingJackson2HttpMessageConverter.write()` dentro de `doDispatch()`.
+18. **DispatcherServlet → JwtAuthFilter:** `filterChain.doFilter()` retorna (desenrollado de pila, sin acción adicional del filtro sobre la respuesta).
+19. **JwtAuthFilter → Angular:** la respuesta `HTTP 200 + JSON` llega al cliente, que actualiza el listado de reservaciones en pantalla.
 ---
 
 ## 🔐 Autenticación
