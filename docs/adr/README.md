@@ -20,3 +20,5 @@ los ADR-010 a ADR-013 y la ampliación de ADR-001 y ADR-008.
 |---|---|
 | [adr-006-estrategia-schema-reproducible.md](adr-006-estrategia-schema-reproducible.md) | Versionado de esquema (Flyway + snapshot reproducible) |
 | [adr-009-licencia-mit.md](adr-009-licencia-mit.md) | Licencia del proyecto (MIT) |
+| [adr-014-separacion-admin-gerente.md](adr-014-separacion-admin-gerente.md) | Separación de responsabilidades entre ADMIN y GERENTE (Módulo 5) |
+| [adr-015-tls-transporte.md](adr-015-tls-transporte.md) | Estrategia de TLS en tránsito: termina en el proxy, no en el backend (Módulo 10.1) |
