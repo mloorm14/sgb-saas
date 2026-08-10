@@ -4,6 +4,8 @@ import com.uteq.backend.dto.DevolucionResponseDTO;
 import com.uteq.backend.dto.PrestamoRequestDTO;
 import com.uteq.backend.dto.PrestamoResponseDTO;
 import com.uteq.backend.dto.RenovacionResponseDTO;
+import com.uteq.backend.dto.ReporteMorosidadResponseDTO;
+import com.uteq.backend.dto.ReporteUsoPorPeriodoResponseDTO;
 import com.uteq.backend.entity.EstadoPrestamo;
 import com.uteq.backend.entity.EstadoReservacion;
 import com.uteq.backend.entity.Prestamo;
@@ -14,6 +16,8 @@ import com.uteq.backend.repository.PrestamoProcedureRepository;
 import com.uteq.backend.repository.PrestamoRepository;
 import com.uteq.backend.repository.ReservacionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.repository.projection.ReporteMorosidadProjection;
+import com.uteq.backend.repository.projection.ReporteUsoPorPeriodoProjection;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -297,6 +301,68 @@ class PrestamoServiceTest {
 
         assertThatThrownBy(() -> prestamoService.crear(
                 new PrestamoRequestDTO(null, null, 2L, 7), auth))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    // ── Test 16: reporte de morosidad aplica default de limite=10 ──
+    // Mismo motivo/patrón que el Test 5 (reporteLibrosMasPrestados): la
+    // @Query nativeQuery de PrestamoProcedureRepository siempre manda
+    // p_limite explícito, así que sin este default un null produciría
+    // "LIMIT NULL" (sin límite) en Postgres.
+    @Test
+    void reporteMorosidad_sinLimite_aplicaDefaultDiez() {
+        given(prestamoProcRepo.fnReporteIndiceMorosidad(10)).willReturn(List.of());
+
+        prestamoService.reporteMorosidad(null);
+
+        verify(prestamoProcRepo).fnReporteIndiceMorosidad(10);
+    }
+
+    // ── Test 17: reporte de morosidad mapea la proyección a DTO ──
+    @Test
+    void reporteMorosidad_conFilas_mapeaProjectionADTO() {
+        ReporteMorosidadProjection fila = mock(ReporteMorosidadProjection.class);
+        given(fila.getUsuarioId()).willReturn(3L);
+        given(fila.getNombre()).willReturn("Ana");
+        given(fila.getApellido()).willReturn("Pérez");
+        given(fila.getCorreo()).willReturn("ana@uteq.edu.ec");
+        given(fila.getMontoTotalAdeudado()).willReturn(new BigDecimal("15.50"));
+        given(fila.getCantidadMultasPendientes()).willReturn(2L);
+        given(fila.getDiasAtrasoPromedio()).willReturn(new BigDecimal("3.5"));
+        given(prestamoProcRepo.fnReporteIndiceMorosidad(5)).willReturn(List.of(fila));
+
+        List<ReporteMorosidadResponseDTO> resultado = prestamoService.reporteMorosidad(5);
+
+        assertThat(resultado).hasSize(1);
+        assertThat(resultado.get(0).usuarioId()).isEqualTo(3L);
+        assertThat(resultado.get(0).montoTotalAdeudado()).isEqualTo(new BigDecimal("15.50"));
+    }
+
+    // ── Test 18: reporte de uso con granularidad válida ──────
+    @Test
+    void reporteUsoPorPeriodo_conGranularidadValida_invocaRepositorioConValorNormalizado() {
+        ReporteUsoPorPeriodoProjection fila = mock(ReporteUsoPorPeriodoProjection.class);
+        given(fila.getPeriodo()).willReturn(OffsetDateTime.now());
+        given(fila.getTotalPrestamos()).willReturn(4L);
+        given(fila.getTotalDevoluciones()).willReturn(2L);
+        given(prestamoProcRepo.fnReporteUsoPorPeriodo("semana", null, null))
+                .willReturn(List.of(fila));
+
+        // "SEMANA" en mayúsculas para verificar que el service normaliza
+        // (toLowerCase) antes de comparar contra la lista blanca y de
+        // invocar al repositorio.
+        List<ReporteUsoPorPeriodoResponseDTO> resultado =
+                prestamoService.reporteUsoPorPeriodo("SEMANA", null, null);
+
+        assertThat(resultado).hasSize(1);
+        assertThat(resultado.get(0).totalPrestamos()).isEqualTo(4L);
+        verify(prestamoProcRepo).fnReporteUsoPorPeriodo("semana", null, null);
+    }
+
+    // ── Test 19: reporte de uso con granularidad inválida ────
+    @Test
+    void reporteUsoPorPeriodo_conGranularidadInvalida_lanzaExcepcion() {
+        assertThatThrownBy(() -> prestamoService.reporteUsoPorPeriodo("dias", null, null))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

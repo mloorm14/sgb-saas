@@ -3,6 +3,8 @@ package com.uteq.backend.repository;
 import com.uteq.backend.entity.Prestamo;
 import com.uteq.backend.repository.projection.LibroMasPrestadoProjection;
 import com.uteq.backend.repository.projection.PrestamoActivoProjection;
+import com.uteq.backend.repository.projection.ReporteMorosidadProjection;
+import com.uteq.backend.repository.projection.ReporteUsoPorPeriodoProjection;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -111,6 +113,25 @@ public interface PrestamoProcedureRepository extends Repository<Prestamo, Long> 
     @Query(value = "SELECT * FROM fn_reporte_libros_mas_prestados(:p_limite, :p_desde, :p_hasta)", nativeQuery = true)
     List<LibroMasPrestadoProjection> fnReporteLibrosMasPrestados(
             @Param("p_limite") Integer limite,
+            @Param("p_desde") OffsetDateTime desde,
+            @Param("p_hasta") OffsetDateTime hasta
+    );
+
+    /**
+     * fn_reporte_indice_morosidad (Módulo 7): misma situación que
+     * fn_reporte_libros_mas_prestados (RETURNS TABLE de varias filas) --
+     * @Query nativa por la misma razón documentada arriba.
+     */
+    @Query(value = "SELECT * FROM fn_reporte_indice_morosidad(:p_limite)", nativeQuery = true)
+    List<ReporteMorosidadProjection> fnReporteIndiceMorosidad(@Param("p_limite") Integer limite);
+
+    /**
+     * fn_reporte_uso_por_periodo (Módulo 7): idem, RETURNS TABLE.
+     */
+    @Query(value = "SELECT * FROM fn_reporte_uso_por_periodo(:p_granularidad, :p_desde, :p_hasta)",
+            nativeQuery = true)
+    List<ReporteUsoPorPeriodoProjection> fnReporteUsoPorPeriodo(
+            @Param("p_granularidad") String granularidad,
             @Param("p_desde") OffsetDateTime desde,
             @Param("p_hasta") OffsetDateTime hasta
     );

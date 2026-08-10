@@ -6,6 +6,8 @@ import com.uteq.backend.dto.PrestamoActivoResponseDTO;
 import com.uteq.backend.dto.PrestamoRequestDTO;
 import com.uteq.backend.dto.PrestamoResponseDTO;
 import com.uteq.backend.dto.RenovacionResponseDTO;
+import com.uteq.backend.dto.ReporteMorosidadResponseDTO;
+import com.uteq.backend.dto.ReporteUsoPorPeriodoResponseDTO;
 import com.uteq.backend.entity.EstadoPrestamo;
 import com.uteq.backend.entity.Prestamo;
 import com.uteq.backend.entity.Usuario;
@@ -17,6 +19,8 @@ import com.uteq.backend.repository.ReservacionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import com.uteq.backend.repository.projection.LibroMasPrestadoProjection;
 import com.uteq.backend.repository.projection.PrestamoActivoProjection;
+import com.uteq.backend.repository.projection.ReporteMorosidadProjection;
+import com.uteq.backend.repository.projection.ReporteUsoPorPeriodoProjection;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -249,6 +253,42 @@ public class PrestamoService {
                 .toList();
     }
 
+    // ── GET /reportes/morosidad (Módulo 7) ──────────────────
+    // Mismo motivo del default aplicado en Java (no en el parámetro SQL)
+    // que reporteLibrosMasPrestados: la @Query nativeQuery siempre envía
+    // p_limite explícito, así que un null produce "LIMIT NULL" (sin
+    // límite) en vez de activar el DEFAULT 10 de la función SQL.
+    @Transactional(readOnly = true)
+    public List<ReporteMorosidadResponseDTO> reporteMorosidad(Integer limite) {
+        Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
+        return prestamoProcRepo.fnReporteIndiceMorosidad(limiteEfectivo).stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
+    // ── GET /reportes/uso (Módulo 7) ────────────────────────
+    // Validación de p_granularidad en Java (400 vía IllegalArgumentException
+    // -> GlobalExceptionHandler) en vez de dejar que un valor no reconocido
+    // caiga silenciosamente al "ELSE 'day'" de fn_reporte_uso_por_periodo:
+    // el fallback en SQL es defensa en profundidad, no la validación
+    // primaria -- un cliente que manda "dias" (typo) debe recibir un 400
+    // explicando el valor esperado, no un reporte diario silencioso.
+    private static final List<String> GRANULARIDADES_VALIDAS = List.of("dia", "semana", "mes");
+
+    @Transactional(readOnly = true)
+    public List<ReporteUsoPorPeriodoResponseDTO> reporteUsoPorPeriodo(
+            String granularidad, OffsetDateTime desde, OffsetDateTime hasta) {
+        String granularidadEfectiva = (granularidad != null) ? granularidad.toLowerCase() : "dia";
+        if (!GRANULARIDADES_VALIDAS.contains(granularidadEfectiva)) {
+            throw new IllegalArgumentException(
+                    "granularidad inválida: '" + granularidad
+                            + "'. Valores permitidos: dia, semana, mes.");
+        }
+        return prestamoProcRepo.fnReporteUsoPorPeriodo(granularidadEfectiva, desde, hasta).stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
     // ── "Propio vs cualquiera": LECTOR solo puede pedir su propio
     // usuarioId; BIBLIOTECARIO/GERENTE no tienen restricción (mismo
     // patrón descrito en docs/reparto-entrega-3/cajas-backend/INSTRUCCIONES.md,
@@ -304,5 +344,23 @@ public class PrestamoService {
                 p.getTitulo(),
                 p.getIsbn(),
                 p.getTotalPrestamos());
+    }
+
+    private ReporteMorosidadResponseDTO toDTO(ReporteMorosidadProjection p) {
+        return new ReporteMorosidadResponseDTO(
+                p.getUsuarioId(),
+                p.getNombre(),
+                p.getApellido(),
+                p.getCorreo(),
+                p.getMontoTotalAdeudado(),
+                p.getCantidadMultasPendientes(),
+                p.getDiasAtrasoPromedio());
+    }
+
+    private ReporteUsoPorPeriodoResponseDTO toDTO(ReporteUsoPorPeriodoProjection p) {
+        return new ReporteUsoPorPeriodoResponseDTO(
+                p.getPeriodo(),
+                p.getTotalPrestamos(),
+                p.getTotalDevoluciones());
     }
 }
