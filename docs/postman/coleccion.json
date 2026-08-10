@@ -65,6 +65,11 @@
       "key": "multa_id",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "chatbot_sesion_id",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -2256,6 +2261,179 @@
             ],
             "url": "{{base_url}}/api/v1/auditoria",
             "description": "@PreAuthorize(hasAnyRole('GERENTE','ADMIN')) a nivel de clase rechaza a LECTOR/BIBLIOTECARIO con 403."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Chatbot",
+      "description": "Modulo H: asistente virtual con Gemini. POST /api/v1/chatbot/mensajes envia un mensaje (si sesionId es null se crea una sesion nueva) y GET /api/v1/chatbot/sesiones/{id}/historial devuelve la conversacion. Restringido SOLO a LECTOR (@PreAuthorize hasRole('LECTOR'), ver ChatbotController). IMPORTANTE: requiere GEMINI_API_KEY real en el backend (ver .env.example); sin key, GeminiClient responde el mensaje de fallback pero el endpoint sigue respondiendo 200.",
+      "item": [
+        {
+          "name": "Enviar mensaje - sesion nueva (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Respuesta del asistente (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.sesionId).to.be.a('string');",
+                  "    pm.expect(json.respuesta).to.be.a('string');",
+                  "    pm.environment.set('chatbot_sesion_id', json.sesionId);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lector_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"texto\": \"¿Cuál es el horario de la biblioteca?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/v1/chatbot/mensajes",
+            "description": "Sesion nueva (sin sesionId): ChatbotService la crea para el LECTOR autenticado, persiste el mensaje USUARIO, pide la respuesta a Gemini con grounding (base_conocimiento) y persiste el mensaje ASISTENTE. Captura chatbot_sesion_id via pm.environment.set para los requests siguientes."
+          },
+          "response": []
+        },
+        {
+          "name": "Enviar mensaje - sesion existente (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Respuesta en sesion existente (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.sesionId).to.eql(pm.environment.get('chatbot_sesion_id'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lector_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sesionId\": \"{{chatbot_sesion_id}}\",\n  \"texto\": \"¿hay disponible el libro Clean Code?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/v1/chatbot/mensajes",
+            "description": "Reutiliza la sesion creada antes: ChatbotService valida que pertenezca al LECTOR autenticado y actualiza ultima_actividad. El texto con 'hay disponible' dispara el grounding de disponibilidad via LibroService.sugerir (resultados reales del catalogo al prompt)."
+          },
+          "response": []
+        },
+        {
+          "name": "Historial de la sesion (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Historial (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.length).to.be.greaterThan(0);",
+                  "    pm.expect(json[0]).to.have.property('rol');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lector_access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/chatbot/sesiones/{{chatbot_sesion_id}}/historial",
+            "description": "Devuelve los mensajes de la sesion ordenados cronologicamente con rol (USUARIO/ASISTENTE), contenido y creadoEn. Solo el dueno de la sesion puede leerlo."
+          },
+          "response": []
+        },
+        {
+          "name": "Enviar mensaje - no LECTOR (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('BIBLIOTECARIO/GERENTE/ADMIN rechazados (403)', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"texto\": \"hola\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/v1/chatbot/mensajes",
+            "description": "El usuario semilla admin@sgb-saas.local es ADMIN (no LECTOR): @PreAuthorize(\"hasRole('LECTOR')\") rechaza con 403 (AuthorizationDeniedException). Decision documentada en ChatbotController: el chatbot es solo para LECTOR en esta fase."
           },
           "response": []
         }
