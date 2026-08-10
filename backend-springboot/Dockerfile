@@ -30,4 +30,15 @@ EXPOSE 8080
 
 RUN apk add --no-cache curl
 
+# OWASP A05 (Bloque C.2, checklist Módulo 10.2, REQ-NF-014): la imagen
+# base eclipse-temurin corre como root por defecto -- si el proceso Java
+# llegara a comprometerse (deserialización, dependencia vulnerable, etc.),
+# root dentro del contenedor facilita escapar o tocar el resto del
+# filesystem del contenedor sin necesidad. app.jar y database/migrations
+# ya fueron copiados como root antes de este punto (son read-only para el
+# proceso en runtime, no necesita escribirlos), así que basta con crear el
+# usuario y cambiar a él antes del ENTRYPOINT.
+RUN addgroup -S spring && adduser -S spring -G spring
+USER spring:spring
+
 ENTRYPOINT ["java", "-jar", "app.jar"]
