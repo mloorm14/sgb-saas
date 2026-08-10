@@ -113,6 +113,18 @@ app:
     # Módulo 9.5: TTL del código de 6 dígitos en Redis, mismo mecanismo que
     # app.security.login (ver VerificacionCorreoService/LoginRateLimiter).
     ttl-minutes: ${VERIFICACION_CORREO_TTL_MINUTES:10}
+  gemini:
+    # Módulo H (chatbot asistente virtual). API key de Google AI Studio --
+    # ver .env.example y docker-compose.yml, ya declaraban GEMINI_API_KEY
+    # desde la rama de infraestructura, a la espera de esta configuración.
+    api-key: ${GEMINI_API_KEY:}
+    modelo: ${GEMINI_MODELO:gemini-2.0-flash}
+    url-base: ${GEMINI_URL_BASE:https://generativelanguage.googleapis.com/v1beta}
+    timeout-ms: ${GEMINI_TIMEOUT_MS:8000}
+    # Máximo de mensajes por usuario por minuto antes de responder 429
+    # (ChatbotRateLimiter), mismo criterio que app.security.login.
+    rate-limit-max-mensajes: ${CHATBOT_RATE_LIMIT_MAX_MENSAJES:10}
+    rate-limit-window-seconds: ${CHATBOT_RATE_LIMIT_WINDOW_SECONDS:60}
 
 security:
   jwt:
