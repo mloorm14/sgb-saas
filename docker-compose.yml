@@ -54,6 +54,15 @@ services:
       DB_PASSWORD: changeme
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      # Modulo 10.2 (REQ-NF-014): activa el perfil 'prod' de application.yml
+      # (Swagger UI/OpenAPI deshabilitados, sin stacktraces en /error) --
+      # ver ADR-015 y docs/mediciones/sec/2026-08-10-owasp-a05-fix-*.md.
+      # Default vacio a proposito: en desarrollo local (este
+      # docker-compose.yml) el equipo sigue necesitando Swagger para
+      # probar endpoints a mano (ver Seccion 0.4 del roadmap, sobre no
+      # mergear seguridad demasiado temprano). Se activa solo poniendo
+      # SPRING_PROFILES_ACTIVE=prod en .env para un despliegue real.
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
       CACHE_LIBROS_TTL_SECONDS: ${CACHE_LIBROS_TTL_SECONDS:-300}
       LOGIN_RATE_LIMIT_WINDOW_SECONDS: ${LOGIN_RATE_LIMIT_WINDOW_SECONDS:-900}
       LOGIN_MAX_ATTEMPTS: ${LOGIN_MAX_ATTEMPTS:-5}
