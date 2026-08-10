@@ -124,6 +124,32 @@
 			<artifactId>javase</artifactId>
 			<version>3.5.3</version>
 		</dependency>
+
+		<!-- Exportación a PDF de reportes gerenciales (Módulo 7.2:
+		     ReportePdfService, GET /prestamos/reportes/morosidad/pdf).
+		     "itext-core" es un POM agregador que trae kernel+layout+io, etc.
+		     NOTA DE LICENCIA: itext-core es AGPL v3 (no Apache/MIT) - válido
+		     para este proyecto académico, pero si el sistema se distribuye
+		     comercialmente hay que revisar la licencia comercial de iText o
+		     cambiar a una alternativa Apache-2.0 (ej. OpenPDF). Documentar
+		     esa decisión en un ADR si se llega a ese punto. -->
+		<dependency>
+			<groupId>com.itextpdf</groupId>
+			<artifactId>itext-core</artifactId>
+			<version>9.5.0</version>
+			<type>pom</type>
+		</dependency>
+
+		<!-- Solo para verificar en tests que el PDF generado por
+		     ReportePdfService no está vacío y contiene el texto esperado
+		     (PDFTextStripper) - nunca se usa en código de producción. -->
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+			<version>3.0.8</version>
+			<scope>test</scope>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>

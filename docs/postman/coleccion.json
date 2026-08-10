@@ -1325,6 +1325,125 @@
           "response": []
         },
         {
+          "name": "Reporte indice de morosidad (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Reporte de morosidad exitoso (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gerente_access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/prestamos/reportes/morosidad?limite=10",
+            "description": "limite es @RequestParam opcional (default 10, ver PrestamoService.reporteMorosidad). Retorna usuarios con multas PENDIENTES: monto_total_adeudado, cantidad_multas_pendientes, dias_atraso_promedio. Requiere BIBLIOTECARIO/GERENTE."
+          },
+          "response": []
+        },
+        {
+          "name": "Reporte uso por periodo (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Reporte de uso exitoso (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gerente_access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/prestamos/reportes/uso?granularidad=semana",
+            "description": "granularidad/desde/hasta son @RequestParam opcionales (granularidad: dia|semana|mes, default 'dia'; desde/hasta en formato ISO_DATE_TIME). Un valor de granularidad fuera de esa lista responde 400. Requiere BIBLIOTECARIO/GERENTE."
+          },
+          "response": []
+        },
+        {
+          "name": "Reporte uso por periodo - Granularidad invalida (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Granularidad invalida devuelve 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gerente_access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/prestamos/reportes/uso?granularidad=dias",
+            "description": "'dias' no esta en la lista blanca (dia|semana|mes) -> PrestamoService.reporteUsoPorPeriodo lanza IllegalArgumentException -> GlobalExceptionHandler.handleIllegalArgument -> 400."
+          },
+          "response": []
+        },
+        {
+          "name": "Reporte morosidad PDF (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('PDF exitoso (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type es application/pdf', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/pdf');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gerente_access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/prestamos/reportes/morosidad/pdf?limite=10",
+            "description": "Exportacion a PDF del mismo reporte de arriba (ReportePdfService, iText). El PDF se arma en memoria y se transmite directo en el body -- nunca se guarda en disco del servidor. Requiere BIBLIOTECARIO/GERENTE."
+          },
+          "response": []
+        },
+        {
           "name": "Renovar prestamo (200)",
           "event": [
             {
