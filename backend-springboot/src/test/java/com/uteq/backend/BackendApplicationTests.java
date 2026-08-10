@@ -81,15 +81,6 @@ class BackendApplicationTests {
     @MockitoBean
     private EstadoReservacionRepository estadoReservacionRepository;
 
-    // Módulo 1 (renovación de préstamos): PrestamoService ahora también
-    // depende de EstadoPrestamoRepository -- faltaba este mock en
-    // feature/prestamos-avanzado, causaba
-    // "No qualifying bean of type 'EstadoPrestamoRepository'" en
-    // contextLoads() porque DataJpaRepositoriesAutoConfiguration sigue
-    // excluido arriba (mismo motivo que el resto de mocks de esta clase).
-    @MockitoBean
-    private EstadoPrestamoRepository estadoPrestamoRepository;
-
     @MockitoBean
     private MultaRepository multaRepository;
 
