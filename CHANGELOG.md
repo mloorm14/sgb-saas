@@ -46,6 +46,19 @@ objetivo `v0.9.0-rc` de esta Tercera Entrega.
   1-2 en Structurizr DSL) (`43caad0`, `83b4889`).
 - Bitácora de observaciones del equipo en `docs/observaciones/`
   (`d162421`).
+- Módulo H (asistente virtual con Gemini): migración `V9__chatbot.sql`
+  con `sesiones_chat`, `mensajes_chat` y `base_conocimiento` (seed de
+  preguntas frecuentes) (`a66ba9b`); entidades, repositorios y DTOs del
+  chatbot (`3286a33`, `35be73f`, `f6f7a09`, `fd56c78`, `8d0718b`,
+  `2536498`, `8f184e6`, `cc43935`); `ChatbotRateLimiter` y excepciones
+  propias de rate limit/sesión (`d1262aa`, `600d25d`, `894a7f2`);
+  `GeminiClient` (HTTP directo con `RestClient`, sin SDK ni dependencias
+  nuevas) (`b03efba`); `ChatbotService` que orquesta sesiones, grounding
+  e intención (`3673c4a`); `ChatbotController` con `POST
+  /api/v1/chat/mensajes` y `GET /api/v1/chat/sesiones/{id}/historial`
+  para LECTOR (`75b1c9c`); tests unitarios, de seguridad y de rate limit
+  (`1fbc6d5`, `233702d`, `eed4642`) y prueba de integración contra
+  Gemini real deshabilitada por defecto (`35c79b9`).
 
 ### Changed
 
@@ -69,6 +82,11 @@ objetivo `v0.9.0-rc` de esta Tercera Entrega.
 - `docs/adr/README.md`: ADR-014 y ADR-015 agregados a la tabla de
   "Otros ADRs" (existían como archivo pero no estaban indexados)
   (`65ccf8d`).
+- `application.yml`: nueva sección `app.gemini` (api-key, modelo,
+  url-base, timeout y rate-limit del chatbot) con defaults vía
+  `${VAR:default}` para que el contexto cargue sin credenciales
+  (`48d0897`); `.env.example` documenta las variables opcionales del
+  Módulo H (`895514c`).
 
 ### Fixed
 
@@ -90,7 +108,7 @@ objetivo `v0.9.0-rc` de esta Tercera Entrega.
   `Page`/`PageImpl` causaba una excepción no controlada en cada intento
   de lectura del cache; corregido migrando ese cache a serialización
   Java estándar (`cabf563`).
-- `docs/postman/coleccion.json` no documentaba los endpoints de
+- `docs/postman/coleccion.json` no documentaba   los endpoints de
   `UsuarioAdminController` (`GET /api/v1/admin/usuarios`, `PATCH
   /{id}/rol`, `PATCH /{id}/estado`) ni de `AuditoriaController` (`GET
   /api/v1/auditoria`) del Módulo 5/6, pese a que la convención del
@@ -98,6 +116,15 @@ objetivo `v0.9.0-rc` de esta Tercera Entrega.
   agregan las carpetas "Usuarios (Admin)" y "Auditoria" con casos de
   éxito (200/204) y de error (400/403) para ADMIN, GERENTE y LECTOR
   (`d5424e8`).
+- `ReportePdfService` no compilaba con iText 9.5 (`Paragraph.setBold()`
+  eliminado en esa versión) y reutilizaba una fuente `static` que iText
+  invalida entre documentos, haciendo fallar `ReportePdfServiceTest`;
+  se fija explícitamente Helvetica-Bold por documento (`a63ae00`).
+- `BackendApplicationTests.contextLoads()` fallaba con "No qualifying
+  bean of type 'AutorRepository'": los repositorios de la
+  feature/catalogo (Autor, Categoria, Favorito, SugerenciaAdquisicion)
+  no estaban mockeados; se completan los `@MockitoBean` siguiendo el
+  patrón documentado en la clase (`927f4f0`).
 
 ### Security
 
@@ -127,6 +154,14 @@ objetivo `v0.9.0-rc` de esta Tercera Entrega.
   para no deshabilitar Swagger en desarrollo local; se activa el perfil
   `prod` solo definiéndolo en `.env` (`f404a4d`, documentado en
   `.env.example` en `d91d552`).
+- ADR-016 documenta la decisión de privacidad del chatbot con Gemini:
+  el prompt solo incluye el texto del mensaje, el historial de la
+  sesión y el grounding (`base_conocimiento` + sugerencias de
+  disponibilidad); nunca datos personales ni credenciales; las reservas
+  desde el chat se difieren a v2 (`f4cfc70`), indexado en
+  `docs/adr/README.md` (`e41cf51`). Trazabilidad: REQ-F-028 agregado a
+  la matriz (`d2be0ad`) y carpeta "Chatbot" en la colección de Postman
+  (`b6da8bc`).
 
 ## [v0.1.0-entrega-1b] — 2026-06-20
 
