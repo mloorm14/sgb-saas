@@ -1,0 +1,182 @@
+package com.uteq.backend.service;
+
+import com.uteq.backend.dto.UsuarioListadoResponseDTO;
+import com.uteq.backend.entity.BitacoraAuditoria;
+import com.uteq.backend.entity.EstadoUsuario;
+import com.uteq.backend.entity.Rol;
+import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
+import com.uteq.backend.repository.EstadoUsuarioRepository;
+import com.uteq.backend.repository.RolRepository;
+import com.uteq.backend.repository.UsuarioRepository;
+import jakarta.persistence.EntityNotFoundException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
+class UsuarioAdminServiceTest {
+
+    @Mock UsuarioRepository usuarioRepo;
+    @Mock RolRepository rolRepo;
+    @Mock EstadoUsuarioRepository estadoUsuarioRepo;
+    @Mock BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
+    @Mock Authentication authentication;
+
+    @InjectMocks UsuarioAdminService service;
+
+    private EstadoUsuario estado(String nombre) {
+        EstadoUsuario e = new EstadoUsuario();
+        e.setId(1);
+        e.setNombre(nombre);
+        return e;
+    }
+
+    private Rol rol(String nombre) {
+        Rol r = new Rol();
+        r.setId(1);
+        r.setNombre(nombre);
+        return r;
+    }
+
+    private Usuario usuario(Long id, String correo, String rolNombre, String estadoNombre) {
+        Instant ahora = Instant.now();
+        return Usuario.builder()
+                .id(id)
+                .nombre("Nombre")
+                .apellido("Apellido")
+                .correo(correo)
+                .passwordHash("hash")
+                .estado(estado(estadoNombre))
+                .correoVerificado(true)
+                .roles(Set.of(rol(rolNombre)))
+                .fechaRegistro(ahora)
+                .actualizadoEn(ahora)
+                .build();
+    }
+
+    // ── listar ──────────────────────────────────────────────
+
+    @Test
+    void listar_retornaUsuariosMapeadosYMarcaMultasPendientesSegunEstado() {
+        Usuario bloqueado = usuario(1L, "bloqueado@uteq.edu.ec", "LECTOR", "BLOQUEADO_POR_MULTA");
+        Usuario activo = usuario(2L, "activo@uteq.edu.ec", "LECTOR", "ACTIVO");
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Usuario> pagina = new PageImpl<>(List.of(bloqueado, activo), pageable, 2);
+
+        given(usuarioRepo.findByNombreContainingIgnoreCaseOrCorreoContainingIgnoreCase("", "", pageable))
+                .willReturn(pagina);
+
+        Page<UsuarioListadoResponseDTO> resultado = service.listar(null, pageable);
+
+        assertThat(resultado.getContent()).hasSize(2);
+        assertThat(resultado.getContent().get(0).multasPendientes()).isTrue();
+        assertThat(resultado.getContent().get(1).multasPendientes()).isFalse();
+        assertThat(resultado.getContent().get(0).roles()).containsExactly("LECTOR");
+    }
+
+    // ── cambiarRol ──────────────────────────────────────────
+
+    @Test
+    void cambiarRol_conDatosValidos_actualizaRolesYRegistraAuditoria() {
+        Usuario usuarioObjetivo = usuario(5L, "lector@uteq.edu.ec", "LECTOR", "ACTIVO");
+        Usuario admin = usuario(9L, "admin@uteq.edu.ec", "ADMIN", "ACTIVO");
+
+        given(usuarioRepo.findById(5L)).willReturn(Optional.of(usuarioObjetivo));
+        given(rolRepo.findByNombre("BIBLIOTECARIO")).willReturn(Optional.of(rol("BIBLIOTECARIO")));
+        given(authentication.getName()).willReturn("admin@uteq.edu.ec");
+        given(usuarioRepo.findByCorreo("admin@uteq.edu.ec")).willReturn(Optional.of(admin));
+
+        service.cambiarRol(5L, "BIBLIOTECARIO", authentication);
+
+        assertThat(usuarioObjetivo.getRoles()).extracting(Rol::getNombre).containsExactly("BIBLIOTECARIO");
+        verify(usuarioRepo, times(1)).save(usuarioObjetivo);
+
+        ArgumentCaptor<BitacoraAuditoria> captor = ArgumentCaptor.forClass(BitacoraAuditoria.class);
+        verify(bitacoraAuditoriaRepo, times(1)).save(captor.capture());
+        assertThat(captor.getValue().getUsuarioId()).isEqualTo(9L);
+        assertThat(captor.getValue().getRegistroId()).isEqualTo(5L);
+        assertThat(captor.getValue().getDetalles()).contains("BIBLIOTECARIO");
+    }
+
+    @Test
+    void cambiarRol_conUsuarioInexistente_lanzaEntityNotFound() {
+        given(usuarioRepo.findById(404L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.cambiarRol(404L, "ADMIN", authentication))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void cambiarRol_conRolInexistenteEnCatalogo_lanzaIllegalArgument() {
+        Usuario usuarioObjetivo = usuario(5L, "lector@uteq.edu.ec", "LECTOR", "ACTIVO");
+        given(usuarioRepo.findById(5L)).willReturn(Optional.of(usuarioObjetivo));
+        given(rolRepo.findByNombre("SUPERVISOR")).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.cambiarRol(5L, "SUPERVISOR", authentication))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("SUPERVISOR");
+    }
+
+    // ── cambiarEstado ───────────────────────────────────────
+
+    @Test
+    void cambiarEstado_conDatosValidos_actualizaEstadoYRegistraAuditoriaConMotivo() {
+        Usuario usuarioObjetivo = usuario(5L, "lector@uteq.edu.ec", "LECTOR", "ACTIVO");
+        Usuario admin = usuario(9L, "admin@uteq.edu.ec", "ADMIN", "ACTIVO");
+
+        given(usuarioRepo.findById(5L)).willReturn(Optional.of(usuarioObjetivo));
+        given(estadoUsuarioRepo.findByNombre("INACTIVO")).willReturn(Optional.of(estado("INACTIVO")));
+        given(authentication.getName()).willReturn("admin@uteq.edu.ec");
+        given(usuarioRepo.findByCorreo("admin@uteq.edu.ec")).willReturn(Optional.of(admin));
+
+        service.cambiarEstado(5L, "INACTIVO", "Solicitud de baja voluntaria", authentication);
+
+        assertThat(usuarioObjetivo.getEstado().getNombre()).isEqualTo("INACTIVO");
+
+        ArgumentCaptor<BitacoraAuditoria> captor = ArgumentCaptor.forClass(BitacoraAuditoria.class);
+        verify(bitacoraAuditoriaRepo, times(1)).save(captor.capture());
+        assertThat(captor.getValue().getDetalles()).contains("Solicitud de baja voluntaria");
+    }
+
+    @Test
+    void cambiarEstado_conEstadoInexistenteEnCatalogo_lanzaIllegalArgument() {
+        Usuario usuarioObjetivo = usuario(5L, "lector@uteq.edu.ec", "LECTOR", "ACTIVO");
+        given(usuarioRepo.findById(5L)).willReturn(Optional.of(usuarioObjetivo));
+        given(estadoUsuarioRepo.findByNombre("SUSPENDIDO")).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.cambiarEstado(5L, "SUSPENDIDO", "motivo", authentication))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("SUSPENDIDO");
+    }
+
+    @Test
+    void cambiarEstado_conUsuarioInexistente_lanzaEntityNotFoundYNoConsultaEstados() {
+        given(usuarioRepo.findById(404L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.cambiarEstado(404L, "INACTIVO", "motivo", authentication))
+                .isInstanceOf(EntityNotFoundException.class);
+
+        verify(estadoUsuarioRepo, times(0)).findByNombre(any());
+    }
+}
