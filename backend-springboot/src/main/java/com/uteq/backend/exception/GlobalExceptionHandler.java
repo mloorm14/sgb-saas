@@ -1,5 +1,6 @@
 package com.uteq.backend.exception;
 
+import com.uteq.backend.service.ChatbotRateLimitExcedidoException;
 import com.uteq.backend.service.CodigoVerificacionInvalidoException;
 import com.uteq.backend.service.CorreoYaRegistradoException;
 import com.uteq.backend.service.LimiteRenovacionesExcedidoException;
@@ -7,6 +8,7 @@ import com.uteq.backend.service.LoginRateLimitExcedidoException;
 import com.uteq.backend.service.MaterialReservadoException;
 import com.uteq.backend.service.PrestamoVencidoException;
 import com.uteq.backend.service.RefreshTokenInvalidoException;
+import com.uteq.backend.service.SesionChatNoEncontradaException;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +59,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(LoginRateLimitExcedidoException.class)
     public ProblemDetail handleLoginRateLimitExcedido(LoginRateLimitExcedidoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
+    }
+
+    // Módulo H (chatbot): ChatbotService.chatbotRateLimiter.estaBloqueado()
+    // -> excepción cuando el LECTOR agotó el cupo de mensajes al asistente
+    // en la ventana vigente. Mismo contrato que handleLoginRateLimitExcedido.
+    @ExceptionHandler(ChatbotRateLimitExcedidoException.class)
+    public ProblemDetail handleChatbotRateLimitExcedido(ChatbotRateLimitExcedidoException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
+    }
+
+    // Módulo H (chatbot): sesión inexistente o de otro usuario (un LECTOR
+    // solo accede a sus propias sesiones). Mismo contrato que handleNotFound.
+    @ExceptionHandler(SesionChatNoEncontradaException.class)
+    public ProblemDetail handleSesionChatNoEncontrada(SesionChatNoEncontradaException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     // AuthService.refresh() lanza esto cuando el refreshToken de la cookie
