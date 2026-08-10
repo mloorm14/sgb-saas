@@ -22,6 +22,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -95,7 +96,7 @@ class LibroControllerSecurityTest {
     private LibroRequestDTO libroValido() {
         return new LibroRequestDTO(
                 "Clean Code", "9780132350884", 2008, "resumen", null,
-                1, 1, 1, 3, 3
+                1, 1, 1, 3, 3, null, null
         );
     }
 
@@ -103,7 +104,7 @@ class LibroControllerSecurityTest {
         return new LibroResponseDTO(
                 1L, "Clean Code", "9780132350884", "resumen", null, 2008,
                 1, "Editorial X", 1, "Español", 1, "ACTIVO", 3, 3, null,
-                OffsetDateTime.now()
+                OffsetDateTime.now(), List.of(), List.of()
         );
     }
 
