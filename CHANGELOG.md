@@ -94,7 +94,7 @@ objetivo `v0.9.0-rc` de esta Tercera Entrega.
   proyecto exige documentar todo endpoint nuevo en la colección; se
   agregan las carpetas "Usuarios (Admin)" y "Auditoria" con casos de
   éxito (200/204) y de error (400/403) para ADMIN, GERENTE y LECTOR
-  (`3ada617`).
+  (`d5424e8`).
 
 ### Security
 
