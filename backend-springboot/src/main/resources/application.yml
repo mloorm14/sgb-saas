@@ -81,6 +81,16 @@ app:
       # docs/adr/adr-008-ttl-cache-libros.md. Se invalida antes de tiempo
       # via @CacheEvict en crear/actualizar/eliminar de LibroService.
       ttl-seconds: ${CACHE_LIBROS_TTL_SECONDS:300}
+    sugerencias:
+      # TTL corto (segundos) del cache del autocompletado de catálogo
+      # (@Cacheable("sugerencias-libros") en LibroService.sugerir(),
+      # GET /api/v1/libros/sugerencias, Módulo 3 del roadmap). A
+      # diferencia de app.cache.libros.ttl-seconds (minutos, invalidado
+      # por @CacheEvict), este cache no tiene evict explícito -- se apoya
+      # solo en que el TTL es corto (5-10s sugeridos por el roadmap,
+      # default 8) para no servir resultados desactualizados frente a
+      # altas/bajas de libros.
+      ttl-seconds: ${CACHE_SUGERENCIAS_TTL_SECONDS:8}
   security:
     login:
       # OWASP A07 (Bloque C.2): ventana de tiempo (segundos) y maximo de

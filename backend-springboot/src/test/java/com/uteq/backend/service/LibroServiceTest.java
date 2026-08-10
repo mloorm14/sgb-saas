@@ -2,8 +2,11 @@ package com.uteq.backend.service;
 
 import com.uteq.backend.dto.LibroRequestDTO;
 import com.uteq.backend.dto.LibroResponseDTO;
+import com.uteq.backend.dto.LibroSugerenciaDTO;
 import com.uteq.backend.entity.EstadoLibro;
 import com.uteq.backend.entity.Libro;
+import com.uteq.backend.repository.AutorRepository;
+import com.uteq.backend.repository.CategoriaRepository;
 import com.uteq.backend.repository.EditorialRepository;
 import com.uteq.backend.repository.EstadoLibroRepository;
 import com.uteq.backend.repository.IdiomaRepository;
@@ -23,6 +26,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -34,6 +38,14 @@ class LibroServiceTest {
     @Mock EditorialRepository editorialRepo;
     @Mock IdiomaRepository idiomaRepo;
     @Mock EstadoLibroRepository estadoRepo;
+    // Módulo 9.1/3 (rama E): repos nuevos que ahora recibe el constructor
+    // de LibroService. No se stubean en los tests preexistentes (1-5)
+    // porque esos flujos nunca resuelven categoriaIds/autorIds no-nulos --
+    // Mockito los inyecta igual por tipo vía @InjectMocks, pero
+    // permanecen "unused" (sin given(...)) en esos casos, que es lo
+    // esperado.
+    @Mock CategoriaRepository categoriaRepo;
+    @Mock AutorRepository autorRepo;
 
     @InjectMocks LibroService libroService;
 
@@ -95,6 +107,36 @@ class LibroServiceTest {
         assertThat(resultado.getContent().get(0).titulo()).isEqualTo("Clean Code");
     }
 
+    // ── Test 6 (Módulo 3): sugerir con texto parcial retorna
+    // coincidencias ordenadas por relevancia ──────────────
+    @Test
+    void sugerir_conTextoParcial_retornaCoincidenciasOrdenadas() {
+        EstadoLibro activo = estadoConNombre("ACTIVO");
+        Libro coincidencia = libroConId();
+        coincidencia.setStockDisponible((short) 2);
+        given(estadoRepo.findByNombre("ACTIVO")).willReturn(Optional.of(activo));
+        given(libroRepo.sugerirPorTitulo("clean", activo.getId()))
+                .willReturn(List.of(coincidencia));
+
+        List<LibroSugerenciaDTO> resultado = libroService.sugerir("clean");
+
+        assertThat(resultado).hasSize(1);
+        assertThat(resultado.get(0).titulo()).isEqualTo("Clean Code");
+        assertThat(resultado.get(0).disponible()).isTrue();
+    }
+
+    // ── Test 7 (Módulo 3): sin coincidencias retorna lista vacía ──
+    @Test
+    void sugerir_sinCoincidencias_retornaListaVacia() {
+        EstadoLibro activo = estadoConNombre("ACTIVO");
+        given(estadoRepo.findByNombre("ACTIVO")).willReturn(Optional.of(activo));
+        given(libroRepo.sugerirPorTitulo(anyString(), anyInt())).willReturn(List.of());
+
+        List<LibroSugerenciaDTO> resultado = libroService.sugerir("xyz-inexistente");
+
+        assertThat(resultado).isEmpty();
+    }
+
     // ── Helpers ───────────────────────────────────────────
     private Libro libroConId() {
         Libro libro = new Libro();
@@ -123,7 +165,9 @@ class LibroServiceTest {
                 1,
                 1,
                 1,
-                1
+                1,
+                null,
+                null
         );
     }
 }

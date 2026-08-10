@@ -36,10 +36,21 @@ public class RedisConfig {
     // de fábrica; LibroResponseDTO se marcó Serializable explícitamente para
     // completar el grafo (ver LibroResponseDTO). Las keys siguen siendo
     // String vía el default de Spring Data Redis.
+    //
+    // Módulo 3 (rama E, búsqueda predictiva): mismo criterio aplicado al
+    // cache nuevo "sugerencias-libros" (LibroService.sugerir()) --
+    // List<LibroSugerenciaDTO> también serializado vía JDK estándar, por
+    // eso LibroSugerenciaDTO se marcó Serializable igual que
+    // LibroResponseDTO. TTL propio y mucho más corto que "libros"
+    // (app.cache.sugerencias.ttl-seconds, default 8s) porque la key acá es
+    // el texto de búsqueda tecleado letra por letra, no la paginación del
+    // catálogo completo -- un TTL de minutos dejaría resultados de
+    // autocompletado desactualizados frente a altas/bajas de libros.
     @Bean
     public CacheManager cacheManager(
             RedisConnectionFactory connectionFactory,
-            @Value("${app.cache.libros.ttl-seconds}") long librosTtlSeconds) {
+            @Value("${app.cache.libros.ttl-seconds}") long librosTtlSeconds,
+            @Value("${app.cache.sugerencias.ttl-seconds}") long sugerenciasTtlSeconds) {
         RedisCacheConfiguration baseConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .disableCachingNullValues();
 
@@ -52,9 +63,17 @@ public class RedisConfig {
         // invalidaban via @CacheEvict en las mutaciones de LibroService.
         RedisCacheConfiguration librosConfig = baseConfig.entryTtl(Duration.ofSeconds(librosTtlSeconds));
 
+        // TTL del cache "sugerencias-libros" (GET /api/v1/libros/sugerencias,
+        // Módulo 3) -- mismo mecanismo, pero configuracion propia
+        // (app.cache.sugerencias.ttl-seconds / CACHE_SUGERENCIAS_TTL_SECONDS)
+        // porque su TTL correcto es de segundos, no de minutos como "libros".
+        RedisCacheConfiguration sugerenciasConfig = baseConfig.entryTtl(Duration.ofSeconds(sugerenciasTtlSeconds));
+
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(baseConfig)
-                .withInitialCacheConfigurations(Map.of("libros", librosConfig))
+                .withInitialCacheConfigurations(Map.of(
+                        "libros", librosConfig,
+                        "sugerencias-libros", sugerenciasConfig))
                 .build();
     }
 

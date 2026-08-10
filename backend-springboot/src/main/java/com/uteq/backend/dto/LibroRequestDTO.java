@@ -2,6 +2,8 @@ package com.uteq.backend.dto;
 
 import jakarta.validation.constraints.*;
 
+import java.util.Set;
+
 public record LibroRequestDTO(
 
         @NotBlank(message = "El título es obligatorio")
@@ -38,5 +40,14 @@ public record LibroRequestDTO(
 
         @NotNull
         @Min(0)
-        Integer stockDisponible
+        Integer stockDisponible,
+
+        // Módulo 9.1: asociación con categorias/autores existentes. null o
+        // vacío es válido (un libro puede no tener categoría/autor
+        // asignado todavía) -- por eso sin @NotNull/@NotEmpty, a
+        // diferencia de editorialId/idiomaId/estadoId que sí son
+        // obligatorios.
+        Set<Integer> categoriaIds,
+
+        Set<Long> autorIds
 ) {}
