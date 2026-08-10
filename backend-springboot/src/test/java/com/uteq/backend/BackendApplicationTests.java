@@ -3,6 +3,7 @@ package com.uteq.backend;
 import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.EditorialRepository;
 import com.uteq.backend.repository.EstadoLibroRepository;
+import com.uteq.backend.repository.EstadoPrestamoRepository;
 import com.uteq.backend.repository.EstadoReservacionRepository;
 import com.uteq.backend.repository.EstadoUsuarioRepository;
 import com.uteq.backend.repository.IdiomaRepository;
@@ -66,6 +67,9 @@ class BackendApplicationTests {
 
     @MockitoBean
     private PrestamoProcedureRepository prestamoProcedureRepository;
+
+    @MockitoBean
+    private EstadoPrestamoRepository estadoPrestamoRepository;
 
     @MockitoBean
     private ReservacionRepository reservacionRepository;
