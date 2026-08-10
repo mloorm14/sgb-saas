@@ -70,6 +70,9 @@ class BackendApplicationTests {
     private PrestamoProcedureRepository prestamoProcedureRepository;
 
     @MockitoBean
+    private EstadoPrestamoRepository estadoPrestamoRepository;
+
+    @MockitoBean
     private ReservacionRepository reservacionRepository;
 
     @MockitoBean
