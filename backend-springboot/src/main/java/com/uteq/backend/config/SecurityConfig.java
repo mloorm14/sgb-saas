@@ -71,6 +71,23 @@ public class SecurityConfig {
                 .headers(headers -> headers
                         .contentTypeOptions(contentTypeOptions -> {})
                         .frameOptions(frameOptions -> frameOptions.deny())
+                        // OWASP A05 (Bloque C.2, REQ-NF-014): gap identificado en
+                        // docs/mediciones/sec/2026-07-30-owasp-a05-mala-configuracion-seguridad.md
+                        // ("Content-Security-Policy ausente en ambos" -- backend y
+                        // frontend, causa independiente del gap de TLS). Se cierra
+                        // acá para el backend: la única superficie HTML que sirve
+                        // hoy es Swagger UI (deshabilitado en el perfil `prod`, ver
+                        // application.yml y adr-015-tls-transporte.md), así que una
+                        // política restrictiva no rompe ningún flujo de la API JSON.
+                        // Si Swagger UI llegase a necesitar estilos/scripts inline en
+                        // algún perfil de desarrollo, ampliar acá explícitamente en
+                        // vez de relajar por defecto.
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "default-src 'self'; "
+                                        + "frame-ancestors 'none'; "
+                                        + "base-uri 'self'; "
+                                        + "object-src 'none'"
+                        ))
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
