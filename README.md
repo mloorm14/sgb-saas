@@ -31,7 +31,9 @@ Video demo del sistema (2-3 min): [ver en Google Drive](https://drive.google.com
 
 Diagrama de secuencia UML del ciclo de vida de una petición autenticada, trazado sobre el endpoint `GET /api/v1/reservaciones/usuario/{usuarioId}` con las clases reales del proyecto.
 
-📎 **Diagrama:** [`docs/diagramas/flujo-mvc-springboot.png`](docs/diagramas/flujo-mvc-springboot.png)
+![Diagrama de secuencia UML — Flujo MVC SGB](docs/diagramas/flujo-mvc-springboot.png)
+
+[Ver diagrama en detalle](docs/diagramas/flujo-mvc-springboot.md)
 
 ## Descripción de cada paso del flujo
 
