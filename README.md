@@ -26,6 +26,26 @@ Video demo del sistema (2-3 min): [ver en Google Drive](https://drive.google.com
 - **Documentación API:** springdoc-openapi (Swagger UI)
 - **IA Integrada:** Gemini 2.0 Flash API (Entrega 2)
 
+---
+## 🔄 Flujo MVC — Ciclo de vida de una petición autenticada
+
+![Diagrama de secuencia UML — Flujo MVC SGB](docs/diagramas/flujo-mvc-springboot.png)
+
+[Ver diagrama en detalle](docs/diagramas/flujo-mvc-springboot.md)
+
+| # | Componente | Descripción |
+|---|---|---|
+| 1 | Angular `HttpClient` | Envía `GET /api/v1/libros` con `Authorization: Bearer [token]` |
+| 2 | Tomcat embebido | Recibe la conexión TCP, parsea el HTTP y crea `HttpServletRequest` |
+| 3 | `DispatcherServlet.doDispatch()` | Punto de entrada de Spring MVC; enruta la solicitud al `HandlerMapping` |
+| 4 | `JwtAuthFilter.doFilterInternal()` | Valida firma/expiración del token, consulta blacklist en Redis y establece el `SecurityContext` |
+| 5 | `RequestMappingHandlerMapping.getHandler()` | Localiza el método del controlador que coincide con la URL y el verbo HTTP |
+| 6 | `LibroController.listar()` | Recibe `Pageable` ya mapeado, delega al servicio |
+| 7 | `LibroService.listar()` | Lógica de negocio; `@Cacheable("libros")` + `@Transactional(readOnly=true)`; llama al repositorio |
+| 8 | `LibroRepository.findByEstado_Nombre()` | Spring Data JPA genera el SQL; Hibernate lo ejecuta contra PostgreSQL |
+| 9 | `MappingJackson2HttpMessageConverter.write()` | Serializa `Page<LibroResponseDTO>` a JSON dentro de `doDispatch()` antes de retornar |
+---
+
 ## 🔐 Autenticación
 
 Autenticación stateless basada en **JWT (HS256)**: `accessToken` de corta duración (1h) + `refreshToken` (7 días, cookie `HttpOnly`). Los tokens revocados se almacenan en Redis (blacklist por `jti`) para permitir invalidación de sesión antes de su expiración natural.
