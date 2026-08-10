@@ -62,6 +62,16 @@ spring:
 
 server:
   port: 8080
+  # REQ-NF-012 / ADR-015 (Módulo 10.1): el backend nunca termina TLS él
+  # mismo -- eso queda del lado del proxy (frontend-angular/nginx.conf en
+  # dev, o el balanceador en producción). 'framework' activa el
+  # ForwardedHeaderFilter de Spring, que confía en X-Forwarded-Proto/-For/
+  # -Host enviados por ese proxy. Sin esto, request.isSecure() siempre da
+  # false y el header Strict-Transport-Security (que Spring Security ya
+  # emite por defecto vía HstsHeaderWriter) nunca se escribe, aunque el
+  # cliente final sí esté en HTTPS -- ver
+  # docs/mediciones/sec/2026-07-30-owasp-a05-mala-configuracion-seguridad.md.
+  forward-headers-strategy: framework
 
 # Módulo 2: notificaciones por correo.
 notificaciones:
@@ -121,3 +131,35 @@ management:
     web:
       exposure:
         include: health, info, metrics
+
+---
+# Perfil 'prod' (Módulo 10.2 del roadmap, checklist OWASP A05, REQ-NF-014).
+# Se activa con SPRING_PROFILES_ACTIVE=prod (no es el default: en dev/test
+# se mantiene Swagger accesible y los stacktraces visibles para depuración
+# local). Ver
+# docs/mediciones/sec/2026-08-10-owasp-a05-fix-csp-stacktrace-swagger-nonroot.md.
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+server:
+  error:
+    # Explícito en vez de confiar solo en el default de Spring Boot: la
+    # capa de dominio ya devuelve ProblemDetail sin detalle interno para
+    # toda excepción de negocio (ver GlobalExceptionHandler.handleGenerica),
+    # esto cubre además el path por defecto /error para lo que caiga fuera
+    # del DispatcherServlet (p.ej. errores a nivel de filtro/contenedor).
+    include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
+
+springdoc:
+  # Swagger UI/OpenAPI expone el mapa completo de la API (rutas, DTOs,
+  # esquemas) -- en producción es superficie de ataque gratuita para
+  # cualquiera, sin aportar nada a un usuario final. Se deja accesible
+  # solo fuera de este perfil.
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
