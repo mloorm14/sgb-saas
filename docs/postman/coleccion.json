@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "9f2a4b1e-6c3d-4e2a-8b1a-3d5e7f9c0a12",
     "name": "SGB-SaaS API",
-    "description": "Coleccion Postman del backend SGB-SaaS (Spring Boot). Cubre AuthController, LibroController, PrestamoController, ReservacionController y MultaController con casos de exito y de error reales (400/401/403/404/409/422/423/429), verificados contra el stack Docker real (backend+postgres+redis) el 2026-07-30/31.\n\n## Como usar\n1. Crea o selecciona un Environment de Postman (pm.environment.set requiere uno activo; sin environment seleccionado las variables no persisten entre requests). Cualquier environment vacio sirve, las variables se auto-crean.\n2. Corre la carpeta 'Auth' completa primero, EN ORDEN, con el Collection Runner -- varios requests posteriores dependen de variables que capturan los de Auth (access_token, lector_access_token, gerente_access_token, lector_usuario_id).\n3. Los requests 'Login - Cuenta bloqueada por multas (423)' y 'Login - Gerente (200)' requieren un paso manual de SQL contra sgb_postgres -- el SQL exacto esta en la descripcion de cada request.\n4. Usuario semilla (db/seed.sql): admin@sgb-saas.local / Admin123! (rol ADMIN unicamente -- NO tiene GERENTE/BIBLIOTECARIO, por eso Prestamos/Reservaciones/Multas necesitan un usuario GERENTE aparte, ver carpeta Auth).\n\n## Hallazgo detectado al armar esta coleccion (no corregido, fuera de alcance de esta tarea)\nReservacionService.crear() no valida que libroId exista antes de guardar (a diferencia de PrestamoController, que sí pasa por sp_crear_prestamo con validacion LB404). Una reservacion con libroId inexistente no responde 404: la restriccion FK de Postgres revienta como excepcion no mapeada y GlobalExceptionHandler.handleGenerica la convierte en 500 Internal Server Error. Ver el request 'Crear reservacion - libro no existe' en la carpeta Reservaciones, verificado en vivo el 2026-07-31.",
+    "description": "Coleccion Postman del backend SGB-SaaS (Spring Boot). Cubre AuthController, LibroController, PrestamoController, ReservacionController, MultaController, UsuarioAdminController y AuditoriaController con casos de exito y de error reales (200/204/400/401/403/404/409/422/423/429).\n\n## Como usar\n1. Crea o selecciona un Environment de Postman (pm.environment.set requiere uno activo; sin environment seleccionado las variables no persisten entre requests). Cualquier environment vacio sirve, las variables se auto-crean.\n2. Corre la carpeta 'Auth' completa primero, EN ORDEN, con el Collection Runner -- varios requests posteriores dependen de variables que capturan los de Auth (access_token, lector_access_token, gerente_access_token, lector_usuario_id).\n3. Los requests 'Login - Cuenta bloqueada por multas (423)' y 'Login - Gerente (200)' requieren un paso manual de SQL contra sgb_postgres -- el SQL exacto esta en la descripcion de cada request.\n4. Usuario semilla (db/seed.sql): admin@sgb-saas.local / Admin123! (rol ADMIN unicamente -- NO tiene GERENTE/BIBLIOTECARIO, por eso Prestamos/Reservaciones/Multas necesitan un usuario GERENTE aparte, ver carpeta Auth).\n\n## Hallazgo detectado al armar esta coleccion (no corregido, fuera de alcance de esta tarea)\nReservacionService.crear() no valida que libroId exista antes de guardar (a diferencia de PrestamoController, que sí pasa por sp_crear_prestamo con validacion LB404). Una reservacion con libroId inexistente no responde 404: la restriccion FK de Postgres revienta como excepcion no mapeada y GlobalExceptionHandler.handleGenerica la convierte en 500 Internal Server Error. Ver el request 'Crear reservacion - libro no existe' en la carpeta Reservaciones, verificado en vivo el 2026-07-31.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -1851,6 +1851,411 @@
             ],
             "url": "{{base_url}}/api/v1/notificaciones/usuario/1",
             "description": "AuthorizationDeniedException (NotificacionService.validarAccesoUsuario) -> 403. Asume que el usuario id=1 no es el propio lector_usuario_id logueado (usuario semilla admin en db/seed.sql)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Usuarios (Admin)",
+      "description": "Modulo 5: panel de administracion de usuarios (adr-014-separacion-admin-gerente.md). El listado es GET /api/v1/admin/usuarios (ADMIN o GERENTE); cambiar rol o estado queda restringido solo a ADMIN.",
+      "item": [
+        {
+          "name": "Listar usuarios - paginado y filtro (200, ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Listado paginado (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('content');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/usuarios?filtro=lector&page=0&size=10",
+            "description": "ADMIN semilla. UsuarioAdminService.listar aplica findByFiltro sobre nombre/correo."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar usuarios - GERENTE tambien puede (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GERENTE puede listar (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gerente_access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/usuarios",
+            "description": "GERENTE tiene lectura del padron de usuarios para su operacion diaria, aunque no pueda cambiar rol/estado (ver adr-014)."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar usuarios - Sin permisos LECTOR (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('LECTOR no puede listar usuarios (403)', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lector_access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/usuarios",
+            "description": "@PreAuthorize(hasAnyRole('ADMIN','GERENTE')) rechaza a LECTOR con 403."
+          },
+          "response": []
+        },
+        {
+          "name": "Cambiar rol - Exito (204, ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Cambio de rol sin contenido (204)', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nuevoRol\": \"BIBLIOTECARIO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/v1/admin/usuarios/{{lector_usuario_id}}/rol",
+            "description": "Solo ADMIN. UsuarioAdminService.cambiarRol valida el rol contra RolRepository y registra el cambio en bitacora_auditoria."
+          },
+          "response": []
+        },
+        {
+          "name": "Cambiar rol - Sin permisos GERENTE (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GERENTE no puede cambiar roles (403)', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gerente_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nuevoRol\": \"BIBLIOTECARIO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/v1/admin/usuarios/{{lector_usuario_id}}/rol",
+            "description": "A proposito hasRole('ADMIN') estricto, no hasAnyRole: separar quien administra permisos de quien administra operacion diaria (adr-014)."
+          },
+          "response": []
+        },
+        {
+          "name": "Cambiar rol - Datos invalidos (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('nuevoRol vacio devuelve 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nuevoRol\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/v1/admin/usuarios/{{lector_usuario_id}}/rol",
+            "description": "@NotBlank en CambioRolRequestDTO.nuevoRol -> GlobalExceptionHandler.handleValidation -> 400."
+          },
+          "response": []
+        },
+        {
+          "name": "Cambiar estado - Exito (204, ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Cambio de estado sin contenido (204)', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nuevoEstado\": \"INACTIVO\",\n  \"motivo\": \"Solicitud del propio usuario, verificado por ventanilla\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/v1/admin/usuarios/{{lector_usuario_id}}/estado",
+            "description": "Solo ADMIN. motivo es obligatorio (@NotBlank) porque queda en bitacora_auditoria para trazabilidad del bloqueo manual."
+          },
+          "response": []
+        },
+        {
+          "name": "Cambiar estado - Sin motivo (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('motivo vacio devuelve 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nuevoEstado\": \"INACTIVO\",\n  \"motivo\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{base_url}}/api/v1/admin/usuarios/{{lector_usuario_id}}/estado",
+            "description": "@NotBlank en CambioEstadoUsuarioRequestDTO.motivo -> 400. Sin este dato la fila de bitacora_auditoria no serviria para auditar el bloqueo."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auditoria",
+      "description": "Modulo 6: bitacora de auditoria (bitacora_auditoria), solo lectura, GERENTE o ADMIN. Alimentada por los eventos que ya registran otros modulos (renovacion, pago de multa, cambio de rol/estado, etc).",
+      "item": [
+        {
+          "name": "Listar eventos de auditoria (200, ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Listado paginado (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('content');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/auditoria?page=0&size=20",
+            "description": "AuditoriaService.listar sin filtros, orden por fechaHora."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar eventos de auditoria - con filtros (200, GERENTE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GERENTE puede consultar auditoria (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gerente_access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/auditoria?usuarioId={{lector_usuario_id}}&modulo=PRESTAMOS&desde=2026-01-01T00:00:00Z&hasta=2026-12-31T23:59:59Z",
+            "description": "Filtros combinados usuarioId + modulo + rango de fechas (desde/hasta en ISO-8601)."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar eventos de auditoria - Sin permisos LECTOR (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('LECTOR no puede consultar auditoria (403)', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lector_access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/auditoria",
+            "description": "@PreAuthorize(hasAnyRole('GERENTE','ADMIN')) a nivel de clase rechaza a LECTOR/BIBLIOTECARIO con 403."
           },
           "response": []
         }

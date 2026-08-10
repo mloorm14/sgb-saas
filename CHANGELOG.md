@@ -87,6 +87,14 @@ objetivo `v0.9.0-rc` de esta Tercera Entrega.
   `Page`/`PageImpl` causaba una excepción no controlada en cada intento
   de lectura del cache; corregido migrando ese cache a serialización
   Java estándar (`cabf563`).
+- `docs/postman/coleccion.json` no documentaba los endpoints de
+  `UsuarioAdminController` (`GET /api/v1/admin/usuarios`, `PATCH
+  /{id}/rol`, `PATCH /{id}/estado`) ni de `AuditoriaController` (`GET
+  /api/v1/auditoria`) del Módulo 5/6, pese a que la convención del
+  proyecto exige documentar todo endpoint nuevo en la colección; se
+  agregan las carpetas "Usuarios (Admin)" y "Auditoria" con casos de
+  éxito (200/204) y de error (400/403) para ADMIN, GERENTE y LECTOR
+  (`3ada617`).
 
 ### Security
 
