@@ -1,14 +1,19 @@
 package com.uteq.backend;
 
+import com.uteq.backend.repository.AutorRepository;
 import com.uteq.backend.repository.BitacoraAuditoriaRepository;
+import com.uteq.backend.repository.BaseConocimientoRepository;
+import com.uteq.backend.repository.CategoriaRepository;
 import com.uteq.backend.repository.ConfiguracionSistemaRepository;
 import com.uteq.backend.repository.EditorialRepository;
 import com.uteq.backend.repository.EstadoLibroRepository;
 import com.uteq.backend.repository.EstadoPrestamoRepository;
 import com.uteq.backend.repository.EstadoReservacionRepository;
 import com.uteq.backend.repository.EstadoUsuarioRepository;
+import com.uteq.backend.repository.FavoritoRepository;
 import com.uteq.backend.repository.IdiomaRepository;
 import com.uteq.backend.repository.LibroRepository;
+import com.uteq.backend.repository.MensajeChatRepository;
 import com.uteq.backend.repository.MultaProcedureRepository;
 import com.uteq.backend.repository.MultaRepository;
 import com.uteq.backend.repository.NotificacionRepository;
@@ -17,6 +22,8 @@ import com.uteq.backend.repository.PrestamoRepository;
 import com.uteq.backend.repository.ReservacionProcedureRepository;
 import com.uteq.backend.repository.ReservacionRepository;
 import com.uteq.backend.repository.RolRepository;
+import com.uteq.backend.repository.SesionChatRepository;
+import com.uteq.backend.repository.SugerenciaAdquisicionRepository;
 import com.uteq.backend.repository.TipoNotificacionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;
@@ -112,6 +119,38 @@ class BackendApplicationTests {
 
     @MockitoBean
     private TipoNotificacionRepository tipoNotificacionRepository;
+
+    // Módulo H (chatbot): ChatbotService depende de estos 3 repositorios --
+    // mismo motivo que el resto de mocks de esta clase
+    // (DataJpaRepositoriesAutoConfiguration sigue excluido arriba, así que
+    // cualquier JpaRepository nuevo sin @MockitoBean rompe contextLoads()
+    // con "No qualifying bean of type ...").
+    @MockitoBean
+    private SesionChatRepository sesionChatRepository;
+
+    @MockitoBean
+    private MensajeChatRepository mensajeChatRepository;
+
+    @MockitoBean
+    private BaseConocimientoRepository baseConocimientoRepository;
+
+    // Módulo catálogo (feature/catalogo, commits sin mergear en esta rama):
+    // LibroController/AutorController/FavoritoController/SugerenciaController
+    // dependen de estos 4 repositorios -- mismo motivo que el resto de mocks
+    // de esta clase. Sin ellos contextLoads() falla con
+    // "No qualifying bean of type 'AutorRepository'" (preexistente, detectado
+    // al correr la suite completa en CI local; no pertenece al Módulo H).
+    @MockitoBean
+    private AutorRepository autorRepository;
+
+    @MockitoBean
+    private CategoriaRepository categoriaRepository;
+
+    @MockitoBean
+    private FavoritoRepository favoritoRepository;
+
+    @MockitoBean
+    private SugerenciaAdquisicionRepository sugerenciaAdquisicionRepository;
 
     @Test
     void contextLoads() {
