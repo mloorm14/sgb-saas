@@ -66,6 +66,9 @@ objetivo `v0.9.0-rc` de esta Tercera Entrega.
 - Documentación de `db/roles-privilegios.sql` corregida (propuesta de
   roles y privilegios) (`f45d481`); README actualizado con paso de
   ejecución de tests (`072175f`).
+- `docs/adr/README.md`: ADR-014 y ADR-015 agregados a la tabla de
+  "Otros ADRs" (existían como archivo pero no estaban indexados)
+  (`65ccf8d`).
 
 ### Fixed
 
@@ -103,6 +106,27 @@ objetivo `v0.9.0-rc` de esta Tercera Entrega.
 - `AuthorizationDeniedException` ahora responde 403 RFC 7807 en vez de
   caer como 500 no controlado; se agrega logueo de errores 500
   genuinos no controlados (`24ea873`).
+- OWASP A05 (Módulo 10.2, REQ-NF-014): `Content-Security-Policy`
+  explícito en `SecurityConfig` para el backend, ausente antes
+  (`42fe942`).
+- OWASP A05 (Módulo 10.2, REQ-NF-014): nuevo perfil `prod` en
+  `application.yml` que deshabilita Swagger UI/OpenAPI y oculta
+  stacktraces/mensajes internos en el path `/error` por defecto
+  (`853c0db`).
+- OWASP A05 (Módulo 10.2, REQ-NF-014): la imagen Docker del backend
+  ahora corre como usuario no-root (`spring`) en vez de `root`
+  (`dbbc097`).
+- REQ-NF-012 (Módulo 10.1): `ADR-015` documenta la decisión de que TLS
+  termina en el proxy (no en el backend Spring Boot), y
+  `server.forward-headers-strategy: framework` (`application.yml`) deja
+  el backend listo para reconocer `X-Forwarded-Proto` y activar
+  `Strict-Transport-Security` en cuanto exista TLS real delante del
+  stack (`381816c`, `853c0db`).
+- OWASP A05 (Módulo 10.2, REQ-NF-014): `SPRING_PROFILES_ACTIVE` expuesto
+  en el servicio `backend` de `docker-compose.yml`, con default vacío
+  para no deshabilitar Swagger en desarrollo local; se activa el perfil
+  `prod` solo definiéndolo en `.env` (`f404a4d`, documentado en
+  `.env.example` en `d91d552`).
 
 ## [v0.1.0-entrega-1b] — 2026-06-20
 
