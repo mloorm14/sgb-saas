@@ -38,10 +38,34 @@ test-backend:
 test-frontend:
 	cd frontend-angular && npx ng test --watch=false --browsers=ChromeHeadless
 
-# make bench: placeholder de pruebas de carga/rendimiento. Se implementara
-# en el Bloque C.1 con k6; por ahora solo informa el estado pendiente.
+# make bench: Bloque C.1 -- corre k6/libros-listado-test.js (cache_caliente +
+# cache_frio, GET /api/v1/libros) contra el stack real, reproduciendo el
+# comando documentado en docs/mediciones/perf/REPORT.md. Levanta el stack si
+# hace falta, espera healthchecks (mismo patron que 'up'), guarda el JSON
+# crudo de k6 en docs/mediciones/perf/ con el siguiente numero de run
+# disponible (nunca sobrescribe corridas previas, ver
+# docs/mediciones/README.md) e imprime un resumen p50/p95 con
+# scripts/perf-analysis.py. NO genera el .md de analisis -- eso es un paso
+# manual de interpretacion.
 bench:
-	@echo "Pendiente: requiere k6 (Bloque C.1), ver docs/mediciones/perf/"
+	docker compose up -d
+	@echo "Esperando healthchecks..."
+	@i=0; \
+	while docker compose ps | grep -qE "starting|unhealthy"; do \
+		i=$$((i+1)); \
+		if [ $$i -gt 30 ]; then echo "Timeout esperando healthchecks"; exit 1; fi; \
+		sleep 2; \
+	done
+	@echo "Todos los servicios estan arriba."
+	@last=$$(ls docs/mediciones/perf/k6-run*.json 2>/dev/null | sed -E 's/.*k6-run([0-9]+)\.json/\1/' | sort -n | tail -1); \
+	next=$$(( $${last:-0} + 1 )); \
+	echo "Corrida k6 -> docs/mediciones/perf/k6-run$$next.json"; \
+	MSYS_NO_PATHCONV=1 docker run --rm --network sgb-saas_default \
+		-v "$$(pwd)/k6:/scripts" -v "$$(pwd)/docs/mediciones/perf:/out" \
+		grafana/k6 run --out json=/out/k6-run$$next.json /scripts/libros-listado-test.js; \
+	echo ""; \
+	echo "Resumen (p50/p95) de esta corrida:"; \
+	python3 scripts/perf-analysis.py docs/mediciones/perf/k6-run$$next.json | grep -E '"escenario"|"n_peticiones"|"p50_ms"|"p95_ms"'
 
 # make audit: Bloque C.2 -- re-verificacion automatizada de los 4 controles
 # OWASP ya documentados manualmente en docs/mediciones/sec/ (A01, A03, A07,
