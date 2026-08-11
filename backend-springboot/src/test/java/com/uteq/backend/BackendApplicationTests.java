@@ -74,6 +74,9 @@ class BackendApplicationTests {
     private PrestamoProcedureRepository prestamoProcedureRepository;
 
     @MockitoBean
+    private EstadoPrestamoRepository estadoPrestamoRepository;
+
+    @MockitoBean
     private ReservacionRepository reservacionRepository;
 
     @MockitoBean
@@ -81,15 +84,6 @@ class BackendApplicationTests {
 
     @MockitoBean
     private EstadoReservacionRepository estadoReservacionRepository;
-
-    // Módulo 1 (renovación de préstamos): PrestamoService ahora también
-    // depende de EstadoPrestamoRepository -- faltaba este mock en
-    // feature/prestamos-avanzado, causaba
-    // "No qualifying bean of type 'EstadoPrestamoRepository'" en
-    // contextLoads() porque DataJpaRepositoriesAutoConfiguration sigue
-    // excluido arriba (mismo motivo que el resto de mocks de esta clase).
-    @MockitoBean
-    private EstadoPrestamoRepository estadoPrestamoRepository;
 
     @MockitoBean
     private MultaRepository multaRepository;
@@ -117,11 +111,9 @@ class BackendApplicationTests {
     @MockitoBean
     private TipoNotificacionRepository tipoNotificacionRepository;
 
-    // Módulo catálogo (feature/catalogo): AutorController/FavoritoController/
-    // SugerenciaController dependen de estos 4 repositorios -- mismo motivo
-    // que el resto de mocks de esta clase. Sin ellos contextLoads() falla con
-    // "No qualifying bean of type 'AutorRepository'" (preexistente, detectado
-    // al correr la suite completa; no pertenece a este fix del PDF).
+    // Módulo 3 (catálogo avanzado): favoritos, autores/categorías expuestos
+    // y sugerencias de adquisición -- mismo motivo que el resto de mocks de
+    // esta clase (DataJpaRepositoriesAutoConfiguration sigue excluido arriba).
     @MockitoBean
     private AutorRepository autorRepository;
 
