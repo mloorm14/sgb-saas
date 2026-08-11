@@ -43,10 +43,14 @@ test-frontend:
 bench:
 	@echo "Pendiente: requiere k6 (Bloque C.1), ver docs/mediciones/perf/"
 
-# make audit: placeholder de auditoria de seguridad OWASP. Se implementara
-# en el Bloque C.2; por ahora solo informa el estado pendiente.
+# make audit: Bloque C.2 -- re-verificacion automatizada de los 4 controles
+# OWASP ya documentados manualmente en docs/mediciones/sec/ (A01, A03, A07,
+# A09) contra el stack Docker real, incluyendo el paso de verificacion de
+# correo que ahora exige el login (ver scripts/owasp-audit.sh). A02 y A05
+# quedan fuera (ver comentario en el propio script). Genera un .md nuevo en
+# docs/mediciones/sec/ sin tocar los archivos de evidencia originales.
 audit:
-	@echo "Pendiente: requiere auditoria OWASP (Bloque C.2), ver docs/mediciones/sec/"
+	bash scripts/owasp-audit.sh
 
 # make clean: baja los contenedores incluyendo volumenes (borra datos de
 # Postgres) y limpia artefactos de build locales (target/, dist/, cache
