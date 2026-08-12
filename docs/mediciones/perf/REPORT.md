@@ -2,8 +2,13 @@
 
 ## Cabecera de medición
 
-- **Fecha (ISO 8601 UTC)**: 2026-07-31T02:54:00Z a 2026-07-31T03:00:00Z (3 corridas consecutivas)
-- **Commit**: `a3d41ac`
+- **Fecha (ISO 8601 UTC)**: 2026-07-31T02:54:00Z a 2026-07-31T03:00:00Z
+  (corridas 1-3) · 2026-08-05 (corrida 4, `d6ae7c9`, regenerada tras el
+  hallazgo de que la primera versión de `k6-run4.json` había quedado
+  contra una imagen Docker desactualizada) · 2026-08-12 (corrida 5,
+  cierre del Bloque D4/B.10, ver sección de comparación estadística) — 5
+  corridas en total, mínimo exigido por la guía.
+- **Commit** (corrida 5): `04ce7c5`
 - **Docker**: Docker version 29.5.3, build d1c06ef
 - **Docker Compose**: Docker Compose version v5.1.4
 - **Java**: openjdk version "21.0.11" 2026-04-21 LTS
@@ -43,8 +48,10 @@ Autenticación: `setup()` hace login real contra `POST /api/auth/login` con
 el usuario admin de desarrollo (`admin@sgb-saas.local`, ver README) y todas
 las VUs reutilizan el `accessToken` obtenido.
 
-Comando ejecutado 3 veces de forma independiente (una corrida = ambos
-escenarios secuenciales, ~106s cada corrida):
+Comando ejecutado 5 veces de forma independiente, vía `make bench`
+(automatiza el mismo comando, auto-incrementando `k6-run{N}.json` sin
+pisar corridas previas — ver `Makefile`), una corrida = ambos escenarios
+secuenciales, ~106s cada corrida:
 
 ```bash
 docker run --rm --network sgb-saas_default \
@@ -57,17 +64,23 @@ Datos crudos (formato NDJSON de k6, un `Point` por métrica por petición):
 - [`k6-run1.json`](k6-run1.json)
 - [`k6-run2.json`](k6-run2.json)
 - [`k6-run3.json`](k6-run3.json)
+- [`k6-run4.json`](k6-run4.json)
+- [`k6-run5.json`](k6-run5.json)
 
 Análisis agregado calculado con [`scripts/perf-analysis.py`](../../../scripts/perf-analysis.py)
 (media, mediana, desviación típica, IC 95% de la media, percentiles
 p50/p90/p95/p99, tasa de error HTTP ≥500 y throughput, por escenario, sobre
-la métrica `http_req_duration` filtrada por tag `scenario`):
+la métrica `http_req_duration` filtrada por tag `scenario`; además, desde
+la corrida 5, comparación pareada Wilcoxon + Cliff's delta y el gráfico
+SVG — ver sección dedicada más abajo):
 
 ```bash
 python scripts/perf-analysis.py \
   docs/mediciones/perf/k6-run1.json \
   docs/mediciones/perf/k6-run2.json \
-  docs/mediciones/perf/k6-run3.json
+  docs/mediciones/perf/k6-run3.json \
+  docs/mediciones/perf/k6-run4.json \
+  docs/mediciones/perf/k6-run5.json
 ```
 
 ## Resultados crudos
@@ -79,13 +92,15 @@ python scripts/perf-analysis.py \
 | 1 | 107.31ms | 10.96ms | 0.00% | ✅ pasa | ✅ pasa |
 | 2 | 10.55ms | 5.93ms | 0.00% | ✅ pasa | ✅ pasa |
 | 3 | 6.25ms | 5.72ms | 0.00% | ✅ pasa | ✅ pasa |
+| 4 | 9.03ms | 4.82ms | 0.00% | ✅ pasa | ✅ pasa |
+| 5 | 12.36ms | 6.69ms | 0.00% | ✅ pasa | ✅ pasa |
 
-### Análisis agregado (`perf-analysis.py`, las 3 corridas combinadas)
+### Análisis agregado (`perf-analysis.py`, las 5 corridas combinadas)
 
 | Escenario | n | media (ms) | mediana (ms) | σ (ms) | IC95% media (ms) | p50 | p90 | p95 | p99 | error ≥500 | throughput (req/s) |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| cache_caliente | 5906 | 27.67 | 5.91 | 194.92 | [22.70, 32.64] | 5.91 | 15.63 | **29.79** | 197.58 | 0.00% | 118.12 |
-| cache_frio | 6039 | 5.40 | 4.80 | 3.46 | [5.31, 5.48] | 4.80 | 7.07 | **7.96** | 13.79 | 0.00% | 120.78 |
+| cache_caliente | 9929 | 18.89 | 5.49 | 150.74 | [15.93, 21.86] | 5.49 | 11.66 | **19.49** | 104.79 | 0.00% | 198.58 |
+| cache_frio | 10074 | 4.84 | 4.34 | 2.88 | [4.78, 4.89] | 4.34 | 6.70 | **7.50** | 12.32 | 0.00% | 201.48 |
 
 Salida JSON completa del script (reproducible con el comando de arriba):
 
@@ -93,63 +108,116 @@ Salida JSON completa del script (reproducible con el comando de arriba):
 [
   {
     "escenario": "cache_caliente",
-    "n_peticiones": 5906,
-    "media_ms": 27.66865201710125,
-    "mediana_ms": 5.9130255,
-    "desviacion_tipica_ms": 194.91644443152174,
-    "ic95_media_ms": [22.697490995756194, 32.63981303844631],
-    "p50_ms": 5.9130255,
-    "p90_ms": 15.630169500000001,
-    "p95_ms": 29.78529875,
-    "p99_ms": 197.58115424999988,
+    "n_peticiones": 9929,
+    "media_ms": 18.894002069896263,
+    "mediana_ms": 5.48609,
+    "desviacion_tipica_ms": 150.74135986001292,
+    "ic95_media_ms": [15.928926648590007, 21.85907749120252],
+    "p50_ms": 5.48609,
+    "p90_ms": 11.661815400000005,
+    "p95_ms": 19.490237200000003,
+    "p99_ms": 104.78916727999977,
     "tasa_error_5xx": 0.0,
-    "throughput_req_s": 118.12
+    "throughput_req_s": 198.58
   },
   {
     "escenario": "cache_frio",
-    "n_peticiones": 6039,
-    "media_ms": 5.396359890379202,
-    "mediana_ms": 4.803499,
-    "desviacion_tipica_ms": 3.458193291963703,
-    "ic95_media_ms": [5.309138537115976, 5.483581243642428],
-    "p50_ms": 4.803499,
-    "p90_ms": 7.0650948,
-    "p95_ms": 7.960982299999994,
-    "p99_ms": 13.78792174,
+    "n_peticiones": 10074,
+    "media_ms": 4.83659276771888,
+    "mediana_ms": 4.3375845,
+    "desviacion_tipica_ms": 2.8827133853554177,
+    "ic95_media_ms": [4.780299486597705, 4.892886048840055],
+    "p50_ms": 4.3375845,
+    "p90_ms": 6.6958983000000005,
+    "p95_ms": 7.5030384,
+    "p99_ms": 12.324086880000046,
     "tasa_error_5xx": 0.0,
-    "throughput_req_s": 120.78
+    "throughput_req_s": 201.48
   }
 ]
 ```
 
 ## Umbrales exigidos por la guía — resultado real
 
-| Umbral | Exigido | Obtenido (agregado 3 corridas) | Cumple |
+| Umbral | Exigido | Obtenido (agregado 5 corridas) | Cumple |
 |---|---|---|---|
-| p95 cache caliente | < 200ms | 29.79ms | ✅ Sí |
-| p95 cache frío | < 500ms | 7.96ms | ✅ Sí |
-| Tasa de error HTTP ≥500 | 0% (implícito, ninguna guía tolera 500 bajo carga nominal) | 0.00% (0 de 11 945 peticiones) | ✅ Sí |
+| p95 cache caliente | < 200ms | 19.49ms | ✅ Sí |
+| p95 cache frío | < 500ms | 7.50ms | ✅ Sí |
+| Tasa de error HTTP ≥500 | 0% (implícito, ninguna guía tolera 500 bajo carga nominal) | 0.00% (0 de 20 003 peticiones) | ✅ Sí |
 
-Ambos umbrales se cumplen con margen amplio en las 3 corridas individuales y
+Ambos umbrales se cumplen con margen amplio en las 5 corridas individuales y
 en el agregado. No se ajustó ningún dato para lograr este resultado.
+
+## Comparación estadística cache_caliente vs cache_frio (Bloque D4/B.10)
+
+Test pareado (Wilcoxon de rangos con signo, no Mann-Whitney: ambos
+escenarios corren en las mismas 5 sesiones de carga, no son muestras
+independientes) sobre el **p95 de cada corrida individual** — no sobre el
+pool de peticiones agregado — más el tamaño de efecto **Cliff's delta**
+sobre la misma pareja de series. Cálculo en
+[`scripts/perf-analysis.py`](../../../scripts/perf-analysis.py)
+(`wilcoxon_pareado`, `cliffs_delta`), usando `scipy.stats.wilcoxon` cuando
+está disponible (método exacto, aplicado aquí).
+
+| Corrida | p95 cache_caliente (ms) | p95 cache_frio (ms) |
+|---|---|---|
+| 1 | 107.31 | 10.96 |
+| 2 | 10.56 | 5.93 |
+| 3 | 6.26 | 5.73 |
+| 4 | 9.03 | 4.82 |
+| 5 | 12.36 | 6.69 |
+
+- **Wilcoxon de rangos con signo**: estadístico = 0.0000, p-valor =
+  0.062500 → **no alcanza significancia estadística convencional
+  (p ≥ 0.05)**, pero por el motivo correcto: con solo 5 pares y una
+  dirección perfectamente consistente (cache_caliente > cache_frio en las
+  5 corridas, sin excepción), el p-valor exacto de dos colas mínimo
+  alcanzable con n=5 es exactamente 0.0625 (2×(1/2⁵)) — es un límite de
+  potencia estadística del tamaño de muestra, no evidencia de que no haya
+  diferencia.
+- **Cliff's delta = -0.68** (efecto **grande**, convención |δ|≥0.474):
+  cache_caliente es consistentemente más lento que cache_frio en las 5
+  corridas.
+- **Interpretación en una frase**: el efecto es grande y consistente en
+  las 5 corridas (Cliff's delta -0.68), pero el test de Wilcoxon no llega
+  al umbral convencional de significancia (p=0.0625) simplemente porque
+  n=5 es el mínimo exigido por la guía y no alcanza la potencia necesaria
+  para ese umbral con una dirección perfectamente consistente — más
+  corridas subirían la potencia sin cambiar la conclusión sustantiva ya
+  señalada en el punto 3 de "Análisis breve" (la comparación no es limpia
+  por la limitación metodológica de `cache_frio`, así que esta diferencia
+  de latencia refleja en parte esa asimetría de consultas, no solo el
+  efecto del cache).
+
+Gráfico vectorial (SVG) con las 5 corridas, p95 de ambos escenarios con
+barras de error de IC 95% (estimado por bootstrap, 2000 réplicas, semilla
+fija 42 — un percentil no tiene una fórmula cerrada de IC como la media),
+paleta accesible a daltonismo (Okabe-Ito, naranja `#E69F00` / celeste
+`#56B4E9`):
+
+![p95 cache_caliente vs cache_frio por corrida, con IC 95%](p95-comparacion-escenarios.svg)
 
 ## Análisis breve
 
-1. **Ambos umbrales se cumplen con margen amplio** (p95 caliente 29.79ms
-   contra el límite de 200ms; p95 frío 7.96ms contra el límite de 500ms), sin
-   errores 5xx en las 11 945 peticiones HTTP realizadas across las 3
+1. **Ambos umbrales se cumplen con margen amplio** (p95 caliente 19.49ms
+   contra el límite de 200ms; p95 frío 7.50ms contra el límite de 500ms), sin
+   errores 5xx en las 20 003 peticiones HTTP realizadas across las 5
    corridas.
 
 2. **Hallazgo colateral — la corrida 1 tiene una cola pesada anómala en
    `cache_caliente`** (p95=107.31ms, p99=2132ms, máximo 2.63s) que **no** se
-   repite en las corridas 2 y 3 (p95 10.55ms y 6.25ms respectivamente). La
-   explicación más probable es warm-up de JVM/JIT y del pool de conexiones
-   de HikariCP: la corrida 1 fue la primera ejecución de carga real desde
-   que el contenedor `sgb_backend` llevaba varias horas sin tráfico
-   significativo (ver `docker compose ps`, contenedor con "Up 4 hours" antes
-   de esta prueba). Esto se documenta con honestidad en vez de descartarlo
-   o repetir la corrida hasta que "saliera bien" — el agregado de las 3
-   corridas ya incluye este efecto y aun así cumple el umbral.
+   repite en ninguna de las 4 corridas siguientes (p95 entre 6.26ms y
+   12.36ms). La explicación más probable es warm-up de JVM/JIT y del pool
+   de conexiones de HikariCP: la corrida 1 fue la primera ejecución de
+   carga real desde que el contenedor `sgb_backend` llevaba varias horas
+   sin tráfico significativo (ver `docker compose ps`, contenedor con "Up
+   4 hours" antes de esta prueba). Esto se documenta con honestidad en vez
+   de descartarlo o repetir la corrida hasta que "saliera bien" — el
+   agregado de las 5 corridas ya incluye este efecto y aun así cumple el
+   umbral, y el test estadístico pareado (ver sección dedicada arriba)
+   confirma que el patrón caliente > frío se sostiene incluso excluyendo
+   mentalmente ese outlier (las corridas 2-5 solas ya muestran la misma
+   dirección).
 
 3. **Limitación metodológica del escenario `cache_frio` — amenaza a la
    validez de la comparación caliente-vs-frío.** El PRNG elige páginas al
@@ -169,6 +237,17 @@ en el agregado. No se ajustó ningún dato para lograr este resultado.
    informe, no oculta.
 
 4. **No se ejecutaron corridas adicionales para "limpiar" el resultado de la
-   corrida 1** ni se excluyó ningún dato del análisis agregado — las 3
+   corrida 1** ni se excluyó ningún dato del análisis agregado — las 5
    corridas completas están en los JSON crudos versionados y el script de
    análisis las procesa tal cual.
+
+5. **Cierre del Bloque D4/B.10**: con la 5ta corrida (mínimo exigido por la
+   guía) se agregó el test inferencial pareado (Wilcoxon) y el tamaño de
+   efecto (Cliff's delta) entre `cache_caliente`/`cache_frio`, más el
+   gráfico vectorial con IC 95% — ver la sección "Comparación estadística"
+   arriba. El resultado (efecto grande y consistente, significancia
+   estadística limitada solo por el tamaño de muestra mínimo) es coherente
+   con la limitación metodológica ya señalada en el punto 3: no se trata
+   de que el cache no tenga efecto, sino de que la comparación no aísla
+   limpiamente ese efecto del costo distinto de las consultas de cada
+   escenario.
