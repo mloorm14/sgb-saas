@@ -1,5 +1,21 @@
 # Índice de ADRs — SGB-SaaS
 
+## Mapeo con la guía de la Entrega Final
+
+La guía de la Entrega Final (Bloque A.2.2 y B.8) exige un ADR-006 sobre
+"Estrategia de acceso a datos: separación CRUD/SP" y un ADR-007 sobre
+estrategia de despliegue. En este repositorio esos contenidos existen con
+otra numeración, por continuidad con la numeración ya usada y evaluada en
+la Entrega 3 (renumerar ahora rompería ~30 referencias cruzadas en
+SRS.md, el informe LaTeX, código Java y CHANGELOG.md):
+
+- Estrategia de acceso a datos (CRUD-ORM / stored procedures): ver
+  [ADR-013](adr-013-acceso-datos-orm-sp.md).
+- Estrategia de despliegue: ver [ADR-012](adr-012-estrategia-despliegue.md).
+
+Ambos ADRs cubren el contenido exigido por la guía; solo difiere el
+número de secuencia respecto a la numeración sugerida en la guía.
+
 Mapeo de los 6 temas obligatorios del Bloque D contra los ADRs que los
 cubren. Generado tras la auditoría de ADRs de la Tercera Entrega, que
 detectó 3 temas parcialmente cubiertos y 3 sin ADR — todos cerrados con
