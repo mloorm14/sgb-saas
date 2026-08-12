@@ -39,10 +39,15 @@ ambigüedad.
 
 ### MINOR (funcionalidad nueva compatible)
 
-- **Un módulo funcional nuevo**: el ejemplo canónico de esta entrega es el
-  módulo de **Préstamos/Reservas/Multas** (Cajas) — agrega endpoints y
-  tablas nuevas, pero no modifica ni rompe nada de lo que ya existe
-  (catálogo, autenticación).
+- **Un módulo funcional nuevo**: el ejemplo canónico de la Tercera
+  Entrega es el módulo de **Préstamos/Reservas/Multas** — agrega
+  endpoints y tablas nuevas, pero no modifica ni rompe nada de lo que ya
+  existe (catálogo, autenticación). Para la Entrega Final, los módulos
+  de **notificaciones y verificación de correo**, **credencial QR**,
+  **favoritos y sugerencias de adquisición**, y **panel de
+  administración con reportes** (todos de Cajas) siguen el mismo
+  criterio: agregan superficie nueva de forma aditiva, sin romper
+  contratos existentes.
 - **Un endpoint nuevo sobre un recurso existente** que no cambia el
   contrato de los endpoints ya existentes (ej. un endpoint de reportes
   agregados sobre libros más prestados,
@@ -102,7 +107,20 @@ implementado y verificado.
 | Tag | Corresponde a |
 |---|---|
 | `v0.1.0-entrega-1b` | Cierre de la Entrega 1B (commit `1f89354`) |
-| `v0.9.0-rc` (objetivo de esta entrega) | Cierre de la Tercera Entrega — pendiente de crear al finalizar los Bloques pendientes |
+| `v0.7.1` | Punto intermedio previo a la Tercera Entrega, con feedback de Entregas 1A/1B incorporado (commit `464fbf7`) |
+| `v0.9.0-rc` | Cierre de la Tercera Entrega (commit `c6b372c`) |
+| `v1.0.0` (objetivo de la Entrega Final) | Primera versión estable del PFC — Bloques A-E completos, despliegue público con TLS, evaluación SUS con muestra completa. Pendiente de crear al finalizar la Entrega Final |
+
+### Nota de reproducibilidad — re-archivado en Zenodo
+
+El feedback de la Tercera Entrega señaló que el DOI de Zenodo, archivado
+sobre `v0.9.0-rc`, quedó **12 commits por detrás** del commit real que
+contiene el informe y las evidencias de rendimiento/accesibilidad
+(`main` avanzó de `c6b372c` a `ac9b8a5` después de crear el tag, sin
+re-etiquetar). Para `v1.0.0`, el tag debe crearse **sobre el commit
+final verificado** (build en verde, informe y evidencia ya incluidos en
+el árbol) antes de archivar en Zenodo — no re-archivar sobre un tag ya
+existente que pueda haber quedado desactualizado.
 
 ## Referencias
 
