@@ -22,6 +22,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.jdbc.UncategorizedSQLException;
@@ -135,6 +136,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EntityNotFoundException.class)
     public ProblemDetail handleNotFound(EntityNotFoundException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    // Spring la lanza cuando no existe ningún recurso estático/ruta para el
+    // path pedido (ej. /swagger-ui.html o /api/docs con el perfil prod, que
+    // los deshabilita vía springdoc.*.enabled=false). Sin este handler caía
+    // en handleGenerica -> 500, ocultando lo que en realidad es un 404
+    // (ver docs/mediciones/sec/2026-08-10-owasp-a05-fix-csp-stacktrace-swagger-nonroot.md,
+    // verificación pendiente que detectó este 500 al probarlo en Docker real).
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ProblemDetail handleNoResourceFound(NoResourceFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Recurso no encontrado");
     }
 
     // PrestamoService.renovar(): las 3 reglas de negocio que bloquean una
