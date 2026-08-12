@@ -194,6 +194,25 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.errores.password").exists());
     }
 
+    // REQ-F-001 criterio 3: registro_datosInvalidos_devuelve400ConErroresPorCampo
+    // invalida los 4 campos a la vez, asi que un futuro relajamiento de la
+    // validacion de contraseña seguiria devolviendo 400 igual (los otros 3
+    // campos ya bastan). Este test aisla el criterio: solo la contraseña es
+    // invalida, el resto de campos son validos.
+    @Test
+    void registro_passwordCorta_devuelve400ProblemDetail() throws Exception {
+        RegistroRequestDTO dto = new RegistroRequestDTO("Nueva", "Persona", "nueva@uteq.edu.ec", "corta");
+
+        mockMvc.perform(post("/api/auth/registro")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errores.password").exists())
+                .andExpect(jsonPath("$.errores.nombre").doesNotExist())
+                .andExpect(jsonPath("$.errores.apellido").doesNotExist())
+                .andExpect(jsonPath("$.errores.correo").doesNotExist());
+    }
+
     @Test
     void refresh_sinCookie_devuelve400ProblemDetail() throws Exception {
         mockMvc.perform(post("/api/auth/refresh"))
