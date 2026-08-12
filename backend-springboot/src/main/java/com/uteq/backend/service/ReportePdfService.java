@@ -38,16 +38,15 @@ public class ReportePdfService {
     private static final DateTimeFormatter FORMATO_FECHA_GENERACION =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-    // FIX (preexistente, no del Módulo H): iText 9.5 eliminó el método
-    // conveniente Paragraph.setBold() (presente en iText 7). Sin esto la
-    // rama no compilaba -- el pipeline de CI fallaba antes de correr
-    // cualquier test. En iText 9 la negrita se logra fijando explícitamente
-    // una fuente bold (Helvetica-Bold, fuente estándar incrustable).
+    // FIX (preexistente, bloquea compilación): iText 9.5 eliminó el método
+    // conveniente Paragraph.setBold() (presente en iText 7). La negrita se
+    // logra fijando explícitamente una fuente bold (Helvetica-Bold, fuente
+    // estándar incrustable).
     //
-    // La fuente NO es estática a propósito: en iText un objeto PdfFont queda
-    // ligado al PdfDocument que lo usa y se invalida al cerrarlo, así que
-    // reutilizar una instancia entre reportes distintos lanza
-    // "Pdf indirect object belongs to other PDF document" (lo detectó
+    // La fuente NO es un campo static a propósito: en iText un objeto
+    // PdfFont queda ligado al PdfDocument que lo usa y se invalida al
+    // cerrarlo, así que reutilizar una instancia entre reportes distintos
+    // lanza "Pdf indirect object belongs to other PDF document" (lo detecta
     // ReportePdfServiceTest al generar el segundo PDF con el mismo font).
     private static PdfFont crearFuenteNegrita() {
         try {
