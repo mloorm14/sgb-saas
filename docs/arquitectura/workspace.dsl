@@ -1,9 +1,14 @@
 /*
  * SGB-SaaS — Modelo C4 (Structurizr DSL)
- * Niveles 1 (Contexto del sistema) y 2 (Contenedores).
- * Nivel 3 (Componentes) queda pendiente de un prompt aparte: depende de
- * detalle fino del backend de Préstamos que aún puede cambiar según lo
- * que construya Cajas, y rehacerlo dos veces sería trabajo perdido.
+ * Niveles 1 (Contexto del sistema), 2 (Contenedores) y 3 (Componentes,
+ * container "Backend Spring Boot").
+ * Nivel 3 se completó una vez cerradas las 8 ramas de Cajas (todas
+ * mergeadas a main) -- ya no había riesgo de rehacerlo por cambios en el
+ * backend de Préstamos, motivo por el que se había dejado pendiente. Se
+ * construyó a partir del inventario real de controllers/services/security
+ * del backend (no de memoria ni del diseño aspiracional), agrupado por
+ * dominio para que el diagrama siga siendo legible (21 componentes, no
+ * una entrada por cada una de las ~30 clases reales).
  *
  * ORIGEN: actualiza el diseño C4 nivel 1/2 de la Entrega 1A, que existía
  * solo como imagen (docs/diagramas/diagrama_c4_capa1.png y
@@ -88,7 +93,41 @@ workspace "SGB-SaaS" "Sistema de Gestión Bibliotecaria Web — plataforma de ca
 
             spa = container "Frontend Angular" "SPA de catálogo, formularios reactivos y gestión de sesión (accessToken en memoria, nunca localStorage)." "TypeScript / Angular 17" "Frontend"
 
-            backend = container "Backend Spring Boot" "API REST: autenticación JWT (cookie HttpOnly para el refresh token), autorización RBAC por roles, lógica de negocio de préstamos/reservas/multas vía JPA + procedimientos SQL." "Java 21 / Spring Boot 4.0.6"
+            backend = container "Backend Spring Boot" "API REST: autenticación JWT (cookie HttpOnly para el refresh token), autorización RBAC por roles, lógica de negocio de préstamos/reservas/multas vía JPA + procedimientos SQL." "Java 21 / Spring Boot 4.0.6" {
+
+                // Controllers, agrupados por dominio (no uno por cada una de
+                // las 16 clases @RestController reales -- TestController se
+                // excluye del diagrama: es un endpoint de humo sin lógica de
+                // negocio, /api/test/protegido).
+                authApi = component "Auth API" "Registro, login, refresh (cookie HttpOnly), logout, verificación de correo." "Spring MVC REST Controller"
+                catalogoApi = component "Catálogo API" "Libros, autores, categorías, favoritos y sugerencias de adquisición." "Spring MVC REST Controller"
+                prestamosApi = component "Préstamos API" "Préstamos, renovaciones, reservas, multas y su reporte de morosidad." "Spring MVC REST Controller"
+                notificacionesApi = component "Notificaciones API" "Consulta de notificaciones del usuario (vencimientos próximos)." "Spring MVC REST Controller"
+                credencialQrApi = component "CredencialQR API" "Consulta del token QR de credencial del usuario." "Spring MVC REST Controller"
+                chatbotApi = component "Chatbot API" "Sesiones y mensajes del asistente virtual." "Spring MVC REST Controller"
+                adminApi = component "Admin API" "Gestión de usuarios/roles, configuración del sistema y bitácora de auditoría." "Spring MVC REST Controller"
+
+                // Services, misma agrupación por dominio que los controllers.
+                authService = component "Auth Service" "Login, registro, refresh/logout, auditoría de autenticación y verificación de correo (código de un solo uso en Redis)." "Spring Service"
+                catalogoService = component "Catálogo Service" "Listado cacheado de libros, favoritos y sugerencias de adquisición." "Spring Service"
+                prestamosService = component "Préstamos Service" "Reglas de negocio de préstamos (renovaciones, límites), reservas y multas." "Spring Service"
+                reportesService = component "Reportes Service" "Genera el PDF del reporte de morosidad (iText) a partir de datos ya consultados por Préstamos API." "Spring Service"
+                notificacionesService = component "Notificaciones Service" "Genera notificaciones de vencimiento próximo y envía correos (SMTP, spring-boot-starter-mail)." "Spring Service"
+                credencialQrService = component "CredencialQR Service" "Expone el token QR generado por Postgres al insertar el usuario (uuid_generate_v4())." "Spring Service"
+                chatbotService = component "Chatbot Service" "Orquesta la conversación: guarda mensajes, arma el prompt con grounding real del catálogo/reservas y pide la respuesta a Gemini." "Spring Service"
+                adminService = component "Admin Service" "Administración de cuentas/roles, configuración del sistema y consulta de la bitácora de auditoría." "Spring Service"
+
+                // Security -- JwtService, filtro de autenticación y los dos
+                // rate limiters (OWASP A07, login y chatbot) respaldados por Redis.
+                jwtService = component "JwtService" "Genera y valida los JWT de acceso y refresh (jjwt)." "Spring Component"
+                jwtAuthFilter = component "JwtAuthFilter" "Filtro de Spring Security: valida el JWT de cada petición y verifica que no esté en la blacklist de Redis." "Spring Security Filter"
+                userDetailsServiceImpl = component "UserDetailsServiceImpl" "Carga el usuario, sus roles y el estado de la cuenta (bloqueada/inactiva) para Spring Security." "Spring Component"
+                loginRateLimiter = component "LoginRateLimiter" "Límite de intentos fallidos de login por correo+IP (OWASP A07)." "Spring Component"
+                chatbotRateLimiter = component "ChatbotRateLimiter" "Límite de mensajes al chatbot por usuario en la ventana vigente." "Spring Component"
+
+                // Integraciones externas.
+                geminiClient = component "GeminiClient" "Cliente HTTP hacia la API REST externa de Gemini 2.0 Flash: reintento simple ante 429/timeout/5xx, sin exponer la URL con la API key en logs." "Spring Component"
+            }
 
             postgres = container "PostgreSQL" "Usuarios, roles/permisos, catálogo, préstamos, reservas, multas y bitácora de auditoría (26 tablas)." "PostgreSQL 16" "Database"
 
@@ -110,6 +149,49 @@ workspace "SGB-SaaS" "Sistema de Gestión Bibliotecaria Web — plataforma de ca
         spa -> backend "Peticiones REST (JSON) -- JWT en header Authorization; cookie refreshToken HttpOnly+Secure+SameSite=Strict para /api/auth/refresh" "HTTPS/JSON"
         backend -> postgres "Lee/escribe vía Spring Data JPA (CRUD) y 7 procedimientos/funciones SQL (joins, agregaciones, transacciones complejas)" "JDBC"
         backend -> redis "Consulta blacklist de tokens revocados; lee/escribe cache del catálogo (@Cacheable)" "Redis protocol"
+
+        // Nivel 3 -- relaciones entre componentes del backend (API -> Service,
+        // y de ahí a Postgres/Redis/GeminiClient según lo que cada clase real
+        // usa; verificado en el código, no inferido).
+        authApi -> authService "Usa"
+        catalogoApi -> catalogoService "Usa"
+        catalogoApi -> postgres "Lee/escribe directo (AutorController/CategoriaController no tienen capa de servicio propia)" "JDBC"
+        prestamosApi -> prestamosService "Usa"
+        prestamosApi -> reportesService "Pide el PDF del reporte de morosidad"
+        notificacionesApi -> notificacionesService "Usa"
+        credencialQrApi -> credencialQrService "Usa"
+        chatbotApi -> chatbotService "Usa"
+        adminApi -> adminService "Usa"
+
+        authService -> jwtService "Genera/valida tokens de acceso y refresh"
+        authService -> loginRateLimiter "Verifica intentos fallidos antes de autenticar"
+        authService -> notificacionesService "Envía el correo de verificación (VerificacionCorreoService -> EmailService)"
+        authService -> postgres "Lee/escribe usuarios y bitácora de auditoría" "JDBC"
+        authService -> redis "Invalida el token en logout (blacklist); código de verificación de correo" "Redis protocol"
+
+        catalogoService -> postgres "Lee/escribe libros, favoritos, sugerencias de adquisición" "JDBC"
+        catalogoService -> redis "Cache del listado de libros (@Cacheable, TTL configurable)" "Redis protocol"
+
+        prestamosService -> postgres "Lee/escribe préstamos, reservas y multas (JPA + procedimientos SQL)" "JDBC"
+
+        notificacionesService -> postgres "Lee/escribe notificaciones" "JDBC"
+
+        credencialQrService -> postgres "Lee el usuario y su token QR (columna generada por Postgres)" "JDBC"
+
+        chatbotService -> postgres "Lee/escribe sesiones y mensajes de chat; consulta la base de conocimiento" "JDBC"
+        chatbotService -> geminiClient "Pide la respuesta al modelo, con el prompt de grounding"
+        chatbotService -> chatbotRateLimiter "Verifica el cupo de mensajes del usuario"
+        chatbotService -> catalogoService "Consulta disponibilidad real de libros (grounding, evita que el modelo la invente)"
+        chatbotService -> prestamosService "Consulta las reservas del usuario (grounding)"
+
+        adminService -> postgres "Lee/escribe usuarios, roles, configuración del sistema y bitácora de auditoría" "JDBC"
+
+        jwtAuthFilter -> jwtService "Valida el token de cada petición entrante"
+        jwtAuthFilter -> redis "Verifica que el token no esté en la blacklist" "Redis protocol"
+        jwtAuthFilter -> userDetailsServiceImpl "Carga el usuario autenticado"
+        userDetailsServiceImpl -> postgres "Carga usuario, roles y estado de la cuenta" "JDBC"
+        loginRateLimiter -> redis "Cuenta intentos fallidos por correo+IP" "Redis protocol"
+        chatbotRateLimiter -> redis "Cuenta mensajes por usuario en la ventana vigente" "Redis protocol"
     }
 
     views {
@@ -119,6 +201,11 @@ workspace "SGB-SaaS" "Sistema de Gestión Bibliotecaria Web — plataforma de ca
         }
 
         container sgb "NivelContenedores" "Nivel 2 C4 -- Frontend Angular, Backend Spring Boot, PostgreSQL y Redis, según docker-compose.yml real." {
+            include *
+            autoLayout lr
+        }
+
+        component backend "NivelComponentes" "Nivel 3 C4 -- componentes principales del backend Spring Boot." {
             include *
             autoLayout lr
         }
