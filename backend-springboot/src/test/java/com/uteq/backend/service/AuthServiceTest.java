@@ -242,6 +242,45 @@ class AuthServiceTest {
         verify(verificacionCorreoService).generarYEnviarCodigo(any(Usuario.class));
     }
 
+    // REQ-NF-013 / OWASP A03: replica como test de regresión permanente el
+    // caso 2 de docs/mediciones/sec/2026-07-30-owasp-a03-inyeccion.md
+    // (verificado antes solo de forma manual con curl contra Docker real,
+    // sin test en el suite). El payload clásico `' OR '1'='1` y un intento
+    // de `DROP TABLE` en campos de texto libre (nombre/apellido) deben
+    // guardarse como texto literal -- si UsuarioRepository.save() usara
+    // concatenación de SQL en vez de un PreparedStatement parametrizado,
+    // este flujo lanzaría una excepción en vez de completar el registro.
+    @Test
+    void registroConPayloadDeInyeccionSql_seGuardaComoTextoLiteralSinLanzarExcepcion() {
+        RegistroRequestDTO dto = new RegistroRequestDTO(
+                "' OR '1'='1", "'; DROP TABLE usuarios; --", "owasp@uteq.edu.ec", "password123");
+
+        EstadoUsuario pendienteVerificacion = new EstadoUsuario();
+        pendienteVerificacion.setId(4);
+        pendienteVerificacion.setNombre("PENDIENTE_VERIFICACION");
+
+        Rol lector = new Rol();
+        lector.setId(1);
+        lector.setNombre("LECTOR");
+
+        when(usuarioRepository.findByCorreo("owasp@uteq.edu.ec")).thenReturn(Optional.empty());
+        when(rolRepository.findByNombre("LECTOR")).thenReturn(Optional.of(lector));
+        when(estadoUsuarioRepository.findByNombre("PENDIENTE_VERIFICACION")).thenReturn(Optional.of(pendienteVerificacion));
+        when(passwordEncoder.encode("password123")).thenReturn("hash-encriptado");
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> {
+            Usuario u = inv.getArgument(0);
+            u.setId(100L);
+            return u;
+        });
+
+        authService.registrar(dto);
+
+        var capturado = org.mockito.ArgumentCaptor.forClass(Usuario.class);
+        verify(usuarioRepository).save(capturado.capture());
+        assertEquals("' OR '1'='1", capturado.getValue().getNombre());
+        assertEquals("'; DROP TABLE usuarios; --", capturado.getValue().getApellido());
+    }
+
     @Test
     void verificarCorreo_codigoValido_activaAlUsuarioYMarcaCorreoVerificado() {
         Usuario usuarioPendiente = usuarioDePrueba();
