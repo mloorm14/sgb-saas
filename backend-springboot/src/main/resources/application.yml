@@ -131,6 +131,15 @@ management:
     web:
       exposure:
         include: health, info, metrics
+  health:
+    mail:
+      # spring-boot-starter-mail (EmailService) trae de forma automatica un
+      # MailHealthIndicator que abre una conexion SMTP real para /actuator/health.
+      # En entornos sin SMTP configurado (dev local, CI) eso tumba el healthcheck
+      # aunque la app funcione bien -- EmailService.enviarCorreo() ya atrapa el
+      # fallo de SMTP y nunca rompe el flujo que lo origina (ver su Javadoc), asi
+      # que el correo no es un componente critico para considerar la app "unhealthy".
+      enabled: false
 
 ---
 # Perfil 'prod' (Módulo 10.2 del roadmap, checklist OWASP A05, REQ-NF-014).

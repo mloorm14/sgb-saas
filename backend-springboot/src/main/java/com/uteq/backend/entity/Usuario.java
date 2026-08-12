@@ -75,7 +75,7 @@ public class Usuario {
     // Modulo 8 (credencial QR): UUID generado una sola vez por la migracion
     // V5, nunca reemplazado por la app. Es lo unico que el codigo QR codifica
     // -- no el correo ni la identificacion en claro (ver CredencialQrService).
-    @Column(name = "credencial_qr_token", nullable = false, unique = true)
+    @Column(name = "credencial_qr_token", nullable = false, unique = true, insertable = false, updatable = false)
     private UUID credencialQrToken;
 
     @ManyToOne(fetch = FetchType.EAGER)
