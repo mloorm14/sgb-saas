@@ -1,0 +1,45 @@
+# Entorno de desarrollo de SGB-SaaS (captura automatica)
+
+- Fecha de captura (ISO 8601, UTC): 2026-08-13T18:19:39Z
+- Generado por: scripts/capture-versions.sh (invocado por 'make docs' / 'make all')
+- Documenta el estado del entorno en que corrio la medicion/entrega,
+  para reproducirla (criterio D.2 de la guia).
+### Docker CLI
+Docker version 29.3.1, build c2be9cc
+### Docker Compose
+Docker Compose version v5.1.1
+### Java (JDK del host, usado por test-backend)
+java version "21.0.10" 2026-01-20 LTS
+Java(TM) SE Runtime Environment (build 21.0.10+8-LTS-217)
+Java HotSpot(TM) 64-Bit Server VM (build 21.0.10+8-LTS-217, mixed mode, sharing)
+### k6 (imagen grafana/k6, via docker run -- igual que make bench)
+k6 v2.2.0 (commit/00a9a1b7f5, go1.26.5, linux/amd64)
+### Node.js
+v22.23.1
+### Angular CLI (global)
+
+     _                      _                 ____ _     ___
+    / \   _ __   __ _ _   _| | __ _ _ __     / ___| |   |_ _|
+   / △ \ | '_ \ / _` | | | | |/ _` | '__|   | |   | |    | |
+  / ___ \| | | | (_| | |_| | | (_| | |      | |___| |___ | |
+ /_/   \_\_| |_|\__, |\__,_|_|\__,_|_|       \____|_____|___|
+                |___/
+    
+
+Angular CLI       : 21.2.7
+Node.js           : 22.23.1
+Package Manager   : npm 10.9.8
+Operating System  : win32 x64
+
+
+### Python (usado por scripts/perf-analysis.py)
+Python 3.14.3
+
+Modulos usados por perf-analysis.py:
+  scipy 1.18.0
+  matplotlib 3.11.1
+### Imagen base del contenedor backend (backend-springboot/Dockerfile)
+Las dos etapas estan pinadas por digest sha256 (ver docs/DIGESTS-LOG.md):
+FROM eclipse-temurin@sha256:1ff763083f2993d57d0bf374ab10bb3e2cb873af6c13a04458ebbd3e0337dc76 AS build
+FROM eclipse-temurin@sha256:3f08b13888f595cc49edabea7250ba69499ba25602b267da591720769400e08c
+
