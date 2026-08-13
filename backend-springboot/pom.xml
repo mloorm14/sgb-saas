@@ -263,6 +263,50 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- Bloque A.2.3: analisis estatico de seguridad (SpotBugs +
+			     find-sec-bugs) sobre SQL dinamico. spotbugs:check enlazado a
+			     verify: el build falla si find-sec-bugs detecta concatenacion
+			     de strings hacia una query ejecutable (SQL_INJECTION_JDBC /
+			     SQL_INJECTION_JPA / SQL_INJECTION_HIBERNATE /
+			     SQL_INJECTION_SPRING_JDBC / SQL_INJECTION) o si SpotBugs
+			     encuentra un string no constante hacia execute()/addBatch()
+			     (SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE) o hacia
+			     prepareStatement() (SQL_PREPARED_STATEMENT_GENERATED_FROM_
+			     NONCONSTANT_STRING). includeFilterFile restringe el analisis
+			     a esas reglas y nada mas (ver spotbugs-security-include.xml):
+			     un hallazgo de otra categoria no debe tumbar el build. Con
+			     effort=Max y threshold=Low para minimizar falsos negativos.
+			     Todo hallazgo real de estas reglas deja A.2.3 (y P1/P3 por
+			     cascada) en Insuficiente, asi que check debe fallar, no solo
+			     reportar. -->
+			<plugin>
+				<groupId>com.github.spotbugs</groupId>
+				<artifactId>spotbugs-maven-plugin</artifactId>
+				<version>4.9.3.0</version>
+				<configuration>
+					<plugins>
+						<plugin>
+							<groupId>com.h3xstream.findsecbugs</groupId>
+							<artifactId>findsecbugs-plugin</artifactId>
+							<version>1.14.0</version>
+						</plugin>
+					</plugins>
+					<includeFilterFile>spotbugs-security-include.xml</includeFilterFile>
+					<effort>Max</effort>
+					<threshold>Low</threshold>
+					<failOnError>true</failOnError>
+					<maxAllowedViolations>0</maxAllowedViolations>
+				</configuration>
+				<executions>
+					<execution>
+						<id>spotbugs-security-check</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 
