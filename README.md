@@ -143,6 +143,42 @@ desarrollo:
 ⚠️ Solo para entornos locales de desarrollo. Nunca usar estas credenciales
 en un entorno con datos reales o accesible públicamente.
 
+## 🔁 Reproducibilidad (D.1 / D.2)
+
+El repositorio se orquesta con `make` y el pipeline completo se corre de
+punta a punta desde un clone limpio con un solo comando (criterio D.1 de la
+guía):
+
+```bash
+make all   # = up → test → bench → audit → docs → compilar PDF del informe
+```
+
+Targets disponibles: `up` `down` `test` `bench` `audit` `docs` `all` `clean`.
+
+- **`make docs`** regenera la evidencia documental que cambia con cada
+  corrida: `docs/entorno/versions.txt` (versiones **reales** del entorno —
+  Docker, docker compose, JDK, Node, Angular CLI, Python y k6, criterio D.2 —
+  vía `scripts/capture-versions.sh`), el análisis estadístico de rendimiento
+  (Wilcoxon pareado + Cliff's delta, `scripts/perf-analysis.py`) y verifica
+  (solo advierte, no regenera) la sincronía del render C4 contra
+  `docs/arquitectura/workspace.dsl`.
+- **Notebooks con outputs archivados**: `docs/mediciones/perf-analysis.ipynb`
+  (análisis de rendimiento, invoca `scripts/perf-analysis.py` — una sola
+  fuente de verdad, no duplica lógica) y `docs/mediciones/sus-analysis.ipynb`
+  (SUS, en estado *pendiente de datos* — no se fabrican resultados).
+- **Semillas fijas (D.2)**: toda aleatoriedad del pipeline usa semilla
+  explícita, no el default no determinista del lenguaje — el PRNG
+  `mulberry32` de `k6/libros-listado-test.js` y el bootstrap del IC 95% del
+  p95 en `scripts/perf-analysis.py` (`BOOTSTRAP_SEED`) usan **42**, ambos
+  documentados en su propio código. El resto del pipeline (agregación
+  estadística, SUS pendiente) no usa muestreo aleatorio: *no aplica*,
+  confirmado. Ver también la convención en `docs/mediciones/README.md`.
+- **Requisitos adicionales** para `make all`: `latexmk` (compilar el PDF —
+  Windows: MiKTeX, `winget install MiKTeX.MiKTeX`; Debian/Ubuntu:
+  `apt install latexmk`) y Chrome instalado (para `make test-frontend` con
+  ChromeHeadless). `make test-frontend` instala `node_modules` automáticamente
+  si faltan (`npm ci`, mismo paso que CI).
+
 ## 📄 Estado del proyecto
 
 **Entrega 1B (Junio 2026):** módulo de autenticación JWT + CRUD de `Libro` con Spring Data JPA, Flyway, Redis y Docker Compose. Ver `docs/` para el informe técnico completo.
