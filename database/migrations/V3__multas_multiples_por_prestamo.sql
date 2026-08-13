@@ -5,9 +5,21 @@
 -- multa (ej. daño al libro + atraso, registrados como dos filas separadas
 -- en `multas`). El UNIQUE original sobre multas.prestamo_id lo impedía.
 --
--- Nombre real de la constraint verificado en vivo contra Postgres 16 (no
--- asumido): Postgres nombra un UNIQUE inline de columna como
--- <tabla>_<columna>_key por defecto, y así se confirmó con
--- `\d multas` -> "multas_prestamo_id_key" UNIQUE CONSTRAINT, btree (prestamo_id).
+-- NO-OP DOCUMENTADA (rama conf-produccion): la tabla `multas` ahora nace en
+-- V2__rbac_normalizado.sql SIN el UNIQUE en prestamo_id (copiada verbatim
+-- de db/schema.sql, fuente de verdad del esquema final), así que en una
+-- base genuinamente vacía — Flyway real sobre Neon/Render, donde db/schema.sql
+-- nunca corre — no hay ninguna constraint que dropear y el ALTER original
+-- fallaba con "constraint does not exist".
+--
+-- Se mantiene el archivo (no se elimina) por versionado de Flyway:
+--   - bases sin UNIQUE (todas las nuevas): el DROP CONSTRAINT IF EXISTS
+--     no actúa — no-op pura.
+--   - bases sembradas desde un snapshot previo con el UNIQUE inline
+--     (multas_prestamo_id_key): lo dropea, preservando el efecto original
+--     de la decisión de negocio sin romper el checksum de una migración
+--     ya aplicada en algún ambiente.
+--   - el nombre real de la constraint se verificó en vivo contra Postgres 16
+--     (convención <tabla>_<columna>_key): "multas_prestamo_id_key".
 -- ============================================================================
-ALTER TABLE multas DROP CONSTRAINT multas_prestamo_id_key;
+ALTER TABLE multas DROP CONSTRAINT IF EXISTS multas_prestamo_id_key;
