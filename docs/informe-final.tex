@@ -50,6 +50,9 @@
 \usepackage{natbib}     % \citep para Trabajos Relacionados / Amenazas a la Validez
 \usepackage[expansion=false]{microtype}  % protrusion sin font expansion (las fuentes EC/T1 de este documento no son escalables)
 \sloppy                 % tolerancia adicional para las rutas/nombres de metodo mas largos que microtype por si solo no resuelve
+\usepackage{tikz}       % diagrama de flujo PRISMA, cap. Trabajos Relacionados
+\usetikzlibrary{arrows.meta,positioning}
+\usepackage{pdflscape}  % tabla comparativa ancha (8 columnas), cap. Trabajos Relacionados
 
 % ===== GEOMETRÍA =====
 \geometry{
@@ -144,11 +147,12 @@
 \input{capitulos/01-resumen.tex}
 \input{capitulos/02-introduccion.tex}
 
+\input{capitulos/03-trabajos-relacionados.tex}
+
 % ------------------------------------------------------------
 % Capitulos pendientes de prompts posteriores (dejados como
 % comentario para que el orden final del documento quede visible
 % aqui aunque el archivo todavia no exista):
-%   \input{capitulos/03-trabajos-relacionados.tex}
 %   \input{capitulos/04-metodologia.tex}          % si aplica segun la guia
 %   \input{capitulos/05-...}                      % si aplica segun la guia
 % ------------------------------------------------------------
