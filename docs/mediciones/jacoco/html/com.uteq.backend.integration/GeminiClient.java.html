@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GeminiClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.integration</a> &gt; <span class="el_source">GeminiClient.java</span></div><h1>GeminiClient.java</h1><pre class="source lang-java linenums">package com.uteq.backend.integration;
+
+import com.uteq.backend.entity.MensajeChat;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClient;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Cliente HTTP directo de la API {@code generateContent} de Gemini (Módulo
+ * H). Se decidió NO usar el SDK de Vertex AI: el roadmap lo dejaba como
+ * opción, pero en el repo la decisión ya tomada es HTTP directo vía
+ * {@link RestClient} (spring-web viene con spring-boot-starter-webmvc, sin
+ * dependencia nueva -- verificado en pom.xml).
+ * &lt;p&gt;
+ * IMPORTANTE (grounding): {@code promptSistema} DEBE instruir al modelo a
+ * responder SOLO con la información real pasada como contexto y a NUNCA
+ * inventar disponibilidad de libros. ChatbotService es quien construye ese
+ * contexto real (base_conocimiento + resultados de LibroService.sugerir),
+ * este cliente solo lo transporta.
+ * &lt;p&gt;
+ * Formato del payload: se usa el campo {@code systemInstruction} (soporte
+ * oficial de generateContent) en vez de inyectar el prompt como primer
+ * mensaje, porque así el historial de {@code contents} queda limpio para
+ * alternar roles user/model como exige la API; el historial de la sesión se
+ * mapea USUARIO-&amp;gt;user / ASISTENTE-&amp;gt;model. Respuesta parseada desde
+ * {@code candidates[0].content.parts[].text}.
+ * &lt;p&gt;
+ * Errores de la API NUNCA se propagan al cliente HTTP: 429, timeouts y
+ * cualquier 4xx/5xx se traducen a mensajes amigables fijos (con un único
+ * reintento automático antes del fallback, sin librería de retries).
+ */
+@Component
+public class GeminiClient {
+
+<span class="fc" id="L49">    private static final Logger log = LoggerFactory.getLogger(GeminiClient.class);</span>
+
+    private static final String MENSAJE_SATURADO =
+            &quot;El asistente está saturado, intenta en unos segundos.&quot;;
+    private static final String MENSAJE_FALLBACK_GENERICO =
+            &quot;No se pudo obtener respuesta del asistente, intenta de nuevo.&quot;;
+
+    private final RestClient restClient;
+    private final ObjectMapper objectMapper;
+    private final String apiKey;
+    private final String modelo;
+    private final String urlBase;
+
+    public GeminiClient(
+            @Value(&quot;${app.gemini.api-key}&quot;) String apiKey,
+            @Value(&quot;${app.gemini.modelo}&quot;) String modelo,
+            @Value(&quot;${app.gemini.url-base}&quot;) String urlBase,
+<span class="fc" id="L66">            @Value(&quot;${app.gemini.timeout-ms}&quot;) long timeoutMs) {</span>
+<span class="fc" id="L67">        this.apiKey = apiKey;</span>
+<span class="fc" id="L68">        this.modelo = modelo;</span>
+<span class="fc" id="L69">        this.urlBase = urlBase;</span>
+<span class="fc" id="L70">        this.objectMapper = new ObjectMapper();</span>
+
+        // Timeout de conexión/lectura configurable (app.gemini.timeout-ms),
+        // mismo criterio de configuración externa que el resto del repo.
+<span class="fc" id="L74">        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();</span>
+<span class="fc" id="L75">        requestFactory.setConnectTimeout((int) timeoutMs);</span>
+<span class="fc" id="L76">        requestFactory.setReadTimeout((int) timeoutMs);</span>
+
+<span class="fc" id="L78">        this.restClient = RestClient.builder()</span>
+<span class="fc" id="L79">                .requestFactory(requestFactory)</span>
+<span class="fc" id="L80">                .build();</span>
+<span class="fc" id="L81">    }</span>
+
+    public String generarRespuesta(String promptSistema, List&lt;MensajeChat&gt; historial, String mensajeNuevo) {
+        // Máximo 1 reintento automático: si el primer intento falla con 429
+        // o timeout, se reintenta una vez antes de caer al mensaje amigable.
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        for (int intento = 0; intento &lt; 2; intento++) {</span>
+            try {
+<span class="nc" id="L88">                return llamarGemini(promptSistema, historial, mensajeNuevo);</span>
+<span class="nc" id="L89">            } catch (HttpClientErrorException.TooManyRequests ex) {</span>
+<span class="nc" id="L90">                log.warn(&quot;Gemini respondió 429 (intento {}/2)&quot;, intento + 1);</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">                if (intento == 0) {</span>
+<span class="nc" id="L92">                    continue;</span>
+                }
+<span class="nc" id="L94">                return MENSAJE_SATURADO;</span>
+<span class="nc" id="L95">            } catch (ResourceAccessException ex) {</span>
+<span class="nc" id="L96">                log.warn(&quot;Timeout/sin conexión hacia Gemini (intento {}/2)&quot;, intento + 1, ex);</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">                if (intento == 0) {</span>
+<span class="nc" id="L98">                    continue;</span>
+                }
+<span class="nc" id="L100">                return MENSAJE_SATURADO;</span>
+<span class="nc" id="L101">            } catch (HttpClientErrorException | HttpServerErrorException ex) {</span>
+<span class="nc" id="L102">                log.error(&quot;Gemini respondió {} en el intento {}&quot;, ex.getStatusCode(), intento + 1);</span>
+<span class="nc" id="L103">                return MENSAJE_FALLBACK_GENERICO;</span>
+            }
+        }
+<span class="nc" id="L106">        return MENSAJE_SATURADO;</span>
+    }
+
+    private String llamarGemini(String promptSistema, List&lt;MensajeChat&gt; historial, String mensajeNuevo) {
+<span class="nc" id="L110">        List&lt;Map&lt;String, Object&gt;&gt; contents = new ArrayList&lt;&gt;();</span>
+
+        // Historial previo de la sesión (roles alternados user/model).
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        for (MensajeChat mensaje : historial) {</span>
+<span class="nc" id="L114">            contents.add(Map.of(</span>
+<span class="nc" id="L115">                    &quot;role&quot;, geminiRol(mensaje.getRol()),</span>
+<span class="nc" id="L116">                    &quot;parts&quot;, List.of(Map.of(&quot;text&quot;, mensaje.getContenido()))));</span>
+<span class="nc" id="L117">        }</span>
+
+        // El mensaje nuevo va como último contenido &quot;user&quot;. Si ya quedó
+        // incluido como último elemento del historial (ChatbotService lo
+        // persiste antes de llamar acá), no se duplica.
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (historial.isEmpty()</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">                || !&quot;USUARIO&quot;.equals(historial.get(historial.size() - 1).getRol())</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">                || !mensajeNuevo.equals(historial.get(historial.size() - 1).getContenido())) {</span>
+<span class="nc" id="L125">            contents.add(Map.of(</span>
+                    &quot;role&quot;, &quot;user&quot;,
+<span class="nc" id="L127">                    &quot;parts&quot;, List.of(Map.of(&quot;text&quot;, mensajeNuevo))));</span>
+        }
+
+<span class="nc" id="L130">        Map&lt;String, Object&gt; body = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc" id="L131">        body.put(&quot;contents&quot;, contents);</span>
+<span class="nc" id="L132">        body.put(&quot;systemInstruction&quot;, Map.of(&quot;parts&quot;, List.of(Map.of(&quot;text&quot;, promptSistema))));</span>
+
+<span class="nc" id="L134">        String url = urlBase + &quot;/models/&quot; + modelo + &quot;:generateContent?key=&quot; + apiKey;</span>
+
+        String jsonBody;
+        try {
+<span class="nc" id="L138">            jsonBody = objectMapper.writeValueAsString(body);</span>
+<span class="nc" id="L139">        } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {</span>
+            // Solo ocurre si la estructura interna del payload cambió de
+            // forma incompatible -- un error de programación, no del cliente.
+<span class="nc" id="L142">            throw new IllegalStateException(&quot;No se pudo serializar el payload de Gemini&quot;, ex);</span>
+<span class="nc" id="L143">        }</span>
+
+<span class="nc" id="L145">        String respuestaJson = restClient.post()</span>
+<span class="nc" id="L146">                .uri(url)</span>
+<span class="nc" id="L147">                .contentType(MediaType.APPLICATION_JSON)</span>
+<span class="nc" id="L148">                .body(jsonBody)</span>
+<span class="nc" id="L149">                .retrieve()</span>
+<span class="nc" id="L150">                .body(String.class);</span>
+
+<span class="nc" id="L152">        return extraerTexto(respuestaJson);</span>
+    }
+
+    private String extraerTexto(String respuestaJson) {
+        try {
+<span class="nc" id="L157">            JsonNode root = objectMapper.readTree(respuestaJson);</span>
+<span class="nc" id="L158">            JsonNode parts = root.at(&quot;/candidates/0/content/parts&quot;);</span>
+<span class="nc bnc" id="L159" title="All 4 branches missed.">            if (parts.isArray() &amp;&amp; parts.size() &gt; 0) {</span>
+<span class="nc" id="L160">                return parts.get(0).path(&quot;text&quot;).asText(&quot;&quot;);</span>
+            }
+<span class="nc" id="L162">            log.warn(&quot;Respuesta de Gemini sin texto en candidates[0].content.parts: {}&quot;,</span>
+                    respuestaJson);
+<span class="nc" id="L164">            return MENSAJE_FALLBACK_GENERICO;</span>
+<span class="nc" id="L165">        } catch (Exception ex) {</span>
+<span class="nc" id="L166">            log.error(&quot;No se pudo parsear la respuesta de Gemini&quot;, ex);</span>
+<span class="nc" id="L167">            return MENSAJE_FALLBACK_GENERICO;</span>
+        }
+    }
+
+    private String geminiRol(String rol) {
+<span class="nc bnc" id="L172" title="All 2 branches missed.">        return &quot;ASISTENTE&quot;.equals(rol) ? &quot;model&quot; : &quot;user&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

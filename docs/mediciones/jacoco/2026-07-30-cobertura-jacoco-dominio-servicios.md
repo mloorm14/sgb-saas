@@ -3,9 +3,13 @@
 **Registro histórico — NO vigente.** Este archivo documenta el hallazgo
 original (53.69% líneas, 5 clases de auth casi sin cobertura real) que
 motivó el trabajo de
-`2026-07-30-cobertura-jacoco-clases-seguridad-vigente.md`. Para el número
-de cobertura actual (75.85%), ver ese archivo — este se conserva sin
-editar como evidencia de cuál era el estado antes del fix.
+`2026-07-30-cobertura-jacoco-clases-seguridad-vigente.md` (que a su vez
+también quedó como registro histórico). Para el número de cobertura
+actual (81.64% líneas, tras el merge de ocho módulos de dominio nuevos),
+ver
+[`2026-08-13-cobertura-jacoco-post-merge-8-modulos.md`](2026-08-13-cobertura-jacoco-post-merge-8-modulos.md)
+— este archivo se conserva sin editar como evidencia de cuál era el
+estado antes del fix de las 5 clases de auth.
 
 ## Cabecera de medición
 

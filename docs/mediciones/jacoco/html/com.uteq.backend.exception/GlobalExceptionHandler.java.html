@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GlobalExceptionHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.exception</a> &gt; <span class="el_source">GlobalExceptionHandler.java</span></div><h1>GlobalExceptionHandler.java</h1><pre class="source lang-java linenums">package com.uteq.backend.exception;
 
+import com.uteq.backend.service.ChatbotRateLimitExcedidoException;
+import com.uteq.backend.service.CodigoVerificacionInvalidoException;
 import com.uteq.backend.service.CorreoYaRegistradoException;
+import com.uteq.backend.service.LimiteRenovacionesExcedidoException;
 import com.uteq.backend.service.LoginRateLimitExcedidoException;
+import com.uteq.backend.service.MaterialReservadoException;
+import com.uteq.backend.service.PrestamoVencidoException;
 import com.uteq.backend.service.RefreshTokenInvalidoException;
+import com.uteq.backend.service.SesionChatNoEncontradaException;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +22,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.jdbc.UncategorizedSQLException;
@@ -31,18 +38,18 @@ import java.util.Map;
  * y serializa con Content-Type {@code application/problem+json}.
  */
 @RestControllerAdvice
-<span class="fc" id="L34">public class GlobalExceptionHandler {</span>
+<span class="fc" id="L41">public class GlobalExceptionHandler {</span>
 
-<span class="fc" id="L36">    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);</span>
+<span class="fc" id="L43">    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);</span>
 
     @ExceptionHandler(CorreoYaRegistradoException.class)
     public ProblemDetail handleCorreoYaRegistrado(CorreoYaRegistradoException ex) {
-<span class="fc" id="L40">        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());</span>
+<span class="fc" id="L47">        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());</span>
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ProblemDetail handleBadCredentials(BadCredentialsException ex) {
-<span class="fc" id="L45">        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, &quot;Credenciales inválidas&quot;);</span>
+<span class="fc" id="L52">        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, &quot;Credenciales inválidas&quot;);</span>
     }
 
     // OWASP A07 (Bloque C.2): LoginRateLimiter.estaBloqueado() -&gt; AuthService
@@ -52,7 +59,22 @@ import java.util.Map;
     // para el gap original (6/6 intentos devolvían 401 sin límite) que esto cierra.
     @ExceptionHandler(LoginRateLimitExcedidoException.class)
     public ProblemDetail handleLoginRateLimitExcedido(LoginRateLimitExcedidoException ex) {
-<span class="fc" id="L55">        return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());</span>
+<span class="fc" id="L62">        return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());</span>
+    }
+
+    // Módulo H (chatbot): ChatbotService.chatbotRateLimiter.estaBloqueado()
+    // -&gt; excepción cuando el LECTOR agotó el cupo de mensajes al asistente
+    // en la ventana vigente. Mismo contrato que handleLoginRateLimitExcedido.
+    @ExceptionHandler(ChatbotRateLimitExcedidoException.class)
+    public ProblemDetail handleChatbotRateLimitExcedido(ChatbotRateLimitExcedidoException ex) {
+<span class="nc" id="L70">        return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());</span>
+    }
+
+    // Módulo H (chatbot): sesión inexistente o de otro usuario (un LECTOR
+    // solo accede a sus propias sesiones). Mismo contrato que handleNotFound.
+    @ExceptionHandler(SesionChatNoEncontradaException.class)
+    public ProblemDetail handleSesionChatNoEncontrada(SesionChatNoEncontradaException ex) {
+<span class="nc" id="L77">        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());</span>
     }
 
     // AuthService.refresh() lanza esto cuando el refreshToken de la cookie
@@ -66,7 +88,7 @@ import java.util.Map;
     // para no filtrar informacion sobre si una cuenta existe.
     @ExceptionHandler(RefreshTokenInvalidoException.class)
     public ProblemDetail handleRefreshTokenInvalido(RefreshTokenInvalidoException ex) {
-<span class="fc" id="L69">        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());</span>
+<span class="fc" id="L91">        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());</span>
     }
 
     // UserDetailsServiceImpl marca accountLocked=true cuando
@@ -75,7 +97,7 @@ import java.util.Map;
     // regularizar su multa, no reintentar la clave.
     @ExceptionHandler(LockedException.class)
     public ProblemDetail handleLocked(LockedException ex) {
-<span class="fc" id="L78">        return ProblemDetail.forStatusAndDetail(HttpStatus.LOCKED,</span>
+<span class="fc" id="L100">        return ProblemDetail.forStatusAndDetail(HttpStatus.LOCKED,</span>
                 &quot;Cuenta bloqueada por multas pendientes. Regularice su situación para continuar.&quot;);
     }
 
@@ -83,7 +105,7 @@ import java.util.Map;
     // es INACTIVO o PENDIENTE_VERIFICACION.
     @ExceptionHandler(DisabledException.class)
     public ProblemDetail handleDisabled(DisabledException ex) {
-<span class="fc" id="L86">        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,</span>
+<span class="fc" id="L108">        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,</span>
                 &quot;Cuenta inactiva o pendiente de verificación.&quot;);
     }
 
@@ -95,30 +117,67 @@ import java.util.Map;
     // que no está en la lista de roles de LibroController.listar()).
     @ExceptionHandler(AuthorizationDeniedException.class)
     public ProblemDetail handleAuthorizationDenied(AuthorizationDeniedException ex) {
-<span class="fc" id="L98">        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,</span>
+<span class="fc" id="L120">        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,</span>
                 &quot;No tiene permisos para realizar esta acción.&quot;);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
-<span class="fc" id="L104">        Map&lt;String, String&gt; detalles = new HashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L105" title="All 2 branches covered.">        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {</span>
-<span class="fc" id="L106">            detalles.put(fieldError.getField(), fieldError.getDefaultMessage());</span>
-<span class="fc" id="L107">        }</span>
+<span class="fc" id="L126">        Map&lt;String, String&gt; detalles = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {</span>
+<span class="fc" id="L128">            detalles.put(fieldError.getField(), fieldError.getDefaultMessage());</span>
+<span class="fc" id="L129">        }</span>
 
-<span class="fc" id="L109">        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, &quot;Datos inválidos&quot;);</span>
-<span class="fc" id="L110">        problem.setProperty(&quot;errores&quot;, detalles);</span>
-<span class="fc" id="L111">        return problem;</span>
+<span class="fc" id="L131">        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, &quot;Datos inválidos&quot;);</span>
+<span class="fc" id="L132">        problem.setProperty(&quot;errores&quot;, detalles);</span>
+<span class="fc" id="L133">        return problem;</span>
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
     public ProblemDetail handleNotFound(EntityNotFoundException ex) {
-<span class="nc" id="L116">        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());</span>
+<span class="nc" id="L138">        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());</span>
+    }
+
+    // Spring la lanza cuando no existe ningún recurso estático/ruta para el
+    // path pedido (ej. /swagger-ui.html o /api/docs con el perfil prod, que
+    // los deshabilita vía springdoc.*.enabled=false). Sin este handler caía
+    // en handleGenerica -&gt; 500, ocultando lo que en realidad es un 404
+    // (ver docs/mediciones/sec/2026-08-10-owasp-a05-fix-csp-stacktrace-swagger-nonroot.md,
+    // verificación pendiente que detectó este 500 al probarlo en Docker real).
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ProblemDetail handleNoResourceFound(NoResourceFoundException ex) {
+<span class="nc" id="L149">        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, &quot;Recurso no encontrado&quot;);</span>
+    }
+
+    // PrestamoService.renovar(): las 3 reglas de negocio que bloquean una
+    // renovación, cada una como su propia excepción para que el cliente
+    // pueda distinguir el motivo exacto del 409 sin parsear el mensaje.
+    @ExceptionHandler(PrestamoVencidoException.class)
+    public ProblemDetail handlePrestamoVencido(PrestamoVencidoException ex) {
+<span class="nc" id="L157">        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());</span>
+    }
+
+    @ExceptionHandler(LimiteRenovacionesExcedidoException.class)
+    public ProblemDetail handleLimiteRenovacionesExcedido(LimiteRenovacionesExcedidoException ex) {
+<span class="nc" id="L162">        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());</span>
+    }
+
+    @ExceptionHandler(MaterialReservadoException.class)
+    public ProblemDetail handleMaterialReservado(MaterialReservadoException ex) {
+<span class="nc" id="L167">        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());</span>
+    }
+
+    // Módulo 9.5: código de 6 dígitos incorrecto o ya expirado en Redis.
+    // 400 (no 401/403): no es un problema de autenticación ni de permisos,
+    // es un dato de entrada que no coincide con lo esperado.
+    @ExceptionHandler(CodigoVerificacionInvalidoException.class)
+    public ProblemDetail handleCodigoVerificacionInvalido(CodigoVerificacionInvalidoException ex) {
+<span class="nc" id="L175">        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());</span>
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
-<span class="fc" id="L121">        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());</span>
+<span class="fc" id="L180">        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());</span>
     }
 
     // Los SPs con efectos secundarios (sp_crear_prestamo, sp_registrar_devolucion,
@@ -134,26 +193,26 @@ import java.util.Map;
             DataAccessException.class
     })
     public ProblemDetail handleStoredProcedureError(Exception ex) {
-<span class="nc" id="L137">        Throwable causa = ex;</span>
-<span class="nc bnc" id="L138" title="All 4 branches missed.">        while (causa != null &amp;&amp; !(causa instanceof SQLException)) {</span>
-<span class="nc" id="L139">            causa = causa.getCause();</span>
+<span class="nc" id="L196">        Throwable causa = ex;</span>
+<span class="nc bnc" id="L197" title="All 4 branches missed.">        while (causa != null &amp;&amp; !(causa instanceof SQLException)) {</span>
+<span class="nc" id="L198">            causa = causa.getCause();</span>
         }
 
-<span class="nc bnc" id="L142" title="All 2 branches missed.">        if (causa instanceof SQLException sqlEx) {</span>
-<span class="nc" id="L143">            String sqlState = sqlEx.getSQLState();</span>
-<span class="nc bnc" id="L144" title="All 4 branches missed.">            HttpStatus status = switch (sqlState) {</span>
-<span class="nc" id="L145">                case &quot;LB404&quot; -&gt; HttpStatus.NOT_FOUND;</span>
-<span class="nc" id="L146">                case &quot;LB409&quot; -&gt; HttpStatus.CONFLICT;</span>
-<span class="nc" id="L147">                case &quot;LB422&quot; -&gt; HttpStatus.UNPROCESSABLE_ENTITY;</span>
-<span class="nc" id="L148">                default -&gt; null;</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">        if (causa instanceof SQLException sqlEx) {</span>
+<span class="nc" id="L202">            String sqlState = sqlEx.getSQLState();</span>
+<span class="nc bnc" id="L203" title="All 4 branches missed.">            HttpStatus status = switch (sqlState) {</span>
+<span class="nc" id="L204">                case &quot;LB404&quot; -&gt; HttpStatus.NOT_FOUND;</span>
+<span class="nc" id="L205">                case &quot;LB409&quot; -&gt; HttpStatus.CONFLICT;</span>
+<span class="nc" id="L206">                case &quot;LB422&quot; -&gt; HttpStatus.UNPROCESSABLE_ENTITY;</span>
+<span class="nc" id="L207">                default -&gt; null;</span>
             };
-<span class="nc bnc" id="L150" title="All 2 branches missed.">            if (status != null) {</span>
-<span class="nc" id="L151">                return ProblemDetail.forStatusAndDetail(status, sqlEx.getMessage());</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">            if (status != null) {</span>
+<span class="nc" id="L210">                return ProblemDetail.forStatusAndDetail(status, sqlEx.getMessage());</span>
             }
         }
 
-<span class="nc" id="L155">        log.error(&quot;Error no controlado en procedimiento almacenado&quot;, ex);</span>
-<span class="nc" id="L156">        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, &quot;Error interno del servidor&quot;);</span>
+<span class="nc" id="L214">        log.error(&quot;Error no controlado en procedimiento almacenado&quot;, ex);</span>
+<span class="nc" id="L215">        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, &quot;Error interno del servidor&quot;);</span>
     }
 
     @ExceptionHandler(Exception.class)
@@ -161,8 +220,8 @@ import java.util.Map;
         // Sin este log, un 500 no deja ningún rastro server-side: el cliente
         // recibe el detail genérico (correcto, no debe filtrar detalles
         // internos) pero el equipo no tiene forma de diagnosticar la causa.
-<span class="nc" id="L164">        log.error(&quot;Error no controlado&quot;, ex);</span>
-<span class="nc" id="L165">        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, &quot;Error interno del servidor&quot;);</span>
+<span class="nc" id="L223">        log.error(&quot;Error no controlado&quot;, ex);</span>
+<span class="nc" id="L224">        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, &quot;Error interno del servidor&quot;);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -2,39 +2,67 @@
 
 import com.uteq.backend.dto.LibroRequestDTO;
 import com.uteq.backend.dto.LibroResponseDTO;
+import com.uteq.backend.dto.LibroSugerenciaDTO;
 import com.uteq.backend.service.LibroService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping(&quot;/api/v1/libros&quot;)
+@Validated
 public class LibroController {
 
     private final LibroService libroService;
 
-<span class="fc" id="L21">    public LibroController(LibroService libroService) {</span>
-<span class="fc" id="L22">        this.libroService = libroService;</span>
-<span class="fc" id="L23">    }</span>
+<span class="fc" id="L27">    public LibroController(LibroService libroService) {</span>
+<span class="fc" id="L28">        this.libroService = libroService;</span>
+<span class="fc" id="L29">    }</span>
 
     // ── GET /api/v1/libros?page=0&amp;size=10 ────────────────
+    // Módulo 9.1: ?categoriaId= y ?autorId= son mutuamente excluyentes por
+    // simplicidad (combinar ambos filtros a la vez no está en el alcance
+    // de esta rama); si llegan los dos, categoriaId gana.
     @GetMapping
     @PreAuthorize(&quot;hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')&quot;)
     public ResponseEntity&lt;Page&lt;LibroResponseDTO&gt;&gt; listar(
+            @RequestParam(required = false) Integer categoriaId,
+            @RequestParam(required = false) Long autorId,
             @PageableDefault(size = 10, sort = &quot;titulo&quot;) Pageable pageable) {
-<span class="nc" id="L30">        return ResponseEntity.ok(libroService.listar(pageable));</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        if (categoriaId != null) {</span>
+<span class="nc" id="L42">            return ResponseEntity.ok(libroService.listarPorCategoria(categoriaId, pageable));</span>
+        }
+<span class="nc bnc" id="L44" title="All 2 branches missed.">        if (autorId != null) {</span>
+<span class="nc" id="L45">            return ResponseEntity.ok(libroService.listarPorAutor(autorId, pageable));</span>
+        }
+<span class="nc" id="L47">        return ResponseEntity.ok(libroService.listar(pageable));</span>
+    }
+
+    // ── GET /api/v1/libros/sugerencias?texto= ─────────────
+    // Módulo 3 (RF-09/CU-08): autocompletado de catálogo. isAuthenticated()
+    // sin restricción de rol -- cualquier usuario logueado puede buscar,
+    // a diferencia del resto de endpoints de este controller.
+    @GetMapping(&quot;/sugerencias&quot;)
+    @PreAuthorize(&quot;isAuthenticated()&quot;)
+    public ResponseEntity&lt;List&lt;LibroSugerenciaDTO&gt;&gt; sugerencias(
+            @RequestParam @Size(min = 2, max = 60, message = &quot;El texto de búsqueda debe tener entre 2 y 60 caracteres&quot;) String texto) {
+<span class="nc" id="L58">        return ResponseEntity.ok(libroService.sugerir(texto));</span>
     }
 
     // ── GET /api/v1/libros/{id} ───────────────────────────
     @GetMapping(&quot;/{id}&quot;)
     @PreAuthorize(&quot;hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')&quot;)
     public ResponseEntity&lt;LibroResponseDTO&gt; buscar(@PathVariable Long id) {
-<span class="nc" id="L37">        return ResponseEntity.ok(libroService.buscarPorId(id));</span>
+<span class="nc" id="L65">        return ResponseEntity.ok(libroService.buscarPorId(id));</span>
     }
 
     // ── POST /api/v1/libros ───────────────────────────────
@@ -42,8 +70,8 @@ public class LibroController {
     @PreAuthorize(&quot;hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')&quot;)
     public ResponseEntity&lt;LibroResponseDTO&gt; crear(
             @Valid @RequestBody LibroRequestDTO dto) {
-<span class="fc" id="L45">        return ResponseEntity.status(HttpStatus.CREATED)</span>
-<span class="fc" id="L46">                .body(libroService.crear(dto));</span>
+<span class="fc" id="L73">        return ResponseEntity.status(HttpStatus.CREATED)</span>
+<span class="fc" id="L74">                .body(libroService.crear(dto));</span>
     }
 
     // ── PUT /api/v1/libros/{id} ───────────────────────────
@@ -52,15 +80,15 @@ public class LibroController {
     public ResponseEntity&lt;LibroResponseDTO&gt; actualizar(
             @PathVariable Long id,
             @Valid @RequestBody LibroRequestDTO dto) {
-<span class="fc" id="L55">        return ResponseEntity.ok(libroService.actualizar(id, dto));</span>
+<span class="fc" id="L83">        return ResponseEntity.ok(libroService.actualizar(id, dto));</span>
     }
 
     // ── DELETE /api/v1/libros/{id} ────────────────────────
     @DeleteMapping(&quot;/{id}&quot;)
     @PreAuthorize(&quot;hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')&quot;)
     public ResponseEntity&lt;Void&gt; eliminar(@PathVariable Long id) {
-<span class="fc" id="L62">        libroService.eliminar(id);</span>
-<span class="fc" id="L63">        return ResponseEntity.noContent().build();</span>
+<span class="fc" id="L90">        libroService.eliminar(id);</span>
+<span class="fc" id="L91">        return ResponseEntity.noContent().build();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
