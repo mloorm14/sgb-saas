@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- =========================================================================
+     backend-springboot/spotbugs-security-include.xml
+
+     IncludeFilter del analisis estatico de seguridad (A.2.3, Tercera
+     Entrega): restringe spotbugs:check a las reglas de SQL dinamico, y
+     solo a ellas. Un hallazgo de cualquier otra regla de SpotBugs (o de
+     find-sec-bugs) NO debe tumbar el build: no es el criterio que esta
+     rama audita y mezclarlo haria que hallazgos no relacionados enturbien
+     la evidencia de A.2.3.
+
+     Reglas habilitadas, segun el catalogo real:
+
+       - SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE (core de SpotBugs):
+         string no constante pasado a execute()/addBatch() de un Statement
+         JDBC. Es la regla que la rubric cita por nombre.
+       - SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING (core de
+         SpotBugs): un PreparedStatement armado a partir de un string no
+         constante; misma clase de problema, otra API.
+       - SQL_INJECTION_JDBC (find-sec-bugs): consulta construida por
+         concatenacion hacia Statement.executeQuery()/execute() etc.
+       - SQL_INJECTION_JPA / SQL_INJECTION_HIBERNATE (find-sec-bugs):
+         concatenacion hacia EntityManager.createQuery()/createNativeQuery()
+         o la session de Hibernate (createQuery), que es el camino real de
+         este backend: la capa de datos usa Spring Data JPA + una function
+         nativa via procedure (ver PrestamoMultaProcedure...).
+       - SQL_INJECTION_SPRING_JDBC (find-sec-bugs): JdbcTemplate con SQL
+         construido por concatenacion.
+       - SQL_INJECTION (find-sec-bugs): generica del detector de
+         inyecciones; cubre sinks SQL no encasillados en las anteriores.
+
+     Reglas del catalogo que se omiten a proposito (no aplican a este
+     stack): SQL_INJECTION_TURBINE, SQL_INJECTION_JDO, SQL_INJECTION_VERTX,
+     SQL_INJECTION_ANDROID, SCALA_SQL_INJECTION_* (frameworks que el
+     proyecto no usa) y LDAP_INJECTION (no es SQL).
+     ========================================================================= -->
+<FindBugsFilter>
+    <Match>
+        <Bug pattern="SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JPA"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_HIBERNATE"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_SPRING_JDBC"/>
+    </Match>
+</FindBugsFilter>
