@@ -136,6 +136,12 @@
 % typewriter sin hyphenchar. Se desactiva ese shorthand global; no afecta
 % el contenido de los entornos lstlisting (leen su texto de forma
 % practicamente verbatim, sin pasar por los shorthands de babel).
+% NOTA: "-" NO es un shorthand registrado por babel-spanish (intentar
+% \shorthandoff{-} da error de compilacion: "not a shorthand") -- el bug
+% de "Bad character code" con un guion suelto dentro de \texttt{} (ej.
+% `docker compose down -v`) tiene otra causa (probablemente el propio
+% guion como punto de hyphenation implicito en fuente sin hyphenchar) y
+% se resuelve en el propio texto fuente, no aqui.
 \shorthandoff{"}
 
 \input{capitulos/00-portada.tex}
@@ -150,7 +156,16 @@
 % aparicion en el documento -- ese orden real es el de esta lista de
 % \input, que sigue la estructura de la guia (Introduccion B.4, Marco
 % Teorico B.5, Trabajos Relacionados B.6, Ingenieria de Requisitos
-% B.6bis, Materiales y Metodos B.7, Diseno B.8, Implementacion B.9).
+% B.6bis, Materiales y Metodos B.7, Diseno B.8, Implementacion B.9,
+% Resultados B.10, Discusion B.11, Trabajo Futuro B.13, Conclusiones
+% B.14, Amenazas a la Validez B.12 -- Amenazas se redacto originalmente
+% como capitulos/10-amenazas-validez.tex y se renombro a
+% capitulos/12-amenazas-validez.tex via git mv cuando se agregaron los
+% capitulos de Discusion/Trabajo Futuro/Conclusiones, para que el
+% prefijo numerico del archivo coincida con su posicion real; el
+% renombre no afecta ninguna \ref/\autoref existente porque esas
+% referencian la etiqueta \label{cap:amenazas-validez}, no el nombre de
+% archivo).
 \input{capitulos/01-resumen.tex}
 \input{capitulos/02-introduccion.tex}
 \input{capitulos/04-marco-teorico.tex}
@@ -160,12 +175,14 @@
 \input{capitulos/06-diseno-arquitectura.tex}
 \input{capitulos/07-implementacion.tex}
 \input{capitulos/08-resultados.tex}
-\input{capitulos/10-amenazas-validez.tex}
+\input{capitulos/09-discusion.tex}
+\input{capitulos/10-trabajo-futuro.tex}
+\input{capitulos/11-conclusiones.tex}
+\input{capitulos/12-amenazas-validez.tex}
 
 % ------------------------------------------------------------
-% Pendientes (tareas aparte, per instrucción explícita de esta tarea):
-%   \input{capitulos/11-discusion.tex}
-%   \input{capitulos/12-conclusiones.tex}
+% Pendientes (tareas aparte): Declaraciones/Anexos -- su archivo de
+% capitulo no existe todavia.
 %   \input{capitulos/13-declaraciones.tex}
 %   \input{capitulos/14-anexos.tex}
 % ------------------------------------------------------------
