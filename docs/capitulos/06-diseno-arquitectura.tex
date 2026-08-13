@@ -220,7 +220,23 @@ vive en \autoref{cap:ingenieria-requisitos} y en la propia matriz);
 resume aquí la columna \texttt{tipo\_acceso}, relevante para esta
 sección por ser la evidencia directa de que la estrategia híbrida
 CRUD-ORM/SP declarada en ADR-013 se aplica de verdad y no solo en
-teoría:
+teoría.
+
+\textbf{Nota de corrección respecto a una versión anterior de este
+capítulo.} \texttt{matriz.csv} tenía 4 filas
+(\texttt{REQ-F-018}, \texttt{REQ-F-019}, \texttt{REQ-F-020},
+\texttt{REQ-F-028}) con una coma sin escapar dentro de un campo, que
+rompía el parseo CSV estándar -- defecto ya corregido en el commit
+\texttt{ecfaf52}. Una versión anterior de esta tabla, calculada antes de
+esa corrección, solo había detectado 2 de las 4 filas afectadas
+(\texttt{REQ-F-019}, \texttt{REQ-F-020}) y las marcaba como ``sin
+clasificar''; además atribuía el problema de \texttt{REQ-F-019} a la
+columna \texttt{tipo\_acceso}, cuando en realidad ese campo sí tenía un
+valor de \texttt{tipo\_acceso} válido (\texttt{"CRUD-ORM + generacion de
+imagen (ZXing)"}) -- el campo roto en esa fila específica era
+\texttt{modulo\_codigo}, no \texttt{tipo\_acceso}. Con las 43 filas
+parseando limpio, la tabla de abajo reclasifica las 4 filas
+correctamente en vez de dejarlas fuera:
 
 \begin{center}
 \begin{tabularx}{\linewidth}{|X|c|c|}
@@ -228,26 +244,37 @@ teoría:
 \rowcolor{verdeuteq}
 \color{white}\textbf{Tipo de acceso a datos} & \color{white}\textbf{Requisitos} & \color{white}\textbf{\%} \\
 \hline
-CRUD-ORM (exclusivo, incl.\ combinado con Redis/SMTP/caché en memoria) & 20 & 46{,}5\,\% \\
+CRUD-ORM (exclusivo, incl.\ combinado con Redis/SMTP/caché/API externa) & 21 & 48{,}8\,\% \\
 \hline
-Híbrido SP + CRUD-ORM (requisitos transversales) & 6 & 14{,}0\,\% \\
+Híbrido SP + CRUD-ORM (requisitos transversales) & 2 & 4{,}7\,\% \\
 \hline
-Procedimiento/función SQL (SP, exclusivo) & 8 & 18{,}6\,\% \\
+Procedimiento/función SQL (SP, exclusivo, incl.\ combinado con generación de PDF) & 8 & 18{,}6\,\% \\
 \hline
-No aplica (decisión de arquitectura, configuración o UI sin acceso directo a BD) & 7 & 16{,}3\,\% \\
+No aplica (decisión de arquitectura, configuración, control de acceso o UI sin acceso directo a BD) & 11 & 25{,}6\,\% \\
 \hline
-Sin clasificar\footnote{\texttt{REQ-F-019} y \texttt{REQ-F-020}: la columna \texttt{tipo\_acceso} de esas dos filas de \texttt{matriz.csv} tiene una coma sin escapar dentro del campo, que rompe el parseo CSV estándar de una columna a la siguiente -- un defecto real y menor del propio archivo de datos, detectado al calcular esta tabla, documentado aquí en vez de omitido u ocultado con una cifra redondeada. No se corrige \texttt{matriz.csv} en esta tarea por estar fuera de su alcance.} (defecto de formato en la matriz, ver nota) & 2 & 4{,}7\,\% \\
+Redis + SMTP (sin tabla Postgres nueva; no aplica CRUD-ORM ni SP)\footnote{\texttt{REQ-F-020}: \texttt{tipo\_acceso} = ``Redis (código OTP con TTL, sin tabla nueva) + SMTP (EmailService)''. Categoría propia, no un defecto de la matriz -- el código de verificación vive en Redis con TTL, sin persistirse en una tabla Postgres nueva, y el envío usa SMTP directo; no encaja limpiamente en CRUD-ORM ni en SP.} & 1 & 2{,}3\,\% \\
 \hline
 \textbf{Total} & \textbf{43} & \textbf{100{,}0\,\%} \\
 \hline
 \end{tabularx}
 \end{center}
 
-De los 43 requisitos, 14 (32{,}6\,\%) involucran al menos un
-procedimiento o función SQL (8 exclusivamente, 6 en combinación con
-CRUD-ORM), consistente con la justificación de ADR-013: reservar los
+De los 43 requisitos, 10 (23{,}3\,\%) involucran al menos un
+procedimiento o función SQL (8 exclusivamente, 2 en combinación con
+CRUD-ORM: \texttt{REQ-NF-004}, transversal a los módulos de
+préstamos/multas/reservaciones vs.\ auth/libros/bitácora, y
+\texttt{REQ-NF-013}, prevención de inyección SQL sobre ambos
+mecanismos), consistente con la justificación de ADR-013: reservar los
 procedimientos almacenados para operaciones con validación cruzada
 multi-tabla o transacciones atómicas compuestas (registrar préstamo,
 registrar devolución, pagar multa, anular multa, expirar reservaciones
 vencidas, y los 3 reportes agregados), dejando el CRUD elemental de una
-sola tabla en Spring Data JPA.
+sola tabla en Spring Data JPA. \texttt{REQ-F-018} (renovación de
+préstamo), pese a mencionar textualmente ``SP'' en su valor de
+\texttt{tipo\_acceso} (``CRUD-ORM (validación en Java, sin SP nuevo)''),
+es CRUD-ORM exclusivo: la frase aclara explícitamente que la renovación
+\emph{no} introdujo un procedimiento almacenado nuevo, la validación de
+sus 3 reglas de negocio corre en Java -- se señala aquí porque una
+primera pasada de clasificación automática por coincidencia de texto
+la contó por error como híbrida, hasta revisar el valor completo del
+campo.
