@@ -13,17 +13,18 @@
 % rapida durante la redaccion.
 %
 % ESTADO DE ESTE DOCUMENTO (ver tambien la nota en 01-resumen.tex):
-% este prompt cubre Portada + indices + los capitulos que ya tienen
-% evidencia 100% real en el repositorio (Introduccion, Diseno y
-% Arquitectura, Implementacion, Ingenieria de Requisitos, Amenazas a la
-% Validez). Quedan pendientes para prompts posteriores: Trabajos
-% Relacionados (busqueda bibliografica real), Resultados/Discusion,
-% Conclusiones, y Declaraciones/Anexos -- sus archivos de capitulo no
-% existen todavia, por eso no aparecen en la lista de \input de abajo.
-% Cuando se agreguen, solo hace falta insertar su \input en la posicion
-% correcta: la numeracion de capitulos es automatica (\chapter), no
-% escrita a mano, asi que insertar un capitulo nuevo no rompe la
-% numeracion de los que ya existen.
+% actualizado tras agregar Marco Teorico (B.5) y Materiales y Metodos
+% (B.7). Capitulos presentes, en orden real: Portada, Resumen
+% (placeholder), Introduccion, Marco Teorico, Trabajos Relacionados,
+% Ingenieria de Requisitos, Materiales y Metodos, Diseno y Arquitectura,
+% Implementacion, Amenazas a la Validez. Quedan pendientes para prompts
+% posteriores: Resultados, Discusion, Conclusiones, y
+% Declaraciones/Anexos -- sus archivos de capitulo no existen todavia,
+% por eso no aparecen en la lista de \input de abajo. Cuando se agreguen,
+% solo hace falta insertar su \input en la posicion correcta: la
+% numeracion de capitulos es automatica (\chapter), no escrita a mano,
+% asi que insertar un capitulo nuevo no rompe la numeracion de los que ya
+% existen.
 % ============================================================
 
 % ===== PAQUETES (heredados de informe-entrega-3.tex) =====
@@ -144,19 +145,18 @@
 \listoftables
 \newpage
 
+% NOTA: los prefijos numericos de los nombres de archivo (03, 04, 05...)
+% reflejan el orden en que cada capitulo se redacto, NO el orden real de
+% aparicion en el documento -- ese orden real es el de esta lista de
+% \input, que sigue la estructura de la guia (Introduccion B.4, Marco
+% Teorico B.5, Trabajos Relacionados B.6, Ingenieria de Requisitos
+% B.6bis, Materiales y Metodos B.7, Diseno B.8, Implementacion B.9).
 \input{capitulos/01-resumen.tex}
 \input{capitulos/02-introduccion.tex}
-
+\input{capitulos/04-marco-teorico.tex}
 \input{capitulos/03-trabajos-relacionados.tex}
-
-% ------------------------------------------------------------
-% Capitulos pendientes de prompts posteriores (dejados como
-% comentario para que el orden final del documento quede visible
-% aqui aunque el archivo todavia no exista):
-%   \input{capitulos/04-metodologia.tex}          % si aplica segun la guia
-%   \input{capitulos/05-...}                      % si aplica segun la guia
-% ------------------------------------------------------------
-
+\input{capitulos/09-ingenieria-requisitos.tex}
+\input{capitulos/05-materiales-metodos.tex}
 \input{capitulos/06-diseno-arquitectura.tex}
 \input{capitulos/07-implementacion.tex}
 
@@ -164,7 +164,6 @@
 %   \input{capitulos/08-resultados.tex}           % pendiente
 % ------------------------------------------------------------
 
-\input{capitulos/09-ingenieria-requisitos.tex}
 \input{capitulos/10-amenazas-validez.tex}
 
 % ------------------------------------------------------------

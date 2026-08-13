@@ -156,21 +156,33 @@ repositorio al momento de escribir este capítulo:
 \section{Organización del documento}
 
 El resto de este documento se organiza como sigue.
-\autoref{cap:diseno-arquitectura} describe el diseño arquitectónico del
-sistema mediante el modelo C4 en sus tres niveles, las decisiones
-arquitectónicas formalizadas como ADR, y el mapeo contra las
+\autoref{cap:marco-teorico} sienta las bases conceptuales estrictamente
+necesarias para el resto del documento -- ingeniería de requisitos según
+ISO/IEC/IEEE~29148:2018, el modelo C4, ISO/IEC~25010, REST, autenticación
+JWT, OWASP Top~10 y los patrones de acceso a datos (ORM, procedimientos
+almacenados, \emph{cache-aside}) --, remitiendo a cada capítulo posterior
+para su aplicación concreta. \autoref{cap:trabajos-relacionados} sitúa a
+SGB-SaaS frente a la literatura académica indexada disponible sobre
+sistemas de gestión bibliotecaria y los patrones arquitectónicos que el
+sistema efectivamente utiliza. \autoref{cap:ingenieria-requisitos} resume
+el proceso completo de ingeniería de requisitos -- stakeholders, técnicas
+de elicitación, los 43 requisitos categorizados, su validación empírica y
+su evaluación según el marco de calidad INCOSE~v4.
+\autoref{cap:materiales-metodos} describe la metodología de \emph{Design
+Science Research} adoptada, los instrumentos de medición usados
+(SUS, k6, Lighthouse, JaCoCo, auditoría OWASP), el enfoque de métricas
+Goal-Question-Metric y el protocolo experimental replicable del bloque de
+rendimiento. \autoref{cap:diseno-arquitectura} describe el diseño
+arquitectónico del sistema mediante el modelo C4 en sus tres niveles, las
+decisiones arquitectónicas formalizadas como ADR, y el mapeo contra las
 características de calidad de producto de ISO/IEC~25010.
 \autoref{cap:implementacion} detalla decisiones críticas de
 implementación con evidencia de código real: la estrategia de
-configuración paramétrica, el manejo uniforme de errores según
-RFC~7807, la estrategia de caché y el transporte seguro del token de
-sesión. \autoref{cap:ingenieria-requisitos} resume el proceso completo
-de ingeniería de requisitos -- stakeholders, técnicas de elicitación,
-los 43 requisitos categorizados, su validación empírica y su evaluación
-según el marco de calidad INCOSE~v4. \autoref{cap:amenazas-validez}
-analiza críticamente las amenazas a la validez de constructo, interna,
-externa y de conclusión de la evidencia empírica recolectada. Los
-capítulos de Trabajos Relacionados, Resultados, Discusión, Conclusiones
-y Declaraciones/Anexos se incorporarán en tareas de redacción
-posteriores, una vez completada la evidencia que dependen de ellos (ver
-la nota de estado en \texttt{docs/informe-final.tex}).
+configuración paramétrica, el manejo uniforme de errores según RFC~7807,
+la estrategia de caché y el transporte seguro del token de sesión.
+\autoref{cap:amenazas-validez} analiza críticamente las amenazas a la
+validez de constructo, interna, externa y de conclusión de la evidencia
+empírica recolectada. Los capítulos de Resultados, Discusión,
+Conclusiones y Declaraciones/Anexos se incorporarán en tareas de
+redacción posteriores, una vez completada la evidencia que dependen de
+ellos (ver la nota de estado en \texttt{docs/informe-final.tex}).
