@@ -61,6 +61,53 @@
 % El resto de las entradas coincidio con Crossref salvo diferencias
 % menores de titulo abreviado/completo (se prefirio el titulo completo
 % de Crossref) y normalizacion de diacriticos.
+%
+% ------------------------------------------------------------------
+% VERIFICACION 2 (2026-08-13, misma sesion de trabajo): 3 candidatos
+% nuevos sobre JWT/autenticacion, propuestos para subir el conteo de
+% referencias de "alto impacto". Los 3 se verificaron contra Crossref
+% antes de agregarse -- ninguno presento datos fabricados o erroneos
+% (a diferencia de los 5 casos de la tanda anterior), asi que los 3 SE
+% AGREGAN. Pero solo 1 de los 3 cuenta como "alto impacto" bajo el
+% criterio literal de la guia (JCR Q1/Q2, o conferencia de primer nivel
+% tipo ICSE/FSE/ASE/MSR/EASE/ESEM/RE):
+%
+%   - bucko2023jwtbehavior (Computers, MDPI, DOI 10.3390/computers12040078):
+%     verificado -- autores, volumen, numero de articulo y DOI coinciden
+%     con Crossref. La revista SI tiene Journal Impact Factor oficial de
+%     Clarivate (JCR) con cuartil Q2 en "Computer Science, Interdisciplinary
+%     Applications" (confirmado de forma cruzada en dos fuentes
+%     independientes de metricas de revista) -- CUENTA como alto impacto.
+%
+%   - shatnawi2024pythonjwt (Procedia Computer Science 238, DOI
+%     10.1016/j.procs.2024.06.099): verificado -- autores reales
+%     Shatnawi/Al-Duwairi/Samarneh confirmados en Crossref (el usuario no
+%     tenia el nombre completo de los autores; se completo con el dato
+%     oficial). Es una publicacion real e indexada (Scopus SJR Q2,
+%     Web of Science Conference Proceedings Citation Index) pero NO
+%     tiene Journal Impact Factor de JCR -- las series "Procedia" de
+%     Elsevier son actas de conferencia, no revistas core de JCR/SCIE.
+%     NO CUENTA como alto impacto bajo el criterio literal de la guia,
+%     aunque se agrega igual como referencia real y directamente
+%     relevante (JWT en Python).
+%
+%   - ahmed2019jwtscheme (2019 22nd International Multitopic Conference
+%     INMIC, DOI 10.1109/inmic48123.2019.9022766): verificado -- autores
+%     reales Ahmed/Mahmood confirmados en Crossref/IEEE Xplore. Es una
+%     conferencia IEEE real e indexada, pero regional/generalista (no
+%     figura en rankings CORE de primer nivel). NO CUENTA como alto
+%     impacto por el mismo criterio.
+%
+% AUTOCORRECCION: al aplicar este mismo criterio de forma consistente,
+% se revisa hacia atras la clasificacion de "alto impacto" reportada
+% previamente para colley2018ormperformance (iCCECE) y
+% kusuma2017rediscaching (ICST) -- ambas son conferencias IEEE reales
+% e indexadas, pero igual de regionales/tematicas que ahmed2019jwtscheme
+% (INMIC), no de primer nivel. Contarlas como "alto impacto" en el
+% reporte anterior fue inconsistente con el criterio ahora aplicado a
+% ahmed2019jwtscheme; se corrige el conteo total en el reporte de esta
+% tarea (ver mensaje al usuario), no solo en este comentario.
+% ------------------------------------------------------------------
 
 @article{baltes2022sampling,
   author  = {Baltes, Sebastian and Ralph, Paul},
@@ -309,6 +356,45 @@
   number      = {800-52 Rev. 2},
   year        = {2019},
   doi         = {10.6028/nist.sp.800-52r2}
+}
+
+% ===== JWT / autenticacion -- reservadas para el capitulo de Marco
+% Teorico (docs/capitulos/04-marco-teorico.tex), que todavia no existe.
+% No se integran en el capitulo de Trabajos Relacionados porque no son
+% sistemas comparables a SGB-SaaS ni fundamento metodologico general:
+% son evidencia tecnica especifica sobre el mecanismo JWT que SGB-SaaS
+% ya usa para autenticacion (ver nota de alcance en
+% docs/capitulos/03-trabajos-relacionados.tex). =====
+
+@article{bucko2023jwtbehavior,
+  author  = {Bucko, Ahmet and Vishi, Kamer and Krasniqi, Bujar and Rexha, Blerim},
+  title   = {Enhancing {JWT} Authentication and Authorization in Web Applications Based on User Behavior History},
+  journal = {Computers},
+  year    = {2023},
+  volume  = {12},
+  number  = {4},
+  pages   = {78},
+  doi     = {10.3390/computers12040078}
+}
+
+@article{shatnawi2024pythonjwt,
+  author  = {Shatnawi, Ahmed S. and Al-Duwairi, Basheer and Samarneh, Ala' A.},
+  title   = {Comprehensive Empirical Study of {P}ython {JWT} Libraries},
+  journal = {Procedia Computer Science},
+  year    = {2024},
+  volume  = {238},
+  pages   = {827--832},
+  doi     = {10.1016/j.procs.2024.06.099}
+}
+
+@inproceedings{ahmed2019jwtscheme,
+  author    = {Ahmed, Salman and Mahmood, Qamar},
+  title     = {An authentication based scheme for applications using {JSON} web token},
+  booktitle = {2019 22nd International Multitopic Conference (INMIC)},
+  year      = {2019},
+  pages     = {1--6},
+  publisher = {IEEE},
+  doi       = {10.1109/inmic48123.2019.9022766}
 }
 
 % ===== Fundamentos de arquitectura y desarrollo de software =====
