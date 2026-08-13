@@ -1,4 +1,4 @@
-.PHONY: up down test bench audit clean
+.PHONY: up down test bench audit docs all clean
 
 # make up: regenera db/init/01-consolidado.sql (schema + procs + seed, ver
 # scripts/build-init-sql.sh) y levanta todos los servicios (Postgres, Redis,
@@ -34,8 +34,13 @@ test-backend:
 # make test-frontend: Angular, modo single-run sin watch y navegador
 # headless -- mismo comando que corre .github/workflows/ci.yml (job
 # "frontend"), para que si pasa en la maquina de alguien tambien pase en
-# GitHub Actions.
+# GitHub Actions. El guard de node_modules es para el clone limpio: 'ng
+# test' sin dependencias instaladas falla con un error critptico de
+# modulo ausente, y el criterio R1/D.1 exige que 'make all' corra de
+# punta a punta desde una carpeta nueva (npm ci es exactamente el mismo
+# paso que CI ya ejecuta antes de 'npx ng test').
 test-frontend:
+	cd frontend-angular && ([ -d node_modules ] || npm ci)
 	cd frontend-angular && npx ng test --watch=false --browsers=ChromeHeadless
 
 # make bench: Bloque C.1 -- corre k6/libros-listado-test.js (cache_caliente +
@@ -73,8 +78,105 @@ bench:
 # correo que ahora exige el login (ver scripts/owasp-audit.sh). A02 y A05
 # quedan fuera (ver comentario en el propio script). Genera un .md nuevo en
 # docs/mediciones/sec/ sin tocar los archivos de evidencia originales.
+#
+# Orden deliberado: primero scripts/audit-sql-dynamic.sh (A.2.3, SQL
+# dinamico por concatenacion en db/procs/ -- el hallazgo mas grave, regla
+# transversal 7) y solo si ese pasa, scripts/owasp-audit.sh. Replica el
+# mismo gate que ya hace CI (ver .github/workflows/ci.yml) para que
+# 'make all' local no pueda dar verde saltandose el chequeo de SQL
+# dinamico. El orden de severidad tambien importa: si hay SQL inyectable no
+# tiene sentido gastar el tiempo de correr el resto de los controles.
 audit:
+	bash scripts/audit-sql-dynamic.sh
 	bash scripts/owasp-audit.sh
+
+# make docs: Bloque D.1/D.2 -- regenera la evidencia documental que SI
+# cambia con cada corrida y verifica la que no cambia:
+#   1. docs/entorno/versions.txt (scripts/capture-versions.sh): versiones
+#      reales del entorno (D.2, "actualizado con cada release").
+#   2. Analisis estadistico de rendimiento (scripts/perf-analysis.py) sobre
+#      TODAS las corridas archivadas k6-run*.json: Wilcoxon pareado +
+#      Cliff's delta + grafico SVG p95. NO reimplementa nada de la logica,
+#      solo la invoca -- las figuras de rendimiento SI cambian con cada
+#      corrida de k6, por eso se regeneran.
+#   3. Sincronia del render C4 vs workspace.dsl: unicamente una ADVERTENCIA
+#      si el .dsl es mas reciente que los .svg/.png archivados. NO se
+#      regenera el render en cada corrida: el modelo C4 es estatico y la
+#      regeneracion exige Docker + Structurizr (imagen structurizr/structurizr,
+#      ver nota de deprecacion de structurizr/cli en el propio workspace.dsl)
+#      -- agregarla aqui solo anadiria una dependencia fragil a un target
+#      que debe ser confiable de punta a punta. Si hace falta regenerar,
+#      hacerlo manualmente siguiendo los pasos documentados en workspace.dsl.
+#   4. Existencia del informe LaTeX: aviso claro (no error) si existe
+#      informe-entrega-3.tex pero no informe-final.tex -- probable rename
+#      pendiente del equipo de documentacion. NO compila el PDF: eso es de
+#      'make all'.
+# El target termina en exit code != 0 si cualquiera de los pasos 1-2
+# falla (ningun paso se envuelve en '|| true' -- regla transversal 3).
+docs:
+	bash scripts/capture-versions.sh
+	python3 scripts/perf-analysis.py docs/mediciones/perf/k6-run*.json
+	@echo "Verificando sincronia del render C4 vs workspace.dsl..."
+	@dsl=docs/arquitectura/workspace.dsl; \
+	for f in docs/arquitectura/*.svg docs/arquitectura/*.png; do \
+		[ -f "$$f" ] || continue; \
+		dsl_t=$$(stat -c %Y "$$dsl"); \
+		f_t=$$(stat -c %Y "$$f"); \
+		if [ "$$dsl_t" -gt "$$f_t" ]; then \
+			echo "AVISO: $$f es mas antiguo que $$dsl -- el diagrama archivado podria estar"; \
+			echo "       desactualizado. Regenerarlo a mano si el modelo C4 cambio (pasos en"; \
+			echo "       docs/arquitectura/workspace.dsl). No bloquea 'make docs'."; \
+		else \
+			echo "OK: $$f no es mas antiguo que $$dsl."; \
+		fi; \
+	done
+	@if [ -f docs/informe-final.tex ]; then \
+		echo "OK: informe LaTeX encontrado (docs/informe-final.tex)."; \
+	elif [ -f docs/informe-entrega-3.tex ]; then \
+		echo "AVISO: no existe docs/informe-final.tex, pero si docs/informe-entrega-3.tex."; \
+		echo "       Probablemente falta el rename a informe-final.tex por parte del equipo de"; \
+		echo "       documentacion antes del cierre. No bloquea 'make docs' (el PDF se compila"; \
+		echo "       en 'make all')."; \
+	else \
+		echo "AVISO: no se encontro ningun .tex de informe (ni informe-final.tex ni"; \
+		echo "       informe-entrega-3.tex) en docs/ -- ver equipo de documentacion."; \
+	fi
+	@echo "make docs completado."
+
+# make all: pipeline reproducible de punta a punta (criterio R1 / D.1) --
+# levanta el stack en limpio (up), corre la suite de tests (test), la
+# prueba de carga real (bench), las dos auditorias (audit), regenera la
+# evidencia documental (docs) y compila el PDF final del informe LaTeX.
+# Ningun paso se declara '|| true': si cualquiera falla, make all falla
+# (regla transversal 3 -- un verde falso es peor que un rojo honesto).
+#
+# El informe LaTeX: busca informe-final.tex (nombre definitivo del cierre);
+# si no existe, usa informe-entrega-3.tex con un aviso de rename pendiente
+# (documentado en el commit de esta rama -- NO se renombra el archivo aqui).
+# Si no existe NINGUNO de los dos, falla con mensaje explicativo en vez de
+# un error critptico de latexmk/LaTeX.
+all: up test bench audit docs
+	@echo "Compilando PDF final..."
+	@if ! command -v latexmk >/dev/null 2>&1; then \
+		echo "ERROR: latexmk no esta instalado -- requisito de 'make all' (criterio D.1)." >&2; \
+		echo "       Instalarlo: Windows -> MiKTeX (winget install MiKTeX.MiKTeX);" >&2; \
+		echo "       Debian/Ubuntu -> apt install latexmk; macOS -> brew install latexmk." >&2; \
+		exit 1; \
+	fi; \
+	if [ -f docs/informe-final.tex ]; then \
+		TEXFILE=docs/informe-final.tex; \
+	elif [ -f docs/informe-entrega-3.tex ]; then \
+		echo "AVISO: no se encontro docs/informe-final.tex, usando docs/informe-entrega-3.tex" >&2; \
+		echo "       -- confirmar con el equipo de documentacion si falta el rename a" >&2; \
+		echo "       informe-final.tex antes del cierre." >&2; \
+		TEXFILE=docs/informe-entrega-3.tex; \
+	else \
+		echo "ERROR: no se encontro ni docs/informe-final.tex ni docs/informe-entrega-3.tex --" >&2; \
+		echo "       ver equipo de documentacion (el PDF final es requisito de la entrega)." >&2; \
+		exit 1; \
+	fi; \
+	cd docs && latexmk -pdf -interaction=nonstopmode -halt-on-error $$(basename $$TEXFILE)
+	@echo "make all completado con exito."
 
 # make clean: baja los contenedores incluyendo volumenes (borra datos de
 # Postgres) y limpia artefactos de build locales (target/, dist/, cache
