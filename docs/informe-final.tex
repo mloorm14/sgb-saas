@@ -167,8 +167,8 @@
 % renombre no afecta ninguna \ref/\autoref existente porque esas
 % referencian la etiqueta \label{cap:amenazas-validez}, no el nombre de
 % archivo). Declaraciones B.15 agregado al final del cuerpo, antes de
-% Referencias. Queda pendiente solo Anexos (B.16), sin archivo de
-% capitulo todavia.
+% Referencias. Anexos (B.17) va despues de Declaraciones (B.15) y
+% antes de la bibliografia.
 \input{capitulos/01-resumen.tex}
 \input{capitulos/02-introduccion.tex}
 \input{capitulos/04-marco-teorico.tex}
@@ -183,12 +183,7 @@
 \input{capitulos/11-conclusiones.tex}
 \input{capitulos/12-amenazas-validez.tex}
 \input{capitulos/13-declaraciones.tex}
-
-% ------------------------------------------------------------
-% Pendiente (tarea aparte): Anexos -- su archivo de capitulo no existe
-% todavia.
-%   \input{capitulos/14-anexos.tex}
-% ------------------------------------------------------------
+\input{capitulos/14-anexos.tex}
 
 \bibliographystyle{apalike}
 \bibliography{bibliografia}
