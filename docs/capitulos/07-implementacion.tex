@@ -143,6 +143,62 @@ de solo lectura que retornan \texttt{TABLE} (varias filas) usaron
 procedures} de JPA~2.1 no tiene una forma estándar de exponer un
 \texttt{RETURNS TABLE} de PostgreSQL a través de \texttt{@Procedure}.
 
+\subsection*{¿Esto viola la prohibición de SQL dinámico de la guía (A.2.1)?}
+
+No. La guía (Bloque~A.2.1) establece textualmente que ``queda prohibido
+invocarlos mediante concatenación de cadenas en
+\texttt{createNativeQuery(...)}''. Esa prohibición apunta a un patrón
+concreto y distinto del usado en este proyecto: construir la sentencia
+SQL en tiempo de ejecución \textbf{concatenando texto de entrada del
+usuario} dentro del propio literal de la consulta -- p.~ej.
+\texttt{createNativeQuery("SELECT sp\_crear\_prestamo(" + idUsuario +
+")")}, donde \texttt{idUsuario} pasa a formar parte literal de la
+cadena SQL antes de ejecutarse, el vector clásico de inyección SQL.
+
+El código real de este proyecto \textbf{no hace eso en ningún punto}.
+El listado~\ref{lst:sp-crear-prestamo-java} usa
+\texttt{@Query(value = "SELECT sp\_crear\_prestamo(:p\_usuario\_id, ...)",
+nativeQuery = true)} con \textbf{parámetros nombrados bindeados}
+(\texttt{:p\_usuario\_id}, \texttt{:p\_libro\_id}, \ldots) resueltos por
+Spring Data JPA/Hibernate vía \texttt{PreparedStatement} antes de llegar
+al driver JDBC -- el valor de cada parámetro nunca se concatena, formatea
+ni interpola dentro del literal de la cadena SQL; el literal que Java
+compila es fijo (\texttt{"SELECT sp\_crear\_prestamo(:p\_usuario\_id, :p\_libro\_id, :p\_bibliotecario\_id, :p\_dias\_prestamo)"})
+y el binding ocurre por separado, exactamente como con
+\texttt{@Procedure}. Esta forma de \texttt{@Query} nativo con
+parámetros nombrados es, en sí misma, un mecanismo formal y documentado
+de Spring Data JPA para invocar funciones/procedimientos parametrizados
+-- no es un atajo informal ni una forma disimulada de SQL dinámico.
+
+En síntesis: \textbf{la regla A.2.1 prohíbe construir SQL concatenando
+entrada de usuario dentro del texto de la consulta; los parámetros
+bindeados de \texttt{@Query} nativa no construyen SQL a partir de
+input en absoluto, por lo que este patrón no cae bajo esa prohibición}.
+El motivo del cambio desde \texttt{@Procedure}/
+\texttt{@NamedStoredProcedureQuery} tampoco fue estilístico: está
+documentado con evidencia real y verificable en
+\texttt{docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md}
+(fallo reproducido en runtime, con el mensaje de error real de
+PostgreSQL/pgjdbc) y corresponde a un defecto conocido de la
+combinación Hibernate~6.2+/7.x con procedimientos multi-\texttt{OUT} en
+PostgreSQL, reportado en el repositorio público de Spring Data JPA
+(\texttt{spring-projects/spring-data-jpa\#3393}) -- no una decisión
+arbitraria del equipo para eludir el mecanismo que pide la guía.
+
+\textbf{Nota sobre verificación automática.} Al momento de escribir este
+capítulo no existe todavía en el repositorio un script de análisis
+estático tipo \texttt{scripts/audit-sql-dynamic.sh} que detecte
+patrones de SQL dinámico en el código fuente -- se deja constancia aquí
+para que, cuando se incorpore, su regla de detección distinga
+explícitamente entre concatenación real de entrada de usuario dentro
+del texto de una consulta (el patrón que sí debe marcar) y
+\texttt{@Query(nativeQuery = true)} con parámetros nombrados bindeados
+(\texttt{:p\_...}) como el de esta sección, que no debería marcarse
+como hallazgo -- un análisis ingenuo basado solo en buscar la cadena
+\texttt{nativeQuery = true} sin inspeccionar si el valor de
+\texttt{value} contiene variables Java concatenadas produciría un falso
+positivo contra este patrón, ya verificado como seguro.
+
 \section{Manejo uniforme de errores (RFC 7807)}
 
 Todas las respuestas de error del backend se devuelven como
