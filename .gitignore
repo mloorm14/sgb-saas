@@ -24,3 +24,9 @@ db/init/
 *.aux
 *.out
 *.toc
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+
+# Artefactos temporales de notebooks Jupyter (los .ipynb con sus outputs si se versionan)
+.ipynb_checkpoints/
