@@ -109,6 +109,22 @@ jobs:
         working-directory: ./backend-springboot
         run: ./mvnw -B clean verify
 
+      # A.2.3: auditoria estatica de SQL dinamico sobre db/procs/ (los 9
+      # procedimientos/funciones del modulo de prestamos). Falla el job si
+      # un proc construye SQL por concatenacion -- EXECUTE IMMEDIATE,
+      # sp_executesql, o || / format() alimentando un EXECUTE dentro de
+      # PL/pgSQL. Ver scripts/audit-sql-dynamic.sh para el detalle de los
+      # 3 checks y de sus limites.
+      #
+      # El lado Java queda cubierto por el step anterior, no por este:
+      # spotbugs:check (con find-sec-bugs y el includeFilter de reglas SQL)
+      # esta enlazado a la fase verify del backend en pom.xml, asi que el
+      # ./mvnw -B clean verify de "Build and run tests" ya lo ejecuta y
+      # falla el build ante un hallazgo -- duplicarlo aqui no agrega
+      # cobertura, solo tiempo de CI.
+      - name: Auditar SQL dinamico en db/procs (A.2.3)
+        run: bash scripts/audit-sql-dynamic.sh
+
       # A.3.3: rechaza el commit si la matriz de trazabilidad tiene un
       # requisito Must sin historia_usuario/caso_de_uso, o un requisito
       # marcado como "verificado" sin una prueba automatizada real que lo
