@@ -54,6 +54,7 @@
 \usepackage{tikz}       % diagrama de flujo PRISMA, cap. Trabajos Relacionados
 \usetikzlibrary{arrows.meta,positioning}
 \usepackage{pdflscape}  % tabla comparativa ancha (8 columnas), cap. Trabajos Relacionados
+\usepackage{amssymb}    % \checkmark, tabla CRediT del cap. Declaraciones
 
 % ===== GEOMETRÍA =====
 \geometry{
@@ -165,7 +166,9 @@
 % prefijo numerico del archivo coincida con su posicion real; el
 % renombre no afecta ninguna \ref/\autoref existente porque esas
 % referencian la etiqueta \label{cap:amenazas-validez}, no el nombre de
-% archivo).
+% archivo). Declaraciones B.15 agregado al final del cuerpo, antes de
+% Referencias. Queda pendiente solo Anexos (B.16), sin archivo de
+% capitulo todavia.
 \input{capitulos/01-resumen.tex}
 \input{capitulos/02-introduccion.tex}
 \input{capitulos/04-marco-teorico.tex}
@@ -179,11 +182,11 @@
 \input{capitulos/10-trabajo-futuro.tex}
 \input{capitulos/11-conclusiones.tex}
 \input{capitulos/12-amenazas-validez.tex}
+\input{capitulos/13-declaraciones.tex}
 
 % ------------------------------------------------------------
-% Pendientes (tareas aparte): Declaraciones/Anexos -- su archivo de
-% capitulo no existe todavia.
-%   \input{capitulos/13-declaraciones.tex}
+% Pendiente (tarea aparte): Anexos -- su archivo de capitulo no existe
+% todavia.
 %   \input{capitulos/14-anexos.tex}
 % ------------------------------------------------------------
 
