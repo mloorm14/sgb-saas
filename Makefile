@@ -52,6 +52,18 @@ test-frontend:
 # docs/mediciones/README.md) e imprime un resumen p50/p95 con
 # scripts/perf-analysis.py. NO genera el .md de analisis -- eso es un paso
 # manual de interpretacion.
+#
+# FIX (descubierto en la verificacion de 'make all' desde clone limpio en
+# Windows, rama feature/reproducibilidad-makefile-entorno): el shell que
+# usa make (Git Bash sh.exe) resuelve $(pwd) a un path MSYS-aliasado
+# (/tmp/... = %TEMP%) cuando PWD no viene en el entorno, y Docker Desktop
+# con MSYS_NO_PATHCONV=1 lo interpreta como C:\tmp\... -- un directorio
+# NUEVO y vacio que Docker crea en silencio. Resultado: k6 corre contra un
+# volumen vacio y no encuentra /scripts/libros-listado-test.js (log con
+# hallazgo completo en el commit). En Linux esto nunca se nota (pwd es el
+# path real). Se normaliza el path del host con cygpath -m cuando existe
+# (Git for Windows) y se cae a pwd en Linux/macOS -- comportamiento
+# identico al original en los sistemas donde ya funcionaba.
 bench:
 	docker compose up -d
 	@echo "Esperando healthchecks..."
@@ -62,11 +74,12 @@ bench:
 		sleep 2; \
 	done
 	@echo "Todos los servicios estan arriba."
-	@last=$$(ls docs/mediciones/perf/k6-run*.json 2>/dev/null | sed -E 's/.*k6-run([0-9]+)\.json/\1/' | sort -n | tail -1); \
+	@host=$$(command -v cygpath >/dev/null 2>&1 && cygpath -m "$$(pwd)" || printf '%s' "$$(pwd)"); \
+	last=$$(ls docs/mediciones/perf/k6-run*.json 2>/dev/null | sed -E 's/.*k6-run([0-9]+)\.json/\1/' | sort -n | tail -1); \
 	next=$$(( $${last:-0} + 1 )); \
 	echo "Corrida k6 -> docs/mediciones/perf/k6-run$$next.json"; \
 	MSYS_NO_PATHCONV=1 docker run --rm --network sgb-saas_default \
-		-v "$$(pwd)/k6:/scripts" -v "$$(pwd)/docs/mediciones/perf:/out" \
+		-v "$$host/k6:/scripts" -v "$$host/docs/mediciones/perf:/out" \
 		grafana/k6 run --out json=/out/k6-run$$next.json /scripts/libros-listado-test.js; \
 	echo ""; \
 	echo "Resumen (p50/p95) de esta corrida:"; \
