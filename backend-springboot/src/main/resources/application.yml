@@ -40,8 +40,15 @@ spring:
     baseline-version: 3
   data:
     redis:
+      # Upstash (Redis gestionado del despliegue en Render) exige
+      # autenticación por password y conexión TLS; los defaults vacíos/false
+      # mantienen el comportamiento actual en desarrollo local (Redis de
+      # Docker Compose sin password ni TLS).
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      ssl:
+        enabled: ${REDIS_SSL:false}
   # Módulo 2/9.5: SMTP_HOST/PORT/USER/PASS ya existían como variables de
   # entorno desde la rama feature/ci-infraestructura (ci.yml, .env.example,
   # docker-compose.yml), a la espera de esta configuración. Defaults
