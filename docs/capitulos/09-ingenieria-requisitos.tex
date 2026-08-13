@@ -1,0 +1,207 @@
+% ============================================================
+% Capítulo: Ingeniería de Requisitos (Bloque B.6bis)
+% ============================================================
+\chapter{Ingeniería de requisitos}
+\label{cap:ingenieria-requisitos}
+
+\section{Stakeholders}
+
+El proyecto identifica cinco grupos de interesados reales, no
+hipotéticos: los cuatro roles de usuario final del sistema --
+\textbf{Lector} (estudiante o miembro de la comunidad universitaria),
+\textbf{Bibliotecario} (personal de mostrador, bajo conocimiento técnico
+esperado), \textbf{Gerente} (responsable de la biblioteca, además de las
+funciones de Bibliotecario puede anular multas y ver reportes) y
+\textbf{Administrador} (administrador técnico/institucional del
+sistema) -- más el \textbf{docente-director} (Dr.\ Gleiston Cicerón
+Guerrero Ulloa, Ph.D.) como evaluador académico del PFC y fuente directa
+de retroalimentación formal (ver las observaciones de Entrega~1A,
+Entrega~1B y Tercera Entrega en
+\texttt{docs/observaciones/OBSERVACIONES.md}). El propio equipo de
+desarrollo (3 integrantes) actúa simultáneamente como responsable de
+elicitación, implementación y verificación -- una restricción real de
+recursos declarada explícitamente en \texttt{docs/requisitos/SRS-v1.0.0.md}
+(sección 2.4) que explica, entre otras cosas, por qué ciertos requisitos
+quedan con evidencia parcial en vez de simularse como completos.
+
+\section{Técnicas de elicitación}
+
+El proyecto combina tres fuentes de requisitos, ninguna ficticia:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{Historias de usuario y casos de uso}, en formato
+    Connextra (``Como \emph{rol}, quiero \emph{acción}, para
+    \emph{beneficio}'') y Cockburn respectivamente, versionados como un
+    archivo por HU/CU en \texttt{docs/requisitos/historias/} y
+    \texttt{docs/requisitos/casos-de-uso/} para el módulo original del
+    equipo, y consolidados en dos archivos únicos
+    (\texttt{historias-usuario.md}, \texttt{casos-de-uso.md}) para las 5
+    HU/CU del módulo de Préstamos/Reservas/Multas -- una inconsistencia
+    real de convención entre módulos, documentada explícitamente en el
+    SRS en vez de normalizada en silencio.
+  \item \textbf{Hallazgos de auditoría de seguridad como fuente directa
+    de requisitos no funcionales}: \texttt{REQ-NF-006} (\emph{rate
+    limiting} de login) y \texttt{REQ-NF-007} (auditoría de eventos de
+    autenticación) no eran requisitos preexistentes -- nacieron de un
+    hallazgo real de la auditoría OWASP~A07/A09 (ausencia total de
+    límite de intentos y de registro de eventos), corregido dentro del
+    mismo ciclo de desarrollo.
+  \item \textbf{Inspección directa del código como último recurso
+    declarado}, únicamente para los módulos construidos después de la
+    Tercera Entrega que no llegaron a tener HU/CU dedicada -- nunca
+    presentada como si una HU real existiera. De los 43 requisitos, 8
+    (\texttt{REQ-F-010}, \texttt{REQ-F-020} a \texttt{REQ-F-022},
+    \texttt{REQ-F-025} a \texttt{REQ-F-028}) no citan ninguna HU/CU en la
+    matriz de trazabilidad, y otros 5
+    (\texttt{REQ-F-017}, \texttt{REQ-F-018}, \texttt{REQ-F-019}
+    parcialmente, \texttt{REQ-F-023}, \texttt{REQ-F-024}) citan un
+    identificador de HU/CU que \textbf{no corresponde a ningún archivo
+    real} del repositorio, verificado por búsqueda exhaustiva antes de
+    escribir el SRS -- en ambos casos, el rationale de esos requisitos en
+    el SRS se declara explícitamente como inferido de la implementación,
+    no como un hecho documentado previamente.
+\end{itemize}
+
+\section{Los 43 requisitos: categorización MoSCoW}
+
+La fuente única de verdad es \texttt{docs/trazabilidad/matriz.csv},
+validada automáticamente en cada ejecución de CI por
+\texttt{scripts/validate-traceability.sh}. Este capítulo resume su
+distribución agregada; el detalle de cada requisito individual
+(descripción, rationale, criterio de aceptación medible, método de
+verificación) vive en \texttt{docs/requisitos/SRS-v1.0.0.md} y en la
+propia matriz -- no se reproducen aquí las 43 fichas completas.
+
+\begin{center}
+\begin{tabular}{|l|c|c|}
+\hline
+\rowcolor{verdeuteq}
+\color{white}\textbf{Dimensión} & \color{white}\textbf{Categoría} & \color{white}\textbf{Cantidad (\%)} \\
+\hline
+\multirow{2}{*}{Tipo} & Funcional (\texttt{REQ-F}) & 28 (65{,}1\,\%) \\
+ & No funcional (\texttt{REQ-NF}) & 15 (34{,}9\,\%) \\
+\hline
+\multirow{4}{*}{Prioridad MoSCoW} & Must & 23 (53{,}5\,\%) \\
+ & Should & 20 (46{,}5\,\%) \\
+ & Could & 0 (0{,}0\,\%) \\
+ & Won't & 0 (0{,}0\,\%) \\
+\hline
+\multirow{2}{*}{Estado (matriz)} & verificado & 23 (53{,}5\,\%) \\
+ & implementado & 20 (46{,}5\,\%) \\
+\hline
+\textbf{Total} & & \textbf{43 (100{,}0\,\%)} \\
+\hline
+\end{tabular}
+\end{center}
+
+Ningún requisito usa las categorías \texttt{Could} o \texttt{Won't} de
+MoSCoW -- dato real, no una omisión de esta tabla: los 43 requisitos del
+sistema se consideraron, al momento de incorporarse, o bien
+imprescindibles (\texttt{Must}) o bien deseables dentro del alcance
+actual (\texttt{Should}); ninguno se registró formalmente como
+descartado o como candidato de prioridad baja.
+
+\section{Proceso de validación: 100\,\% de los requisitos \texttt{Must} verificados}
+
+Al cierre de este capítulo, los 23 requisitos de prioridad \texttt{Must}
+tienen estado \texttt{verificado} en la matriz -- es decir, cuentan con
+prueba automatizada real y/o evidencia empírica directa contra el stack
+en ejecución, no solo con código que compila. Este 100\,\% es reciente:
+los dos últimos requisitos \texttt{Must} en estado \texttt{implementado}
+(\texttt{REQ-F-001}, registro de usuario, y \texttt{REQ-NF-013},
+prevención de inyección SQL) carecían de prueba automatizada de
+regresión para parte de su criterio de aceptación -- \texttt{REQ-F-001}
+solo tenía cubierto el criterio de rechazo por correo duplicado, no el
+flujo exitoso ni el rechazo por contraseña corta; \texttt{REQ-NF-013}
+solo tenía verificación manual puntual de la auditoría original, sin
+test de regresión permanente. Se cerraron agregando 2 tests nuevos
+(\texttt{AuthControllerTest.registro\_passwordCorta\_devuelve400ProblemDetail}
+y
+\texttt{AuthServiceTest.registroConPayloadDeInyeccionSql\_} \texttt{seGuardaComoTextoLiteralSinLanzarExcepcion},
+este último una regresión permanente del payload de inyección SQL
+verificado manualmente en la auditoría OWASP~A03 original) en el commit
+\texttt{e1f0c25}.
+
+\section{Estabilidad del conjunto de requisitos: \texttt{CHANGELOG-REQ.md}}
+
+\texttt{docs/requisitos/CHANGELOG-REQ.md} compara el conjunto de
+requisitos entre la Tercera Entrega
+(\texttt{docs/requisitos/historico/SRS-v0.9.0-rc.md}, 30 requisitos) y
+esta entrega (\texttt{SRS-v1.0.0.md}, 43 requisitos), comparando el
+\textbf{cuerpo completo} de cada requisito compartido, no solo su
+título -- metodología que descartó explícitamente 2 falsos positivos
+(\texttt{REQ-F-016}, \texttt{REQ-NF-009}) que una primera versión del
+script de comparación marcó como ``modificados'' por un artefacto de
+extracción de texto (un separador Markdown capturado como parte del
+cuerpo), documentado en el propio \texttt{CHANGELOG-REQ.md} en vez de
+contar una modificación que en realidad no ocurrió. El resultado: 13
+requisitos agregados, 2 genuinamente modificados
+(\texttt{REQ-NF-012}/TLS y \texttt{REQ-NF-014}/CSP, ambos reclasificados
+de ``pendiente'' a ``parcialmente implementado'' tras cerrar parte de su
+alcance), 0 eliminados -- \textbf{tasa de estabilidad} $=1-(2/43)=0{,}9535\approx0{,}953$,
+es decir, \textbf{95{,}3\,\%}.
+
+\textbf{Nota de honestidad (hallazgo de este capítulo, no de
+\texttt{CHANGELOG-REQ.md}).} Ese mismo archivo reporta también un
+``porcentaje verificado'' de $21/43$, es decir 48{,}8\,\%, calculado en
+el momento en que se escribió. Esa cifra quedó desactualizada por el
+propio cierre descrito en la sección anterior: tras el commit
+\texttt{e1f0c25} (posterior a \texttt{CHANGELOG-REQ.md}), el conteo real
+de requisitos \texttt{verificado} es $23/43$, es decir 53{,}5\,\%, no
+48{,}8\,\%. Se señala
+aquí en vez de propagar silenciosamente la cifra desactualizada de la
+fuente citada -- \texttt{CHANGELOG-REQ.md} en sí no se corrige en esta
+tarea, por estar fuera de su alcance.
+
+\section{Checklist de calidad de requisitos (INCOSE~v4)}
+
+\texttt{docs/checklists/incose2023-req.md} evalúa los 43 requisitos
+contra las 9 características individuales (C1--C9) del marco INCOSE~v4
+y las 6 características de conjunto (C10--C15), con el mismo criterio de
+honestidad metodológica del resto del proyecto: no se marca cumplimiento
+por defecto.
+
+\textbf{Resultado agregado, considerando solo las 8 características de
+contenido (C1--C8)}: \textbf{20 de 43 requisitos (46{,}5\,\%)} pasan las
+8 sin ninguna excepción; los 23 restantes (53{,}5\,\%) tienen al menos
+una excepción documentada con evidencia concreta -- típicamente C5
+(\emph{Singular}: un requisito agrupa más de una acción o regla de
+negocio distinguible bajo un mismo id, 12 casos) o C2
+(\emph{Appropriate}: criterio de aceptación demasiado escueto frente a
+requisitos hermanos del mismo módulo, 5 casos); las de C8
+(\emph{Correct}) son las menos frecuentes (4 casos) pero las más
+específicas, incluyendo una que este mismo checklist encontró antes de
+que se cerrara: la afirmación de \texttt{REQ-F-001}/\texttt{REQ-NF-013}
+de que ciertos criterios carecían de prueba automatizada, ya resuelta en
+el commit \texttt{e1f0c25} citado en la sección anterior.
+
+\textbf{Hallazgo sistémico de C9 (\emph{Conforming}), declarado sin
+ambigüedad}: ninguno de los 43 requisitos está redactado como una única
+cláusula ``[condición] [sujeto] \emph{shall} [acción] [objeto]
+[restricción]'' del patrón formal de ISO/IEC/IEEE~29148:2018. El formato
+real del SRS separa \emph{Descripción} (sujeto + modal + acción +
+objeto, en prosa) de \emph{Criterio de aceptación medible} (las
+condiciones/restricciones, en bullets aparte) -- un híbrido
+Volere/Cockburn/Gherkin, no el patrón EARS de una sola oración. El
+propio checklist documenta esto como una desviación
+\textbf{estructural y sistemática}, no un defecto puntual de contenido
+de alguno de los 43 -- razón por la cual, si se cuentan las 9
+características en vez de solo las 8 de contenido, el resultado formal
+es 0 de 43 requisitos sin ninguna excepción (100\,\% con al menos una),
+enteramente explicado por este hallazgo de formato, no por 43 fallas de
+contenido independientes. No ocultar este resultado -- aunque a primera
+vista parezca alarmante -- es exactamente el criterio de honestidad
+metodológica que el propio checklist declara como su objetivo.
+
+Sobre el conjunto (C10--C15): 4 de las 6 características de conjunto se
+evalúan como cumplidas con matices (\emph{Complete}, \emph{Feasible},
+\emph{Comprehensible}, \emph{Able to be validated}), respaldadas por
+evidencia directa (los 43 requisitos ya implementados y validados en CI
+vía \texttt{scripts/validate-traceability.sh}). Las otras 2
+(\emph{Consistent}, \emph{Correct}) se marcan explícitamente con
+excepción: se identificaron 2 inconsistencias reales dentro del
+conjunto -- la contradicción ya autodeclarada entre
+\texttt{REQ-F-001}/\texttt{REQ-F-020} sobre el estado inicial de una
+cuenta tras el registro, y una nueva (encontrada por el propio
+checklist, no señalada antes) entre las dos cifras de latencia citadas
+por \texttt{REQ-NF-003} para la misma condición de caché frío.

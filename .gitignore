@@ -24,3 +24,7 @@ db/init/
 *.aux
 *.out
 *.toc
+*.bbl
+*.blg
+*.lof
+*.lot

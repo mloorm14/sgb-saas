@@ -1,0 +1,176 @@
+% ============================================================
+% Capítulo: Introducción (Bloque B.4)
+% ============================================================
+\chapter{Introducción}
+\label{cap:introduccion}
+
+\section{Contexto y motivación}
+
+La gestión de una biblioteca institucional o municipal -- control de
+catálogo, préstamos, devoluciones, reservaciones y multas -- se sigue
+resolviendo con frecuencia mediante procesos manuales o herramientas
+genéricas no pensadas para el dominio bibliotecario (hojas de cálculo,
+registros en papel, o sistemas de escritorio aislados sin acceso
+remoto). En el contexto concreto de una biblioteca universitaria como la
+de la Universidad Técnica Estatal de Quevedo (UTEQ), esto se traduce en
+fricción operativa real y verificable en el propio dominio del
+proyecto: un bibliotecario que registra un préstamo a mano no tiene
+forma automática de saber si un usuario ya tiene multas pendientes ni de
+decrementar el stock disponible de forma atómica; un lector no tiene
+forma de autoservicio para ver sus propios préstamos, reservar un libro
+o consultar su historial sin acudir físicamente al mostrador.
+
+\textbf{Nota de honestidad (estimación razonada, no dato de fuente
+externa verificada).} Este documento evita deliberadamente citar una
+cifra de "población afectada" (número de usuarios de biblioteca,
+volumen de préstamos anuales, etc.) porque el equipo no cuenta con un
+estudio o fuente institucional verificada que la respalde -- inventar
+una cifra cuantitativa aquí sería exactamente el tipo de dato fabricado
+que el resto de este proyecto se niega a producir (ver, por ejemplo, el
+criterio ya aplicado en \texttt{docs/checklists/incose2023-req.md} y en
+las notas de honestidad de \texttt{docs/requisitos/SRS-v1.0.0.md}). Lo
+que sí se sostiene con evidencia real es el perfil de carga: una
+biblioteca universitaria como la de UTEQ tiene un volumen de operación
+bajo y no sostenido en el tiempo (ráfagas puntuales en fechas concretas
+del calendario académico, no tráfico constante de alta concurrencia),
+supuesto ya declarado explícitamente en
+\texttt{docs/arquitectura/ISO25010.md} y usado para justificar
+decisiones de arquitectura (p.~ej. la prioridad \emph{Media}, no
+\emph{Alta}, de la característica "Eficiencia de desempeño").
+
+SGB-SaaS se construye como respuesta a ese problema concreto: una
+plataforma web (no de escritorio) que digitaliza el ciclo completo de
+préstamo/devolución/reserva/multa, con control de acceso basado en
+roles (RBAC) para los distintos perfiles reales de una biblioteca
+(lector, bibliotecario, gerente, administrador), y que -- a diferencia
+de una implementación mínima que solo "funcione" -- se desarrolla junto
+con un programa explícito de evaluación de calidad: pruebas de carga
+reales, auditoría de seguridad OWASP Top~10 en vivo, ingeniería de
+requisitos formal con trazabilidad verificable, y un protocolo de
+usabilidad (SUS) con participantes reales.
+
+\section{Preguntas de investigación}
+\label{sec:rqs}
+
+% BORRADOR -- estas 4 preguntas se proponen a partir de los 4 frentes de
+% evaluación empírica que el sistema YA ejecuta o tiene protocolo listo
+% para ejecutar (rendimiento bajo cache, seguridad OWASP, usabilidad
+% SUS, arquitectura híbrida CRUD/SP). Quedan sujetas a validación
+% conjunta del equipo antes de considerarse definitivas -- no se tratan
+% todavía como un hallazgo cerrado de este documento.
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{RQ1.} ¿En qué medida el uso de caché (Redis) reduce la
+    latencia observable del endpoint de catálogo bajo carga concurrente
+    controlada, y con qué margen se cumplen los umbrales de rendimiento
+    exigidos?
+  \item \textbf{RQ2.} ¿Qué proporción de los controles auditados del
+    OWASP Top~10:2021 presenta hallazgos reales en la implementación, y
+    en qué proporción de esos hallazgos el propio equipo aplicó una
+    corrección verificable dentro del mismo ciclo de desarrollo?
+  \item \textbf{RQ3.} ¿Cómo perciben usuarios reales (con roles
+    representativos del dominio, p.~ej. lector y bibliotecario) la
+    usabilidad del sistema, medida con el instrumento estandarizado
+    System Usability Scale (SUS)?
+  \item \textbf{RQ4.} ¿Qué efecto tiene adoptar una estrategia híbrida
+    de acceso a datos (CRUD elemental vía ORM, operaciones multi-tabla
+    vía procedimientos almacenados) sobre la trazabilidad de requisitos
+    y la cobertura de pruebas automatizadas, frente a un enfoque de solo
+    ORM?
+\end{itemize}
+
+\section{Objetivos}
+
+\subsection{Objetivo general}
+
+Evaluar empíricamente la calidad del sistema SGB-SaaS -- en sus
+dimensiones de rendimiento, seguridad, usabilidad y arquitectura de
+acceso a datos -- mediante evidencia reproducible, versionada y
+verificable de forma independiente en el propio repositorio del
+proyecto.
+
+\subsection{Objetivos específicos}
+
+\begin{enumerate}[leftmargin=1.2cm]
+  \item \textbf{OE1} (trazado a RQ1). Medir, mediante pruebas de carga
+    controladas (k6, 50~VUs concurrentes, múltiples corridas
+    independientes), la latencia p95 del endpoint de catálogo con y sin
+    caché activo, y contrastar el resultado agregado contra los
+    umbrales de aceptación exigidos.
+  \item \textbf{OE2} (trazado a RQ2). Auditar en vivo, contra el stack
+    Docker real (no simulado), un subconjunto representativo de
+    controles del OWASP Top~10:2021, documentando cada hallazgo con
+    evidencia cruda y aplicando corrección verificable a los defectos
+    reales detectados dentro del propio ciclo del proyecto.
+  \item \textbf{OE3} (trazado a RQ3). Aplicar el cuestionario System
+    Usability Scale (SUS) a una muestra de participantes reales, bajo un
+    protocolo de consentimiento informado ya definido, para obtener una
+    puntuación de usabilidad percibida con validez estadística.
+  \item \textbf{OE4} (trazado a RQ4). Documentar y trazar, mediante
+    Architecture Decision Records (ADR) y una matriz de trazabilidad
+    verificada automáticamente en CI, la estrategia híbrida de acceso a
+    datos, cuantificando qué proporción de los requisitos del sistema
+    depende de cada mecanismo (ORM vs.\ procedimiento almacenado) y qué
+    porcentaje cuenta con prueba automatizada real.
+  \item \textbf{OE5} (transversal a RQ1--RQ4). Construir y versionar
+    toda la evidencia empírica del proyecto -- scripts de medición,
+    datos crudos, análisis estadístico -- de forma reproducible, para
+    que un tercero pueda regenerarla de forma independiente sin
+    depender de capturas de pantalla ni de afirmaciones sin respaldo.
+\end{enumerate}
+
+\section{Contribuciones}
+
+Este trabajo entrega, con evidencia real ya versionada en el
+repositorio al momento de escribir este capítulo:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item Un sistema web funcional y completo (tag \texttt{v1.0.0}) con
+    43 requisitos especificados y trazados
+    (\texttt{docs/trazabilidad/matriz.csv}: 28 funcionales, 15 no
+    funcionales), de los cuales el 100\,\% de los requisitos de
+    prioridad \texttt{Must} cuenta con evidencia de verificación real
+    (ver \autoref{cap:ingenieria-requisitos}).
+  \item Evidencia empírica reproducible y versionada como código, no
+    como capturas de pantalla editadas a mano: scripts de prueba de
+    carga (\texttt{k6/}), análisis estadístico con test pareado de
+    Wilcoxon y tamaño de efecto de Cliff's delta
+    (\texttt{scripts/perf-analysis.py}), cobertura de código real
+    (JaCoCo) y auditoría de accesibilidad (Lighthouse).
+  \item Un artefacto de software citable con identificador persistente:
+    el software está archivado en Zenodo con DOI
+    (\texttt{10.5281/zenodo.21712467} para la versión \texttt{v0.9.0-rc};
+    la versión \texttt{v1.0.0} de este documento se re-archivará al
+    cierre de esta entrega, ver el placeholder de DOI en la portada).
+  \item Un checklist de calidad de requisitos según el marco INCOSE~v4
+    (características C1--C15) aplicado con honestidad metodológica
+    completa: documenta explícitamente qué requisitos no cumplen cada
+    característica y por qué, en vez de reportar cumplimiento universal
+    (\texttt{docs/checklists/incose2023-req.md}).
+  \item Documentación arquitectónica versionada como código fuente, no
+    como imágenes estáticas: el modelo C4 completo (niveles 1--3) en
+    Structurizr DSL (\texttt{docs/arquitectura/workspace.dsl}) y 13
+    Architecture Decision Records (\texttt{docs/adr/}).
+\end{itemize}
+
+\section{Organización del documento}
+
+El resto de este documento se organiza como sigue.
+\autoref{cap:diseno-arquitectura} describe el diseño arquitectónico del
+sistema mediante el modelo C4 en sus tres niveles, las decisiones
+arquitectónicas formalizadas como ADR, y el mapeo contra las
+características de calidad de producto de ISO/IEC~25010.
+\autoref{cap:implementacion} detalla decisiones críticas de
+implementación con evidencia de código real: la estrategia de
+configuración paramétrica, el manejo uniforme de errores según
+RFC~7807, la estrategia de caché y el transporte seguro del token de
+sesión. \autoref{cap:ingenieria-requisitos} resume el proceso completo
+de ingeniería de requisitos -- stakeholders, técnicas de elicitación,
+los 43 requisitos categorizados, su validación empírica y su evaluación
+según el marco de calidad INCOSE~v4. \autoref{cap:amenazas-validez}
+analiza críticamente las amenazas a la validez de constructo, interna,
+externa y de conclusión de la evidencia empírica recolectada. Los
+capítulos de Trabajos Relacionados, Resultados, Discusión, Conclusiones
+y Declaraciones/Anexos se incorporarán en tareas de redacción
+posteriores, una vez completada la evidencia que dependen de ellos (ver
+la nota de estado en \texttt{docs/informe-final.tex}).
