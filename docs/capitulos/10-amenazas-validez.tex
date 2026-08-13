@@ -1,0 +1,130 @@
+% ============================================================
+% Capítulo: Amenazas a la Validez (Bloque B.12, D5)
+% ============================================================
+\chapter{Amenazas a la validez}
+\label{cap:amenazas-validez}
+
+Este capítulo analiza, en las 4 categorías estándar de amenazas a la
+validez de un estudio empírico de ingeniería de software, las
+limitaciones \textbf{reales} ya documentadas en el repositorio -- no una
+lista genérica de amenazas de relleno que no correspondan a algo
+efectivamente observado o declarado durante este proyecto.
+
+\section{Validez de constructo}
+
+La amenaza de constructo más concreta de este proyecto está en el propio
+diseño del experimento de rendimiento (\autoref{sec:cache-redis},
+\texttt{docs/mediciones/perf/REPORT.md}): el escenario
+\texttt{cache\_frio} se diseñó para medir el costo de una consulta al
+catálogo \emph{sin} caché (el constructo de interés, para contrastarlo
+contra \texttt{cache\_caliente}), pero su implementación real -- un PRNG
+que elige una página aleatoria entre 0 y 999 en cada petición -- hace que
+la gran mayoría de esas páginas queden fuera de rango de la tabla
+\texttt{libro} (poblada con datos de ejemplo de desarrollo, no con miles
+de registros), de modo que Spring Data devuelve una \texttt{Page} vacía
+sin necesidad de traer filas reales. En la práctica,
+\texttt{cache\_frio} mide sobre todo el costo de una consulta
+\texttt{COUNT}~+~\texttt{SELECT} con resultado vacío, \textbf{no} el
+costo real de traer y serializar una página completa de libros sin
+caché -- una construcción operacional distinta de la que el nombre del
+escenario sugiere. La comparación ``caché caliente vs.\ caché frío'' de
+este experimento, por tanto, \textbf{no aísla limpiamente el efecto del
+caché}: parte de la diferencia de latencia observada entre ambos
+escenarios refleja también el costo distinto de las consultas que cada
+uno ejecuta, no únicamente la presencia o ausencia de caché. Esta
+limitación está documentada explícitamente en el propio
+\texttt{REPORT.md} (punto~3 de su ``Análisis breve''), no descubierta
+recién en este capítulo -- se reproduce aquí porque es exactamente el
+tipo de amenaza de constructo que este capítulo debe declarar, en vez de
+reemplazarla por una amenaza genérica que no corresponda al proyecto
+real.
+
+\section{Validez interna}
+
+La corrida~1 de las 5 corridas de k6 (\autoref{cap:diseno-arquitectura},
+\texttt{docs/mediciones/perf/REPORT.md}) presenta una cola de latencia
+anómala en \texttt{cache\_caliente} (p95$=$107{,}31\,ms, frente a un
+rango de 6{,}25--12{,}36\,ms en las 4 corridas siguientes) que no se
+repite en ninguna corrida posterior. La explicación documentada es
+\emph{warm-up} de JVM/JIT y del \emph{pool} de conexiones de HikariCP:
+la corrida~1 fue la primera ejecución de carga real contra un contenedor
+\texttt{sgb\_backend} que llevaba varias horas sin tráfico significativo.
+Esto constituye una variable extraña (\emph{confound}) no controlada
+directamente por el diseño experimental -- no se descartó la corrida ni
+se repitió hasta obtener un resultado más limpio (lo que habría sido, en
+sí mismo, una amenaza distinta: sesgo de selección de datos), sino que
+se documentó y se incluyó en el agregado de las 5 corridas, confirmando
+además mediante el test estadístico pareado que el patrón
+\texttt{caliente}~$>$~\texttt{frio} se sostiene igual si se considera
+solo el subconjunto de las corridas 2--5. Una amenaza de validez interna
+distinta, propia de la auditoría de seguridad
+(\autoref{cap:diseno-arquitectura}), es que el mismo equipo que
+implementó el sistema es quien ejecutó y documentó la auditoría OWASP: no
+existe una segunda parte independiente que haya intentado explotar el
+sistema sin conocimiento previo de su código fuente, lo que puede
+subestimar la superficie real de vulnerabilidades frente a una prueba de
+penetración por un equipo externo.
+
+\section{Validez externa}
+\label{sec:validez-externa}
+
+La amenaza de validez externa más relevante y todavía sin resolver es el
+tamaño de muestra de la evidencia de usabilidad (System Usability Scale,
+SUS): la guía de esta entrega exige un mínimo de $N\geq15$ participantes,
+y esa evidencia sigue \textbf{pendiente} al momento de escribir este
+capítulo (\texttt{OBS-08} en
+\texttt{docs/observaciones/OBSERVACIONES.md}, ``en progreso, asignada a
+Panama'', sin commit real todavía). El protocolo completo -- plantilla de
+consentimiento informado, tarea de \emph{onboarding} de dos pasos,
+código de participante anónimo -- ya está definido y validado, pero no
+ejecutado; este capítulo no puede, por tanto, evaluar la validez externa
+del resultado SUS en sí (todavía no existe), solo señalar el riesgo de
+tamaño de muestra que enfrentará cuando se ejecute. Ese riesgo no es
+menor: \citet{baltes2022sampling} documentan, en su revisión crítica de
+prácticas de muestreo en investigación de ingeniería de software, que
+muestras pequeñas y no aleatorizadas -- exactamente el perfil esperable
+de un estudio SUS de PFC con participantes reclutados por conveniencia
+dentro de la comunidad universitaria -- limitan severamente la
+generalización de cualquier conclusión más allá de la muestra concreta
+estudiada, y recomiendan reportar explícitamente el método de
+reclutamiento y sus límites en vez de presentar el resultado como
+representativo de una población más amplia sin justificarlo. Cuando la
+muestra SUS se ejecute, este capítulo deberá actualizarse citando el
+tamaño real obtenido, el método de reclutamiento, y aplicando ese mismo
+criterio de \citet{baltes2022sampling} a la interpretación del puntaje.
+Una segunda amenaza de validez externa, más estructural: todos los
+hallazgos de este proyecto provienen de un único contexto (una biblioteca
+universitaria ecuatoriana de bajo volumen, con un equipo de 3 personas
+sin dedicación exclusiva) -- ninguna conclusión aquí debería
+generalizarse sin más a bibliotecas de otro tipo (públicas de gran
+escala, especializadas, con perfiles de carga o de usuario distintos).
+
+\section{Validez de conclusión}
+
+La comparación estadística pareada entre \texttt{cache\_caliente} y
+\texttt{cache\_frio} (Wilcoxon de rangos con signo sobre el p95 de cada
+una de las 5 corridas, \texttt{scripts/perf-analysis.py}) es el ejemplo
+más concreto de amenaza a la validez de conclusión de este proyecto: el
+estadístico exacto de dos colas con $n=5$ pares tiene un valor mínimo
+alcanzable de exactamente $p=0{,}0625$ cuando las 5 diferencias apuntan
+en la misma dirección sin excepción -- que es precisamente lo que
+ocurre aquí (\texttt{cache\_caliente} $>$ \texttt{cache\_frio} en las 5
+corridas) --, por lo que el resultado \textbf{no alcanza el umbral
+convencional de significancia} ($p<0{,}05$) pese a un tamaño de efecto
+grande y consistente (Cliff's delta $=-0{,}68$). Tratar este resultado
+como ``no hay diferencia'' sería una conclusión estadísticamente
+incorrecta: el límite real es la potencia estadística del tamaño de
+muestra mínimo exigido por la guía ($n=5$ corridas), no evidencia
+sustantiva en contra del efecto observado -- más corridas subirían la
+potencia sin que se espere que cambie la dirección de la conclusión, ya
+consistente en las 5 disponibles. Esta interpretación se documenta de
+forma explícita en \texttt{docs/mediciones/perf/REPORT.md} en vez de
+reportar solo el $p$-valor sin su contexto de potencia, que por sí solo
+induciría a la conclusión errónea de ausencia de efecto. Una segunda
+amenaza de conclusión, ya señalada en la sección de validez de
+constructo de este mismo capítulo, es que ese mismo resultado
+($p=0{,}0625$, efecto grande) se interpreta sobre una comparación que no
+aísla limpiamente el constructo de interés (el efecto del caché en sí) --
+ambas amenazas se refuerzan mutuamente y deben leerse juntas, no de
+forma aislada, para no sobre-interpretar la magnitud exacta del efecto
+del caché reportada aquí.

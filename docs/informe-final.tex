@@ -1,0 +1,168 @@
+\documentclass[12pt,a4paper]{report}
+
+% ============================================================
+% SGB-SaaS -- Informe academico de la Entrega Final
+% Documento NUEVO (no una copia de informe-entrega-3.tex), aunque reusa
+% su preambulo (paquetes, colores, geometria, hyperref, badges/estados)
+% como base para mantener consistencia visual entre entregas.
+%
+% Estructura: documento maestro con \input{} por capitulo
+% (docs/capitulos/*.tex), para poder revisar/editar cada capitulo por
+% separado sin tocar los demas. Cada archivo de capitulo puede tambien
+% compilarse aislado (\documentclass + \input directo) para revision
+% rapida durante la redaccion.
+%
+% ESTADO DE ESTE DOCUMENTO (ver tambien la nota en 01-resumen.tex):
+% este prompt cubre Portada + indices + los capitulos que ya tienen
+% evidencia 100% real en el repositorio (Introduccion, Diseno y
+% Arquitectura, Implementacion, Ingenieria de Requisitos, Amenazas a la
+% Validez). Quedan pendientes para prompts posteriores: Trabajos
+% Relacionados (busqueda bibliografica real), Resultados/Discusion,
+% Conclusiones, y Declaraciones/Anexos -- sus archivos de capitulo no
+% existen todavia, por eso no aparecen en la lista de \input de abajo.
+% Cuando se agreguen, solo hace falta insertar su \input en la posicion
+% correcta: la numeracion de capitulos es automatica (\chapter), no
+% escrita a mano, asi que insertar un capitulo nuevo no rompe la
+% numeracion de los que ya existen.
+% ============================================================
+
+% ===== PAQUETES (heredados de informe-entrega-3.tex) =====
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{colortbl}
+\usepackage{tabularx}
+\usepackage{parskip}
+\usepackage{multirow}
+
+% ===== PAQUETES NUEVOS para este informe =====
+\usepackage{listings}   % listados de codigo real (SQL/Java), Bloque B.9
+\usepackage{natbib}     % \citep para Trabajos Relacionados / Amenazas a la Validez
+\usepackage[expansion=false]{microtype}  % protrusion sin font expansion (las fuentes EC/T1 de este documento no son escalables)
+\sloppy                 % tolerancia adicional para las rutas/nombres de metodo mas largos que microtype por si solo no resuelve
+
+% ===== GEOMETRÍA =====
+\geometry{
+  top=2.5cm, bottom=2.5cm,
+  left=3cm,  right=2.5cm
+}
+
+% ===== COLORES (idénticos a informe-entrega-3.tex) =====
+\definecolor{verdeuteq}{RGB}{0,92,47}
+\definecolor{verdelight}{RGB}{0,128,64}
+\definecolor{javacolor}{RGB}{200,95,20}
+\definecolor{sqlcolor}{RGB}{0,100,180}
+\definecolor{angularcolor}{RGB}{221,30,40}
+\definecolor{owaspborder}{RGB}{180,130,0}
+\definecolor{gapcolor}{RGB}{200,120,0}
+\definecolor{pendientecolor}{RGB}{130,130,130}
+\definecolor{grisclaro}{RGB}{240,240,240}
+
+% ===== LISTINGS (estilo para código Java/SQL) =====
+\lstdefinestyle{codigosgb}{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{sqlcolor}\bfseries,
+  commentstyle=\color{verdelight}\itshape,
+  stringstyle=\color{javacolor},
+  numbers=left,
+  numberstyle=\tiny\color{pendientecolor},
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=false,
+  tabsize=2,
+  showstringspaces=false,
+  backgroundcolor=\color{grisclaro}
+}
+\lstset{style=codigosgb}
+
+% ===== HYPERREF =====
+\hypersetup{
+  colorlinks=true,
+  linkcolor=verdeuteq,
+  urlcolor=verdelight,
+  citecolor=verdeuteq,
+  pdftitle={SGB-SaaS -- Entrega Final -- Informe Academico},
+  pdfauthor={Cajas Ibarra Irvin Marcelo, Loor Medranda Marlon Taylor, Panama Murillo Moises Antonio -- UTEQ}
+}
+
+% ===== ENCABEZADOS =====
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[L]{\small SGB-SaaS --- Entrega Final}
+\fancyhead[R]{\small \texttt{v1.0.0}}
+\fancyfoot[C]{\thepage}
+
+\titleformat{\chapter}[display]{\normalfont\huge\bfseries\color{verdeuteq}}{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titleformat{\section}{\normalfont\Large\bfseries\color{verdeuteq}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries\color{verdeuteq}}{\thesubsection}{0.6em}{}
+
+% ===== BADGES (idénticos a informe-entrega-3.tex) =====
+\newcommand{\badgeJAVA}{\colorbox{javacolor}{\color{white}\small\bfseries\ Java 21 / Spring Boot 4\ }}
+\newcommand{\badgeSQL}{\colorbox{sqlcolor}{\color{white}\small\bfseries\ PostgreSQL 16\ }}
+\newcommand{\badgeOWASP}{\colorbox{verdeuteq}{\color{white}\small\bfseries\ OWASP\ }}
+\newcommand{\badgeANGULAR}{\colorbox{angularcolor}{\color{white}\small\bfseries\ Angular 17\ }}
+\newcommand{\badgeREDIS}{\colorbox{owaspborder}{\color{white}\small\bfseries\ Redis 7\ }}
+
+% ===== ESTADOS (badges de tabla, idénticos a informe-entrega-3.tex) =====
+\newcommand{\estadoPasa}{\colorbox{verdelight}{\color{white}\small\bfseries\ PASA\ }}
+\newcommand{\estadoCorregido}{\colorbox{verdeuteq}{\color{white}\small\bfseries\ CORREGIDO\ }}
+\newcommand{\estadoGap}{\colorbox{gapcolor}{\color{white}\small\bfseries\ GAP CONOCIDO\ }}
+\newcommand{\estadoPendiente}{\colorbox{pendientecolor}{\color{white}\small\bfseries\ NO EJECUTADO\ }}
+\newcommand{\estadoVerificado}{\colorbox{verdelight}{\color{white}\small\bfseries\ verificado\ }}
+\newcommand{\estadoImplementado}{\colorbox{sqlcolor}{\color{white}\small\bfseries\ implementado\ }}
+\newcommand{\estadoPend}{\colorbox{gapcolor}{\color{white}\small\bfseries\ pendiente\ }}
+
+\begin{document}
+
+\input{capitulos/00-portada.tex}
+
+\tableofcontents
+\listoffigures
+\listoftables
+\newpage
+
+\input{capitulos/01-resumen.tex}
+\input{capitulos/02-introduccion.tex}
+
+% ------------------------------------------------------------
+% Capitulos pendientes de prompts posteriores (dejados como
+% comentario para que el orden final del documento quede visible
+% aqui aunque el archivo todavia no exista):
+%   \input{capitulos/03-trabajos-relacionados.tex}
+%   \input{capitulos/04-metodologia.tex}          % si aplica segun la guia
+%   \input{capitulos/05-...}                      % si aplica segun la guia
+% ------------------------------------------------------------
+
+\input{capitulos/06-diseno-arquitectura.tex}
+\input{capitulos/07-implementacion.tex}
+
+% ------------------------------------------------------------
+%   \input{capitulos/08-resultados.tex}           % pendiente
+% ------------------------------------------------------------
+
+\input{capitulos/09-ingenieria-requisitos.tex}
+\input{capitulos/10-amenazas-validez.tex}
+
+% ------------------------------------------------------------
+% Pendientes (tareas aparte, per instrucción explícita de esta tarea):
+%   \input{capitulos/11-discusion.tex}
+%   \input{capitulos/12-conclusiones.tex}
+%   \input{capitulos/13-declaraciones.tex}
+%   \input{capitulos/14-anexos.tex}
+% ------------------------------------------------------------
+
+\bibliographystyle{apalike}
+\bibliography{bibliografia}
+
+\end{document}
