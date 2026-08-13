@@ -125,6 +125,15 @@
 
 \begin{document}
 
+% El shorthand `"` de babel-spanish (usado para dígrafos de hyphenation)
+% choca con las comillas dobles literales que aparecen dentro de \texttt{}
+% en prosa normal (ej. fragmentos de código citados inline en el cap. de
+% Implementación) -- produce "Bad character code (-1)" en fuentes
+% typewriter sin hyphenchar. Se desactiva ese shorthand global; no afecta
+% el contenido de los entornos lstlisting (leen su texto de forma
+% practicamente verbatim, sin pasar por los shorthands de babel).
+\shorthandoff{"}
+
 \input{capitulos/00-portada.tex}
 
 \tableofcontents
