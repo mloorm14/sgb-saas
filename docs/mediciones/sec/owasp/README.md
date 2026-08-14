@@ -28,26 +28,61 @@ corrección sobre un gap previo (antes/después, sin editar el original).
 
 ## Cabeceras de seguridad (esta rama)
 
-| Cabecera | Backend (prod, verificado 2026-08-14) | Frontend (verificado local; deploy pendiente en Render) |
+| Cabecera | Backend (prod, verificado 2026-08-14) | Frontend (prod, verificado 2026-08-14) |
 |---|---|---|
-| `Content-Security-Policy` | ✓ (restrictiva, `frame-ancestors 'none'`, `form-action 'none'`) | ✓ (ver [`frontend-angular/public/_headers`](../../../frontend-angular/public/_headers)) |
+| `Content-Security-Policy` | ✓ (restrictiva, `frame-ancestors 'none'`, `form-action 'none'`) | ✓ `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://sgb-backend-b058.onrender.com; frame-ancestors 'none'; base-uri 'self'; object-src 'none'` |
 | `X-Frame-Options` | ✓ `DENY` | ✓ `DENY` |
 | `X-Content-Type-Options` | ✓ `nosniff` | ✓ `nosniff` |
-| `Strict-Transport-Security` | ✓ `max-age=31536000; includeSubDomains` | ✓ (edge de Render/Cloudflare) |
+| `Strict-Transport-Security` | ✓ `max-age=31536000; includeSubDomains` | ✓ automática del edge de Render (`max-age=315360000; includeSubdomains; preload`) |
 
 El frontend quedó con CSP con `style-src 'unsafe-inline'` (requerido por
-Angular, riesgo aceptado y documentado) y `connect-src` limitado al host
-del backend. Detalle en [`docs/despliegue/DEPLOYMENT.md`](../../despliegue/DEPLOYMENT.md) §5.4.
+Angular, riesgo aceptado y documentado abajo) y `connect-src` limitado al
+host del backend.
+
+> **Nota de configuración (2026-08-14):** los Static Sites de Render **no
+> soportan el archivo `_headers`** (lo sirven como archivo plano, no lo
+> interpretan). Las cabeceras del frontend se configuran en el **Dashboard
+> de Render** (Servicio → Headers, patrón `/*`), no en el repositorio. La
+> CSP cargada en el Dashboard no incluye `form-action 'none'` ni
+> `script-src-attr 'none'` que sí estaban en el draft del `_headers` —
+> pendiente opcional: agregarlas a la regla del Dashboard para igualar la
+> política más estricta. Detalle y valores completos en
+> [`docs/despliegue/DEPLOYMENT.md`](../../despliegue/DEPLOYMENT.md) §5.4.1.
 
 ## ZAP Baseline (2026-08-14, ZAP 2.17.0)
 
 | Objetivo | High | Medium | Low | Informational | FAIL-NEW | Resultado |
 |---|---|---|---|---|---|---|
 | Backend prod (`https://sgb-backend-b058.onrender.com`) | 0 | 0 | 0 | 1 (`Non-Storable Content`, 403s) | 0 | **PASA** |
-| Frontend local (build corregido, Angular 21.2.20, cabeceras finales) | 0 | 1 (`CSP: style-src unsafe-inline` — aceptado) | 4 (COEP/COOP/CORP, Permissions-Policy — opcionales) | 3 | 0 | **PASA** |
+| Frontend prod (`https://biblora-sgb.onrender.com`, Angular 21.2.20, cabeceras desde Dashboard de Render) | 0 | 2 (ambos `CSP` plugin 10055 — `style-src unsafe-inline` y `Failure to Define Directive with No Fallback`, aceptados) | 4 (COEP/COOP/CORP, Permissions-Policy — opcionales) | 4 | 0 | **PASA** |
+| Frontend local (histórico — build de la rama servido en localhost, pre-deploy) | 0 | 1 (`CSP: style-src unsafe-inline` — aceptado) | 4 | 3 | 0 | **PASA** |
 
-Reportes: [`zap/`](../zap/). El hallazgo High del frontend original
-(`Vulnerable JS Library` — `@angular/core 17.3.12`, CVEs 2026) se
-resolvió con el upgrade a Angular 21.2.20 (ver DEPLOYMENT.md §5.4.2); el
-reporte con ese hallazgo no se archivó. El escaneo del frontend desplegado
-se re-ejecutará tras el deploy (pendiente de confirmación post-merge).
+Reportes: [`zap/`](../zap/). El reporte vigente del frontend es
+`reporte-zap-baseline-frontend-prod-2026-08-14.{xml,html}`, corrido contra
+la URL real de producción; el de localhost se conserva como evidencia
+histórica del proceso (`reporte-zap-baseline-frontend-local-2026-08-14`).
+El hallazgo High del frontend original (`Vulnerable JS Library` —
+`@angular/core 17.3.12`, CVEs 2026) se resolvió con el upgrade a Angular
+21.2.20 (ver DEPLOYMENT.md §5.4.2); el reporte con ese hallazgo no se
+archivó.
+
+### Hallazgo Medium aceptado (ZAP frontend)
+
+- **Hallazgo:** CSP: `style-src` incluye `'unsafe-inline'` y no define
+  directivas de fallback por tipo de recurso (ZAP plugin id 10055, CWE-693;
+  dos ítems en el reporte prod: `style-src unsafe-inline` y `Failure to
+  Define Directive with No Fallback`).
+- **Causa:** Angular inyecta estilos de componentes como `<style>` inline en tiempo
+  de ejecución; sin `unsafe-inline` la aplicación no renderiza correctamente. El
+  segundo ítem aparece porque la CSP cargada en el Dashboard de Render no define
+  `script-src-elem`/`style-src-elem`/etc., y con `style-src` presente, `unsafe-inline`
+  aplica como fallback por defecto — mitigación: definir explícitamente
+  `script-src-elem 'self'`, `script-src-attr 'none'`, `style-src-elem 'self' 'unsafe-inline'`
+  y `style-src-attr 'unsafe-inline'` en la regla del Dashboard (pendiente opcional).
+- **Decisión:** aceptado como riesgo residual. El resto de la CSP es estricta
+  (`default-src 'self'`, `frame-ancestors 'none'`, `object-src 'none'`, `script-src 'self'`),
+  lo que limita el impacto de este punto a un vector secundario (requiere una
+  vulnerabilidad de inyección previa para ser explotable). Migrar a CSP basada en
+  nonces requeriría generación de nonce por request en el servidor, no viable con
+  el Static Site actual de Render sin un cambio de arquitectura del frontend —
+  queda registrado como línea de trabajo futuro.
