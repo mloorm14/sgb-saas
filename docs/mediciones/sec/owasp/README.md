@@ -34,6 +34,9 @@ corrección sobre un gap previo (antes/después, sin editar el original).
 | `X-Frame-Options` | ✓ `DENY` | ✓ `DENY` |
 | `X-Content-Type-Options` | ✓ `nosniff` | ✓ `nosniff` |
 | `Strict-Transport-Security` | ✓ `max-age=31536000; includeSubDomains` | ✓ automática del edge de Render (`max-age=315360000; includeSubdomains; preload`) |
+| `Cross-Origin-Opener-Policy` | — | ✓ `same-origin` |
+| `Cross-Origin-Resource-Policy` | — | ✓ `same-origin` |
+| `Permissions-Policy` | — | ✓ `geolocation=(), microphone=(), camera=(), payment=()` |
 
 El frontend quedó con CSP con `style-src 'unsafe-inline'` (requerido por
 Angular, riesgo aceptado y documentado abajo) y `connect-src` limitado al
@@ -45,8 +48,15 @@ host del backend.
 > de Render** (Servicio → Headers, patrón `/*`), no en el repositorio. La
 > CSP cargada en el Dashboard fue endurecida el 2026-08-14 agregando
 > `script-src-attr 'none'` y `form-action 'none'` (cierra el ítem
-> `Failure to Define Directive with No Fallback` del plugin 10055). Detalle
-> y valores completos en
+> `Failure to Define Directive with No Fallback` del plugin 10055), y el
+> mismo día se agregaron `Cross-Origin-Opener-Policy: same-origin`,
+> `Cross-Origin-Resource-Policy: same-origin` y `Permissions-Policy` con
+> geolocalización, micrófono, cámara y pago bloqueados. **`Cross-Origin-
+> Embedder-Policy` fue evaluado y descartado deliberadamente:** requerir
+> `require-corp` rompería las llamadas cross-origin del frontend al backend
+> (`https://sgb-backend-b058.onrender.com`), ya que CORP `same-origin`
+> bloquearía los recursos cargados desde ese origen. Detalle y valores
+> completos en
 > [`docs/despliegue/DEPLOYMENT.md`](../../despliegue/DEPLOYMENT.md) §5.4.1.
 
 ## ZAP Baseline (2026-08-14, ZAP 2.17.0)
@@ -54,19 +64,48 @@ host del backend.
 | Objetivo | High | Medium | Low | Informational | FAIL-NEW | Resultado |
 |---|---|---|---|---|---|---|
 | Backend prod (`https://sgb-backend-b058.onrender.com`) | 0 | 0 | 0 | 1 (`Non-Storable Content`, 403s) | 0 | **PASA** |
-| Frontend prod v2 (`https://biblora-sgb.onrender.com`, CSP endurecida: `script-src-attr 'none'`, `form-action 'none'`) | 0 | 1 (`CSP: style-src unsafe-inline` — aceptado, ver abajo) | 5 (COEP/COOP/CORP, Permissions-Policy, HSTS en 404 de sitemap — opcionales/sin impacto) | 4 | 0 | **PASA** |
+| Frontend prod v3 (`https://biblora-sgb.onrender.com`, +COOP/CORP `same-origin` + `Permissions-Policy`) | 0 | 1 (`CSP: style-src unsafe-inline` — aceptado, ver abajo) | 1 (COEP — **evaluado y descartado**, rompería llamadas cross-origin al backend) | 4 | 0 | **PASA** |
+| Frontend prod v2 (histórico — sin COOP/CORP/Permissions-Policy) | 0 | 1 (`CSP: style-src unsafe-inline` — aceptado, ver abajo) | 5 (COEP/COOP/CORP, Permissions-Policy, HSTS en 404 de sitemap — opcionales/sin impacto) | 4 | 0 | **PASA** |
 | Frontend prod v1 (histórico — CSP previa al endurecimiento, con los 2 Medium del plugin 10055) | 0 | 2 (ambos `CSP` plugin 10055 — `style-src unsafe-inline` y `Failure to Define Directive with No Fallback`, aceptados) | 4 | 4 | 0 | **PASA** |
 | Frontend local (histórico — build de la rama servido en localhost, pre-deploy) | 0 | 1 (`CSP: style-src unsafe-inline` — aceptado) | 4 | 3 | 0 | **PASA** |
 
 Reportes: [`zap/`](../zap/). El reporte vigente del frontend es
-`reporte-zap-baseline-frontend-prod-2026-08-14-v2.{xml,html}`, corrido
-contra la URL real de producción con la CSP endurecida; el v1 (CSP previa)
-y el de localhost se conservan como evidencia histórica del proceso
-(`reporte-zap-baseline-frontend-prod-2026-08-14` y
+`reporte-zap-baseline-frontend-prod-2026-08-14-v3.{xml,html}`, corrido
+contra la URL real de producción con la CSP endurecida y los headers
+COOP/CORP/Permissions-Policy cargados en el Dashboard; el v2 (CSP
+endurecida, sin isolación cross-origin), el v1 (CSP previa) y el de
+localhost se conservan como evidencia histórica del proceso
+(`reporte-zap-baseline-frontend-prod-2026-08-14-v2`,
+`reporte-zap-baseline-frontend-prod-2026-08-14` y
 `reporte-zap-baseline-frontend-local-2026-08-14`). El hallazgo High del
 frontend original (`Vulnerable JS Library` — `@angular/core 17.3.12`, CVEs
 2026) se resolvió con el upgrade a Angular 21.2.20 (ver DEPLOYMENT.md
 §5.4.2); el reporte con ese hallazgo no se archivó.
+
+### Hallazgo Low aceptado (ZAP frontend)
+
+> **Cerrado el 2026-08-14 (headers en el Dashboard de Render).** Los 5 Low
+> del reporte v2 se redujeron a 1 en el v3: `Cross-Origin-Opener-Policy`
+> (10043 → plugin 90004), `Cross-Origin-Resource-Policy` (mismo 90004),
+> `Permissions Policy Header Not Set` (10063) y el `Strict-Transport-
+> Security` sobre el 404 de `/sitemap.xml` (10035) **ya no aparecen** en el
+> v3. Permanece solo `Cross-Origin-Embedder-Policy Header Missing or
+> Invalid` (90004), **descartado deliberadamente:** activar COEP
+> (`require-corp`) exigiría CORP en los recursos del backend y rompería las
+> llamadas cross-origin del SPA al API. El texto original queda como
+> referencia histórica del proceso.
+
+- **Hallazgo:** no se envía `Cross-Origin-Embedder-Policy` (plugin 90004,
+  low). Justificación de aceptación: COEP `require-corp` fuerza `CORP`/CORS
+  explícitos en **todos** los subrecursos; el frontend carga datos vía
+  `fetch` cross-origin desde `https://sgb-backend-b058.onrender.com`, y el
+  backend no envía `Cross-Origin-Resource-Policy`, así que la activación
+  bloquearía la aplicación. Como el SPA no procesa contenido embebido
+  externo (iframes, plugins, WASM), el beneficio de COEP es marginal frente
+  al riesgo de romper el producto.
+- **Decisión:** aceptado (opcional — línea de trabajo futuro si el backend
+  migra a `brotli`/CDN propia o se incorporan subrecursos de terceros:
+  revisar entonces COEP `credentialless`).
 
 ### Hallazgo Medium aceptado (ZAP frontend)
 
