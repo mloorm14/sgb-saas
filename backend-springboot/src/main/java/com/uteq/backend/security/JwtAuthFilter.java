@@ -10,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -52,8 +54,32 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
 
             String jti = jwtService.extractJti(token);
-            if (estaRevocado(jti)) {
-                filterChain.doFilter(request, response);
+            try {
+                if (estaRevocado(jti)) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+            } catch (DataAccessException e) {
+                // Fail-closed (decisión OWASP A07, ver
+                // docs/mediciones/sec/owasp/decision-fail-closed-jwt-redis.md):
+                // no poder consultar la blacklist no equivale a "token vigente";
+                // un token revocado (logout, cambio de contraseña, cuenta
+                // bloqueada) tratado como válido durante el corte restablece
+                // accesos que ya fueron removidos. Se rechaza con 401 y no se
+                // continúa la cadena del filtro. El log es best-effort (no
+                // depende de Redis) para distinguir en monitoreo un outage de
+                // infraestructura de una revocación real.
+                SecurityContextHolder.clearContext();
+                log.error("Redis no disponible al verificar revocación (fail-closed, request rechazada con 401): jti={}", jti, e);
+                response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+                // ProblemDetail serializado a mano: este filtro corre antes del
+                // despacho MVC, así que no depende de un ObjectMapper inyectado
+                // (que tampoco existe en contextos de test tipo @WebMvcTest).
+                response.getWriter().write(
+                        "{\"type\":\"about:blank\",\"title\":\"Unauthorized\",\"status\":401,"
+                                + "\"detail\":\"No se pudo confirmar la validez del token. Intente nuevamente.\"}"
+                );
                 return;
             }
 
@@ -72,21 +98,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     /**
-     * La revocación por logout vive en la blacklist de Redis. Antes de
-     * envolverla, una caída de Redis hacía que esta consulta cayera en el
-     * catch general de abajo: se limpiaba el contexto de seguridad y TODA
-     * request autenticada respondía 403 durante el corte (la firma JWT era
-     * válida, pero el filtro nunca llegaba a autenticar). Fail-open (tratar
-     * como no revocado): la firma y el exp siguen validados; solo se degrada
-     * la revocación puntual, acotada por el TTL del token. El corte queda en
-     * warn. Ver docs/mediciones/sec/2026-08-14-incidente-500-auth-redis-produccion.md.
+     * La revocación por logout vive en la blacklist de Redis. Consulta directa
+     * sin degradación local: si Redis no responde, la {@link DataAccessException}
+     * se propaga al catch de {@link #doFilterInternal} que la maneja en
+     * fail-closed (401). Ver
+     * docs/mediciones/sec/owasp/decision-fail-closed-jwt-redis.md.
      */
     private boolean estaRevocado(String jti) {
-        try {
-            return Boolean.TRUE.equals(redisTemplate.hasKey("blacklist:" + jti));
-        } catch (DataAccessException e) {
-            log.warn("Redis no disponible en estaRevocado (fail-open, token tratado como vigente): jti={}", jti, e);
-            return false;
-        }
+        return Boolean.TRUE.equals(redisTemplate.hasKey("blacklist:" + jti));
     }
 }
