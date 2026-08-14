@@ -166,7 +166,13 @@ public class AuthService {
         long ttl = (expiration.getTime() - System.currentTimeMillis()) / 1000;
 
         if (ttl > 0) {
-            redisTemplate.opsForValue().set("blacklist:" + jti, "revoked", ttl, TimeUnit.SECONDS);
+            try {
+                redisTemplate.opsForValue().set("blacklist:" + jti, "revoked", ttl, TimeUnit.SECONDS);
+            } catch (org.springframework.dao.DataAccessException e) {
+                // Fail-open acotado: la revocación por blacklist es best-effort;
+                // el exp del token sigue siendo el límite duro de validez.
+                log.warn("Redis no disponible en logout (blacklist no actualizada): correo={} jti={}", correo, jti, e);
+            }
         }
 
         log.info("Logout: correo={} jti={} ip={}", correo, jti, ipOrigen);
@@ -193,7 +199,16 @@ public class AuthService {
                 .ipOrigen(ipOrigen)
                 .fechaHora(OffsetDateTime.now())
                 .build();
-        bitacoraAuditoriaRepository.save(evento);
+        try {
+            bitacoraAuditoriaRepository.save(evento);
+        } catch (org.springframework.dao.DataAccessException e) {
+            // La bitácora es best-effort: un corte de BD no debe convertir un
+            // login exitoso en un 500 ni un LOGIN_FAIL en un 500 -- el evento
+            // perdido queda en el log del servidor para correlación manual.
+            // Documentado en docs/mediciones/sec/2026-08-14-incidente-500-auth-redis-produccion.md.
+            log.error("No se pudo registrar evento de auditoría: tipo={} usuarioId={} ip={}",
+                    tipoOperacion, usuarioId, ipOrigen, e);
+        }
     }
 
     public TokenResponseDTO refresh(String refreshToken) {
