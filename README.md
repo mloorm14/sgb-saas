@@ -126,7 +126,16 @@ Convención de commits: [Conventional Commits](https://www.conventionalcommits.o
 
 ## 🔗 URL del sistema desplegado
 
-*En desarrollo (se actualizará en la Entrega 2).*
+Despliegue de producción en **Render + Neon + Upstash** (plan free, sin
+VM propia): ver [docs/despliegue/DEPLOYMENT.md](docs/despliegue/DEPLOYMENT.md).
+
+- **Frontend:** https://biblora-sgb.onrender.com
+- **Backend:** https://sgb-backend-b058.onrender.com
+- **Health check:** https://sgb-backend-b058.onrender.com/actuator/health
+
+> El backend corre en el plan Free de Render: duerme tras 15 min de
+> inactividad, así que la primera petición tras un rato sin tráfico puede
+> tardar ~30–60 s en responder (cold start).
 
 ## 🔑 Credenciales de desarrollo
 
