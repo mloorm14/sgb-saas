@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -40,10 +41,29 @@ public class VerificacionCorreoService {
      * por correo. Un nuevo código para el mismo correo sobrescribe
      * cualquiera anterior sin usar (Redis SET reemplaza la clave) -- no
      * hay "código anterior" que quede válido en paralelo.
+     *
+     * @throws ServicioTemporalmenteNoDisponibleException si Redis no permite
+     *                                                    GUARDAR el código:
+     *                                                    el registro falla
+     *                                                    honestamente con 503
+     *                                                    en vez de "tener
+     *                                                    éxito" con un usuario
+     *                                                    atrapado en
+     *                                                    PENDIENTE_VERIFICACION
+     *                                                    y un correo con un
+     *                                                    código que no existe
+     *                                                    en ningún lado. Ver
+     *                                                    docs/mediciones/sec/2026-08-14-incidente-500-auth-redis-produccion.md.
      */
     public void generarYEnviarCodigo(Usuario usuario) {
         String codigo = generarCodigo();
-        redisTemplate.opsForValue().set(key(usuario.getCorreo()), codigo, Duration.ofMinutes(ttlMinutes));
+        try {
+            redisTemplate.opsForValue().set(key(usuario.getCorreo()), codigo, Duration.ofMinutes(ttlMinutes));
+        } catch (DataAccessException e) {
+            log.error("Redis no disponible al generar código de verificación para {}", usuario.getCorreo(), e);
+            throw new ServicioTemporalmenteNoDisponibleException(
+                    "El servicio de verificación de correo no está disponible temporalmente. Intente más tarde.");
+        }
 
         String cuerpo = "<p>Hola " + usuario.getNombre() + ",</p>"
                 + "<p>Tu código de verificación es: <b>" + codigo + "</b></p>"
@@ -61,11 +81,24 @@ public class VerificacionCorreoService {
     /**
      * @throws CodigoVerificacionInvalidoException si el código no coincide
      *                                              o ya no existe en Redis
-     *                                              (expiró o nunca se pidió)
+     *                                              (expiró o nunca se pidió),
+     *                                              o si Redis está caído
+     *                                              (fail-CLOSED: sin Redis no
+     *                                              se puede comprobar el
+     *                                              código, y aceptar a ciegas
+     *                                              sería un bypass de
+     *                                              verificación)
      */
     public void validar(String correo, String codigoIngresado) {
         String llave = key(correo);
-        String codigoAlmacenado = redisTemplate.opsForValue().get(llave);
+        String codigoAlmacenado;
+        try {
+            codigoAlmacenado = redisTemplate.opsForValue().get(llave);
+        } catch (DataAccessException e) {
+            log.error("Redis no disponible al validar código de verificación para {}", correo, e);
+            throw new CodigoVerificacionInvalidoException(
+                    "El servicio de verificación no está disponible temporalmente. Intente más tarde.");
+        }
 
         if (codigoAlmacenado == null) {
             throw new CodigoVerificacionInvalidoException(
@@ -77,7 +110,11 @@ public class VerificacionCorreoService {
 
         // Un solo uso: se borra apenas se valida, para que no quede
         // reutilizable dentro de la ventana de TTL restante.
-        redisTemplate.delete(llave);
+        try {
+            redisTemplate.delete(llave);
+        } catch (DataAccessException e) {
+            log.warn("Redis no disponible al eliminar código ya validado para {}", correo, e);
+        }
     }
 
     private String generarCodigo() {

@@ -8,6 +8,7 @@ import com.uteq.backend.service.LoginRateLimitExcedidoException;
 import com.uteq.backend.service.MaterialReservadoException;
 import com.uteq.backend.service.PrestamoVencidoException;
 import com.uteq.backend.service.RefreshTokenInvalidoException;
+import com.uteq.backend.service.ServicioTemporalmenteNoDisponibleException;
 import com.uteq.backend.service.SesionChatNoEncontradaException;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
@@ -24,7 +25,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
+import org.springframework.dao.UncategorizedDataAccessException;
 import org.springframework.jdbc.UncategorizedSQLException;
 
 import java.sql.SQLException;
@@ -173,6 +176,34 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CodigoVerificacionInvalidoException.class)
     public ProblemDetail handleCodigoVerificacionInvalido(CodigoVerificacionInvalidoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    // VerificacionCorreoService.generarYEnviarCodigo() cuando Redis no
+    // permite GUARDAR el código (dependencia caída o sin cuota). 503, no 500:
+    // el registro no debe "tener éxito" con un código que no existirá en
+    // Redis -- el usuario quedaría atrapado en PENDIENTE_VERIFICACION sin
+    // poder completar el alta. Ver
+    // docs/mediciones/sec/2026-08-14-incidente-500-auth-redis-produccion.md.
+    @ExceptionHandler(ServicioTemporalmenteNoDisponibleException.class)
+    public ProblemDetail handleServicioTemporalmenteNoDisponible(ServicioTemporalmenteNoDisponibleException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+    }
+
+    // Red de seguridad para cualquier acceso a datos que NO esté envuelto en
+    // degradación local (ej. @Cacheable("libros"/"sugerencias-libros") de
+    // LibroService con Redis/Upstash caído): las fallas de conexión
+    // (DataAccessResourceFailureException) y las de protocolo/error RESP de
+    // Redis (UncategorizedDataAccessException, ej. cuota de comandos agotada
+    // en Upstash) deben responder 503 Service Unavailable, no el 500
+    // genérico -- es una dependencia agotada/caída, no un bug del código.
+    // Antes de este handler, ambas caían en handleStoredProcedureError -> 500
+    // con el mensaje engañoso "Error no controlado en procedimiento
+    // almacenado" (ver docs/mediciones/sec/2026-08-14-incidente-500-auth-redis-produccion.md).
+    @ExceptionHandler({DataAccessResourceFailureException.class, UncategorizedDataAccessException.class})
+    public ProblemDetail handleDataAccessResourceFailure(DataAccessException ex) {
+        log.error("Fallo de acceso a dependencia de datos (Redis/BD)", ex);
+        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE,
+                "El servicio de almacenamiento temporal no está disponible. Intente más tarde.");
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
