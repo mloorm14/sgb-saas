@@ -116,6 +116,33 @@ VALUES (
 );
 
 -- ============================================================================
+-- USUARIO DEMO DE EVALUACIÓN (espejo de V11__seed_usuario_demo.sql)
+-- Contraseña en texto plano: usuario1
+-- Hash BCrypt (costo 12, $2a$ — mismo formato que el admin arriba):
+--   $2a$12$h1.Cc0mZA1T/L13tFiq61OA7rrdLjDMZGiO36IDqZoRgjIoxSMeFe
+-- Rol limitado LECTOR (sin permisos administrativos), separado del admin
+-- real. Credenciales públicas documentadas en README.md → "Cuenta demo".
+-- Este bloque es el reflejo local de la migración V11 Flyway (y su fix
+-- V12 para cuentas preexistentes): si se edita uno, hay que reflejar el
+-- cambio en el otro a mano (convención de V10__seed_catalogos_y_admin.sql).
+-- ============================================================================
+INSERT INTO usuarios (nombre, apellido, correo, password_hash, estado_id, correo_verificado)
+VALUES (
+    'Usuario',
+    'Demo',
+    'u@uteq.edu.ec',
+    '$2a$12$h1.Cc0mZA1T/L13tFiq61OA7rrdLjDMZGiO36IDqZoRgjIoxSMeFe',
+    (SELECT id FROM estados_usuario WHERE nombre = 'ACTIVO'),
+    TRUE
+);
+
+INSERT INTO usuario_roles (usuario_id, rol_id)
+VALUES (
+    (SELECT id FROM usuarios WHERE correo = 'u@uteq.edu.ec'),
+    (SELECT id FROM roles WHERE nombre = 'LECTOR')
+);
+
+-- ============================================================================
 -- LIBROS DE EJEMPLO
 -- ============================================================================
 INSERT INTO libros (isbn, titulo, resumen, anio_publicacion, editorial_id, idioma_id, estado_id, stock_total, stock_disponible)
