@@ -16,17 +16,20 @@ La política realmente cargada en el Dashboard (verificada con
 
 | Cabecera | Valor en producción (Dashboard) |
 |---|---|
-| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://sgb-backend-b058.onrender.com; frame-ancestors 'none'; base-uri 'self'; object-src 'none'` |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://sgb-backend-b058.onrender.com; frame-ancestors 'none'; base-uri 'self'; form-action 'none'; object-src 'none'` |
 | `X-Frame-Options` | `DENY` |
 | `X-Content-Type-Options` | `nosniff` |
 | `Strict-Transport-Security` | aplicada automáticamente por el edge de Render (`max-age=315360000; includeSubdomains; preload`) — no se configura manualmente |
 
 Notas:
 
-- La CSP del Dashboard de esta fecha **no incluye** `form-action 'none'` ni
-  `script-src-attr 'none'` que sí estaban en el draft del `_headers`; si se
-  quiere recuperar esa restricción, agregar esas directivas a la regla del
-  Dashboard. Detalle completo en
+- El 2026-08-14 la CSP del Dashboard fue **endurecida** agregando
+  `script-src-attr 'none'` y `form-action 'none'` (5 formularios de la app
+  verificados: todos usan `(ngSubmit)` + `HttpClient`, ninguno depende de
+  submit nativo — `form-action 'none'` no rompe ningún flujo). Esto cerró
+  el ítem `Failure to Define Directive with No Fallback` del plugin 10055
+  de ZAP (reporte `-v2`: 0 High, 1 Medium restante `style-src
+  'unsafe-inline'`, aceptado). Detalle completo en
   [`docs/despliegue/DEPLOYMENT.md`](../../docs/despliegue/DEPLOYMENT.md)
   §5.4.1.
 - Si el servicio se recrea o se migra a otro proveedor, esta configuración

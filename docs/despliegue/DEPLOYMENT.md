@@ -221,7 +221,7 @@ Configuración actual (servicio `biblora-sgb`, verificada con
 
 | Cabecera | Valor cargado en el Dashboard (patrón `/*`) |
 |---|---|
-| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://sgb-backend-b058.onrender.com; frame-ancestors 'none'; base-uri 'self'; object-src 'none'` |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://sgb-backend-b058.onrender.com; frame-ancestors 'none'; base-uri 'self'; form-action 'none'; object-src 'none'` |
 | `X-Frame-Options` | `DENY` |
 | `X-Content-Type-Options` | `nosniff` |
 | `Strict-Transport-Security` | automática del edge de Render (`max-age=315360000; includeSubdomains; preload`) — no requiere configuración propia en Static Sites |
@@ -231,13 +231,16 @@ Configuración actual (servicio `biblora-sgb`, verificada con
 > proveedor, se pierde y hay que volver a cargarla manualmente desde la
 > tabla de arriba.
 >
-> **Nota sobre la CSP 2026-08-14:** la política cargada en el Dashboard
-> no incluye `form-action 'none'` ni `script-src-attr 'none'` (sí
-> presentes en el draft de `frontend-angular/public/_headers`). Si se
-> quiere recuperar esa restricción, agregar esas directivas a la regla del
-> Dashboard. El archivo `frontend-angular/public/_headers` se conserva
-> solo como referencia histórica (ver
-> `frontend-angular/public/README.md`).
+> **Nota sobre la CSP 2026-08-14:** la política cargada en el Dashboard fue
+> endurecida agregando `script-src-attr 'none'` y `form-action 'none'`
+> (auditoría previa confirmó que los 5 formularios de la app usan
+> `(ngSubmit)` + `HttpClient`, ninguno depende de submit nativo; con
+> `form-action 'none'` la app no rompe). Esto cerró el ítem `Failure to
+> Define Directive with No Fallback` del plugin 10055 de ZAP (reporte v2:
+> 0 High, 1 Medium restante `style-src 'unsafe-inline'` — aceptado, ver
+> `docs/mediciones/sec/owasp/README.md`). El archivo
+> `frontend-angular/public/_headers` se conserva solo como referencia
+> histórica (ver `frontend-angular/public/README.md`).
 
 Notas de diseño (no cambiar sin releer):
 - `style-src ... 'unsafe-inline'` es **obligatorio**: Angular inyecta
