@@ -169,7 +169,10 @@ de push, y las credenciales SMTP/Gemini si se quiere habilitar ese módulo.
 1. Crear cuenta en https://render.com (login con GitHub/Google), plan
    **Free**.
 2. **New → Web Service**: conectar el repo `mloorm14/sgb-saas`,
-   rama `conf-produccion`, que contiene el `Dockerfile` multi-stage del
+   rama `feature/despliegue-produccion` (rama de despliegue actual del
+   servicio en Render — posición cambiada desde `conf-produccion` para
+   incorporar las migraciones V11/V12 del usuario demo), que contiene el
+   `Dockerfile` multi-stage del
    backend (el servicio se construye por Docker).
    - Build: `docker build -f backend-springboot/Dockerfile` (o raíz del
      repo según la config desplegada — el despliegue funcional actual
@@ -191,7 +194,9 @@ de push, y las credenciales SMTP/Gemini si se quiere habilitar ese módulo.
 
 ### 5.4 Render — desplegar el frontend (Static Site)
 
-1. **New → Static Site**: mismo repo, rama `conf-produccion`.
+1. **New → Static Site**: mismo repo, rama `feature/despliegue-produccion`
+   (misma posición que el Web Service, para mantener frontend y backend
+   en el mismo punto).
 2. Build command: `npm run build --prefix frontend-angular` (equivale al
    `<build>` del entorno de CI), Publish directory:
    `frontend-angular/dist/`.
@@ -206,9 +211,12 @@ de push, y las credenciales SMTP/Gemini si se quiere habilitar ese módulo.
 
 1. `curl https://<backend>.onrender.com/actuator/health` → `UP`.
 2. Abrir `https://<frontend>.onrender.com` en el navegador: carga la SPA.
-3. `POST https://<backend>.onrender.com/api/v1/auth/login` con credenciales
+3. `POST https://<backend>.onrender.com/api/auth/login` con credenciales
    válidas → 200 con `accessToken`; repetir con password incorrecto 5
    veces y confirmar `429` (rate limiting vía Upstash).
+   NOTA: el módulo de autenticación mapea en `/api/auth` (sin
+   `v1` — ver `AuthController` y `frontend-angular/.../auth.service.ts`);
+   el `/api/v1` es solo para los módulos de negocio.
 4. En los dashboards de Neon y Upstash confirmar conexiones/uso en vivo
    (prueba de que el backend llega a ambos por URL pública TLS).
 5. Si el primer acceso tarda ~60 s, es el *cold start* del plan Free
