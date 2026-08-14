@@ -32,7 +32,7 @@ describe('PrestamosLectorComponent', () => {
     fixture.detectChanges(); // dispara ngOnInit -> cargarPrestamos()
 
     const req = httpMock.expectOne(
-      r => r.url.startsWith('http://localhost:8080/api/v1/prestamos/usuario/1')
+      r => r.url.startsWith('https://sgb-backend-b058.onrender.com/api/v1/prestamos/usuario/1')
     );
     expect(req.request.method).toBe('GET');
     req.flush({ content: [{ id: 1, libroId: 5, estadoPrestamoId: 1 }], totalPages: 1 });
@@ -45,7 +45,7 @@ describe('PrestamosLectorComponent', () => {
     fixture.detectChanges();
 
     const req = httpMock.expectOne(
-      r => r.url.startsWith('http://localhost:8080/api/v1/prestamos/usuario/1')
+      r => r.url.startsWith('https://sgb-backend-b058.onrender.com/api/v1/prestamos/usuario/1')
     );
     req.flush('error', { status: 500, statusText: 'Server Error' });
 
