@@ -18,7 +18,7 @@ interface JwtPayload {
 })
 export class AuthService {
 
-  private apiUrl = 'http://localhost:8080/api';
+  private apiUrl = 'https://sgb-backend-b058.onrender.com/api';
 
   // El token se guarda AQUI en memoria, nunca en localStorage
   private accessToken: string | null = null;
