@@ -225,6 +225,9 @@ Configuración actual (servicio `biblora-sgb`, verificada con
 | `X-Frame-Options` | `DENY` |
 | `X-Content-Type-Options` | `nosniff` |
 | `Strict-Transport-Security` | automática del edge de Render (`max-age=315360000; includeSubdomains; preload`) — no requiere configuración propia en Static Sites |
+| `Cross-Origin-Opener-Policy` | `same-origin` |
+| `Cross-Origin-Resource-Policy` | `same-origin` |
+| `Permissions-Policy` | `geolocation=(), microphone=(), camera=(), payment=()` |
 
 > **Nota operativa (importante):** esta configuración **no vive en el
 > repositorio**. Si el servicio del frontend se recrea o migra a otro
@@ -238,9 +241,17 @@ Configuración actual (servicio `biblora-sgb`, verificada con
 > `form-action 'none'` la app no rompe). Esto cerró el ítem `Failure to
 > Define Directive with No Fallback` del plugin 10055 de ZAP (reporte v2:
 > 0 High, 1 Medium restante `style-src 'unsafe-inline'` — aceptado, ver
-> `docs/mediciones/sec/owasp/README.md`). El archivo
-> `frontend-angular/public/_headers` se conserva solo como referencia
-> histórica (ver `frontend-angular/public/README.md`).
+> `docs/mediciones/sec/owasp/README.md`).
+>
+> **Nota COEP 2026-08-14:** `Cross-Origin-Embedder-Policy` fue **evaluado
+> y descartado deliberadamente** (no por descuido): `require-corp` exigiría
+> `Cross-Origin-Resource-Policy` en los subrecursos del backend y bloquearía
+> las llamadas cross-origin del SPA al API (`https://sgb-backend-b058.onrender.com`).
+> Beneficio marginal frente al riesgo de romper el producto; registrado como
+> línea de trabajo futuro (`credentialless`) si cambia la arquitectura.
+>
+> El archivo `frontend-angular/public/_headers` se conserva solo como
+> referencia histórica (ver `frontend-angular/public/README.md`).
 
 Notas de diseño (no cambiar sin releer):
 - `style-src ... 'unsafe-inline'` es **obligatorio**: Angular inyecta
@@ -254,6 +265,14 @@ Notas de diseño (no cambiar sin releer):
 - `Strict-Transport-Security` la agrega el edge de Render en
   `*.onrender.com` automáticamente; por eso no se carga manualmente en el
   Dashboard (evitar cabecera duplicada o contradictoria).
+- `Cross-Origin-Opener-Policy: same-origin` y `Cross-Origin-Resource-Policy:
+  same-origin` aíslan la ventana y los subrecursos sin afectar el `fetch`
+  cross-origin al backend (CORP solo restringe la carga de subrecursos del
+  documento, no las peticiones `fetch`/`XHR`). Se eligió no agregar COEP
+  (ver nota arriba).
+- `Permissions-Policy` bloquea `geolocation`, `microphone`, `camera` y
+  `payment` (la app no usa ninguna de esas APIs; si un futuro
+  feature las necesita, hay que ampliar la lista antes del deploy).
 
 #### 5.4.2 Dependencias del frontend (Angular)
 

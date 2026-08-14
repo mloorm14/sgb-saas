@@ -20,6 +20,9 @@ La política realmente cargada en el Dashboard (verificada con
 | `X-Frame-Options` | `DENY` |
 | `X-Content-Type-Options` | `nosniff` |
 | `Strict-Transport-Security` | aplicada automáticamente por el edge de Render (`max-age=315360000; includeSubdomains; preload`) — no se configura manualmente |
+| `Cross-Origin-Opener-Policy` | `same-origin` |
+| `Cross-Origin-Resource-Policy` | `same-origin` |
+| `Permissions-Policy` | `geolocation=(), microphone=(), camera=(), payment=()` |
 
 Notas:
 
@@ -29,7 +32,10 @@ Notas:
   submit nativo — `form-action 'none'` no rompe ningún flujo). Esto cerró
   el ítem `Failure to Define Directive with No Fallback` del plugin 10055
   de ZAP (reporte `-v2`: 0 High, 1 Medium restante `style-src
-  'unsafe-inline'`, aceptado). Detalle completo en
+  'unsafe-inline'`, aceptado). El mismo día se agregaron `COOP`/`CORP`
+  `same-origin` y `Permissions-Policy` restrictiva (reporte `-v3`: Low 5 →
+  1). **COEP no se aplica:** `require-corp` rompería el `fetch` cross-origin
+  al backend (discutido abajo). Detalle completo en
   [`docs/despliegue/DEPLOYMENT.md`](../../docs/despliegue/DEPLOYMENT.md)
   §5.4.1.
 - Si el servicio se recrea o se migra a otro proveedor, esta configuración
