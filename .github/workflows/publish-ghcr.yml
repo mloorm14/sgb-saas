@@ -1,0 +1,70 @@
+# Publica las imagenes Docker del Backend y del Frontend a GitHub
+# Container Registry (GHCR). Se dispara SOLO con un push de tag v*, no con
+# pushes a ramas ni con pull requests: el CI de validacion (tests, lint,
+# auditoria SQL) sigue viviendo en ci.yml.
+#
+# Usa ${{ github.ref_name }} (el nombre del tag que disparo el workflow)
+# como tag de la imagen desde el archivo de repositorio, para que el mismo
+# job sirva para un tag de prueba (v1.0.0-test1) y para el tag real
+# (v1.0.0) sin tocar el YAML entre una y otra corrida.
+#
+# NOTA sobre el contexto de build del backend: NO es ./backend-springboot.
+# El Dockerfile del backend escribe path como backend-springboot/mvnw y
+# database/migrations (ver docker-compose.yml, build.context: .), asi que
+# el contexto es la raiz del repositorio con file: backend-springboot/Dockerfile.
+name: Publicar imagenes en GHCR
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login a GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build y push — backend
+        id: build-backend
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: backend-springboot/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/mloorm14/sgb-saas-backend:${{ github.ref_name }}
+            ghcr.io/mloorm14/sgb-saas-backend:latest
+
+      - name: Build y push — frontend
+        id: build-frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend-angular
+          push: true
+          tags: |
+            ghcr.io/mloorm14/sgb-saas-frontend:${{ github.ref_name }}
+            ghcr.io/mloorm14/sgb-saas-frontend:latest
+
+      # Los digests salen como output de build-push-action (NO de buildx
+      # con cache-loader): se imprimen aca para poder copiarlos a mano.
+      - name: Mostrar digests
+        run: |
+          echo "Backend digest:  ${{ steps.build-backend.outputs.digest }}"
+          echo "Frontend digest: ${{ steps.build-frontend.outputs.digest }}"
