@@ -12,40 +12,46 @@
           type="email"
           placeholder="ejemplo@uteq.edu.ec"
           style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:14px;box-sizing:border-box"
-        />
-        <small style="color:red" *ngIf="form.get('correo')?.invalid && form.get('correo')?.touched">
-          Ingrese un correo válido
-        </small>
+          />
+          @if (form.get('correo')?.invalid && form.get('correo')?.touched) {
+            <small style="color:red">
+              Ingrese un correo válido
+            </small>
+          }
+        </div>
+
+        <div style="margin-bottom:1rem">
+          <label style="display:block;margin-bottom:4px;font-size:14px">Contraseña</label>
+          <input
+            formControlName="password"
+            type="password"
+            placeholder="Mínimo 6 caracteres"
+            style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:14px;box-sizing:border-box"
+            />
+            @if (form.get('password')?.invalid && form.get('password')?.touched) {
+              <small style="color:red">
+                La contraseña debe tener al menos 6 caracteres
+              </small>
+            }
+          </div>
+
+          @if (errorMsg) {
+            <div style="color:red;font-size:13px;margin-bottom:1rem">
+              {{ errorMsg }}
+            </div>
+          }
+
+          <button
+            type="submit"
+            [disabled]="form.invalid || cargando"
+            style="width:100%;padding:10px;background:#005c2f;color:white;border:none;border-radius:4px;font-size:15px;cursor:pointer">
+            {{ cargando ? 'Ingresando...' : 'Iniciar sesión' }}
+          </button>
+
+          <p style="text-align:center;margin-top:1rem;font-size:13px">
+            ¿No tienes cuenta? <a routerLink="/registro" style="color:#005c2f">Regístrate aquí</a>
+          </p>
+
+        </form>
       </div>
-
-      <div style="margin-bottom:1rem">
-        <label style="display:block;margin-bottom:4px;font-size:14px">Contraseña</label>
-        <input
-          formControlName="password"
-          type="password"
-          placeholder="Mínimo 6 caracteres"
-          style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:14px;box-sizing:border-box"
-        />
-        <small style="color:red" *ngIf="form.get('password')?.invalid && form.get('password')?.touched">
-          La contraseña debe tener al menos 6 caracteres
-        </small>
-      </div>
-
-      <div *ngIf="errorMsg" style="color:red;font-size:13px;margin-bottom:1rem">
-        {{ errorMsg }}
-      </div>
-
-      <button
-        type="submit"
-        [disabled]="form.invalid || cargando"
-        style="width:100%;padding:10px;background:#005c2f;color:white;border:none;border-radius:4px;font-size:15px;cursor:pointer">
-        {{ cargando ? 'Ingresando...' : 'Iniciar sesión' }}
-      </button>
-
-      <p style="text-align:center;margin-top:1rem;font-size:13px">
-        ¿No tienes cuenta? <a routerLink="/registro" style="color:#005c2f">Regístrate aquí</a>
-      </p>
-
-    </form>
-  </div>
-</div>
+    </div>

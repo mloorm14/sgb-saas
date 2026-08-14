@@ -4,10 +4,9 @@ import { HttpClient } from '@angular/common/http';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 @Component({
-  selector: 'app-prestamos-gestion',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
-  templateUrl: './prestamos-gestion.component.html'
+    selector: 'app-prestamos-gestion',
+    imports: [CommonModule, ReactiveFormsModule, FormsModule],
+    templateUrl: './prestamos-gestion.component.html'
 })
 export class PrestamosGestionComponent {
   // Formulario de creación

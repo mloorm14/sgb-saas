@@ -1,15 +1,14 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { HttpClient } from '@angular/common/http';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 
 @Component({
-  selector: 'app-libros',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
-  templateUrl: './libros.component.html'
+    selector: 'app-libros',
+    imports: [ReactiveFormsModule],
+    templateUrl: './libros.component.html'
 })
 export class LibrosComponent implements OnInit {
   libros: any[] = [];

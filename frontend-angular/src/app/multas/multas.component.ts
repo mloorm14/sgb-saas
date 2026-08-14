@@ -5,10 +5,9 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../core/services/auth.service';
 
 @Component({
-  selector: 'app-multas',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './multas.component.html'
+    selector: 'app-multas',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './multas.component.html'
 })
 export class MultasComponent implements OnInit {
   esLector: boolean = false;
