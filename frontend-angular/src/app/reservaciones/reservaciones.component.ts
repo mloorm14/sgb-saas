@@ -5,10 +5,9 @@ import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } 
 import { AuthService } from '../core/services/auth.service';
 
 @Component({
-  selector: 'app-reservaciones',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
-  templateUrl: './reservaciones.component.html'
+    selector: 'app-reservaciones',
+    imports: [CommonModule, ReactiveFormsModule, FormsModule],
+    templateUrl: './reservaciones.component.html'
 })
 export class ReservacionesComponent implements OnInit {
   esLector: boolean = false;

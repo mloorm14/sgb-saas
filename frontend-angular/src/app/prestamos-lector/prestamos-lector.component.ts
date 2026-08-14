@@ -4,10 +4,9 @@ import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../core/services/auth.service';
 
 @Component({
-  selector: 'app-prestamos-lector',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './prestamos-lector.component.html'
+    selector: 'app-prestamos-lector',
+    imports: [CommonModule],
+    templateUrl: './prestamos-lector.component.html'
 })
 export class PrestamosLectorComponent implements OnInit {
   prestamos: any[] = [];

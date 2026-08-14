@@ -207,6 +207,51 @@ de push, y las credenciales SMTP/Gemini si se quiere habilitar ese módulo.
 4. **Create Static Site** → Render sirve el sitio con HTTPS automático y
    sin dormir.
 
+#### 5.4.1 Cabeceras de seguridad del Static Site (archivo `_headers`)
+
+Render aplica cabeceras HTTP personalizadas al Static Site desde un
+archivo **`_headers`** (mismo formato que Netlify) que debe estar en la
+**raíz del Publish Directory** (`dist/frontend-angular/browser/`). Como
+ese directorio se genera en cada build, el archivo vive en la fuente y se
+copia con el build:
+
+- Fuente: `frontend-angular/public/_headers`.
+- Copia: entrada objeto en `assets` de `angular.json`
+  (`{ "glob": "_headers", "input": "public", "output": "./" }`) — en
+  Angular 21 el `output` es el directorio `browser/` del `outputPath`.
+
+Cabeceras servidas (verificado con `curl -I` el 2026-08-14, evidencia en
+`docs/mediciones/sec/owasp/README.md` y reportes ZAP en
+`docs/mediciones/sec/zap/`):
+
+| Cabecera | Valor |
+|---|---|
+| `X-Frame-Options` | `DENY` |
+| `X-Content-Type-Options` | `nosniff` |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; script-src-elem 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://sgb-backend-b058.onrender.com; frame-ancestors 'none'; form-action 'none'; base-uri 'self'; object-src 'none'` |
+
+Notas de diseño (no cambiar sin releer):
+- `style-src ... 'unsafe-inline'` es **obligatorio**: Angular inyecta
+  estilos inline en runtime (Critters además inlinea el CSS crítico en el
+  `index.html`); sin `'unsafe-inline'` la SPA no carga.
+- `connect-src` incluye explícitamente el host del backend, que es un
+  origen distinto al del frontend.
+- Si el proyecto cambia de backend (host de Render distinto), editar
+  `connect-src` a la vez que las URLs de servicio del bundle.
+- HSTS adicional al del edge de Render/Cloudflare en `*.onrender.com`:
+  ambos deben quedar coherentes; si el valor del edge cambiara, este
+  archivo sigue siendo la fuente de verdad del repo.
+
+#### 5.4.2 Dependencias del frontend (Angular)
+
+El bundle de producción se construye con **Angular 21.2.20** (subido
+desde 17.3 en la rama `feature/seguridad-headers-owasp-zap` por CVEs de
+2026 en `@angular/core` ≤ 18.2.14 — ver
+`docs/mediciones/sec/owasp/README.md`). Actualizar `@angular/*`,
+`zone.js` y `typescript` juntos (versionado enlazado); `ng update` exige
+una major por paso para migraciones automáticas.
+
 ### 5.5 Verificación integral (punto a punto)
 
 1. `curl https://<backend>.onrender.com/actuator/health` → `UP`.

@@ -4,35 +4,45 @@
     <h2 style="color:#005c2f;margin:0">Mis préstamos</h2>
   </div>
 
-  <div *ngIf="errorMsg" style="color:red;margin-bottom:1rem">{{ errorMsg }}</div>
-  <div *ngIf="cargando" style="text-align:center;padding:2rem">Cargando préstamos...</div>
+  @if (errorMsg) {
+    <div style="color:red;margin-bottom:1rem">{{ errorMsg }}</div>
+  }
+  @if (cargando) {
+    <div style="text-align:center;padding:2rem">Cargando préstamos...</div>
+  }
 
-  <table *ngIf="!cargando" style="width:100%;border-collapse:collapse;font-size:14px">
-    <thead>
-      <tr style="background:#005c2f;color:white">
-        <th style="padding:10px;text-align:left">ID</th>
-        <th style="padding:10px;text-align:left">Libro</th>
-        <th style="padding:10px;text-align:left">Fecha préstamo</th>
-        <th style="padding:10px;text-align:left">Devolución estimada</th>
-        <th style="padding:10px;text-align:left">Devolución real</th>
-        <th style="padding:10px;text-align:left">Estado</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let prestamo of prestamos; let i = index"
-        [style.background]="i % 2 === 0 ? '#f9f9f9' : 'white'">
-        <td style="padding:10px">{{ prestamo.id }}</td>
-        <td style="padding:10px">{{ prestamo.libroId }}</td>
-        <td style="padding:10px">{{ prestamo.fechaPrestamo | date:'short' }}</td>
-        <td style="padding:10px">{{ prestamo.fechaDevolucionEstimada | date:'short' }}</td>
-        <td style="padding:10px">{{ prestamo.fechaDevolucionReal ? (prestamo.fechaDevolucionReal | date:'short') : '—' }}</td>
-        <td style="padding:10px">{{ prestamo.estadoPrestamoId }}</td>
-      </tr>
-      <tr *ngIf="prestamos.length === 0">
-        <td colspan="6" style="text-align:center;padding:2rem;color:#888">No tenés préstamos registrados</td>
-      </tr>
-    </tbody>
-  </table>
+  @if (!cargando) {
+    <table style="width:100%;border-collapse:collapse;font-size:14px">
+      <thead>
+        <tr style="background:#005c2f;color:white">
+          <th style="padding:10px;text-align:left">ID</th>
+          <th style="padding:10px;text-align:left">Libro</th>
+          <th style="padding:10px;text-align:left">Fecha préstamo</th>
+          <th style="padding:10px;text-align:left">Devolución estimada</th>
+          <th style="padding:10px;text-align:left">Devolución real</th>
+          <th style="padding:10px;text-align:left">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (prestamo of prestamos; track prestamo; let i = $index) {
+          <tr
+            [style.background]="i % 2 === 0 ? '#f9f9f9' : 'white'">
+            <td style="padding:10px">{{ prestamo.id }}</td>
+            <td style="padding:10px">{{ prestamo.libroId }}</td>
+            <td style="padding:10px">{{ prestamo.fechaPrestamo | date:'short' }}</td>
+            <td style="padding:10px">{{ prestamo.fechaDevolucionEstimada | date:'short' }}</td>
+            <td style="padding:10px">{{ prestamo.fechaDevolucionReal ? (prestamo.fechaDevolucionReal | date:'short') : '—' }}</td>
+            <td style="padding:10px">{{ prestamo.estadoPrestamoId }}</td>
+          </tr>
+        }
+        @if (prestamos.length === 0) {
+          <tr>
+            <td colspan="6" style="text-align:center;padding:2rem;color:#888">No tenés préstamos registrados</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
 
   <div style="display:flex;justify-content:center;align-items:center;gap:16px;margin-top:1rem">
     <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
