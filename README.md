@@ -1,6 +1,7 @@
 # Sistema de Gestión Bibliotecaria Web (SGB - SaaS) 📚
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21712467.svg)](https://doi.org/10.5281/zenodo.21712467)
+[![CI](https://github.com/mloorm14/sgb-saas/actions/workflows/ci.yml/badge.svg)](https://github.com/mloorm14/sgb-saas/actions/workflows/ci.yml)
 
 Plataforma 100% web diseñada para la modernización de bibliotecas institucionales y municipales, desarrollada como Proyecto Fin de Curso para la asignatura de Aplicaciones Web (2026-2027).
 
@@ -168,6 +169,19 @@ admin real y con rol limitado (LECTOR, sin permisos administrativos)**:
 
 Este usuario es el que el tribunal puede usar para entrar sin
 registrarse. No modifica ni comparte la cuenta `admin@sgb-saas.local`.
+
+## 📦 Imágenes Docker publicadas (v1.0.0)
+
+Las imágenes se publican en GitHub Container Registry (GHCR) por el
+workflow `publish-ghcr.yml`, que se dispara con el push del tag `v1.0.0`
+(no por push a rama ni por PR). Los digests sha256 se declaran acá cuando
+se corte el tag definitivo — por ahora quedan pendientes a propósito, no se
+inventan ni se copian de corridas de prueba.
+
+| Servicio  | Imagen                                   | Digest sha256 |
+|-----------|------------------------------------------|---------------|
+| Backend   | `ghcr.io/mloorm14/sgb-saas-backend:v1.0.0`  | _pendiente — se completa al cortar el tag final_ |
+| Frontend  | `ghcr.io/mloorm14/sgb-saas-frontend:v1.0.0` | _pendiente — se completa al cortar el tag final_ |
 
 ## 🔁 Reproducibilidad (D.1 / D.2)
 
