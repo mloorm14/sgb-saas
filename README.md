@@ -1,5 +1,6 @@
 # Sistema de Gestión Bibliotecaria Web (SGB - SaaS) 📚
 
+[![CI](https://github.com/mloorm14/sgb-saas/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mloorm14/sgb-saas/actions/workflows/ci.yml)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21712467.svg)](https://doi.org/10.5281/zenodo.21712467)
 
 Plataforma 100% web diseñada para la modernización de bibliotecas institucionales y municipales, desarrollada como Proyecto Fin de Curso para la asignatura de Aplicaciones Web (2026-2027).
@@ -9,6 +10,36 @@ Plataforma 100% web diseñada para la modernización de bibliotecas instituciona
 Video demo del sistema (2-3 min): [ver en Google Drive](https://drive.google.com/file/d/19s7Ls2Ixz7wJ7RWzfJ-F2U18LknC7O_r/view?usp=drive_link)
 
 > ⚠️ **Pendiente de confirmación manual**: no es posible verificar desde aquí que el permiso de este enlace de Drive esté en modo "Cualquier usuario con el enlace puede ver". Antes de la entrega final, confirmar manualmente en Drive (botón "Compartir" → "Acceso general") que el enlace es público; si está restringido a cuentas específicas, un evaluador externo no podrá reproducirlo.
+
+## 🚀 Despliegue y Acceso Demo
+
+> **Requisito A.4.1** — acceso público y cuenta demo para el tribunal evaluador.
+
+El despliegue público objetivo usa **Render** (aplicación), **Neon** (PostgreSQL) y **Upstash** (Redis). La URL definitiva **aún no está publicada** en este README: queda bloqueada hasta que la migración Flyway `V3` en producción sea exitosa (responsabilidad de Marlon).
+
+**URL pública (placeholder estricto — no inventar un dominio):**
+
+```text
+<URL_DESPLIEGUE_PUBLICO_PENDIENTE>
+```
+
+### Credenciales demo (tribunal evaluador)
+
+Cuenta preconfigurada en la semilla real `db/seed.sql` (usuario administrador de desarrollo / demo). Mismos valores que usa el entorno local y el script k6 (`admin@sgb-saas.local` / `Admin123!`).
+
+| Campo | Valor |
+|-------|-------|
+| **Rol** | Administrador / Tribunal (`ADMIN`) |
+| **Usuario / Email** | `admin@sgb-saas.local` |
+| **Contraseña** | `Admin123!` |
+
+```text
+Rol:      Administrador / Tribunal
+Email:    admin@sgb-saas.local
+Password: Admin123!
+```
+
+> ⚠️ Credenciales **solo** para evaluación académica / entorno demo. No usarlas con datos personales reales.
 
 ## 👥 Equipo de Desarrollo
 
@@ -124,15 +155,11 @@ sgb-saas/
 
 Convención de commits: [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`).
 
-## 🔗 URL del sistema desplegado
-
-*En desarrollo (se actualizará en la Entrega 2).*
-
-## 🔑 Credenciales de desarrollo
+## 🔑 Credenciales de desarrollo (local)
 
 Al inicializar la base de datos con `db/schema.sql` + `db/seed.sql` (montados
-en `docker-entrypoint-initdb.d/`), se crea un usuario administrador de
-desarrollo:
+en `docker-entrypoint-initdb.d/`), se crea el mismo usuario administrador
+documentado arriba en la sección **Despliegue y Acceso Demo**:
 
 | Campo      | Valor                     |
 |------------|---------------------------|
@@ -140,8 +167,10 @@ desarrollo:
 | Contraseña | `Admin123!`               |
 | Rol        | `ADMIN`                   |
 
-⚠️ Solo para entornos locales de desarrollo. Nunca usar estas credenciales
-en un entorno con datos reales o accesible públicamente.
+Fuente verificada: `db/seed.sql` (comentario «Contraseña en texto plano: Admin123!» + `INSERT` de `admin@sgb-saas.local`). No existe un `V2__insert_data.sql` en este repositorio; Flyway `V2__rbac_normalizado.sql` no inserta ese usuario.
+
+⚠️ Solo para entornos locales de desarrollo / demo académica. Nunca usar estas credenciales
+en un entorno con datos personales reales.
 
 ## 📄 Estado del proyecto
 
