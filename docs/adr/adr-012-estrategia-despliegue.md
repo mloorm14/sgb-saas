@@ -106,3 +106,57 @@ completo desde cero (volumen vacío) de forma reproducible.
 - `docker-compose.yml`, `backend-springboot/Dockerfile`, `frontend-angular/Dockerfile`
 - `docs/DIGESTS-LOG.md` (digests sha256 de las 6 imágenes base)
 - `.env.example`, `Makefile` (`make up`)
+
+## Actualización — 2026-08-13: producción en Render + Neon + Upstash
+
+**Estado de esta revisión:** la decisión original (Docker Compose) sigue
+vigente **para el entorno local y el de evaluación** (Bloque B:
+reproducibilidad `make up`). Esta actualización **no la reemplaza**: la
+amplía con la estrategia del **entorno de producción real**, que quedó
+definida al cierre de la rama `conf-produccion`.
+
+### Decisión actualizada
+
+Para el despliegue de producción (Entrega Final, Bloque A.4 / criterio
+P5) se elige **Render + Neon + Upstash**, todos en plan free:
+
+- **Frontend** (SPA Angular) → **Render Static Site**:
+  https://biblora-sgb.onrender.com
+- **Backend** (Spring Boot) → **Render Web Service** (Docker, 512 MB RAM /
+  0.1 CPU del plan Free): https://sgb-backend-b058.onrender.com
+- **PostgreSQL** → **Neon** (plan Free, 0.5 GB / 100 CU-horas/mes, PITR de
+  6 h).
+- **Redis** → **Upstash** (plan Free, 500K comandos/mes).
+
+HTTPS en ambos servicios públicos lo provee Render automáticamente
+(termina TLS en el balanceador de Render; ver adr-015 — coherente con la
+decisión de que TLS termina en el proxy, no en el backend).
+
+### Contexto del cambio (motivo)
+
+El plan original para esta rama asumía una **VM propia en Oracle Cloud
+(Always Free, instancias ARM)** con **nginx + Certbot** administrados a
+mano. Esa vía se descartó durante la planificación del despliegue por
+**saturación de capacidad de las instancias ARM del Always Free de Oracle
+Cloud** (sin disponibilidad para aprovisionar la VM; documentado en el
+historial del plan de trabajo de la rama). Se optó entonces por
+PaaS/SaaS gestionados que no requieren administración de sistema propia:
+sin VM, sin nginx propio, sin Certbot — TLS gestionado por Render.
+
+### Consecuencias del cambio
+
+- **Positivas:** cero administración de infraestructura (parches de OS,
+  renovación de certificados TLS, mantenimiento de Postgres y Redis a
+  cargo de los proveedores); despliegue reproducible en minutos desde el
+  dashboard; límites y costes predecibles en plan free; CORS y health
+  check verificados de punta a punta en el despliegue real.
+- **Negativas:** el backend free duerme tras 15 min de inactividad
+  (cold start de ~30–60 s en la primera petición); las conexiones entre
+  servicios son por URL pública con TLS (sin red privada compartida, a
+  diferencia del `docker-compose.yml` local); los límites del plan free
+  (horas de instancia, minutos de build, comandos/mes) acotan el uso
+  académico.
+- **Detalles operativos**: despliegue desde cero en
+  `docs/despliegue/DEPLOYMENT.md`; operación y rotación de secretos en
+  `docs/despliegue/RUNBOOK.md`; respaldo y retención en
+  `docs/despliegue/BACKUP.md`.
