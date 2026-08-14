@@ -101,8 +101,9 @@ repo: cambio de dependencias, versión base (JDK/OS), o simplemente
 reproducir el estado del último commit.
 
 1. Dashboard de Render → backend (Web Service).
-2. **Manual Deploy → Deploy latest commit** (despliega el commit del HEAD
-   de la rama configurada, `conf-produccion`).
+2. **Manual Deploy → Deploy latest commit** (despliega el HEAD de la
+   rama configurada en el servicio — actualmente
+   `feature/despliegue-produccion`).
 3. Render reconstruye la imagen (consume minutos de build del free tier,
    500 min/mes) y la publica con zero-downtime; el estado del deploy se ve
    en la pestaña **Events**.
