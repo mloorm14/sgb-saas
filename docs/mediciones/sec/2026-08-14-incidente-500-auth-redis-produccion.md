@@ -116,6 +116,15 @@ sugerencias) NO se degradaron a fail-open; durante una caída responden
 `503` (honesto y diagnosticable). La restauración es del proveedor de la
 dependencia, no del código.
 
+> **Actualización posterior (misma rama, 2026-08-14):** la fila de
+> `security/JwtAuthFilter.java` (fail-open en la blacklist) fue revisada
+> como parte del cierre de pendientes de la rama: el chequeo de revocación
+> cambió a **fail-closed** (401 sin continuar la cadena de filtros) porque
+> es control de acceso y no de disponibilidad — un token revocado tratado
+> como válido durante el outage restablece accesos ya removidos. Decisión
+> completa en
+> [`sec/owasp/decision-fail-closed-jwt-redis.md`](sec/owasp/decision-fail-closed-jwt-redis.md).
+
 ## Acciones requeridas fuera del repo
 
 1. Dashboard de Upstash → revisar la página de uso/cuota de la base de
