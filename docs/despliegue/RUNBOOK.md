@@ -41,6 +41,14 @@ inactividad:
 > de inactividad; Upstash cobra solo comandos). No hace falta suspenderlos
 > nunca salvo decisión de desmantelamiento (ver [BACKUP.md](BACKUP.md)).
 
+> **Nota — headers del frontend (2026-08-14):** si el servicio del
+> frontend en Render se recrea (borrado accidental, migración de plan, o
+> cambio de proveedor), recargar los headers de seguridad manualmente
+> desde el Dashboard antes de considerar el despliegue completo — ver la
+> tabla de cabeceras en `docs/despliegue/DEPLOYMENT.md` §5.4.1. Esta
+> configuración no vive en el repositorio (Render Static Site no soporta
+> el archivo `_headers`), así que no se recupera sola con un redeploy.
+
 ## 2. Rotación de secretos
 
 Objetivo: reemplazar un secreto comprometido o por política sin downtime
