@@ -13,6 +13,7 @@ export class LoginComponent {
   form: FormGroup;
   errorMsg: string = '';
   cargando: boolean = false;
+  mostrarPassword: boolean = false;
 
   constructor(
     private fb: FormBuilder,
@@ -21,8 +22,13 @@ export class LoginComponent {
   ) {
     this.form = this.fb.group({
       correo: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]]
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      compliance: [false, [Validators.requiredTrue]]
     });
+  }
+
+  togglePassword() {
+    this.mostrarPassword = !this.mostrarPassword;
   }
 
   submit() {
@@ -30,6 +36,7 @@ export class LoginComponent {
     this.cargando = true;
     this.errorMsg = '';
 
+    // compliance es solo un gate de UI (LOPDP): no se envia al backend
     const { correo, password } = this.form.value;
 
     this.authService.login(correo, password).subscribe({
