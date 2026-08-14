@@ -24,7 +24,7 @@ export class ReservacionesComponent implements OnInit {
   cargando: boolean = false;
   errorMsg: string = '';
 
-  private apiUrl = 'http://localhost:8080/api/v1';
+  private apiUrl = 'https://sgb-backend-b058.onrender.com/api/v1';
 
   constructor(
     private http: HttpClient,
