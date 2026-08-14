@@ -1,57 +1,134 @@
-<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f5f5">
-  <div style="background:white;padding:2rem;border-radius:8px;width:100%;max-width:400px;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
+<div class="bg-surface text-on-surface antialiased min-h-screen flex flex-col md:flex-row">
 
-    <h2 style="text-align:center;margin-bottom:1.5rem;color:#005c2f">SGB-SaaS — Iniciar sesión</h2>
+  <!-- Lado izquierdo: hero -->
+  <div class="hidden md:flex md:w-1/2 lg:w-3/5 relative bg-cover bg-center"
+       style="background-image: url('/assets/login/library-hero.jpg')">
+    <div class="absolute inset-0 bg-primary/80 bg-gradient-to-br from-primary/90 to-primary-container/70 mix-blend-multiply"></div>
+    <div class="relative z-10 p-12 lg:p-24 flex flex-col justify-between h-full w-full">
+      <div class="flex items-center gap-3 text-on-primary">
+        <span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">local_library</span>
+        <span class="font-headline-lg text-headline-lg text-on-primary tracking-tight">SGB UTEQ</span>
+      </div>
+      <div class="max-w-lg mb-12">
+        <h1 class="font-headline-xl text-headline-xl text-on-primary mb-6">
+          Sistema de Gestión Bibliotecaria
+        </h1>
+        <p class="font-body-lg text-body-lg text-primary-fixed-dim opacity-90 leading-relaxed">
+          Accede al catálogo digital, gestiona tus préstamos y explora recursos académicos con nuestra plataforma integral de servicios bibliotecarios.
+        </p>
+      </div>
+    </div>
+  </div>
 
-    <form [formGroup]="form" (ngSubmit)="submit()">
+  <!-- Lado derecho: formulario -->
+  <div class="w-full md:w-1/2 lg:w-2/5 flex flex-col justify-center px-6 py-12 lg:px-16 xl:px-24 bg-surface relative min-h-screen">
+    <div class="w-full max-w-md mx-auto">
 
-      <div style="margin-bottom:1rem">
-        <label style="display:block;margin-bottom:4px;font-size:14px">Correo electrónico</label>
-        <input
-          formControlName="correo"
-          type="email"
-          placeholder="ejemplo@uteq.edu.ec"
-          style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:14px;box-sizing:border-box"
-          />
-          @if (form.get('correo')?.invalid && form.get('correo')?.touched) {
-            <small style="color:red">
-              Ingrese un correo válido
-            </small>
-          }
+      <div class="md:hidden flex items-center gap-3 text-primary mb-8">
+        <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">local_library</span>
+        <span class="font-headline-md text-headline-lg-mobile text-primary tracking-tight">SGB UTEQ</span>
+      </div>
+
+      <div class="mb-10">
+        <h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-2">Bienvenido de vuelta</h2>
+        <p class="font-body-md text-body-md text-on-surface-variant">Ingresa tus credenciales para acceder al sistema</p>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-6">
+
+        <!-- Correo -->
+        <div class="space-y-2">
+          <label class="block font-label-md text-label-md text-on-surface" for="correo">Correo electrónico</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline">
+              <span class="material-symbols-outlined text-[20px]">mail</span>
+            </div>
+            <input
+              formControlName="correo"
+              id="correo"
+              type="email"
+              placeholder="usuario@uteq.edu.ec"
+              class="block w-full pl-10 pr-3 py-3 border border-outline-variant rounded-lg bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-colors placeholder:text-outline"
+            />
+          </div>
+          <small class="text-error" *ngIf="form.get('correo')?.invalid && form.get('correo')?.touched">
+            Ingrese un correo válido
+          </small>
         </div>
 
-        <div style="margin-bottom:1rem">
-          <label style="display:block;margin-bottom:4px;font-size:14px">Contraseña</label>
-          <input
-            formControlName="password"
-            type="password"
-            placeholder="Mínimo 6 caracteres"
-            style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:14px;box-sizing:border-box"
-            />
-            @if (form.get('password')?.invalid && form.get('password')?.touched) {
-              <small style="color:red">
-                La contraseña debe tener al menos 6 caracteres
-              </small>
-            }
+        <!-- Contraseña -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="block font-label-md text-label-md text-on-surface" for="password">Contraseña</label>
           </div>
-
-          @if (errorMsg) {
-            <div style="color:red;font-size:13px;margin-bottom:1rem">
-              {{ errorMsg }}
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline">
+              <span class="material-symbols-outlined text-[20px]">lock</span>
             </div>
-          }
+            <input
+              formControlName="password"
+              id="password"
+              [type]="mostrarPassword ? 'text' : 'password'"
+              placeholder="Mínimo 6 caracteres"
+              class="block w-full pl-10 pr-10 py-3 border border-outline-variant rounded-lg bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-colors placeholder:text-outline"
+            />
+            <button type="button" (click)="togglePassword()"
+              class="absolute inset-y-0 right-0 pr-3 flex items-center text-outline hover:text-on-surface transition-colors">
+              <span class="material-symbols-outlined text-[20px]">{{ mostrarPassword ? 'visibility' : 'visibility_off' }}</span>
+            </button>
+          </div>
+          <small class="text-error" *ngIf="form.get('password')?.invalid && form.get('password')?.touched">
+            La contraseña debe tener al menos 6 caracteres
+          </small>
+        </div>
 
-          <button
-            type="submit"
-            [disabled]="form.invalid || cargando"
-            style="width:100%;padding:10px;background:#005c2f;color:white;border:none;border-radius:4px;font-size:15px;cursor:pointer">
+        <!-- Consentimiento LOPDP -->
+        <div class="flex items-start gap-3 p-4 bg-surface-container-low rounded-lg border border-outline-variant/30">
+          <div class="flex items-center h-5 mt-0.5">
+            <input formControlName="compliance" id="compliance" type="checkbox"
+              class="h-4 w-4 text-primary border-outline-variant rounded focus:ring-primary focus:ring-offset-surface" />
+          </div>
+          <div class="flex-1 flex items-start gap-2">
+            <span class="material-symbols-outlined text-primary text-[20px] flex-shrink-0 mt-0.5">shield</span>
+            <label class="font-body-sm text-body-sm text-on-surface-variant leading-tight" for="compliance">
+              Acepto la Política de Privacidad y el tratamiento de mis datos personales conforme a la LOPDP Ecuador. (Obligatorio)
+            </label>
+          </div>
+        </div>
+
+        <div class="text-error text-body-sm" *ngIf="errorMsg">
+          {{ errorMsg }}
+        </div>
+
+        <!-- Acciones -->
+        <div class="pt-2 space-y-4">
+          <button type="submit" [disabled]="form.invalid || cargando"
+            class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm font-label-md text-label-md text-on-primary bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed">
             {{ cargando ? 'Ingresando...' : 'Iniciar sesión' }}
           </button>
 
-          <p style="text-align:center;margin-top:1rem;font-size:13px">
-            ¿No tienes cuenta? <a routerLink="/registro" style="color:#005c2f">Regístrate aquí</a>
-          </p>
+          <div class="relative flex items-center py-2">
+            <div class="flex-grow border-t border-outline-variant"></div>
+            <span class="flex-shrink-0 mx-4 font-body-sm text-body-sm text-outline">¿No tienes cuenta?</span>
+            <div class="flex-grow border-t border-outline-variant"></div>
+          </div>
 
-        </form>
+          <a routerLink="/registro"
+            class="w-full flex justify-center py-3 px-4 border border-secondary rounded-lg font-label-md text-label-md text-secondary bg-transparent hover:bg-secondary/5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary transition-colors min-h-[44px] items-center cursor-pointer">
+            Crear cuenta nueva
+          </a>
+        </div>
+      </form>
+
+      <div class="mt-12 pt-6 border-t border-outline-variant/50 flex flex-col items-center gap-2">
+        <p class="flex items-center gap-1.5 font-label-sm text-label-sm text-outline">
+          <span class="material-symbols-outlined text-[16px]">verified_user</span>
+          Sesión protegida con JWT (HS256) · Sin almacenamiento en localStorage
+        </p>
+        <p class="font-label-sm text-label-sm text-outline/80">
+          UTEQ · Facultad de Ciencias de la Computación · 2026
+        </p>
       </div>
     </div>
+  </div>
+</div>
