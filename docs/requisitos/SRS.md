@@ -325,8 +325,8 @@ formato.
   3. Usuario `BLOQUEADO_POR_MULTA` → `423`.
   4. Usuario `INACTIVO`/`PENDIENTE_VERIFICACION` → `403`.
 - **Método de verificación**: **Test** (`AuthServiceTest.login*`, 5 tests)
-  + **Demonstration** (`docs/mediciones/sec/2026-07-30-owasp-a07-fix-rate-limiting-login.md`,
-  `docs/mediciones/sec/2026-07-30-owasp-a09-fix-logging-autenticacion.md` —
+  + **Demonstration** (`docs/mediciones/sec/owasp/2026-07-30-owasp-a07-fix-rate-limiting-login.md`,
+  `docs/mediciones/sec/owasp/2026-07-30-owasp-a09-fix-logging-autenticacion.md` —
   verificación en vivo contra el stack Docker real).
 
 #### REQ-F-003 — Cierre de sesión
@@ -348,7 +348,7 @@ formato.
   5. El evento `LOGOUT` queda registrado (correo, IP, fecha/hora).
 - **Método de verificación**: **Test**
   (`AuthServiceTest.logoutGuardaTokenEnBlacklist`) + **Demonstration**
-  (`docs/mediciones/sec/2026-07-30-owasp-a09-fix-logging-autenticacion.md`).
+  (`docs/mediciones/sec/owasp/2026-07-30-owasp-a09-fix-logging-autenticacion.md`).
 
 #### REQ-F-004 — Refresco de sesión
 
@@ -393,7 +393,7 @@ formato.
   `.buscarPorId_cuandoNoExiste_lanzaEntityNotFound`,
   `LibroControllerSecurityTest`, 4 tests con `@PreAuthorize` real vía
   MockMvc) + **Demonstration**
-  (`docs/mediciones/sec/2026-07-30-owasp-a01-fix-rol-admin-libros.md`).
+  (`docs/mediciones/sec/owasp/2026-07-30-owasp-a01-fix-rol-admin-libros.md`).
 
 #### REQ-F-006 — Gestionar el catálogo de libros
 
@@ -416,7 +416,7 @@ formato.
   `.crearLibro_cuandoIsbnDuplicado_lanzaExcepcion`,
   `.eliminar_cuandoExiste_loMarcaDadoDeBaja`, `LibroControllerSecurityTest`,
   4 tests) + **Demonstration**
-  (`docs/mediciones/sec/2026-07-30-owasp-a01-fix-rol-admin-libros.md`).
+  (`docs/mediciones/sec/owasp/2026-07-30-owasp-a01-fix-rol-admin-libros.md`).
 
 #### REQ-F-007 — Registrar préstamo
 
@@ -984,7 +984,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   request posterior con ese token es rechazada.
 - **Método de verificación**: **Test**
   (`AuthServiceTest.logoutGuardaTokenEnBlacklist`) + **Demonstration**
-  (`docs/mediciones/sec/2026-07-30-owasp-a09-fix-logging-autenticacion.md`).
+  (`docs/mediciones/sec/owasp/2026-07-30-owasp-a09-fix-logging-autenticacion.md`).
 
 ##### REQ-NF-002 — Cookie HttpOnly/Secure/SameSite para el refresh token
 
@@ -1029,7 +1029,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   3. Un login exitoso resetea el contador de esa combinación a cero.
 - **Método de verificación**: **Test** (`LoginRateLimiterTest`, 6 tests;
   `AuthServiceTest.login*RateLimit*`, 3 tests) + **Demonstration**
-  (`docs/mediciones/sec/2026-07-30-owasp-a07-fix-rate-limiting-login.md`).
+  (`docs/mediciones/sec/owasp/2026-07-30-owasp-a07-fix-rate-limiting-login.md`).
 
 ##### REQ-NF-007 — Auditoría de eventos de autenticación
 
@@ -1053,7 +1053,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   `.loginFallidoIncrementaContadorDeRateLimit`,
   `.logoutGuardaTokenEnBlacklist` — verifican
   `bitacoraAuditoriaRepository.save()`) + **Demonstration**
-  (`docs/mediciones/sec/2026-07-30-owasp-a09-fix-logging-autenticacion.md`).
+  (`docs/mediciones/sec/owasp/2026-07-30-owasp-a09-fix-logging-autenticacion.md`).
 
 ##### REQ-NF-010 — RBAC aplicado consistentemente con defensa en profundidad
 
@@ -1077,7 +1077,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   `.listarPorUsuario_cuandoLectorPideOtroUsuario_lanzaAccesoDenegado` +
   patrones equivalentes en `PrestamoServiceTest`/`ReservacionServiceTest`)
   + **Demonstration**
-  (`docs/mediciones/sec/2026-07-30-owasp-a01-control-acceso-roto.md`).
+  (`docs/mediciones/sec/owasp/2026-07-30-owasp-a01-control-acceso-roto.md`).
   **Nota de honestidad** (ya documentada en el informe técnico): existe
   una asimetría real entre controllers — `LibroController` incluye
   `ADMIN` en sus 5 endpoints, `PrestamoController`/`ReservacionController`
@@ -1099,7 +1099,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 - **Método de verificación**: **Test**
   (`MultaServiceTest.anular_sinRolGerenteOAdmin_lanzaAccesoDenegado`) +
   **Demonstration**
-  (`docs/mediciones/sec/2026-07-30-owasp-a01-control-acceso-roto.md`).
+  (`docs/mediciones/sec/owasp/2026-07-30-owasp-a01-control-acceso-roto.md`).
 
 ##### REQ-NF-012 — TLS en tránsito
 
@@ -1133,9 +1133,9 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   `Strict-Transport-Security`.
 - **Método de verificación**: **Analysis** (decisión de arquitectura y
   preparación del backend, revisadas por inspección) —
-  `docs/mediciones/sec/2026-07-30-owasp-a02-fallo-criptografico.md`
+  `docs/mediciones/sec/owasp/2026-07-30-owasp-a02-fallo-criptografico.md`
   (hallazgo original) y
-  `docs/mediciones/sec/2026-08-10-owasp-a02-fix-tls-transporte.md` (qué se
+  `docs/mediciones/sec/owasp/2026-08-10-owasp-a02-fix-tls-transporte.md` (qué se
   cerró y qué sigue pendiente, con la misma honestidad declarada en el
   hallazgo original). **TLS real activo end-to-end sigue sin Test ni
   Demonstration** — no hay stack con certificado real contra el cual
@@ -1156,7 +1156,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   cadena SQL.
 - **Método de verificación**: **Analysis** — verificación manual puntual
   durante la auditoría original
-  (`docs/mediciones/sec/2026-07-30-owasp-a03-inyeccion.md`), **sin test de
+  (`docs/mediciones/sec/owasp/2026-07-30-owasp-a03-inyeccion.md`), **sin test de
   regresión permanente en el suite** (la propia matriz lo señala
   explícitamente con un `—` en la columna de prueba automatizada) — se
   documenta la ausencia de un test de regresión en vez de implicar que
@@ -1191,7 +1191,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   3. El contenedor `backend` corre como usuario `spring` (no `root`) —
      confirmado con `docker exec sgb_backend whoami`.
   - Todo lo anterior verificado en vivo en
-    `docs/mediciones/sec/2026-08-11-owasp-a05-verificacion-real.md`
+    `docs/mediciones/sec/owasp/2026-08-11-owasp-a05-verificacion-real.md`
     (complementa, no reemplaza, el hallazgo original ni el cierre por
     inspección de `feature/seguridad-transporte`).
   - **Lo que sigue sin implementar, sin ambigüedad**: `Content-Security-Policy`
@@ -1202,11 +1202,11 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   Nginx incluyen `Content-Security-Policy` (**pendiente**).
 - **Método de verificación**: **Test** (no aplica, es configuración, no
   lógica de negocio) + **Demonstration**
-  (`docs/mediciones/sec/2026-07-30-owasp-a05-mala-configuracion-seguridad.md`
+  (`docs/mediciones/sec/owasp/2026-07-30-owasp-a05-mala-configuracion-seguridad.md`
   — hallazgo original;
-  `docs/mediciones/sec/2026-08-10-owasp-a05-fix-csp-stacktrace-swagger-nonroot.md`
+  `docs/mediciones/sec/owasp/2026-08-10-owasp-a05-fix-csp-stacktrace-swagger-nonroot.md`
   — cierre por inspección;
-  `docs/mediciones/sec/2026-08-11-owasp-a05-verificacion-real.md` —
+  `docs/mediciones/sec/owasp/2026-08-11-owasp-a05-verificacion-real.md` —
   verificación real contra Docker, incluyendo el fix de `NoResourceFoundException`).
 
 #### 3.2.3 Calidad de software / arquitectura

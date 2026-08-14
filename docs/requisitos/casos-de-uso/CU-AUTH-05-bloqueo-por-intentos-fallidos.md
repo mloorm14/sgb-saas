@@ -57,4 +57,4 @@ IP cada 5 intentos. Mitigar eso (reputación de IP, CAPTCHA
 progresivo) queda fuera del alcance de este requisito.
 
 **Evidencia empírica**: verificado en vivo contra el stack real —
-`docs/mediciones/sec/2026-07-30-owasp-a07-fix-rate-limiting-login.md`.
+`docs/mediciones/sec/owasp/2026-07-30-owasp-a07-fix-rate-limiting-login.md`.

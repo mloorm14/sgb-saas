@@ -58,4 +58,4 @@ explícita, no un descuido.
 
 **Evidencia empírica**: verificado en vivo contra el stack real, logs
 y tabla reales —
-`docs/mediciones/sec/2026-07-30-owasp-a09-fix-logging-autenticacion.md`.
+`docs/mediciones/sec/owasp/2026-07-30-owasp-a09-fix-logging-autenticacion.md`.

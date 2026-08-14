@@ -8,7 +8,7 @@ Aceptado
 
 REQ-NF-012 (Bloque C.2, checklist OWASP A05/A02) exige TLS 1.2+ en
 tránsito. Como ya quedó documentado explícitamente en
-`docs/mediciones/sec/2026-07-30-owasp-a02-fallo-criptografico.md`, el
+`docs/mediciones/sec/owasp/2026-07-30-owasp-a02-fallo-criptografico.md`, el
 stack de desarrollo/evaluación actual (`docker-compose.yml`) corre sobre
 HTTP plano: `backend` expone `8080` y `frontend` expone `4200` sin ningún
 proxy TLS ni certificado. Ese archivo también deja escrito que un entorno
@@ -81,7 +81,7 @@ TLS:
 - Sigue existiendo el mismo gap "honesto" documentado en A02: sin TLS
   real activo hoy, no hay forma verificable de mostrar HSTS funcionando
   end-to-end en este entorno — se deja como gap conocido, no simulado
-  (ver `docs/mediciones/sec/2026-08-10-owasp-a02-fix-tls-transporte.md`).
+  (ver `docs/mediciones/sec/owasp/2026-08-10-owasp-a02-fix-tls-transporte.md`).
 - Si en el futuro se decide desplegar el backend directamente expuesto
   (sin proxy delante), esta decisión debe revisitarse explícitamente: sin
   proxy, `forward-headers-strategy` en `framework` sin validar el origen

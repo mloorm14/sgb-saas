@@ -55,4 +55,4 @@
   operación diaria de biblioteca) o un descuido; queda para que
   producto lo confirme, no se corrige como parte de este relevamiento.
 
-**Evidencia empírica**: `docs/mediciones/sec/2026-07-30-owasp-a01-control-acceso-roto.md`.
+**Evidencia empírica**: `docs/mediciones/sec/owasp/2026-07-30-owasp-a01-control-acceso-roto.md`.
