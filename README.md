@@ -156,8 +156,9 @@ en un entorno con datos reales o accesible públicamente.
 
 El sistema desplegado en producción (https://biblora-sgb.onrender.com)
 incluye un usuario demo de acceso libre para el tribunal, creado por la
-migración Flyway `V11__seed_usuario_demo.sql`, **separado del admin real
-y con rol limitado (LECTOR, sin permisos administrativos)**:
+migración Flyway `V11__seed_usuario_demo.sql` (y normalizado por
+`V12__fix_usuario_demo.sql` para cuentas preexistentes), **separado del
+admin real y con rol limitado (LECTOR, sin permisos administrativos)**:
 
 | Campo      | Valor                  |
 |------------|------------------------|
