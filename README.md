@@ -152,6 +152,22 @@ desarrollo:
 ⚠️ Solo para entornos locales de desarrollo. Nunca usar estas credenciales
 en un entorno con datos reales o accesible públicamente.
 
+### 👤 Cuenta demo (para evaluación — credenciales públicas)
+
+El sistema desplegado en producción (https://biblora-sgb.onrender.com)
+incluye un usuario demo de acceso libre para el tribunal, creado por la
+migración Flyway `V11__seed_usuario_demo.sql`, **separado del admin real
+y con rol limitado (LECTOR, sin permisos administrativos)**:
+
+| Campo      | Valor                  |
+|------------|------------------------|
+| Correo     | `u@uteq.edu.ec`        |
+| Contraseña | `usuario1`             |
+| Rol        | `LECTOR`               |
+
+Este usuario es el que el tribunal puede usar para entrar sin
+registrarse. No modifica ni comparte la cuenta `admin@sgb-saas.local`.
+
 ## 🔁 Reproducibilidad (D.1 / D.2)
 
 El repositorio se orquesta con `make` y el pipeline completo se corre de
