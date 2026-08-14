@@ -30,7 +30,7 @@ corrección sobre un gap previo (antes/después, sin editar el original).
 
 | Cabecera | Backend (prod, verificado 2026-08-14) | Frontend (prod, verificado 2026-08-14) |
 |---|---|---|
-| `Content-Security-Policy` | ✓ (restrictiva, `frame-ancestors 'none'`, `form-action 'none'`) | ✓ `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://sgb-backend-b058.onrender.com; frame-ancestors 'none'; base-uri 'self'; object-src 'none'` |
+| `Content-Security-Policy` | ✓ (restrictiva, `frame-ancestors 'none'`, `form-action 'none'`) | ✓ `default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://sgb-backend-b058.onrender.com; frame-ancestors 'none'; base-uri 'self'; form-action 'none'; object-src 'none'` |
 | `X-Frame-Options` | ✓ `DENY` | ✓ `DENY` |
 | `X-Content-Type-Options` | ✓ `nosniff` | ✓ `nosniff` |
 | `Strict-Transport-Security` | ✓ `max-age=31536000; includeSubDomains` | ✓ automática del edge de Render (`max-age=315360000; includeSubdomains; preload`) |
@@ -43,10 +43,10 @@ host del backend.
 > soportan el archivo `_headers`** (lo sirven como archivo plano, no lo
 > interpretan). Las cabeceras del frontend se configuran en el **Dashboard
 > de Render** (Servicio → Headers, patrón `/*`), no en el repositorio. La
-> CSP cargada en el Dashboard no incluye `form-action 'none'` ni
-> `script-src-attr 'none'` que sí estaban en el draft del `_headers` —
-> pendiente opcional: agregarlas a la regla del Dashboard para igualar la
-> política más estricta. Detalle y valores completos en
+> CSP cargada en el Dashboard fue endurecida el 2026-08-14 agregando
+> `script-src-attr 'none'` y `form-action 'none'` (cierra el ítem
+> `Failure to Define Directive with No Fallback` del plugin 10055). Detalle
+> y valores completos en
 > [`docs/despliegue/DEPLOYMENT.md`](../../despliegue/DEPLOYMENT.md) §5.4.1.
 
 ## ZAP Baseline (2026-08-14, ZAP 2.17.0)
@@ -54,31 +54,43 @@ host del backend.
 | Objetivo | High | Medium | Low | Informational | FAIL-NEW | Resultado |
 |---|---|---|---|---|---|---|
 | Backend prod (`https://sgb-backend-b058.onrender.com`) | 0 | 0 | 0 | 1 (`Non-Storable Content`, 403s) | 0 | **PASA** |
-| Frontend prod (`https://biblora-sgb.onrender.com`, Angular 21.2.20, cabeceras desde Dashboard de Render) | 0 | 2 (ambos `CSP` plugin 10055 — `style-src unsafe-inline` y `Failure to Define Directive with No Fallback`, aceptados) | 4 (COEP/COOP/CORP, Permissions-Policy — opcionales) | 4 | 0 | **PASA** |
+| Frontend prod v2 (`https://biblora-sgb.onrender.com`, CSP endurecida: `script-src-attr 'none'`, `form-action 'none'`) | 0 | 1 (`CSP: style-src unsafe-inline` — aceptado, ver abajo) | 5 (COEP/COOP/CORP, Permissions-Policy, HSTS en 404 de sitemap — opcionales/sin impacto) | 4 | 0 | **PASA** |
+| Frontend prod v1 (histórico — CSP previa al endurecimiento, con los 2 Medium del plugin 10055) | 0 | 2 (ambos `CSP` plugin 10055 — `style-src unsafe-inline` y `Failure to Define Directive with No Fallback`, aceptados) | 4 | 4 | 0 | **PASA** |
 | Frontend local (histórico — build de la rama servido en localhost, pre-deploy) | 0 | 1 (`CSP: style-src unsafe-inline` — aceptado) | 4 | 3 | 0 | **PASA** |
 
 Reportes: [`zap/`](../zap/). El reporte vigente del frontend es
-`reporte-zap-baseline-frontend-prod-2026-08-14.{xml,html}`, corrido contra
-la URL real de producción; el de localhost se conserva como evidencia
-histórica del proceso (`reporte-zap-baseline-frontend-local-2026-08-14`).
-El hallazgo High del frontend original (`Vulnerable JS Library` —
-`@angular/core 17.3.12`, CVEs 2026) se resolvió con el upgrade a Angular
-21.2.20 (ver DEPLOYMENT.md §5.4.2); el reporte con ese hallazgo no se
-archivó.
+`reporte-zap-baseline-frontend-prod-2026-08-14-v2.{xml,html}`, corrido
+contra la URL real de producción con la CSP endurecida; el v1 (CSP previa)
+y el de localhost se conservan como evidencia histórica del proceso
+(`reporte-zap-baseline-frontend-prod-2026-08-14` y
+`reporte-zap-baseline-frontend-local-2026-08-14`). El hallazgo High del
+frontend original (`Vulnerable JS Library` — `@angular/core 17.3.12`, CVEs
+2026) se resolvió con el upgrade a Angular 21.2.20 (ver DEPLOYMENT.md
+§5.4.2); el reporte con ese hallazgo no se archivó.
 
 ### Hallazgo Medium aceptado (ZAP frontend)
 
+> **Resuelto parcialmente el 2026-08-14 (CSP endurecida en el Dashboard de
+> Render).** De los dos ítems que generaba el plugin 10055 en el reporte
+> v1, el ítem `Failure to Define Directive with No Fallback` **quedó
+> cerrado** al agregar `script-src-attr 'none'` y `form-action 'none'` a la
+> CSP (reporte v2: 0 High, 0 FAIL-NEW, 1 Medium). El ítem restante
+> (`style-src 'unsafe-inline'`) se mantiene **aceptado** como riesgo
+> residual: es el renderizado de estilos de Angular, no viable de cambiar
+> sin nonces server-side. El texto original queda como referencia histórica
+> del proceso.
+
 - **Hallazgo:** CSP: `style-src` incluye `'unsafe-inline'` y no define
   directivas de fallback por tipo de recurso (ZAP plugin id 10055, CWE-693;
-  dos ítems en el reporte prod: `style-src unsafe-inline` y `Failure to
-  Define Directive with No Fallback`).
+  dos ítems en el reporte prod v1: `style-src unsafe-inline` y `Failure to
+  Define Directive with No Fallback` — este último **resuelto** en v2 con
+  `script-src-attr 'none'` + `form-action 'none'`).
 - **Causa:** Angular inyecta estilos de componentes como `<style>` inline en tiempo
   de ejecución; sin `unsafe-inline` la aplicación no renderiza correctamente. El
-  segundo ítem aparece porque la CSP cargada en el Dashboard de Render no define
+  segundo ítem aparecía porque la CSP cargada en el Dashboard de Render no definía
   `script-src-elem`/`style-src-elem`/etc., y con `style-src` presente, `unsafe-inline`
-  aplica como fallback por defecto — mitigación: definir explícitamente
-  `script-src-elem 'self'`, `script-src-attr 'none'`, `style-src-elem 'self' 'unsafe-inline'`
-  y `style-src-attr 'unsafe-inline'` en la regla del Dashboard (pendiente opcional).
+  aplica como fallback por defecto — cerrado definiendo explícitamente
+  `script-src-attr 'none'` y `form-action 'none'` en la regla del Dashboard.
 - **Decisión:** aceptado como riesgo residual. El resto de la CSP es estricta
   (`default-src 'self'`, `frame-ancestors 'none'`, `object-src 'none'`, `script-src 'self'`),
   lo que limita el impacto de este punto a un vector secundario (requiere una
