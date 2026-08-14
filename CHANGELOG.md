@@ -59,6 +59,17 @@ objetivo `v0.9.0-rc` de esta Tercera Entrega.
   para LECTOR (`75b1c9c`); tests unitarios, de seguridad y de rate limit
   (`1fbc6d5`, `233702d`, `eed4642`) y prueba de integración contra
   Gemini real deshabilitada por defecto (`35c79b9`).
+- Documentación de despliegue de producción en
+  `docs/despliegue/DEPLOYMENT.md` (arquitectura Render + Neon + Upstash,
+  límites del free tier, variables de entorno solo nombres y
+  procedimiento desde cero) (`88fae53`), `RUNBOOK.md` (suspend/resume,
+  rotación de secretos y contenedores, restauración) (`014e9a1`) y
+  `BACKUP.md` (PITR de Neon, retención hasta el 2026-09-16 y prueba de
+  restauración) (`b8b1ee8`).
+- Usuario demo de evaluación `u@uteq.edu.ec` / `usuario1` con rol
+  limitado LECTOR, separado del admin real, vía migración
+  `V11__seed_usuario_demo.sql` (`df741b9`) con su espejo local en
+  `db/seed.sql` (`2982589`).
 
 ### Changed
 
@@ -87,6 +98,16 @@ objetivo `v0.9.0-rc` de esta Tercera Entrega.
   `${VAR:default}` para que el contexto cargue sin credenciales
   (`48d0897`); `.env.example` documenta las variables opcionales del
   Módulo H (`895514c`).
+- `docs/adr/adr-012-estrategia-despliegue.md`: sección de Actualización
+  fechada (2026-08-13) — la producción pasa a Render + Neon + Upstash
+  (descartada la VM Oracle Cloud ARM por saturación del Always Free);
+  Docker Compose queda vigente para local/evaluación (`540f7c9`).
+- README: se publica la URL del sistema desplegado
+  (https://biblora-sgb.onrender.com + backend y health check) reemplazando
+  el placeholder de la Entrega 2 (`a9f6451`) y se agrega la sección
+  "Cuenta demo (para evaluación)" con las credenciales públicas del
+  usuario LECTOR, dejando intacta la advertencia del admin real
+  (`37fa6f3`).
 
 ### Fixed
 
@@ -125,6 +146,12 @@ objetivo `v0.9.0-rc` de esta Tercera Entrega.
   feature/catalogo (Autor, Categoria, Favorito, SugerenciaAdquisicion)
   no estaban mockeados; se completan los `@MockitoBean` siguiendo el
   patrón documentado en la clase (`927f4f0`).
+- Login del usuario demo devolvía 403: `u@uteq.edu.ec` ya existía en la
+  base en estado `PENDIENTE_VERIFICACION` (creado por el registro
+  público) y el `ON CONFLICT DO NOTHING` de V11 no corregía ese estado;
+  `V12__fix_usuario_demo.sql` normaliza la cuenta de forma idempotente
+  (ACTIVO + correo verificado + hash de `usuario1` + rol LECTOR)
+  (`8b1fa2d`).
 
 ### Security
 
