@@ -29,7 +29,7 @@ describe('PrestamosGestionComponent', () => {
     component.buscarPrestamos();
 
     const req = httpMock.expectOne(
-      r => r.url.startsWith('http://localhost:8080/api/v1/prestamos/usuario/7')
+      r => r.url.startsWith('https://sgb-backend-b058.onrender.com/api/v1/prestamos/usuario/7')
     );
     req.flush({ content: [{ id: 1, usuarioId: 7, libroId: 3 }], totalPages: 1 });
 
@@ -42,7 +42,7 @@ describe('PrestamosGestionComponent', () => {
     component.buscarPrestamos();
 
     const req = httpMock.expectOne(
-      r => r.url.startsWith('http://localhost:8080/api/v1/prestamos/usuario/7')
+      r => r.url.startsWith('https://sgb-backend-b058.onrender.com/api/v1/prestamos/usuario/7')
     );
     req.flush('error', { status: 500, statusText: 'Server Error' });
 
