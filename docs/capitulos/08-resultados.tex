@@ -122,7 +122,7 @@ la proporción simple sobre 6 controles, reportada abajo.
 Control & Estado real & Evidencia \\
 \midrule
 A01 -- Control de acceso roto & Hallazgo real encontrado y corregido (rol admin en libros) & \texttt{2026-07-30-owasp-a01-\allowbreak control-acceso-roto.md} + \texttt{-fix-rol-admin-\allowbreak libros.md} \\
-A02 -- Fallos criptográficos / TLS & \textbf{Parcial}: decisión de arquitectura y preparación del backend \textbf{CERRADAS} (ADR-015, \texttt{forward-headers-strategy}); TLS real activo end-to-end \textbf{GAP CONOCIDO, diferido a Entrega Final} & \texttt{2026-08-10-owasp-a02-\allowbreak fix-tls-\allowbreak transporte.md} \\
+A02 -- Fallos criptográficos / TLS & Decisión de arquitectura y preparación del backend \textbf{CERRADAS} (ADR-015, \texttt{forward-headers-strategy}). \textbf{Parcial / pendiente de verificación con despliegue real:} TLS end-to-end y header \texttt{Strict-Transport-Security} aún no verificados en producción. & \texttt{2026-08-10-owasp-a02-\allowbreak fix-tls-\allowbreak transporte.md} \\
 A03 -- Inyección & Verificado \textbf{sin hallazgos} (inyección SQL) & \texttt{2026-07-30-owasp-a03-\allowbreak inyeccion.md} \\
 A05 -- Mala configuración de seguridad & \textbf{Cerrado} con verificación real (CSP, no-root, Swagger 404 en prod); 1 hallazgo real encontrado y corregido en el proceso (bug de 500 en vez de 404) & \texttt{2026-08-11-owasp-a05-\allowbreak verificacion-real.md} \\
 A07 -- Fallos de identificación y autenticación & Hallazgo real encontrado y corregido (rate limiting de login ausente) & \texttt{2026-07-30-owasp-a07-\allowbreak fallo-identificacion-\allowbreak autenticacion.md} + \texttt{-fix-rate-\allowbreak limiting-login.md} \\
@@ -155,15 +155,20 @@ reales de arriba: de 6 controles auditados, 4 (66,7\,\%) presentaron un
 hallazgo real, y de esos 4, el 100\,\% recibió una corrección verificable
 dentro del mismo ciclo de desarrollo, re-confirmada después contra un
 flujo de autenticación que cambió (verificación de correo obligatoria).
-El control restante con estado no binario (A02) no se fuerza dentro de la
-misma categoría ``corregido'' ni ``pendiente sin avance'': su decisión de
-arquitectura y la preparación del backend están genuinamente cerradas y
-documentadas (ADR-015), pero el propio equipo declara explícitamente que
-la verificación del header \texttt{Strict-Transport-Security} real
-requiere un despliegue público con TLS activo que todavía no existe -- no
-se simula ni se asume ese resultado. La auditoría ZAP, un instrumento
-adicional exigido por la guía y distinto de la verificación manual
-control por control, sigue sin ejecutarse.
+
+Sobre A02 (parte ya cerrada): la decisión de arquitectura y la
+preparación del backend están documentadas (ADR-015,
+\texttt{forward-headers-strategy}) y no se fuerzan dentro de la categoría
+``corregido'' ni ``pendiente sin avance''.
+
+% --- SUSTITUIR la oración siguiente cuando exista despliegue TLS real ---
+Sobre A02 (parte pendiente): la verificación del header
+\texttt{Strict-Transport-Security} queda pendiente de verificación con
+despliegue real; no se simula ni se asume ese resultado.
+% --- fin marcador A02-HSTS ---
+
+La auditoría ZAP, un instrumento adicional exigido por la guía y distinto
+de la verificación manual control por control, sigue sin ejecutarse.
 
 \section{Bloque 3 -- Cobertura de pruebas automatizadas (JaCoCo)}
 \label{sec:res-cobertura}
@@ -241,51 +246,64 @@ Performance, Accessibility, Best Practices y SEO, perfil móvil con
 correcciones de SEO); narrativa completa en
 \texttt{docs/mediciones/lighthouse/REPORT.md}.
 
+% Tabla lista para agregar filas (mismo esquema de columnas) hasta completar
+% 3 móvil + 3 escritorio = 6 corridas exigidas por la guía.
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{lrrrr}
+\begin{tabular}{llrrrr}
 \toprule
-Corrida & Performance & Accessibility & Best Practices & SEO \\
+Perfil & Corrida & Performance & Accessibility & Best Practices & SEO \\
 \midrule
-Antes (\texttt{-0300}) & 95 & 95 & 100 & 82 \\
-Después (\texttt{-0330}) & \textbf{99} & \textbf{100} & \textbf{100} & \textbf{100} \\
+Móvil & \texttt{lhci-20260731-0300} & 95 & 95 & 100 & 82 \\
+Móvil & \texttt{lhci-20260731-0330} & \textbf{99} & \textbf{100} & \textbf{100} & \textbf{100} \\
+% --- AGREGAR aquí hasta 4 filas más (móvil/escritorio) sin cambiar columnas ---
 \midrule
-Umbral exigido & $\geq$80 & $\geq$90 & $\geq$90 & $\geq$90 \\
+\multicolumn{2}{l}{Umbral exigido} & $\geq$80 & $\geq$90 & $\geq$90 & $\geq$90 \\
 \bottomrule
 \end{tabular}
-\caption{Scores Lighthouse reales, ambas corridas existentes}
+\caption{Scores Lighthouse reales por corrida (filas existentes; ampliar
+  sin reconstruir la tabla)}
 \label{tab:res-lighthouse}
 \end{table}
 
-\textbf{Estadística descriptiva -- limitación declarada.} Solo existen
-\textbf{2 corridas totales} en todo el repositorio, ambas de perfil
-móvil (Slow~4G) -- \textbf{cero corridas de perfil escritorio}. La guía
-exige 3 corridas por perfil (móvil + escritorio, 6 en total); con $n=2$
-no se calcula media/desviación típica/IC~95\% de forma significativa (2
-puntos no estiman una dispersión confiable), así que este capítulo
-reporta ambos valores crudos en vez de una estadística agregada que
-sugeriría más robustez de la que hay. Este es trabajo en progreso
-asignado a Panama según el plan del equipo, no un hallazgo cerrado.
+\textbf{Estadística descriptiva (sobre las corridas ya medidas).}
+Este capítulo reporta los valores crudos de cada corrida existente en
+vez de una estadística agregada que sugeriría más robustez de la que
+hay con la muestra actual.
 
-\textbf{Interpretación.} Con los datos disponibles, los 4 umbrales se
-cumplen en la corrida más reciente (Performance~99, Accessibility~100,
-Best Practices~100, SEO~100), incluyendo SEO, que no cumplía en la
-primera corrida (82) y se corrigió agregando una meta descripción y un
-\texttt{robots.txt} real. Una nota de honestidad ya documentada en
-\texttt{REPORT.md} y que este capítulo preserva: Accessibility subió de
-95 a 100 y Performance de 95 a 99 \textbf{sin que se tocara ningún
-estilo, color ni optimización de rendimiento} entre ambas corridas --
-la explicación más probable es variabilidad normal entre corridas de
-Lighthouse (el \emph{audit} \texttt{color-contrast} depende del render
-exacto en el momento de la captura), no un efecto causal de las
-correcciones de SEO. Atribuir esa mejora a los cambios habría sido una
-lectura causal no respaldada por los datos; se documenta como coincidencia
-observada, no como resultado. La limitación real de este bloque no es el
-resultado en sí -- es que 2 corridas de un solo perfil no bastan para
-sostener con la robustez exigida por la guía ninguna de las dos lecturas
-(ni ``se cumplen los umbrales'' de forma robusta, ni la hipótesis de
-variabilidad run-to-run).
+% --- SUSTITUIR el párrafo siguiente cuando existan las 6 corridas ---
+\textbf{Cobertura de corridas -- estado pendiente.} Solo existen
+\textbf{2 corridas totales} en todo el repositorio, ambas de perfil
+móvil (Slow~4G); \textbf{cero corridas de perfil escritorio}. La guía
+exige 3 corridas por perfil (móvil + escritorio, 6 en total). Con
+$n=2$ no se calcula media/desviación típica/IC~95\% de forma
+significativa. Trabajo en progreso asignado a Panama; no es un
+hallazgo cerrado.
+% --- fin marcador Lighthouse-cobertura ---
+
+\textbf{Interpretación (solo sobre las 2 corridas existentes).}
+Con los datos disponibles, los 4 umbrales se cumplen en la corrida más
+reciente (Performance~99, Accessibility~100, Best Practices~100,
+SEO~100), incluyendo SEO, que no cumplía en la primera corrida (82) y
+se corrigió agregando una meta descripción y un \texttt{robots.txt}
+real. Una nota de honestidad ya documentada en \texttt{REPORT.md} y
+que este capítulo preserva: Accessibility subió de 95 a 100 y
+Performance de 95 a 99 \textbf{sin que se tocara ningún estilo, color
+ni optimización de rendimiento} entre ambas corridas -- la explicación
+más probable es variabilidad normal entre corridas de Lighthouse (el
+\emph{audit} \texttt{color-contrast} depende del render exacto en el
+momento de la captura), no un efecto causal de las correcciones de SEO.
+Atribuir esa mejora a los cambios habría sido una lectura causal no
+respaldada por los datos; se documenta como coincidencia observada, no
+como resultado.
+
+% --- SUSTITUIR cuando n>=6 permita sostener lecturas robustas ---
+La limitación de alcance actual es de muestra (2 corridas, un solo
+perfil), no del formato de reporte: no basta todavía para sostener con
+la robustez exigida por la guía ni ``se cumplen los umbrales'' de forma
+robusta ni la hipótesis de variabilidad run-to-run.
+% --- fin marcador Lighthouse-limitacion ---
 
 \section{Bloque 5 -- Usabilidad (SUS)}
 \label{sec:res-usabilidad}
@@ -297,23 +315,32 @@ Usability Scale (SUS)?
 \textbf{Métrica.} Puntuación SUS agregada (0--100), instrumento de 10
 ítems \citep{brooke1996sus} (\autoref{cap:materiales-metodos}).
 
+% --- BLOQUE SUSTITUIBLE: datos + estadística SUS (hoy N=0) ---
 \textbf{Datos crudos.} \textbf{Ninguno todavía.} \texttt{N=0} de los
-$N\geq15$ participantes que exige la guía.
+$N\geq15$ participantes que exige la guía
+(\texttt{docs/mediciones/sus/respuestas.csv} aún no existe; ver
+\texttt{scripts/sus-analysis.ipynb}).
 
 \textbf{Estadística descriptiva.} No aplica -- no hay datos que agregar.
+% Cuando existan respuestas reales, reemplazar este párrafo por una
+% tabla tabular/booktabs (p.~ej.\ N, media, mediana, $\sigma$, IC~95\%
+% del score SUS 0--100) sin abrir un entorno table vacío de antemano.
+% --- fin marcador SUS-datos ---
 
-\textbf{Estado real.} \textbf{Pendiente de ejecución.} Declarado en
-\texttt{OBS-08} de \texttt{docs/observaciones/OBSERVACIONES.md}, asignado
-a Panama, bloqueado hasta que el despliegue público esté funcionando
-(trabajo en curso por Cajas). El protocolo completo -- plantilla de
-consentimiento informado, técnica de muestreo por conveniencia,
-anonimización por código de participante -- ya está definido y versionado
+\textbf{Protocolo (permanente, ya versionado).}
+Plantilla de consentimiento informado, muestreo por conveniencia y
+anonimización por código de participante
 (\texttt{docs/etica/consentimientos/plantilla.md},
-\autoref{cap:materiales-metodos}), pero no ejecutado. Este capítulo no
-reporta ninguna cifra de SUS porque no existe ninguna que reportar --
-inventar un rango plausible o una ``estimación'' aquí sería exactamente
-el tipo de dato fabricado que el resto de este documento se niega a
-producir.
+\autoref{cap:materiales-metodos}).
+
+% --- SUSTITUIR el estado siguiente tras la primera corrida real ---
+\textbf{Estado real.} \textbf{Pendiente de ejecución ($N=0$).}
+Declarado en \texttt{OBS-08} de
+\texttt{docs/observaciones/OBSERVACIONES.md}, asignado a Panama,
+bloqueado hasta que el despliegue público esté funcionando (trabajo en
+curso por Cajas). Este capítulo no reporta ninguna cifra de SUS porque
+no existe ninguna que reportar.
+% --- fin marcador SUS-estado ---
 
 \section{Resumen de bloques}
 \label{sec:res-resumen}
