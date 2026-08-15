@@ -15,12 +15,12 @@ Video demo del sistema (2-3 min): [ver en Google Drive](https://drive.google.com
 
 > **Requisito A.4.1** — acceso público y cuenta demo para el tribunal evaluador.
 
-El despliegue público objetivo usa **Render** (aplicación), **Neon** (PostgreSQL) y **Upstash** (Redis). La URL definitiva **aún no está publicada** en este README: queda bloqueada hasta que la migración Flyway `V3` en producción sea exitosa (responsabilidad de Marlon).
+El despliegue público usa **Render** (aplicación), **Neon** (PostgreSQL) y **Upstash** (Redis). El sistema está desplegado y accesible en producción.
 
-**URL pública (placeholder estricto — no inventar un dominio):**
+**URL pública:**
 
 ```text
-<URL_DESPLIEGUE_PUBLICO_PENDIENTE>
+https://biblora-sgb.onrender.com
 ```
 
 ### Credenciales demo (tribunal evaluador)
