@@ -8,7 +8,7 @@ compleja va en un procedimiento almacenado o función SQL.
 
 ## Nota de diseño: FUNCTION en todos los casos, no PROCEDURE nativo
 
-Los 7 objetos están implementados como `CREATE OR REPLACE FUNCTION` (no
+Los 9 objetos están implementados como `CREATE OR REPLACE FUNCTION` (no
 `CREATE PROCEDURE`), incluidos los que tienen efectos secundarios (INSERT/
 UPDATE). Razón: Spring Data JPA (`@Procedure`, `@NamedStoredProcedureQuery`)
 y el driver JDBC de PostgreSQL tienen soporte más amplio y predecible para
@@ -20,59 +20,77 @@ atomicidad requerida por la guía se cumple igual: cada función corre en la
 transacción implícita de su propia invocación — cualquier `RAISE EXCEPTION`
 revierte todos los cambios hechos dentro de esa llamada.
 
-## Nota de diseño: por qué 5 usan `@Procedure`/`@NamedStoredProcedureQuery` y 2 usan `@Query(nativeQuery = true)`
+## Nota de diseño: los 9 objetos se invocan vía `@Query(nativeQuery = true)`, no `@Procedure`
 
-Las 5 funciones con efectos secundarios (`sp_crear_prestamo`,
+El plan original (ADR-013, requisito A.2.1 de la guía) era invocar las 5
+funciones con efectos secundarios (`sp_crear_prestamo`,
 `sp_registrar_devolucion`, `sp_pagar_multa`, `sp_anular_multa`,
-`sp_expirar_reservaciones_vencidas`) se invocan desde Spring Data vía
-`@Procedure` (directo o referenciando un `@NamedStoredProcedureQuery`),
-siguiendo el contrato de stored procedures de Jakarta Persistence 2.1 que
-exige la guía.
+`sp_expirar_reservaciones_vencidas`) vía `@Procedure` (directo o
+referenciando un `@NamedStoredProcedureQuery`), siguiendo el contrato de
+stored procedures de Jakarta Persistence 2.1, y reservar
+`@Query(nativeQuery = true)` únicamente para las funciones de solo lectura
+que retornan `TABLE` (varias filas — `fn_listar_prestamos_activos_por_usuario`,
+`fn_reporte_libros_mas_prestados`, `fn_reporte_indice_morosidad`,
+`fn_reporte_uso_por_periodo`).
 
-Las 2 funciones de solo lectura que retornan `TABLE` (varias filas —
-`fn_listar_prestamos_activos_por_usuario`, `fn_reporte_libros_mas_prestados`)
-usan en cambio `@Query(nativeQuery = true)`. Motivo técnico: la API de
-stored procedures de JPA 2.1 está construida sobre JDBC `CallableStatement`,
-que en PostgreSQL solo expone resultados vía un valor escalar/OUT o un
-parámetro `REF_CURSOR` — no vía `RETURNS TABLE`/`SETOF` invocado como
-función. Forzar estas dos a devolver un `refcursor` para encajar en
-`@NamedStoredProcedureQuery` tendría dos costos reales sin ninguna ganancia:
-(1) dejarían de poder invocarse directo como `SELECT * FROM fn_...(...)`
-desde `psql`/Postman/otras herramientas de depuración, y (2) complicaría la
-definición SQL de la función solo para satisfacer una anotación. `@Query`
-nativa con parámetros nombrados (`:p_usuario_id`, `:p_limite`, ...) es el
-patrón estándar documentado de Spring Data para funciones PostgreSQL que
-retornan tabla, y **cumple igual la regla A.2.3** (invocación parametrizada
-nombrada, sin `EXECUTE`/SQL dinámico, sin concatenación de entrada de
-usuario en la sentencia): los parámetros se bindean por nombre exactamente
-igual que en un `@Procedure`, la única diferencia es el mecanismo JDBC
-usado por Hibernate para transportar la llamada. No es una inconsistencia
-del diseño: es la solución correcta para el subconjunto de casos donde el
-contrato de JPA 2.1 no tiene forma de representar un resultado tabular de
-PostgreSQL.
+Ese plan se abandonó en la práctica para **todos** los objetos, no solo los
+de parámetros OUT. Al verificar en runtime (primera ejecución real contra
+Hibernate/pgjdbc, ver `docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md`)
+cada caso que se intentó con `@Procedure`/`@NamedStoredProcedureQuery` falló
+con el mismo error de sintaxis "`=>`" de PostgreSQL: Hibernate genera la
+llamada dentro del escape JDBC `{call ...}` usando parámetros nombrados al
+estilo `nombre => valor`, que el driver `pgjdbc` no soporta ahí (bug
+conocido de Hibernate 6.2+/7.x sin fix oficial, ver
+`spring-projects/spring-data-jpa#3393`). El fallo afectó tanto a las
+funciones multi-OUT (`sp_registrar_devolucion`, `sp_pagar_multa`,
+`sp_anular_multa`) como a la de retorno escalar (`sp_crear_prestamo`) y a la
+de retorno `INTEGER` (`sp_expirar_reservaciones_vencidas`, que además
+Postgres rechaza como `call ...` porque el objeto es `FUNCTION`, no
+`PROCEDURE` nativo).
 
-### Addendum — confirmación explícita (Postgres `RETURNS TABLE` vs JPA 2.1)
+**Estado actual (verificado en código):** los 9 objetos se invocan de forma
+uniforme vía `@Query(nativeQuery = true)` con parámetros nombrados `@Param`
+(p. ej. `SELECT * FROM sp_registrar_devolucion(:p_prestamo_id)`). La
+decisión quedó registrada como addendum en
+`docs/adr/adr-013-acceso-datos-orm-sp.md`.
+
+Esto **no debilita el cumplimiento de la regla A.2.3** (invocación
+parametrizada nombrada, sin `EXECUTE`/SQL dinámico, sin concatenación de
+entrada de usuario): los parámetros se bindean por nombre (`@Param`) y se
+transportan como parámetros vinculados de `PreparedStatement`, exactamente
+igual que en un `@Procedure` — la única diferencia es el mecanismo JDBC que
+usa Hibernate para transportar la llamada. Las funciones `RETURNS TABLE` de
+varias filas, además, no tienen forma estándar de representarse en la API de
+stored procedures de JPA 2.1 (ver addendum abajo), así que `@Query` nativa
+es el patrón documentado de Spring Data para ese subconjunto.
+
+### Addendum — confirmación explícita (Postgres `RETURNS TABLE` vs JPA 2.1, y alcance de la migración)
 
 Nota adicional a la sección anterior, para que quede como respuesta directa
-si en la sustentación preguntan por qué no las 7 funciones usan el mismo
-mecanismo: **JPA 2.1 no tiene una forma estándar de exponer un
-`RETURNS TABLE`/`SETOF` de PostgreSQL** (múltiples filas) a través de
-`@Procedure`/`@NamedStoredProcedureQuery`. La única vía que contempla la
+si en la sustentación preguntan por la mezcla histórica de mecanismos:
+**JPA 2.1 no tiene una forma estándar de exponer un `RETURNS TABLE`/`SETOF`
+de PostgreSQL** (múltiples filas) a través de
+`@Procedure`/`@NamedStoredProcedureQuery` — la única vía que contempla la
 especificación para obtener un resultado tabular de un procedimiento es un
-parámetro `REF_CURSOR`, lo que obligaría a reescribir
-`fn_listar_prestamos_activos_por_usuario` y `fn_reporte_libros_mas_prestados`
-para que abran y devuelvan un cursor en vez de usar `RETURNS TABLE` — y con
-eso perderían la posibilidad de invocarse directo como
+parámetro `REF_CURSOR`, lo que obligaría a reescribir las 4 funciones de
+reporte/listado tabular para que abran y devuelvan un cursor en vez de usar
+`RETURNS TABLE`, perdiendo la posibilidad de invocarse directo como
 `SELECT * FROM fn_...(...)` desde `psql`, Postman u otra herramienta externa
-de depuración/inspección. Por eso esas dos usan `@Query(nativeQuery = true)`
-desde Spring Data en lugar de `@Procedure`/`@NamedStoredProcedureQuery`.
+de depuración/inspección. Por eso esas 4 siempre usaron
+`@Query(nativeQuery = true)` desde Spring Data.
+
+Hoy **las 9 funciones usan el mismo mecanismo** (`@Query` nativa con
+parámetros nombrados): las 5 con efectos secundarios se unieron a ese patrón
+cuando la verificación en runtime confirmó el fallo de
+`@Procedure`/`@NamedStoredProcedureQuery` (documentado en
+`docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md`).
 Ambos mecanismos (`@Procedure` y `@Query` nativo con parámetros nombrados)
 cumplen igual la prohibición de SQL dinámico / concatenación de entrada de
 usuario de la regla A.2.3: en ningún caso hay `EXECUTE`, `sp_executesql`, ni
-construcción de la sentencia por concatenación de strings — la única
-diferencia es el mecanismo JDBC que usa Hibernate para transportar la
-llamada (`CallableStatement` vs. `PreparedStatement` con parámetros
-nombrados `:p_...`).
+construcción de la sentencia por concatenación de strings — los parámetros
+viajan siempre bindeados por nombre; la única diferencia con el plan
+original es el mecanismo JDBC de transporte (`CallableStatement` vs.
+`PreparedStatement` con parámetros nombrados `:p_...`).
 
 ## Convención de SQLSTATE para mapeo a HTTP en el backend
 
@@ -166,9 +184,31 @@ mensaje:
 | Tablas afectadas | Solo lectura: `prestamos`, `libros` |
 | Justificación A.2 | JOIN + agregación (`GROUP BY`/`COUNT`/`ORDER BY`/`LIMIT`) — el ejemplo canónico de "agregación" que la guía reserva para SP/función, imposible de expresar como método derivado de Spring Data. |
 
+### 8. `fn_reporte_indice_morosidad`
+
+| Campo | Detalle |
+|-------|---------|
+| Tipo | Función (SQL puro, `STABLE`, retorna `TABLE`) |
+| Propósito | Reporte gerencial de morosidad: usuarios con multas pendientes, monto total adeudado y días de atraso promedio |
+| Parámetros | `p_limite INTEGER DEFAULT 10` |
+| Retorno | `TABLE(usuario_id, nombre, apellido, correo, monto_total_adeudado, cantidad_multas_pendientes, dias_atraso_promedio)` |
+| Tablas afectadas | Solo lectura: `multas`, `estados_multa`, `prestamos`, `usuarios` |
+| Justificación A.2 | JOIN de 4 tablas + agregación (`SUM`/`COUNT`/`AVG` con `GREATEST` para el atraso, `GROUP BY`/`ORDER BY`/`LIMIT`) — el caso "agregación" que la guía reserva para SP/función, imposible de expresar como método derivado de Spring Data. |
+
+### 9. `fn_reporte_uso_por_periodo`
+
+| Campo | Detalle |
+|-------|---------|
+| Tipo | Función (SQL puro, `STABLE`, retorna `TABLE`) |
+| Propósito | Reporte gerencial de uso: préstamos y devoluciones agrupados por día/semana/mes para el dashboard |
+| Parámetros | `p_granularidad TEXT DEFAULT 'dia'`, `p_desde TIMESTAMPTZ DEFAULT NULL`, `p_hasta TIMESTAMPTZ DEFAULT NULL` |
+| Retorno | `TABLE(periodo, total_prestamos, total_devoluciones)` |
+| Tablas afectadas | Solo lectura: `prestamos` |
+| Justificación A.2 | Agregación por período (`date_trunc` en dos CTEs combinadas con `FULL OUTER JOIN`) — imposible de expresar como método derivado de Spring Data. |
+
 ## Validación
 
-Los 7 objetos fueron aplicados y probados manualmente contra una instancia
+Los 9 objetos fueron aplicados y probados manualmente contra una instancia
 real de PostgreSQL 16 (contenedor `sgb_postgres`), cubriendo: creación de
 préstamo exitosa y sus 3 validaciones de error (usuario inexistente, libro
 inexistente, sin stock/usuario bloqueado), devolución a tiempo y devolución
@@ -180,9 +220,14 @@ activos, reporte de libros más prestados, y expiración masiva de
 reservaciones vencidas. Todos los casos se comportaron según lo
 especificado.
 
+Las 3 funciones de reporte gerencial (`fn_reporte_libros_mas_prestados`,
+`fn_reporte_indice_morosidad`, `fn_reporte_uso_por_periodo`) quedan además
+cubiertas por pruebas unitarias en `PrestamoServiceTest`
+(`reporteLibrosMasPrestados_*`, `reporteMorosidad_*`, `reporteUsoPorPeriodo_*`).
+
 Adicionalmente se validó el flujo completo de inicialización automática
 descrito abajo (`scripts/build-init-sql.sh` + `make up`) contra un volumen
-Postgres vacío: las 26 tablas, las 8 funciones (7 procs + el trigger de
+Postgres vacío: las 26 tablas, las 10 funciones (9 procs + el trigger de
 `actualizado_en`) y todos los `INSERT` de `db/seed.sql` se aplican en una
 sola pasada, sin errores, incluyendo un `sp_crear_prestamo` de humo
 inmediatamente después.
@@ -191,7 +236,7 @@ inmediatamente después.
 
 `db/procs/*.sql` vive en un subdirectorio de `db/`, y PostgreSQL **no**
 recorre subdirectorios de `docker-entrypoint-initdb.d/` — si se montara
-`db/` completo, los 7 archivos de `procs/` nunca se ejecutarían en un
+`db/` completo, los 9 archivos de `procs/` nunca se ejecutarían en un
 `make up` desde cero (bug real detectado y cerrado, no solo señalado).
 
 Solución adoptada: `scripts/build-init-sql.sh` concatena
@@ -206,7 +251,7 @@ individual de `db/procs/` y `db/seed.sql`; `db/init/01-consolidado.sql` es
 un artefacto de build, nunca se edita a mano.
 
 Validado contra un volumen Postgres vacío (`docker compose down -v` +
-`make up`): las 26 tablas, el seed y los 7 procedimientos quedan
+`make up`): las 26 tablas, el seed y los 9 procedimientos quedan
 disponibles en una sola pasada de inicialización (evidencia en la sección
 "Validación" arriba y en el resumen de la conversación).
 
