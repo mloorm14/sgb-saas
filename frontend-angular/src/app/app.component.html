@@ -13,7 +13,7 @@
           @for (enlace of enlacesLector; track enlace.ruta) {
             <a [routerLink]="enlace.ruta"
                routerLinkActive="bg-primary-fixed text-primary"
-               routerLinkActiveOptions="{ exact: true }"
+               [routerLinkActiveOptions]="{ exact: true }"
                [class.opacity-50]="enlace.futuro"
                [title]="enlace.futuro ? 'Disponible en una próxima versión' : enlace.etiqueta"
                class="flex items-center gap-1.5 px-sm py-2 rounded-lg font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors whitespace-nowrap cursor-pointer">
@@ -27,7 +27,7 @@
           @for (enlace of enlacesOperacion; track enlace.ruta) {
             <a [routerLink]="enlace.ruta"
                routerLinkActive="bg-primary-fixed text-primary"
-               routerLinkActiveOptions="{ exact: true }"
+               [routerLinkActiveOptions]="{ exact: true }"
                [class.opacity-50]="enlace.futuro"
                [title]="enlace.futuro ? 'Disponible en una próxima versión' : enlace.etiqueta"
                class="flex items-center gap-1.5 px-sm py-2 rounded-lg font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors whitespace-nowrap cursor-pointer">
@@ -41,7 +41,7 @@
           @for (enlace of enlacesAdmin; track enlace.ruta) {
             <a [routerLink]="enlace.ruta"
                routerLinkActive="bg-primary-fixed text-primary"
-               routerLinkActiveOptions="{ exact: true }"
+               [routerLinkActiveOptions]="{ exact: true }"
                [class.opacity-50]="enlace.futuro"
                [title]="enlace.futuro ? 'Disponible en una próxima versión' : enlace.etiqueta"
                class="flex items-center gap-1.5 px-sm py-2 rounded-lg font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors whitespace-nowrap cursor-pointer">
