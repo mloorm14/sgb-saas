@@ -1,4 +1,4 @@
-.PHONY: up down test bench audit clean
+.PHONY: up down test test-backend test-frontend bench audit clean all check-pdflatex
 
 # make up: regenera db/init/01-consolidado.sql (schema + procs + seed, ver
 # scripts/build-init-sql.sh) y levanta todos los servicios (Postgres, Redis,
@@ -85,3 +85,51 @@ clean:
 	rm -rf frontend-angular/dist
 	rm -rf frontend-angular/node_modules/.cache
 	rm -rf db/init
+
+# check-pdflatex: verificacion temprana de que pdflatex/bibtex existen en
+# este entorno, antes de gastar tiempo en 'up'/'test'/'bench'/'audit' (que
+# pueden tardar varios minutos) solo para fallar al final compilando el
+# PDF. Falla con un mensaje claro en vez del error generico "command not
+# found" que daria Make si se llamara a pdflatex directamente sin este
+# chequeo. No instala nada -- instalar una distribucion TeX (MiKTeX, TeX
+# Live, etc.) es una decision del entorno de quien corre esto, fuera del
+# alcance de este Makefile.
+check-pdflatex:
+	@command -v pdflatex >/dev/null 2>&1 || { \
+		echo "ERROR: pdflatex no esta instalado en este entorno."; \
+		echo "'make all' necesita compilar docs/informe-final.pdf (requisito D.1) e instala una distribucion TeX (ej. MiKTeX en Windows, TeX Live en Linux/Mac)."; \
+		exit 1; \
+	}
+	@command -v bibtex >/dev/null 2>&1 || { \
+		echo "ERROR: bibtex no esta instalado en este entorno (viene con la misma distribucion TeX que pdflatex)."; \
+		exit 1; \
+	}
+
+# make all: Bloque D.1 / criterio R1 -- secuencia completa desde una
+# clonacion limpia hasta el PDF final compilado. Reusa los targets ya
+# existentes como prerequisitos de Make (cada uno corre una sola vez, en
+# el orden listado) en vez de duplicar su logica:
+#   check-pdflatex -- falla temprano si faltan las herramientas de LaTeX,
+#                      antes de gastar tiempo en el resto.
+#   up             -- regenera db/init/ y levanta Postgres/Redis/backend/
+#                      frontend con las semillas de db/seed.sql aplicadas.
+#   test           -- test-backend (Maven: JUnit + JaCoCo + spotbugs) y
+#                      test-frontend (Karma), ver targets de arriba.
+#   bench          -- corrida de carga real con k6 contra el stack de
+#                      'up', con resumen p50/p95 impreso.
+#   audit          -- re-verificacion automatizada de los 4 controles
+#                      OWASP (scripts/owasp-audit.sh), genera su propio
+#                      .md en docs/mediciones/sec/.
+# Si cualquiera de esos prerequisitos falla, Make se detiene ahi mismo
+# (comportamiento estandar de dependencias de Make) y 'all' nunca llega a
+# intentar compilar el PDF -- no hace falta logica adicional para eso.
+# Despues de los prerequisitos, compila docs/informe-final.pdf con el
+# mismo procedimiento de 3 pasadas de pdflatex + bibtex ya usado en el
+# resto de este proyecto (ver docs/informe-final.tex).
+all: check-pdflatex up test bench audit
+	@echo "Compilando docs/informe-final.pdf..."
+	cd docs && pdflatex -interaction=nonstopmode informe-final.tex > /tmp/make-all-pdflatex-1.log 2>&1 || { echo "ERROR: fallo la primera pasada de pdflatex -- ver /tmp/make-all-pdflatex-1.log"; exit 1; }
+	cd docs && bibtex informe-final > /tmp/make-all-bibtex.log 2>&1 || { echo "ERROR: fallo bibtex -- ver /tmp/make-all-bibtex.log"; exit 1; }
+	cd docs && pdflatex -interaction=nonstopmode informe-final.tex > /tmp/make-all-pdflatex-2.log 2>&1 || { echo "ERROR: fallo la segunda pasada de pdflatex -- ver /tmp/make-all-pdflatex-2.log"; exit 1; }
+	cd docs && pdflatex -interaction=nonstopmode informe-final.tex > /tmp/make-all-pdflatex-3.log 2>&1 || { echo "ERROR: fallo la tercera pasada de pdflatex -- ver /tmp/make-all-pdflatex-3.log"; exit 1; }
+	@echo "make all: completo -- stack levantado, tests y benchmark corridos, auditoria OWASP re-verificada, docs/informe-final.pdf compilado."
