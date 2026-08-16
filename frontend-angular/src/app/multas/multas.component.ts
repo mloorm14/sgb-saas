@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../core/services/auth.service';
+import { MultaService } from '../core/services/multa.service';
+import { Multa } from '../core/models/multa.model';
 
 @Component({
     selector: 'app-multas',
@@ -15,7 +16,7 @@ export class MultasComponent implements OnInit {
   puedeAnular: boolean = false;    // GERENTE/ADMIN: anular
 
   usuarioIdBusqueda: number | null = null;
-  multas: any[] = [];
+  multas: Multa[] = [];
   totalPages: number = 0;
   currentPage: number = 0;
   pageSize: number = 10;
@@ -27,10 +28,8 @@ export class MultasComponent implements OnInit {
   multaSeleccionadaId: number | null = null;
   motivoAnulacion: string = '';
 
-  private apiUrl = 'https://sgb-backend-b058.onrender.com/api/v1';
-
   constructor(
-    private http: HttpClient,
+    private multaService: MultaService,
     private authService: AuthService
   ) {}
 
@@ -57,9 +56,11 @@ export class MultasComponent implements OnInit {
 
   private cargarPagina(): void {
     this.cargando = true;
-    this.http.get<any>(
-      `${this.apiUrl}/multas/usuario/${this.usuarioIdBusqueda}?page=${this.currentPage}&size=${this.pageSize}&sort=id,desc`
-    ).subscribe({
+    this.multaService.listarPorUsuario(this.usuarioIdBusqueda!, {
+      page: this.currentPage,
+      size: this.pageSize,
+      sort: 'id,desc'
+    }).subscribe({
       next: (data) => {
         this.multas = data.content;
         this.totalPages = data.totalPages;
@@ -88,7 +89,7 @@ export class MultasComponent implements OnInit {
 
   pagarMulta(multaId: number): void {
     if (!confirm('¿Confirmar el pago de esta multa?')) return;
-    this.http.post(`${this.apiUrl}/multas/${multaId}/pago`, {}).subscribe({
+    this.multaService.pagar(multaId).subscribe({
       next: () => { this.cargarPagina(); },
       error: () => { this.errorMsg = 'Error al procesar el pago'; }
     });
@@ -108,7 +109,7 @@ export class MultasComponent implements OnInit {
 
   confirmarAnulacion(): void {
     if (!this.motivoAnulacion.trim() || !this.multaSeleccionadaId) return;
-    this.http.post(`${this.apiUrl}/multas/${this.multaSeleccionadaId}/anulacion`, { motivo: this.motivoAnulacion }).subscribe({
+    this.multaService.anular(this.multaSeleccionadaId, this.motivoAnulacion).subscribe({
       next: () => {
         this.cerrarModalAnular();
         this.cargarPagina();
