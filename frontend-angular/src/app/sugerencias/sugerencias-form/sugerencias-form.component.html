@@ -1,0 +1,62 @@
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg flex justify-center">
+  <div class="w-full max-w-xl">
+    <div class="mb-lg">
+      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Sugerir adquisición</h1>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">Si un libro no está en el catálogo, pedile a la biblioteca que lo consiga</p>
+    </div>
+
+    @if (errorMsg) {
+      <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="enviar()" class="rounded-xl glass-panel p-xl space-y-md">
+      <div class="space-y-xs">
+        <label class="font-label-sm text-label-sm text-on-surface">Título <span class="text-error">*</span></label>
+        <div class="rounded border border-outline-variant bg-surface">
+          <input type="text" formControlName="titulo" maxlength="255" placeholder="Ej: Designing Data-Intensive Applications"
+            class="w-full bg-transparent border-none focus:ring-0 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+        </div>
+        <p class="font-label-sm text-[11px] text-on-surface-variant">Máximo 255 caracteres</p>
+        @if (campoInvalido('titulo')) {
+          <p class="font-label-sm text-[11px] text-error">El título es obligatorio</p>
+        }
+      </div>
+
+      <div class="space-y-xs">
+        <label class="font-label-sm text-label-sm text-on-surface">Autor</label>
+        <div class="rounded border border-outline-variant bg-surface">
+          <input type="text" formControlName="autor" maxlength="150" placeholder="Ej: Martin Kleppmann"
+            class="w-full bg-transparent border-none focus:ring-0 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+        </div>
+      </div>
+
+      <div class="space-y-xs">
+        <label class="font-label-sm text-label-sm text-on-surface">ISBN</label>
+        <div class="rounded border border-outline-variant bg-surface">
+          <input type="text" formControlName="isbn" maxlength="13" placeholder="978-1449373320"
+            class="w-full bg-transparent border-none focus:ring-0 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+        </div>
+        <p class="font-label-sm text-[11px] text-on-surface-variant">Formato numérico, 10 a 17 caracteres con guiones opcionales</p>
+        @if (campoInvalido('isbn')) {
+          <p class="font-label-sm text-[11px] text-error">ISBN inválido (solo números y guiones, 10 a 17 caracteres)</p>
+        }
+      </div>
+
+      <div class="space-y-xs">
+        <label class="font-label-sm text-label-sm text-on-surface">Justificación</label>
+        <div class="rounded border border-outline-variant bg-surface">
+          <textarea formControlName="justificacion" rows="3" maxlength="1000" placeholder="¿Por qué la biblioteca debería adquirir este título?"
+            class="w-full bg-transparent border-none focus:ring-0 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline resize-none"></textarea>
+        </div>
+        <p class="font-label-sm text-[11px] text-on-surface-variant text-right">{{ form.get('justificacion')?.value?.length ?? 0 }} / 1000</p>
+      </div>
+
+      <button type="submit" [disabled]="form.invalid || cargando"
+        class="w-full h-11 bg-primary text-on-primary font-label-md text-label-md rounded flex items-center justify-center gap-sm hover:bg-on-primary-fixed-variant transition-colors disabled:opacity-50 cursor-pointer">
+        {{ cargando ? 'Enviando…' : 'Enviar sugerencia' }} <span class="material-symbols-outlined text-[20px]">send</span>
+      </button>
+
+      <a routerLink="/sugerencias" class="block text-center font-body-sm text-body-sm text-primary hover:underline">Ver mis solicitudes enviadas</a>
+    </form>
+  </div>
+</main>
