@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../core/services/auth.service';
+import { PrestamoService } from '../core/services/prestamo.service';
+import { Prestamo } from '../core/models/prestamo.model';
 
 @Component({
     selector: 'app-prestamos-lector',
@@ -9,17 +10,15 @@ import { AuthService } from '../core/services/auth.service';
     templateUrl: './prestamos-lector.component.html'
 })
 export class PrestamosLectorComponent implements OnInit {
-  prestamos: any[] = [];
+  prestamos: Prestamo[] = [];
   totalPages: number = 0;
   currentPage: number = 0;
   pageSize: number = 10;
   cargando: boolean = false;
   errorMsg: string = '';
 
-  private apiUrl = 'https://sgb-backend-b058.onrender.com/api/v1';
-
   constructor(
-    private http: HttpClient,
+    private prestamoService: PrestamoService,
     private authService: AuthService
   ) {}
 
@@ -34,14 +33,12 @@ export class PrestamosLectorComponent implements OnInit {
       return;
     }
     this.cargando = true;
-    this.http.get<any>(
-      `${this.apiUrl}/prestamos/usuario/${miId}?page=${this.currentPage}&size=${this.pageSize}&sort=id,desc`
-    ).subscribe({
+    this.prestamoService.listarPorUsuario(miId, {
+      page: this.currentPage,
+      size: this.pageSize,
+      sort: 'id,desc'
+    }).subscribe({
       next: (data) => {
-        // Nota: nombres de campo (usuarioId, libroId, estadoPrestamoId...)
-        // siguen la entidad Prestamo.java tal cual hoy. Ajustar aqui si
-        // PrestamoResponseDTO expone nombres distintos cuando Cajas
-        // termine el backend.
         this.prestamos = data.content;
         this.totalPages = data.totalPages;
         this.cargando = false;
