@@ -147,13 +147,29 @@ class JwtServiceTest {
         assertFalse(jwtService.validateToken(tokenExpirado));
     }
 
+    // Test originalmente flaky (verificado: falla ~1/5 corridas): alteraba el
+    // ÚLTIMO carácter del token, que es el carácter de padding del tercer
+    // segmento (una firma HMAC-SHA256 de 32 bytes ocupa 43 chars base64url
+    // y el char 43 solo aporta 4 bits de firma + 2 bits de relleno sin
+    // datos, dropeados al decodificar). Según qué nibble quedara de
+    // relleno, el token alterado decodificaba a LOS MISMOS bytes de firma
+    // y validateToken() devolvía true -- "expected: false but was: true".
+    // Un carácter del MEDIO de la firma siempre altera 6 bits con datos
+    // reales (no hay padding en chars intermedios), así que el fallo del
+    // chequeo de firma es determinista.
     @Test
     void validateToken_conFirmaAlterada_devuelveFalse() {
         String token = jwtService.generateToken(usuarioConRoles("LECTOR"));
-        // Altera el ultimo caracter de la firma (tercer segmento del JWT)
-        // para simular un token manipulado sin volver a firmarlo.
-        String tokenAlterado = token.substring(0, token.length() - 1)
-                + (token.charAt(token.length() - 1) == 'a' ? 'b' : 'a');
+        // Altera un carácter central del tercer segmento (firma) para
+        // simular un token manipulado sin volver a firmarlo.
+        String[] partes = token.split("\\.");
+        String firma = partes[2];
+        int mitad = firma.length() / 2;
+        char original = firma.charAt(mitad);
+        String firmaAlterada = firma.substring(0, mitad)
+                + (original == 'a' ? 'b' : 'a')
+                + firma.substring(mitad + 1);
+        String tokenAlterado = partes[0] + "." + partes[1] + "." + firmaAlterada;
 
         assertFalse(jwtService.validateToken(tokenAlterado));
     }
