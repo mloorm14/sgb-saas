@@ -110,4 +110,13 @@ export class AuthService {
     const misRoles = this.getRoles();
     return roles.some(r => misRoles.includes(r));
   }
+
+  // Reusa decodePayload(): sin token o sin claim exp => no esta expirado
+  // (el backend decidira); con exp pasado => la sesion caduco y el guard
+  // no debe esperar el 403 del backend para desloguear.
+  tokenExpirado(): boolean {
+    const payload = this.decodePayload();
+    if (!payload?.exp) return false;
+    return payload.exp * 1000 <= Date.now();
+  }
 }
