@@ -264,6 +264,63 @@ corrección puntual).
 - Frontend: <https://biblora-sgb.onrender.com>
 - Backend: <https://sgb-backend-b058.onrender.com>
 
+## 10. Navegador para los tests (Karma/Puppeteer)
+
+No es despliegue en Render, pero afecta directamente a si `make all`
+(D.1/R1) puede correr de punta a punta el día de la sustentación en una
+máquina que no se pudo probar de antemano -- se documenta acá junto al
+resto de "cosas que hacen fallar una máquina que no es la del equipo".
+
+`frontend-angular/karma.conf.js` resuelve `CHROME_BIN` (la variable que
+`karma-chrome-launcher` usa para arrancar `ChromeHeadless`) en este
+orden de prioridad:
+
+1. **Si ya está seteado en el entorno**, se respeta tal cual.
+2. **Un Chrome/Edge/Chromium ya instalado en el sistema** (rutas típicas
+   por sistema operativo + búsqueda en `PATH`). Cubre la gran mayoría de
+   máquinas reales.
+3. **Como último recurso**, el Chromium que instala `puppeteer`
+   (devDependency de `frontend-angular/package.json`).
+
+**Por qué no depender solo del punto 3.** Se confirmó un incidente real
+corriendo `npm ci` en un entorno con lista blanca de dominios: la
+descarga del Chromium de Puppeteer (contra `storage.googleapis.com`)
+devolvió `403 Forbidden`, y Puppeteer no trata eso como una falla
+recuperable -- el proceso de instalación termina con código de salida
+distinto de cero, lo que hace fallar **todo** `npm ci` (no solo los
+tests: bloquea también `ng build`). Cualquier red institucional
+(universidad, corporativa) con firewall o filtro de contenido puede
+bloquear ese mismo dominio, y no hay forma de probar la red real de la
+sede de la sustentación de antemano.
+
+Dos capas de defensa, no una sola:
+
+- **`frontend-angular/karma.conf.js`** intenta un navegador ya instalado
+  en el sistema antes de caer en el binario de Puppeteer (los 3 pasos de
+  arriba).
+- **`frontend-angular/.puppeteerrc.cjs`** fija `skipDownload: true` por
+  defecto: `npm install`/`npm ci` **ya no intenta** descargar el
+  Chromium de Puppeteer, así que el 403 (o cualquier otro fallo de red
+  contra ese dominio) deja de ser posible en el paso de instalación. Es
+  el mecanismo documentado por el propio Puppeteer para este caso (ver
+  `node_modules/puppeteer/src/node/install.ts`, variable de entorno
+  `PUPPETEER_SKIP_DOWNLOAD` / configuración `skipDownload` vía
+  `cosmiconfig`) -- no un workaround inventado para este repo.
+
+**Tradeoff aceptado explícitamente.** Con la descarga desactivada por
+defecto, el paso 3 de la resolución de arriba (Chromium de Puppeteer)
+solo tiene binario disponible si alguien lo instaló a mano antes (`npx
+puppeteer browsers install chrome`) o si ya estaba en la caché de una
+corrida anterior. Si una máquina no tiene **ningún** navegador
+instalado (ni Chrome, ni Edge, ni Chromium) y tampoco tiene ese
+Chromium cacheado, los tests van a fallar -- pero con un error normal y
+claro de Karma en el momento de arrancar el navegador ("no se encontró
+el binario"), no con un `npm ci` completo abortado antes de llegar
+siquiera a compilar o testear nada. Se prioriza a propósito "`npm ci`
+nunca se cae por una CDN externa" sobre "Puppeteer siempre tiene su
+propio Chromium" -- la capa 2 (navegador del sistema) cubre el caso real
+en la enorme mayoría de máquinas.
+
 ## Referencias
 
 - `render.yaml` (raíz del repo)
@@ -272,3 +329,4 @@ corrección puntual).
 - `backend-springboot/Dockerfile`
 - `docker-compose.yml`, `.env.example`
 - `docs/despliegue/RUNBOOK.md`, `docs/despliegue/BACKUP.md`
+- `frontend-angular/karma.conf.js`, `frontend-angular/.puppeteerrc.cjs`, `Makefile` (target `test-frontend`)
