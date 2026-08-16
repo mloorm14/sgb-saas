@@ -8,3 +8,12 @@
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
+
+// Efecto vidrio esmerilado compartido (mismos valores exactos que el
+// style inline de login/registro/no-autorizado: rgba 0.85 + blur 12px).
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
