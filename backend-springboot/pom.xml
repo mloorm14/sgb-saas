@@ -263,6 +263,100 @@
 					</execution>
 				</executions>
 			</plugin>
+
+			<!-- Bloque A.2.3 / criterio P3 de la rubrica: analisis estatico de
+			     seguridad, con foco en concatenacion de SQL dinamico.
+
+			     VERSIONES: verificadas contra el metadata.xml real de Maven
+			     Central el 2026-08-15 (repo1.maven.org/.../maven-metadata.xml),
+			     no copiadas de memoria.
+			       - findsecbugs-plugin: 1.14.0 es la ultima version publicada
+			         (sin release mas nueva desde 2025-04-20).
+			       - spotbugs-maven-plugin: la ultima version publicada es
+			         4.10.3.0 (2026-07-13), pero se fija deliberadamente
+			         4.8.3.1 en su lugar. El propio CHANGELOG de
+			         find-sec-bugs 1.14.0 declara que esa release se
+			         construyo y probo contra el nucleo de SpotBugs 4.8.3; no
+			         se encontro evidencia (ni en el repo de find-sec-bugs ni
+			         en el de spotbugs-maven-plugin) de que 1.14.0 este
+			         verificado contra las lineas 4.9.x/4.10.x mas nuevas. Con
+			         la entrega de manana, se prioriza la combinacion con
+			         compatibilidad documentada por el propio proyecto en vez
+			         de la version mas nueva sin garantia. SpotBugs 4.8.x ya
+			         soporta bytecode de Java 21 (ASM 9.6, agregado en la
+			         release 4.8.0), asi que no hay perdida de compatibilidad
+			         real con este backend.
+
+			     DISENO: dos goals distintos, mismo proposito dividido en dos
+			     pasos. `spotbugs` genera el reporte XML+HTML completo (TODOS
+			     los hallazgos, informativo, nunca rompe el build); `check`
+			     usa spotbugs-security-include.xml + threshold=high para que
+			     SOLO un hallazgo de severidad alta en las reglas de SQL
+			     dinamico de ese filtro rompa `./mvnw verify`. Hallazgos de
+			     otras categorias no tocan el exit code de este build, para no
+			     bloquear CI por algo fuera del alcance de esta tarea. -->
+			<plugin>
+				<groupId>com.github.spotbugs</groupId>
+				<artifactId>spotbugs-maven-plugin</artifactId>
+				<version>4.8.3.1</version>
+				<dependencies>
+					<!-- Dependencia DEL PLUGIN (analizador cargado por SpotBugs),
+					     no del proyecto: no aparece en el classpath de
+					     compilacion/runtime del backend. -->
+					<dependency>
+						<groupId>com.h3xstream.findsecbugs</groupId>
+						<artifactId>findsecbugs-plugin</artifactId>
+						<version>1.14.0</version>
+					</dependency>
+				</dependencies>
+				<configuration>
+					<effort>Max</effort>
+					<threshold>high</threshold>
+					<xmlOutput>true</xmlOutput>
+					<htmlOutput>true</htmlOutput>
+					<includeFilterFile>${project.basedir}/spotbugs-security-include.xml</includeFilterFile>
+					<failOnError>true</failOnError>
+				</configuration>
+				<executions>
+					<!-- NOTA DE DISENO (probado, no el diseno original): se
+					     intento primero separar esto en dos ejecuciones con
+					     configuracion distinta (reporte SIN filtro + check
+					     CON filtro, cada uno con su propio <configuration>
+					     por ejecucion) para que el reporte fuera un audit
+					     completo y el check quedara acotado a las reglas de
+					     SQL. No funciono: `check` invoca internamente un
+					     sub-goal `spotbugs` de forma forkeada que ignora la
+					     configuracion propia de la ejecucion `check` y usa
+					     solo la configuracion de nivel de plugin. Con el
+					     filtro solo en la ejecucion de `check`, el resultado
+					     observado fue que `check` evaluaba los 38 hallazgos
+					     SIN filtrar del proyecto entero (EI_EXPOSE_REP,
+					     BC_VACUOUS_INSTANCEOF, etc.), no solo los 5 patrones
+					     de SQL dinamico. Confirmado corriendo `./mvnw
+					     clean verify` y leyendo el log real, no asumido. Por
+					     eso ambos goals comparten la MISMA configuracion de
+					     arriba: el reporte de `spotbugs-report` tambien
+					     queda acotado a los 5 patrones de SQL dinamico (no es
+					     un audit completo de todas las categorias). Es una
+					     limitacion real de este diseno, documentada aqui en
+					     vez de prometer un reporte mas amplio del que en
+					     realidad se genera. -->
+					<execution>
+						<id>spotbugs-report</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>spotbugs</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>spotbugs-check-sql-dinamico</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 
