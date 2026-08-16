@@ -96,7 +96,7 @@ export class PrestamoService {
     );
   }
 
-  private aHttpParams(params: Record<string, unknown>): HttpParams {
+  private aHttpParams<T extends object>(params: T): HttpParams {
     let httpParams = new HttpParams();
     for (const [clave, valor] of Object.entries(params)) {
       if (valor !== undefined && valor !== null) {
