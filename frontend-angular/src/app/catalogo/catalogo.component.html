@@ -34,14 +34,14 @@
   <!-- Filtros por categoria/autor (CategoriaService/AutorService reales) -->
   <div class="flex flex-wrap gap-sm mb-lg">
     <select (change)="onCategoriaChange($event)"
-      class="rounded border border-outline-variant bg-white text-body-sm text-on-surface px-sm py-xs cursor-pointer">
+      class="rounded border border-outline-variant bg-white text-body-sm text-on-surface pl-sm pr-lg py-xs cursor-pointer">
       <option value="">Todas las categorías</option>
       @for (categoria of categorias; track categoria.id) {
         <option [value]="categoria.id">{{ categoria.nombre }}</option>
       }
     </select>
     <select (change)="onAutorChange($event)"
-      class="rounded border border-outline-variant bg-white text-body-sm text-on-surface px-sm py-xs cursor-pointer">
+      class="rounded border border-outline-variant bg-white text-body-sm text-on-surface pl-sm pr-lg py-xs cursor-pointer">
       <option value="">Todos los autores</option>
       @for (autor of autores; track autor.id) {
         <option [value]="autor.id">{{ autor.nombre }}</option>
