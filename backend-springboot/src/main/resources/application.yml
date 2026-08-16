@@ -66,6 +66,16 @@ spring:
           starttls:
             enable: true
             required: true
+  # Módulo portada binaria (POST /api/v1/libros/{id}/portada). Límites del
+  # contenedor de servlets para uploads multipart, SIEMPRE por encima del
+  # límite de negocio (max_tamano_portada_mb, default 2 MB, en
+  # configuracion_sistema): si el archivo excede el límite de negocio lo
+  # frena LibroService.actualizarPortada con un 400+ProblemDetail legible,
+  # no el contenedor con un error genérico de multipart.
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
 
 server:
   port: 8080

@@ -16,6 +16,14 @@ public record LibroResponseDTO(
         String isbn,
         String resumen,
         String portadaUrl,
+        // Portada binaria (V13__portada_imagen.sql): solo metadata, NUNCA
+        // el byte[] -- el binario se sirve aparte por
+        // GET /api/v1/libros/{id}/portada con su Content-Type dinámico.
+        // tienePortada es true cuando portadaImagen != null (el frontend
+        // decide con esto si mostrarla o pedirla al endpoint).
+        Boolean tienePortada,
+        String portadaNombre,
+        String portadaTipo,
         Integer anioPublicacion,
         Integer editorialId,
         String editorial,

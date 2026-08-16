@@ -3,6 +3,7 @@ package com.uteq.backend.controller;
 import com.uteq.backend.config.SecurityConfig;
 import com.uteq.backend.dto.LibroRequestDTO;
 import com.uteq.backend.dto.LibroResponseDTO;
+import com.uteq.backend.dto.PortadaImagenDTO;
 import com.uteq.backend.security.JwtAuthFilter;
 import com.uteq.backend.security.JwtService;
 import com.uteq.backend.security.UserDetailsServiceImpl;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -26,10 +28,15 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 // Bloque C.2 (hallazgo OWASP A01): LibroController no incluia ADMIN en la
@@ -102,7 +109,8 @@ class LibroControllerSecurityTest {
 
     private LibroResponseDTO libroCreado() {
         return new LibroResponseDTO(
-                1L, "Clean Code", "9780132350884", "resumen", null, 2008,
+                1L, "Clean Code", "9780132350884", "resumen", null,
+                false, null, null, 2008,
                 1, "Editorial X", 1, "Español", 1, "ACTIVO", 3, 3, null,
                 OffsetDateTime.now(), List.of(), List.of()
         );
@@ -146,5 +154,40 @@ class LibroControllerSecurityTest {
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(libroValido())))
                 .andExpect(status().isForbidden());
+    }
+
+    // ── Módulo portada binaria (V13__portada_imagen.sql): ──
+    // LECTOR puede VER la portada (GET) pero NO subirla (POST) -- la
+    // subida es gestión de catálogo, mismo criterio que crear/actualizar.
+    @Test
+    @WithMockUser(roles = "LECTOR")
+    void subirPortada_conRolLector_rechazado403() throws Exception {
+        mockMvc.perform(multipart("/api/v1/libros/1/portada")
+                        .file(new MockMultipartFile("archivo", "portada.png", "image/png", new byte[]{1})))
+                .andExpect(status().isForbidden());
+        verify(libroService, never()).actualizarPortada(anyLong(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "LECTOR")
+    void obtenerPortada_conRolLector_sePermite() throws Exception {
+        when(libroService.obtenerPortada(anyLong()))
+                .thenReturn(new PortadaImagenDTO(new byte[]{1, 2, 3}, "image/png"));
+
+        mockMvc.perform(get("/api/v1/libros/1/portada"))
+                .andExpect(status().isOk())
+                // Content-Type dinámico según portada_tipo guardado.
+                .andExpect(content().contentType("image/png"))
+                .andExpect(content().bytes(new byte[]{1, 2, 3}));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void subirPortada_conRolAdmin_sePermite() throws Exception {
+        when(libroService.actualizarPortada(anyLong(), any())).thenReturn(libroCreado());
+
+        mockMvc.perform(multipart("/api/v1/libros/1/portada")
+                        .file(new MockMultipartFile("archivo", "portada.png", "image/png", new byte[]{1})))
+                .andExpect(status().isOk());
     }
 }

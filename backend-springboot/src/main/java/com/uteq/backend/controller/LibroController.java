@@ -3,6 +3,7 @@ package com.uteq.backend.controller;
 import com.uteq.backend.dto.LibroRequestDTO;
 import com.uteq.backend.dto.LibroResponseDTO;
 import com.uteq.backend.dto.LibroSugerenciaDTO;
+import com.uteq.backend.dto.PortadaImagenDTO;
 import com.uteq.backend.service.LibroService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
@@ -10,10 +11,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -89,5 +92,34 @@ public class LibroController {
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         libroService.eliminar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // ── POST /api/v1/libros/{id}/portada ───────────────────
+    // Módulo portada binaria (V13__portada_imagen.sql): multipart con un
+    // solo campo "archivo". La validación (tipo/tamaño) vive en
+    // LibroService.actualizarPortada y responde 400 con ProblemDetail vía
+    // GlobalExceptionHandler, no acá. Admin/Gerente heredan el rol de
+    // bibliotecario, mismo criterio que el resto del controller.
+    @PostMapping(value = "/{id}/portada", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    public ResponseEntity<LibroResponseDTO> subirPortada(
+            @PathVariable Long id,
+            @RequestParam("archivo") MultipartFile archivo) {
+        return ResponseEntity.ok(libroService.actualizarPortada(id, archivo));
+    }
+
+    // ── GET /api/v1/libros/{id}/portada ────────────────────
+    // Devuelve el binario con Content-Type dinámico según portada_tipo
+    // (image/png|image/jpeg|image/webp). LECTURA para todos los roles
+    // autenticados, igual que el resto del catálogo. 404 (no un
+    // placeholder) si el libro no existe o no tiene portada -- eso es
+    // decisión del frontend.
+    @GetMapping("/{id}/portada")
+    @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')")
+    public ResponseEntity<byte[]> obtenerPortada(@PathVariable Long id) {
+        PortadaImagenDTO portada = libroService.obtenerPortada(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(portada.contentType()))
+                .body(portada.bytes());
     }
 }
