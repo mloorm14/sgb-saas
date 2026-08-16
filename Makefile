@@ -41,10 +41,17 @@ test-backend:
 # en C:\Program Files\Google\Chrome\Application\chrome.exe y falla si
 # no esta -- eso rompia D.1/R1 (make all debe correr en cualquier
 # maquina desde una clonacion limpia). frontend-angular/karma.conf.js
-# (ver angular.json -> test.options.karmaConfig) fija CHROME_BIN al
-# binario de Chromium que instala 'puppeteer' (devDependency, se baja
-# solo con 'npm install'/'npm ci'), asi que este target no necesita
-# ninguna variable de entorno ni navegador preinstalado en la maquina.
+# (ver angular.json -> test.options.karmaConfig) resuelve CHROME_BIN
+# solo, en este orden: 1) si ya esta seteado, lo respeta: 2) un
+# Chrome/Edge/Chromium ya instalado en la maquina (cubre la gran
+# mayoria de casos reales); 3) como ultimo recurso, el Chromium que
+# instala 'puppeteer' (devDependency). Ese ultimo paso ya NO se baja
+# solo con 'npm install'/'npm ci' (ver frontend-angular/.puppeteerrc.cjs):
+# se confirmo un 403 real descargandolo en una red con lista blanca de
+# dominios, lo que hacia fallar el 'npm ci' completo -- ver
+# docs/despliegue/DEPLOYMENT.md, seccion 10, para el detalle. Este
+# target no necesita ninguna variable de entorno ni navegador
+# preinstalado en la maquina para funcionar en el caso comun.
 test-frontend:
 	cd frontend-angular && npx ng test --watch=false --browsers=ChromeHeadless
 
