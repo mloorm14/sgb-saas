@@ -20,21 +20,22 @@ export class AppComponent {
 
   constructor(private authService: AuthService) {}
 
-  // TODO(frontend/estudiante-catalogo-social, frontend/estudiante-cuenta,
-  // frontend/bibliotecario-operacion, frontend/gerente-panel-administrativo):
-  // los enlaces con futuro=true apuntan a rutas que todavia no existen en
-  // esta rama (catalogo, favoritos, mi-credencial, sugerencias,
+  // TODO(frontend/estudiante-cuenta, frontend/bibliotecario-operacion,
+  // frontend/gerente-panel-administrativo): los enlaces con futuro=true
+  // apuntan a rutas que todavia no existen en esta rama (mi-credencial,
   // notificaciones, dashboard, reportes, admin/usuarios, auditoria). Se
   // completan cuando se mergeen esas ramas; el clic hoy cae en el
   // comodin '**' -> /login.
+  // Rama B completada: /catalogo, /favoritos y /sugerencias ya son reales
+  // y salen de la lista de futuros.
   enlacesLector: EnlaceNav[] = [
     { ruta: '/prestamos', etiqueta: 'Mis Préstamos', icono: 'menu_book' },
     { ruta: '/reservaciones', etiqueta: 'Reservaciones', icono: 'event_available' },
     { ruta: '/multas', etiqueta: 'Multas', icono: 'payments' },
-    { ruta: '/catalogo', etiqueta: 'Catálogo', icono: 'search', futuro: true },
-    { ruta: '/favoritos', etiqueta: 'Favoritos', icono: 'favorite', futuro: true },
+    { ruta: '/catalogo', etiqueta: 'Catálogo', icono: 'search' },
+    { ruta: '/favoritos', etiqueta: 'Favoritos', icono: 'favorite' },
     { ruta: '/mi-credencial', etiqueta: 'Mi Credencial', icono: 'qr_code_2', futuro: true },
-    { ruta: '/sugerencias', etiqueta: 'Sugerencias', icono: 'lightbulb', futuro: true },
+    { ruta: '/sugerencias', etiqueta: 'Sugerencias', icono: 'lightbulb' },
     { ruta: '/notificaciones', etiqueta: 'Notificaciones', icono: 'notifications', futuro: true }
   ];
 
