@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 
-import { HttpClient } from '@angular/common/http';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
+import { LibroService } from '../core/services/libro.service';
+import { Libro, LibroRequest } from '../core/models/libro.model';
 
 @Component({
     selector: 'app-libros',
@@ -11,7 +12,7 @@ import { AuthService } from '../core/services/auth.service';
     templateUrl: './libros.component.html'
 })
 export class LibrosComponent implements OnInit {
-  libros: any[] = [];
+  libros: Libro[] = [];
   totalPages: number = 0;
   currentPage: number = 0;
   pageSize: number = 10;
@@ -22,10 +23,8 @@ export class LibrosComponent implements OnInit {
   libroSeleccionadoId: number | null = null;
   form: FormGroup;
 
-  private apiUrl = 'https://sgb-backend-b058.onrender.com/api/v1';
-
   constructor(
-    private http: HttpClient,
+    private libroService: LibroService,
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router
@@ -48,9 +47,11 @@ export class LibrosComponent implements OnInit {
 
   cargarLibros(): void {
     this.cargando = true;
-    this.http.get<any>(
-      `${this.apiUrl}/libros?page=${this.currentPage}&size=${this.pageSize}&sort=id,asc`
-    ).subscribe({
+    this.libroService.listar({
+      page: this.currentPage,
+      size: this.pageSize,
+      sort: 'id,asc'
+    }).subscribe({
       next: (data) => {
         this.libros = data.content;
         this.totalPages = data.totalPages;
@@ -84,7 +85,7 @@ export class LibrosComponent implements OnInit {
     this.mostrarFormulario = true;
   }
 
-  abrirFormularioEditar(libro: any): void {
+  abrirFormularioEditar(libro: Libro): void {
     this.modoEdicion = true;
     this.libroSeleccionadoId = libro.id;
     this.form.patchValue({
@@ -107,10 +108,12 @@ export class LibrosComponent implements OnInit {
 
   guardarLibro(): void {
     if (this.form.invalid) return;
-    const datos = this.form.value;
+    // Los valores del form siguen viajando tal cual (el backend convierte
+    // los strings a Integer); solo cambia el canal de transporte.
+    const datos = this.form.value as LibroRequest;
 
     if (this.modoEdicion && this.libroSeleccionadoId) {
-      this.http.put(`${this.apiUrl}/libros/${this.libroSeleccionadoId}`, datos).subscribe({
+      this.libroService.actualizar(this.libroSeleccionadoId, datos).subscribe({
         next: () => {
           this.cerrarFormulario();
           this.cargarLibros();
@@ -118,7 +121,7 @@ export class LibrosComponent implements OnInit {
         error: () => { this.errorMsg = 'Error al actualizar el libro'; }
       });
     } else {
-      this.http.post(`${this.apiUrl}/libros`, datos).subscribe({
+      this.libroService.crear(datos).subscribe({
         next: () => {
           this.cerrarFormulario();
           this.cargarLibros();
@@ -130,7 +133,7 @@ export class LibrosComponent implements OnInit {
 
   eliminarLibro(id: number): void {
     if (!confirm('¿Está seguro de eliminar este libro?')) return;
-    this.http.delete(`${this.apiUrl}/libros/${id}`).subscribe({
+    this.libroService.eliminar(id).subscribe({
       next: () => { this.cargarLibros(); },
       error: () => { this.errorMsg = 'Error al eliminar el libro'; }
     });
