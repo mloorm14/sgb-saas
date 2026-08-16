@@ -9,6 +9,11 @@ import { PrestamosGestionComponent } from './prestamos-gestion/prestamos-gestion
 import { ReservacionesComponent } from './reservaciones/reservaciones.component';
 import { MultasComponent } from './multas/multas.component';
 import { NoAutorizadoComponent } from './shared/no-autorizado/no-autorizado.component';
+import { CatalogoComponent } from './catalogo/catalogo.component';
+import { LibroDetalleComponent } from './catalogo/libro-detalle/libro-detalle.component';
+import { FavoritosComponent } from './favoritos/favoritos.component';
+import { SugerenciasFormComponent } from './sugerencias/sugerencias-form/sugerencias-form.component';
+import { MisSugerenciasComponent } from './sugerencias/mis-sugerencias/mis-sugerencias.component';
 
 // Los roleGuard de abajo reflejan los @PreAuthorize reales de cada
 // controller en backend-springboot (verificado en el codigo, no asumido):
@@ -27,6 +32,16 @@ export const routes: Routes = [
   { path: 'prestamos/gestion', component: PrestamosGestionComponent, canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE'])] },
   { path: 'reservaciones', component: ReservacionesComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
   { path: 'multas', component: MultasComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
+  // Rama B (frontend/estudiante-catalogo-social): las 5 rutas del
+  // consumidor son 100% LECTOR — verificado en FavoritoController.java y
+  // SugerenciaAdquisicionController.java (los endpoints de favoritos y de
+  // sugerencias/adquisicion son @PreAuthorize hasRole('LECTOR'); las
+  // categorias y autores admiten cualquier rol autenticado).
+  { path: 'catalogo', component: CatalogoComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
+  { path: 'catalogo/:id', component: LibroDetalleComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
+  { path: 'favoritos', component: FavoritosComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
+  { path: 'sugerencias', component: MisSugerenciasComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
+  { path: 'sugerencias/nueva', component: SugerenciasFormComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
   { path: 'no-autorizado', component: NoAutorizadoComponent },
   { path: '**', redirectTo: 'login' }
 ];
