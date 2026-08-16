@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../core/services/auth.service';
+import { ReservacionService } from '../core/services/reservacion.service';
+import { Reservacion, ReservacionRequest } from '../core/models/reservacion.model';
 
 @Component({
     selector: 'app-reservaciones',
@@ -16,17 +17,15 @@ export class ReservacionesComponent implements OnInit {
   errorMsgCrear: string = '';
 
   usuarioIdBusqueda: number | null = null;
-  reservaciones: any[] = [];
+  reservaciones: Reservacion[] = [];
   totalPages: number = 0;
   currentPage: number = 0;
   pageSize: number = 10;
   cargando: boolean = false;
   errorMsg: string = '';
 
-  private apiUrl = 'https://sgb-backend-b058.onrender.com/api/v1';
-
   constructor(
-    private http: HttpClient,
+    private reservacionService: ReservacionService,
     private fb: FormBuilder,
     private authService: AuthService
   ) {
@@ -51,7 +50,9 @@ export class ReservacionesComponent implements OnInit {
   crearReservacion(): void {
     if (this.formCrear.invalid) return;
     this.errorMsgCrear = '';
-    this.http.post(`${this.apiUrl}/reservaciones`, this.formCrear.value).subscribe({
+    // Los valores del form viajan tal cual (el backend convierte strings);
+    // solo cambia el canal de transporte.
+    this.reservacionService.crear(this.formCrear.value as ReservacionRequest).subscribe({
       next: () => {
         this.formCrear.patchValue({ libroId: '' });
         if (this.usuarioIdBusqueda === Number(this.formCrear.value.usuarioId)) {
@@ -74,9 +75,11 @@ export class ReservacionesComponent implements OnInit {
 
   private cargarPagina(): void {
     this.cargando = true;
-    this.http.get<any>(
-      `${this.apiUrl}/reservaciones/usuario/${this.usuarioIdBusqueda}?page=${this.currentPage}&size=${this.pageSize}&sort=id,desc`
-    ).subscribe({
+    this.reservacionService.listarPorUsuario(this.usuarioIdBusqueda!, {
+      page: this.currentPage,
+      size: this.pageSize,
+      sort: 'id,desc'
+    }).subscribe({
       next: (data) => {
         this.reservaciones = data.content;
         this.totalPages = data.totalPages;
