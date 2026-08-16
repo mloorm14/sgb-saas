@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-libros',
@@ -23,7 +24,7 @@ export class LibrosComponent implements OnInit {
   libroSeleccionadoId: number | null = null;
   form: FormGroup;
 
-  private apiUrl = 'http://localhost:8080/api/v1';
+  private apiUrl = environment.apiUrl + '/v1';
 
   constructor(
     private http: HttpClient,
