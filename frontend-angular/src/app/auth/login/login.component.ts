@@ -43,8 +43,7 @@ export class LoginComponent implements OnInit {
 
   // Hallazgo lambda: la redireccion post-login ya no es un /libros fijo,
   // depende del rol real (misma tabla que roleGuard en app.routes.ts).
-  // TODO(frontend/estudiante-catalogo-social): LECTOR -> /catalogo cuando
-  // exista la rama B; hoy /prestamos es el fallback temporal.
+  // Rama B: LECTOR -> /catalogo (la pantalla inicial del consumidor).
   // TODO(frontend/bibliotecario-operacion): BIBLIOTECARIO/GERENTE ->
   // /dashboard cuando exista la rama E; hoy /prestamos/gestion es el
   // fallback temporal.
@@ -53,7 +52,7 @@ export class LoginComponent implements OnInit {
   // operacion diaria en prestamos/reservaciones/multas).
   private redirigirSegunRol(): void {
     if (this.authService.hasRole('LECTOR')) {
-      this.router.navigate(['/prestamos']);
+      this.router.navigate(['/catalogo']);
     } else if (this.authService.hasRole('BIBLIOTECARIO', 'GERENTE')) {
       this.router.navigate(['/prestamos/gestion']);
     } else {
