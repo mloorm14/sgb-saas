@@ -1,0 +1,130 @@
+<div style="padding:2rem;max-width:1200px;margin:0 auto">
+
+  <h2 style="color:#005c2f;margin:0 0 1.5rem 0">Gestión de usuarios</h2>
+
+  <div *ngIf="!puedeVer" style="color:#c0392b;padding:2rem;text-align:center">
+    No tenés permisos para ver esta sección.
+  </div>
+
+  <ng-container *ngIf="puedeVer">
+    <div style="display:flex;gap:12px;align-items:flex-end;margin-bottom:1.5rem">
+      <div>
+        <label style="display:block;font-size:13px;margin-bottom:4px">Buscar (nombre, apellido, correo)</label>
+        <input [(ngModel)]="filtro" [ngModelOptions]="{standalone: true}" type="text"
+          style="padding:8px;border:1px solid #ccc;border-radius:4px;width:280px"/>
+      </div>
+      <button (click)="buscarUsuarios()"
+        style="padding:8px 16px;background:#2980b9;color:white;border:none;border-radius:4px;cursor:pointer">
+        Buscar
+      </button>
+    </div>
+
+    <div *ngIf="errorMsg" style="color:red;margin-bottom:1rem">{{ errorMsg }}</div>
+    <div *ngIf="cargando" style="text-align:center;padding:2rem">Cargando usuarios...</div>
+
+    <table *ngIf="!cargando && usuarios.length > 0" style="width:100%;border-collapse:collapse;font-size:14px">
+      <thead>
+        <tr style="background:#005c2f;color:white">
+          <th style="padding:10px;text-align:left">ID</th>
+          <th style="padding:10px;text-align:left">Nombre</th>
+          <th style="padding:10px;text-align:left">Correo</th>
+          <th style="padding:10px;text-align:left">Roles</th>
+          <th style="padding:10px;text-align:left">Estado</th>
+          <th style="padding:10px;text-align:left">Multas pendientes</th>
+          <th style="padding:10px;text-align:left" *ngIf="puedeGestionar">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let usuario of usuarios; let i = index"
+          [style.background]="i % 2 === 0 ? '#f9f9f9' : 'white'">
+          <td style="padding:10px">{{ usuario.id }}</td>
+          <td style="padding:10px">{{ usuario.nombre }} {{ usuario.apellido }}</td>
+          <td style="padding:10px">{{ usuario.correo }}</td>
+          <td style="padding:10px">{{ usuario.roles?.join(', ') }}</td>
+          <td style="padding:10px">{{ usuario.estado }}</td>
+          <td style="padding:10px">{{ usuario.multasPendientes ? 'Sí' : 'No' }}</td>
+          <td style="padding:10px;display:flex;gap:8px" *ngIf="puedeGestionar">
+            <button (click)="abrirModalRol(usuario)"
+              style="padding:4px 10px;background:#005c2f;color:white;border:none;border-radius:4px;cursor:pointer">
+              Cambiar rol
+            </button>
+            <button (click)="abrirModalEstado(usuario)"
+              style="padding:4px 10px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer">
+              Cambiar estado
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="!cargando && usuarios.length === 0" style="text-align:center;padding:2rem;color:#888">
+      No se encontraron usuarios
+    </div>
+
+    <div *ngIf="usuarios.length > 0" style="display:flex;justify-content:center;align-items:center;gap:16px;margin-top:1rem">
+      <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
+        style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
+        ← Anterior
+      </button>
+      <span style="font-size:14px">Página {{ currentPage + 1 }} de {{ totalPages }}</span>
+      <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
+        style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
+        Siguiente →
+      </button>
+    </div>
+  </ng-container>
+
+  <!-- MODAL CAMBIAR ROL -->
+  <div *ngIf="mostrarModalRol"
+    style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999">
+    <div style="background:white;padding:2rem;border-radius:8px;width:100%;max-width:450px">
+      <h3 style="color:#005c2f;margin-top:0">Cambiar rol de {{ usuarioSeleccionado?.nombre }}</h3>
+      <label style="display:block;font-size:13px;margin-bottom:4px">Nuevo rol</label>
+      <select [(ngModel)]="nuevoRol" [ngModelOptions]="{standalone: true}"
+        style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box">
+        <option *ngFor="let rol of rolesDisponibles" [value]="rol">{{ rol }}</option>
+      </select>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:1rem">
+        <button type="button" (click)="cerrarModalRol()"
+          style="padding:8px 16px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
+          Cancelar
+        </button>
+        <button type="button" [disabled]="!nuevoRol" (click)="confirmarCambioRol()"
+          style="padding:8px 16px;background:#005c2f;color:white;border:none;border-radius:4px;cursor:pointer">
+          Confirmar cambio de rol
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CAMBIAR ESTADO -->
+  <div *ngIf="mostrarModalEstado"
+    style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999">
+    <div style="background:white;padding:2rem;border-radius:8px;width:100%;max-width:450px">
+      <h3 style="color:#c0392b;margin-top:0">Cambiar estado de {{ usuarioSeleccionado?.nombre }}</h3>
+
+      <label style="display:block;font-size:13px;margin-bottom:4px">Nuevo estado</label>
+      <select [(ngModel)]="nuevoEstado" [ngModelOptions]="{standalone: true}"
+        style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box;margin-bottom:1rem">
+        <option *ngFor="let estado of estadosDisponibles" [value]="estado">{{ estado }}</option>
+      </select>
+
+      <label style="display:block;font-size:13px;margin-bottom:4px">Motivo (obligatorio)</label>
+      <textarea [(ngModel)]="motivoEstado" [ngModelOptions]="{standalone: true}" rows="3" maxlength="255"
+        style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"></textarea>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:1rem">
+        <button type="button" (click)="cerrarModalEstado()"
+          style="padding:8px 16px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
+          Cancelar
+        </button>
+        <button type="button" [disabled]="!nuevoEstado || !motivoEstado.trim()" (click)="confirmarCambioEstado()"
+          style="padding:8px 16px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer">
+          Confirmar cambio de estado
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

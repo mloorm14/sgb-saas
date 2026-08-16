@@ -7,6 +7,14 @@
         style="padding:8px 16px;background:#005c2f;color:white;border:none;border-radius:4px;cursor:pointer">
         + Nuevo libro
       </button>
+      <button *ngIf="verAdminUsuarios" (click)="irAUsuarios()"
+        style="padding:8px 16px;background:#2980b9;color:white;border:none;border-radius:4px;cursor:pointer">
+        Usuarios
+      </button>
+      <button *ngIf="verAdminConfiguracion" (click)="irAConfiguracion()"
+        style="padding:8px 16px;background:#2980b9;color:white;border:none;border-radius:4px;cursor:pointer">
+        Configuración
+      </button>
       <button (click)="cerrarSesion()"
         style="padding:8px 16px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer">
         Cerrar sesión

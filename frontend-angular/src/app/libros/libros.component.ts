@@ -24,6 +24,13 @@ export class LibrosComponent implements OnInit {
   libroSeleccionadoId: number | null = null;
   form: FormGroup;
 
+  // Libros es la pantalla a la que se llega tras el login (ver
+  // LoginComponent#submit): no hay un layout/nav compartido en el
+  // proyecto todavía, así que los accesos a las pantallas ADMIN se
+  // exponen acá, gateados por rol igual que el resto de la UI.
+  verAdminUsuarios: boolean = false;
+  verAdminConfiguracion: boolean = false;
+
   private apiUrl = environment.apiUrl + '/v1';
 
   constructor(
@@ -45,6 +52,8 @@ export class LibrosComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.verAdminUsuarios = this.authService.hasRole('ADMIN', 'GERENTE');
+    this.verAdminConfiguracion = this.authService.hasRole('ADMIN');
     this.cargarLibros();
   }
 
@@ -140,5 +149,13 @@ export class LibrosComponent implements OnInit {
 
   cerrarSesion(): void {
     this.authService.logout();
+  }
+
+  irAUsuarios(): void {
+    this.router.navigate(['/admin/usuarios']);
+  }
+
+  irAConfiguracion(): void {
+    this.router.navigate(['/admin/configuracion']);
   }
 }
