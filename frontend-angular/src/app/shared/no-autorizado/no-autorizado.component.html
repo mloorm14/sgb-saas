@@ -1,0 +1,29 @@
+<div class="min-h-screen flex items-center justify-center p-md bg-surface relative overflow-hidden">
+
+  <!-- Fondo -->
+  <div class="fixed inset-0 -z-10 bg-cover bg-center" style="background-image: url('/assets/login/library-hero.jpg')">
+    <div class="absolute inset-0" style="background: linear-gradient(to right, rgba(248,249,255,0.95), rgba(248,249,255,0.6));"></div>
+  </div>
+
+  <main class="w-full max-w-md mx-auto rounded-xl shadow-lg p-xl relative overflow-hidden text-center"
+       style="background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3);">
+    <div class="absolute top-0 left-0 w-full h-2 bg-error"></div>
+
+    <div class="w-16 h-16 mx-auto rounded-full bg-error-container flex items-center justify-center text-error mb-lg">
+      <span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">gpp_bad</span>
+    </div>
+
+    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">
+      No tenés permiso
+    </h1>
+    <p class="font-body-md text-body-md text-on-surface-variant mb-lg">
+      Tu rol de usuario no está habilitado para ver esta sección. Si creés que esto es un error, comunicate con la administración de la biblioteca.
+    </p>
+
+    <button (click)="volverAlHome()"
+      class="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm font-label-md text-label-md text-on-primary bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors min-h-[44px] cursor-pointer">
+      <span class="material-symbols-outlined text-[20px]">home</span>
+      Volver a mi inicio
+    </button>
+  </main>
+</div>
