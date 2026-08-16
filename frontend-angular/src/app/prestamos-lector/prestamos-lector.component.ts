@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../core/services/auth.service';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-prestamos-lector',
@@ -17,7 +18,7 @@ export class PrestamosLectorComponent implements OnInit {
   cargando: boolean = false;
   errorMsg: string = '';
 
-  private apiUrl = 'http://localhost:8080/api/v1';
+  private apiUrl = environment.apiUrl + '/v1';
 
   constructor(
     private http: HttpClient,

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../core/services/auth.service';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-multas',
@@ -28,7 +29,7 @@ export class MultasComponent implements OnInit {
   multaSeleccionadaId: number | null = null;
   motivoAnulacion: string = '';
 
-  private apiUrl = 'http://localhost:8080/api/v1';
+  private apiUrl = environment.apiUrl + '/v1';
 
   constructor(
     private http: HttpClient,

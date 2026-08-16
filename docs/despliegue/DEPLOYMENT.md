@@ -194,11 +194,11 @@ un mecanismo disponible para servicios Static Site.
    es la #1 (`render.yaml`); la #2/#3 quedan documentadas como defensa
    adicional, no como solución independiente para el caso Static Site.
 
-## 7. Hallazgo adicional (no diagnosticado antes de esta tarea): URL del backend hardcodeada en el frontend
+## 7. Hallazgo (encontrado en esta tarea, corregido en la siguiente): URL del backend hardcodeada en el frontend
 
 Al revisar `frontend-angular/src/` para completar la sección 4 (variables
 de entorno del frontend) se encontró que **6 archivos** del frontend
-tienen la URL del backend **hardcodeada como
+tenían la URL del backend **hardcodeada como
 `http://localhost:8080/api`** (o `/api/v1`), sin pasar por ningún
 mecanismo de configuración:
 
@@ -209,22 +209,57 @@ mecanismo de configuración:
 - `src/app/prestamos-lector/prestamos-lector.component.ts`
 - `src/app/reservaciones/reservaciones.component.ts`
 
-Esto significa que, tal como está el código fuente en el commit base de
-este documento, el JavaScript que corre en el navegador del evaluador
-intentaría llamar a `http://localhost:8080` (la máquina del propio
-evaluador, no el backend real) -- estas llamadas fallarían
-independientemente de que se corrija el problema de la sección 6.
-**No se modificó ningún archivo `.ts` para corregir esto en esta
-tarea** -- las restricciones de esta tarea son explícitamente de
-despliegue/infraestructura y documentación, y arreglar esto
-requiere una decisión de arquitectura del equipo (agregar
-`environment.ts`/`environment.prod.ts` con `fileReplacements` en
-`angular.json`, o un `config.json` cargado en runtime, u otro mecanismo)
-que no corresponde tomar unilateralmente aquí. Se documenta como
-hallazgo para que el equipo lo resuelva -- ver también el reporte final
-de esta tarea.
+Esto significaba que, tal como estaba el código fuente en el commit base
+de este documento (`cd25ebe`), el JavaScript que corre en el navegador
+del evaluador intentaba llamar a `http://localhost:8080` (la máquina del
+propio evaluador, no el backend real) -- estas llamadas fallaban
+independientemente de que se corrigiera el problema de la sección 6. Se
+documentó como hallazgo en ese commit sin corregirlo (fuera del alcance
+de esa tarea, que era explícitamente de despliegue/infraestructura). Se
+corrigió en un commit posterior sobre este mismo repositorio -- ver
+sección 8.
 
-## 8. URLs públicas
+## 8. Configuración de entorno del frontend (`fileReplacements`)
+
+**Corregido.** El hallazgo de la sección 7 se resolvió con el mecanismo
+estándar de Angular para variables de configuración en tiempo de build:
+
+- `frontend-angular/src/environments/environment.ts` (desarrollo):
+  `apiUrl: 'http://localhost:8080/api'`.
+- `frontend-angular/src/environments/environment.prod.ts` (producción):
+  `apiUrl: 'https://sgb-backend-b058.onrender.com/api'`.
+- `frontend-angular/angular.json`, `architect.build.configurations.production.fileReplacements`
+  reemplaza `environment.ts` por `environment.prod.ts` **solo** cuando se
+  compila con `ng build` (que usa `production` como configuración por
+  defecto, `defaultConfiguration: "production"`) o explícitamente `ng
+  build --configuration production`. `ng build --configuration
+  development` sigue usando `environment.ts` (verificado: se corrieron
+  ambos builds para esta tarea y se confirmó con `grep` sobre los
+  archivos `.js` generados que el bundle de producción no contiene
+  ningún `localhost:8080` y sí contiene
+  `sgb-backend-b058.onrender.com/api`; el bundle de desarrollo contiene
+  `localhost:8080` y no contiene la URL de producción).
+- Los 6 archivos listados en la sección 7 ahora importan `{ environment
+  }` desde `../../environments/environment` (o `../../../environments/environment`
+  para `auth.service.ts`, un nivel más profundo) y usan
+  `environment.apiUrl` (con el sufijo `/v1` agregado en el código donde
+  el valor original ya lo tenía) en vez del literal hardcodeado.
+
+**Limitación real, declarada explícitamente (no es un defecto, es una
+propiedad del mecanismo elegido).** `apiUrl` se resuelve **en tiempo de
+build**, no en tiempo de ejecución -- queda embebido dentro del bundle
+JavaScript ya compilado sobre `dist/frontend-angular/browser/`. Esto
+significa que **cualquier cambio futuro de la URL del backend (ej. si el
+equipo renombra el servicio en Render, o cambia de proveedor) exige
+recompilar y volver a desplegar el frontend** -- no hay forma de
+cambiarla por un simple `restart` del servicio o una variable de entorno
+inyectada en runtime al contenedor nginx ya construido. Si en el futuro
+el equipo necesita cambiar el backend con más frecuencia sin
+recompilar, la alternativa sería un `config.json` cargado en runtime
+por el frontend (no implementado -- no se justificaba para esta
+corrección puntual).
+
+## 9. URLs públicas
 
 - Frontend: <https://biblora-sgb.onrender.com>
 - Backend: <https://sgb-backend-b058.onrender.com>
@@ -233,6 +268,7 @@ de esta tarea.
 
 - `render.yaml` (raíz del repo)
 - `frontend-angular/Dockerfile`, `frontend-angular/nginx.conf`, `frontend-angular/public/_redirects`
+- `frontend-angular/src/environments/environment.ts`, `environment.prod.ts`, `frontend-angular/angular.json`
 - `backend-springboot/Dockerfile`
 - `docker-compose.yml`, `.env.example`
 - `docs/despliegue/RUNBOOK.md`, `docs/despliegue/BACKUP.md`

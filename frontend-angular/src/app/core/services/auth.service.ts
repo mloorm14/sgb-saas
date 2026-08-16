@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 interface JwtPayload {
   sub: string;
@@ -18,7 +19,7 @@ interface JwtPayload {
 })
 export class AuthService {
 
-  private apiUrl = 'http://localhost:8080/api';
+  private apiUrl = environment.apiUrl;
 
   // El token se guarda AQUI en memoria, nunca en localStorage
   private accessToken: string | null = null;

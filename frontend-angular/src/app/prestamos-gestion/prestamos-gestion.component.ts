@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-prestamos-gestion',
@@ -23,7 +24,7 @@ export class PrestamosGestionComponent {
   cargando: boolean = false;
   errorMsg: string = '';
 
-  private apiUrl = 'http://localhost:8080/api/v1';
+  private apiUrl = environment.apiUrl + '/v1';
 
   constructor(private http: HttpClient, private fb: FormBuilder) {
     this.formCrear = this.fb.group({
