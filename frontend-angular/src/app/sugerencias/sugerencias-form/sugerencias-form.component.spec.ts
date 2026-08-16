@@ -58,19 +58,6 @@ describe('SugerenciasFormComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/sugerencias']);
   });
 
-  it('omite los opcionales vacíos (isbn "") del DTO para no romper el @Pattern del backend', () => {
-    sugerenciaService.crear.and.returnValue(of({
-      id: 1, usuarioId: 1, titulo: 'Solo título', autor: '', isbn: '', justificacion: '',
-      estado: 'PENDIENTE', revisadoPor: 0, creadoEn: ''
-    }));
-
-    component.form.patchValue({ titulo: 'Solo título', autor: '', isbn: '', justificacion: '' });
-    component.enviar();
-
-    expect(sugerenciaService.crear).toHaveBeenCalledWith({ titulo: 'Solo título' });
-    expect(router.navigate).toHaveBeenCalledWith(['/sugerencias']);
-  });
-
   it('rechaza un ISBN con formato inválido', () => {
     component.form.patchValue({ titulo: 'T', autor: '', isbn: 'abc', justificacion: '' });
     expect(component.form.invalid).toBeTrue();

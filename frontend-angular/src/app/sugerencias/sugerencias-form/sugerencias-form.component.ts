@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { SugerenciaAdquisicionService } from '../../core/services/sugerencia-adquisicion.service';
-import { SugerenciaAdquisicionRequest } from '../../core/models/sugerencia-adquisicion.model';
 
 // Formulario de sugerencia de adquisición (Rama B, mockup 07). Las
 // validaciones replican EXACTAS a SugerenciaAdquisicionRequestDTO del
@@ -52,17 +51,7 @@ export class SugerenciasFormComponent implements OnInit {
     this.cargando = true;
     this.errorMsg = '';
 
-    // Los opcionales con @Pattern (isbn) fallan en el backend si llega ''
-    // en vez de omitirse -- Validators.pattern salta vacíos pero @Pattern
-    // no (solo salta null), y el regex exige min 10 chars. @Size solo
-    // (autor, justificacion) es inofensivo con '', pero se limpia igual
-    // por consistencia.
-    const dto: Partial<SugerenciaAdquisicionRequest> = { ...this.form.value };
-    (['autor', 'isbn', 'justificacion'] as const).forEach((campo) => {
-      if (!dto[campo]) delete dto[campo];
-    });
-
-    this.sugerenciaService.crear(dto as SugerenciaAdquisicionRequest).subscribe({
+    this.sugerenciaService.crear(this.form.value).subscribe({
       next: () => {
         this.cargando = false;
         this.router.navigate(['/sugerencias']);
