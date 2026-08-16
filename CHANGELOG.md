@@ -70,9 +70,23 @@ objetivo `v0.9.0-rc` de esta Tercera Entrega.
   limitado LECTOR, separado del admin real, vía migración
   `V11__seed_usuario_demo.sql` (`df741b9`) con su espejo local en
   `db/seed.sql` (`2982589`).
+- Portada del libro como imagen binaria dentro de la propia base de datos
+  vía migración `V13__portada_imagen.sql` (`portada_imagen BYTEA`,
+  `portada_nombre`, `portada_tipo`, `portada_tamanio`; sin tocar ni borrar
+  `portada_url`, que queda como legacy/fallback): endpoints `POST
+  /api/v1/libros/{id}/portada` (multipart, BIBLIOTECARIO/GERENTE/ADMIN) y
+  `GET /api/v1/libros/{id}/portada` (todos los roles, Content-Type
+  dinámico según `portada_tipo`, 404 si no hay portada); límite de tamaño
+  configurable en `configuracion_sistema` (`max_tamano_portada_mb`,
+  default 2 MB) leído vía `ConfiguracionSistemaService`; `LibroResponseDTO`
+  expone `tienePortada`/`portadaNombre`/`portadaTipo` pero nunca el
+  byte[] (`831c493`).
 
 ### Changed
 
+- `Libro`/`LibroService`: al subir una portada binaria, `portada_url` se
+  limpia a null — la fuente vigente pasa a ser el binario y se descarta la
+  URL a un host externo que el sistema no controla (`831c493`).
 - `Usuario`/`Libro` migrados de campos simples a modelo RBAC normalizado
   (`roles`, `estados`) (`6609d80`).
 - `LibroService`: constante literal extraída, `moduleResolution` de
