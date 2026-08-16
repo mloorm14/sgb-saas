@@ -1,0 +1,117 @@
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
+
+  <div class="mb-lg">
+    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Catálogo</h1>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Busca por título, autor o categoría</p>
+  </div>
+
+  <!-- Buscador predictivo (LibroService.sugerencias, minimo 2 caracteres) -->
+  <div class="relative mb-md max-w-xl">
+    <div class="rounded border border-outline-variant bg-white flex items-center px-sm glass-panel">
+      <span class="material-symbols-outlined text-outline text-[20px] mr-xs">search</span>
+      <input type="text" placeholder="Ej: estructuras de datos"
+        [(ngModel)]="textoBusqueda"
+        (ngModelChange)="onBusquedaChange()"
+        class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+    </div>
+    @if (sugerencias.length > 0) {
+      <div class="absolute mt-xs w-full bg-white rounded shadow-lg border border-outline-variant overflow-hidden z-10">
+        @for (sug of sugerencias; track sug.id) {
+          <a [routerLink]="['/catalogo', sug.id]" (click)="textoBusqueda = ''; sugerencias = []"
+            class="w-full block text-left px-md py-sm hover:bg-surface-container-low flex items-center justify-between border-b border-outline-variant">
+            <span class="font-body-sm text-body-sm text-on-surface">{{ sug.titulo }}</span>
+            @if (sug.disponible) {
+              <span class="font-label-sm text-[11px] text-secondary">Disponible</span>
+            } @else {
+              <span class="font-label-sm text-[11px] text-error">Sin stock</span>
+            }
+          </a>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Filtros por categoria/autor (CategoriaService/AutorService reales) -->
+  <div class="flex flex-wrap gap-sm mb-lg">
+    <select (change)="onCategoriaChange($event)"
+      class="rounded border border-outline-variant bg-white text-body-sm text-on-surface px-sm py-xs cursor-pointer">
+      <option value="">Todas las categorías</option>
+      @for (categoria of categorias; track categoria.id) {
+        <option [value]="categoria.id">{{ categoria.nombre }}</option>
+      }
+    </select>
+    <select (change)="onAutorChange($event)"
+      class="rounded border border-outline-variant bg-white text-body-sm text-on-surface px-sm py-xs cursor-pointer">
+      <option value="">Todos los autores</option>
+      @for (autor of autores; track autor.id) {
+        <option [value]="autor.id">{{ autor.nombre }}</option>
+      }
+    </select>
+  </div>
+
+  @if (errorMsg) {
+    <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
+  }
+
+  @if (cargando && libros.length === 0) {
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando catálogo…</p>
+  }
+
+  <!-- Grid de tarjetas -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-md">
+    @for (libro of libros; track libro.id) {
+      <a [routerLink]="['/catalogo', libro.id]"
+        class="group rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow">
+        <div class="relative aspect-[3/4] bg-surface-container-low overflow-hidden">
+          <app-portada-libro [libroId]="libro.id" [tienePortada]="libro.tienePortada" />
+          <button (click)="alternarFavorito($event, libro)"
+            [title]="esFavorito(libro.id) ? 'Quitar de favoritos' : 'Agregar a favoritos'"
+            class="absolute top-xs right-xs w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow z-10 cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]"
+              [class.text-primary]="esFavorito(libro.id)"
+              [class.text-outline]="!esFavorito(libro.id)"
+              [style.font-variation-settings]="estiloIconoFavorito(libro.id)">star</span>
+          </button>
+        </div>
+        <div class="p-sm">
+          <p class="font-label-md text-[13px] text-on-surface leading-tight line-clamp-2">{{ libro.titulo }}</p>
+          <p class="font-label-sm text-[11px] text-on-surface-variant mt-1">{{ autoresTexto(libro) }}</p>
+          @if (libro.stockDisponible > 0) {
+            <span class="inline-block mt-xs font-label-sm text-[11px] text-secondary">{{ libro.stockDisponible }} disponibles</span>
+          } @else {
+            <span class="inline-block mt-xs font-label-sm text-[11px] text-error">Sin stock</span>
+          }
+        </div>
+      </a>
+    } @empty {
+      @if (!cargando) {
+        <p class="font-body-sm text-body-sm text-on-surface-variant col-span-full">No hay libros para mostrar.</p>
+      }
+    }
+  </div>
+
+  <!-- Paginacion numerada (mockup 04) -->
+  @if (totalPages > 1) {
+    <div class="flex justify-center mt-lg gap-xs">
+      <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
+        class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+      </button>
+      @for (pagina of paginasVisibles; track pagina) {
+        <button (click)="irAPagina(pagina)"
+          [class.bg-primary]="pagina === currentPage"
+          [class.text-on-primary]="pagina === currentPage"
+          [class.border]="pagina !== currentPage"
+          [class.border-outline-variant]="pagina !== currentPage"
+          [class.text-on-surface]="pagina !== currentPage"
+          class="w-8 h-8 rounded font-label-sm text-label-sm cursor-pointer">
+          {{ pagina + 1 }}
+        </button>
+      }
+      <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
+        class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+      </button>
+    </div>
+  }
+</main>
