@@ -97,7 +97,12 @@ public class SecurityConfig {
     private CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("http://localhost:4200", "https://biblora-sgb.onrender.com"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // PATCH incluido desde el fix de CORS: los 3 endpoints PATCH
+        // (sugerencias-adquisicion/{id}/estado, admin/usuarios/{id}/rol,
+        // admin/usuarios/{id}/estado) morían en el preflight OPTIONS
+        // cross-origin sin él -- un 403 de CORS antes de llegar al
+        // @PreAuthorize, imposible de arreglar desde el frontend.
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 
