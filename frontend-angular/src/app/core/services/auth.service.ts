@@ -33,8 +33,12 @@ export class AuthService {
     );
   }
 
-  registro(nombre: string, correo: string, password: string): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/auth/registro`, { nombre, correo, password });
+  registro(nombre: string, apellido: string, correo: string, password: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/auth/registro`, { nombre, apellido, correo, password });
+  }
+
+  verificarCorreo(correo: string, codigo: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/auth/verificar-correo`, { correo, codigo });
   }
 
   logout(): void {
