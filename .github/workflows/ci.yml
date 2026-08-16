@@ -109,6 +109,24 @@ jobs:
         working-directory: ./backend-springboot
         run: ./mvnw -B clean verify
 
+      # A.2.3 / criterio P3: `./mvnw verify` ya corrio spotbugs-maven-plugin
+      # (con find-sec-bugs) como parte del step de arriba -- si aparecio un
+      # hallazgo de severidad alta en las reglas de SQL dinamico
+      # (spotbugs-security-include.xml), el step anterior ya fallo el
+      # pipeline antes de llegar aca. Este step no vuelve a correr el
+      # analisis: solo archiva el XML/HTML ya generado en target/ como
+      # artifact de la corrida, para que quede accesible desde GitHub
+      # Actions sin tener que reproducir la build localmente.
+      - name: Archivar reporte de SpotBugs + find-sec-bugs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spotbugs-findsecbugs-report
+          path: |
+            backend-springboot/target/spotbugs.xml
+            backend-springboot/target/spotbugs.html
+          if-no-files-found: error
+
       # A.3.3: rechaza el commit si la matriz de trazabilidad tiene un
       # requisito Must sin historia_usuario/caso_de_uso, o un requisito
       # marcado como "verificado" sin una prueba automatizada real que lo

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Filtro de inclusión para spotbugs-maven-plugin (goal `check`), Bloque
+  A.2.3 / criterio P3 de la rúbrica: "sin hallazgos altos sobre
+  concatenación SQL".
+
+  Solo los patrones listados aquí pueden hacer fallar el build (ver
+  <includeFilterFile> + <threshold>high</threshold> en pom.xml). Cualquier
+  otro hallazgo de SpotBugs/find-sec-bugs se sigue reportando en el XML/HTML
+  generado (informativo), pero NO rompe `./mvnw verify`: ampliar el
+  alcance de qué falla el build a otras categorías es una decisión aparte,
+  fuera de esta tarea.
+
+  NOTA DE VERIFICACIÓN (no asumida): SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE
+  es un detector del NÚCLEO de SpotBugs (clase
+  edu.umd.cs.findbugs.detect.FindSqlInjection), NO un patrón de find-sec-bugs.
+  Se verificó contra el código fuente de spotbugs/spotbugs y contra un
+  issue real de ese repositorio antes de escribir este archivo. Los otros 4
+  patrones sí son de find-sec-bugs (com.h3xstream.findsecbugs); se
+  incluyen solo las variantes con superficie real en este proyecto (JDBC
+  directo, Spring JDBC, JPA, Hibernate/HQL vía Spring Data JPA), y se
+  excluyen a propósito las variantes de otros frameworks no usados aquí
+  (Turbine, JDO, Android, Scala Slick/Anorm, Vert.x) para no generar ruido.
+-->
+<FindBugsFilter>
+  <Match>
+    <Bug pattern="SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE"/>
+  </Match>
+  <Match>
+    <Bug pattern="SQL_INJECTION_JDBC"/>
+  </Match>
+  <Match>
+    <Bug pattern="SQL_INJECTION_SPRING_JDBC"/>
+  </Match>
+  <Match>
+    <Bug pattern="SQL_INJECTION_JPA"/>
+  </Match>
+  <Match>
+    <Bug pattern="SQL_INJECTION_HIBERNATE"/>
+  </Match>
+</FindBugsFilter>
