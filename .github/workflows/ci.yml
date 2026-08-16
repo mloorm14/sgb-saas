@@ -120,12 +120,20 @@ jobs:
 
       # A.2.3 / criterio P3: `./mvnw verify` ya corrio spotbugs-maven-plugin
       # (con find-sec-bugs) como parte del step de arriba -- si aparecio un
-      # hallazgo de severidad alta en las reglas de SQL dinamico
-      # (spotbugs-security-include.xml), el step anterior ya fallo el
-      # pipeline antes de llegar aca. Este step no vuelve a correr el
-      # analisis: solo archiva el XML/HTML ya generado en target/ como
-      # artifact de la corrida, para que quede accesible desde GitHub
-      # Actions sin tener que reproducir la build localmente.
+      # hallazgo en las reglas de SQL dinamico (spotbugs-security-include.xml,
+      # threshold=Low), el step anterior ya fallo el pipeline antes de
+      # llegar aca. Este step no vuelve a correr el analisis: solo archiva
+      # el XML/HTML ya generado en target/ como artifact de la corrida,
+      # para que quede accesible desde GitHub Actions sin tener que
+      # reproducir la build localmente.
+      #
+      # Nota de fusion: la rama que agrego el analisis estatico de SQL en
+      # paralelo (feature/seguridad-analisis-estatico-sql) traia acá mismo
+      # un segundo step que volvia a correr scripts/audit-sql-dynamic.sh --
+      # redundante con el step "Auditar SQL dinámico en procedimientos" que
+      # ya corre antes del build (mismo script, misma cobertura, ver ese
+      # step mas arriba): correrlo dos veces no agrega cobertura, solo
+      # tiempo de CI, asi que no se duplico.
       - name: Archivar reporte de SpotBugs + find-sec-bugs
         if: always()
         uses: actions/upload-artifact@v4
