@@ -1,53 +1,45 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { of, throwError } from 'rxjs';
 import { PrestamosLectorComponent } from './prestamos-lector.component';
 import { AuthService } from '../core/services/auth.service';
+import { PrestamoService } from '../core/services/prestamo.service';
 
 describe('PrestamosLectorComponent', () => {
   let component: PrestamosLectorComponent;
   let fixture: ComponentFixture<PrestamosLectorComponent>;
-  let httpMock: HttpTestingController;
+  let prestamoService: jasmine.SpyObj<PrestamoService>;
 
   beforeEach(async () => {
+    prestamoService = jasmine.createSpyObj('PrestamoService', ['listarPorUsuario', 'crear', 'devolver', 'renovar', 'activosPorUsuario']);
+
     await TestBed.configureTestingModule({
       imports: [PrestamosLectorComponent],
       providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
+        { provide: PrestamoService, useValue: prestamoService },
         { provide: AuthService, useValue: { getUserId: () => 1 } }
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(PrestamosLectorComponent);
     component = fixture.componentInstance;
-    httpMock = TestBed.inject(HttpTestingController);
-  });
-
-  afterEach(() => {
-    httpMock.verify();
   });
 
   it('carga el listado inicial de prestamos propios correctamente', () => {
+    prestamoService.listarPorUsuario.and.returnValue(
+      of({ content: [{ id: 1, libroId: 5, estadoPrestamoId: 1 }], totalPages: 1 } as any)
+    );
+
     fixture.detectChanges(); // dispara ngOnInit -> cargarPrestamos()
 
-    const req = httpMock.expectOne(
-      r => r.url.startsWith('https://sgb-backend-b058.onrender.com/api/v1/prestamos/usuario/1')
-    );
-    expect(req.request.method).toBe('GET');
-    req.flush({ content: [{ id: 1, libroId: 5, estadoPrestamoId: 1 }], totalPages: 1 });
-
+    expect(prestamoService.listarPorUsuario).toHaveBeenCalledWith(1, jasmine.anything());
     expect(component.prestamos.length).toBe(1);
     expect(component.errorMsg).toBe('');
   });
 
   it('muestra errorMsg sin romper la UI si el backend falla', () => {
-    fixture.detectChanges();
+    prestamoService.listarPorUsuario.and.returnValue(throwError(() => ({ status: 500 })));
 
-    const req = httpMock.expectOne(
-      r => r.url.startsWith('https://sgb-backend-b058.onrender.com/api/v1/prestamos/usuario/1')
-    );
-    req.flush('error', { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
 
     expect(component.errorMsg).toBe('Error al cargar tus préstamos');
     expect(component.cargando).toBeFalse();
