@@ -113,15 +113,32 @@ services:
     dockerfilePath: ./frontend-angular/Dockerfile
     dockerContext: ./frontend-angular
     healthCheckPath: /
-    # SIN envVars: verificado contra el repo (frontend-angular/src/)
-    # que este proyecto NO tiene environment.ts/environment.prod.ts ni
-    # ningún otro mecanismo de configuración en tiempo de build o de
-    # arranque -- la URL del backend está hardcodeada como
-    # 'http://localhost:8080/api' (o '/api/v1') directamente en 6
-    # archivos .ts (auth.service.ts, libros.component.ts,
-    # multas.component.ts, prestamos-gestion.component.ts,
-    # prestamos-lector.component.ts, reservaciones.component.ts). Esto
-    # es un hallazgo de esta tarea, no un problema ya diagnosticado
-    # antes -- ver la sección correspondiente en
-    # docs/despliegue/DEPLOYMENT.md. No se agrega ninguna variable de
-    # entorno aquí porque el código actual no leería ninguna.
+    # SIN envVars (actualizado tras el commit b89df9d -- el estado
+    # anterior de este comentario, escrito en bcb3baf, decía que el
+    # proyecto no tenía environment.ts y que la URL del backend estaba
+    # hardcodeada; eso ya no es así, se corrigió en b89df9d y este
+    # comentario quedaba contradiciendo el código real). Verificado de
+    # nuevo contra el repo: frontend-angular/src/environments/environment.ts
+    # (desarrollo, apiUrl 'http://localhost:8080/api') y
+    # environment.prod.ts (producción, apiUrl
+    # 'https://sgb-backend-b058.onrender.com/api') ya existen, y
+    # frontend-angular/angular.json tiene fileReplacements configurado
+    # en architect.build.configurations.production para intercambiarlos.
+    # Los 6 archivos que antes tenían la URL hardcodeada (auth.service.ts,
+    # libros.component.ts, multas.component.ts,
+    # prestamos-gestion.component.ts, prestamos-lector.component.ts,
+    # reservaciones.component.ts) ahora usan environment.apiUrl.
+    #
+    # Este servicio sigue sin necesitar envVars, pero la razón ya no es
+    # "el código no lee ninguna" -- es que apiUrl se resuelve en TIEMPO
+    # DE BUILD (fileReplacements de Angular, ejecutado dentro del
+    # Dockerfile al correr `npm run build`), no en tiempo de arranque
+    # del contenedor. Una variable de entorno de Render nunca sería
+    # leída de todas formas, porque para cuando el contenedor arranca el
+    # bundle JavaScript ya quedó compilado con la URL fija adentro.
+    #
+    # Limitación real (ya documentada en docs/despliegue/DEPLOYMENT.md,
+    # sección 8 -- no se repite con una redacción distinta aquí, se
+    # referencia): si cambia la URL del backend en producción, hace
+    # falta recompilar y volver a desplegar el frontend -- no alcanza
+    # con cambiar una variable de entorno en el dashboard de Render.
