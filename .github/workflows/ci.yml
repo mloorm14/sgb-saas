@@ -88,7 +88,7 @@ jobs:
 
       # Misma fuente de verdad que desarrollo local (docker-compose.yml
       # monta esto mismo en docker-entrypoint-initdb.d/): se genera el
-      # consolidado (schema + los 7 procedimientos/funciones + seed) con el
+      # consolidado (schema + los 9 procedimientos/funciones + seed) con el
       # mismo script que usa `make up`, y se aplica contra el servicio de
       # Postgres de CI con psql -- no se reescribe ni se duplica el DDL acá.
       - name: Inicializar esquema y procedimientos en Postgres (CI)
@@ -97,6 +97,15 @@ jobs:
         run: |
           ./scripts/build-init-sql.sh
           psql -h localhost -p 5432 -U sgb_user -d sgb_db -v ON_ERROR_STOP=1 -f db/init/01-consolidado.sql
+
+      # A.2.3: rechaza el commit si algún archivo de db/procs/ construye SQL
+      # dinámico (EXECUTE IMMEDIATE, sp_executesql, o una sentencia EXECUTE
+      # a secas -- ver scripts/audit-sql-dynamic.sh para el detalle de las
+      # reglas). Corre acá, antes del build de Maven, porque es una
+      # verificación rápida sobre archivos fuente .sql que no depende de
+      # compilar nada -- si va a fallar, que falle temprano.
+      - name: Auditar SQL dinámico en procedimientos
+        run: ./scripts/audit-sql-dynamic.sh
 
       # Host/puerto/usuario/password ya coinciden con los defaults de
       # application.yml (DB_URL localhost:5432/sgb_db, DB_USER sgb_user,
