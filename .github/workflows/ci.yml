@@ -176,9 +176,14 @@ jobs:
 
       # --browsers=ChromeHeadless: 'ng test' por defecto abre Karma con un
       # navegador interactivo, lo que cuelga cualquier runner de CI sin
-      # display. No hace falta un karma.conf.js propio (el proyecto usa el
-      # builder por defecto @angular-devkit/build-angular:karma, ver
-      # angular.json): el flag alcanza como override desde la CLI.
+      # display. El binario real que arranca ChromeHeadless es el Chromium
+      # que trae 'puppeteer' (devDependency, ya descargado por 'npm ci' de
+      # arriba) -- frontend-angular/karma.conf.js fija CHROME_BIN a esa
+      # ruta antes de que karma-chrome-launcher resuelva el navegador (ver
+      # angular.json -> test.options.karmaConfig). Antes de esto se
+      # dependía del Chrome que trae preinstalado ubuntu-latest, lo cual
+      # funcionaba acá pero no en una máquina limpia sin Chrome (rompía
+      # D.1/R1) -- ahora CI y una máquina local se comportan igual.
       - name: Tests (modo headless)
         working-directory: ./frontend-angular
         run: npx ng test --watch=false --browsers=ChromeHeadless

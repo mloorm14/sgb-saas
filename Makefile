@@ -35,6 +35,16 @@ test-backend:
 # headless -- mismo comando que corre .github/workflows/ci.yml (job
 # "frontend"), para que si pasa en la maquina de alguien tambien pase en
 # GitHub Actions.
+#
+# No exporta CHROME_BIN a mano: se probo en una maquina Windows limpia
+# (sin Chrome instalado) que karma-chrome-launcher busca por defecto
+# en C:\Program Files\Google\Chrome\Application\chrome.exe y falla si
+# no esta -- eso rompia D.1/R1 (make all debe correr en cualquier
+# maquina desde una clonacion limpia). frontend-angular/karma.conf.js
+# (ver angular.json -> test.options.karmaConfig) fija CHROME_BIN al
+# binario de Chromium que instala 'puppeteer' (devDependency, se baja
+# solo con 'npm install'/'npm ci'), asi que este target no necesita
+# ninguna variable de entorno ni navegador preinstalado en la maquina.
 test-frontend:
 	cd frontend-angular && npx ng test --watch=false --browsers=ChromeHeadless
 
