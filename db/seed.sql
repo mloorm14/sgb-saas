@@ -59,8 +59,18 @@ INSERT INTO estados_reservacion (nombre) VALUES
 -- 'monto_multa_diaria' es requerido por db/procs/sp_registrar_devolucion.sql
 -- (calcula multas.monto = dias_atraso * este valor). Placeholder razonable
 -- para desarrollo — ajustar al valor real que defina la biblioteca.
+-- 'max_tamano_portada_mb' es requerido por LibroService.validarPortada
+-- (limite de subida de portadas, ver V13__portada_imagen.sql). El snapshot
+-- debe ser autocontenido: no depender de que Flyway aplique V4+/V13.
+-- Las tres siguientes ('minutos_reserva', 'dias_prestamo_default',
+-- 'max_renovaciones_default') vienen de V4__configuracion_sistema_valores_
+-- iniciales.sql, requeridas por ReservacionService/PrestamoService.
 INSERT INTO configuracion_sistema (clave, valor) VALUES
-    ('monto_multa_diaria', '0.50');
+    ('monto_multa_diaria', '0.50'),
+    ('max_tamano_portada_mb', '2'),
+    ('minutos_reserva', '1440'),
+    ('dias_prestamo_default', '15'),
+    ('max_renovaciones_default', '2');
 
 -- ===== editoriales =====
 INSERT INTO editoriales (nombre, pais_origen) VALUES
