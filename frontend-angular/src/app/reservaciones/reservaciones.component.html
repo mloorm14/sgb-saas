@@ -1,27 +1,98 @@
 <main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
 
-  <div class="mb-lg">
-    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">
-      {{ esLector ? 'Mis reservaciones' : 'Gestión de reservaciones' }}
-    </h1>
-    <p class="font-body-sm text-body-sm text-on-surface-variant">
-      {{ esLector ? 'Reservá un libro y seguí el estado de tus reservas' : 'Creá reservas y consultá las de cualquier usuario' }}
-    </p>
+  <div class="mb-lg flex flex-col md:flex-row md:items-end md:justify-between gap-sm">
+    <div>
+      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">
+        {{ esLector ? 'Mis reservaciones' : 'Gestión de reservaciones' }}
+      </h1>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">
+        {{ esLector ? 'Para reservar un libro nuevo, buscalo en el catálogo' : 'Creá reservas y consultá las de cualquier usuario' }}
+      </p>
+    </div>
+    @if (esLector) {
+      <a routerLink="/catalogo"
+        class="inline-flex items-center gap-xs h-10 px-md rounded bg-primary text-on-primary font-label-md text-label-sm hover:bg-on-primary-fixed-variant self-start">
+        <span class="material-symbols-outlined text-[18px]">search</span> Ir al catálogo
+      </a>
+    }
   </div>
 
-  <!-- FORMULARIO CREAR -->
-  <div class="rounded-xl glass-panel p-lg mb-xl">
-    <h2 class="font-headline-md text-headline-md text-on-background mb-sm">Nueva reservación</h2>
-    @if (errorMsgCrear) {
-      <div class="rounded-lg bg-error-container text-on-error-container font-body-sm text-body-sm p-sm mb-md">{{ errorMsgCrear }}</div>
+  @if (esLector) {
+    <!-- Vista LECTOR (mockup 18): la creacion vive en el catalogo/detalle,
+         aca solo Pendientes de retiro + Historial -->
+    @if (errorMsg) {
+      <div class="rounded-lg bg-error-container text-on-error-container font-body-sm text-body-sm p-sm mb-lg">{{ errorMsg }}</div>
+    }
+    @if (cargando) {
+      <div class="text-center py-md font-body-sm text-body-sm text-on-surface-variant">Cargando reservaciones...</div>
     }
 
-    <form [formGroup]="formCrear" (ngSubmit)="crearReservacion()" class="flex flex-col md:flex-row items-start md:items-end gap-md">
-      @if (esLector) {
-        <div class="flex-1 max-w-md">
-          <app-buscador-libro (libroSeleccionado)="onLibroSeleccionado($event)"></app-buscador-libro>
+    @if (!cargando && reservaciones.length === 0) {
+      <div class="rounded-lg border border-dashed border-outline-variant bg-white p-xl text-center">
+        <span class="material-symbols-outlined text-[40px] text-outline">event_available</span>
+        <p class="font-body-md text-body-md text-on-surface-variant mt-sm">No tenés reservaciones todavía.</p>
+        <a routerLink="/catalogo" class="inline-flex items-center gap-xs text-primary font-label-md text-label-sm hover:underline mt-xs">
+          Buscar en el catálogo <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+        </a>
+      </div>
+    }
+
+    @if (!cargando && reservaciones.length > 0) {
+      @if (pendientesDeRetiro.length > 0) {
+        <h2 class="font-headline-md text-headline-md text-on-background mb-sm">Pendientes de retiro</h2>
+        <div class="grid gap-sm mb-xl">
+          @for (r of pendientesDeRetiro; track r.id) {
+            <div class="rounded-lg border border-outline-variant bg-white p-md flex items-center justify-between">
+              <div>
+                <p class="font-label-md text-label-sm text-on-surface">{{ tituloLibro(r.libroId) }}</p>
+                <p class="font-body-sm text-[12px] text-on-surface-variant mt-1">Reservado el {{ r.fechaReserva | date:'dd/MM' }} · Retirar antes del <strong class="text-warning">{{ r.fechaLimiteRetiro | date:'dd/MM/yyyy' }}</strong></p>
+              </div>
+              <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]" [class]="claseEstadoReservacion(r.estadoReservacionId)">
+                <span class="material-symbols-outlined text-[14px]">event_available</span> {{ estadosReservacion[r.estadoReservacionId] }}
+              </span>
+            </div>
+          }
         </div>
-      } @else {
+      }
+
+      @if (historial.length > 0) {
+        <h2 class="font-headline-md text-headline-md text-on-background mb-sm">Historial</h2>
+        <div class="rounded-lg border border-outline-variant bg-white overflow-hidden mb-lg">
+          <table class="w-full text-left">
+            <thead class="bg-surface-container-low">
+              <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+                <th class="px-md py-sm">Libro</th>
+                <th class="px-md py-sm">Fecha reserva</th>
+                <th class="px-md py-sm">Estado</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+              @for (r of historial; track r.id) {
+                <tr>
+                  <td class="px-md py-sm">{{ tituloLibro(r.libroId) }}</td>
+                  <td class="px-md py-sm text-on-surface-variant">{{ r.fechaReserva | date:'dd MMM yyyy' }}</td>
+                  <td class="px-md py-sm">
+                    <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]" [class]="claseEstadoReservacion(r.estadoReservacionId)">
+                      {{ estadosReservacion[r.estadoReservacionId] }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  } @else {
+    <!-- Modo GESTION (BIBLIOTECARIO/GERENTE): sin cambios, formulario
+         usuarioId/libroId manual + busqueda + tabla paginada -->
+    <div class="rounded-xl glass-panel p-lg mb-xl">
+      <h2 class="font-headline-md text-headline-md text-on-background mb-sm">Nueva reservación</h2>
+      @if (errorMsgCrear) {
+        <div class="rounded-lg bg-error-container text-on-error-container font-body-sm text-body-sm p-sm mb-md">{{ errorMsgCrear }}</div>
+      }
+
+      <form [formGroup]="formCrear" (ngSubmit)="crearReservacion()" class="flex flex-col md:flex-row items-start md:items-end gap-md">
         <div>
           <label class="block font-label-sm text-label-sm text-on-surface-variant mb-xs">Usuario ID</label>
           <input formControlName="usuarioId" type="number"
@@ -32,16 +103,13 @@
           <input formControlName="libroId" type="number"
             class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:ring-0 focus:border-primary" />
         </div>
-      }
-      <button type="submit" [disabled]="formCrear.invalid"
-        class="h-10 px-md rounded bg-primary text-on-primary font-label-md text-label-sm hover:bg-on-primary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed">
-        Reservar
-      </button>
-    </form>
-  </div>
+        <button type="submit" [disabled]="formCrear.invalid"
+          class="h-10 px-md rounded bg-primary text-on-primary font-label-md text-label-sm hover:bg-on-primary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed">
+          Reservar
+        </button>
+      </form>
+    </div>
 
-  <!-- BUSQUEDA POR USUARIO: solo bibliotecario/gerente, el lector ya ve lo suyo automaticamente -->
-  @if (!esLector) {
     <div class="flex flex-col md:flex-row items-start md:items-end gap-md mb-lg">
       <div>
         <label class="block font-label-sm text-label-sm text-on-surface-variant mb-xs">Ver reservaciones del usuario ID</label>
@@ -53,65 +121,61 @@
         Buscar
       </button>
     </div>
-  }
 
-  @if (errorMsg) {
-    <div class="rounded-lg bg-error-container text-on-error-container font-body-sm text-body-sm p-sm mb-lg">{{ errorMsg }}</div>
-  }
-  @if (cargando) {
-    <div class="text-center py-md font-body-sm text-body-sm text-on-surface-variant">Cargando reservaciones...</div>
-  }
+    @if (errorMsg) {
+      <div class="rounded-lg bg-error-container text-on-error-container font-body-sm text-body-sm p-sm mb-lg">{{ errorMsg }}</div>
+    }
+    @if (cargando) {
+      <div class="text-center py-md font-body-sm text-body-sm text-on-surface-variant">Cargando reservaciones...</div>
+    }
 
-  @if (!cargando && reservaciones.length > 0) {
-    <div class="rounded-lg border border-outline-variant bg-white overflow-hidden mb-lg">
-      <table class="w-full text-left">
-        <thead class="bg-surface-container-low">
-          <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
-            <th class="px-md py-sm">Libro</th>
-            @if (!esLector) {
+    @if (!cargando && reservaciones.length > 0) {
+      <div class="rounded-lg border border-outline-variant bg-white overflow-hidden mb-lg">
+        <table class="w-full text-left">
+          <thead class="bg-surface-container-low">
+            <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+              <th class="px-md py-sm">Libro</th>
               <th class="px-md py-sm">Usuario</th>
-            }
-            <th class="px-md py-sm hidden sm:table-cell">Reservado</th>
-            <th class="px-md py-sm hidden sm:table-cell">Límite de retiro</th>
-            <th class="px-md py-sm">Estado</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-          @for (r of reservaciones; track r.id) {
-            <tr>
-              <td class="px-md py-sm">{{ tituloLibro(r.libroId) }}</td>
-              @if (!esLector) {
-                <td class="px-md py-sm text-on-surface-variant">{{ r.usuarioId }}</td>
-              }
-              <td class="px-md py-sm hidden sm:table-cell text-on-surface-variant">{{ r.fechaReserva | date:'dd MMM yyyy' }}</td>
-              <td class="px-md py-sm hidden sm:table-cell text-on-surface-variant">{{ r.fechaLimiteRetiro | date:'dd MMM yyyy' }}</td>
-              <td class="px-md py-sm">
-                <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]" [class]="claseEstadoReservacion(r.estadoReservacionId)">
-                  {{ estadosReservacion[r.estadoReservacionId] }}
-                </span>
-              </td>
+              <th class="px-md py-sm hidden sm:table-cell">Reservado</th>
+              <th class="px-md py-sm hidden sm:table-cell">Límite de retiro</th>
+              <th class="px-md py-sm">Estado</th>
             </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  }
-  @if (!cargando && reservaciones.length === 0) {
-    <div class="text-center py-lg font-body-sm text-body-sm text-on-surface-variant mb-lg">No hay reservaciones registradas</div>
-  }
+          </thead>
+          <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+            @for (r of reservaciones; track r.id) {
+              <tr>
+                <td class="px-md py-sm">{{ tituloLibro(r.libroId) }}</td>
+                <td class="px-md py-sm text-on-surface-variant">{{ r.usuarioId }}</td>
+                <td class="px-md py-sm hidden sm:table-cell text-on-surface-variant">{{ r.fechaReserva | date:'dd MMM yyyy' }}</td>
+                <td class="px-md py-sm hidden sm:table-cell text-on-surface-variant">{{ r.fechaLimiteRetiro | date:'dd MMM yyyy' }}</td>
+                <td class="px-md py-sm">
+                  <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]" [class]="claseEstadoReservacion(r.estadoReservacionId)">
+                    {{ estadosReservacion[r.estadoReservacionId] }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    @if (!cargando && reservaciones.length === 0) {
+      <div class="text-center py-lg font-body-sm text-body-sm text-on-surface-variant mb-lg">No hay reservaciones registradas</div>
+    }
 
-  @if (reservaciones.length > 0) {
-    <div class="flex justify-center items-center gap-md font-body-sm text-body-sm">
-      <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
-        class="px-sm h-8 rounded border border-outline-variant text-on-surface hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed">
-        ← Anterior
-      </button>
-      <span class="text-on-surface-variant">Página {{ currentPage + 1 }} de {{ totalPages }}</span>
-      <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
-        class="px-sm h-8 rounded border border-outline-variant text-on-surface hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed">
-        Siguiente →
-      </button>
-    </div>
+    @if (reservaciones.length > 0) {
+      <div class="flex justify-center items-center gap-md font-body-sm text-body-sm">
+        <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
+          class="px-sm h-8 rounded border border-outline-variant text-on-surface hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed">
+          ← Anterior
+        </button>
+        <span class="text-on-surface-variant">Página {{ currentPage + 1 }} de {{ totalPages }}</span>
+        <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
+          class="px-sm h-8 rounded border border-outline-variant text-on-surface hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed">
+          Siguiente →
+        </button>
+      </div>
+    }
   }
 
 </main>
