@@ -7,6 +7,7 @@ interface EnlaceNav {
   etiqueta: string;
   icono: string;
   futuro?: boolean;
+  roles?: string[];
 }
 
 @Component({
@@ -20,12 +21,9 @@ export class AppComponent {
 
   constructor(private authService: AuthService) {}
 
-  // TODO(frontend/estudiante-cuenta, frontend/bibliotecario-operacion,
-  // frontend/gerente-panel-administrativo): los enlaces con futuro=true
-  // apuntan a rutas que todavia no existen en esta rama (mi-credencial,
-  // notificaciones, dashboard, reportes, admin/usuarios, auditoria). Se
-  // completan cuando se mergeen esas ramas; el clic hoy cae en el
-  // comodin '**' -> /login.
+  // TODO(frontend/estudiante-cuenta): los enlaces con futuro=true apuntan
+  // a rutas que todavia no existen en esta rama (mi-credencial,
+  // notificaciones). Se completan cuando se mergeen esas ramas.
   // Rama B completada: /catalogo, /favoritos y /sugerencias ya son reales
   // y salen de la lista de futuros.
   enlacesLector: EnlaceNav[] = [
@@ -39,21 +37,24 @@ export class AppComponent {
     { ruta: '/notificaciones', etiqueta: 'Notificaciones', icono: 'notifications', futuro: true }
   ];
 
-  enlacesOperacion: EnlaceNav[] = [
-    { ruta: '/prestamos/gestion', etiqueta: 'Préstamos', icono: 'assignment_return' },
-    { ruta: '/reservaciones', etiqueta: 'Reservaciones', icono: 'event_available' },
-    { ruta: '/multas', etiqueta: 'Multas', icono: 'payments' },
-    { ruta: '/libros', etiqueta: 'Libros', icono: 'inventory_2' },
-    { ruta: '/dashboard', etiqueta: 'Dashboard', icono: 'dashboard', futuro: true },
-    { ruta: '/reportes', etiqueta: 'Reportes', icono: 'bar_chart', futuro: true }
-  ];
-
-  enlacesAdmin: EnlaceNav[] = [
-    { ruta: '/libros', etiqueta: 'Libros', icono: 'inventory_2' },
-    { ruta: '/dashboard', etiqueta: 'Dashboard', icono: 'dashboard', futuro: true },
-    { ruta: '/reportes', etiqueta: 'Reportes', icono: 'bar_chart', futuro: true },
-    { ruta: '/admin/usuarios', etiqueta: 'Usuarios', icono: 'manage_accounts', futuro: true },
-    { ruta: '/auditoria', etiqueta: 'Auditoría', icono: 'receipt_long', futuro: true }
+  // Navbar compartido del staff (mockup 23: SGB · Staff). roles por enlace
+  // con hasRole(), espejo de los roleGuard de app.routes y de los
+  // @PreAuthorize reales de cada controller:
+  // - /prestamos/gestion, /reservaciones, /multas: BIBLIOTECARIO/GERENTE
+  //   (ADMIN no tiene endpoints en esos controllers).
+  // - /reportes: BIBLIOTECARIO/GERENTE (el ADMIN no entra).
+  // - /sugerencias/gestion, /admin/usuarios, /auditoria: GERENTE/ADMIN.
+  // - /libros: todo el staff (inventario).
+  enlacesStaff: EnlaceNav[] = [
+    { ruta: '/libros', etiqueta: 'Libros', icono: 'inventory_2', roles: ['BIBLIOTECARIO', 'GERENTE', 'ADMIN'] },
+    { ruta: '/prestamos/gestion', etiqueta: 'Préstamos', icono: 'assignment_return', roles: ['BIBLIOTECARIO', 'GERENTE'] },
+    { ruta: '/reservaciones', etiqueta: 'Reservaciones', icono: 'event_available', roles: ['BIBLIOTECARIO', 'GERENTE'] },
+    { ruta: '/multas', etiqueta: 'Multas', icono: 'payments', roles: ['BIBLIOTECARIO', 'GERENTE'] },
+    { ruta: '/reportes', etiqueta: 'Reportes', icono: 'bar_chart', roles: ['BIBLIOTECARIO', 'GERENTE'] },
+    { ruta: '/sugerencias/gestion', etiqueta: 'Sugerencias', icono: 'lightbulb', roles: ['GERENTE', 'ADMIN'] },
+    { ruta: '/admin/usuarios', etiqueta: 'Usuarios', icono: 'manage_accounts', roles: ['GERENTE', 'ADMIN'] },
+    { ruta: '/auditoria', etiqueta: 'Auditoría', icono: 'receipt_long', roles: ['GERENTE', 'ADMIN'] },
+    { ruta: '/dashboard', etiqueta: 'Dashboard', icono: 'dashboard', futuro: true, roles: ['BIBLIOTECARIO', 'GERENTE', 'ADMIN'] }
   ];
 
   estaLogueado(): boolean {
@@ -64,12 +65,12 @@ export class AppComponent {
     return this.authService.hasRole('LECTOR');
   }
 
-  esOperacion(): boolean {
-    return this.authService.hasRole('BIBLIOTECARIO', 'GERENTE');
+  esStaff(): boolean {
+    return this.authService.hasRole('BIBLIOTECARIO', 'GERENTE', 'ADMIN');
   }
 
-  esAdmin(): boolean {
-    return this.authService.hasRole('ADMIN');
+  permiteEnlace(enlace: EnlaceNav): boolean {
+    return this.authService.hasRole(...(enlace.roles ?? []));
   }
 
   cerrarSesion(): void {
