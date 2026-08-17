@@ -4,7 +4,7 @@ import { catchError, Observable, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Page } from '../models/pagina.model';
 import { ProblemDetail } from '../models/problem-detail.model';
-import { Reservacion, ReservacionRequest } from '../models/reservacion.model';
+import { CambioEstadoReservacionRequest, Reservacion, ReservacionRequest } from '../models/reservacion.model';
 
 export interface ReservacionListarParams {
   page?: number;
@@ -34,6 +34,14 @@ export class ReservacionService {
     if (params.sort) httpParams = httpParams.set('sort', params.sort);
 
     return this.http.get<Page<Reservacion>>(`${this.apiUrl}/usuario/${usuarioId}`, { params: httpParams }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  // PATCH /api/v1/reservaciones/{id}/estado: solo BIBLIOTECARIO/GERENTE en
+  // el backend (@PreAuthorize). Aceptar = LISTA_PARA_RETIRO, rechazar = CANCELADA.
+  cambiarEstado(id: number, dto: CambioEstadoReservacionRequest): Observable<Reservacion> {
+    return this.http.patch<Reservacion>(`${this.apiUrl}/${id}/estado`, dto).pipe(
       catchError(err => this.manejarError(err))
     );
   }

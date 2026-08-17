@@ -52,6 +52,10 @@ export class ReservacionesComponent implements OnInit {
   private titulosLibros = new Map<number, string>();
   private titulosEnCarga = new Set<number>();
 
+  // Id de la reservación con acción (aceptar/rechazar) en curso: deshabilita
+  // sus botones hasta que responda el PATCH.
+  accionandoId: number | null = null;
+
   constructor(
     private reservacionService: ReservacionService,
     private libroService: LibroService,
@@ -157,6 +161,25 @@ export class ReservacionesComponent implements OnInit {
     this.errorMsg = '';
     this.currentPage = 0;
     this.cargarPagina();
+  }
+
+  // PATCH /api/v1/reservaciones/{id}/estado (solo staff, botones visibles
+  // únicamente en filas PENDIENTE). Aceptar -> LISTA_PARA_RETIRO,
+  // rechazar -> CANCELADA; el estado nuevo queda visible en la tabla y se
+  // audita en el backend (tabla reservaciones, UPDATE).
+  cambiarEstadoReservacion(r: Reservacion, nuevoEstado: 'LISTA_PARA_RETIRO' | 'CANCELADA'): void {
+    if (this.accionandoId !== null || r.estadoReservacionId !== 1) return;
+    this.accionandoId = r.id;
+    this.errorMsg = '';
+    this.reservacionService.cambiarEstado(r.id, { nuevoEstado }).subscribe({
+      next: () => this.cargarPagina(),
+      error: (err) => {
+        this.errorMsg = (err as { error?: { detail?: string } })?.error?.detail
+          ?? 'No se pudo cambiar el estado de la reservación';
+        this.accionandoId = null;
+      },
+      complete: () => { this.accionandoId = null; }
+    });
   }
 
   private cargarPagina(): void {

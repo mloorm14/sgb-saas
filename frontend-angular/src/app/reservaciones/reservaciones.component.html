@@ -139,6 +139,7 @@
               <th class="px-md py-sm hidden sm:table-cell">Reservado</th>
               <th class="px-md py-sm hidden sm:table-cell">Límite de retiro</th>
               <th class="px-md py-sm">Estado</th>
+              <th class="px-md py-sm">Acciones</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
@@ -152,6 +153,22 @@
                   <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]" [class]="claseEstadoReservacion(r.estadoReservacionId)">
                     {{ estadosReservacion[r.estadoReservacionId] }}
                   </span>
+                </td>
+                <td class="px-md py-sm">
+                  @if (r.estadoReservacionId === 1) {
+                    <div class="flex items-center gap-xs">
+                      <button (click)="cambiarEstadoReservacion(r, 'LISTA_PARA_RETIRO')" [disabled]="accionandoId !== null"
+                        class="inline-flex items-center gap-xs h-8 px-sm rounded bg-primary text-on-primary font-label-md text-label-sm hover:bg-on-primary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span class="material-symbols-outlined text-[16px]">check</span> Aceptar
+                      </button>
+                      <button (click)="cambiarEstadoReservacion(r, 'CANCELADA')" [disabled]="accionandoId !== null"
+                        class="inline-flex items-center gap-xs h-8 px-sm rounded border border-error text-error font-label-md text-label-sm hover:bg-error-container disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span class="material-symbols-outlined text-[16px]">close</span> Rechazar
+                      </button>
+                    </div>
+                  } @else {
+                    <span class="text-[12px] text-on-surface-variant">—</span>
+                  }
                 </td>
               </tr>
             }
