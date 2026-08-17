@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SGB · Inventario · Formulario completo</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          "secondary-container": "#76f4e0","surface": "#f8f9ff","surface-container-highest": "#d5e3fc",
+          "on-error": "#ffffff","error-container": "#ffdad6","surface-container": "#e6eeff",
+          "on-secondary-fixed": "#00201c","on-secondary-container": "#006f63","surface-bright": "#f8f9ff",
+          "tertiary": "#503a00","surface-variant": "#d5e3fc","outline-variant": "#c4c6d5",
+          "inverse-primary": "#b4c5ff","primary-container": "#1e4db7","on-tertiary-fixed-variant": "#5b4300",
+          "on-primary-fixed-variant": "#003ea8","inverse-on-surface": "#eaf1ff","surface-dim": "#ccdbf3",
+          "error": "#ba1a1a","on-tertiary-fixed": "#261a00","primary-fixed-dim": "#b4c5ff",
+          "on-tertiary": "#ffffff","on-surface-variant": "#434653","secondary-fixed": "#79f7e3",
+          "background": "#f8f9ff","on-background": "#0d1c2e","tertiary-fixed": "#ffdf9e",
+          "on-surface": "#0d1c2e","primary-fixed": "#dbe1ff","surface-container-lowest": "#ffffff",
+          "on-tertiary-container": "#fec004","surface-container-high": "#dce9ff","surface-container-low": "#eff4ff",
+          "tertiary-container": "#6c5000","surface-tint": "#2c57c1","primary": "#003694",
+          "on-secondary": "#ffffff","on-primary-fixed": "#00174b","outline": "#747684",
+          "on-secondary-fixed-variant": "#005047","secondary": "#006b5f","tertiary-fixed-dim": "#fabd00",
+          "secondary-fixed-dim": "#59dbc7","on-primary-container": "#b8c8ff","on-error-container": "#93000a",
+          "on-primary": "#ffffff","inverse-surface": "#233144",
+          "success": "#1d9e75","warning": "#fec004"
+        },
+        borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" },
+        spacing: { gutter: "24px", xl: "40px", lg: "24px", md: "16px", "container-max": "1280px", sm: "8px", xs: "4px", "margin-mobile": "16px", base: "4px" },
+        fontFamily: {
+          "headline-lg": ["Plus Jakarta Sans"], "body-md": ["Inter"], "label-md": ["Inter"],
+          "headline-lg-mobile": ["Plus Jakarta Sans"], "headline-xl": ["Plus Jakarta Sans"],
+          "label-sm": ["Inter"], "body-lg": ["Inter"], "body-sm": ["Inter"], "headline-md": ["Plus Jakarta Sans"]
+        },
+        fontSize: {
+          "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+          "label-md": ["14px", { lineHeight: "20px", letterSpacing: "0.05em", fontWeight: "600" }],
+          "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+          "headline-xl": ["40px", { lineHeight: "48px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "label-sm": ["12px", { lineHeight: "16px", fontWeight: "500" }],
+          "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+          "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+          "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Inter', sans-serif; background:#f8f9ff; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align:middle; }
+  .glass-panel { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
+</style>
+</head>
+<body class="bg-black/10 p-lg">
+<main class="max-w-2xl mx-auto">
+
+  <div class="mb-md">
+    <h1 class="font-headline-md text-headline-md text-on-background">Formulario completo corregido</h1>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Reemplaza al mockup 19-v2 — ahora con año de publicación, portada manual y ubicación física, que faltaban</p>
+  </div>
+
+  <div class="bg-white rounded-xl glass-panel w-full p-xl">
+    <h2 class="font-headline-md text-headline-md text-on-background mb-md">Editar libro</h2>
+
+    <form class="space-y-md">
+      <!-- ISBN + autocompletar (ya existia, sin cambios) -->
+      <div>
+        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">ISBN</label>
+        <div class="flex gap-xs">
+          <input type="text" value="978-8497592208" class="flex-1 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+          <button type="button" class="h-11 px-md rounded border border-primary text-primary font-label-sm text-label-sm">Autocompletar</button>
+        </div>
+        <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Autor sugerido: Isabel Allende</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-md">
+        <div class="sm:col-span-2">
+          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Título</label>
+          <input type="text" value="La casa de los espíritus" class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+        </div>
+
+        <!-- NUEVO: antes existia en el FormGroup pero nunca se mostraba -->
+        <div class="relative">
+          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Año de publicación</label>
+          <input type="number" value="1982" class="w-full h-11 px-sm rounded border-2 border-secondary font-body-sm text-body-sm" />
+          <span class="absolute -top-2 right-2 bg-secondary text-white text-[10px] px-2 py-0.5 rounded-full">nuevo</span>
+        </div>
+        <div>
+          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Stock total / disponible</label>
+          <div class="flex gap-xs">
+            <input type="number" value="3" class="w-1/2 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+            <input type="number" value="3" class="w-1/2 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+          </div>
+        </div>
+
+        <div class="sm:col-span-2">
+          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Resumen</label>
+          <textarea rows="3" class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm resize-y">Saga familiar que combina historia política y elementos fantásticos.</textarea>
+        </div>
+
+        <div>
+          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Categorías</label>
+          <select multiple class="w-full h-24 px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm bg-white">
+            <option selected>Ficción</option>
+            <option>Tecnología</option>
+            <option>Historia</option>
+          </select>
+        </div>
+        <div>
+          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Autores</label>
+          <select multiple class="w-full h-24 px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm bg-white">
+            <option>Gabriel García Márquez</option>
+            <option>Yuval Noah Harari</option>
+            <option selected>Isabel Allende</option>
+          </select>
+        </div>
+
+        <!-- Editorial/Idioma/Estado: selects reales con nombre, no ID -->
+        <div>
+          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Editorial</label>
+          <select class="w-full h-11 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm">
+            <option selected>Plaza &amp; Janés</option>
+            <option>Prentice Hall</option>
+          </select>
+        </div>
+        <div>
+          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Idioma</label>
+          <select class="w-full h-11 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm">
+            <option selected>Español</option>
+            <option>Inglés</option>
+          </select>
+        </div>
+        <div>
+          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Estado del ejemplar</label>
+          <select class="w-full h-11 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm">
+            <option selected>Buen estado</option>
+            <option>Nuevo</option>
+            <option>Deteriorado</option>
+          </select>
+        </div>
+
+        <!-- NUEVO: texto libre, no catalogo -->
+        <div class="relative">
+          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Ubicación física <span class="opacity-60">(opcional)</span></label>
+          <input type="text" placeholder="Ej: Estante A-12" value="Estante B-04" class="w-full h-11 px-sm rounded border-2 border-secondary font-body-sm text-body-sm" />
+          <span class="absolute -top-2 right-2 bg-secondary text-white text-[10px] px-2 py-0.5 rounded-full">nuevo</span>
+        </div>
+      </div>
+
+      <!-- NUEVO: subida manual de portada, independiente del autocompletar -->
+      <div class="relative rounded-lg border-2 border-secondary p-md bg-surface-container-low">
+        <span class="absolute -top-2 right-2 bg-secondary text-white text-[10px] px-2 py-0.5 rounded-full">nuevo</span>
+        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Portada <span class="opacity-60">(opcional — automática por ISBN o manual)</span></label>
+        <div class="flex items-center gap-md">
+          <div class="w-16 h-20 rounded border border-outline-variant bg-white overflow-hidden shrink-0">
+            <img src="https://picsum.photos/seed/casaespiritus/200/280" class="w-full h-full object-cover" alt="Portada actual" />
+          </div>
+          <div class="flex-1">
+            <input type="file" accept="image/png,image/jpeg,image/webp"
+              class="w-full text-body-sm text-on-surface-variant file:mr-sm file:h-9 file:px-sm file:rounded file:border-0 file:bg-primary-fixed file:text-on-primary-fixed-variant file:cursor-pointer" />
+            <p class="font-label-sm text-[11px] text-on-surface-variant mt-1">PNG, JPEG o WEBP · máx. 2MB</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-sm mt-lg">
+        <button type="button" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm">Cancelar</button>
+        <button type="submit" class="h-10 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm">Actualizar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="mt-lg rounded-lg border border-outline-variant bg-white p-md">
+    <p class="font-label-sm text-label-sm text-on-surface mb-xs">Los 3 campos marcados "nuevo" son los que faltaban:</p>
+    <ul class="font-body-sm text-body-sm text-on-surface-variant list-disc pl-lg space-y-1">
+      <li><strong>Año de publicación:</strong> ya existía en el form de Angular pero nunca tenía un &lt;input&gt; visible — bug real, no cosmético.</li>
+      <li><strong>Portada manual:</strong> antes solo se podía subir automáticamente vía autocompletar ISBN.</li>
+      <li><strong>Ubicación física:</strong> la columna existe en la base de datos pero el backend no la exponía para escritura — hay que agregarla al DTO primero.</li>
+    </ul>
+  </div>
+</main>
+</body>
+</html>

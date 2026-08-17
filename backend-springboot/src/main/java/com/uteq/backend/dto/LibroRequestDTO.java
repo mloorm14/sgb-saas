@@ -22,6 +22,11 @@ public record LibroRequestDTO(
 
         String resumen,
 
+        // Ubicación física (ej. "Estante A-12"). Opcional: un libro puede
+        // no tener estantería asignada todavía, mismo criterio que resumen.
+        @Size(max = 50, message = "La ubicación física no puede superar 50 caracteres")
+        String ubicacionFisica,
+
         @Size(max = 1000)
         String portadaUrl,
 

@@ -108,7 +108,7 @@ class LibroControllerSecurityTest {
 
     private LibroRequestDTO libroValido() {
         return new LibroRequestDTO(
-                "Clean Code", "9780132350884", 2008, "resumen", null,
+                "Clean Code", "9780132350884", 2008, "resumen", null, null,
                 1, 1, 1, 3, 3, null, null
         );
     }
