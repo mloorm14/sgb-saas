@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SGB · Inventario · Nuevo libro</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          "secondary-container": "#76f4e0","surface": "#f8f9ff","surface-container-highest": "#d5e3fc",
+          "on-error": "#ffffff","error-container": "#ffdad6","surface-container": "#e6eeff",
+          "on-secondary-fixed": "#00201c","on-secondary-container": "#006f63","surface-bright": "#f8f9ff",
+          "tertiary": "#503a00","surface-variant": "#d5e3fc","outline-variant": "#c4c6d5",
+          "inverse-primary": "#b4c5ff","primary-container": "#1e4db7","on-tertiary-fixed-variant": "#5b4300",
+          "on-primary-fixed-variant": "#003ea8","inverse-on-surface": "#eaf1ff","surface-dim": "#ccdbf3",
+          "error": "#ba1a1a","on-tertiary-fixed": "#261a00","primary-fixed-dim": "#b4c5ff",
+          "on-tertiary": "#ffffff","on-surface-variant": "#434653","secondary-fixed": "#79f7e3",
+          "background": "#f8f9ff","on-background": "#0d1c2e","tertiary-fixed": "#ffdf9e",
+          "on-surface": "#0d1c2e","primary-fixed": "#dbe1ff","surface-container-lowest": "#ffffff",
+          "on-tertiary-container": "#fec004","surface-container-high": "#dce9ff","surface-container-low": "#eff4ff",
+          "tertiary-container": "#6c5000","surface-tint": "#2c57c1","primary": "#003694",
+          "on-secondary": "#ffffff","on-primary-fixed": "#00174b","outline": "#747684",
+          "on-secondary-fixed-variant": "#005047","secondary": "#006b5f","tertiary-fixed-dim": "#fabd00",
+          "secondary-fixed-dim": "#59dbc7","on-primary-container": "#b8c8ff","on-error-container": "#93000a",
+          "on-primary": "#ffffff","inverse-surface": "#233144",
+          "success": "#1d9e75","warning": "#fec004"
+        },
+        borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" },
+        spacing: { gutter: "24px", xl: "40px", lg: "24px", md: "16px", "container-max": "1280px", sm: "8px", xs: "4px", "margin-mobile": "16px", base: "4px" },
+        fontFamily: {
+          "headline-lg": ["Plus Jakarta Sans"], "body-md": ["Inter"], "label-md": ["Inter"],
+          "headline-lg-mobile": ["Plus Jakarta Sans"], "headline-xl": ["Plus Jakarta Sans"],
+          "label-sm": ["Inter"], "body-lg": ["Inter"], "body-sm": ["Inter"], "headline-md": ["Plus Jakarta Sans"]
+        },
+        fontSize: {
+          "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+          "label-md": ["14px", { lineHeight: "20px", letterSpacing: "0.05em", fontWeight: "600" }],
+          "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+          "headline-xl": ["40px", { lineHeight: "48px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "label-sm": ["12px", { lineHeight: "16px", fontWeight: "500" }],
+          "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+          "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+          "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Inter', sans-serif; background:#f8f9ff; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align:middle; }
+  .glass-panel { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
+</style>
+</head>
+<body>
+<nav class="sticky top-0 z-40 bg-surface/90 backdrop-blur border-b border-outline-variant">
+  <div class="max-w-container-max mx-auto px-md md:px-lg h-16 flex items-center justify-between">
+    <div class="flex items-center gap-sm">
+      <div class="w-9 h-9 rounded bg-primary flex items-center justify-center text-on-primary">
+        <span class="material-symbols-outlined text-[20px]" style="font-variation-settings:'FILL' 1;">menu_book</span>
+      </div>
+      <span class="font-headline-md text-headline-md text-primary hidden sm:inline">SGB</span>
+    </div>
+    <div class="hidden md:flex items-center gap-lg font-label-sm text-label-sm text-on-surface-variant">
+      <a class="hover:text-primary" href="#">Dashboard</a>
+      <a class="hover:text-primary" href="#">Préstamos</a>
+      <a class="hover:text-primary" href="#">Reservaciones</a>
+      <a class="hover:text-primary" href="#">Multas</a>
+      <a class="text-primary font-semibold" href="#">Inventario</a>
+      <a class="hover:text-primary" href="#">Reportes</a>
+    </div>
+    <div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center font-label-sm text-label-sm text-on-primary-fixed-variant">MP</div>
+  </div>
+</nav>
+
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg flex justify-center">
+  <div class="w-full max-w-2xl">
+    <div class="mb-lg">
+      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Nuevo libro</h1>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">Digitá el ISBN para autocompletar título, autor, portada y descripción</p>
+    </div>
+
+    <!-- Aviso de gap real de backend -->
+    <div class="rounded-lg border border-outline-variant bg-surface-container-low p-sm mb-lg flex items-start gap-xs">
+      <span class="material-symbols-outlined text-[18px] text-on-surface-variant mt-0.5">construction</span>
+      <p class="font-label-sm text-[12px] text-on-surface-variant">El autocompletado necesita un endpoint nuevo en backend (ej. <code>GET /api/v1/libros/lookup-isbn?isbn=</code>) que consulte una API externa (Google Books / Open Library) y devuelva título/autor/portada/descripción. Hoy <code>LibroRequestDTO.isbn</code> es solo un campo de texto validado por regex, sin ninguna resolución automática — lo confirmé en el código real.</p>
+    </div>
+
+    <form class="rounded-xl glass-panel p-xl space-y-md">
+
+      <!-- ISBN con autocompletar -->
+      <div class="space-y-xs">
+        <label class="font-label-sm text-label-sm text-on-surface">ISBN <span class="text-error">*</span></label>
+        <div class="flex gap-xs">
+          <div class="flex-1 rounded border border-outline-variant bg-surface">
+            <input type="text" value="978-0132350884" maxlength="13"
+              class="w-full bg-transparent border-none focus:ring-0 px-sm py-sm font-body-sm text-body-sm text-on-surface" />
+          </div>
+          <button type="button" class="shrink-0 h-[42px] px-md rounded bg-primary text-on-primary font-label-md text-[13px] flex items-center gap-xs hover:bg-on-primary-fixed-variant">
+            <span class="material-symbols-outlined text-[18px]">auto_awesome</span> Autocompletar
+          </button>
+        </div>
+        <p class="font-label-sm text-[11px] text-secondary flex items-center gap-xs mt-1">
+          <span class="material-symbols-outlined text-[14px]">check_circle</span> Encontrado en Google Books — campos rellenados abajo, revisalos antes de guardar
+        </p>
+      </div>
+
+      <!-- Preview de portada resuelta -->
+      <div class="flex gap-md items-start p-sm bg-surface-container-low rounded-lg">
+        <div class="w-20 aspect-[3/4] rounded bg-white border border-outline-variant overflow-hidden shrink-0">
+          <img src="https://picsum.photos/seed/libro1/200/280" class="w-full h-full object-cover" alt="Portada encontrada" />
+        </div>
+        <div>
+          <p class="font-label-sm text-[12px] text-on-surface-variant">Portada obtenida automáticamente. Se sube al guardar mediante <code class="text-[11px]">LibroService.subirPortada()</code> (endpoint real ya implementado, POST /libros/{id}/portada).</p>
+          <button type="button" class="mt-xs font-label-sm text-[11px] text-primary hover:underline">Reemplazar por otra imagen</button>
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-md">
+        <div class="space-y-xs">
+          <label class="font-label-sm text-label-sm text-on-surface">Título <span class="text-error">*</span></label>
+          <div class="rounded border border-outline-variant bg-surface">
+            <input type="text" value="Clean Code: A Handbook of Agile Software Craftsmanship" class="w-full bg-transparent border-none focus:ring-0 px-sm py-sm font-body-sm text-body-sm text-on-surface" />
+          </div>
+        </div>
+        <div class="space-y-xs">
+          <label class="font-label-sm text-label-sm text-on-surface">Año de publicación <span class="text-error">*</span></label>
+          <div class="rounded border border-outline-variant bg-surface">
+            <input type="number" value="2008" class="w-full bg-transparent border-none focus:ring-0 px-sm py-sm font-body-sm text-body-sm text-on-surface" />
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-xs">
+        <label class="font-label-sm text-label-sm text-on-surface">Resumen</label>
+        <div class="rounded border border-outline-variant bg-surface">
+          <textarea rows="3" class="w-full bg-transparent border-none focus:ring-0 px-sm py-sm font-body-sm text-body-sm text-on-surface resize-none">Aunque escribir código funcional es importante, el código limpio es lo que marca la diferencia entre un buen y un mal programador...</textarea>
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-3 gap-md">
+        <div class="space-y-xs">
+          <label class="font-label-sm text-label-sm text-on-surface">Editorial <span class="text-error">*</span></label>
+          <select class="w-full rounded border border-outline-variant bg-surface text-body-sm text-on-surface px-sm py-sm">
+            <option>Prentice Hall</option>
+            <option>O'Reilly</option>
+          </select>
+        </div>
+        <div class="space-y-xs">
+          <label class="font-label-sm text-label-sm text-on-surface">Idioma <span class="text-error">*</span></label>
+          <select class="w-full rounded border border-outline-variant bg-surface text-body-sm text-on-surface px-sm py-sm">
+            <option>Inglés</option>
+            <option>Español</option>
+          </select>
+        </div>
+        <div class="space-y-xs">
+          <label class="font-label-sm text-label-sm text-on-surface">Estado <span class="text-error">*</span></label>
+          <select class="w-full rounded border border-outline-variant bg-surface text-body-sm text-on-surface px-sm py-sm">
+            <option>Nuevo</option>
+            <option>Usado - buen estado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="space-y-xs">
+        <label class="font-label-sm text-label-sm text-on-surface">Categorías</label>
+        <div class="flex flex-wrap gap-xs">
+          <span class="px-sm py-xs rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-[11px] flex items-center gap-1">Ingeniería de Software <span class="material-symbols-outlined text-[13px] cursor-pointer">close</span></span>
+          <button type="button" class="px-sm py-xs rounded-full border border-dashed border-outline-variant text-on-surface-variant font-label-sm text-[11px]">+ Agregar</button>
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-md">
+        <div class="space-y-xs">
+          <label class="font-label-sm text-label-sm text-on-surface">Stock total <span class="text-error">*</span></label>
+          <div class="rounded border border-outline-variant bg-surface">
+            <input type="number" value="6" class="w-full bg-transparent border-none focus:ring-0 px-sm py-sm font-body-sm text-body-sm text-on-surface" />
+          </div>
+        </div>
+        <div class="space-y-xs">
+          <label class="font-label-sm text-label-sm text-on-surface">Stock disponible <span class="text-error">*</span></label>
+          <div class="rounded border border-outline-variant bg-surface">
+            <input type="number" value="4" class="w-full bg-transparent border-none focus:ring-0 px-sm py-sm font-body-sm text-body-sm text-on-surface" />
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="w-full h-11 bg-primary text-on-primary font-label-md text-label-md rounded flex items-center justify-center gap-sm hover:bg-on-primary-fixed-variant transition-colors">
+        Guardar libro <span class="material-symbols-outlined text-[20px]">check</span>
+      </button>
+    </form>
+  </div>
+</main>
+</body>
+</html>
