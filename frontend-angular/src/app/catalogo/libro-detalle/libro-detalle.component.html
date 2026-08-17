@@ -21,6 +21,27 @@
             [style.font-variation-settings]="estiloIconoFavorito()">star</span>
           {{ esFavorito() ? 'Quitar de favoritos' : 'Agregar a favoritos' }}
         </button>
+
+        @if (reservaCreada) {
+          <!-- Estado B (mockup 17): confirmación tras reservar, con la
+               fechaLimiteRetiro real que devuelve ReservacionResponseDTO -->
+          <div class="mt-sm rounded-lg bg-secondary-container text-on-secondary-container p-sm">
+            <p class="font-label-md text-label-sm flex items-center gap-xs">
+              <span class="material-symbols-outlined text-[18px]">check_circle</span> Reservado
+            </p>
+            <p class="font-body-sm text-[12px] mt-1">Retiralo antes del <strong>{{ reservaCreada.fechaLimiteRetiro | date:'dd/MM/yyyy' }}</strong> o la reserva se libera automáticamente.</p>
+          </div>
+        } @else if (estaReservado()) {
+          <button disabled
+            class="w-full mt-sm h-10 rounded bg-surface-container text-on-surface-variant flex items-center justify-center gap-xs font-label-md text-label-sm cursor-not-allowed">
+            <span class="material-symbols-outlined text-[18px]">check_circle</span> Ya reservado
+          </button>
+        } @else {
+          <button (click)="reservarLibro()"
+            class="w-full mt-sm h-10 rounded bg-primary text-on-primary flex items-center justify-center gap-xs font-label-md text-label-sm hover:bg-on-primary-fixed-variant cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]">event_available</span> Reservar este libro
+          </button>
+        }
       </div>
 
       <div class="flex-1">
