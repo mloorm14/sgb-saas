@@ -205,3 +205,213 @@ score agregado de la categoría.
    confirmar que el score de 100 en SEO es estable y no un artefacto de
    una sola medición, haría falta repetir la corrida — no se hizo aquí por
    alcance.
+
+## Actualización — 3 corridas mobile + 3 desktop contra producción (P4/B.10)
+
+La guía exige explícitamente "al menos tres corridas por perfil (mobile,
+desktop)" con media y desviación típica por categoría — un requisito que
+las dos corridas anteriores (ambas móvil, ambas contra `localhost`) no
+satisfacían en ninguno de los dos ejes (ni el número de corridas, ni el
+perfil desktop, ni el objetivo de producción). Esta actualización corre
+las 6 corridas que faltaban, contra la URL real de producción.
+
+### Cabecera de medición
+
+- **Fecha (ISO 8601 UTC)**: 2026-08-17T18:59Z – 2026-08-17T19:05Z (las 6
+  corridas, secuenciales, ~6 minutos en total)
+- **Commit**: `9d9d873`
+- **Objetivo probado**: `https://biblora-sgb.onrender.com/` (producción
+  real, no `localhost` — a diferencia de las dos corridas anteriores)
+- **Lighthouse**: v13.4.1 (`npx lighthouse`) — versión más nueva que la
+  v12.x usada en la corrida original; no se fijó la versión anterior a
+  propósito, se documenta el cambio en vez de ocultarlo
+- **Chrome/Chromium usado**: Microsoft Edge 151.0.0.0 en modo headless
+  (mismo mecanismo `CHROME_PATH` que la corrida original, misma máquina
+  Windows sin Chrome nativo instalado)
+
+### Metodología / comandos ejecutados
+
+**Perfil móvil (3 corridas)**: mismo comando que las corridas "antes" y
+"después" documentadas arriba (`--form-factor=mobile
+--screenEmulation.mobile --throttling-method=simulate`), solo cambiando
+la URL a producción y el nombre de archivo. **No se usó
+`frontend-angular/lighthouserc.js` cargado directamente** (`lhci
+autorun` sigue teniendo el mismo bug de limpieza de `chrome-launcher` en
+Windows ya documentado arriba) ni se pasaron a mano los sub-flags
+`--throttling.rttMs`, etc. -- en su lugar se confirmó, leyendo
+`configSettings.throttling` del JSON resultante después de la primera
+corrida, que `--throttling-method=simulate` con `--form-factor=mobile`
+ya aplica por defecto los mismos valores estándar de `mobileSlow4G` que
+`lighthouserc.js` declara explícitamente (`rttMs=150,
+throughputKbps=1638.4, cpuSlowdownMultiplier=4,
+downloadThroughputKbps=1474.56`), con una única diferencia menor:
+`uploadThroughputKbps` es `675` por defecto de Lighthouse CLI, frente a
+`607.5` (`675*0.9`) que fija `lighthouserc.js` explícitamente -- una
+diferencia de configuración real, documentada aquí en vez de asumir que
+son idénticos sin comprobarlo.
+
+```bash
+export CHROME_PATH="C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+npx lighthouse https://biblora-sgb.onrender.com/ \
+  --output=json \
+  --output-path="docs/mediciones/lighthouse/lhci-mobile-prod-<TS>-run<N>.json" \
+  --chrome-flags="--headless=new --no-sandbox --disable-gpu --user-data-dir=<tmp-unico-por-corrida>" \
+  --form-factor=mobile --screenEmulation.mobile --throttling-method=simulate \
+  --only-categories=performance,accessibility,best-practices,seo \
+  --max-wait-for-load=60000
+```
+
+**Perfil desktop (3 corridas)**: se usó el preset estándar de Lighthouse
+(`--preset=desktop`) en vez de reetiquetar la configuración móvil, tal
+como exige la tarea -- verificado en el JSON resultante que
+`configSettings` realmente cambia de perfil (no solo el nombre de
+archivo): `formFactor=desktop`, `throttling.rttMs=40` (vs. `150` en
+móvil), `throttling.cpuSlowdownMultiplier=1` (vs. `4`),
+`screenEmulation={mobile: false, width: 1350, height: 940,
+deviceScaleFactor: 1}` (vs. `360×640` móvil).
+
+```bash
+export CHROME_PATH="C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+npx lighthouse https://biblora-sgb.onrender.com/ \
+  --output=json \
+  --output-path="docs/mediciones/lighthouse/lhci-desktop-prod-<TS>-run<N>.json" \
+  --chrome-flags="--headless=new --no-sandbox --disable-gpu --user-data-dir=<tmp-unico-por-corrida>" \
+  --preset=desktop \
+  --only-categories=performance,accessibility,best-practices,seo \
+  --max-wait-for-load=60000
+```
+
+Cada una de las 6 corridas usó un `--user-data-dir` distinto (evita que
+el bug de limpieza de Windows de una corrida interfiera con la
+siguiente) y cada una volvió a disparar el mismo `EPERM` de
+`chrome-launcher` al limpiar su directorio temporal (excepto las 3
+corridas desktop, que esta vez terminaron limpio, sin el error de
+limpieza -- variación del propio bug, no algo que se haya cambiado a
+propósito). En las 6, el JSON ya estaba escrito a disco
+(`LH:Printer json output written to ...`) antes de cualquier fallo de
+limpieza, así que las 6 son evidencia válida; se confirmó además
+`runtimeError: null` en las 6 leyendo el JSON, no solo por la ausencia
+de una excepción en la consola.
+
+Los 6 JSON crudos quedan versionados sin editar:
+[`lhci-mobile-prod-20260817-1859-run1.json`](lhci-mobile-prod-20260817-1859-run1.json),
+[`lhci-mobile-prod-20260817-1901-run2.json`](lhci-mobile-prod-20260817-1901-run2.json),
+[`lhci-mobile-prod-20260817-1903-run3.json`](lhci-mobile-prod-20260817-1903-run3.json),
+[`lhci-desktop-prod-20260817-1904-run1.json`](lhci-desktop-prod-20260817-1904-run1.json),
+[`lhci-desktop-prod-20260817-1904-run2.json`](lhci-desktop-prod-20260817-1904-run2.json),
+[`lhci-desktop-prod-20260817-1905-run3.json`](lhci-desktop-prod-20260817-1905-run3.json).
+
+### Resultados crudos — perfil móvil (Slow 4G), producción
+
+| Categoría | Run 1 | Run 2 | Run 3 | **Media** | **DT** | Umbral | Cumple (media) |
+|---|---|---|---|---|---|---|---|
+| Performance | 93 | 94 | **71** | **86,0** | **13,0** | ≥80 | ✅ Sí (media), ❌ **No en Run 3** |
+| Accessibility | 100 | 100 | 100 | **100,0** | **0,0** | ≥90 | ✅ Sí |
+| Best Practices | 100 | 100 | 100 | **100,0** | **0,0** | ≥90 | ✅ Sí |
+| SEO | 100 | 100 | 100 | **100,0** | **0,0** | ≥90 | ✅ Sí |
+
+`runtimeError` en las 3 corridas: `None`. `finalDisplayedUrl` en las 3:
+`https://biblora-sgb.onrender.com/` (confirmado, no hubo redirección
+inesperada).
+
+### Resultados crudos — perfil desktop, producción
+
+| Categoría | Run 1 | Run 2 | Run 3 | **Media** | **DT** | Umbral | Cumple (media) |
+|---|---|---|---|---|---|---|---|
+| Performance | 88 | 88 | 88 | **88,0** | **0,0** | ≥80 | ✅ Sí |
+| Accessibility | 100 | 100 | 100 | **100,0** | **0,0** | ≥90 | ✅ Sí |
+| Best Practices | 100 | 100 | 100 | **100,0** | **0,0** | ≥90 | ✅ Sí |
+| SEO | 100 | 100 | 100 | **100,0** | **0,0** | ≥90 | ✅ Sí |
+
+`runtimeError` en las 3 corridas: `None`.
+
+### Hallazgo real — Performance móvil, Run 3 no cumple el umbral (71 < 80)
+
+Se reporta con la misma honestidad que el hallazgo de SEO=82 de la
+corrida original, sin descartar la corrida ni promediar el problema
+para que desaparezca. Comparando las métricas crudas de las 3 corridas
+móviles (`audits.<id>.displayValue` y `.score`, extraídos directamente
+del JSON, no estimados):
+
+| Métrica | Run 1 | Run 2 | Run 3 |
+|---|---|---|---|
+| Speed Index | 2,0 s (score 0,99) | 2,5 s (score 0,98) | **48,1 s (score 0)** |
+| Cumulative Layout Shift | 0,013 (score 1) | 0,013 (score 1) | **0,338 (score 0,33)** |
+| Server response time (TTFB) | 20 ms | 20 ms | **210 ms** |
+| Layout shifts detectados | 3 | 3 | **4** |
+
+La causa concreta, verificada en el propio JSON: en Run 3 aparece un
+**cuarto *layout shift* real que no ocurre en Run 1 ni Run 2** —
+el panel `div.rounded-xl.glass-panel` ("¿Querés reservar o guardar
+favoritos? Con una cuenta gratis accedés...") se desplaza tarde en el
+renderizado (score de ese shift individual: 0,338, el más alto de los 4
+por sí solo), y el tiempo de respuesta del documento raíz subió 10× (20
+ms → 210 ms) frente a las otras dos corridas. Un *layout shift* real y
+tardío empuja el cálculo de Speed Index hacia arriba porque Lighthouse
+lo interpreta como progreso visual retrasado, lo que explica el salto
+de ~2 s a 48,1 s sin que haya un error de red ni un timeout.
+
+**No se atribuye esto a un cambio de código** — las 3 corridas se
+ejecutaron en una ventana de ~4 minutos contra el mismo despliegue, sin
+ningún commit ni redeploy entre medio. La explicación más plausible,
+consistente con la evidencia (TTFB 10× más alto en esa corrida
+puntual), es variabilidad real de infraestructura compartida del
+hosting de producción (Render, capa gratuita/compartida) en el momento
+exacto de esa captura, no un defecto de la aplicación reproducible a
+voluntad — pero **el panel que se desplaza tarde sí es un defecto real
+de la aplicación** (ver hallazgo de CLS en desktop, abajo, donde el
+mismo panel aparece de forma consistente, no solo en una corrida
+anómala). Exactamente el tipo de hallazgo que una sola corrida (como la
+medición original de este documento) no puede detectar — la media
+(86,0) sola habría ocultado que una corrida individual no cumple el
+umbral.
+
+### Hallazgo real — CLS consistente en desktop (0,235–0,236, las 3 corridas)
+
+A diferencia del salto puntual de Run 3 en móvil, el perfil desktop
+muestra `cumulative-layout-shift` en **0,235–0,236 en las 3 corridas**
+(audit score ≈0,53, sin llegar a tumbar la categoría Performance por
+debajo de 80 porque el resto de métricas en desktop son muy rápidas:
+LCP 0,4–0,7 s, TBT 0 ms sin throttling de CPU). Este valor cae en la
+franja "needs improvement" de la curva de Lighthouse para CLS (buena
+<0,1, aceptable 0,1–0,25, pobre >0,25) de forma **reproducible, no
+anómala** — presente en las 3 corridas desktop por igual, a diferencia
+del hallazgo puntual de Run 3 móvil de arriba. Es consistente con el
+mismo panel `glass-panel` detectado en la corrida móvil anómala: en el
+viewport de escritorio (1350×940, sin throttling de CPU) el contenido
+por encima del panel probablemente termina de cargar/reflow más rápido
+y de forma más predecible que en móvil, produciendo el mismo
+desplazamiento de forma consistente en vez de ocasional. **No se
+corrige en este documento** (el alcance de esta tarea es medir y
+reportar, no remediar) — queda como hallazgo real para un commit de
+corrección aparte (candidato: reservar el espacio del panel con
+`min-height` o cargarlo sin desplazamiento de layout, p. ej. con
+`aspect-ratio` o placeholder).
+
+### Análisis breve de esta actualización
+
+1. **7 de 8 combinaciones categoría×perfil cumplen su umbral con
+   margen** (Accessibility, Best Practices y SEO al 100 en ambos
+   perfiles; Performance desktop en 88 estable). La única que no cumple
+   es Performance móvil, y solo en 1 de las 3 corridas (Run 3, 71<80) —
+   la media (86,0) sí cumple, pero reportar solo la media habría
+   ocultado el incumplimiento puntual, exactamente lo que la guía busca
+   evitar al exigir 3 corridas con media y DT en vez de una sola cifra.
+2. **El ejercicio de 3 corridas por perfil hizo su trabajo**: expuso un
+   defecto real y reproducible (el panel CTA que desplaza layout,
+   presente de forma consistente en desktop y de forma puntual en
+   móvil) que la medición original de una sola corrida contra
+   `localhost` no podía detectar.
+3. **Cambio de objetivo (localhost → producción)**: no se observa
+   ninguna categoría que empeore por el cambio a producción en sí —
+   Accessibility/Best Practices/SEO se mantienen en 100 igual que la
+   corrida "después" contra `localhost`; Performance móvil (86,0 de
+   media) es comparable al 99 de la corrida `localhost` anterior
+   considerando que esa corrida fue una única muestra, no una media de
+   3.
+4. Con esta actualización, el Bloque C.5/P4-B.10 queda con **6 corridas
+   reales contra producción** (3 mobile + 3 desktop), cumpliendo el
+   requisito explícito de "al menos tres corridas por perfil" con media
+   y desviación típica reportadas por categoría — las 2 corridas
+   originales contra `localhost` se conservan arriba como evidencia
+   histórica del hallazgo y la corrección de SEO, no se eliminan.
