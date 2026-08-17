@@ -45,3 +45,14 @@ export interface LibroSugerencia {
   titulo: string;
   disponible: boolean;
 }
+
+// Respuesta de GET /v1/libros/lookup-isbn?isbn= (LibroIsbnLookupDTO,
+// Google Books). anioPublicacion puede venir null si no hay fecha; la
+// portada NO viaja acá (se descarga aparte con portadaPorIsbn()).
+export interface LibroIsbnLookup {
+  titulo: string;
+  autor: string;
+  resumen: string;
+  anioPublicacion: number | null;
+  portadaDisponible: boolean;
+}

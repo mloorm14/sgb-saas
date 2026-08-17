@@ -88,12 +88,37 @@
             <label style="display:block;font-size:13px;margin-bottom:4px">ISBN</label>
             <input formControlName="isbn" type="text"
               style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"/>
+            <div style="display:flex;gap:10px;align-items:center;margin-top:6px">
+              <button type="button" (click)="autocompletar()"
+                [disabled]="!esIsbnAutocompletable() || buscandoIsbn"
+                style="padding:6px 12px;background:#005c2f;color:white;border:none;border-radius:4px;cursor:pointer">
+                {{ buscandoIsbn ? 'Buscando...' : 'Autocompletar' }}
+              </button>
+              @if (autocompletarAutor) {
+                <span style="font-size:13px;color:#555">Autor: {{ autocompletarAutor }}</span>
+              }
+              @if (portadaPreviewUrl) {
+                <img [src]="portadaPreviewUrl" alt="Portada"
+                  style="width:48px;height:64px;object-fit:cover;border:1px solid #ccc;border-radius:4px"/>
+              }
+            </div>
+            @if (lookupMensaje) {
+              <div style="font-size:13px;color:#005c2f;margin-top:4px">{{ lookupMensaje }}</div>
+            }
+            @if (lookupError) {
+              <div style="font-size:13px;color:#c0392b;margin-top:4px">{{ lookupError }}</div>
+            }
             </div>
             <div style="margin-bottom:1rem">
               <label style="display:block;font-size:13px;margin-bottom:4px">Título</label>
               <input formControlName="titulo" type="text"
                 style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"/>
               </div>
+              <div style="margin-bottom:1rem">
+                <label style="display:block;font-size:13px;margin-bottom:4px">Resumen</label>
+                <textarea formControlName="resumen" rows="3"
+                  style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box;resize:vertical"></textarea>
+                </div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem">
                 <div>
                   <label style="display:block;font-size:13px;margin-bottom:4px">Año publicación</label>
