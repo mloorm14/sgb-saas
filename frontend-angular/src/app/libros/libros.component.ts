@@ -54,6 +54,7 @@ export class LibrosComponent implements OnInit {
       isbn: ['', [Validators.required]],
       titulo: ['', [Validators.required]],
       resumen: [''],
+      ubicacionFisica: [''],
       anioPublicacion: ['', [Validators.required]],
       stockTotal: ['', [Validators.required]],
       stockDisponible: ['', [Validators.required]],
@@ -139,6 +140,7 @@ export class LibrosComponent implements OnInit {
       isbn: libro.isbn,
       titulo: libro.titulo,
       resumen: libro.resumen,
+      ubicacionFisica: libro.ubicacionFisica,
       anioPublicacion: libro.anioPublicacion,
       stockTotal: libro.stockTotal,
       stockDisponible: libro.stockDisponible,
@@ -237,6 +239,34 @@ export class LibrosComponent implements OnInit {
     this.buscandoIsbn = false;
   }
 
+  // Subida manual de portada (no solo por ISBN): misma whitelist de tipos
+  // y límite que valida el backend (V13: max_tamano_portada_mb = 2 en
+  // configuracion_sistema, tope duro de servlet 5MB). El preview reusa
+  // portadaPreviewUrl/portadaPreviewBlob -- el mismo canal que usa el
+  // autocompletar, para que guardarPortadaPendiente() no distinga origen.
+  onArchivoPortadaSeleccionado(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const archivo = input.files?.[0];
+    if (!archivo) return;
+
+    const tiposPermitidos = ['image/png', 'image/jpeg', 'image/webp'];
+    if (!tiposPermitidos.includes(archivo.type)) {
+      this.lookupError = 'Formato no permitido. Usá PNG, JPEG o WEBP.';
+      return;
+    }
+    if (archivo.size > 2 * 1024 * 1024) {
+      this.lookupError = 'La imagen supera los 2MB permitidos.';
+      return;
+    }
+
+    if (this.portadaPreviewUrl) {
+      URL.revokeObjectURL(this.portadaPreviewUrl);
+    }
+    this.portadaPreviewBlob = archivo;
+    this.portadaPreviewUrl = URL.createObjectURL(archivo);
+    this.lookupError = '';
+  }
+
   guardarLibro(): void {
     if (this.form.invalid) return;
     // Los valores del form siguen viajando tal cual (el backend convierte
@@ -246,7 +276,7 @@ export class LibrosComponent implements OnInit {
     if (this.modoEdicion && this.libroSeleccionadoId) {
       this.libroService.actualizar(this.libroSeleccionadoId, datos).subscribe({
         next: (libro) => {
-          this.guardarPortadaAutocompletada(libro.id);
+          this.guardarPortadaPendiente(libro.id);
           this.cerrarFormulario();
           this.cargarLibros();
         },
@@ -255,7 +285,7 @@ export class LibrosComponent implements OnInit {
     } else {
       this.libroService.crear(datos).subscribe({
         next: (libro) => {
-          this.guardarPortadaAutocompletada(libro.id);
+          this.guardarPortadaPendiente(libro.id);
           this.cerrarFormulario();
           this.cargarLibros();
         },
@@ -264,11 +294,13 @@ export class LibrosComponent implements OnInit {
     }
   }
 
-  // La portada bajada de Google Books se sube como archivo al libro recién
-  // guardado (Blob -> File; el backend la guarda como PortadaImagen).
-  private guardarPortadaAutocompletada(libroId: number): void {
+  // La portada pendiente (Google Books o selección manual, ambas dejan el
+  // Blob en portadaPreviewBlob) se sube como archivo al libro recién
+  // guardado; el backend la persiste como PortadaImagen (V13).
+  private guardarPortadaPendiente(libroId: number): void {
     if (!this.portadaPreviewBlob) return;
-    const archivo = new File([this.portadaPreviewBlob], 'portada-google-books.jpg');
+    const tipo = this.portadaPreviewBlob.type.split('/')[1] ?? 'jpg';
+    const archivo = new File([this.portadaPreviewBlob], `portada.${tipo}`);
     this.libroService.subirPortada(libroId, archivo).subscribe({
       error: () => { this.errorMsg = 'El libro se guardó, pero hubo un error al subir su portada'; }
     });
