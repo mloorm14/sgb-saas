@@ -1,6 +1,7 @@
 package com.uteq.backend.controller;
 
 import com.uteq.backend.config.SecurityConfig;
+import com.uteq.backend.dto.LibroIsbnLookupDTO;
 import com.uteq.backend.dto.LibroRequestDTO;
 import com.uteq.backend.dto.LibroResponseDTO;
 import com.uteq.backend.dto.PortadaImagenDTO;
@@ -8,6 +9,7 @@ import com.uteq.backend.security.JwtAuthFilter;
 import com.uteq.backend.security.JwtService;
 import com.uteq.backend.security.UserDetailsServiceImpl;
 import com.uteq.backend.service.LibroService;
+import com.uteq.backend.service.LibroIsbnLookupService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,6 +85,10 @@ class LibroControllerSecurityTest {
 
     @MockitoBean
     private LibroService libroService;
+
+    // Dependencia de los endpoints /lookup-isbn (Módulo inventario).
+    @MockitoBean
+    private LibroIsbnLookupService libroIsbnLookupService;
 
     // Dependencias de JwtAuthFilter (el filtro real se usa tal cual, ver
     // @Import arriba -- mockearlo directamente rompe la cadena de filtros,
@@ -189,5 +195,46 @@ class LibroControllerSecurityTest {
         mockMvc.perform(multipart("/api/v1/libros/1/portada")
                         .file(new MockMultipartFile("archivo", "portada.png", "image/png", new byte[]{1})))
                 .andExpect(status().isOk());
+    }
+
+    // ── Módulo inventario (autocompletar ISBN): solo gestión de catálogo,
+    // mismo criterio de roles que crear/actualizar el libro. ──
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void lookupIsbn_conRolAdmin_sePermite() throws Exception {
+        when(libroIsbnLookupService.buscarPorIsbn("9780132350884"))
+                .thenReturn(new LibroIsbnLookupDTO("Clean Code", "Robert C. Martin", "resumen", 2008, true));
+
+        mockMvc.perform(get("/api/v1/libros/lookup-isbn").param("isbn", "9780132350884"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("{\"titulo\":\"Clean Code\",\"anioPublicacion\":2008,\"portadaDisponible\":true}"));
+    }
+
+    @Test
+    @WithMockUser(roles = "LECTOR")
+    void lookupIsbn_conRolLector_rechazado403() throws Exception {
+        mockMvc.perform(get("/api/v1/libros/lookup-isbn").param("isbn", "9780132350884"))
+                .andExpect(status().isForbidden());
+        verify(libroIsbnLookupService, never()).buscarPorIsbn(any());
+    }
+
+    @Test
+    @WithMockUser(roles = "GERENTE")
+    void lookupIsbnPortada_conRolGerente_sePermite() throws Exception {
+        when(libroIsbnLookupService.obtenerPortada("9780132350884"))
+                .thenReturn(new PortadaImagenDTO(new byte[]{1, 2, 3}, "image/jpeg"));
+
+        mockMvc.perform(get("/api/v1/libros/lookup-isbn/portada").param("isbn", "9780132350884"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("image/jpeg"))
+                .andExpect(content().bytes(new byte[]{1, 2, 3}));
+    }
+
+    @Test
+    @WithMockUser(roles = "LECTOR")
+    void lookupIsbnPortada_conRolLector_rechazado403() throws Exception {
+        mockMvc.perform(get("/api/v1/libros/lookup-isbn/portada").param("isbn", "9780132350884"))
+                .andExpect(status().isForbidden());
+        verify(libroIsbnLookupService, never()).obtenerPortada(any());
     }
 }
