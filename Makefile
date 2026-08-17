@@ -42,6 +42,20 @@ test-backend:
 # carpeta nueva (npm ci es exactamente el mismo paso que CI ya ejecuta
 # antes de 'npx ng test').
 #
+# El guard compara mtimes en vez de solo chequear que node_modules exista:
+# un node_modules cacheado de ANTES de un cambio real de dependencias
+# (ver el upgrade a Angular 21.2.20 mergeado hoy) queda desactualizado sin
+# desaparecer, y 'ng test' contra un Angular viejo falla con errores
+# crípticos de compilador (NG8001/'add an @NgModule annotation') en vez de
+# reinstalar solo. node_modules/.package-lock.json es el marker que 'npm
+# ci'/'npm install' actualizan en cada corrida (confirmado contra la
+# version de npm de este entorno, no asumido) -- si falta (node_modules
+# nunca se instalo con npm, o se borro a mano) o package-lock.json es mas
+# nuevo que el marker (cambio de dependencias sin reinstalar), se corre
+# 'npm ci'; si el marker es igual o mas nuevo, se saltea. '-nt' es
+# soportado por el /bin/sh que este Makefile ya asume en otros targets
+# (confirmado en este entorno), no es un bashismo.
+#
 # No exporta CHROME_BIN a mano: se probo en una maquina Windows limpia
 # (sin Chrome instalado) que karma-chrome-launcher busca por defecto en
 # C:\Program Files\Google\Chrome\Application\chrome.exe y falla si no esta
@@ -56,7 +70,7 @@ test-backend:
 # fallar el 'npm ci' completo -- ver docs/despliegue/DEPLOYMENT.md,
 # seccion 10, para el detalle.
 test-frontend:
-	cd frontend-angular && ([ -d node_modules ] || npm ci)
+	cd frontend-angular && ([ -d node_modules ] && [ node_modules/.package-lock.json -nt package-lock.json ] || npm ci)
 	cd frontend-angular && npx ng test --watch=false --browsers=ChromeHeadless
 
 # make bench: Bloque C.1 -- corre k6/libros-listado-test.js (cache_caliente +
