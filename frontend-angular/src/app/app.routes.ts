@@ -14,6 +14,7 @@ import { LibroDetalleComponent } from './catalogo/libro-detalle/libro-detalle.co
 import { FavoritosComponent } from './favoritos/favoritos.component';
 import { SugerenciasFormComponent } from './sugerencias/sugerencias-form/sugerencias-form.component';
 import { MisSugerenciasComponent } from './sugerencias/mis-sugerencias/mis-sugerencias.component';
+import { GestionSugerenciasComponent } from './sugerencias/gestion-sugerencias/gestion-sugerencias.component';
 import { PortalPublicoComponent } from './portal-publico/portal-publico.component';
 import { DetallePublicoComponent } from './portal-publico/detalle-publico/detalle-publico.component';
 import { UsuariosComponent } from './admin/usuarios/usuarios.component';
@@ -52,6 +53,9 @@ export const routes: Routes = [
   { path: 'favoritos', component: FavoritosComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
   { path: 'sugerencias', component: MisSugerenciasComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
   { path: 'sugerencias/nueva', component: SugerenciasFormComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
+  // Revisión de sugerencias: GERENTE/ADMIN listan todas y cambian estado
+  // a APROBADA/RECHAZADA (SugerenciaAdquisicionController real).
+  { path: 'sugerencias/gestion', component: GestionSugerenciasComponent, canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])] },
   // Rama F (panel administrativo): gestión de usuarios -- listado ADMIN/GERENTE,
   // PATCH de rol/estado solo ADMIN (UsuarioAdminController real).
   { path: 'admin/usuarios', component: UsuariosComponent, canActivate: [authGuard, roleGuard(['ADMIN', 'GERENTE'])] },
