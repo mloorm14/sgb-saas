@@ -1,301 +1,796 @@
 -- ============================================================================
--- SGB-SaaS — db/schema.sql
--- Snapshot consolidado del modelo de datos (24 tablas) para reproducibilidad
--- desde cero vía docker-entrypoint-initdb.d/. Ver docs/adr/adr-006-estrategia-schema-reproducible.md
--- para la justificación de por qué este archivo coexiste con
--- database/migrations/ (Flyway sigue siendo el mecanismo real de
--- versionado incremental; este archivo NO reemplaza a Flyway).
---
--- Este archivo resulta de fusionar:
---   - database/migrations/V1__schema_inicial.sql (Entrega 1B, 5 tablas)
---   - el schema de 24 tablas del módulo de Administración de BD
--- Discrepancias entre ambas fuentes revisadas y decididas por el equipo
--- (sin migración de datos: entorno de desarrollo, sin usuarios reales;
--- `activo BOOLEAN` eliminado de `usuarios`/`libros` en favor de `estado_id`).
--- Ver los comentarios "NOTA DE FUSIÓN" bajo `usuarios` y `libros` más abajo.
+-- SGB-SaaS - db/schema.sql
+-- Snapshot consolidado del estado objetivo del esquema (31 tablas) para
+-- reproducibilidad desde cero via docker-entrypoint-initdb.d/. Generado con
+-- pg_dump --schema-only desde una base con las migraciones V1..V13 aplicadas
+-- (database/migrations/) -- ver docs/adr/adr-006-estrategia-schema-reproducible.md.
 -- ============================================================================
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 
--- ============================================================================
--- MÓDULO 1: SEGURIDAD (8 tablas)
--- ============================================================================
-CREATE TABLE estados_usuario (
-    id     SERIAL PRIMARY KEY,
-    nombre VARCHAR(30) NOT NULL UNIQUE
-);
+COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
 
-CREATE TABLE roles (
-    id          SERIAL PRIMARY KEY,
-    nombre      VARCHAR(30)  NOT NULL UNIQUE,
-    descripcion VARCHAR(200)
-);
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 
-CREATE TABLE permisos (
-    id     SERIAL PRIMARY KEY,
-    codigo VARCHAR(60) NOT NULL UNIQUE
-);
+COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UUIDs)';
 
-CREATE TABLE rol_permisos (
-    rol_id     INTEGER NOT NULL REFERENCES roles(id)    ON DELETE CASCADE,
-    permiso_id INTEGER NOT NULL REFERENCES permisos(id) ON DELETE CASCADE,
-    PRIMARY KEY (rol_id, permiso_id)
-);
-
--- NOTA DE FUSIÓN (usuarios): database/migrations/V1__schema_inicial.sql
--- (Entrega 1B) define esta tabla de forma distinta:
---   - tenía columna `rol VARCHAR(20)` embebida con CHECK
---     (ROLE_LECTOR/ROLE_BIBLIOTECARIO/ROLE_GERENTE) en vez de las tablas
---     normalizadas roles/usuario_roles de abajo.
---   - tenía columna `activo BOOLEAN` en vez de `estado_id` (FK a
---     estados_usuario, que además distingue 4 estados en vez de 2).
---   - la columna de fecha se llamaba `creado_en`, aquí es `fecha_registro`.
---   - no existían `apellido`, `identificacion_usuario`, `correo_verificado`.
--- Decisión del equipo: sin migración de datos (V1 solo tenía datos de
--- prueba en desarrollo, sin usuarios reales); se recrea la BD desde este
--- archivo + db/seed.sql. `correo` no lleva UNIQUE inline: la unicidad se
--- exige únicamente vía `idx_usuarios_correo` (evita índice duplicado).
-CREATE TABLE usuarios (
-    id                     BIGSERIAL PRIMARY KEY,
-    nombre                 VARCHAR(100) NOT NULL,
-    apellido               VARCHAR(100) NOT NULL,
-    correo                 VARCHAR(150) NOT NULL,
-    password_hash          VARCHAR(255) NOT NULL,
-    identificacion_usuario VARCHAR(20),
-    estado_id              INTEGER NOT NULL REFERENCES estados_usuario(id) ON DELETE RESTRICT,
-    correo_verificado      BOOLEAN NOT NULL DEFAULT FALSE,
-    fecha_registro         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    actualizado_en         TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE UNIQUE INDEX idx_usuarios_correo ON usuarios (correo);
-
-CREATE TABLE usuario_roles (
-    usuario_id BIGINT  NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    rol_id     INTEGER NOT NULL REFERENCES roles(id)    ON DELETE RESTRICT,
-    asignado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (usuario_id, rol_id)
-);
-
-CREATE TABLE tokens_invalidos (
-    id          BIGSERIAL PRIMARY KEY,
-    jti         VARCHAR(100) NOT NULL UNIQUE,
-    usuario_id  BIGINT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    expira_en   TIMESTAMPTZ NOT NULL,
-    invalidado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE verificaciones_correo (
-    id          BIGSERIAL PRIMARY KEY,
-    usuario_id  BIGINT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    token       UUID NOT NULL DEFAULT uuid_generate_v4(),
-    expira_en   TIMESTAMPTZ NOT NULL,
-    usado       BOOLEAN NOT NULL DEFAULT FALSE,
-    creado_en   TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- ============================================================================
--- MÓDULO 2: CATÁLOGO E INVENTARIO (8 tablas)
--- ============================================================================
-
--- NOTA DE FUSIÓN (editoriales): V1 no tenía la columna `pais_origen`
--- (nullable, aditiva — sin conflicto).
-CREATE TABLE editoriales (
-    id           SERIAL PRIMARY KEY,
-    nombre       VARCHAR(150) NOT NULL UNIQUE,
-    pais_origen  VARCHAR(80)
-);
-
-CREATE TABLE idiomas (
-    id         SERIAL PRIMARY KEY,
-    nombre     VARCHAR(50) NOT NULL UNIQUE,
-    codigo_iso VARCHAR(5)  NOT NULL UNIQUE
-);
-
-CREATE TABLE estados_libro (
-    id     SERIAL PRIMARY KEY,
-    nombre VARCHAR(30) NOT NULL UNIQUE
-    -- Valores esperados (ver db/seed.sql): 'ACTIVO', 'DADO_DE_BAJA',
-    -- 'EN_REPARACION', 'PERDIDO'
-);
-
-CREATE TABLE categorias (
-    id     SERIAL PRIMARY KEY,
-    nombre VARCHAR(80) NOT NULL UNIQUE
-);
-
-CREATE TABLE autores (
-    id     BIGSERIAL PRIMARY KEY,
-    nombre VARCHAR(150) NOT NULL
-);
-
--- NOTA DE FUSIÓN (libros): respecto a V1:
---   - V1 tenía además una columna `activo BOOLEAN DEFAULT TRUE`, redundante
---     con `estado_id` (que ya distinguía ACTIVO/DADO_DE_BAJA/...). Decisión
---     del equipo: confirmado, se elimina (no se reintroduce).
---   - la columna de fecha se llamaba `creado_en`, aquí es `fecha_registro`.
---   - se agrega `ubicacion_fisica` (nueva, nullable, sin conflicto).
---   - el CHECK `stock_disponible <= stock_total` estaba inline en V1
---     (`chk_stock_disponible`); aquí es una constraint de tabla al final
---     (`chk_stock`) con el mismo efecto.
---   - `isbn` no lleva UNIQUE inline: la unicidad se exige únicamente vía
---     `idx_libros_isbn` (evita índice duplicado).
-CREATE TABLE libros (
-    id                BIGSERIAL PRIMARY KEY,
-    isbn              VARCHAR(13)   NOT NULL,
-    titulo            VARCHAR(255)  NOT NULL,
-    resumen           TEXT,
-    portada_url       VARCHAR(1000),
-    anio_publicacion  SMALLINT      NOT NULL CHECK (anio_publicacion BETWEEN 1000 AND 2100),
-    editorial_id      INTEGER       NOT NULL REFERENCES editoriales(id)   ON DELETE RESTRICT,
-    idioma_id         INTEGER       NOT NULL REFERENCES idiomas(id)       ON DELETE RESTRICT,
-    estado_id         INTEGER       NOT NULL REFERENCES estados_libro(id) ON DELETE RESTRICT,
-    stock_total       SMALLINT      NOT NULL DEFAULT 1 CHECK (stock_total >= 0),
-    stock_disponible  SMALLINT      NOT NULL DEFAULT 1 CHECK (stock_disponible >= 0),
-    ubicacion_fisica  VARCHAR(50),
-    fecha_registro    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
-    actualizado_en    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
-    CONSTRAINT chk_stock CHECK (stock_disponible <= stock_total)
-);
-
-CREATE UNIQUE INDEX idx_libros_isbn ON libros (isbn);
-
-CREATE TABLE libro_categorias (
-    libro_id     BIGINT  NOT NULL REFERENCES libros(id)     ON DELETE CASCADE,
-    categoria_id INTEGER NOT NULL REFERENCES categorias(id) ON DELETE RESTRICT,
-    PRIMARY KEY (libro_id, categoria_id)
-);
-
-CREATE TABLE libro_autores (
-    libro_id  BIGINT NOT NULL REFERENCES libros(id)  ON DELETE CASCADE,
-    autor_id  BIGINT NOT NULL REFERENCES autores(id) ON DELETE RESTRICT,
-    PRIMARY KEY (libro_id, autor_id)
-);
-
--- ============================================================================
--- MÓDULO 3: TRANSACCIONES (5 tablas)
--- ============================================================================
-CREATE TABLE configuracion_sistema (
-    clave  VARCHAR(50) PRIMARY KEY,
-    valor  VARCHAR(200) NOT NULL
-);
-
-CREATE TABLE estados_prestamo (
-    id     SERIAL PRIMARY KEY,
-    nombre VARCHAR(30) NOT NULL UNIQUE
-);
-
-CREATE TABLE estados_multa (
-    id     SERIAL PRIMARY KEY,
-    nombre VARCHAR(30) NOT NULL UNIQUE
-);
-
-CREATE TABLE estados_reservacion (
-    id     SERIAL PRIMARY KEY,
-    nombre VARCHAR(30) NOT NULL UNIQUE
-);
-
-CREATE TABLE reservaciones (
-    id                     BIGSERIAL PRIMARY KEY,
-    usuario_id             BIGINT  NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
-    libro_id               BIGINT  NOT NULL REFERENCES libros(id)   ON DELETE RESTRICT,
-    estado_reservacion_id  INTEGER NOT NULL REFERENCES estados_reservacion(id),
-    fecha_reserva          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    fecha_limite_retiro    TIMESTAMPTZ NOT NULL
-);
-
-CREATE TABLE prestamos (
-    id                          BIGSERIAL PRIMARY KEY,
-    usuario_id                  BIGINT  NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
-    libro_id                    BIGINT  NOT NULL REFERENCES libros(id)   ON DELETE RESTRICT,
-    bibliotecario_id            BIGINT  NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
-    reservacion_id              BIGINT  REFERENCES reservaciones(id) ON DELETE SET NULL,
-    fecha_prestamo              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    fecha_devolucion_estimada   TIMESTAMPTZ NOT NULL,
-    fecha_devolucion_real       TIMESTAMPTZ,
-    renovaciones_realizadas     SMALLINT NOT NULL DEFAULT 0 CHECK (renovaciones_realizadas >= 0),
-    estado_prestamo_id          INTEGER NOT NULL REFERENCES estados_prestamo(id)
-);
-
--- DECISIÓN DE NEGOCIO (resuelta): un préstamo SÍ puede generar más de una
--- multa (ej. daño al libro + atraso, registrados por separado). Por eso
--- prestamo_id NO lleva UNIQUE -- ver database/migrations/V3__multas_multiples_por_prestamo.sql
--- para el DROP CONSTRAINT sobre bases ya existentes con el UNIQUE previo.
-CREATE TABLE multas (
-    id               BIGSERIAL PRIMARY KEY,
-    prestamo_id      BIGINT NOT NULL REFERENCES prestamos(id) ON DELETE RESTRICT,
-    monto            NUMERIC(8,2) NOT NULL CHECK (monto > 0),
-    estado_multa_id  INTEGER NOT NULL REFERENCES estados_multa(id),
-    fecha_generada   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    fecha_pagada     TIMESTAMPTZ,
-    observaciones    VARCHAR(255)
-);
-
--- ============================================================================
--- MÓDULO 4: EXPERIENCIA DEL LECTOR (2 tablas)
--- ============================================================================
--- NOTA: favoritos y sugerencias_adquisicion exigen usuario_id NOT NULL en
--- ambas tablas — a propósito, no es un descuido. Ambas funcionalidades
--- requieren usuario autenticado; el portal anónimo (visitante sin login,
--- solo landing + catálogo público) NO tiene persistencia de favoritos ni
--- puede enviar sugerencias de adquisición. Es una decisión de producto ya
--- tomada implícitamente por el diseño del schema; se documenta aquí para
--- que quede explícita.
-CREATE TABLE favoritos (
-    usuario_id  BIGINT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    libro_id    BIGINT NOT NULL REFERENCES libros(id)   ON DELETE CASCADE,
-    agregado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (usuario_id, libro_id)
-);
-
-CREATE TABLE sugerencias_adquisicion (
-    id           BIGSERIAL PRIMARY KEY,
-    usuario_id   BIGINT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    titulo       VARCHAR(255) NOT NULL,
-    autor        VARCHAR(150),
-    isbn         VARCHAR(13),
-    justificacion TEXT,
-    estado       VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE'
-                 CHECK (estado IN ('PENDIENTE','APROBADA','RECHAZADA')),
-    revisado_por BIGINT REFERENCES usuarios(id) ON DELETE SET NULL,
-    creado_en    TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- ============================================================================
--- MÓDULO 5: AUDITORÍA (1 tabla)
--- ============================================================================
-CREATE TABLE bitacora_auditoria (
-    id              BIGSERIAL PRIMARY KEY,
-    usuario_id      BIGINT REFERENCES usuarios(id) ON DELETE SET NULL,
-    tipo_operacion  VARCHAR(20) NOT NULL
-                    CHECK (tipo_operacion IN
-                           ('INSERT','UPDATE','DELETE','LOGIN_OK','LOGIN_FAIL','LOGOUT')),
-    tabla_afectada  VARCHAR(50) NOT NULL,
-    registro_id     BIGINT,
-    detalles        TEXT NOT NULL,
-    ip_origen       VARCHAR(45),
-    fecha_hora      TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- ============================================================================
--- TRIGGERS DE actualizado_en
--- ============================================================================
-CREATE OR REPLACE FUNCTION set_actualizado_en()
-RETURNS TRIGGER AS $$
+CREATE FUNCTION public.set_actualizado_en() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
 BEGIN
     NEW.actualizado_en = NOW();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
-CREATE TRIGGER trg_usuarios_actualizado_en
-    BEFORE UPDATE ON usuarios
-    FOR EACH ROW EXECUTE FUNCTION set_actualizado_en();
+CREATE TABLE public.autores (
+    id bigint NOT NULL,
+    nombre character varying(150) NOT NULL
+);
 
-CREATE TRIGGER trg_libros_actualizado_en
-    BEFORE UPDATE ON libros
-    FOR EACH ROW EXECUTE FUNCTION set_actualizado_en();
+CREATE SEQUENCE public.autores_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
--- ============================================================================
--- FIN DEL SCHEMA — 24 TABLAS
--- ============================================================================
+ALTER SEQUENCE public.autores_id_seq OWNED BY public.autores.id;
+
+CREATE TABLE public.base_conocimiento (
+    id integer NOT NULL,
+    categoria character varying(40) NOT NULL,
+    pregunta_ejemplo text NOT NULL,
+    respuesta text NOT NULL,
+    activo boolean DEFAULT true NOT NULL
+);
+
+CREATE SEQUENCE public.base_conocimiento_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.base_conocimiento_id_seq OWNED BY public.base_conocimiento.id;
+
+CREATE TABLE public.bitacora_auditoria (
+    id bigint NOT NULL,
+    usuario_id bigint,
+    tipo_operacion character varying(20) NOT NULL,
+    tabla_afectada character varying(50) NOT NULL,
+    registro_id bigint,
+    detalles text NOT NULL,
+    ip_origen character varying(45),
+    fecha_hora timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT bitacora_auditoria_tipo_operacion_check CHECK (((tipo_operacion)::text = ANY ((ARRAY['INSERT'::character varying, 'UPDATE'::character varying, 'DELETE'::character varying, 'LOGIN_OK'::character varying, 'LOGIN_FAIL'::character varying, 'LOGOUT'::character varying, 'CORREO_VERIFICADO'::character varying])::text[])))
+);
+
+CREATE SEQUENCE public.bitacora_auditoria_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.bitacora_auditoria_id_seq OWNED BY public.bitacora_auditoria.id;
+
+CREATE TABLE public.categorias (
+    id integer NOT NULL,
+    nombre character varying(80) NOT NULL
+);
+
+CREATE SEQUENCE public.categorias_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.categorias_id_seq OWNED BY public.categorias.id;
+
+CREATE TABLE public.configuracion_sistema (
+    clave character varying(50) NOT NULL,
+    valor character varying(200) NOT NULL
+);
+
+CREATE TABLE public.editoriales (
+    id integer NOT NULL,
+    nombre character varying(150) NOT NULL,
+    pais_origen character varying(80)
+);
+
+CREATE SEQUENCE public.editoriales_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.editoriales_id_seq OWNED BY public.editoriales.id;
+
+CREATE TABLE public.estados_libro (
+    id integer NOT NULL,
+    nombre character varying(30) NOT NULL
+);
+
+CREATE SEQUENCE public.estados_libro_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.estados_libro_id_seq OWNED BY public.estados_libro.id;
+
+CREATE TABLE public.estados_multa (
+    id integer NOT NULL,
+    nombre character varying(30) NOT NULL
+);
+
+CREATE SEQUENCE public.estados_multa_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.estados_multa_id_seq OWNED BY public.estados_multa.id;
+
+CREATE TABLE public.estados_prestamo (
+    id integer NOT NULL,
+    nombre character varying(30) NOT NULL
+);
+
+CREATE SEQUENCE public.estados_prestamo_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.estados_prestamo_id_seq OWNED BY public.estados_prestamo.id;
+
+CREATE TABLE public.estados_reservacion (
+    id integer NOT NULL,
+    nombre character varying(30) NOT NULL
+);
+
+CREATE SEQUENCE public.estados_reservacion_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.estados_reservacion_id_seq OWNED BY public.estados_reservacion.id;
+
+CREATE TABLE public.estados_usuario (
+    id integer NOT NULL,
+    nombre character varying(30) NOT NULL
+);
+
+CREATE SEQUENCE public.estados_usuario_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.estados_usuario_id_seq OWNED BY public.estados_usuario.id;
+
+CREATE TABLE public.favoritos (
+    usuario_id bigint NOT NULL,
+    libro_id bigint NOT NULL,
+    agregado_en timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE public.idiomas (
+    id integer NOT NULL,
+    nombre character varying(50) NOT NULL,
+    codigo_iso character varying(5) NOT NULL
+);
+
+CREATE SEQUENCE public.idiomas_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.idiomas_id_seq OWNED BY public.idiomas.id;
+
+CREATE TABLE public.libro_autores (
+    libro_id bigint NOT NULL,
+    autor_id bigint NOT NULL
+);
+
+CREATE TABLE public.libro_categorias (
+    libro_id bigint NOT NULL,
+    categoria_id integer NOT NULL
+);
+
+CREATE TABLE public.libros (
+    id bigint NOT NULL,
+    isbn character varying(13) NOT NULL,
+    titulo character varying(255) NOT NULL,
+    resumen text,
+    portada_url character varying(1000),
+    anio_publicacion smallint NOT NULL,
+    editorial_id integer NOT NULL,
+    idioma_id integer NOT NULL,
+    estado_id integer NOT NULL,
+    stock_total smallint DEFAULT 1 NOT NULL,
+    stock_disponible smallint DEFAULT 1 NOT NULL,
+    fecha_registro timestamp with time zone DEFAULT now() CONSTRAINT libros_creado_en_not_null NOT NULL,
+    actualizado_en timestamp with time zone DEFAULT now() NOT NULL,
+    ubicacion_fisica character varying(50),
+    portada_imagen bytea,
+    portada_nombre character varying(255),
+    portada_tipo character varying(100),
+    portada_tamanio integer,
+    CONSTRAINT chk_anio_publicacion CHECK (((anio_publicacion >= 1000) AND (anio_publicacion <= 2100))),
+    CONSTRAINT chk_stock_disponible CHECK (((stock_disponible >= 0) AND (stock_disponible <= stock_total))),
+    CONSTRAINT chk_stock_total CHECK ((stock_total >= 0))
+);
+
+CREATE SEQUENCE public.libros_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.libros_id_seq OWNED BY public.libros.id;
+
+CREATE TABLE public.mensajes_chat (
+    id bigint NOT NULL,
+    sesion_id uuid NOT NULL,
+    rol character varying(10) NOT NULL,
+    contenido text NOT NULL,
+    creado_en timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT mensajes_chat_rol_check CHECK (((rol)::text = ANY ((ARRAY['USUARIO'::character varying, 'ASISTENTE'::character varying])::text[])))
+);
+
+CREATE SEQUENCE public.mensajes_chat_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.mensajes_chat_id_seq OWNED BY public.mensajes_chat.id;
+
+CREATE TABLE public.multas (
+    id bigint NOT NULL,
+    prestamo_id bigint NOT NULL,
+    monto numeric(8,2) NOT NULL,
+    estado_multa_id integer NOT NULL,
+    fecha_generada timestamp with time zone DEFAULT now() NOT NULL,
+    fecha_pagada timestamp with time zone,
+    observaciones character varying(255),
+    CONSTRAINT multas_monto_check CHECK ((monto > (0)::numeric))
+);
+
+CREATE SEQUENCE public.multas_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.multas_id_seq OWNED BY public.multas.id;
+
+CREATE TABLE public.notificaciones (
+    id bigint NOT NULL,
+    usuario_id bigint NOT NULL,
+    prestamo_id bigint,
+    tipo_notificacion_id integer NOT NULL,
+    mensaje text NOT NULL,
+    fecha_envio timestamp with time zone,
+    enviado_ok boolean DEFAULT false NOT NULL,
+    error_envio character varying(255),
+    creado_en timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE SEQUENCE public.notificaciones_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.notificaciones_id_seq OWNED BY public.notificaciones.id;
+
+CREATE TABLE public.permisos (
+    id integer NOT NULL,
+    codigo character varying(60) NOT NULL
+);
+
+CREATE SEQUENCE public.permisos_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.permisos_id_seq OWNED BY public.permisos.id;
+
+CREATE TABLE public.prestamos (
+    id bigint NOT NULL,
+    usuario_id bigint NOT NULL,
+    libro_id bigint NOT NULL,
+    bibliotecario_id bigint NOT NULL,
+    reservacion_id bigint,
+    fecha_prestamo timestamp with time zone DEFAULT now() NOT NULL,
+    fecha_devolucion_estimada timestamp with time zone NOT NULL,
+    fecha_devolucion_real timestamp with time zone,
+    renovaciones_realizadas smallint DEFAULT 0 NOT NULL,
+    estado_prestamo_id integer NOT NULL,
+    CONSTRAINT prestamos_renovaciones_realizadas_check CHECK ((renovaciones_realizadas >= 0))
+);
+
+CREATE SEQUENCE public.prestamos_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.prestamos_id_seq OWNED BY public.prestamos.id;
+
+CREATE TABLE public.reservaciones (
+    id bigint NOT NULL,
+    usuario_id bigint NOT NULL,
+    libro_id bigint NOT NULL,
+    estado_reservacion_id integer NOT NULL,
+    fecha_reserva timestamp with time zone DEFAULT now() NOT NULL,
+    fecha_limite_retiro timestamp with time zone NOT NULL
+);
+
+CREATE SEQUENCE public.reservaciones_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.reservaciones_id_seq OWNED BY public.reservaciones.id;
+
+CREATE TABLE public.rol_permisos (
+    rol_id integer NOT NULL,
+    permiso_id integer NOT NULL
+);
+
+CREATE TABLE public.roles (
+    id integer NOT NULL,
+    nombre character varying(30) NOT NULL,
+    descripcion character varying(200)
+);
+
+CREATE SEQUENCE public.roles_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.roles_id_seq OWNED BY public.roles.id;
+
+CREATE TABLE public.sesiones_chat (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    usuario_id bigint NOT NULL,
+    creado_en timestamp with time zone DEFAULT now() NOT NULL,
+    ultima_actividad timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE public.sugerencias_adquisicion (
+    id bigint NOT NULL,
+    usuario_id bigint NOT NULL,
+    titulo character varying(255) NOT NULL,
+    autor character varying(150),
+    isbn character varying(13),
+    justificacion text,
+    estado character varying(20) DEFAULT 'PENDIENTE'::character varying NOT NULL,
+    revisado_por bigint,
+    creado_en timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT sugerencias_adquisicion_estado_check CHECK (((estado)::text = ANY ((ARRAY['PENDIENTE'::character varying, 'APROBADA'::character varying, 'RECHAZADA'::character varying])::text[])))
+);
+
+CREATE SEQUENCE public.sugerencias_adquisicion_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sugerencias_adquisicion_id_seq OWNED BY public.sugerencias_adquisicion.id;
+
+CREATE TABLE public.tipos_notificacion (
+    id integer NOT NULL,
+    nombre character varying(30) NOT NULL
+);
+
+CREATE SEQUENCE public.tipos_notificacion_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.tipos_notificacion_id_seq OWNED BY public.tipos_notificacion.id;
+
+CREATE TABLE public.tokens_invalidos (
+    id bigint NOT NULL,
+    jti character varying(100) NOT NULL,
+    usuario_id bigint NOT NULL,
+    expira_en timestamp with time zone NOT NULL,
+    invalidado_en timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE SEQUENCE public.tokens_invalidos_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.tokens_invalidos_id_seq OWNED BY public.tokens_invalidos.id;
+
+CREATE TABLE public.usuario_roles (
+    usuario_id bigint NOT NULL,
+    rol_id integer NOT NULL,
+    asignado_en timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE public.usuarios (
+    id bigint NOT NULL,
+    nombre character varying(100) NOT NULL,
+    correo character varying(150) NOT NULL,
+    password_hash character varying(255) NOT NULL,
+    fecha_registro timestamp with time zone DEFAULT now() CONSTRAINT usuarios_creado_en_not_null NOT NULL,
+    actualizado_en timestamp with time zone DEFAULT now() NOT NULL,
+    apellido character varying(100) NOT NULL,
+    identificacion_usuario character varying(20),
+    correo_verificado boolean DEFAULT false NOT NULL,
+    estado_id integer NOT NULL,
+    credencial_qr_token uuid DEFAULT public.uuid_generate_v4() NOT NULL
+);
+
+CREATE SEQUENCE public.usuarios_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.usuarios_id_seq OWNED BY public.usuarios.id;
+
+CREATE TABLE public.verificaciones_correo (
+    id bigint NOT NULL,
+    usuario_id bigint NOT NULL,
+    token uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    expira_en timestamp with time zone NOT NULL,
+    usado boolean DEFAULT false NOT NULL,
+    creado_en timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE SEQUENCE public.verificaciones_correo_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.verificaciones_correo_id_seq OWNED BY public.verificaciones_correo.id;
+
+ALTER TABLE ONLY public.autores ALTER COLUMN id SET DEFAULT nextval('public.autores_id_seq'::regclass);
+
+ALTER TABLE ONLY public.base_conocimiento ALTER COLUMN id SET DEFAULT nextval('public.base_conocimiento_id_seq'::regclass);
+
+ALTER TABLE ONLY public.bitacora_auditoria ALTER COLUMN id SET DEFAULT nextval('public.bitacora_auditoria_id_seq'::regclass);
+
+ALTER TABLE ONLY public.categorias ALTER COLUMN id SET DEFAULT nextval('public.categorias_id_seq'::regclass);
+
+ALTER TABLE ONLY public.editoriales ALTER COLUMN id SET DEFAULT nextval('public.editoriales_id_seq'::regclass);
+
+ALTER TABLE ONLY public.estados_libro ALTER COLUMN id SET DEFAULT nextval('public.estados_libro_id_seq'::regclass);
+
+ALTER TABLE ONLY public.estados_multa ALTER COLUMN id SET DEFAULT nextval('public.estados_multa_id_seq'::regclass);
+
+ALTER TABLE ONLY public.estados_prestamo ALTER COLUMN id SET DEFAULT nextval('public.estados_prestamo_id_seq'::regclass);
+
+ALTER TABLE ONLY public.estados_reservacion ALTER COLUMN id SET DEFAULT nextval('public.estados_reservacion_id_seq'::regclass);
+
+ALTER TABLE ONLY public.estados_usuario ALTER COLUMN id SET DEFAULT nextval('public.estados_usuario_id_seq'::regclass);
+
+ALTER TABLE ONLY public.idiomas ALTER COLUMN id SET DEFAULT nextval('public.idiomas_id_seq'::regclass);
+
+ALTER TABLE ONLY public.libros ALTER COLUMN id SET DEFAULT nextval('public.libros_id_seq'::regclass);
+
+ALTER TABLE ONLY public.mensajes_chat ALTER COLUMN id SET DEFAULT nextval('public.mensajes_chat_id_seq'::regclass);
+
+ALTER TABLE ONLY public.multas ALTER COLUMN id SET DEFAULT nextval('public.multas_id_seq'::regclass);
+
+ALTER TABLE ONLY public.notificaciones ALTER COLUMN id SET DEFAULT nextval('public.notificaciones_id_seq'::regclass);
+
+ALTER TABLE ONLY public.permisos ALTER COLUMN id SET DEFAULT nextval('public.permisos_id_seq'::regclass);
+
+ALTER TABLE ONLY public.prestamos ALTER COLUMN id SET DEFAULT nextval('public.prestamos_id_seq'::regclass);
+
+ALTER TABLE ONLY public.reservaciones ALTER COLUMN id SET DEFAULT nextval('public.reservaciones_id_seq'::regclass);
+
+ALTER TABLE ONLY public.roles ALTER COLUMN id SET DEFAULT nextval('public.roles_id_seq'::regclass);
+
+ALTER TABLE ONLY public.sugerencias_adquisicion ALTER COLUMN id SET DEFAULT nextval('public.sugerencias_adquisicion_id_seq'::regclass);
+
+ALTER TABLE ONLY public.tipos_notificacion ALTER COLUMN id SET DEFAULT nextval('public.tipos_notificacion_id_seq'::regclass);
+
+ALTER TABLE ONLY public.tokens_invalidos ALTER COLUMN id SET DEFAULT nextval('public.tokens_invalidos_id_seq'::regclass);
+
+ALTER TABLE ONLY public.usuarios ALTER COLUMN id SET DEFAULT nextval('public.usuarios_id_seq'::regclass);
+
+ALTER TABLE ONLY public.verificaciones_correo ALTER COLUMN id SET DEFAULT nextval('public.verificaciones_correo_id_seq'::regclass);
+
+ALTER TABLE ONLY public.autores
+    ADD CONSTRAINT autores_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.base_conocimiento
+    ADD CONSTRAINT base_conocimiento_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.bitacora_auditoria
+    ADD CONSTRAINT bitacora_auditoria_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.categorias
+    ADD CONSTRAINT categorias_nombre_key UNIQUE (nombre);
+
+ALTER TABLE ONLY public.categorias
+    ADD CONSTRAINT categorias_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.configuracion_sistema
+    ADD CONSTRAINT configuracion_sistema_pkey PRIMARY KEY (clave);
+
+ALTER TABLE ONLY public.editoriales
+    ADD CONSTRAINT editoriales_nombre_key UNIQUE (nombre);
+
+ALTER TABLE ONLY public.editoriales
+    ADD CONSTRAINT editoriales_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.estados_libro
+    ADD CONSTRAINT estados_libro_nombre_key UNIQUE (nombre);
+
+ALTER TABLE ONLY public.estados_libro
+    ADD CONSTRAINT estados_libro_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.estados_multa
+    ADD CONSTRAINT estados_multa_nombre_key UNIQUE (nombre);
+
+ALTER TABLE ONLY public.estados_multa
+    ADD CONSTRAINT estados_multa_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.estados_prestamo
+    ADD CONSTRAINT estados_prestamo_nombre_key UNIQUE (nombre);
+
+ALTER TABLE ONLY public.estados_prestamo
+    ADD CONSTRAINT estados_prestamo_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.estados_reservacion
+    ADD CONSTRAINT estados_reservacion_nombre_key UNIQUE (nombre);
+
+ALTER TABLE ONLY public.estados_reservacion
+    ADD CONSTRAINT estados_reservacion_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.estados_usuario
+    ADD CONSTRAINT estados_usuario_nombre_key UNIQUE (nombre);
+
+ALTER TABLE ONLY public.estados_usuario
+    ADD CONSTRAINT estados_usuario_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.favoritos
+    ADD CONSTRAINT favoritos_pkey PRIMARY KEY (usuario_id, libro_id);
+
+ALTER TABLE ONLY public.idiomas
+    ADD CONSTRAINT idiomas_codigo_iso_key UNIQUE (codigo_iso);
+
+ALTER TABLE ONLY public.idiomas
+    ADD CONSTRAINT idiomas_nombre_key UNIQUE (nombre);
+
+ALTER TABLE ONLY public.idiomas
+    ADD CONSTRAINT idiomas_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.libro_autores
+    ADD CONSTRAINT libro_autores_pkey PRIMARY KEY (libro_id, autor_id);
+
+ALTER TABLE ONLY public.libro_categorias
+    ADD CONSTRAINT libro_categorias_pkey PRIMARY KEY (libro_id, categoria_id);
+
+ALTER TABLE ONLY public.libros
+    ADD CONSTRAINT libros_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.mensajes_chat
+    ADD CONSTRAINT mensajes_chat_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.multas
+    ADD CONSTRAINT multas_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.notificaciones
+    ADD CONSTRAINT notificaciones_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.permisos
+    ADD CONSTRAINT permisos_codigo_key UNIQUE (codigo);
+
+ALTER TABLE ONLY public.permisos
+    ADD CONSTRAINT permisos_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.prestamos
+    ADD CONSTRAINT prestamos_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.reservaciones
+    ADD CONSTRAINT reservaciones_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.rol_permisos
+    ADD CONSTRAINT rol_permisos_pkey PRIMARY KEY (rol_id, permiso_id);
+
+ALTER TABLE ONLY public.roles
+    ADD CONSTRAINT roles_nombre_key UNIQUE (nombre);
+
+ALTER TABLE ONLY public.roles
+    ADD CONSTRAINT roles_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sesiones_chat
+    ADD CONSTRAINT sesiones_chat_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sugerencias_adquisicion
+    ADD CONSTRAINT sugerencias_adquisicion_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.tipos_notificacion
+    ADD CONSTRAINT tipos_notificacion_nombre_key UNIQUE (nombre);
+
+ALTER TABLE ONLY public.tipos_notificacion
+    ADD CONSTRAINT tipos_notificacion_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.tokens_invalidos
+    ADD CONSTRAINT tokens_invalidos_jti_key UNIQUE (jti);
+
+ALTER TABLE ONLY public.tokens_invalidos
+    ADD CONSTRAINT tokens_invalidos_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.usuario_roles
+    ADD CONSTRAINT usuario_roles_pkey PRIMARY KEY (usuario_id, rol_id);
+
+ALTER TABLE ONLY public.usuarios
+    ADD CONSTRAINT usuarios_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.verificaciones_correo
+    ADD CONSTRAINT verificaciones_correo_pkey PRIMARY KEY (id);
+
+CREATE UNIQUE INDEX idx_libros_isbn ON public.libros USING btree (isbn);
+
+CREATE INDEX idx_libros_titulo_trgm ON public.libros USING gin (titulo public.gin_trgm_ops);
+
+CREATE INDEX idx_mensajes_chat_sesion ON public.mensajes_chat USING btree (sesion_id);
+
+CREATE INDEX idx_notificaciones_usuario ON public.notificaciones USING btree (usuario_id);
+
+CREATE UNIQUE INDEX idx_usuarios_correo ON public.usuarios USING btree (correo);
+
+CREATE UNIQUE INDEX idx_usuarios_credencial_qr_token ON public.usuarios USING btree (credencial_qr_token);
+
+CREATE TRIGGER trg_libros_actualizado_en BEFORE UPDATE ON public.libros FOR EACH ROW EXECUTE FUNCTION public.set_actualizado_en();
+
+CREATE TRIGGER trg_usuarios_actualizado_en BEFORE UPDATE ON public.usuarios FOR EACH ROW EXECUTE FUNCTION public.set_actualizado_en();
+
+ALTER TABLE ONLY public.bitacora_auditoria
+    ADD CONSTRAINT bitacora_auditoria_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY public.favoritos
+    ADD CONSTRAINT favoritos_libro_id_fkey FOREIGN KEY (libro_id) REFERENCES public.libros(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.favoritos
+    ADD CONSTRAINT favoritos_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.libro_autores
+    ADD CONSTRAINT libro_autores_autor_id_fkey FOREIGN KEY (autor_id) REFERENCES public.autores(id) ON DELETE RESTRICT;
+
+ALTER TABLE ONLY public.libro_autores
+    ADD CONSTRAINT libro_autores_libro_id_fkey FOREIGN KEY (libro_id) REFERENCES public.libros(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.libro_categorias
+    ADD CONSTRAINT libro_categorias_categoria_id_fkey FOREIGN KEY (categoria_id) REFERENCES public.categorias(id) ON DELETE RESTRICT;
+
+ALTER TABLE ONLY public.libro_categorias
+    ADD CONSTRAINT libro_categorias_libro_id_fkey FOREIGN KEY (libro_id) REFERENCES public.libros(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.libros
+    ADD CONSTRAINT libros_editorial_id_fkey FOREIGN KEY (editorial_id) REFERENCES public.editoriales(id) ON DELETE RESTRICT;
+
+ALTER TABLE ONLY public.libros
+    ADD CONSTRAINT libros_estado_id_fkey FOREIGN KEY (estado_id) REFERENCES public.estados_libro(id) ON DELETE RESTRICT;
+
+ALTER TABLE ONLY public.libros
+    ADD CONSTRAINT libros_idioma_id_fkey FOREIGN KEY (idioma_id) REFERENCES public.idiomas(id) ON DELETE RESTRICT;
+
+ALTER TABLE ONLY public.mensajes_chat
+    ADD CONSTRAINT mensajes_chat_sesion_id_fkey FOREIGN KEY (sesion_id) REFERENCES public.sesiones_chat(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.multas
+    ADD CONSTRAINT multas_estado_multa_id_fkey FOREIGN KEY (estado_multa_id) REFERENCES public.estados_multa(id);
+
+ALTER TABLE ONLY public.multas
+    ADD CONSTRAINT multas_prestamo_id_fkey FOREIGN KEY (prestamo_id) REFERENCES public.prestamos(id) ON DELETE RESTRICT;
+
+ALTER TABLE ONLY public.notificaciones
+    ADD CONSTRAINT notificaciones_prestamo_id_fkey FOREIGN KEY (prestamo_id) REFERENCES public.prestamos(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY public.notificaciones
+    ADD CONSTRAINT notificaciones_tipo_notificacion_id_fkey FOREIGN KEY (tipo_notificacion_id) REFERENCES public.tipos_notificacion(id) ON DELETE RESTRICT;
+
+ALTER TABLE ONLY public.notificaciones
+    ADD CONSTRAINT notificaciones_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id) ON DELETE RESTRICT;
+
+ALTER TABLE ONLY public.prestamos
+    ADD CONSTRAINT prestamos_bibliotecario_id_fkey FOREIGN KEY (bibliotecario_id) REFERENCES public.usuarios(id) ON DELETE RESTRICT;
+
+ALTER TABLE ONLY public.prestamos
+    ADD CONSTRAINT prestamos_estado_prestamo_id_fkey FOREIGN KEY (estado_prestamo_id) REFERENCES public.estados_prestamo(id);
+
+ALTER TABLE ONLY public.prestamos
+    ADD CONSTRAINT prestamos_libro_id_fkey FOREIGN KEY (libro_id) REFERENCES public.libros(id) ON DELETE RESTRICT;
+
+ALTER TABLE ONLY public.prestamos
+    ADD CONSTRAINT prestamos_reservacion_id_fkey FOREIGN KEY (reservacion_id) REFERENCES public.reservaciones(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY public.prestamos
+    ADD CONSTRAINT prestamos_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id) ON DELETE RESTRICT;
+
+ALTER TABLE ONLY public.reservaciones
+    ADD CONSTRAINT reservaciones_estado_reservacion_id_fkey FOREIGN KEY (estado_reservacion_id) REFERENCES public.estados_reservacion(id);
+
+ALTER TABLE ONLY public.reservaciones
+    ADD CONSTRAINT reservaciones_libro_id_fkey FOREIGN KEY (libro_id) REFERENCES public.libros(id) ON DELETE RESTRICT;
+
+ALTER TABLE ONLY public.reservaciones
+    ADD CONSTRAINT reservaciones_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id) ON DELETE RESTRICT;
+
+ALTER TABLE ONLY public.rol_permisos
+    ADD CONSTRAINT rol_permisos_permiso_id_fkey FOREIGN KEY (permiso_id) REFERENCES public.permisos(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.rol_permisos
+    ADD CONSTRAINT rol_permisos_rol_id_fkey FOREIGN KEY (rol_id) REFERENCES public.roles(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.sesiones_chat
+    ADD CONSTRAINT sesiones_chat_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id);
+
+ALTER TABLE ONLY public.sugerencias_adquisicion
+    ADD CONSTRAINT sugerencias_adquisicion_revisado_por_fkey FOREIGN KEY (revisado_por) REFERENCES public.usuarios(id) ON DELETE SET NULL;
+
+ALTER TABLE ONLY public.sugerencias_adquisicion
+    ADD CONSTRAINT sugerencias_adquisicion_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.tokens_invalidos
+    ADD CONSTRAINT tokens_invalidos_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.usuario_roles
+    ADD CONSTRAINT usuario_roles_rol_id_fkey FOREIGN KEY (rol_id) REFERENCES public.roles(id) ON DELETE RESTRICT;
+
+ALTER TABLE ONLY public.usuario_roles
+    ADD CONSTRAINT usuario_roles_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.usuarios
+    ADD CONSTRAINT usuarios_estado_id_fkey FOREIGN KEY (estado_id) REFERENCES public.estados_usuario(id) ON DELETE RESTRICT;
+
+ALTER TABLE ONLY public.verificaciones_correo
+    ADD CONSTRAINT verificaciones_correo_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id) ON DELETE CASCADE;
+
