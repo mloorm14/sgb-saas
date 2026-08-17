@@ -5,6 +5,31 @@
 > [RUNBOOK.md](RUNBOOK.md) (operación de día a día) y [BACKUP.md](BACKUP.md)
 > (respaldo y restauración).
 
+## 0. Estado de despliegue: sin confirmar
+
+**No se afirma como hecho vigente cuál de los dos estados de abajo está
+realmente aplicado en el dashboard de Render ahora mismo** — nadie del
+equipo lo ha confirmado todavía, así que no se adivina.
+
+- **Estado documentado en esta rama** (verificado con `curl -I` contra la
+  URL pública real el 2026-08-14): el frontend corre como **Static
+  Site**, con cabeceras de seguridad cargadas manualmente en el Dashboard
+  de Render (§5.4.1). Este documento **nunca menciona una corrección para
+  el fallback de rutas SPA** (`/login` y rutas equivalentes devolviendo
+  `404`) — no hay evidencia en esta rama de que ese problema se haya
+  resuelto.
+- **Corrección propuesta en `main`** (rama `conf-produccion`, añadida el
+  2026-08-15/16, ver §6 más abajo): `render.yaml` fuerza `runtime: docker`
+  para frontend y backend, específicamente para resolver el 404 de rutas
+  SPA — diagnosticado ahí como causado por el propio comportamiento de
+  Static Site. Este merge trae `render.yaml` a esta rama por primera vez,
+  pero **aplicarlo requiere una acción manual en el dashboard de Render**
+  (crear un Blueprint o migrar el servicio existente) — el archivo estar
+  en el repositorio no reconfigura un servicio ya creado por su cuenta.
+
+Quien confirme el estado real en el dashboard debería actualizar esta
+sección quitando la ambigüedad, en vez de que quede así indefinidamente.
+
 ## 1. Arquitectura desplegada (resumen ejecutivo)
 
 El sistema corre en tres proveedores PaaS/SaaS independientes, todos en
@@ -298,13 +323,100 @@ una major por paso para migraciones automáticas.
 5. Si el primer acceso tarda ~60 s, es el *cold start* del plan Free
    (comportamiento esperado, §2.1).
 
-## 6. Referencias
+## 6. Historial de incidentes documentados en `main` (rama `conf-produccion`, 2026-08-15/16)
+
+Esta sección proviene de `main` (fecha de escritura posterior a todo el
+resto de este documento) y no fue verificada de nuevo contra esta rama —
+se conserva tal cual porque documenta hallazgos reales con evidencia
+propia, no se descarta solo por venir de otra rama. Ver §0 para la
+salvedad sobre si esta corrección específica (404 de rutas SPA) está
+realmente aplicada hoy.
+
+### 6.1 Problema conocido: 404 en rutas SPA del frontend
+
+**Síntoma observado** (verificado con `curl -I` contra la URL pública
+real el 2026-08-15): `GET https://biblora-sgb.onrender.com/` responde
+`200 OK` con contenido real; `GET https://biblora-sgb.onrender.com/login`
+responde `404 Not Found`.
+
+**Causa raíz más probable.** El servicio de Render que sirve el
+frontend está configurado como **Static Site** (sirve los archivos del
+build directamente, sin pasar por el `Dockerfile`/`nginx.conf` de este
+repositorio) en vez de como **Web Service con Runtime Docker**. Un
+Static Site sin una regla de reescritura de rutas explícita devuelve
+`404` para cualquier ruta que no sea un archivo real en el build (como
+`/login`, que solo existe como ruta de Angular, no como archivo
+`login.html`) — comportamiento esperado de ese tipo de servicio, no un
+bug del código Angular.
+
+**Corrección aplicada en `main`:**
+
+1. `render.yaml` (raíz del repo) fuerza `runtime: docker` para ambos
+   servicios, para que Render use el `Dockerfile` real (y por lo tanto
+   `nginx.conf`, que sí tiene `try_files $uri $uri/ /index.html;`) en
+   vez de tratar al frontend como Static Site. Esta es la corrección
+   principal — pero ver §0: traer el archivo a una rama no reconfigura
+   un servicio de Render ya creado, se necesita una acción manual además.
+2. `frontend-angular/public/_redirects` (contenido: `/* /index.html
+   200`) se agrega como red de seguridad adicional, por si el equipo
+   decide NO migrar a `render.yaml` y mantener el servicio como Static
+   Site manual — ese formato de archivo es el mecanismo de fallback SPA
+   que reconocen los Static Site de Render (heredado de la convención de
+   Netlify).
+3. **Limitación honesta de la corrección #2**: `angular.json` no incluye
+   `public/` en su arreglo `assets`, así que `ng build` no copia
+   `_redirects` automáticamente. `frontend-angular/Dockerfile` lo copia
+   explícitamente al output de nginx — pero esa copia solo ocurre si el
+   servicio efectivamente usa el Dockerfile (corrección #1). La única
+   corrección que resuelve el problema en ambos escenarios (Docker o
+   Static Site) es la #1; la #2/#3 quedan como defensa adicional.
+
+### 6.2 Hallazgo (corregido en un commit posterior): URL del backend hardcodeada en el frontend
+
+En un commit base anterior de `main` (`cd25ebe`), **6 archivos** del
+frontend tenían la URL del backend hardcodeada como
+`http://localhost:8080/api` (o `/api/v1`), sin pasar por ningún mecanismo
+de configuración: `auth.service.ts`, `libros.component.ts`,
+`multas.component.ts`, `prestamos-gestion.component.ts`,
+`prestamos-lector.component.ts`, `reservaciones.component.ts`. Esto
+significaba que el JavaScript que corre en el navegador del evaluador
+intentaba llamar a `http://localhost:8080` (la máquina del propio
+evaluador, no el backend real).
+
+**Corregido** con el mecanismo estándar de Angular
+(`fileReplacements`): `environment.ts` (desarrollo, `apiUrl:
+'http://localhost:8080/api'`) vs `environment.prod.ts` (producción,
+`apiUrl: 'https://sgb-backend-b058.onrender.com/api'`), intercambiados
+por `angular.json` según la configuración de build. Verificado con
+`grep` sobre los bundles generados que el bundle de producción no
+contiene `localhost:8080` y el de desarrollo no contiene la URL de
+producción. Esta rama (`interfaces-completas`) ya usaba internamente
+servicios (`LibroService`, `MultaService`, etc.) construidos sobre
+`environment.apiUrl` desde antes — el mecanismo coincide, no hubo
+conflicto real al traer este fix.
+
+### 6.3 Navegador para los tests (Karma/Puppeteer)
+
+`frontend-angular/karma.conf.js` resuelve `CHROME_BIN` en este orden:
+(1) variable ya seteada en el entorno, (2) un Chrome/Edge/Chromium ya
+instalado en el sistema, (3) como último recurso, el Chromium que
+instala `puppeteer`. `frontend-angular/.puppeteerrc.cjs` fija
+`skipDownload: true` por defecto para que `npm ci`/`npm install` nunca
+dependan de una descarga externa (`storage.googleapis.com`) que puede
+estar bloqueada por el firewall de una red institucional — un fallo ahí
+antes hacía fallar `npm ci` completo (bloqueando también `ng build`), no
+solo los tests.
+
+## 7. Referencias
 
 - [RUNBOOK.md](RUNBOOK.md) — operación, rotación de secretos y redeploys.
 - [BACKUP.md](BACKUP.md) — respaldo Neon, retención mínima y prueba de
   restauración.
 - [ADR-012](docs/adr/adr-012-estrategia-despliegue.md) — decisión y
   Actualización a esta arquitectura.
+- `render.yaml` (raíz del repo, traído por primera vez a esta rama en
+  este merge — ver §0 y §6.1).
+- `frontend-angular/karma.conf.js`, `frontend-angular/.puppeteerrc.cjs`.
 - Documentación oficial de límites verificada: `render.com/docs/free`,
   `neon.com/docs/introduction/plans`, `upstash.com/pricing/redis`
   (agosto 2026).

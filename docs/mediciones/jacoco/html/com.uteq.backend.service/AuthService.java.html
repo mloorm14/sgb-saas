@@ -39,7 +39,12 @@ public class AuthService {
 <span class="fc" id="L39">    private static final Logger log = LoggerFactory.getLogger(AuthService.class);</span>
 
     private static final String ROL_POR_DEFECTO = &quot;LECTOR&quot;;
-    private static final String ESTADO_INICIAL = &quot;ACTIVO&quot;;
+    // Módulo 9.5: ya no ACTIVO directo -- UserDetailsServiceImpl marca
+    // disabled=true para PENDIENTE_VERIFICACION, así que el login queda
+    // bloqueado (403, ver GlobalExceptionHandler#handleDisabled) hasta que
+    // verificarCorreo() lo pase a ESTADO_VERIFICADO.
+    private static final String ESTADO_INICIAL = &quot;PENDIENTE_VERIFICACION&quot;;
+    private static final String ESTADO_VERIFICADO = &quot;ACTIVO&quot;;
     private static final String TABLA_USUARIOS = &quot;usuarios&quot;;
 
     private final UsuarioRepository usuarioRepository;
@@ -51,36 +56,65 @@ public class AuthService {
     private final RedisTemplate&lt;String, String&gt; redisTemplate;
     private final LoginRateLimiter loginRateLimiter;
     private final BitacoraAuditoriaRepository bitacoraAuditoriaRepository;
+    private final VerificacionCorreoService verificacionCorreoService;
 
     public UsuarioResponseDTO registrar(RegistroRequestDTO dto) {
-<span class="nc" id="L56">        usuarioRepository.findByCorreo(dto.correo()).ifPresent(usuario -&gt; {</span>
-<span class="fc" id="L57">            throw new CorreoYaRegistradoException(&quot;El correo ya está registrado: &quot; + dto.correo());</span>
+<span class="fc" id="L62">        usuarioRepository.findByCorreo(dto.correo()).ifPresent(usuario -&gt; {</span>
+<span class="fc" id="L63">            throw new CorreoYaRegistradoException(&quot;El correo ya está registrado: &quot; + dto.correo());</span>
         });
 
-<span class="nc" id="L60">        Rol rolLector = rolRepository.findByNombre(ROL_POR_DEFECTO)</span>
-<span class="nc" id="L61">                .orElseThrow(() -&gt; new IllegalStateException(&quot;Catalogo roles sin fila '&quot; + ROL_POR_DEFECTO + &quot;'&quot;));</span>
-<span class="nc" id="L62">        EstadoUsuario estadoActivo = estadoUsuarioRepository.findByNombre(ESTADO_INICIAL)</span>
-<span class="nc" id="L63">                .orElseThrow(() -&gt; new IllegalStateException(&quot;Catalogo estados_usuario sin fila '&quot; + ESTADO_INICIAL + &quot;'&quot;));</span>
+<span class="fc" id="L66">        Rol rolLector = rolRepository.findByNombre(ROL_POR_DEFECTO)</span>
+<span class="pc" id="L67">                .orElseThrow(() -&gt; new IllegalStateException(&quot;Catalogo roles sin fila '&quot; + ROL_POR_DEFECTO + &quot;'&quot;));</span>
+<span class="fc" id="L68">        EstadoUsuario estadoPendienteVerificacion = estadoUsuarioRepository.findByNombre(ESTADO_INICIAL)</span>
+<span class="pc" id="L69">                .orElseThrow(() -&gt; new IllegalStateException(&quot;Catalogo estados_usuario sin fila '&quot; + ESTADO_INICIAL + &quot;'&quot;));</span>
 
-<span class="nc" id="L65">        Instant ahora = Instant.now();</span>
-<span class="nc" id="L66">        Set&lt;Rol&gt; roles = new HashSet&lt;&gt;();</span>
-<span class="nc" id="L67">        roles.add(rolLector);</span>
+<span class="fc" id="L71">        Instant ahora = Instant.now();</span>
+<span class="fc" id="L72">        Set&lt;Rol&gt; roles = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L73">        roles.add(rolLector);</span>
 
-<span class="nc" id="L69">        Usuario usuario = Usuario.builder()</span>
-<span class="nc" id="L70">                .nombre(dto.nombre())</span>
-<span class="nc" id="L71">                .apellido(dto.apellido())</span>
-<span class="nc" id="L72">                .correo(dto.correo())</span>
-<span class="nc" id="L73">                .passwordHash(passwordEncoder.encode(dto.password()))</span>
-<span class="nc" id="L74">                .estado(estadoActivo)</span>
-<span class="nc" id="L75">                .correoVerificado(false)</span>
-<span class="nc" id="L76">                .roles(roles)</span>
-<span class="nc" id="L77">                .fechaRegistro(ahora)</span>
-<span class="nc" id="L78">                .actualizadoEn(ahora)</span>
-<span class="nc" id="L79">                .build();</span>
+<span class="fc" id="L75">        Usuario usuario = Usuario.builder()</span>
+<span class="fc" id="L76">                .nombre(dto.nombre())</span>
+<span class="fc" id="L77">                .apellido(dto.apellido())</span>
+<span class="fc" id="L78">                .correo(dto.correo())</span>
+<span class="fc" id="L79">                .passwordHash(passwordEncoder.encode(dto.password()))</span>
+<span class="fc" id="L80">                .estado(estadoPendienteVerificacion)</span>
+<span class="fc" id="L81">                .correoVerificado(false)</span>
+<span class="fc" id="L82">                .roles(roles)</span>
+<span class="fc" id="L83">                .fechaRegistro(ahora)</span>
+<span class="fc" id="L84">                .actualizadoEn(ahora)</span>
+<span class="fc" id="L85">                .build();</span>
 
-<span class="nc" id="L81">        Usuario guardado = usuarioRepository.save(usuario);</span>
+<span class="fc" id="L87">        Usuario guardado = usuarioRepository.save(usuario);</span>
 
-<span class="nc" id="L83">        return mapToUsuarioResponseDTO(guardado);</span>
+        // Módulo 9.5: el usuario queda PENDIENTE_VERIFICACION (login
+        // bloqueado) hasta que confirme este código vía verificarCorreo().
+<span class="fc" id="L91">        verificacionCorreoService.generarYEnviarCodigo(guardado);</span>
+
+<span class="fc" id="L93">        return mapToUsuarioResponseDTO(guardado);</span>
+    }
+
+    // ── POST /api/auth/verificar-correo ───────────────────────
+    // No requiere estar autenticado (el usuario todavía no puede loguearse
+    // -- ver ESTADO_INICIAL): la identidad se comprueba con el código de un
+    // solo uso, no con un JWT.
+    public UsuarioResponseDTO verificarCorreo(String correo, String codigo, String ipOrigen) {
+<span class="fc" id="L101">        verificacionCorreoService.validar(correo, codigo);</span>
+
+<span class="fc" id="L103">        Usuario usuario = usuarioRepository.findByCorreo(correo)</span>
+<span class="pc" id="L104">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Usuario no encontrado: &quot; + correo));</span>
+<span class="fc" id="L105">        EstadoUsuario estadoActivo = estadoUsuarioRepository.findByNombre(ESTADO_VERIFICADO)</span>
+<span class="pc" id="L106">                .orElseThrow(() -&gt; new IllegalStateException(&quot;Catalogo estados_usuario sin fila '&quot; + ESTADO_VERIFICADO + &quot;'&quot;));</span>
+
+<span class="fc" id="L108">        usuario.setEstado(estadoActivo);</span>
+<span class="fc" id="L109">        usuario.setCorreoVerificado(true);</span>
+<span class="fc" id="L110">        usuario.setActualizadoEn(Instant.now());</span>
+<span class="fc" id="L111">        Usuario guardado = usuarioRepository.save(usuario);</span>
+
+<span class="fc" id="L113">        log.info(&quot;Correo verificado: correo={} ip={}&quot;, correo, ipOrigen);</span>
+<span class="fc" id="L114">        registrarAuditoria(guardado.getId(), &quot;CORREO_VERIFICADO&quot;, guardado.getId(),</span>
+                &quot;Correo verificado para: &quot; + correo, ipOrigen);
+
+<span class="fc" id="L117">        return mapToUsuarioResponseDTO(guardado);</span>
     }
 
     public TokenResponseDTO login(LoginRequestDTO dto, String ipOrigen) {
@@ -88,56 +122,56 @@ public class AuthService {
         // autenticar -- si correo+IP ya agotaron el cupo, ni siquiera se
         // llama a authenticationManager.authenticate(). Ver LoginRateLimiter
         // para por qué la clave es correo+IP (no solo correo).
-<span class="fc bfc" id="L91" title="All 2 branches covered.">        if (loginRateLimiter.estaBloqueado(dto.correo(), ipOrigen)) {</span>
-<span class="fc" id="L92">            long segundosRestantes = loginRateLimiter.segundosRestantes(dto.correo(), ipOrigen);</span>
-<span class="fc" id="L93">            log.warn(&quot;Login bloqueado por rate limit: correo={} ip={} segundosRestantes={}&quot;,</span>
-<span class="fc" id="L94">                    dto.correo(), ipOrigen, segundosRestantes);</span>
-<span class="fc" id="L95">            throw new LoginRateLimitExcedidoException(</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        if (loginRateLimiter.estaBloqueado(dto.correo(), ipOrigen)) {</span>
+<span class="fc" id="L126">            long segundosRestantes = loginRateLimiter.segundosRestantes(dto.correo(), ipOrigen);</span>
+<span class="fc" id="L127">            log.warn(&quot;Login bloqueado por rate limit: correo={} ip={} segundosRestantes={}&quot;,</span>
+<span class="fc" id="L128">                    dto.correo(), ipOrigen, segundosRestantes);</span>
+<span class="fc" id="L129">            throw new LoginRateLimitExcedidoException(</span>
                     &quot;Demasiados intentos fallidos. Intente nuevamente en &quot; + segundosRestantes + &quot; segundos.&quot;);
         }
 
         try {
-<span class="fc" id="L100">            authenticationManager.authenticate(</span>
-<span class="fc" id="L101">                    new UsernamePasswordAuthenticationToken(dto.correo(), dto.password())</span>
+<span class="fc" id="L134">            authenticationManager.authenticate(</span>
+<span class="fc" id="L135">                    new UsernamePasswordAuthenticationToken(dto.correo(), dto.password())</span>
             );
-<span class="fc" id="L103">        } catch (BadCredentialsException ex) {</span>
-<span class="fc" id="L104">            loginRateLimiter.registrarFallo(dto.correo(), ipOrigen);</span>
-<span class="fc" id="L105">            log.warn(&quot;Login fallido: correo={} ip={}&quot;, dto.correo(), ipOrigen);</span>
-<span class="fc" id="L106">            registrarAuditoria(null, &quot;LOGIN_FAIL&quot;, null, &quot;Login fallido para correo: &quot; + dto.correo(), ipOrigen);</span>
-<span class="fc" id="L107">            throw ex;</span>
-<span class="fc" id="L108">        }</span>
+<span class="fc" id="L137">        } catch (BadCredentialsException ex) {</span>
+<span class="fc" id="L138">            loginRateLimiter.registrarFallo(dto.correo(), ipOrigen);</span>
+<span class="fc" id="L139">            log.warn(&quot;Login fallido: correo={} ip={}&quot;, dto.correo(), ipOrigen);</span>
+<span class="fc" id="L140">            registrarAuditoria(null, &quot;LOGIN_FAIL&quot;, null, &quot;Login fallido para correo: &quot; + dto.correo(), ipOrigen);</span>
+<span class="fc" id="L141">            throw ex;</span>
+<span class="fc" id="L142">        }</span>
 
-<span class="fc" id="L110">        Usuario usuario = usuarioRepository.findByCorreo(dto.correo())</span>
-<span class="pc" id="L111">                .orElseThrow(() -&gt; new RuntimeException(&quot;Usuario no encontrado: &quot; + dto.correo()));</span>
+<span class="fc" id="L144">        Usuario usuario = usuarioRepository.findByCorreo(dto.correo())</span>
+<span class="pc" id="L145">                .orElseThrow(() -&gt; new RuntimeException(&quot;Usuario no encontrado: &quot; + dto.correo()));</span>
 
         // Login exitoso: resetea el contador de fallos de esta combinación
         // correo+IP -- no se penaliza a alguien que se equivocó una vez y
         // luego acertó.
-<span class="fc" id="L116">        loginRateLimiter.resetear(dto.correo(), ipOrigen);</span>
-<span class="fc" id="L117">        log.info(&quot;Login exitoso: sub={} correo={} ip={}&quot;, usuario.getId(), dto.correo(), ipOrigen);</span>
-<span class="fc" id="L118">        registrarAuditoria(usuario.getId(), &quot;LOGIN_OK&quot;, usuario.getId(),</span>
-<span class="fc" id="L119">                &quot;Login exitoso para correo: &quot; + dto.correo(), ipOrigen);</span>
+<span class="fc" id="L150">        loginRateLimiter.resetear(dto.correo(), ipOrigen);</span>
+<span class="fc" id="L151">        log.info(&quot;Login exitoso: sub={} correo={} ip={}&quot;, usuario.getId(), dto.correo(), ipOrigen);</span>
+<span class="fc" id="L152">        registrarAuditoria(usuario.getId(), &quot;LOGIN_OK&quot;, usuario.getId(),</span>
+<span class="fc" id="L153">                &quot;Login exitoso para correo: &quot; + dto.correo(), ipOrigen);</span>
 
-<span class="fc" id="L121">        String accessToken = jwtService.generateToken(usuario);</span>
-<span class="fc" id="L122">        String refreshToken = jwtService.generateRefreshToken(usuario);</span>
+<span class="fc" id="L155">        String accessToken = jwtService.generateToken(usuario);</span>
+<span class="fc" id="L156">        String refreshToken = jwtService.generateRefreshToken(usuario);</span>
 
-<span class="fc" id="L124">        return new TokenResponseDTO(accessToken, refreshToken, expiresInSeconds());</span>
+<span class="fc" id="L158">        return new TokenResponseDTO(accessToken, refreshToken, expiresInSeconds());</span>
     }
 
     public void logout(String token, String ipOrigen) {
-<span class="fc" id="L128">        String jti = jwtService.extractJti(token);</span>
-<span class="fc" id="L129">        Date expiration = jwtService.extractExpiration(token);</span>
-<span class="fc" id="L130">        String correo = jwtService.extractCorreo(token);</span>
+<span class="fc" id="L162">        String jti = jwtService.extractJti(token);</span>
+<span class="fc" id="L163">        Date expiration = jwtService.extractExpiration(token);</span>
+<span class="fc" id="L164">        String correo = jwtService.extractCorreo(token);</span>
 
-<span class="fc" id="L132">        long ttl = (expiration.getTime() - System.currentTimeMillis()) / 1000;</span>
+<span class="fc" id="L166">        long ttl = (expiration.getTime() - System.currentTimeMillis()) / 1000;</span>
 
-<span class="pc bpc" id="L134" title="1 of 2 branches missed.">        if (ttl &gt; 0) {</span>
-<span class="fc" id="L135">            redisTemplate.opsForValue().set(&quot;blacklist:&quot; + jti, &quot;revoked&quot;, ttl, TimeUnit.SECONDS);</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">        if (ttl &gt; 0) {</span>
+<span class="fc" id="L169">            redisTemplate.opsForValue().set(&quot;blacklist:&quot; + jti, &quot;revoked&quot;, ttl, TimeUnit.SECONDS);</span>
         }
 
-<span class="fc" id="L138">        log.info(&quot;Logout: correo={} jti={} ip={}&quot;, correo, jti, ipOrigen);</span>
-<span class="fc" id="L139">        registrarAuditoria(null, &quot;LOGOUT&quot;, null, &quot;Logout para correo: &quot; + correo + &quot; (jti=&quot; + jti + &quot;)&quot;, ipOrigen);</span>
-<span class="fc" id="L140">    }</span>
+<span class="fc" id="L172">        log.info(&quot;Logout: correo={} jti={} ip={}&quot;, correo, jti, ipOrigen);</span>
+<span class="fc" id="L173">        registrarAuditoria(null, &quot;LOGOUT&quot;, null, &quot;Logout para correo: &quot; + correo + &quot; (jti=&quot; + jti + &quot;)&quot;, ipOrigen);</span>
+<span class="fc" id="L174">    }</span>
 
     // Bloque C.2 (OWASP A09): bitacora_auditoria ya preveía LOGIN_OK/
     // LOGIN_FAIL/LOGOUT en su CHECK de tipo_operacion (db/schema.sql) --
@@ -149,42 +183,42 @@ public class AuthService {
     // extra solo para la bitácora -- el correo intentado ya queda en
     // &quot;detalles&quot; para correlación manual si hace falta.
     private void registrarAuditoria(Long usuarioId, String tipoOperacion, Long registroId,
-                                     String detalles, String ipOrigen) {
-<span class="fc" id="L153">        BitacoraAuditoria evento = BitacoraAuditoria.builder()</span>
-<span class="fc" id="L154">                .usuarioId(usuarioId)</span>
-<span class="fc" id="L155">                .tipoOperacion(tipoOperacion)</span>
-<span class="fc" id="L156">                .tablaAfectada(TABLA_USUARIOS)</span>
-<span class="fc" id="L157">                .registroId(registroId)</span>
-<span class="fc" id="L158">                .detalles(detalles)</span>
-<span class="fc" id="L159">                .ipOrigen(ipOrigen)</span>
-<span class="fc" id="L160">                .fechaHora(OffsetDateTime.now())</span>
-<span class="fc" id="L161">                .build();</span>
-<span class="fc" id="L162">        bitacoraAuditoriaRepository.save(evento);</span>
-<span class="fc" id="L163">    }</span>
+                                    String detalles, String ipOrigen) {
+<span class="fc" id="L187">        BitacoraAuditoria evento = BitacoraAuditoria.builder()</span>
+<span class="fc" id="L188">                .usuarioId(usuarioId)</span>
+<span class="fc" id="L189">                .tipoOperacion(tipoOperacion)</span>
+<span class="fc" id="L190">                .tablaAfectada(TABLA_USUARIOS)</span>
+<span class="fc" id="L191">                .registroId(registroId)</span>
+<span class="fc" id="L192">                .detalles(detalles)</span>
+<span class="fc" id="L193">                .ipOrigen(ipOrigen)</span>
+<span class="fc" id="L194">                .fechaHora(OffsetDateTime.now())</span>
+<span class="fc" id="L195">                .build();</span>
+<span class="fc" id="L196">        bitacoraAuditoriaRepository.save(evento);</span>
+<span class="fc" id="L197">    }</span>
 
     public TokenResponseDTO refresh(String refreshToken) {
-<span class="fc bfc" id="L166" title="All 2 branches covered.">        if (!jwtService.validateToken(refreshToken)) {</span>
-<span class="fc" id="L167">            throw new RefreshTokenInvalidoException(&quot;Refresh token inválido o expirado. Inicie sesión nuevamente.&quot;);</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        if (!jwtService.validateToken(refreshToken)) {</span>
+<span class="fc" id="L201">            throw new RefreshTokenInvalidoException(&quot;Refresh token inválido o expirado. Inicie sesión nuevamente.&quot;);</span>
         }
 
-<span class="fc" id="L170">        String correo = jwtService.extractCorreo(refreshToken);</span>
-<span class="fc" id="L171">        Usuario usuario = usuarioRepository.findByCorreo(correo)</span>
-<span class="fc" id="L172">                .orElseThrow(() -&gt; new RefreshTokenInvalidoException(&quot;Refresh token inválido o expirado. Inicie sesión nuevamente.&quot;));</span>
+<span class="fc" id="L204">        String correo = jwtService.extractCorreo(refreshToken);</span>
+<span class="fc" id="L205">        Usuario usuario = usuarioRepository.findByCorreo(correo)</span>
+<span class="fc" id="L206">                .orElseThrow(() -&gt; new RefreshTokenInvalidoException(&quot;Refresh token inválido o expirado. Inicie sesión nuevamente.&quot;));</span>
 
-<span class="fc" id="L174">        String nuevoAccessToken = jwtService.generateToken(usuario);</span>
+<span class="fc" id="L208">        String nuevoAccessToken = jwtService.generateToken(usuario);</span>
 
-<span class="fc" id="L176">        return new TokenResponseDTO(nuevoAccessToken, refreshToken, expiresInSeconds());</span>
+<span class="fc" id="L210">        return new TokenResponseDTO(nuevoAccessToken, refreshToken, expiresInSeconds());</span>
     }
 
     private long expiresInSeconds() {
-<span class="fc" id="L180">        return jwtService.getExpirationMs() / 1000;</span>
+<span class="fc" id="L214">        return jwtService.getExpirationMs() / 1000;</span>
     }
 
     private UsuarioResponseDTO mapToUsuarioResponseDTO(Usuario usuario) {
-<span class="nc" id="L184">        List&lt;String&gt; roles = usuario.getRoles().stream()</span>
-<span class="nc" id="L185">                .map(Rol::getNombre)</span>
-<span class="nc" id="L186">                .toList();</span>
-<span class="nc" id="L187">        return new UsuarioResponseDTO(usuario.getId(), usuario.getNombre(), usuario.getCorreo(), roles);</span>
+<span class="fc" id="L218">        List&lt;String&gt; roles = usuario.getRoles().stream()</span>
+<span class="fc" id="L219">                .map(Rol::getNombre)</span>
+<span class="fc" id="L220">                .toList();</span>
+<span class="fc" id="L221">        return new UsuarioResponseDTO(usuario.getId(), usuario.getNombre(), usuario.getCorreo(), roles);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

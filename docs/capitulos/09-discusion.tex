@@ -1,0 +1,197 @@
+% ============================================================
+% Capítulo: Discusión (Bloque B.11)
+% ============================================================
+\chapter{Discusión}
+\label{cap:discusion}
+
+Este capítulo interpreta la evidencia del \autoref{cap:resultados} a la
+luz de las cuatro preguntas de investigación planteadas en el
+\autoref{cap:introduccion} -- sin repetir las cifras ya reportadas allí,
+sino sintetizándolas y discutiendo lo que significan. Se cierra
+comparando SGB-SaaS contra la literatura revisada en el
+\autoref{cap:trabajos-relacionados}, señalando los hallazgos no buscados
+que surgieron durante el desarrollo, y discutiendo las implicaciones
+prácticas del proyecto para una biblioteca real.
+
+\section{Respuesta a las preguntas de investigación}
+\label{sec:disc-rqs}
+
+\subsection*{RQ1 -- ¿En qué medida el caché reduce la latencia, y con qué margen se cumplen los umbrales?}
+
+Ambos umbrales de rendimiento se cumplen con margen amplio -- p95
+$19{,}49$\,ms contra un límite de $200$\,ms en caché caliente, p95
+$7{,}50$\,ms contra $500$\,ms en frío
+(\autoref{sec:res-rendimiento})--, así que en el sentido estricto que
+exige la guía, la respuesta a RQ1 es afirmativa: el sistema cumple. Pero
+la comparación \emph{entre} escenarios no permite concluir de forma
+limpia que sea el caché específicamente el responsable de la diferencia
+observada, porque el escenario \texttt{cache\_frio} tiene una limitación
+metodológica real -- termina midiendo mayoritariamente consultas con
+página vacía, no la consulta completa que \texttt{cache\_frio} debería
+representar (\autoref{sec:res-rendimiento},
+\autoref{cap:amenazas-validez}). Lo que sí se sostiene pese a esa
+limitación es la dirección y el tamaño del efecto entre corridas de
+\texttt{cache\_caliente}: Cliff's delta $=-0{,}68$ (grande, consistente en
+las 5 corridas), exactamente la dirección que la hipótesis de caché
+predeciría si la comparación fuera limpia. En síntesis: RQ1 se responde
+con evidencia de cumplimiento de umbral sólida, y con evidencia de efecto
+del caché sugestiva pero no aislada limpiamente -- una distinción que
+este documento no difumina.
+
+\subsection*{RQ2 -- ¿Qué proporción de controles OWASP presentó hallazgos reales, y cuántos se corrigieron?}
+
+De los 6 controles auditados, 4 (A01, A05, A07, A09) presentaron un
+hallazgo real -- el $66{,}7$\,\% reportado en
+\autoref{sec:res-seguridad} -- y los 4 recibieron corrección verificable
+dentro del mismo ciclo de desarrollo, re-confirmada después contra un
+flujo de autenticación que cambió. Este es, en sí mismo, el dato más
+relevante para RQ2: la mayoría de los controles auditados \textbf{sí}
+tenían defectos reales en la implementación -- rol admin mal validado,
+rate limiting de login ausente, logging de autenticación insuficiente, y
+un código de estado HTTP incorrecto detectado durante la propia
+verificación de A05 (\texttt{500} en vez de \texttt{404} en Swagger bajo
+perfil \texttt{prod}). No fue una auditoría de casillas vacías que
+confirma lo que ya se sabía: encontró y forzó a corregir defectos de
+seguridad concretos. El control A03 (inyección) se verificó limpio, sin
+hallazgo -- un resultado real también, no la ausencia de una prueba. A02
+queda en un estado genuinamente mixto que RQ2 no puede resolver del todo
+todavía: la decisión de arquitectura y la preparación del backend para
+TLS están cerradas, pero la verificación final del header
+\texttt{Strict-Transport-Security} depende de un despliegue público que
+todavía no existe -- no es un hallazgo sin corregir, es una verificación
+que no puede completarse sin una pieza de infraestructura externa al
+propio código.
+
+\subsection*{RQ3 -- ¿Cómo perciben usuarios reales la usabilidad del sistema (SUS)?}
+
+RQ3 \textbf{no tiene respuesta todavía}. Con $N=0$ de los $N\geq15$
+participantes exigidos, no existe ninguna puntuación SUS que interpretar
+(\autoref{sec:res-usabilidad}). Forzar una respuesta aquí -- aunque fuera
+calificada de ``preliminar'' o ``estimada'' -- sería exactamente el tipo
+de afirmación no verificada que este documento se niega a producir en
+cualquier otro capítulo; no hay razón para relajar ese criterio en la
+discusión. La respuesta honesta a RQ3, a la fecha de este documento, es
+que sigue siendo trabajo en progreso, bloqueado en la cadena de
+dependencias correcta (protocolo de consentimiento ya definido
+$\to$ despliegue público $\to$ reclutamiento $\to$ aplicación del
+instrumento), no una omisión arbitraria.
+
+\subsection*{RQ4 -- ¿Qué efecto tiene la estrategia híbrida CRUD-ORM/SP sobre trazabilidad y cobertura?}
+
+La matriz de trazabilidad (\autoref{sec:matriz-resumen},
+\autoref{cap:diseno-arquitectura}) muestra una distribución real y no
+pareja: $48{,}8$\,\% de los requisitos son CRUD-ORM exclusivo,
+$18{,}6$\,\% son procedimiento/función SQL exclusivo, y solo
+$4{,}7$\,\% son genuinamente híbridos (requisitos transversales que
+combinan ambos mecanismos) -- el resto no aplica un patrón de acceso a
+datos directo. La cobertura de pruebas automatizadas, medida sobre esa
+misma base de código, es del $81{,}64$\,\% de líneas
+(\autoref{sec:res-cobertura}), muy por encima del umbral exigido, y no
+se concentra de forma distinta entre el código que usa ORM y el que usa
+SP -- ambos paquetes (\texttt{service}, que contiene la mayoría de las
+invocaciones a SP, y el resto orientado a ORM) están sobre el $89$\,\%.
+Con esta evidencia, RQ4 tiene una respuesta afirmativa en cuanto a
+resultado: la estrategia híbrida no perjudicó ni la trazabilidad (cada
+requisito tiene su mecanismo de acceso documentado en la matriz) ni la
+cobertura de pruebas. Pero el dato más honesto para RQ4 no es un número
+de cobertura -- es que la estrategia híbrida generó \textbf{fricción real
+de implementación}: el equipo tuvo que abandonar
+\texttt{@Procedure}/\texttt{@NamedStoredProcedureQuery} (el mecanismo
+JPA formalmente diseñado para invocar procedimientos almacenados) y
+migrar a \texttt{@Query} nativa con parámetros bindeados, por un defecto
+documentado de la combinación Hibernate~6.2+/7.x con procedimientos
+multi-\texttt{OUT} en PostgreSQL
+(\texttt{docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md},
+\texttt{spring-projects/spring-data-jpa\#3393}, ya detallado en el
+\autoref{cap:implementacion}). Es decir: la arquitectura híbrida no fue
+gratis -- costó un ciclo de depuración real y un cambio de mecanismo de
+invocación no planeado originalmente -- y ese costo es tan parte de la
+respuesta a RQ4 como el resultado final positivo de cobertura y
+trazabilidad.
+
+\section{Comparación con trabajos relacionados}
+\label{sec:disc-trabajos-relacionados}
+
+El \autoref{cap:trabajos-relacionados} identificó una brecha concreta en
+la literatura revisada: ningún trabajo de los 10 sistemas primarios
+comparados combina, en un solo sistema, autenticación JWT con roles,
+catálogo con autocompletado de ISBN, un chatbot con IA generativa real
+usado tanto para recomendaciones como para consultas, y una arquitectura
+híbrida de acceso a datos con evidencia empírica de rendimiento
+reproducible. Con los resultados reales de este documento en mano, esa
+brecha se sostiene y se refuerza con evidencia, no solo con ausencia de
+contraejemplos: \citet{colley2018ormperformance} identifica el problema
+de rendimiento que motiva una arquitectura híbrida ORM/SP pero no llega a
+implementarla ni medirla; SGB-SaaS sí la implementa y la mide (RQ4,
+arriba) -- incluyendo el costo real de implementarla, un dato que ese
+trabajo tampoco podría reportar por no haber construido el sistema.
+\citet{kusuma2017rediscaching} mide el efecto de Redis con métricas de
+uso de CPU y tráfico, pero sin la evaluación estadística formal (Wilcoxon
+pareado, Cliff's delta) que este documento aporta para su propio caso de
+uso de caché (RQ1, arriba) -- aunque, con honestidad, esa misma
+evaluación formal es la que expuso la limitación metodológica de
+\texttt{cache\_frio} que un enfoque menos riguroso no habría descubierto.
+Ningún trabajo comparado en el \autoref{cap:trabajos-relacionados} reporta una auditoría de
+seguridad control por control con hallazgos reales corregidos
+verificablemente (RQ2) ni una matriz de trazabilidad de 43 requisitos con
+patrón de acceso a datos declarado por requisito (RQ4) -- estas dos
+piezas de evidencia son, hasta donde este acervo bibliográfico permite
+afirmar, una contribución metodológica de este proyecto más allá del
+propio sistema.
+
+\section{Hallazgos inesperados}
+\label{sec:disc-hallazgos}
+
+Un indicador indirecto pero concreto de que la verificación de este
+proyecto fue real -- no un ejercicio cosmético para llenar una guía -- es
+la cantidad de defectos genuinamente inesperados que el propio proceso de
+desarrollo y auditoría encontró y corrigió, ninguno de ellos sembrado a
+propósito para ``encontrar algo que reportar''. La comprobación del DSL
+de Structurizr detectó que \texttt{structurizr/cli} es, en el estado
+actual de ese ecosistema, una imagen retirada que imprime un aviso de
+desuso pero termina con código de salida~$0$ para cualquier entrada
+--válida o no--, por lo que una validación histórica contra esa imagen
+nunca habría sido una validación real
+(\autoref{cap:diseno-arquitectura}). Un defecto en la generación de
+\texttt{credencial\_qr\_token} obligó a que Postgres generara el valor
+vía \texttt{DEFAULT} de columna en vez de que el backend lo insertara
+explícitamente (commit \texttt{1f1008e}). Un \texttt{MailHealthIndicator}
+colgaba el \emph{healthcheck} del contenedor cuando no había SMTP
+configurado, un defecto de configuración que solo se manifestaba en
+entornos sin correo real (commit \texttt{14992d6}). Una
+\texttt{NoResourceFoundException} devolvía \texttt{500} genérico en vez
+de \texttt{404} -- el mismo hallazgo que cerró la verificación de A05 en
+el \autoref{cap:resultados} (commit \texttt{951fae5}). Y una migración de
+Flyway (\texttt{V3\_\_multas\_multiples\_por\_prestamo.sql}, entre otras)
+fallaba en un despliegue limpio (\texttt{docker compose down -v} +
+reconstrucción completa) porque la fuente de migraciones estaba duplicada
+entre \texttt{database/migrations/} y \texttt{src/main/resources/db/migration/},
+y \texttt{baseline-version} no reflejaba la versión más alta ya aplicada
+al esquema (commit \texttt{03821d7}). Ninguno de estos 5 hallazgos estaba
+en el plan de trabajo original -- todos surgieron de ejecutar el sistema
+de verdad, contra Docker real, en vez de razonar sobre el código sin
+correrlo. Esa es, en sí misma, la evidencia más directa de que el
+programa de calidad de este proyecto (\autoref{cap:materiales-metodos})
+no fue cosmético.
+
+\section{Implicaciones prácticas}
+\label{sec:disc-implicaciones}
+
+Para una biblioteca universitaria real que evaluara adoptar un sistema
+como SGB-SaaS, la lectura honesta de este capítulo es la siguiente: el
+sistema cumple sus umbrales de rendimiento y cobertura con margen real, y
+su superficie de seguridad auditada (6 de los controles OWASP más
+relevantes para una aplicación con autenticación y datos personales) no
+llegó limpia a la primera revisión -- tuvo defectos reales que se
+corrigieron, lo cual es una señal de proceso saludable, no una alarma, si
+se compara contra la alternativa de no auditar en absoluto. Lo que
+todavía no está listo para una decisión de adopción informada es la
+evidencia de usabilidad percibida por usuarios reales (RQ3, pendiente) y
+la verificación de TLS end-to-end en un entorno de despliegue público
+real (A02, parcial) -- ambas son, precisamente, las piezas que dependen
+de infraestructura o de participantes externos al propio código, no de
+trabajo de ingeniería adicional dentro del repositorio. Una institución
+que considere este sistema debería tratar la Entrega Final como una base
+arquitectónica y de calidad de código sólida, pero condicionar cualquier
+decisión de producción a que esas dos piezas -- SUS y TLS real -- se
+completen primero.

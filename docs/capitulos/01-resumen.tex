@@ -1,0 +1,39 @@
+% ============================================================
+% Capítulo: Resumen estructurado (Bloque B.2)
+% ============================================================
+\chapter*{Resumen}
+\addcontentsline{toc}{chapter}{Resumen}
+
+\textbf{PENDIENTE: se escribe al final, cuando el resto del documento
+esté completo.} El resumen estructurado que exige el Bloque~B.2 de la
+guía (problema, método, resultados principales con cifras reales,
+conclusión) tiene que sintetizar el documento completo -- Introducción,
+Trabajos Relacionados, Diseño y Arquitectura, Implementación, Resultados,
+Ingeniería de Requisitos, Amenazas a la Validez, Discusión y
+Conclusiones -- y varios de esos capítulos todavía no existen (ver la
+nota de estado en \texttt{docs/informe-final.tex}). Redactarlo ahora
+obligaría a inventar resultados y conclusiones que este documento
+todavía no sostiene, exactamente el tipo de contenido fabricado que este
+proyecto evita en el resto de su documentación.
+
+\iffalse
+Esqueleto de referencia para cuando se redacte (no es contenido real,
+solo la estructura esperada por el Bloque B.2 -- eliminar todo este
+bloque oculto al escribir el resumen definitivo):
+
+- Problema/contexto: gestión bibliotecaria universitaria manual o
+  parcialmente digitalizada, sin trazabilidad de requisitos ni evidencia
+  empírica reproducible de calidad.
+- Método: desarrollo del sistema SGB-SaaS (Spring Boot + Angular +
+  PostgreSQL + Redis), con evaluación empírica en 4 frentes (rendimiento
+  vía k6, seguridad vía auditoría OWASP Top 10, usabilidad vía SUS,
+  ingeniería de requisitos vía checklist INCOSE v4), toda la evidencia
+  versionada y reproducible.
+- Resultados principales (con cifras reales, citando el archivo fuente
+  de cada una -- no resumir de memoria): p95 de latencia con/sin cache,
+  hallazgos OWASP corregidos, puntaje SUS (cuando exista), % de
+  requisitos Must verificados, tasa de estabilidad de requisitos.
+- Conclusión: qué tan bien se cumplieron los objetivos específicos
+  (trazado a las RQ de la Introducción), y qué queda como limitación
+  reconocida (no oculta).
+\fi

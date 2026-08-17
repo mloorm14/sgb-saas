@@ -1,0 +1,488 @@
+% ============================================================
+% Capítulo: Trabajos Relacionados (Bloque B.6)
+% ============================================================
+\chapter{Trabajos relacionados}
+\label{cap:trabajos-relacionados}
+
+Este capítulo sitúa a SGB-SaaS frente a la literatura académica indexada
+disponible sobre sistemas de gestión bibliotecaria y sobre los patrones
+arquitectónicos y de proceso que el sistema efectivamente utiliza. Sigue
+una metodología \textbf{adaptada} de PRISMA~2020 -- adaptada porque, como
+se explica en la \autoref{sec:estrategia-busqueda}, no es una revisión
+sistemática completa ejecutada desde cero para este capítulo, sino un
+acervo bibliográfico construido en dos momentos del proyecto y
+consolidado aquí; se declara esto explícitamente en vez de presentar un
+embudo de selección más grande o más formal del que realmente se
+ejecutó.
+
+\section{Estrategia de búsqueda}
+\label{sec:estrategia-busqueda}
+
+\textbf{Origen del acervo.} Las referencias de este capítulo provienen de
+dos fuentes: (1)~un conjunto de 27 referencias curadas por el equipo en
+fases anteriores del proyecto a partir de búsquedas en IEEE~Xplore,
+ACM~Digital Library, Scopus, ScienceDirect (Elsevier) y SpringerLink; y
+(2)~2 referencias adicionales (\citet{colley2018ormperformance} y
+\citet{kusuma2017rediscaching}) identificadas mediante una búsqueda
+dirigida realizada específicamente para este capítulo -- vía Crossref e
+IEEE~Xplore -- para cubrir dos vacíos temáticos puntuales que el acervo
+original no cubría: rendimiento comparado de arquitecturas ORM frente a
+SQL optimizado, y el patrón \emph{cache-aside} con Redis. Las 30
+referencias del archivo \texttt{docs/bibliografia.bib} se verificaron
+una por una contra el registro oficial de Crossref de su DOI antes de
+transcribirse; esa verificación encontró 5 discrepancias entre los datos
+originalmente reunidos por el equipo y el registro oficial (autores
+atribuidos incorrectamente en 3 casos, un DOI que en realidad apunta a
+un artículo distinto del atribuido en un caso, y un año/autoría
+equivocados en el caso de la referencia NIST). Cada discrepancia se
+documenta con su evidencia en el encabezado de \texttt{bibliografia.bib}
+y se usó, en todos los casos, el dato verificado por Crossref.
+
+\textbf{Cadena de búsqueda de referencia} (la usada en las búsquedas
+originales del equipo y replicada en la búsqueda dirigida de este
+capítulo):
+
+\begin{quote}
+\ttfamily
+("library management system" OR "biblioteca" OR "library automation")\\
+AND ("QR code" OR RFID OR chatbot OR "recommendation system" OR\\
+\phantom{AND (}"generative AI" OR "stored procedure" OR "cache-aside" OR Redis OR ORM)\\
+AND (performance OR empirical OR evaluation OR "case study")
+\end{quote}
+
+\textbf{Ventana temporal.} 2017--2026, coherente con el rango real de
+publicación de las referencias reunidas (\citet{kusuma2017rediscaching},
+2017, es la más antigua; \citet{ayinde2026ai}, 2026, la más reciente).
+
+\textbf{Criterios de inclusión.} (a)~publicación arbitrada por pares en
+una revista indexada (Scopus/JCR) o en actas de una conferencia
+publicada por IEEE/ACM; (b)~publicada entre 2017 y 2026; (c)~aborda
+directamente un sistema de gestión bibliotecaria, o un patrón
+arquitectónico/de proceso que SGB-SaaS implementa (ORM/SP, caché Redis,
+IA generativa, elicitación de requisitos, prácticas ágiles, diseño
+responsivo, TLS); (d)~disponible en inglés con resumen consultable.
+
+\textbf{Criterios de exclusión.} Blogs, tutoriales de código sin
+evaluación empírica, contenido de marketing de proveedores, y fuentes
+autopublicadas sin arbitraje por pares. Una excepción declarada
+explícitamente: \citet{brown2023c4model} (el modelo~C4) se cita en este
+documento como referencia normativa de notación arquitectónica -- no
+como evidencia de investigación empírica -- y por eso queda fuera del
+acervo sometido a cribado de este capítulo.
+
+\section{Proceso de selección}
+\label{sec:proceso-seleccion}
+
+El acervo de 30 referencias se dividió en dos grupos con tratamiento
+distinto, porque no todas compiten con SGB-SaaS como sistemas
+alternativos comparables: solo el primer grupo se sometió al cribado
+tipo PRISMA de la \autoref{fig:prisma-flow}.
+
+\textbf{Grupo A -- dominio bibliotecario y arquitectura de acceso a
+datos comparable (15 referencias).} Sistemas o estudios de rendimiento
+directamente comparables con SGB-SaaS como aplicación:
+\citet{ayinde2026ai, liabor2023cataloging, shivaji2024intelligentlms,
+rajacic2025gdpr, supriyono2018qr, ng2024libbot, mukund2021rfid,
+adetayo2023chatgpt, yan2023chatbotsslr, ehrenpreis2022chatbot,
+wayesa2023recsys, hu2025bigdata, ayemowa2024genai,
+colley2018ormperformance, kusuma2017rediscaching}.
+
+\textbf{Grupo B -- literatura de apoyo metodológico y arquitectónico (15
+referencias, fuera del cribado PRISMA).} Fundamentan decisiones de
+proceso o de diseño discutidas en otros capítulos, pero no son sistemas
+de biblioteca ni estudios de rendimiento comparables entre sí:
+ingeniería de requisitos (\citet{bano2019elicitation,
+palomares2021elicitation, yu1997istar, kurtanovic2017classifying}),
+prácticas ágiles (\citet{truong2025personality, rahman2024agile}),
+diseño responsivo (\citet{parlakkilic2022responsive,
+aienobe2025responsive}), seguridad de transporte
+(\citet{mckay2019tls}), fundamentos de arquitectura de software
+(\citet{sommerville2011se, fowler2002poeaa, walls2022springinaction,
+bass2021softwarearch, brown2023c4model}) y muestreo en investigación
+empírica de ingeniería de software (\citet{baltes2022sampling}, ya
+citado en el \autoref{cap:amenazas-validez}). No se les aplicó un
+embudo de selección porque no fueron evaluadas como candidatas
+alternativas entre sí -- se incorporaron directamente por relevancia
+temática con un capítulo o decisión concreta del proyecto.
+
+\textbf{Nota de alcance -- referencias de JWT/autenticación reservadas
+para Marco Teórico.} Tres referencias adicionales sobre el mecanismo
+JWT (\citet{bucko2023jwtbehavior, shatnawi2024pythonjwt,
+ahmed2019jwtscheme}, verificadas contra Crossref con el mismo rigor que
+el resto del acervo) están en \texttt{docs/bibliografia.bib} pero
+\textbf{no} se desarrollan en este capítulo: no son sistemas
+bibliotecarios comparables (Grupo~A) ni fundamento metodológico general
+(Grupo~B), sino evidencia técnica específica sobre JWT -- el mecanismo
+de autenticación que SGB-SaaS ya implementa
+(\autoref{cap:diseno-arquitectura}). Corresponden al capítulo de Marco
+Teórico (\texttt{docs/capitulos/04-marco-teorico.tex}), que todavía no
+se ha redactado; se deja esta nota para que, cuando se escriba, incluya
+esas tres referencias en su discusión de JWT en vez de repetir aquí un
+análisis que este capítulo no está en condiciones de sostener todavía.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+    node distance=0.55cm and 1.6cm,
+    box/.style={rectangle, draw=verdeuteq, thick, rounded corners,
+      fill=grisclaro, text width=6.6cm, align=center, minimum height=1.1cm,
+      font=\small},
+    excl/.style={rectangle, draw=gapcolor, thick, rounded corners,
+      fill=white, text width=5.2cm, align=left, minimum height=1.1cm,
+      font=\footnotesize},
+    arr/.style={-{Latex[length=2.2mm]}, thick, draw=verdeuteq}
+  ]
+  \node[box] (identificados)
+    {\textbf{Identificados}\\[2pt] Grupo~A: 15 referencias\\
+     (13 de curación previa del equipo + 2 de búsqueda dirigida
+     Crossref/IEEE~Xplore para esta tarea)};
+  \node[box, below=of identificados] (duplicados)
+    {\textbf{Tras eliminar duplicados}\\[2pt] 15 referencias\\
+     (0 duplicados encontrados)};
+  \node[box, below=of duplicados] (cribados)
+    {\textbf{Cribados por título/resumen}\\[2pt] 15 evaluados\\
+     0 excluidos en esta fase};
+  \node[excl, right=of cribados] (nota1)
+    {Los 15 ya habían sido pre-filtrados por relevancia temática con
+     SGB-SaaS antes de incorporarse al acervo -- por eso el cribado de
+     título/resumen no excluye nada adicional aquí.};
+  \node[box, below=of cribados] (textocompleto)
+    {\textbf{Evaluados a texto completo / resumen extendido}\\[2pt]
+     15 evaluados};
+  \node[excl, right=of textocompleto] (nota2)
+    {5 excluidos de la tabla comparativa primaria: son revisiones o
+     artículos de posición que sintetizan el estado del arte
+     (\citet{ayinde2026ai, liabor2023cataloging, adetayo2023chatgpt,
+     yan2023chatbotsslr, ayemowa2024genai}), no sistemas primarios
+     directamente comparables fila a fila. Se mantienen citados en la
+     \autoref{sec:panorama-relacionados} como contexto.};
+  \node[box, below=of textocompleto, fill=verdelight!25] (incluidos)
+    {\textbf{Incluidos en la tabla comparativa de sistemas primarios}\\[2pt]
+     \textbf{10 referencias} (\autoref{tab:trabajos-comparativa})};
+
+  \draw[arr] (identificados) -- (duplicados);
+  \draw[arr] (duplicados) -- (cribados);
+  \draw[arr] (cribados) -- (textocompleto);
+  \draw[arr] (textocompleto) -- (incluidos);
+\end{tikzpicture}
+\caption{Flujo de selección adaptado de PRISMA~2020 para el Grupo~A
+  (dominio bibliotecario y arquitectura de acceso a datos comparable).
+  El Grupo~B (15 referencias de apoyo metodológico, \autoref{sec:proceso-seleccion})
+  no se somete a este embudo.}
+\label{fig:prisma-flow}
+\end{figure}
+
+\section{Panorama de trabajos relacionados}
+\label{sec:panorama-relacionados}
+
+\subsection{Sistemas de gestión bibliotecaria: automatización, IA y
+arquitectura de acceso a datos}
+
+La literatura reciente sobre automatización bibliotecaria confirma una
+tendencia clara hacia la incorporación de IA y de tecnologías de
+identificación automática (QR, RFID), documentada en revisiones amplias
+como \citet{ayinde2026ai} (adopción de IA en bibliotecas académicas) y
+\citet{yan2023chatbotsslr} / \citet{ayemowa2024genai} (revisiones
+sistemáticas específicas de chatbots y de sistemas de recomendación con
+IA generativa, respectivamente). \citet{adetayo2023chatgpt} documenta,
+a nivel editorial, la llegada de ChatGPT como punto de inflexión para
+los chatbots de biblioteca, y \citet{liabor2023cataloging} describe
+técnicas de catalogación digital sin evaluación empírica cuantitativa
+propia. Ninguna de estas cinco es un sistema primario evaluable
+fila a fila contra SGB-SaaS (\autoref{fig:prisma-flow}), por lo que se
+citan aquí como contexto y no aparecen en la tabla comparativa.
+
+La \autoref{tab:trabajos-comparativa} compara SGB-SaaS contra los 10
+trabajos primarios seleccionados. Una nota de honestidad metodológica
+aplica a varias filas: cuando el resumen indexado consultado no permitía
+confirmar con certeza la pila tecnológica, el método de evaluación
+empírica o las limitaciones declaradas de un trabajo -- por no haberse
+podido acceder al texto completo del artículo, frecuentemente detrás de
+un muro de pago editorial -- la celda correspondiente dice
+explícitamente ``no confirmado a partir del resumen indexado
+disponible'' en vez de completarse con una suposición razonable pero no
+verificada.
+
+\begin{landscape}
+\begin{center}
+\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{|p{2.1cm}|p{0.6cm}|p{2.6cm}|p{2.6cm}|p{2.9cm}|p{3.1cm}|p{2.9cm}|p{3.2cm}|}
+\caption{Comparación de trabajos relacionados frente a SGB-SaaS}
+\label{tab:trabajos-comparativa}\\
+\hline
+\rowcolor{verdeuteq}
+\textcolor{white}{\textbf{Referencia}} & \textcolor{white}{\textbf{Año}} &
+\textcolor{white}{\textbf{Dominio}} & \textcolor{white}{\textbf{Pila
+tecnológica}} & \textcolor{white}{\textbf{Patrones arquitectónicos}} &
+\textcolor{white}{\textbf{Evaluación empírica reportada}} &
+\textcolor{white}{\textbf{Limitaciones declaradas}} &
+\textcolor{white}{\textbf{Diferencia frente a SGB-SaaS}} \\
+\hline
+\endfirsthead
+\hline
+\rowcolor{verdeuteq}
+\textcolor{white}{\textbf{Referencia}} & \textcolor{white}{\textbf{Año}} &
+\textcolor{white}{\textbf{Dominio}} & \textcolor{white}{\textbf{Pila
+tecnológica}} & \textcolor{white}{\textbf{Patrones arquitectónicos}} &
+\textcolor{white}{\textbf{Evaluación empírica reportada}} &
+\textcolor{white}{\textbf{Limitaciones declaradas}} &
+\textcolor{white}{\textbf{Diferencia frente a SGB-SaaS}} \\
+\hline
+\endhead
+\hline
+\endfoot
+
+\citet{supriyono2018qr} & 2018 &
+Préstamo/devolución con QR en biblioteca escolar privada (Surakarta,
+Indonesia) &
+Web (Bootstrap) + MySQL + lector de cámara USB &
+Monolito web tradicional, CRUD directo sobre MySQL (no se reporta ORM
+ni SP) &
+Pruebas funcionales/de aceptación con usuarios reales de la biblioteca;
+sin métricas de carga ni estadística formal &
+Caso único (una escuela); sin datos de escalabilidad &
+SGB-SaaS usa QR solo como credencial de acceso (REQ-F-019), no como eje
+central del préstamo, y aporta evidencia de carga formal (k6) ausente
+aquí \\
+\hline
+
+\citet{mukund2021rfid} & 2021 &
+LMS inteligente basado en RFID con analítica predictiva de demanda de
+libros &
+RFID + interfaz de escritorio PyQt &
+Sistema de escritorio con lectura de hardware RFID; no arquitectura web
+multi-tenant &
+No confirmado a partir del resumen indexado disponible &
+No confirmado a partir del resumen indexado disponible; dependencia
+evidente de hardware RFID especializado &
+SGB-SaaS es 100\,\% web multiusuario concurrente sin hardware
+propietario, con auditoría OWASP y pruebas de carga documentadas \\
+\hline
+
+\citet{ng2024libbot} & 2024 &
+Chatbot asistente bibliotecario (Lib-Bot) &
+No confirmado a partir del resumen indexado disponible &
+Asistente conversacional dedicado a consultas bibliotecarias &
+No confirmado a partir del resumen indexado disponible &
+No confirmado a partir del resumen indexado disponible &
+SGB-SaaS integra un chatbot con IA generativa real (Gemini,
+REQ-F-028) para recomendaciones \emph{y} consultas dentro del mismo
+sistema transaccional, con \emph{rate limiting} propio en Redis \\
+\hline
+
+\citet{rajacic2025gdpr} & 2025 &
+Validación de cumplimiento GDPR en un LMS real (BISIS, +60 bibliotecas
+en Serbia) integrando el framework TeMDA &
+BISIS (LMS en producción) + TeMDA (framework de validación dirigido por
+modelos) &
+Integración de un framework externo de validación de privacidad sobre
+un LMS ya productivo; caso de estudio con diario de desarrollo &
+Estudio de caso cualitativo (diario de desarrollo); sin métricas
+cuantitativas de rendimiento ni pruebas de carga &
+Caso único, cualitativo, sin generalización estadística &
+SGB-SaaS \textbf{no} implementa un framework dedicado de validación
+GDPR -- gap real, no solo diferencia --; solo cuenta con bitácora de
+auditoría interna (REQ-F-003) sin verificación normativa formal \\
+\hline
+
+\citet{wayesa2023recsys} & 2023 &
+Recomendación híbrida de libros basada en patrones y relaciones
+semánticas &
+No confirmado en detalle a partir del resumen indexado disponible &
+Módulo de recomendación independiente, no integrado a un LMS
+transaccional completo &
+Evaluación de calidad de recomendación (según título/resumen); detalle
+cuantitativo no confirmado en el resumen consultado &
+No confirmado en detalle a partir del resumen indexado disponible &
+SGB-SaaS no implementa un modelo de recomendación semántica dedicado;
+delega la recomendación a un chatbot con IA generativa de propósito
+general (Gemini) -- \emph{trade-off} explícito, no superioridad \\
+\hline
+
+\citet{hu2025bigdata} & 2025 &
+Analítica de big data e IA en servicios de biblioteca: recomendación
+personalizada y optimización de catálogo &
+Framework de IA con autoencoder variacional (VAE) y optimizador Adam
+(según fragmento de resumen disponible) &
+Pipeline de analítica/ML sobre datos de catálogo, orientado a
+optimización, no a transacciones de préstamo &
+No confirmado en detalle -- acceso completo restringido por muro de
+pago editorial (IEEE Access) &
+No confirmado en detalle (mismo motivo) &
+SGB-SaaS no entrena un modelo de ML propio (VAE ni similar); delega la
+personalización a una API de IA generativa externa -- arquitectura más
+simple, dependiente de proveedor externo \\
+\hline
+
+\citet{ehrenpreis2022chatbot} & 2022 &
+Implementación de un chatbot propietario (Ivy) en el sitio web de una
+biblioteca universitaria (Lehman College) -- primer caso documentado en
+biblioteca académica &
+Software de chatbot educativo propietario embebido en sitio web
+institucional &
+Chatbot de terceros integrado solo al sitio informativo, sin conexión a
+las transacciones del sistema de préstamos &
+Estudio de caso descriptivo de implementación; sin métricas
+cuantitativas de precisión ni de carga &
+Descripción de un solo caso; sin datos cuantitativos de efectividad del
+chatbot &
+El chatbot de SGB-SaaS no es un producto de terceros aislado: es un
+módulo (REQ-F-028) integrado a los datos transaccionales reales del
+catálogo \\
+\hline
+
+\citet{shivaji2024intelligentlms} & 2024 &
+Sistema inteligente de gestión bibliotecaria con RFID, módulo GSM y
+microcontrolador AVR &
+RFID + GSM + microcontrolador AVR + Visual Basic (según palabras clave
+del resumen indexado) &
+Sistema embebido/de escritorio orientado a automatización física
+(notificación por SMS vía GSM), no arquitectura SaaS web &
+No confirmado en detalle a partir del resumen indexado disponible &
+No confirmado en detalle (mismo motivo); dependencia de hardware
+especializado evidente por el propio diseño &
+SGB-SaaS es una plataforma SaaS 100\,\% software, desplegable en
+cualquier navegador, con notificación por correo (SMTP) en vez de
+SMS/GSM \\
+\hline
+
+\citet{colley2018ormperformance} & 2018 &
+Impacto de frameworks ORM en el rendimiento de consultas relacionales
+(estudio general de acceso a datos, no específico de bibliotecas) &
+Stack de aplicación Java líder de mercado (no se especifica dominio
+bibliotecario) &
+Identifica patrones de rendimiento indeseables (anti-patrones)
+producidos por el uso de ORM frente a SQL optimizado &
+Comparación empírica real de tiempos de ejecución y uso de memoria entre
+configuraciones ORM &
+No evalúa explícitamente una arquitectura híbrida ORM+procedimientos
+almacenados como estrategia de mitigación &
+SGB-SaaS \textbf{sí} implementa y mide empíricamente (k6, Wilcoxon) la
+estrategia híbrida CRUD-ORM/SP que este trabajo identifica como
+necesaria pero no llega a ejecutar ni medir (\autoref{sec:sp-invocacion}) \\
+\hline
+
+\citet{kusuma2017rediscaching} & 2017 &
+Comparación de estrategias de caché (acelerador HTTP + Redis) en
+WordPress multisitio -- no bibliotecario &
+WordPress + Varnish (caché HTTP) + Redis (caché de objetos) + MySQL &
+\emph{Cache-aside} separado por tipo de objeto: estático vía Varnish,
+consultas de BD vía Redis &
+Medición real de uso de CPU de MySQL ($-25$\,\%) y tráfico de red
+($-94$\,\%) bajo carga, con caché Redis activo &
+Contexto específico de WordPress multisitio; sin test estadístico
+formal ($p$-valor, tamaño de efecto) &
+SGB-SaaS usa un patrón \emph{cache-aside} equivalente
+(\autoref{sec:cache-redis}) sobre una API REST propia, con evaluación
+estadística formal (Wilcoxon, Cliff's delta) que este trabajo no reporta \\
+\hline
+\end{longtable}
+\end{center}
+\end{landscape}
+
+\subsection{Ingeniería de requisitos: elicitación y clasificación}
+
+La calidad del proceso de elicitación de requisitos es un tema activo de
+investigación empírica: \citet{bano2019elicitation} estudian, mediante un
+análisis de errores comunes, cómo se enseña y se aprende a conducir
+entrevistas de elicitación, y \citet{palomares2021elicitation} amplían el
+panorama con un estudio de estado de la práctica en 12 empresas reales.
+\citet{yu1997istar} aporta el marco conceptual clásico ($i^{*}$) para
+razonar sobre requisitos en fase temprana en términos de actores e
+intenciones, y \citet{kurtanovic2017classifying} atacan un problema
+técnico directamente relevante para este proyecto: la clasificación
+automática de requisitos funcionales frente a no funcionales mediante
+aprendizaje supervisado -- la misma distinción F/NF que estructura la
+matriz de trazabilidad de SGB-SaaS (\autoref{cap:ingenieria-requisitos}),
+aunque en este proyecto esa clasificación se hizo manualmente y no con un
+clasificador entrenado.
+
+\subsection{Prácticas ágiles y efectividad de equipo}
+
+\citet{truong2025personality} encuentran, en equipos Scrum de empresas
+vietnamitas, una asociación medible entre rasgos de personalidad del
+equipo y su efectividad percibida, y \citet{rahman2024agile} reportan
+evidencia de que la adopción de prácticas ágiles impacta la
+productividad de equipos de desarrollo. Ambos trabajos son relevantes
+como marco de referencia para contextualizar (no medir formalmente,
+dado que está fuera del alcance de este proyecto) el propio proceso de
+un equipo de 3 personas sin dedicación exclusiva que construyó SGB-SaaS
+(\autoref{cap:amenazas-validez}).
+
+\subsection{Diseño responsivo de interfaces web}
+
+\citet{parlakkilic2022responsive} evalúan el efecto del diseño
+responsivo sobre la usabilidad de sitios web académicos durante la
+pandemia, y \citet{aienobe2025responsive} revisan patrones de diseño
+responsivo orientados a mejorar UX/UI. Ambos fundamentan la decisión de
+construir el frontend de SGB-SaaS como una aplicación Angular
+responsiva -- decisión cuya validación de usabilidad real (SUS) sigue
+pendiente al momento de escribir este documento
+(\autoref{sec:validez-externa}).
+
+\subsection{Seguridad de transporte}
+
+\citet{mckay2019tls} (NIST SP~800-52 Rev.~2) documentan las guías
+oficiales para la selección y configuración de implementaciones TLS, la
+referencia normativa detrás de las decisiones de transporte seguro de
+credenciales de SGB-SaaS (cookies \texttt{HttpOnly}, \autoref{cap:implementacion}).
+
+\subsection{Fundamentos de arquitectura y desarrollo de software}
+
+Las decisiones de diseño documentadas en el \autoref{cap:diseno-arquitectura}
+y el \autoref{cap:implementacion} se apoyan en literatura fundacional
+consolidada: \citet{sommerville2011se} para el proceso de ingeniería de
+software en general, \citet{fowler2002poeaa} para los patrones de
+arquitectura de aplicaciones empresariales (incluyendo el patrón de
+acceso a datos que motiva la estrategia híbrida ORM/SP),
+\citet{walls2022springinaction} para el framework Spring usado en el
+backend, \citet{bass2021softwarearch} para el vocabulario de atributos
+de calidad usado en el mapeo a ISO/IEC~25010
+(\autoref{cap:diseno-arquitectura}), y \citet{brown2023c4model} para la
+notación C4 usada para documentar la arquitectura -- citado, como se
+aclaró en la \autoref{sec:estrategia-busqueda}, como referencia técnica
+normativa y no como evidencia empírica de investigación.
+
+\section{Brecha identificada}
+\label{sec:brecha-identificada}
+
+Ningún trabajo revisado en este capítulo integra, en un solo sistema,
+las cuatro características que SGB-SaaS combina: (i)~autenticación
+basada en JWT con control de acceso por roles (RBAC); (ii)~un catálogo
+con autocompletado de ISBN; (iii)~un chatbot con IA generativa real --no
+un motor de intents fijos-- usado simultáneamente para recomendaciones y
+para consultas sobre el catálogo (REQ-F-028); y (iv)~una arquitectura
+híbrida de acceso a datos (CRUD elemental vía ORM, operaciones
+multi-tabla vía procedimientos almacenados) respaldada por evidencia
+empírica de rendimiento reproducible (k6, 5 corridas independientes,
+prueba de Wilcoxon pareada, tamaño de efecto de Cliff's delta).
+
+De los 10 trabajos primarios comparados, los más cercanos a SGB-SaaS en
+cada dimensión individual son: \citet{ng2024libbot} y
+\citet{ehrenpreis2022chatbot} en la dimensión de chatbot (pero ninguno
+de los dos reporta el uso de un modelo de IA generativa de propósito
+general integrado a las transacciones del sistema, a diferencia de
+Gemini en SGB-SaaS); \citet{colley2018ormperformance} en la dimensión de
+arquitectura de acceso a datos (identifica el problema que la estrategia
+híbrida de SGB-SaaS resuelve, pero no implementa ni mide esa estrategia);
+y \citet{kusuma2017rediscaching} en la dimensión de caché (mide el
+efecto de Redis, pero sin la evaluación estadística formal que
+\texttt{docs/mediciones/perf/REPORT.md} aporta para SGB-SaaS). Ningún
+trabajo del acervo revisado combina las cuatro dimensiones en un solo
+sistema evaluado empíricamente.
+
+Esta afirmación de brecha se hace con dos advertencias explícitas de
+honestidad metodológica, coherentes con el resto de este documento:
+primera, está acotada estrictamente a las 30 referencias efectivamente
+revisadas en este capítulo (\autoref{sec:estrategia-busqueda}) -- no es
+una afirmación sobre la totalidad de la literatura publicada sobre
+sistemas de gestión bibliotecaria, que es considerablemente más extensa
+que el acervo aquí reunido; segunda, la brecha se refiere a la
+\emph{combinación} de las cuatro características, no a la novedad de
+cada característica individual, varias de las cuales (chatbots,
+recomendación, RFID, QR) están bien establecidas por separado en la
+literatura revisada. Esta misma limitación de alcance de la revisión se
+retoma como amenaza a la validez externa en el
+\autoref{cap:amenazas-validez}.

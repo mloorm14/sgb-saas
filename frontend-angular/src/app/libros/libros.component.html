@@ -7,6 +7,18 @@
         style="padding:8px 16px;background:#005c2f;color:white;border:none;border-radius:4px;cursor:pointer">
         + Nuevo libro
       </button>
+      @if (verAdminUsuarios) {
+        <button (click)="irAUsuarios()"
+          style="padding:8px 16px;background:#2980b9;color:white;border:none;border-radius:4px;cursor:pointer">
+          Usuarios
+        </button>
+      }
+      @if (verAdminConfiguracion) {
+        <button (click)="irAConfiguracion()"
+          style="padding:8px 16px;background:#2980b9;color:white;border:none;border-radius:4px;cursor:pointer">
+          Configuración
+        </button>
+      }
       <button (click)="cerrarSesion()"
         style="padding:8px 16px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer">
         Cerrar sesión

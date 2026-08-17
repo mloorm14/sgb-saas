@@ -16,6 +16,8 @@ import { SugerenciasFormComponent } from './sugerencias/sugerencias-form/sugeren
 import { MisSugerenciasComponent } from './sugerencias/mis-sugerencias/mis-sugerencias.component';
 import { PortalPublicoComponent } from './portal-publico/portal-publico.component';
 import { DetallePublicoComponent } from './portal-publico/detalle-publico/detalle-publico.component';
+import { AdminUsuariosComponent } from './admin-usuarios/admin-usuarios.component';
+import { ConfiguracionSistemaComponent } from './configuracion-sistema/configuracion-sistema.component';
 
 // Los roleGuard de abajo reflejan los @PreAuthorize reales de cada
 // controller en backend-springboot (verificado en el codigo, no asumido):
@@ -25,6 +27,11 @@ import { DetallePublicoComponent } from './portal-publico/detalle-publico/detall
 //   BIBLIOTECARIO/GERENTE; el listado por usuario admite tambien LECTOR
 //   pero ADMIN queda fuera en todos los endpoints del controller.
 // - /reservaciones y /multas: LECTOR/BIBLIOTECARIO/GERENTE (ADMIN fuera).
+// - /admin/usuarios: ADMIN y GERENTE (ver UsuarioAdminController#listar);
+//   cambiar rol/estado queda gateado dentro del propio componente porque
+//   ahí sí es solo ADMIN.
+// - /admin/configuracion: solo ADMIN (ver ConfiguracionSistemaController,
+//   @PreAuthorize a nivel de clase).
 // Rama C (portal público): la raiz de la app es el portal SIN sesion
 // (/api/publico/libros, permitAll en SecurityConfig). Las rutas de sesion
 // quedan en /login y /registro; las del resto de ramas no cambian. El
@@ -40,6 +47,14 @@ export const routes: Routes = [
   { path: 'prestamos/gestion', component: PrestamosGestionComponent, canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE'])] },
   { path: 'reservaciones', component: ReservacionesComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
   { path: 'multas', component: MultasComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
+  // Listado accesible a ADMIN y GERENTE (igual que el backend, ver
+  // UsuarioAdminController#listar); cambiar rol/estado queda gateado
+  // dentro del propio componente porque ahí sí es solo ADMIN.
+  { path: 'admin/usuarios', component: AdminUsuariosComponent, canActivate: [authGuard, roleGuard(['ADMIN', 'GERENTE'])] },
+  // Solo ADMIN (ver ConfiguracionSistemaController, @PreAuthorize a nivel
+  // de clase) -- roleGuard evita que un GERENTE/BIBLIOTECARIO/LECTOR
+  // navegue acá por URL y vea un componente vacío condenado a fallar.
+  { path: 'admin/configuracion', component: ConfiguracionSistemaComponent, canActivate: [authGuard, roleGuard(['ADMIN'])] },
   // Rama B (frontend/estudiante-catalogo-social): las 5 rutas del
   // consumidor son 100% LECTOR — verificado en FavoritoController.java y
   // SugerenciaAdquisicionController.java (los endpoints de favoritos y de
