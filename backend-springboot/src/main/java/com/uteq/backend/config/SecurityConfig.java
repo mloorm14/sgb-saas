@@ -60,6 +60,11 @@ public class SecurityConfig {
                                 "/api/auth/verificar-correo",
                                 "/api/auth/login",
                                 "/api/auth/refresh",
+                                // Portal público (Rama C): superficie de solo
+                                // lectura del catálogo sin cuenta (ver
+                                // PublicoLibroController). Angosta a propósito:
+                                // solo /api/publico/libros, nada más.
+                                "/api/publico/**",
                                 "/api/docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
