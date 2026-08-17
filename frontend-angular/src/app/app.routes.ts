@@ -14,6 +14,8 @@ import { LibroDetalleComponent } from './catalogo/libro-detalle/libro-detalle.co
 import { FavoritosComponent } from './favoritos/favoritos.component';
 import { SugerenciasFormComponent } from './sugerencias/sugerencias-form/sugerencias-form.component';
 import { MisSugerenciasComponent } from './sugerencias/mis-sugerencias/mis-sugerencias.component';
+import { PortalPublicoComponent } from './portal-publico/portal-publico.component';
+import { DetallePublicoComponent } from './portal-publico/detalle-publico/detalle-publico.component';
 
 // Los roleGuard de abajo reflejan los @PreAuthorize reales de cada
 // controller en backend-springboot (verificado en el codigo, no asumido):
@@ -23,8 +25,14 @@ import { MisSugerenciasComponent } from './sugerencias/mis-sugerencias/mis-suger
 //   BIBLIOTECARIO/GERENTE; el listado por usuario admite tambien LECTOR
 //   pero ADMIN queda fuera en todos los endpoints del controller.
 // - /reservaciones y /multas: LECTOR/BIBLIOTECARIO/GERENTE (ADMIN fuera).
+// Rama C (portal público): la raiz de la app es el portal SIN sesion
+// (/api/publico/libros, permitAll en SecurityConfig). Las rutas de sesion
+// quedan en /login y /registro; las del resto de ramas no cambian. El
+// wildcard ya no redirige a /login sino al portal (nadie esta obligado a
+// iniciar sesion para navegar el catalogo).
 export const routes: Routes = [
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
+  { path: '', component: PortalPublicoComponent },
+  { path: 'portal/:id', component: DetallePublicoComponent },
   { path: 'login', component: LoginComponent },
   { path: 'registro', component: RegistroComponent },
   { path: 'libros', component: LibrosComponent, canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE', 'ADMIN'])] },
@@ -43,5 +51,5 @@ export const routes: Routes = [
   { path: 'sugerencias', component: MisSugerenciasComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
   { path: 'sugerencias/nueva', component: SugerenciasFormComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
   { path: 'no-autorizado', component: NoAutorizadoComponent },
-  { path: '**', redirectTo: 'login' }
+  { path: '**', redirectTo: '' }
 ];
