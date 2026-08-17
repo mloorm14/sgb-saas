@@ -1,0 +1,62 @@
+' Generado desde commit c7c6d9e (real source code)
+' Diagrama de secuencia: POST /api/v1/libros (crear libro)
+' Flujo real: LibroController.crear() -> LibroService.crear() -> LibroRepository.save() -> PostgreSQL
+
+@startuml
+!define RECTANGLE class
+
+skinparam sequenceMessageAlign center
+skinparam linetype ortho
+
+actor "BIBLIOTECARIO / GERENTE / ADMIN" as User
+participant "LibroController\ncrear(LibroRequestDTO)" as Controller
+participant "LibroService\ncrear(LibroRequestDTO)" as Service
+participant "LibroRepository\nsave(Libro)" as Repo
+participant "PostgreSQL\nINSERT INTO libros" as DB
+participant "Cache (Redis)\n@CacheEvict(libros)" as Cache
+
+== Validación de autorización (Spring Security) ==
+User -> Controller: POST /api/v1/libros\nLibroRequestDTO{titulo, isbn, ...}
+Controller --> User: 403 si no tiene rol\nBIBLIOTECARIO|GERENTE|ADMIN\n@PreAuthorize(hasAnyRole(...))
+
+== Creación del libro ==
+Controller -> Service: crear(dto)
+activate Service
+
+Service -> Service: validarStock(stockTotal, stockDisponible)
+note right: stockDisponible ≤ stockTotal\n(L172-178 LibroService)
+
+Service -> Repo: existsByIsbn(dto.isbn())
+activate Repo
+Repo --> Service: boolean (true = ISBN duplicado)
+deactivate Repo
+
+alt ISBN ya existe
+    Service --> Controller: IllegalArgumentException\n"ISBN ya registrado: " + isbn
+    Controller --> User: 400 Bad Request
+else ISBN disponible
+    Service -> Service: fromDTO(dto) : Libro
+    note right: Libro.fromDTO():\n- setTitulo, setIsbn, setResumen...\n- setEditorial(editorialRepo.getReferenceById)\n- setIdioma(idiomaRepo.getReferenceById)\n- setEstado(estadoRepo.getReferenceById)\n- setCategorias(resolverCategorias)\n- setAutores(resolverAutores)\n(L231-246 LibroService)
+
+    Service -> Repo: save(Libro)
+    activate Repo
+    Repo -> DB: INSERT INTO libros\n(isbn, titulo, resumen, portada_url,\n anio_publicacion, editorial_id, idioma_id,\n estado_id, stock_total, stock_disponible,\n ubicacion_fisica, fecha_registro, actualizado_en)\nVALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+    activate DB
+    DB --> Repo: Libro (con id generado)
+    deactivate DB
+    Repo --> Service: Libro (persistido con id)
+    deactivate Repo
+
+    Service -> Service: toDTO(Libro) : LibroResponseDTO
+    note right: toDTO() mapea:\nid, titulo, isbn, resumen, portadaUrl,\nanioPublicacion, editorialId/Nombre,\nidiomaId/Nombre, estadoId/Nombre,\nstockTotal, stockDisponible, ubicacionFisica,\nfechaRegistro, categorias[], autores[]\n(L206-229 LibroService)
+
+    Service --> Controller: LibroResponseDTO
+    deactivate Service
+
+    Controller -> Cache: @CacheEvict(value="libros", allEntries=true)
+    note right: Invalida cache "libros"\n@CacheEvict(allEntries=true)\n(L120 LibroService)
+
+    Controller --> User: 201 Created\nLibroResponseDTO
+end
+
+@enduml
