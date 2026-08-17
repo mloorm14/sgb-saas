@@ -3,9 +3,12 @@ package com.uteq.backend.controller;
 import com.uteq.backend.dto.LibroRequestDTO;
 import com.uteq.backend.dto.LibroResponseDTO;
 import com.uteq.backend.dto.LibroSugerenciaDTO;
+import com.uteq.backend.dto.LibroIsbnLookupDTO;
 import com.uteq.backend.dto.PortadaImagenDTO;
 import com.uteq.backend.service.LibroService;
+import com.uteq.backend.service.LibroIsbnLookupService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,9 +29,11 @@ import java.util.List;
 public class LibroController {
 
     private final LibroService libroService;
+    private final LibroIsbnLookupService libroIsbnLookupService;
 
-    public LibroController(LibroService libroService) {
+    public LibroController(LibroService libroService, LibroIsbnLookupService libroIsbnLookupService) {
         this.libroService = libroService;
+        this.libroIsbnLookupService = libroIsbnLookupService;
     }
 
     // ── GET /api/v1/libros?page=0&size=10 ────────────────
@@ -59,6 +64,33 @@ public class LibroController {
     public ResponseEntity<List<LibroSugerenciaDTO>> sugerencias(
             @RequestParam @Size(min = 2, max = 60, message = "El texto de búsqueda debe tener entre 2 y 60 caracteres") String texto) {
         return ResponseEntity.ok(libroService.sugerir(texto));
+    }
+
+    // ── GET /api/v1/libros/lookup-isbn?isbn= ─────────────
+    // Módulo inventario (mockup 14): autocompletar desde Google Books.
+    // La ruta literal /lookup-isbn gana sobre /{id} (Spring elige el
+    // patrón más específico). 404 con ProblemDetail si no hay resultado.
+    @GetMapping("/lookup-isbn")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    public ResponseEntity<LibroIsbnLookupDTO> lookupIsbn(
+            @RequestParam @Pattern(regexp = "^[0-9\\-]{10,17}$", message = "ISBN inválido")
+            @Size(max = 13, message = "El ISBN no puede superar 13 caracteres") String isbn) {
+        return ResponseEntity.ok(libroIsbnLookupService.buscarPorIsbn(isbn));
+    }
+
+    // ── GET /api/v1/libros/lookup-isbn/portada?isbn= ─────
+    // Proxy de la portada de Google Books: el backend descarga el
+    // thumbnail y lo devuelve como binario (el navegador no debe llamar
+    // a Google Books directo). Igual que /{id}/portada, 404 si no hay.
+    @GetMapping("/lookup-isbn/portada")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    public ResponseEntity<byte[]> lookupIsbnPortada(
+            @RequestParam @Pattern(regexp = "^[0-9\\-]{10,17}$", message = "ISBN inválido")
+            @Size(max = 13, message = "El ISBN no puede superar 13 caracteres") String isbn) {
+        PortadaImagenDTO portada = libroIsbnLookupService.obtenerPortada(isbn);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(portada.contentType()))
+                .body(portada.bytes());
     }
 
     // ── GET /api/v1/libros/{id} ───────────────────────────

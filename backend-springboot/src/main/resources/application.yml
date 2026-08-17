@@ -130,6 +130,11 @@ app:
     # Módulo 9.5: TTL del código de 6 dígitos en Redis, mismo mecanismo que
     # app.security.login (ver VerificacionCorreoService/LoginRateLimiter).
     ttl-minutes: ${VERIFICACION_CORREO_TTL_MINUTES:10}
+  google-books:
+    # Módulo inventario (autocompletar por ISBN, mockup 14). La API
+    # pública de Google Books no requiere API key para /volumes?q=isbn:.
+    url-base: ${GOOGLE_BOOKS_URL_BASE:https://www.googleapis.com/books/v1}
+    timeout-ms: ${GOOGLE_BOOKS_TIMEOUT_MS:8000}
   gemini:
     # Módulo H (chatbot asistente virtual). API key de Google AI Studio --
     # ver .env.example y docker-compose.yml, ya declaraban GEMINI_API_KEY
