@@ -8,6 +8,7 @@ import { PrestamosLectorComponent } from './prestamos-lector/prestamos-lector.co
 import { PrestamosGestionComponent } from './prestamos-gestion/prestamos-gestion.component';
 import { ReservacionesComponent } from './reservaciones/reservaciones.component';
 import { MultasComponent } from './multas/multas.component';
+import { ReportesComponent } from './reportes/reportes.component';
 import { NoAutorizadoComponent } from './shared/no-autorizado/no-autorizado.component';
 import { CatalogoComponent } from './catalogo/catalogo.component';
 import { LibroDetalleComponent } from './catalogo/libro-detalle/libro-detalle.component';
@@ -43,6 +44,9 @@ export const routes: Routes = [
   { path: 'prestamos/gestion', component: PrestamosGestionComponent, canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE'])] },
   { path: 'reservaciones', component: ReservacionesComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
   { path: 'multas', component: MultasComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
+  // Reportes gerenciales: BIBLIOTECARIO/GERENTE (PrestamoController; el
+  // ADMIN no tiene acceso).
+  { path: 'reportes', component: ReportesComponent, canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE'])] },
   // Rama B (frontend/estudiante-catalogo-social): las 5 rutas del
   // consumidor son 100% LECTOR — verificado en FavoritoController.java y
   // SugerenciaAdquisicionController.java (los endpoints de favoritos y de
