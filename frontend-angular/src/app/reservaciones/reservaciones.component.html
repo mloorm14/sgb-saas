@@ -1,86 +1,198 @@
-<div style="padding:2rem;max-width:1100px;margin:0 auto">
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
 
-  <h2 style="color:#005c2f;margin:0 0 1.5rem 0">
-    {{ esLector ? 'Mis reservaciones' : 'Gestión de reservaciones' }}
-  </h2>
-
-  <!-- FORMULARIO CREAR -->
-  <div style="background:#f9f9f9;padding:1.5rem;border-radius:8px;margin-bottom:2rem">
-    <h3 style="margin-top:0;font-size:16px">Nueva reservación</h3>
-    <div *ngIf="errorMsgCrear" style="color:red;margin-bottom:1rem">{{ errorMsgCrear }}</div>
-
-    <form [formGroup]="formCrear" (ngSubmit)="crearReservacion()" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
-      <div *ngIf="!esLector">
-        <label style="display:block;font-size:13px;margin-bottom:4px">Usuario ID</label>
-        <input formControlName="usuarioId" type="number"
-          style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
-      </div>
-      <div>
-        <label style="display:block;font-size:13px;margin-bottom:4px">Libro ID</label>
-        <input formControlName="libroId" type="number"
-          style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
-      </div>
-      <button type="submit" [disabled]="formCrear.invalid"
-        style="padding:8px 16px;background:#005c2f;color:white;border:none;border-radius:4px;cursor:pointer">
-        Reservar
-      </button>
-    </form>
-  </div>
-
-  <!-- BUSQUEDA POR USUARIO: solo bibliotecario/gerente, el lector ya ve lo suyo automaticamente -->
-  <div *ngIf="!esLector" style="display:flex;gap:12px;align-items:flex-end;margin-bottom:1.5rem">
+  <div class="mb-lg flex flex-col md:flex-row md:items-end md:justify-between gap-sm">
     <div>
-      <label style="display:block;font-size:13px;margin-bottom:4px">Ver reservaciones del usuario ID</label>
-      <input [(ngModel)]="usuarioIdBusqueda" [ngModelOptions]="{standalone: true}" type="number"
-        style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
+      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">
+        {{ esLector ? 'Mis reservaciones' : 'Gestión de reservaciones' }}
+      </h1>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">
+        {{ esLector ? 'Para reservar un libro nuevo, buscalo en el catálogo' : 'Creá reservas y consultá las de cualquier usuario' }}
+      </p>
     </div>
-    <button (click)="buscarReservaciones()"
-      style="padding:8px 16px;background:#2980b9;color:white;border:none;border-radius:4px;cursor:pointer">
-      Buscar
-    </button>
+    @if (esLector) {
+      <a routerLink="/catalogo"
+        class="inline-flex items-center gap-xs h-10 px-md rounded bg-primary text-on-primary font-label-md text-label-sm hover:bg-on-primary-fixed-variant self-start">
+        <span class="material-symbols-outlined text-[18px]">search</span> Ir al catálogo
+      </a>
+    }
   </div>
 
-  <div *ngIf="errorMsg" style="color:red;margin-bottom:1rem">{{ errorMsg }}</div>
-  <div *ngIf="cargando" style="text-align:center;padding:2rem">Cargando reservaciones...</div>
+  @if (esLector) {
+    <!-- Vista LECTOR (mockup 18): la creacion vive en el catalogo/detalle,
+         aca solo Pendientes de retiro + Historial -->
+    @if (errorMsg) {
+      <div class="rounded-lg bg-error-container text-on-error-container font-body-sm text-body-sm p-sm mb-lg">{{ errorMsg }}</div>
+    }
+    @if (cargando) {
+      <div class="text-center py-md font-body-sm text-body-sm text-on-surface-variant">Cargando reservaciones...</div>
+    }
 
-  <table *ngIf="!cargando && reservaciones.length > 0" style="width:100%;border-collapse:collapse;font-size:14px">
-    <thead>
-      <tr style="background:#005c2f;color:white">
-        <th style="padding:10px;text-align:left">ID</th>
-        <th style="padding:10px;text-align:left" *ngIf="!esLector">Usuario</th>
-        <th style="padding:10px;text-align:left">Libro</th>
-        <th style="padding:10px;text-align:left">Fecha reserva</th>
-        <th style="padding:10px;text-align:left">Límite de retiro</th>
-        <th style="padding:10px;text-align:left">Estado</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let r of reservaciones; let i = index"
-        [style.background]="i % 2 === 0 ? '#f9f9f9' : 'white'">
-        <td style="padding:10px">{{ r.id }}</td>
-        <td style="padding:10px" *ngIf="!esLector">{{ r.usuarioId }}</td>
-        <td style="padding:10px">{{ r.libroId }}</td>
-        <td style="padding:10px">{{ r.fechaReserva | date:'short' }}</td>
-        <td style="padding:10px">{{ r.fechaLimiteRetiro | date:'short' }}</td>
-        <td style="padding:10px">{{ r.estadoReservacionId }}</td>
-      </tr>
-    </tbody>
-  </table>
+    @if (!cargando && reservaciones.length === 0) {
+      <div class="rounded-lg border border-dashed border-outline-variant bg-white p-xl text-center">
+        <span class="material-symbols-outlined text-[40px] text-outline">event_available</span>
+        <p class="font-body-md text-body-md text-on-surface-variant mt-sm">No tenés reservaciones todavía.</p>
+        <a routerLink="/catalogo" class="inline-flex items-center gap-xs text-primary font-label-md text-label-sm hover:underline mt-xs">
+          Buscar en el catálogo <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+        </a>
+      </div>
+    }
 
-  <div *ngIf="!cargando && reservaciones.length === 0" style="text-align:center;padding:2rem;color:#888">
-    No hay reservaciones registradas
-  </div>
+    @if (!cargando && reservaciones.length > 0) {
+      @if (pendientesDeRetiro.length > 0) {
+        <h2 class="font-headline-md text-headline-md text-on-background mb-sm">Pendientes de retiro</h2>
+        <div class="grid gap-sm mb-xl">
+          @for (r of pendientesDeRetiro; track r.id) {
+            <div class="rounded-lg border border-outline-variant bg-white p-md flex items-center justify-between">
+              <div>
+                <p class="font-label-md text-label-sm text-on-surface">{{ tituloLibro(r.libroId) }}</p>
+                <p class="font-body-sm text-[12px] text-on-surface-variant mt-1">Reservado el {{ r.fechaReserva | date:'dd/MM' }} · Retirar antes del <strong class="text-warning">{{ r.fechaLimiteRetiro | date:'dd/MM/yyyy' }}</strong></p>
+              </div>
+              <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]" [class]="claseEstadoReservacion(r.estadoReservacionId)">
+                <span class="material-symbols-outlined text-[14px]">event_available</span> {{ estadosReservacion[r.estadoReservacionId] }}
+              </span>
+            </div>
+          }
+        </div>
+      }
 
-  <div *ngIf="reservaciones.length > 0" style="display:flex;justify-content:center;align-items:center;gap:16px;margin-top:1rem">
-    <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
-      style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
-      ← Anterior
-    </button>
-    <span style="font-size:14px">Página {{ currentPage + 1 }} de {{ totalPages }}</span>
-    <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
-      style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
-      Siguiente →
-    </button>
-  </div>
+      @if (historial.length > 0) {
+        <h2 class="font-headline-md text-headline-md text-on-background mb-sm">Historial</h2>
+        <div class="rounded-lg border border-outline-variant bg-white overflow-hidden mb-lg">
+          <table class="w-full text-left">
+            <thead class="bg-surface-container-low">
+              <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+                <th class="px-md py-sm">Libro</th>
+                <th class="px-md py-sm">Fecha reserva</th>
+                <th class="px-md py-sm">Estado</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+              @for (r of historial; track r.id) {
+                <tr>
+                  <td class="px-md py-sm">{{ tituloLibro(r.libroId) }}</td>
+                  <td class="px-md py-sm text-on-surface-variant">{{ r.fechaReserva | date:'dd MMM yyyy' }}</td>
+                  <td class="px-md py-sm">
+                    <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]" [class]="claseEstadoReservacion(r.estadoReservacionId)">
+                      {{ estadosReservacion[r.estadoReservacionId] }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  } @else {
+    <!-- Modo GESTION (BIBLIOTECARIO/GERENTE): sin cambios, formulario
+         usuarioId/libroId manual + busqueda + tabla paginada -->
+    <div class="rounded-xl glass-panel p-lg mb-xl">
+      <h2 class="font-headline-md text-headline-md text-on-background mb-sm">Nueva reservación</h2>
+      @if (errorMsgCrear) {
+        <div class="rounded-lg bg-error-container text-on-error-container font-body-sm text-body-sm p-sm mb-md">{{ errorMsgCrear }}</div>
+      }
 
-</div>
+      <form [formGroup]="formCrear" (ngSubmit)="crearReservacion()" class="flex flex-col md:flex-row items-start md:items-end gap-md">
+        <div>
+          <label class="block font-label-sm text-label-sm text-on-surface-variant mb-xs">Usuario ID</label>
+          <input formControlName="usuarioId" type="number"
+            class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:ring-0 focus:border-primary" />
+        </div>
+        <div>
+          <label class="block font-label-sm text-label-sm text-on-surface-variant mb-xs">Libro ID</label>
+          <input formControlName="libroId" type="number"
+            class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:ring-0 focus:border-primary" />
+        </div>
+        <button type="submit" [disabled]="formCrear.invalid"
+          class="h-10 px-md rounded bg-primary text-on-primary font-label-md text-label-sm hover:bg-on-primary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed">
+          Reservar
+        </button>
+      </form>
+    </div>
+
+    <div class="flex flex-col md:flex-row items-start md:items-end gap-md mb-lg">
+      <div>
+        <label class="block font-label-sm text-label-sm text-on-surface-variant mb-xs">Ver reservaciones del usuario ID</label>
+        <input [(ngModel)]="usuarioIdBusqueda" [ngModelOptions]="{standalone: true}" type="number"
+          class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:ring-0 focus:border-primary" />
+      </div>
+      <button (click)="buscarReservaciones()"
+        class="h-10 px-md rounded border border-outline-variant text-on-surface font-label-md text-label-sm hover:bg-surface-container-low">
+        Buscar
+      </button>
+    </div>
+
+    @if (errorMsg) {
+      <div class="rounded-lg bg-error-container text-on-error-container font-body-sm text-body-sm p-sm mb-lg">{{ errorMsg }}</div>
+    }
+    @if (cargando) {
+      <div class="text-center py-md font-body-sm text-body-sm text-on-surface-variant">Cargando reservaciones...</div>
+    }
+
+    @if (!cargando && reservaciones.length > 0) {
+      <div class="rounded-lg border border-outline-variant bg-white overflow-hidden mb-lg">
+        <table class="w-full text-left">
+          <thead class="bg-surface-container-low">
+            <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+              <th class="px-md py-sm">Libro</th>
+              <th class="px-md py-sm">Usuario</th>
+              <th class="px-md py-sm hidden sm:table-cell">Reservado</th>
+              <th class="px-md py-sm hidden sm:table-cell">Límite de retiro</th>
+              <th class="px-md py-sm">Estado</th>
+              <th class="px-md py-sm">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+            @for (r of reservaciones; track r.id) {
+              <tr>
+                <td class="px-md py-sm">{{ tituloLibro(r.libroId) }}</td>
+                <td class="px-md py-sm text-on-surface-variant">{{ r.usuarioId }}</td>
+                <td class="px-md py-sm hidden sm:table-cell text-on-surface-variant">{{ r.fechaReserva | date:'dd MMM yyyy' }}</td>
+                <td class="px-md py-sm hidden sm:table-cell text-on-surface-variant">{{ r.fechaLimiteRetiro | date:'dd MMM yyyy' }}</td>
+                <td class="px-md py-sm">
+                  <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]" [class]="claseEstadoReservacion(r.estadoReservacionId)">
+                    {{ estadosReservacion[r.estadoReservacionId] }}
+                  </span>
+                </td>
+                <td class="px-md py-sm">
+                  @if (r.estadoReservacionId === 1) {
+                    <div class="flex items-center gap-xs">
+                      <button (click)="cambiarEstadoReservacion(r, 'LISTA_PARA_RETIRO')" [disabled]="accionandoId !== null"
+                        class="inline-flex items-center gap-xs h-8 px-sm rounded bg-primary text-on-primary font-label-md text-label-sm hover:bg-on-primary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span class="material-symbols-outlined text-[16px]">check</span> Aceptar
+                      </button>
+                      <button (click)="cambiarEstadoReservacion(r, 'CANCELADA')" [disabled]="accionandoId !== null"
+                        class="inline-flex items-center gap-xs h-8 px-sm rounded border border-error text-error font-label-md text-label-sm hover:bg-error-container disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span class="material-symbols-outlined text-[16px]">close</span> Rechazar
+                      </button>
+                    </div>
+                  } @else {
+                    <span class="text-[12px] text-on-surface-variant">—</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    @if (!cargando && reservaciones.length === 0) {
+      <div class="text-center py-lg font-body-sm text-body-sm text-on-surface-variant mb-lg">No hay reservaciones registradas</div>
+    }
+
+    @if (reservaciones.length > 0) {
+      <div class="flex justify-center items-center gap-md font-body-sm text-body-sm">
+        <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
+          class="px-sm h-8 rounded border border-outline-variant text-on-surface hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed">
+          ← Anterior
+        </button>
+        <span class="text-on-surface-variant">Página {{ currentPage + 1 }} de {{ totalPages }}</span>
+        <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
+          class="px-sm h-8 rounded border border-outline-variant text-on-surface hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed">
+          Siguiente →
+        </button>
+      </div>
+    }
+  }
+
+</main>

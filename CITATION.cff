@@ -35,3 +35,12 @@ keywords:
   - PostgreSQL
   - RBAC
 doi: 10.5281/zenodo.21712467
+# ---
+# Al cortar el tag v1.0.0 definitivo, completar aquí (mismos valores que en
+# la tabla "Imágenes Docker publicadas" del README.md, que quedan pendientes
+# hasta entonces por la misma razón — ver docs/VERSIONING.md):
+# digest-backend: sha256:...
+# digest-frontend: sha256:...
+# CFF 1.2.0 no tiene un campo estándar para digests de imágenes: se deja
+# como comentario (como el placeholder de date-released arriba) para no
+# inventar un campo no contemplado por el esquema.

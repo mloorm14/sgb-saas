@@ -1,4 +1,4 @@
-.PHONY: up down test bench audit docs all clean
+.PHONY: up down test test-backend test-frontend bench audit docs clean all check-latexmk
 
 # make up: regenera db/init/01-consolidado.sql (schema + procs + seed, ver
 # scripts/build-init-sql.sh) y levanta todos los servicios (Postgres, Redis,
@@ -34,11 +34,27 @@ test-backend:
 # make test-frontend: Angular, modo single-run sin watch y navegador
 # headless -- mismo comando que corre .github/workflows/ci.yml (job
 # "frontend"), para que si pasa en la maquina de alguien tambien pase en
-# GitHub Actions. El guard de node_modules es para el clone limpio: 'ng
-# test' sin dependencias instaladas falla con un error critptico de
-# modulo ausente, y el criterio R1/D.1 exige que 'make all' corra de
-# punta a punta desde una carpeta nueva (npm ci es exactamente el mismo
-# paso que CI ya ejecuta antes de 'npx ng test').
+# GitHub Actions.
+#
+# El guard de node_modules es para el clone limpio: 'ng test' sin
+# dependencias instaladas falla con un error criptico de modulo ausente, y
+# el criterio R1/D.1 exige que 'make all' corra de punta a punta desde una
+# carpeta nueva (npm ci es exactamente el mismo paso que CI ya ejecuta
+# antes de 'npx ng test').
+#
+# No exporta CHROME_BIN a mano: se probo en una maquina Windows limpia
+# (sin Chrome instalado) que karma-chrome-launcher busca por defecto en
+# C:\Program Files\Google\Chrome\Application\chrome.exe y falla si no esta
+# -- eso rompia D.1/R1 tambien. frontend-angular/karma.conf.js (ver
+# angular.json -> test.options.karmaConfig) resuelve CHROME_BIN solo, en
+# este orden: 1) si ya esta seteado, lo respeta; 2) un Chrome/Edge/Chromium
+# ya instalado en la maquina (cubre la gran mayoria de casos reales); 3)
+# como ultimo recurso, el Chromium que instala 'puppeteer' (devDependency).
+# Ese ultimo paso ya NO se baja solo con 'npm install'/'npm ci' (ver
+# frontend-angular/.puppeteerrc.cjs): se confirmo un 403 real
+# descargandolo en una red con lista blanca de dominios, lo que hacia
+# fallar el 'npm ci' completo -- ver docs/despliegue/DEPLOYMENT.md,
+# seccion 10, para el detalle.
 test-frontend:
 	cd frontend-angular && ([ -d node_modules ] || npm ci)
 	cd frontend-angular && npx ng test --watch=false --browsers=ChromeHeadless
@@ -54,13 +70,12 @@ test-frontend:
 # manual de interpretacion.
 #
 # FIX (descubierto en la verificacion de 'make all' desde clone limpio en
-# Windows, rama feature/reproducibilidad-makefile-entorno): el shell que
-# usa make (Git Bash sh.exe) resuelve $(pwd) a un path MSYS-aliasado
-# (/tmp/... = %TEMP%) cuando PWD no viene en el entorno, y Docker Desktop
-# con MSYS_NO_PATHCONV=1 lo interpreta como C:\tmp\... -- un directorio
-# NUEVO y vacio que Docker crea en silencio. Resultado: k6 corre contra un
-# volumen vacio y no encuentra /scripts/libros-listado-test.js (log con
-# hallazgo completo en el commit). En Linux esto nunca se nota (pwd es el
+# Windows): el shell que usa make (Git Bash sh.exe) resuelve $(pwd) a un
+# path MSYS-aliasado (/tmp/... = %TEMP%) cuando PWD no viene en el
+# entorno, y Docker Desktop con MSYS_NO_PATHCONV=1 lo interpreta como
+# C:\tmp\... -- un directorio NUEVO y vacio que Docker crea en silencio.
+# Resultado: k6 corre contra un volumen vacio y no encuentra
+# /scripts/libros-listado-test.js. En Linux esto nunca se nota (pwd es el
 # path real). Se normaliza el path del host con cygpath -m cuando existe
 # (Git for Windows) y se cae a pwd en Linux/macOS -- comportamiento
 # identico al original en los sistemas donde ya funcionaba.
@@ -85,20 +100,19 @@ bench:
 	echo "Resumen (p50/p95) de esta corrida:"; \
 	python3 scripts/perf-analysis.py docs/mediciones/perf/k6-run$$next.json | grep -E '"escenario"|"n_peticiones"|"p50_ms"|"p95_ms"'
 
-# make audit: Bloque C.2 -- re-verificacion automatizada de los 4 controles
-# OWASP ya documentados manualmente en docs/mediciones/sec/ (A01, A03, A07,
-# A09) contra el stack Docker real, incluyendo el paso de verificacion de
-# correo que ahora exige el login (ver scripts/owasp-audit.sh). A02 y A05
-# quedan fuera (ver comentario en el propio script). Genera un .md nuevo en
+# make audit: Bloque C.2 -- re-verificacion automatizada de los controles
+# de seguridad contra el stack Docker real. Genera un .md nuevo en
 # docs/mediciones/sec/ sin tocar los archivos de evidencia originales.
 #
 # Orden deliberado: primero scripts/audit-sql-dynamic.sh (A.2.3, SQL
-# dinamico por concatenacion en db/procs/ -- el hallazgo mas grave, regla
-# transversal 7) y solo si ese pasa, scripts/owasp-audit.sh. Replica el
-# mismo gate que ya hace CI (ver .github/workflows/ci.yml) para que
-# 'make all' local no pueda dar verde saltandose el chequeo de SQL
-# dinamico. El orden de severidad tambien importa: si hay SQL inyectable no
-# tiene sentido gastar el tiempo de correr el resto de los controles.
+# dinamico por concatenacion en db/procs/ -- el hallazgo mas grave) y solo
+# si ese pasa, scripts/owasp-audit.sh (A01/A03/A07/A09; A02/A05 quedan
+# fuera, ver comentario en el propio script). Replica el mismo gate que ya
+# hace CI (ver .github/workflows/ci.yml) para que 'make all' local no
+# pueda dar verde saltandose el chequeo de SQL dinamico -- antes de este
+# target, 'make all' nunca corria ese script, solo CI lo hacia. El orden
+# de severidad tambien importa: si hay SQL inyectable no tiene sentido
+# gastar el tiempo de correr el resto de los controles.
 audit:
 	bash scripts/audit-sql-dynamic.sh
 	bash scripts/owasp-audit.sh
@@ -125,7 +139,8 @@ audit:
 #      pendiente del equipo de documentacion. NO compila el PDF: eso es de
 #      'make all'.
 # El target termina en exit code != 0 si cualquiera de los pasos 1-2
-# falla (ningun paso se envuelve en '|| true' -- regla transversal 3).
+# falla (ningun paso se envuelve en '|| true' -- un verde falso es peor
+# que un rojo honesto).
 docs:
 	bash scripts/capture-versions.sh
 	python3 scripts/perf-analysis.py docs/mediciones/perf/k6-run*.json
@@ -156,27 +171,46 @@ docs:
 	fi
 	@echo "make docs completado."
 
-# make all: pipeline reproducible de punta a punta (criterio R1 / D.1) --
-# levanta el stack en limpio (up), corre la suite de tests (test), la
-# prueba de carga real (bench), las dos auditorias (audit), regenera la
-# evidencia documental (docs) y compila el PDF final del informe LaTeX.
-# Ningun paso se declara '|| true': si cualquiera falla, make all falla
-# (regla transversal 3 -- un verde falso es peor que un rojo honesto).
-#
-# El informe LaTeX: busca informe-final.tex (nombre definitivo del cierre);
-# si no existe, usa informe-entrega-3.tex con un aviso de rename pendiente
-# (documentado en el commit de esta rama -- NO se renombra el archivo aqui).
-# Si no existe NINGUNO de los dos, falla con mensaje explicativo en vez de
-# un error critptico de latexmk/LaTeX.
-all: up test bench audit docs
-	@echo "Compilando PDF final..."
-	@if ! command -v latexmk >/dev/null 2>&1; then \
-		echo "ERROR: latexmk no esta instalado -- requisito de 'make all' (criterio D.1)." >&2; \
-		echo "       Instalarlo: Windows -> MiKTeX (winget install MiKTeX.MiKTeX);" >&2; \
-		echo "       Debian/Ubuntu -> apt install latexmk; macOS -> brew install latexmk." >&2; \
+# check-latexmk: verificacion temprana de que latexmk existe en este
+# entorno, antes de gastar tiempo en 'up'/'test'/'bench'/'audit'/'docs'
+# (que pueden tardar varios minutos) solo para fallar al final compilando
+# el PDF. Falla con un mensaje claro en vez del error generico "command
+# not found" que daria Make si se llamara a latexmk directamente sin este
+# chequeo. No instala nada -- instalar una distribucion TeX (MiKTeX, TeX
+# Live, etc.) es una decision del entorno de quien corre esto, fuera del
+# alcance de este Makefile.
+check-latexmk:
+	@command -v latexmk >/dev/null 2>&1 || { \
+		echo "ERROR: latexmk no esta instalado en este entorno."; \
+		echo "'make all' necesita compilar el informe final en PDF (requisito D.1)."; \
+		echo "Instalarlo: Windows -> MiKTeX (winget install MiKTeX.MiKTeX);"; \
+		echo "Debian/Ubuntu -> apt install latexmk; macOS -> brew install latexmk."; \
 		exit 1; \
-	fi; \
-	if [ -f docs/informe-final.tex ]; then \
+	}
+
+# make all: pipeline reproducible de punta a punta (criterio R1 / D.1) --
+# falla temprano si falta latexmk (check-latexmk), levanta el stack en
+# limpio (up), corre la suite de tests (test), la prueba de carga real
+# (bench), las auditorias (audit), regenera la evidencia documental
+# (docs) y compila el PDF final del informe LaTeX. Ningun paso se declara
+# '|| true': si cualquiera falla, make all falla (un verde falso es peor
+# que un rojo honesto). Si cualquiera de los prerequisitos falla, Make se
+# detiene ahi mismo (comportamiento estandar de dependencias de Make) y
+# 'all' nunca llega a intentar compilar el PDF.
+#
+# Compilacion con latexmk (no pdflatex+bibtex a mano en 3 pasadas): latexmk
+# resuelve solo cuantas pasadas hacen falta (incluyendo bibtex/biber), en
+# vez de asumir que 3 siempre alcanza. Probado real contra
+# docs/informe-final.tex antes de adoptarlo (mismo PDF de 92 paginas que
+# ya generaba el proceso manual).
+#
+# El informe LaTeX: busca informe-final.tex (nombre definitivo del
+# cierre); si no existe, usa informe-entrega-3.tex con un aviso de rename
+# pendiente. Si no existe NINGUNO de los dos, falla con mensaje
+# explicativo en vez de un error criptico de latexmk.
+all: check-latexmk up test bench audit docs
+	@echo "Compilando PDF final..."
+	@if [ -f docs/informe-final.tex ]; then \
 		TEXFILE=docs/informe-final.tex; \
 	elif [ -f docs/informe-entrega-3.tex ]; then \
 		echo "AVISO: no se encontro docs/informe-final.tex, usando docs/informe-entrega-3.tex" >&2; \
@@ -189,7 +223,7 @@ all: up test bench audit docs
 		exit 1; \
 	fi; \
 	cd docs && latexmk -pdf -interaction=nonstopmode -halt-on-error $$(basename $$TEXFILE)
-	@echo "make all completado con exito."
+	@echo "make all: completo -- stack levantado, tests y benchmark corridos, auditorias re-verificadas, evidencia documental regenerada, PDF final compilado."
 
 # make clean: baja los contenedores incluyendo volumenes (borra datos de
 # Postgres) y limpia artefactos de build locales (target/, dist/, cache

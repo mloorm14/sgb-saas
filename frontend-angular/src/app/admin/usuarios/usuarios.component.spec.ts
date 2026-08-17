@@ -1,0 +1,141 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { of, throwError } from 'rxjs';
+import { UsuariosComponent } from './usuarios.component';
+import { UsuarioAdminService } from '../../core/services/usuario-admin.service';
+import { AuthService } from '../../core/services/auth.service';
+
+describe('UsuariosComponent', () => {
+  let component: UsuariosComponent;
+  let fixture: ComponentFixture<UsuariosComponent>;
+  let usuarioAdminService: jasmine.SpyObj<UsuarioAdminService>;
+  let authService: jasmine.SpyObj<AuthService>;
+
+  const pagina = {
+    content: [
+      { id: 1, nombre: 'María', apellido: 'López', correo: 'm.lopez@uteq.edu.ec', roles: ['LECTOR'], estado: 'ACTIVO', multasPendientes: false },
+      { id: 2, nombre: 'Usuario', apellido: 'Demo', correo: 'u@uteq.edu.ec', roles: ['LECTOR'], estado: 'BLOQUEADO_POR_MULTA', multasPendientes: true },
+      { id: 3, nombre: 'Jorge', apellido: 'Cajas', correo: 'j.cajas@uteq.edu.ec', roles: ['BIBLIOTECARIO'], estado: 'INACTIVO', multasPendientes: false }
+    ],
+    totalPages: 1,
+    totalElements: 3
+  };
+
+  beforeEach(async () => {
+    usuarioAdminService = jasmine.createSpyObj('UsuarioAdminService', ['listar', 'cambiarRol', 'cambiarEstado']);
+    authService = jasmine.createSpyObj('AuthService', ['hasRole']);
+    usuarioAdminService.listar.and.returnValue(of(pagina as any));
+
+    await TestBed.configureTestingModule({
+      imports: [UsuariosComponent],
+      providers: [
+        { provide: UsuarioAdminService, useValue: usuarioAdminService },
+        { provide: AuthService, useValue: authService }
+      ]
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(UsuariosComponent);
+    component = fixture.componentInstance;
+  });
+
+  it('como ADMIN carga el listado y puede gestionar rol y estado', () => {
+    authService.hasRole.and.callFake((...roles: string[]) => roles.includes('ADMIN'));
+
+    fixture.detectChanges();
+
+    expect(component.puedeVer).toBeTrue();
+    expect(component.puedeGestionar).toBeTrue();
+    expect(usuarioAdminService.listar).toHaveBeenCalledWith('', 0, 10);
+    expect(component.usuarios.length).toBe(3);
+  });
+
+  it('como GERENTE carga el listado en modo solo lectura (sin gestionar)', () => {
+    authService.hasRole.and.callFake((...roles: string[]) => roles.includes('GERENTE'));
+
+    fixture.detectChanges();
+
+    expect(component.puedeVer).toBeTrue();
+    expect(component.puedeGestionar).toBeFalse();
+    expect(component.usuarios.length).toBe(3);
+  });
+
+  it('no consulta el backend sin permisos de visualización', () => {
+    authService.hasRole.and.returnValue(false);
+
+    fixture.detectChanges();
+
+    expect(component.puedeVer).toBeFalse();
+    expect(usuarioAdminService.listar).not.toHaveBeenCalled();
+  });
+
+  describe('cambio de estado con motivo obligatorio', () => {
+    beforeEach(() => {
+      authService.hasRole.and.callFake((...roles: string[]) => roles.includes('ADMIN'));
+      fixture.detectChanges();
+    });
+
+    it('confirma el bloqueo con motivo y recarga el listado', () => {
+      usuarioAdminService.cambiarEstado.and.returnValue(of(undefined));
+      const usuario = component.usuarios[0];
+
+      component.abrirModalEstado(usuario, 'INACTIVO');
+      component.motivoEstado = 'Incumplimiento de política';
+      component.confirmarCambioEstado();
+
+      expect(usuarioAdminService.cambiarEstado).toHaveBeenCalledWith(
+        1, 'INACTIVO', 'Incumplimiento de política'
+      );
+      expect(component.mostrarModalEstado).toBeFalse();
+      expect(usuarioAdminService.listar).toHaveBeenCalledTimes(2);
+    });
+
+    it('no envía la petición sin motivo', () => {
+      const usuario = component.usuarios[0];
+
+      component.abrirModalEstado(usuario, 'INACTIVO');
+      component.motivoEstado = '   ';
+      component.confirmarCambioEstado();
+
+      expect(usuarioAdminService.cambiarEstado).not.toHaveBeenCalled();
+    });
+
+    it('muestra el detail del backend si el cambio de estado falla', () => {
+      usuarioAdminService.cambiarEstado.and.returnValue(
+        throwError(() => ({ error: { detail: 'El estado no existe en el catálogo' } }))
+      );
+
+      component.abrirModalEstado(component.usuarios[0], 'ACTIVO');
+      component.motivoEstado = 'Reactivación solicitada';
+      component.confirmarCambioEstado();
+
+      expect(component.errorModal).toBe('El estado no existe en el catálogo');
+      expect(component.mostrarModalEstado).toBeTrue();
+    });
+  });
+
+  describe('cambio de rol', () => {
+    beforeEach(() => {
+      authService.hasRole.and.callFake((...roles: string[]) => roles.includes('ADMIN'));
+      fixture.detectChanges();
+    });
+
+    it('envía el nuevo rol y recarga para reflejar el estado real del backend', () => {
+      usuarioAdminService.cambiarRol.and.returnValue(of(undefined));
+
+      component.cambiarRol(component.usuarios[0], 'BIBLIOTECARIO');
+
+      expect(usuarioAdminService.cambiarRol).toHaveBeenCalledWith(1, 'BIBLIOTECARIO');
+      expect(usuarioAdminService.listar).toHaveBeenCalledTimes(2);
+    });
+
+    it('muestra error y recarga igual si el PATCH falla (el select ya cambió visualmente)', () => {
+      usuarioAdminService.cambiarRol.and.returnValue(
+        throwError(() => ({ error: { detail: 'Rol no encontrado' } }))
+      );
+
+      component.cambiarRol(component.usuarios[0], 'INEXISTENTE');
+
+      expect(component.errorMsg).toBe('Rol no encontrado');
+      expect(usuarioAdminService.listar).toHaveBeenCalledTimes(2);
+    });
+  });
+});

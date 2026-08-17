@@ -1,0 +1,112 @@
+' Generado desde commit c7c6d9e (real source code)
+' Diagramas de casos de uso: Auth + Libro CRUD
+' Actores basados en roles reales de Usuario (Rol.nombre): LECTOR, BIBLIOTECARIO, GERENTE, ADMIN
+' Permisos derivados de @PreAuthorize en AuthController.java y LibroController.java
+
+@startuml
+!define RECTANGLE class
+
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+    BackgroundColor White
+    BorderColor Black
+    ArrowColor Black
+}
+
+package "SGB-SaaS - Autenticación y Catálogo de Libros" {
+
+    actor "LECTOR" as lector
+    actor "BIBLIOTECARIO" as biblio
+    actor "GERENTE" as gerente
+    actor "ADMIN" as admin
+
+    package "Autenticación (AuthController)" {
+        usecase "Registrarse\nPOST /api/auth/registro" as UC_Registro
+        usecase "Verificar correo\nPOST /api/auth/verificar-correo" as UC_Verificar
+        usecase "Iniciar sesión\nPOST /api/auth/login" as UC_Login
+        usecase "Cerrar sesión\nPOST /api/auth/logout" as UC_Logout
+        usecase "Refrescar token\nPOST /api/auth/refresh" as UC_Refresh
+    }
+
+    package "Catálogo de Libros (LibroController)" {
+        usecase "Listar libros\nGET /api/v1/libros" as UC_Listar
+        usecase "Buscar libro por ID\nGET /api/v1/libros/{id}" as UC_Buscar
+        usecase "Autocompletar sugerencias\nGET /api/v1/libros/sugerencias" as UC_Sugerir
+        usecase "Crear libro\nPOST /api/v1/libros" as UC_Crear
+        usecase "Actualizar libro\nPUT /api/v1/libros/{id}" as UC_Actualizar
+        usecase "Eliminar libro (baja lógica)\nDELETE /api/v1/libros/{id}" as UC_Eliminar
+    }
+}
+
+' --- Autenticación: todos los roles pueden registrarse/verificar/login ---
+lector --> UC_Registro
+biblio --> UC_Registro
+gerente --> UC_Registro
+admin --> UC_Registro
+
+lector --> UC_Verificar
+biblio --> UC_Verificar
+gerente --> UC_Verificar
+admin --> UC_Verificar
+
+lector --> UC_Login
+biblio --> UC_Login
+gerente --> UC_Login
+admin --> UC_Login
+
+lector --> UC_Logout
+biblio --> UC_Logout
+gerente --> UC_Logout
+admin --> UC_Logout
+
+lector --> UC_Refresh
+biblio --> UC_Refresh
+gerente --> UC_Refresh
+admin --> UC_Refresh
+
+' --- Catálogo: listar/buscar - LECTOR, BIBLIOTECARIO, GERENTE, ADMIN ---
+lector --> UC_Listar
+biblio --> UC_Listar
+gerente --> UC_Listar
+admin --> UC_Listar
+
+lector --> UC_Buscar
+biblio --> UC_Buscar
+gerente --> UC_Buscar
+admin --> UC_Buscar
+
+' --- Autocompletar: cualquier autenticado (isAuthenticated) ---
+lector --> UC_Sugerir
+biblio --> UC_Sugerir
+gerente --> UC_Sugerir
+admin --> UC_Sugerir
+
+' --- Escritura (CRUD): solo BIBLIOTECARIO, GERENTE, ADMIN ---
+biblio --> UC_Crear
+gerente --> UC_Crear
+admin --> UC_Crear
+
+biblio --> UC_Actualizar
+gerente --> UC_Actualizar
+admin --> UC_Actualizar
+
+biblio --> UC_Eliminar
+gerente --> UC_Eliminar
+admin --> UC_Eliminar
+
+' Notas de trazabilidad
+note right of UC_Registro : Público (sin @PreAuthorize)\nAuthController:37
+note right of UC_Verificar : Público (sin @PreAuthorize)\nAuthController:47
+note right of UC_Login : Público\nAuthController:54
+note right of UC_Logout : Requiere Authorization header\nAuthController:63
+note right of UC_Refresh : Requiere cookie refreshToken\nAuthController:91
+
+note right of UC_Listar : @PreAuthorize hasAnyRole\nLECTOR,BIBLIOTECARIO,GERENTE,ADMIN\nLibroController:36
+note right of UC_Buscar : @PreAuthorize hasAnyRole\nLECTOR,BIBLIOTECARIO,GERENTE,ADMIN\nLibroController:63
+note right of UC_Sugerir : @PreAuthorize isAuthenticated()\nLibroController:55
+note right of UC_Crear : @PreAuthorize hasAnyRole\nBIBLIOTECARIO,GERENTE,ADMIN\nLibroController:70
+note right of UC_Actualizar : @PreAuthorize hasAnyRole\nBIBLIOTECARIO,GERENTE,ADMIN\nLibroController:79
+note right of UC_Eliminar : @PreAuthorize hasAnyRole\nBIBLIOTECARIO,GERENTE,ADMIN\nLibroController:88
+
+@enduml

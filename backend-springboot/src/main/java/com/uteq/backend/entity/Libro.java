@@ -37,6 +37,35 @@ public class Libro {
     @Column(name = "portada_url", length = 1000)
     private String portadaUrl;
 
+    // Portada como imagen binaria en BD (V13__portada_imagen.sql). LAZY a
+    // proposito: es un binario potencialmente pesado y el listado de
+    // /api/v1/libros pagina resultados -- este campo NUNCA debe viajar en
+    // el SELECT por defecto salvo que se pida explicito
+    // (LibroService.obtenerPortada, GET /api/v1/libros/{id}/portada).
+    // Nota: el lazy real de atributos basicos exige bytecode enhancement
+    // de Hibernate (fuera de alcance de esta rama); sin el, Hibernate
+    // carga el binario igual en el SELECT, pero el contrato de API se
+    // mantiene: LibroResponseDTO expone solo metadata (tienePortada/
+    // portadaNombre/portadaTipo), nunca el byte[].
+    // SIN @Lob a proposito: en PostgreSQL byte[] nativo ya mapea a bytea;
+    // @Lob lo fuerza a OID/large-object y el driver envia el parametro con
+    // un tipo incompatible ("column is of type bytea but expression is of
+    // type bigint"), verificado en LibroPortadaIntegrationTest real.
+    @Basic(fetch = FetchType.LAZY)
+    @Column(name = "portada_imagen", columnDefinition = "BYTEA")
+    private byte[] portadaImagen;
+
+    @Size(max = 255)
+    @Column(name = "portada_nombre", length = 255)
+    private String portadaNombre;
+
+    @Size(max = 100)
+    @Column(name = "portada_tipo", length = 100)
+    private String portadaTipo;
+
+    @Column(name = "portada_tamanio")
+    private Integer portadaTamanio;
+
     @Column(name = "anio_publicacion", nullable = false, columnDefinition = "SMALLINT")
     private Short anioPublicacion;
 

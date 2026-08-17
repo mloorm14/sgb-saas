@@ -1,0 +1,138 @@
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
+  <div class="mb-lg">
+    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Reportes gerenciales</h1>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">GET /api/v1/prestamos/reportes/* — BIBLIOTECARIO y GERENTE (el ADMIN no tiene acceso)</p>
+  </div>
+
+  @if (errorMsg) {
+    <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
+  }
+
+  @if (cargando && libros.length === 0 && morosos.length === 0) {
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando reportes…</p>
+  }
+
+  <!-- 1) Libros más prestados -->
+  <section class="mb-lg">
+    <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
+      <h2 class="font-headline-sm text-headline-sm text-on-surface">Libros más prestados</h2>
+    </div>
+    <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
+      <table class="w-full text-left">
+        <thead class="bg-surface-container-low">
+          <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+            <th class="px-md py-sm">#</th>
+            <th class="px-md py-sm">Título</th>
+            <th class="px-md py-sm">ISBN</th>
+            <th class="px-md py-sm text-right">Préstamos</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+          @for (libro of libros; track libro.libroId; let i = $index) {
+            <tr>
+              <td class="px-md py-sm text-on-surface-variant">{{ i + 1 }}</td>
+              <td class="px-md py-sm font-medium">{{ libro.titulo }}</td>
+              <td class="px-md py-sm text-on-surface-variant">{{ libro.isbn || '—' }}</td>
+              <td class="px-md py-sm text-right">
+                <span class="inline-flex items-center gap-xs font-label-sm text-label-sm text-primary">
+                  <span class="material-symbols-outlined text-[16px]">menu_book</span>
+                  {{ libro.totalPrestamos }}
+                </span>
+              </td>
+            </tr>
+          } @empty {
+            @if (!cargando) {
+              <tr>
+                <td colspan="4" class="px-md py-lg text-center text-on-surface-variant">Sin préstamos registrados</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 2) Morosidad -->
+  <section class="mb-lg">
+    <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
+      <h2 class="font-headline-sm text-headline-sm text-on-surface">Morosidad</h2>
+      <button (click)="descargarMorosidadPdf()" [disabled]="descargandoPdf"
+        class="h-9 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+        {{ descargandoPdf ? 'Generando…' : 'Generar PDF' }}
+      </button>
+    </div>
+    <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
+      <table class="w-full text-left">
+        <thead class="bg-surface-container-low">
+          <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+            <th class="px-md py-sm">Usuario</th>
+            <th class="px-md py-sm hidden md:table-cell">Correo</th>
+            <th class="px-md py-sm text-right">Deuda</th>
+            <th class="px-md py-sm text-right hidden sm:table-cell">Multas</th>
+            <th class="px-md py-sm text-right hidden lg:table-cell">Días atraso (prom.)</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+          @for (m of morosos; track m.usuarioId) {
+            <tr>
+              <td class="px-md py-sm font-medium">{{ m.nombre }} {{ m.apellido }}</td>
+              <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ m.correo }}</td>
+              <td class="px-md py-sm text-right font-medium text-error">$ {{ m.montoTotalAdeudado.toFixed(2) }}</td>
+              <td class="px-md py-sm text-right hidden sm:table-cell">{{ m.cantidadMultasPendientes }}</td>
+              <td class="px-md py-sm text-right hidden lg:table-cell text-on-surface-variant">{{ m.diasAtrasoPromedio }} días</td>
+            </tr>
+          } @empty {
+            @if (!cargando) {
+              <tr>
+                <td colspan="5" class="px-md py-lg text-center text-on-surface-variant">Sin morosidad registrada</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 3) Uso de la biblioteca -->
+  <section>
+    <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
+      <h2 class="font-headline-sm text-headline-sm text-on-surface">Uso de la biblioteca</h2>
+      <div class="flex gap-xs items-center">
+        <label class="font-label-sm text-label-sm text-on-surface-variant">Granularidad</label>
+        <select [(ngModel)]="granularidad" (ngModelChange)="cambiarGranularidad()"
+          class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white cursor-pointer">
+          <option value="dia">Día</option>
+          <option value="semana">Semana</option>
+          <option value="mes">Mes</option>
+        </select>
+      </div>
+    </div>
+    <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
+      <table class="w-full text-left">
+        <thead class="bg-surface-container-low">
+          <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+            <th class="px-md py-sm">Periodo</th>
+            <th class="px-md py-sm text-right">Préstamos</th>
+            <th class="px-md py-sm text-right">Devoluciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+          @for (r of uso; track $index) {
+            <tr>
+              <td class="px-md py-sm text-on-surface-variant">{{ formatoPeriodo(r.periodo) }}</td>
+              <td class="px-md py-sm text-right">{{ r.totalPrestamos }}</td>
+              <td class="px-md py-sm text-right">{{ r.totalDevoluciones }}</td>
+            </tr>
+          } @empty {
+            @if (!cargando) {
+              <tr>
+                <td colspan="3" class="px-md py-lg text-center text-on-surface-variant">Sin actividad para esta granularidad</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>

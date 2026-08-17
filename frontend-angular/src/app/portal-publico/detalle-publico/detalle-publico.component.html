@@ -1,0 +1,71 @@
+<!-- Nav pública (mockup 13): misma identidad que el portal, sin badge -->
+<nav class="sticky top-0 z-40 bg-surface/90 backdrop-blur border-b border-outline-variant">
+  <div class="max-w-container-max mx-auto px-md md:px-lg h-16 flex items-center justify-between">
+    <a routerLink="/" class="flex items-center gap-sm">
+      <div class="w-9 h-9 rounded bg-primary flex items-center justify-center text-on-primary">
+        <span class="material-symbols-outlined text-[20px]">menu_book</span>
+      </div>
+      <span class="font-headline-md text-headline-md text-primary">SGB</span>
+    </a>
+    <div class="flex items-center gap-sm">
+      <a routerLink="/login" class="hidden sm:inline font-label-md text-label-sm text-on-surface-variant hover:text-primary">Iniciar sesión</a>
+      <a routerLink="/registro" class="h-9 px-md rounded bg-primary text-on-primary font-label-md text-label-sm flex items-center hover:bg-on-primary-fixed-variant">Crear cuenta</a>
+    </div>
+  </div>
+</nav>
+
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
+  <a routerLink="/" class="inline-flex items-center gap-xs text-on-surface-variant hover:text-primary font-body-sm text-body-sm mb-md">
+    <span class="material-symbols-outlined text-[18px]">arrow_back</span> Volver al catálogo
+  </a>
+
+  @if (errorMsg) {
+    <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
+  }
+
+  @if (libro) {
+    <div class="flex flex-col md:flex-row gap-xl">
+      <div class="w-full md:w-64 shrink-0">
+        <div class="aspect-[3/4] rounded-lg overflow-hidden bg-surface-container-low border border-outline-variant">
+          @if (libro.tienePortada) {
+            <img [src]="portadaUrl(libro.id)" [alt]="'Portada de ' + libro.titulo" class="w-full h-full object-cover" />
+          } @else {
+            <div class="w-full h-full flex items-center justify-center">
+              <span class="material-symbols-outlined text-outline-variant text-[48px]">menu_book</span>
+            </div>
+          }
+        </div>
+      </div>
+      <div class="flex-1">
+        @if (categoriasTexto()) {
+          <p class="font-label-sm text-label-sm text-secondary uppercase tracking-widest mb-xs">{{ categoriasTexto() }}</p>
+        }
+        <h1 class="font-headline-lg text-headline-lg text-on-background mb-xs">{{ libro.titulo }}</h1>
+        @if (detalleAutor()) {
+          <p class="font-body-md text-body-md text-on-surface-variant mb-md">{{ detalleAutor() }}</p>
+        }
+        @if (libro.stockDisponible > 0) {
+          <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-[12px] mb-lg">
+            <span class="material-symbols-outlined text-[16px]">check_circle</span> Disponible en biblioteca
+          </span>
+        } @else {
+          <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full bg-error-container text-on-error-container font-label-sm text-[12px] mb-lg">
+            <span class="material-symbols-outlined text-[16px]">block</span> Sin stock
+          </span>
+        }
+        @if (libro.resumen) {
+          <p class="font-body-md text-body-md text-on-surface leading-relaxed mb-lg">{{ libro.resumen }}</p>
+        }
+
+        <!-- Bloqueo de acciones de cuenta (mockup 13) -->
+        <div class="rounded-lg border border-outline-variant p-md bg-surface-container-low flex items-center justify-between flex-wrap gap-sm">
+          <div class="flex items-center gap-sm text-on-surface-variant">
+            <span class="material-symbols-outlined text-[20px]">lock</span>
+            <p class="font-body-sm text-body-sm">Reservar, guardar en favoritos y usar el asistente requieren una cuenta.</p>
+          </div>
+          <a routerLink="/registro" class="h-9 px-md rounded bg-primary text-on-primary font-label-md text-[13px] flex items-center hover:bg-on-primary-fixed-variant">Crear cuenta</a>
+        </div>
+      </div>
+    </div>
+  }
+</main>

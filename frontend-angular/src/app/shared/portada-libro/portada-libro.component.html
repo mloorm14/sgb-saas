@@ -1,0 +1,9 @@
+<div class="relative w-full h-full flex items-center justify-center bg-surface-container-low overflow-hidden">
+  @if (cargando) {
+    <span class="material-symbols-outlined text-[32px] text-outline-variant animate-pulse">image</span>
+  } @else if (imagenUrl) {
+    <img [src]="imagenUrl" alt="Portada" class="w-full h-full object-cover" />
+  } @else {
+    <span class="material-symbols-outlined text-[48px] text-outline-variant">menu_book</span>
+  }
+</div>

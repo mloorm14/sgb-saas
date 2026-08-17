@@ -1,68 +1,178 @@
-<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f5f5">
-  <div style="background:white;padding:2rem;border-radius:8px;width:100%;max-width:400px;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
+<div class="min-h-screen flex items-center justify-center p-md md:p-lg bg-surface relative overflow-hidden">
 
-    <h2 style="text-align:center;margin-bottom:1.5rem;color:#005c2f">SGB-SaaS — Registro</h2>
-
-    <form [formGroup]="form" (ngSubmit)="submit()">
-
-      <div style="margin-bottom:1rem">
-        <label style="display:block;margin-bottom:4px;font-size:14px">Nombre completo</label>
-        <input
-          formControlName="nombre"
-          type="text"
-          placeholder="Tu nombre"
-          style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:14px;box-sizing:border-box"
-        />
-        <small style="color:red" *ngIf="form.get('nombre')?.invalid && form.get('nombre')?.touched">
-          El nombre debe tener al menos 3 caracteres
-        </small>
-      </div>
-
-      <div style="margin-bottom:1rem">
-        <label style="display:block;margin-bottom:4px;font-size:14px">Correo electrónico</label>
-        <input
-          formControlName="correo"
-          type="email"
-          placeholder="ejemplo@uteq.edu.ec"
-          style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:14px;box-sizing:border-box"
-        />
-        <small style="color:red" *ngIf="form.get('correo')?.invalid && form.get('correo')?.touched">
-          Ingrese un correo válido
-        </small>
-      </div>
-
-      <div style="margin-bottom:1rem">
-        <label style="display:block;margin-bottom:4px;font-size:14px">Contraseña</label>
-        <input
-          formControlName="password"
-          type="password"
-          placeholder="Mínimo 6 caracteres"
-          style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:14px;box-sizing:border-box"
-        />
-        <small style="color:red" *ngIf="form.get('password')?.invalid && form.get('password')?.touched">
-          La contraseña debe tener al menos 6 caracteres
-        </small>
-      </div>
-
-      <div *ngIf="errorMsg" style="color:red;font-size:13px;margin-bottom:1rem">
-        {{ errorMsg }}
-      </div>
-
-      <div *ngIf="exitoMsg" style="color:green;font-size:13px;margin-bottom:1rem">
-        {{ exitoMsg }}
-      </div>
-
-      <button
-        type="submit"
-        [disabled]="form.invalid || cargando"
-        style="width:100%;padding:10px;background:#005c2f;color:white;border:none;border-radius:4px;font-size:15px;cursor:pointer">
-        {{ cargando ? 'Registrando...' : 'Registrarse' }}
-      </button>
-
-      <p style="text-align:center;margin-top:1rem;font-size:13px">
-        ¿Ya tienes cuenta? <a routerLink="/login" style="color:#005c2f">Inicia sesión aquí</a>
-      </p>
-
-    </form>
+  <!-- Fondo -->
+  <div class="fixed inset-0 -z-10 bg-cover bg-center" style="background-image: url('/assets/login/library-hero.jpg')">
+    <div class="absolute inset-0" style="background: linear-gradient(to right, rgba(248,249,255,0.95), rgba(248,249,255,0.6));"></div>
   </div>
+
+  <main class="w-full max-w-2xl mx-auto flex flex-col md:flex-row gap-xl">
+
+    <!-- Columna izquierda: branding -->
+    <div class="hidden md:flex flex-col justify-center w-1/3 text-on-background">
+      <div class="flex items-center gap-sm mb-md">
+        <div class="w-12 h-12 rounded bg-primary flex items-center justify-center text-on-primary">
+          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+        </div>
+        <div>
+          <h1 class="font-headline-lg text-headline-lg text-primary">SGB</h1>
+          <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Sistema de Gestión Bibliotecaria</p>
+        </div>
+      </div>
+      <p class="font-body-md text-body-md text-on-surface-variant">
+        Accede a miles de recursos académicos y gestiona tu historial de lectura en un entorno seguro y profesional.
+      </p>
+    </div>
+
+    <!-- Columna derecha: tarjeta -->
+    <div class="w-full md:w-2/3 rounded-xl shadow-lg p-xl relative overflow-hidden"
+         style="background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3);">
+      <div class="absolute top-0 left-0 w-full h-2 bg-primary"></div>
+
+      <div class="md:hidden flex items-center gap-sm mb-lg">
+        <div class="w-10 h-10 rounded bg-primary flex items-center justify-center text-on-primary">
+          <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+        </div>
+        <h1 class="font-headline-md text-headline-md text-primary">SGB</h1>
+      </div>
+
+      <!-- ===== PASO 1: REGISTRO ===== -->
+      @if (paso === 'registro') {
+        <div class="mb-lg">
+          <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Crear cuenta</h2>
+          <p class="font-body-sm text-body-sm text-on-surface-variant">Regístrate para acceder al catálogo y gestionar tus préstamos</p>
+        </div>
+
+        <form [formGroup]="formRegistro" (ngSubmit)="submitRegistro()" class="space-y-md">
+          <div class="flex flex-col md:flex-row gap-md">
+            <div class="flex-1 space-y-xs">
+              <label class="font-label-sm text-label-sm text-on-surface" for="nombre">Nombre</label>
+              <div class="rounded border border-outline-variant bg-surface">
+                <input formControlName="nombre" id="nombre" type="text" placeholder="Ej: Marlon"
+                  class="w-full bg-transparent border-none focus:ring-0 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+              </div>
+              @if (formRegistro.get('nombre')?.invalid && formRegistro.get('nombre')?.touched) {
+                <p class="font-label-sm text-[11px] text-error">Ingresa tu nombre</p>
+              }
+            </div>
+            <div class="flex-1 space-y-xs">
+              <label class="font-label-sm text-label-sm text-on-surface" for="apellido">Apellido</label>
+              <div class="rounded border border-outline-variant bg-surface">
+                <input formControlName="apellido" id="apellido" type="text" placeholder="Ej: Loor"
+                  class="w-full bg-transparent border-none focus:ring-0 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+              </div>
+              @if (formRegistro.get('apellido')?.invalid && formRegistro.get('apellido')?.touched) {
+                <p class="font-label-sm text-[11px] text-error">Ingresa tu apellido</p>
+              }
+            </div>
+          </div>
+
+          <div class="space-y-xs">
+            <label class="font-label-sm text-label-sm text-on-surface" for="correo">Correo electrónico</label>
+            <div class="rounded border border-outline-variant bg-surface flex items-center px-sm">
+              <span class="material-symbols-outlined text-outline text-[20px] mr-xs">mail</span>
+              <input formControlName="correo" id="correo" type="email" placeholder="ejemplo@correo.com"
+                class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+            </div>
+            @if (formRegistro.get('correo')?.invalid && formRegistro.get('correo')?.touched) {
+              <p class="font-label-sm text-[11px] text-error">Ingresa un correo válido</p>
+            }
+          </div>
+
+          <div class="space-y-xs">
+            <label class="font-label-sm text-label-sm text-on-surface" for="pass">Contraseña</label>
+            <div class="rounded border border-outline-variant bg-surface flex items-center px-sm">
+              <span class="material-symbols-outlined text-outline text-[20px] mr-xs">lock</span>
+              <input formControlName="password" id="pass" [type]="mostrarPassword ? 'text' : 'password'" placeholder="Mínimo 8 caracteres"
+                class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+              <button type="button" (click)="togglePassword()" class="focus:outline-none ml-xs flex items-center">
+                <span class="material-symbols-outlined text-outline hover:text-on-surface transition-colors text-[20px]">{{ mostrarPassword ? 'visibility_off' : 'visibility' }}</span>
+              </button>
+            </div>
+            <div class="mt-xs">
+              <div class="w-full h-1 bg-surface-variant rounded overflow-hidden">
+                <div class="h-full transition-all duration-300" [style.width.%]="fuerzaPassword.porcentaje" [style.background-color]="fuerzaPassword.color"></div>
+              </div>
+              <p class="font-label-sm text-[11px] mt-xs" [style.color]="fuerzaPassword.color">{{ fuerzaPassword.etiqueta }}</p>
+            </div>
+          </div>
+
+          <div class="space-y-xs">
+            <label class="font-label-sm text-label-sm text-on-surface" for="pass2">Confirmar contraseña</label>
+            <div class="rounded border border-outline-variant bg-surface flex items-center px-sm">
+              <span class="material-symbols-outlined text-outline text-[20px] mr-xs">lock</span>
+              <input formControlName="confirmarPassword" id="pass2" [type]="mostrarPassword2 ? 'text' : 'password'" placeholder="Repite tu contraseña"
+                class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+              <button type="button" (click)="togglePassword2()" class="focus:outline-none ml-xs flex items-center">
+                <span class="material-symbols-outlined text-outline hover:text-on-surface transition-colors text-[20px]">{{ mostrarPassword2 ? 'visibility_off' : 'visibility' }}</span>
+              </button>
+            </div>
+            @if (formRegistro.hasError('passwordsDistintas') && formRegistro.get('confirmarPassword')?.touched) {
+              <p class="font-label-sm text-[11px] text-error">Las contraseñas no coinciden</p>
+            }
+          </div>
+
+          <div class="flex items-start gap-sm p-sm bg-surface-container-low rounded border border-surface-variant">
+            <input formControlName="compliance" id="lopdp" type="checkbox" class="mt-xs rounded text-primary focus:ring-primary border-outline-variant w-4 h-4 cursor-pointer" />
+            <p class="font-body-sm text-[12px] leading-tight text-on-surface-variant">
+              Acepto la Política de Privacidad y el tratamiento de mis datos personales conforme a la <strong>LOPDP Ecuador</strong>. <span class="text-error font-medium">(Obligatorio)</span>
+            </p>
+          </div>
+
+          @if (errorMsg) {
+            <div class="text-error text-body-sm">{{ errorMsg }}</div>
+          }
+
+          <button type="submit" [disabled]="formRegistro.invalid || cargando"
+            class="w-full h-11 bg-primary text-on-primary font-label-md text-label-md rounded flex items-center justify-center gap-sm hover:bg-on-primary-fixed-variant transition-colors mt-md disabled:opacity-50 disabled:cursor-not-allowed">
+            {{ cargando ? 'Creando cuenta...' : 'Crear cuenta' }}
+            <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+          </button>
+
+          <p class="text-center font-body-sm text-body-sm text-on-surface-variant mt-sm">
+            ¿Ya tienes cuenta? <a routerLink="/login" class="text-primary font-medium hover:underline">Iniciar sesión</a>
+          </p>
+        </form>
+      }
+
+      <!-- ===== PASO 2: VERIFICAR CORREO ===== -->
+      @if (paso === 'verificar') {
+        <div class="mb-lg">
+          <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Verifica tu correo</h2>
+          <p class="font-body-sm text-body-sm text-on-surface-variant">
+            Enviamos un código de 6 dígitos a <strong>{{ correoRegistrado }}</strong>. Ingresalo para activar tu cuenta.
+          </p>
+        </div>
+
+        <form [formGroup]="formVerificar" (ngSubmit)="submitVerificar()" class="space-y-md">
+          <div class="space-y-xs">
+            <label class="font-label-sm text-label-sm text-on-surface" for="codigo">Código de verificación</label>
+            <div class="rounded border border-outline-variant bg-surface flex items-center px-sm">
+              <span class="material-symbols-outlined text-outline text-[20px] mr-xs">pin</span>
+              <input formControlName="codigo" id="codigo" type="text" inputmode="numeric" maxlength="6" placeholder="000000"
+                class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-md text-body-md text-on-surface placeholder-outline tracking-[0.3em] text-center" />
+            </div>
+            @if (formVerificar.get('codigo')?.invalid && formVerificar.get('codigo')?.touched) {
+              <p class="font-label-sm text-[11px] text-error">Debe ser un código de 6 dígitos</p>
+            }
+          </div>
+
+          @if (errorMsgVerificar) {
+            <div class="text-error text-body-sm">{{ errorMsgVerificar }}</div>
+          }
+
+          <button type="submit" [disabled]="formVerificar.invalid || cargando"
+            class="w-full h-11 bg-primary text-on-primary font-label-md text-label-md rounded flex items-center justify-center gap-sm hover:bg-on-primary-fixed-variant transition-colors mt-md disabled:opacity-50 disabled:cursor-not-allowed">
+            {{ cargando ? 'Verificando...' : 'Verificar cuenta' }}
+          </button>
+
+          <p class="text-center font-body-sm text-body-sm text-on-surface-variant mt-sm">
+            <button type="button" (click)="volverARegistro()" class="text-primary font-medium hover:underline">
+              ¿Correo equivocado? Volver a registrarte
+            </button>
+          </p>
+        </form>
+      }
+
+    </div>
+  </main>
 </div>

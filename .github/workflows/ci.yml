@@ -88,7 +88,7 @@ jobs:
 
       # Misma fuente de verdad que desarrollo local (docker-compose.yml
       # monta esto mismo en docker-entrypoint-initdb.d/): se genera el
-      # consolidado (schema + los 7 procedimientos/funciones + seed) con el
+      # consolidado (schema + los 9 procedimientos/funciones + seed) con el
       # mismo script que usa `make up`, y se aplica contra el servicio de
       # Postgres de CI con psql -- no se reescribe ni se duplica el DDL acá.
       - name: Inicializar esquema y procedimientos en Postgres (CI)
@@ -97,6 +97,15 @@ jobs:
         run: |
           ./scripts/build-init-sql.sh
           psql -h localhost -p 5432 -U sgb_user -d sgb_db -v ON_ERROR_STOP=1 -f db/init/01-consolidado.sql
+
+      # A.2.3: rechaza el commit si algún archivo de db/procs/ construye SQL
+      # dinámico (EXECUTE IMMEDIATE, sp_executesql, o una sentencia EXECUTE
+      # a secas -- ver scripts/audit-sql-dynamic.sh para el detalle de las
+      # reglas). Corre acá, antes del build de Maven, porque es una
+      # verificación rápida sobre archivos fuente .sql que no depende de
+      # compilar nada -- si va a fallar, que falle temprano.
+      - name: Auditar SQL dinámico en procedimientos
+        run: ./scripts/audit-sql-dynamic.sh
 
       # Host/puerto/usuario/password ya coinciden con los defaults de
       # application.yml (DB_URL localhost:5432/sgb_db, DB_USER sgb_user,
@@ -109,21 +118,31 @@ jobs:
         working-directory: ./backend-springboot
         run: ./mvnw -B clean verify
 
-      # A.2.3: auditoria estatica de SQL dinamico sobre db/procs/ (los 9
-      # procedimientos/funciones del modulo de prestamos). Falla el job si
-      # un proc construye SQL por concatenacion -- EXECUTE IMMEDIATE,
-      # sp_executesql, o || / format() alimentando un EXECUTE dentro de
-      # PL/pgSQL. Ver scripts/audit-sql-dynamic.sh para el detalle de los
-      # 3 checks y de sus limites.
+      # A.2.3 / criterio P3: `./mvnw verify` ya corrio spotbugs-maven-plugin
+      # (con find-sec-bugs) como parte del step de arriba -- si aparecio un
+      # hallazgo en las reglas de SQL dinamico (spotbugs-security-include.xml,
+      # threshold=Low), el step anterior ya fallo el pipeline antes de
+      # llegar aca. Este step no vuelve a correr el analisis: solo archiva
+      # el XML/HTML ya generado en target/ como artifact de la corrida,
+      # para que quede accesible desde GitHub Actions sin tener que
+      # reproducir la build localmente.
       #
-      # El lado Java queda cubierto por el step anterior, no por este:
-      # spotbugs:check (con find-sec-bugs y el includeFilter de reglas SQL)
-      # esta enlazado a la fase verify del backend en pom.xml, asi que el
-      # ./mvnw -B clean verify de "Build and run tests" ya lo ejecuta y
-      # falla el build ante un hallazgo -- duplicarlo aqui no agrega
-      # cobertura, solo tiempo de CI.
-      - name: Auditar SQL dinamico en db/procs (A.2.3)
-        run: bash scripts/audit-sql-dynamic.sh
+      # Nota de fusion: la rama que agrego el analisis estatico de SQL en
+      # paralelo (feature/seguridad-analisis-estatico-sql) traia acá mismo
+      # un segundo step que volvia a correr scripts/audit-sql-dynamic.sh --
+      # redundante con el step "Auditar SQL dinámico en procedimientos" que
+      # ya corre antes del build (mismo script, misma cobertura, ver ese
+      # step mas arriba): correrlo dos veces no agrega cobertura, solo
+      # tiempo de CI, asi que no se duplico.
+      - name: Archivar reporte de SpotBugs + find-sec-bugs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spotbugs-findsecbugs-report
+          path: |
+            backend-springboot/target/spotbugs.xml
+            backend-springboot/target/spotbugs.html
+          if-no-files-found: error
 
       # A.3.3: rechaza el commit si la matriz de trazabilidad tiene un
       # requisito Must sin historia_usuario/caso_de_uso, o un requisito
@@ -165,9 +184,14 @@ jobs:
 
       # --browsers=ChromeHeadless: 'ng test' por defecto abre Karma con un
       # navegador interactivo, lo que cuelga cualquier runner de CI sin
-      # display. No hace falta un karma.conf.js propio (el proyecto usa el
-      # builder por defecto @angular-devkit/build-angular:karma, ver
-      # angular.json): el flag alcanza como override desde la CLI.
+      # display. El binario real que arranca ChromeHeadless es el Chromium
+      # que trae 'puppeteer' (devDependency, ya descargado por 'npm ci' de
+      # arriba) -- frontend-angular/karma.conf.js fija CHROME_BIN a esa
+      # ruta antes de que karma-chrome-launcher resuelva el navegador (ver
+      # angular.json -> test.options.karmaConfig). Antes de esto se
+      # dependía del Chrome que trae preinstalado ubuntu-latest, lo cual
+      # funcionaba acá pero no en una máquina limpia sin Chrome (rompía
+      # D.1/R1) -- ahora CI y una máquina local se comportan igual.
       - name: Tests (modo headless)
         working-directory: ./frontend-angular
         run: npx ng test --watch=false --browsers=ChromeHeadless

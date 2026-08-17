@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -25,6 +26,7 @@ import java.time.Instant;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -190,5 +192,32 @@ class JwtAuthFilterTest {
 
         verify(filterChain).doFilter(request, response);
         assertNull(SecurityContextHolder.getContext().getAuthentication());
+    }
+
+    // Fail-closed ante caida de Redis (decision OWASP A07 documentada en
+    // docs/mediciones/sec/owasp/decision-fail-closed-jwt-redis.md): si la
+    // consulta a la blacklist falla, no se trata el token como vigente --
+    // se rechaza la request con 401 sin continuar la cadena. Con el
+    // comportamiento anterior (fail-open) este mismo escenario dejaba
+    // pasar tokens revocados durante el corte.
+    @Test
+    void headerConTokenValidoYRedisCaido_rechazaCon401SinContinuarCadena() throws Exception {
+        Usuario usuario = usuarioDePrueba();
+        String token = jwtService.generateToken(usuario);
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer " + token);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        FilterChain filterChain = mock(FilterChain.class);
+
+        when(redisTemplate.hasKey(anyString()))
+                .thenThrow(new DataAccessResourceFailureException("Redis caido"));
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        verify(filterChain, never()).doFilter(request, response);
+        assertEquals(401, response.getStatus());
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        verify(userDetailsServiceImpl, never()).loadUserByUsername(any());
     }
 }

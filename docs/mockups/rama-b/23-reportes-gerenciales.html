@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SGB · Reportes</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          "secondary-container": "#76f4e0","surface": "#f8f9ff","surface-container-highest": "#d5e3fc",
+          "on-error": "#ffffff","error-container": "#ffdad6","surface-container": "#e6eeff",
+          "on-secondary-fixed": "#00201c","on-secondary-container": "#006f63","surface-bright": "#f8f9ff",
+          "tertiary": "#503a00","surface-variant": "#d5e3fc","outline-variant": "#c4c6d5",
+          "inverse-primary": "#b4c5ff","primary-container": "#1e4db7","on-tertiary-fixed-variant": "#5b4300",
+          "on-primary-fixed-variant": "#003ea8","inverse-on-surface": "#eaf1ff","surface-dim": "#ccdbf3",
+          "error": "#ba1a1a","on-tertiary-fixed": "#261a00","primary-fixed-dim": "#b4c5ff",
+          "on-tertiary": "#ffffff","on-surface-variant": "#434653","secondary-fixed": "#79f7e3",
+          "background": "#f8f9ff","on-background": "#0d1c2e","tertiary-fixed": "#ffdf9e",
+          "on-surface": "#0d1c2e","primary-fixed": "#dbe1ff","surface-container-lowest": "#ffffff",
+          "on-tertiary-container": "#fec004","surface-container-high": "#dce9ff","surface-container-low": "#eff4ff",
+          "tertiary-container": "#6c5000","surface-tint": "#2c57c1","primary": "#003694",
+          "on-secondary": "#ffffff","on-primary-fixed": "#00174b","outline": "#747684",
+          "on-secondary-fixed-variant": "#005047","secondary": "#006b5f","tertiary-fixed-dim": "#fabd00",
+          "secondary-fixed-dim": "#59dbc7","on-primary-container": "#b8c8ff","on-error-container": "#93000a",
+          "on-primary": "#ffffff","inverse-surface": "#233144",
+          "success": "#1d9e75","warning": "#fec004"
+        },
+        borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" },
+        spacing: { gutter: "24px", xl: "40px", lg: "24px", md: "16px", "container-max": "1280px", sm: "8px", xs: "4px", "margin-mobile": "16px", base: "4px" },
+        fontFamily: {
+          "headline-lg": ["Plus Jakarta Sans"], "body-md": ["Inter"], "label-md": ["Inter"],
+          "headline-lg-mobile": ["Plus Jakarta Sans"], "headline-xl": ["Plus Jakarta Sans"],
+          "label-sm": ["Inter"], "body-lg": ["Inter"], "body-sm": ["Inter"], "headline-md": ["Plus Jakarta Sans"]
+        },
+        fontSize: {
+          "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+          "label-md": ["14px", { lineHeight: "20px", letterSpacing: "0.05em", fontWeight: "600" }],
+          "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+          "headline-xl": ["40px", { lineHeight: "48px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "label-sm": ["12px", { lineHeight: "16px", fontWeight: "500" }],
+          "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+          "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+          "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Inter', sans-serif; background:#f8f9ff; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align:middle; }
+  .glass-panel { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
+  .bar { background: linear-gradient(180deg, #2c57c1, #003694); border-radius: 4px 4px 0 0; }
+</style>
+</head>
+<body>
+<nav class="sticky top-0 z-40 bg-surface/90 backdrop-blur border-b border-outline-variant">
+  <div class="max-w-container-max mx-auto px-md md:px-lg h-16 flex items-center justify-between">
+    <div class="flex items-center gap-sm">
+      <div class="w-9 h-9 rounded bg-primary flex items-center justify-center text-on-primary">
+        <span class="material-symbols-outlined text-[20px]" style="font-variation-settings:'FILL' 1;">menu_book</span>
+      </div>
+      <span class="font-headline-md text-headline-md text-primary hidden sm:inline">SGB · Staff</span>
+    </div>
+    <div class="hidden lg:flex items-center gap-lg font-label-sm text-label-sm text-on-surface-variant">
+      <a href="19-inventario-libros.html" class="hover:text-primary">Inventario</a>
+      <a href="#" class="hover:text-primary">Préstamos</a>
+      <a href="#" class="hover:text-primary">Reservaciones</a>
+      <a href="#" class="hover:text-primary">Multas</a>
+      <a href="23-reportes-gerenciales.html" class="hover:text-primary text-primary font-semibold">Reportes</a>
+      <a href="22-revision-sugerencias.html" class="hover:text-primary">Sugerencias</a>
+      <a href="20-gestion-usuarios.html" class="hover:text-primary">Usuarios</a>
+      <a href="21-auditoria.html" class="hover:text-primary">Auditoría</a>
+    </div>
+    <div class="flex items-center gap-sm">
+      <div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center font-label-sm text-label-sm text-on-primary-fixed-variant">GE</div>
+      <button class="h-9 px-sm rounded flex items-center gap-xs text-error font-label-sm text-label-sm hover:bg-error-container/40">
+        <span class="material-symbols-outlined text-[18px]">logout</span><span class="hidden sm:inline">Salir</span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
+  <div class="mb-lg">
+    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Reportes</h1>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">BIBLIOTECARIO y GERENTE — ADMIN no tiene acceso a este módulo (no forma parte de su @PreAuthorize)</p>
+  </div>
+
+  <!-- Sección 1: libros más prestados (SIN pdf, el backend no lo expone) -->
+  <section class="rounded-lg border border-outline-variant bg-white glass-panel p-md mb-lg">
+    <div class="flex items-center justify-between mb-md flex-wrap gap-sm">
+      <div>
+        <h2 class="font-headline-md text-headline-md text-on-background">Libros más prestados</h2>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">GET /prestamos/reportes/libros-mas-prestados?limite=&desde=&hasta=</p>
+      </div>
+      <div class="flex items-center gap-xs">
+        <input type="date" class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+        <span class="text-on-surface-variant font-body-sm text-body-sm">—</span>
+        <input type="date" class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+        <span class="h-9 px-sm rounded border border-outline-variant font-label-sm text-label-sm text-on-surface-variant flex items-center opacity-60" title="El backend no expone PDF para este reporte">
+          <span class="material-symbols-outlined text-[16px] mr-xs">block</span>Sin PDF
+        </span>
+      </div>
+    </div>
+    <div class="flex items-end gap-md h-40 px-sm">
+      <div class="flex-1 flex flex-col items-center gap-xs">
+        <span class="font-label-sm text-label-sm text-on-surface-variant">42</span>
+        <div class="bar w-full" style="height:100%"></div>
+        <span class="font-label-sm text-[11px] text-on-surface-variant text-center">Clean Code</span>
+      </div>
+      <div class="flex-1 flex flex-col items-center gap-xs">
+        <span class="font-label-sm text-label-sm text-on-surface-variant">31</span>
+        <div class="bar w-full" style="height:74%"></div>
+        <span class="font-label-sm text-[11px] text-on-surface-variant text-center">Sapiens</span>
+      </div>
+      <div class="flex-1 flex flex-col items-center gap-xs">
+        <span class="font-label-sm text-label-sm text-on-surface-variant">18</span>
+        <div class="bar w-full" style="height:43%"></div>
+        <span class="font-label-sm text-[11px] text-on-surface-variant text-center">Cien años de soledad</span>
+      </div>
+      <div class="flex-1 flex flex-col items-center gap-xs">
+        <span class="font-label-sm text-label-sm text-on-surface-variant">12</span>
+        <div class="bar w-full" style="height:29%"></div>
+        <span class="font-label-sm text-[11px] text-on-surface-variant text-center">Refactoring</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sección 2: morosidad — ÚNICO con PDF real -->
+  <section class="rounded-lg border border-outline-variant bg-white glass-panel p-md mb-lg">
+    <div class="flex items-center justify-between mb-md flex-wrap gap-sm">
+      <div>
+        <h2 class="font-headline-md text-headline-md text-on-background">Índice de morosidad</h2>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">GET /prestamos/reportes/morosidad?limite=</p>
+      </div>
+      <button class="h-9 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center gap-xs">
+        <span class="material-symbols-outlined text-[18px]">picture_as_pdf</span> Exportar PDF
+      </button>
+    </div>
+    <table class="w-full text-left">
+      <thead class="bg-surface-container-low">
+        <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+          <th class="px-sm py-xs">Usuario</th>
+          <th class="px-sm py-xs hidden sm:table-cell">Correo</th>
+          <th class="px-sm py-xs">Monto adeudado</th>
+          <th class="px-sm py-xs hidden md:table-cell">Multas pendientes</th>
+          <th class="px-sm py-xs hidden md:table-cell">Días atraso prom.</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+        <tr>
+          <td class="px-sm py-xs font-medium">Usuario Demo</td>
+          <td class="px-sm py-xs hidden sm:table-cell text-on-surface-variant">u@uteq.edu.ec</td>
+          <td class="px-sm py-xs text-error font-semibold">$12.50</td>
+          <td class="px-sm py-xs hidden md:table-cell text-on-surface-variant">2</td>
+          <td class="px-sm py-xs hidden md:table-cell text-on-surface-variant">6.5</td>
+        </tr>
+        <tr>
+          <td class="px-sm py-xs font-medium">Jorge Cajas</td>
+          <td class="px-sm py-xs hidden sm:table-cell text-on-surface-variant">j.cajas@uteq.edu.ec</td>
+          <td class="px-sm py-xs text-error font-semibold">$4.00</td>
+          <td class="px-sm py-xs hidden md:table-cell text-on-surface-variant">1</td>
+          <td class="px-sm py-xs hidden md:table-cell text-on-surface-variant">2.0</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Sección 3: uso por período — SIN pdf -->
+  <section class="rounded-lg border border-outline-variant bg-white glass-panel p-md">
+    <div class="flex items-center justify-between mb-md flex-wrap gap-sm">
+      <div>
+        <h2 class="font-headline-md text-headline-md text-on-background">Uso por período</h2>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">GET /prestamos/reportes/uso?granularidad=&desde=&hasta=</p>
+      </div>
+      <select class="h-9 px-sm rounded border border-outline-variant font-label-sm text-label-sm bg-white">
+        <option>Día</option>
+        <option selected>Semana</option>
+        <option>Mes</option>
+      </select>
+    </div>
+    <div class="flex items-end gap-sm h-32 px-sm">
+      <div class="flex-1 flex flex-col items-center gap-xs"><div class="bar w-full" style="height:60%"></div><span class="font-label-sm text-[10px] text-on-surface-variant">S1</span></div>
+      <div class="flex-1 flex flex-col items-center gap-xs"><div class="bar w-full" style="height:80%"></div><span class="font-label-sm text-[10px] text-on-surface-variant">S2</span></div>
+      <div class="flex-1 flex flex-col items-center gap-xs"><div class="bar w-full" style="height:45%"></div><span class="font-label-sm text-[10px] text-on-surface-variant">S3</span></div>
+      <div class="flex-1 flex flex-col items-center gap-xs"><div class="bar w-full" style="height:95%"></div><span class="font-label-sm text-[10px] text-on-surface-variant">S4</span></div>
+    </div>
+    <div class="flex items-center gap-md mt-sm font-label-sm text-label-sm text-on-surface-variant">
+      <span class="flex items-center gap-xs"><span class="w-3 h-3 rounded-full" style="background:#003694"></span> Préstamos</span>
+    </div>
+  </section>
+</main>
+</body>
+</html>

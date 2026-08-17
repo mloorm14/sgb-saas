@@ -1,0 +1,281 @@
+' Generado desde commit c7c6d9e (real source code)
+' Diagrama de clases: Auth + Libro (controladores, servicios, entidades)
+' Reglas: omitir métodos Lombok/IDE (getters, setters, equals, hashCode, constructors, builder)
+' Mostrar solo métodos de lógica de negocio reales y relaciones reales del código
+
+@startuml
+!define RECTANGLE class
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "com.uteq.backend.entity" {
+    class Usuario {
+        +Long id
+        +String nombre
+        +String apellido
+        +String correo
+        +String passwordHash
+        +String identificacionUsuario
+        +UUID credencialQrToken
+        +EstadoUsuario estado
+        +boolean correoVerificado
+        +Instant fechaRegistro
+        +Instant actualizadoEn
+        +Set<Rol> roles
+        --
+        {static} ROL_POR_DEFECTO = "LECTOR"
+    }
+
+    class Libro {
+        +Long id
+        +String isbn
+        +String titulo
+        +String resumen
+        +String portadaUrl
+        +Short anioPublicacion
+        +Editorial editorial
+        +Idioma idioma
+        +EstadoLibro estado
+        +Short stockTotal
+        +Short stockDisponible
+        +String ubicacionFisica
+        +OffsetDateTime fechaRegistro
+        +OffsetDateTime actualizadoEn
+        +Set<Categoria> categorias
+        +Set<Autor> autores
+        --
+        {static} ESTADO_ACTIVO = "ACTIVO"
+        {static} ESTADO_DADO_DE_BAJA = "DADO_DE_BAJA"
+        --
+        +antesDeGuardar() : void @PrePersist
+        +antesDeCualquierUpdate() : void @PreUpdate
+    }
+
+    class Rol {
+        +Integer id
+        +String nombre
+        --
+        {static} ROLES = {LECTOR, BIBLIOTECARIO, GERENTE, ADMIN}
+    }
+
+    class EstadoUsuario {
+        +Long id
+        +String nombre
+    }
+
+    class Editorial {
+        +Long id
+        +String nombre
+    }
+
+    class Idioma {
+        +Long id
+        +String nombre
+    }
+
+    class EstadoLibro {
+        +Long id
+        +String nombre
+    }
+
+    class Categoria {
+        +Long id
+        +String nombre
+    }
+
+    class Autor {
+        +Long id
+        +String nombre
+    }
+
+    class BitacoraAuditoria {
+        +Long id
+        +Long usuarioId
+        +String tipoOperacion
+        +String tablaAfectada
+        +Long registroId
+        +String detalles
+        +String ipOrigen
+        +OffsetDateTime fechaHora
+    }
+}
+
+package "com.uteq.backend.repository" {
+    interface UsuarioRepository
+    interface LibroRepository
+    interface RolRepository
+    interface EstadoUsuarioRepository
+    interface EditorialRepository
+    interface IdiomaRepository
+    interface EstadoLibroRepository
+    interface CategoriaRepository
+    interface AutorRepository
+    interface BitacoraAuditoriaRepository
+}
+
+package "com.uteq.backend.service" {
+    class AuthService {
+        --
+        +registrar(RegistroRequestDTO) : UsuarioResponseDTO
+        +verificarCorreo(String, String, String) : UsuarioResponseDTO
+        +login(LoginRequestDTO, String) : TokenResponseDTO
+        +logout(String, String) : void
+        +refresh(String) : TokenResponseDTO
+        --
+        #registrarAuditoria(Long, String, Long, String, String) : void
+        #mapToUsuarioResponseDTO(Usuario) : UsuarioResponseDTO
+    }
+
+    class LibroService {
+        --
+        +listar(Pageable) : Page<LibroResponseDTO>
+        +listarPorCategoria(Integer, Pageable) : Page<LibroResponseDTO>
+        +listarPorAutor(Long, Pageable) : Page<LibroResponseDTO>
+        +buscarPorId(Long) : LibroResponseDTO
+        +sugerir(String) : List<LibroSugerenciaDTO>
+        +crear(LibroRequestDTO) : LibroResponseDTO
+        +actualizar(Long, LibroRequestDTO) : LibroResponseDTO
+        +eliminar(Long) : void
+        --
+        #validarStock(Integer, Integer) : void
+        #resolverCategorias(Set<Integer>) : Set<Categoria>
+        #resolverAutores(Set<Long>) : Set<Autor>
+        #toDTO(Libro) : LibroResponseDTO
+        #fromDTO(LibroRequestDTO) : Libro
+    }
+
+    class VerificacionCorreoService {
+        +generarYEnviarCodigo(Usuario) : void
+        +validar(String, String) : void
+    }
+}
+
+package "com.uteq.backend.controller" {
+    class AuthController {
+        --
+        +registro(RegistroRequestDTO) : ResponseEntity<UsuarioResponseDTO>
+        +verificarCorreo(CodigoVerificacionRequestDTO, HttpServletRequest) : ResponseEntity<UsuarioResponseDTO>
+        +login(LoginRequestDTO, HttpServletRequest) : ResponseEntity<TokenResponseDTO>
+        +logout(String, HttpServletRequest) : ResponseEntity<Void>
+        +refresh(String) : ResponseEntity<TokenResponseDTO>
+        --
+        #obtenerIpOrigen(HttpServletRequest) : String
+        #buildRefreshCookie(String, long) : ResponseCookie
+    }
+
+    class LibroController {
+        --
+        +listar(Integer, Long, Pageable) : ResponseEntity<Page<LibroResponseDTO>>
+        +sugerencias(String) : ResponseEntity<List<LibroSugerenciaDTO>>
+        +buscar(Long) : ResponseEntity<LibroResponseDTO>
+        +crear(LibroRequestDTO) : ResponseEntity<LibroResponseDTO>
+        +actualizar(Long, LibroRequestDTO) : ResponseEntity<LibroResponseDTO>
+        +eliminar(Long) : ResponseEntity<Void>
+    }
+}
+
+package "com.uteq.backend.security" {
+    class JwtAuthFilter {
+        --
+        +doFilterInternal(HttpServletRequest, HttpServletResponse, FilterChain) : void
+    }
+
+    class JwtService {
+        +generateToken(Usuario) : String
+        +generateRefreshToken(Usuario) : String
+        +validateToken(String) : boolean
+        +extractCorreo(String) : String
+        +extractJti(String) : String
+        +extractExpiration(String) : Date
+        +getExpirationMs() : long
+        +getRefreshExpirationMs() : long
+    }
+
+    class LoginRateLimiter {
+        +estaBloqueado(String, String) : boolean
+        +registrarFallo(String, String) : void
+        +resetear(String, String) : void
+        +segundosRestantes(String, String) : long
+    }
+
+    class UserDetailsServiceImpl {
+        +loadUserByUsername(String) : UserDetails
+    }
+}
+
+' --- Relaciones reales del código ---
+
+' Controladores -> Servicios
+AuthController --> AuthService : usa
+AuthController --> JwtService : usa
+LibroController --> LibroService : usa
+
+' Servicios -> Repositorios
+AuthService --> UsuarioRepository : inyecta
+AuthService --> RolRepository : inyecta
+AuthService --> EstadoUsuarioRepository : inyecta
+AuthService --> BitacoraAuditoriaRepository : inyecta
+AuthService --> VerificacionCorreoService : inyecta
+AuthService --> JwtService : inyecta
+AuthService --> AuthenticationManager : inyecta
+AuthService --> LoginRateLimiter : inyecta
+AuthService --> RedisTemplate : inyecta
+AuthService --> PasswordEncoder : inyecta
+
+LibroService --> LibroRepository : inyecta
+LibroService --> EditorialRepository : inyecta
+LibroService --> IdiomaRepository : inyecta
+LibroService --> EstadoLibroRepository : inyecta
+LibroService --> CategoriaRepository : inyecta
+LibroService --> AutorRepository : inyecta
+
+VerificacionCorreoService --> RedisTemplate : inyecta
+
+' Servicios -> Entidades (operan sobre)
+AuthService ..> Usuario : crea/actualiza/consulta
+AuthService ..> Rol : consulta (ROL_POR_DEFECTO)
+AuthService ..> EstadoUsuario : consulta (PENDIENTE_VERIFICACION, ACTIVO)
+AuthService ..> BitacoraAuditoria : crea
+
+LibroService ..> Libro : crea/actualiza/consulta/elimina (baja lógica)
+LibroService ..> Editorial : consulta (getReferenceById)
+LibroService ..> Idioma : consulta (getReferenceById)
+LibroService ..> EstadoLibro : consulta (ACTIVO, DADO_DE_BAJA)
+LibroService ..> Categoria : consulta (getReferenceById)
+LibroService ..> Autor : consulta (getReferenceById)
+
+' Seguridad
+JwtAuthFilter --> JwtService : usa
+JwtAuthFilter --> UserDetailsServiceImpl : usa
+JwtAuthFilter --> RedisTemplate : usa (blacklist)
+
+JwtService --> Usuario : usa (extraer claims)
+
+LoginRateLimiter --> RedisTemplate : usa
+
+UserDetailsServiceImpl --> UsuarioRepository : inyecta
+
+' Entidades -> Repositorios
+UsuarioRepository --> Usuario
+LibroRepository --> Libro
+RolRepository --> Rol
+EstadoUsuarioRepository --> EstadoUsuario
+EditorialRepository --> Editorial
+IdiomaRepository --> Idioma
+EstadoLibroRepository --> EstadoLibro
+CategoriaRepository --> Categoria
+AutorRepository --> Autor
+BitacoraAuditoriaRepository --> BitacoraAuditoria
+
+' Relaciones de entidad (JPA)
+Usuario "*" -- "1" EstadoUsuario : estado (EAGER)
+Usuario "*" -- "*" Rol : roles (EAGER, via usuario_roles)
+
+Libro "*" -- "1" Editorial : editorial (LAZY)
+Libro "*" -- "1" Idioma : idioma (LAZY)
+Libro "*" -- "1" EstadoLibro : estado (LAZY)
+Libro "*" -- "*" Categoria : categorias (LAZY, via libro_categorias)
+Libro "*" -- "*" Autor : autores (LAZY, via libro_autores)
+
+@enduml

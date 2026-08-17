@@ -1,0 +1,262 @@
+% ============================================================
+% Capítulo: Declaraciones (Bloque B.15)
+% ============================================================
+\chapter{Declaraciones}
+\label{cap:declaraciones}
+
+Este capítulo reúne las declaraciones formales que la guía exige antes de
+las referencias bibliográficas. Sigue el mismo criterio de honestidad
+metodológica que el resto del documento: los datos verificables en el
+propio repositorio se presentan como tales, y los que exigen una
+decisión que solo puede tomar el equipo (financiamiento, conflictos de
+interés, distribución exacta de contribuciones) se dejan marcados de
+forma explícita como pendientes, en vez de decidirse unilateralmente en
+este documento.
+
+\section{Disponibilidad de código}
+\label{sec:decl-codigo}
+
+El código fuente completo de SGB-SaaS (backend Spring Boot, frontend
+Angular, scripts de medición, infraestructura Docker) está disponible
+públicamente bajo licencia MIT (\texttt{LICENSE}, raíz del repositorio)
+en:
+
+\begin{center}
+\url{https://github.com/mloorm14/sgb-saas}
+\end{center}
+
+El software citable de esta entrega corresponde al tag \texttt{v1.0.0}
+(ver portada de este documento para el hash de commit exacto, fijado al
+cierre). Los metadatos de citación siguen el formato Citation File
+Format 1.2.0 (\texttt{CITATION.cff}, raíz del repositorio), con ORCID
+verificado de los 3 autores.
+
+\section{Disponibilidad de datos}
+\label{sec:decl-datos}
+
+Los datos empíricos crudos que sustentan el \autoref{cap:resultados}
+(salidas de k6, reportes JaCoCo en XML/CSV/HTML, resultados de
+Lighthouse, evidencia de auditoría OWASP control por control) están
+versionados junto con el código fuente en \texttt{docs/mediciones/}, en
+el mismo repositorio citado en la
+\autoref{sec:decl-codigo}. \texttt{LICENSE} cubre el repositorio
+completo (\emph{"the Software"}, sin excluir explícitamente los datos de
+\texttt{docs/}), por lo que estos datos quedan bajo la misma licencia
+MIT que el software -- el equipo no ha declarado hasta la fecha una
+licencia de datos separada (p.~ej.\ CC-BY) para este material, algo que
+podría formalizarse en una futura revisión de \texttt{LICENSE} si el
+equipo lo considera necesario.
+
+A diferencia del software (con DOI de Zenodo, ver más abajo), este
+conjunto de datos empíricos \textbf{no cuenta todavía con un DOI propio
+independiente} -- no se ha creado un archivado separado en un
+repositorio de datos (Zenodo permite archivar datasets con su propio
+DOI, distinto del DOI del software). El campo queda como
+\emph{placeholder} explícito hasta que el equipo decida si amerita un
+archivado independiente o si basta con el DOI único del software
+(criterio también pendiente de decisión del equipo):
+
+\begin{center}
+\texttt{<DOI-DATASET-V1.0.0-SI-APLICA>}
+\end{center}
+
+Los formularios de consentimiento informado firmados por participantes
+reales de las pruebas de usabilidad (cuando se ejecuten,
+\autoref{sec:tf-sus}) están explícitamente excluidos de este
+repositorio y de cualquier archivado público, por la razón declarada en
+la \autoref{sec:decl-etica}.
+
+\section{Disponibilidad de materiales}
+\label{sec:decl-materiales}
+
+Los instrumentos y materiales usados para producir la evidencia de este
+documento están versionados como parte del propio repositorio de
+código, no como capturas de pantalla ni archivos externos no
+trazables:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{Colección de peticiones HTTP}: \texttt{docs/postman/coleccion.json},
+    con 66 peticiones reales que cubren los módulos de
+    Auth, Libros, Préstamos, Reservaciones, Multas, Configuración,
+    Credencial QR, Notificaciones, Usuarios (Admin), Auditoría y
+    Chatbot, incluyendo casos de error (401/403/404/422/423/429). Nota
+    de honestidad: \texttt{docs/observaciones/OBSERVACIONES.md} (OBS-03)
+    registra 39 peticiones como la cifra vigente en el commit
+    \texttt{c6b372c} (cierre de la Tercera Entrega); el conteo real
+    verificado directamente sobre el archivo actual para este capítulo
+    es 66 -- la colección creció junto con los 8 módulos de dominio
+    mergeados durante esta entrega, y esa cifra antigua no se actualizó
+    en su momento en \texttt{OBSERVACIONES.md}.
+  \item \textbf{Scripts de carga (k6)}: \texttt{k6/}, con semilla fija
+    documentada (\autoref{sec:mm-semillas}) para reproducibilidad.
+  \item \textbf{Script de análisis estadístico}: \texttt{scripts/perf-analysis.py}
+    (bootstrap de IC~95\,\% sobre p95, semilla fija \texttt{BOOTSTRAP\_SEED = 42}).
+  \item \textbf{Configuración de Lighthouse CI}: \texttt{frontend-angular/lighthouserc.js},
+    con el perfil móvil/Slow~4G ya parametrizado y comentado, listo para
+    ejecutarse contra el stack Docker real.
+  \item \textbf{Protocolo de usabilidad SUS}: plantilla de consentimiento
+    informado en \texttt{docs/etica/consentimientos/plantilla.md}
+    (\autoref{sec:tf-sus}).
+\end{itemize}
+
+\section{Declaración ética}
+\label{sec:decl-etica}
+
+El tratamiento de datos personales y el protocolo de consentimiento
+informado para las pruebas de usabilidad SUS están documentados en
+detalle en \texttt{docs/etica/ETHICS.md}, verificado directamente para
+este capítulo. En síntesis:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item Los datos de ejemplo del sistema (\texttt{db/seed.sql}) usan
+    metadatos bibliográficos públicos de libros reales publicados (ISBN,
+    título, autor, editorial); ninguna contraseña se almacena en texto
+    plano (hash BCrypt, costo 12); se verificó por auditoría de código
+    que ningún endpoint expone el campo \texttt{passwordHash}.
+  \item Los participantes de las pruebas SUS (cuando se ejecuten,
+    \autoref{sec:tf-sus}) firman un consentimiento informado bajo la
+    plantilla ya versionada, que declara explícitamente el propósito de
+    la prueba, los datos recogidos (sin datos identificables, solo un
+    código de participante \texttt{P01}, \texttt{P02}, ...), el
+    mecanismo de anonimización, y el derecho a retirarse en cualquier
+    momento sin consecuencias.
+  \item Los formularios de consentimiento ya firmados por participantes
+    reales \textbf{no se suben a este repositorio público bajo ninguna
+    forma} -- se conservan, según el texto verificado de
+    \texttt{ETHICS.md}, "por el equipo en un medio separado (físico o
+    digital con acceso restringido)". Nota de precisión: este documento
+    inicialmente iba a describir ese medio como "Drive institucional con
+    acceso restringido al docente", pero \texttt{ETHICS.md} no especifica
+    ese detalle -- solo declara que el medio es separado del repositorio
+    y de acceso restringido, sin nombrar la herramienta concreta. Se
+    reporta aquí lo que el archivo realmente dice, no el detalle asumido
+    inicialmente.
+\end{itemize}
+
+\section{Contribuciones de autoría (taxonomía CRediT)}
+\label{sec:decl-credit}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}p{4.6cm}ccc@{}}
+\toprule
+\textbf{Rol CRediT} & \textbf{Cajas} & \textbf{Loor} & \textbf{Panamá} \\
+\midrule
+Conceptualization        & \checkmark & \checkmark & \checkmark \\
+Data curation             &            & \checkmark &            \\
+Formal analysis           &            & \checkmark &            \\
+Funding acquisition       & \multicolumn{3}{c}{No aplica -- sin financiamiento externo declarado} \\
+Investigation              & \checkmark & \checkmark & \checkmark \\
+Methodology                & \checkmark & \checkmark &            \\
+Project administration     &            & \checkmark &            \\
+Resources                  & \checkmark & \checkmark & \checkmark \\
+Software                   & \checkmark & \checkmark & \checkmark \\
+Supervision                & \multicolumn{3}{c}{Ver nota debajo de la tabla} \\
+Validation                  & \checkmark & \checkmark &            \\
+Visualization               &            & \checkmark &            \\
+Writing -- original draft    &            & \checkmark &            \\
+Writing -- review \& editing  & \checkmark & \checkmark & \checkmark \\
+\bottomrule
+\end{tabular}
+\caption{Distribución de roles CRediT del equipo SGB-SaaS.}
+\label{tab:decl-credit}
+\end{table}
+
+Justificación de la propuesta, con evidencia concreta verificada para
+este capítulo:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{Cajas}: autor del mayor volumen de commits del proyecto
+    (194 de $\sim$390 commits con identidad atribuible, contando las
+    variantes de firma \texttt{Theirvin1}/\texttt{TheIrvin}/\texttt{Irvin}),
+    concentrados en el backend Spring Boot -- servicios, controladores,
+    la migración forzada de \texttt{@Procedure} a \texttt{@Query} nativa
+    por el defecto de Hibernate (\autoref{cap:discusion}), y la mayoría
+    de los 203 tests automatizados del backend. Autor de los 8 módulos
+    de dominio mergeados en esta entrega. Asignado también a la
+    auditoría ZAP baseline pendiente (\autoref{sec:tf-zap}).
+  \item \textbf{Loor}: autor de la mayoría de los commits de
+    \texttt{docs/} (este informe, arquitectura C4, ADRs, bibliografía
+    verificada contra Crossref), de los scripts de medición
+    (\texttt{k6/}, \texttt{scripts/perf-analysis.py}) y del análisis
+    estadístico del \autoref{cap:resultados}. 150 commits (variantes
+    \texttt{Marlon Loor}/\texttt{mloorm14}/\texttt{Loor Marlon}).
+  \item \textbf{Panamá}: autor de los componentes de frontend de
+    Préstamos, Reservaciones y Multas (\texttt{frontend-angular/}) y de
+    varias historias de usuario en \texttt{docs/requisitos/}. 44
+    commits. Asignado a la ejecución de las pruebas SUS pendientes
+    (OBS-08, \autoref{sec:tf-sus}).
+\end{itemize}
+
+\textbf{Nota sobre "Supervision".} La guía CRediT reserva este rol
+típicamente para quien dirige el trabajo sin ser autor operativo directo
+del código -- en este PFC, ese rol lo ejerce el docente-director (Dr.
+Gleiston Cicerón Guerrero Ulloa, ver portada), no uno de los 3
+integrantes-autores. Se deja fuera de la tabla de columnas por
+integrante para no asignarlo incorrectamente a ninguno de los 3, y se
+señala aquí como punto abierto: el equipo debe decidir si desea listar
+al docente-director bajo este rol en la versión final de esta
+declaración.
+
+\section{Conflictos de interés}
+\label{sec:decl-conflictos}
+
+Los autores declaran que no existe ningún conflicto de interés en
+relación con el desarrollo de este proyecto ni con los resultados
+reportados en este documento. SGB-SaaS es un Proyecto de Fin de Curso
+(PFC) de carácter estrictamente académico, desarrollado sin patrocinio
+externo ni relación comercial, laboral o financiera con terceros que
+pudiera influir en el diseño, la ejecución o la interpretación de la
+evidencia presentada.
+
+\section{Financiamiento}
+\label{sec:decl-financiamiento}
+
+Este proyecto no contó con financiamiento externo de ningún tipo. No
+recibió patrocinio institucional más allá del marco académico regular
+de la Universidad Técnica Estatal de Quevedo (UTEQ) en el que se
+desarrolla, ni financiamiento de terceros, ni becas de investigación
+específicas para su realización.
+
+\section{Uso de inteligencia artificial generativa}
+\label{sec:decl-ia}
+
+Este proyecto usó de forma extensiva el asistente Claude (Anthropic) a
+lo largo de todo el ciclo de desarrollo, con dos roles diferenciados:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{Claude}, en conversación directa, como orquestador y
+    revisor: definición de tareas técnicas concretas, redacción asistida
+    de este mismo documento académico (incluyendo este capítulo),
+    verificación cruzada de referencias bibliográficas contra la API de
+    Crossref (\autoref{cap:trabajos-relacionados}), y análisis de datos
+    empíricos ya generados (interpretación de salidas de k6, JaCoCo,
+    Lighthouse y auditoría OWASP para el \autoref{cap:resultados}).
+  \item \textbf{Claude Code}, como agente ejecutor de las tareas
+    técnicas derivadas de esas conversaciones: generación y edición de
+    código fuente (backend, frontend, scripts), ejecución de comandos
+    (compilaciones, builds Docker, corridas de tests), y operaciones de
+    control de versiones (commits, push).
+\end{itemize}
+
+En ambos casos, cada cambio propuesto por la IA -- ya fuera código,
+texto de este informe, o un comando a ejecutar -- pasó por revisión
+humana explícita del integrante que dirigía esa sesión de trabajo antes
+de aplicarse: los commits del repositorio no se generaron ni se
+subieron de forma autónoma sin intervención humana en el punto de
+decisión. Este documento declara este uso con el mismo criterio de
+honestidad metodológica aplicado al resto de sus afirmaciones: ni se
+minimiza (la IA participó de forma sustancial, no marginal, en la
+redacción de la documentación y en buena parte de la implementación) ni
+se exagera (las decisiones de diseño, arquitectura, alcance y los
+juicios sobre qué evidencia era suficiente o qué limitación declarar
+correspondieron al equipo humano, no a la IA de forma autónoma).
+
+\section{Agradecimientos}
+\label{sec:decl-agradecimientos}
+
+El equipo agradece al docente-director, Dr. Gleiston Cicerón Guerrero
+Ulloa, Ph.D., por su guía y retroalimentación constante a lo largo de
+las cuatro entregas de este PFC, que contribuyeron directamente a la
+calidad técnica y metodológica del proyecto.

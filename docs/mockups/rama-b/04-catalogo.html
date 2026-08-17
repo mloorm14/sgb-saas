@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SGB · Catálogo</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          "secondary-container": "#76f4e0","surface": "#f8f9ff","surface-container-highest": "#d5e3fc",
+          "on-error": "#ffffff","error-container": "#ffdad6","surface-container": "#e6eeff",
+          "on-secondary-fixed": "#00201c","on-secondary-container": "#006f63","surface-bright": "#f8f9ff",
+          "tertiary": "#503a00","surface-variant": "#d5e3fc","outline-variant": "#c4c6d5",
+          "inverse-primary": "#b4c5ff","primary-container": "#1e4db7","on-tertiary-fixed-variant": "#5b4300",
+          "on-primary-fixed-variant": "#003ea8","inverse-on-surface": "#eaf1ff","surface-dim": "#ccdbf3",
+          "error": "#ba1a1a","on-tertiary-fixed": "#261a00","primary-fixed-dim": "#b4c5ff",
+          "on-tertiary": "#ffffff","on-surface-variant": "#434653","secondary-fixed": "#79f7e3",
+          "background": "#f8f9ff","on-background": "#0d1c2e","tertiary-fixed": "#ffdf9e",
+          "on-surface": "#0d1c2e","primary-fixed": "#dbe1ff","surface-container-lowest": "#ffffff",
+          "on-tertiary-container": "#fec004","surface-container-high": "#dce9ff","surface-container-low": "#eff4ff",
+          "tertiary-container": "#6c5000","surface-tint": "#2c57c1","primary": "#003694",
+          "on-secondary": "#ffffff","on-primary-fixed": "#00174b","outline": "#747684",
+          "on-secondary-fixed-variant": "#005047","secondary": "#006b5f","tertiary-fixed-dim": "#fabd00",
+          "secondary-fixed-dim": "#59dbc7","on-primary-container": "#b8c8ff","on-error-container": "#93000a",
+          "on-primary": "#ffffff","inverse-surface": "#233144",
+          "success": "#1d9e75","warning": "#fec004"
+        },
+        borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" },
+        spacing: { gutter: "24px", xl: "40px", lg: "24px", md: "16px", "container-max": "1280px", sm: "8px", xs: "4px", "margin-mobile": "16px", base: "4px" },
+        fontFamily: {
+          "headline-lg": ["Plus Jakarta Sans"], "body-md": ["Inter"], "label-md": ["Inter"],
+          "headline-lg-mobile": ["Plus Jakarta Sans"], "headline-xl": ["Plus Jakarta Sans"],
+          "label-sm": ["Inter"], "body-lg": ["Inter"], "body-sm": ["Inter"], "headline-md": ["Plus Jakarta Sans"]
+        },
+        fontSize: {
+          "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+          "label-md": ["14px", { lineHeight: "20px", letterSpacing: "0.05em", fontWeight: "600" }],
+          "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+          "headline-xl": ["40px", { lineHeight: "48px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "label-sm": ["12px", { lineHeight: "16px", fontWeight: "500" }],
+          "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+          "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+          "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Inter', sans-serif; background:#f8f9ff; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align:middle; }
+  .glass-panel { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
+</style>
+</head>
+<body>
+<nav class="sticky top-0 z-40 bg-surface/90 backdrop-blur border-b border-outline-variant">
+  <div class="max-w-container-max mx-auto px-md md:px-lg h-16 flex items-center justify-between">
+    <div class="flex items-center gap-sm">
+      <div class="w-9 h-9 rounded bg-primary flex items-center justify-center text-on-primary">
+        <span class="material-symbols-outlined text-[20px]" style="font-variation-settings:'FILL' 1;">menu_book</span>
+      </div>
+      <span class="font-headline-md text-headline-md text-primary hidden sm:inline">SGB</span>
+    </div>
+    <div class="hidden md:flex items-center gap-lg font-label-sm text-label-sm text-on-surface-variant">
+      <a class="text-primary font-semibold" href="04-catalogo.html">Catálogo</a><a href="09-mis-prestamos.html" class="hover:text-primary">Mis préstamos</a><a href="12-reservaciones.html" class="hover:text-primary">Reservaciones</a><a href="13-multas.html" class="hover:text-primary">Multas</a><a href="06-favoritos.html" class="hover:text-primary">Favoritos</a><a href="08-mis-solicitudes.html" class="hover:text-primary">Sugerencias</a><a href="11-mi-credencial.html" class="hover:text-primary">Mi credencial</a>
+    </div>
+    <div class="flex items-center gap-sm">
+      <button class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container-low relative">
+        <span class="material-symbols-outlined text-[22px] text-on-surface-variant">notifications</span>
+        <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-error"></span>
+      </button>
+      <div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center font-label-sm text-label-sm text-on-primary-fixed-variant">ML</div>
+    </div>
+  </div>
+</nav>
+
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
+
+  <div class="mb-lg">
+    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Catálogo</h1>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Busca por título, autor o categoría</p>
+  </div>
+
+  <!-- Buscador predictivo -->
+  <div class="relative mb-md max-w-xl">
+    <div class="rounded border border-outline-variant bg-white flex items-center px-sm glass-panel">
+      <span class="material-symbols-outlined text-outline text-[20px] mr-xs">search</span>
+      <input type="text" placeholder="Ej: estructuras de datos"
+        class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+    </div>
+    <!-- Dropdown de sugerencias (LibroService.sugerencias) -->
+    <div class="absolute mt-xs w-full bg-white rounded shadow-lg border border-outline-variant overflow-hidden z-10">
+      <button class="w-full text-left px-md py-sm hover:bg-surface-container-low flex items-center justify-between border-b border-outline-variant">
+        <span class="font-body-sm text-body-sm text-on-surface">Estructuras de Datos y Algoritmos</span>
+        <span class="font-label-sm text-[11px] text-secondary">3 disponibles</span>
+      </button>
+      <button class="w-full text-left px-md py-sm hover:bg-surface-container-low flex items-center justify-between">
+        <span class="font-body-sm text-body-sm text-on-surface">Estructuras Discretas Aplicadas</span>
+        <span class="font-label-sm text-[11px] text-error">Sin stock</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtros: categoria/autor vienen de CategoriaService/AutorService reales -->
+  <div class="flex flex-wrap gap-sm mb-lg">
+    <select class="rounded border border-outline-variant bg-white text-body-sm text-on-surface px-sm py-xs">
+      <option>Todas las categorías</option>
+      <option>Ingeniería de Software</option>
+      <option>Bases de Datos</option>
+      <option>Matemáticas</option>
+    </select>
+    <select class="rounded border border-outline-variant bg-white text-body-sm text-on-surface px-sm py-xs">
+      <option>Todos los autores</option>
+      <option>Robert C. Martin</option>
+      <option>Andrew S. Tanenbaum</option>
+    </select>
+  </div>
+
+  <!-- Grid de tarjetas -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-md">
+
+    <a href="05-libro-detalle.html" class="group rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow">
+      <div class="relative aspect-[3/4] bg-surface-container-low overflow-hidden">
+        <img src="https://picsum.photos/seed/libro1/300/400" class="w-full h-full object-cover" alt="Portada Clean Code" />
+        <button class="absolute top-xs right-xs w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow" onclick="event.preventDefault()">
+          <span class="material-symbols-outlined text-[18px] text-outline">star</span>
+        </button>
+      </div>
+      <div class="p-sm">
+        <p class="font-label-md text-[13px] text-on-surface leading-tight line-clamp-2">Clean Code: A Handbook of Agile Software Craftsmanship</p>
+        <p class="font-label-sm text-[11px] text-on-surface-variant mt-1">Robert C. Martin</p>
+        <span class="inline-block mt-xs font-label-sm text-[11px] text-secondary">4 disponibles</span>
+      </div>
+    </a>
+
+    <a href="05-libro-detalle.html" class="group rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow">
+      <div class="relative aspect-[3/4] bg-surface-container-low overflow-hidden">
+        <img src="https://picsum.photos/seed/libro2/300/400" class="w-full h-full object-cover" alt="Portada" />
+        <button class="absolute top-xs right-xs w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow" onclick="event.preventDefault()">
+          <span class="material-symbols-outlined text-[18px] text-primary" style="font-variation-settings:'FILL' 1;">star</span>
+        </button>
+      </div>
+      <div class="p-sm">
+        <p class="font-label-md text-[13px] text-on-surface leading-tight line-clamp-2">Sistemas Operativos Modernos</p>
+        <p class="font-label-sm text-[11px] text-on-surface-variant mt-1">Andrew S. Tanenbaum</p>
+        <span class="inline-block mt-xs font-label-sm text-[11px] text-error">Sin stock</span>
+      </div>
+    </a>
+
+    <a href="05-libro-detalle.html" class="group rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow">
+      <div class="relative aspect-[3/4] bg-surface-container-low overflow-hidden flex items-center justify-center">
+        <!-- tienePortada=false: placeholder local, no url externa (ver roadmap 5.1) -->
+        <span class="material-symbols-outlined text-outline-variant" style="font-size:48px">menu_book</span>
+      </div>
+      <div class="p-sm">
+        <p class="font-label-md text-[13px] text-on-surface leading-tight line-clamp-2">Bases de Datos: Diseño y Modelado</p>
+        <p class="font-label-sm text-[11px] text-on-surface-variant mt-1">Elmasri &amp; Navathe</p>
+        <span class="inline-block mt-xs font-label-sm text-[11px] text-secondary">1 disponible</span>
+      </div>
+    </a>
+
+    <a href="05-libro-detalle.html" class="group rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow">
+      <div class="relative aspect-[3/4] bg-surface-container-low overflow-hidden">
+        <img src="https://picsum.photos/seed/libro4/300/400" class="w-full h-full object-cover" alt="Portada" />
+      </div>
+      <div class="p-sm">
+        <p class="font-label-md text-[13px] text-on-surface leading-tight line-clamp-2">Introducción a los Algoritmos</p>
+        <p class="font-label-sm text-[11px] text-on-surface-variant mt-1">Cormen, Leiserson</p>
+        <span class="inline-block mt-xs font-label-sm text-[11px] text-secondary">2 disponibles</span>
+      </div>
+    </a>
+
+    <a href="05-libro-detalle.html" class="group rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow">
+      <div class="relative aspect-[3/4] bg-surface-container-low overflow-hidden">
+        <img src="https://picsum.photos/seed/libro5/300/400" class="w-full h-full object-cover" alt="Portada" />
+      </div>
+      <div class="p-sm">
+        <p class="font-label-md text-[13px] text-on-surface leading-tight line-clamp-2">Redes de Computadoras</p>
+        <p class="font-label-sm text-[11px] text-on-surface-variant mt-1">Andrew S. Tanenbaum</p>
+        <span class="inline-block mt-xs font-label-sm text-[11px] text-secondary">5 disponibles</span>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="flex justify-center mt-lg gap-xs">
+    <button class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
+    <button class="w-8 h-8 rounded bg-primary text-on-primary font-label-sm text-label-sm">1</button>
+    <button class="w-8 h-8 rounded border border-outline-variant text-on-surface font-label-sm text-label-sm">2</button>
+    <button class="w-8 h-8 rounded border border-outline-variant text-on-surface font-label-sm text-label-sm">3</button>
+    <button class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+  </div>
+</main>
+
+<!-- Widget de chatbot flotante (Rama D) - visible solo si auth.hasRole('LECTOR') -->
+<div class="fixed bottom-lg right-lg z-50">
+  <button onclick="document.getElementById('chatbot-panel').classList.toggle('hidden')"
+    class="w-14 h-14 rounded-full bg-primary text-on-primary shadow-lg flex items-center justify-center hover:bg-on-primary-fixed-variant transition-colors">
+    <span class="material-symbols-outlined text-[26px]">chat</span>
+  </button>
+  <div id="chatbot-panel" class="hidden absolute bottom-16 right-0 w-80 rounded-xl bg-white shadow-2xl border border-outline-variant overflow-hidden">
+    <div class="bg-primary text-on-primary px-md py-sm flex items-center justify-between">
+      <span class="font-label-md text-label-sm">Asistente SGB</span>
+      <span class="material-symbols-outlined text-[18px] cursor-pointer" onclick="document.getElementById('chatbot-panel').classList.add('hidden')">close</span>
+    </div>
+    <div class="p-md h-64 overflow-y-auto space-y-sm text-body-sm">
+      <div class="bg-surface-container-low rounded-lg rounded-tl-none px-sm py-xs max-w-[85%] text-on-surface">Hola, soy el asistente de la biblioteca. Esta conversación es temporal, no se guarda si recargas la página.</div>
+      <div class="bg-primary text-on-primary rounded-lg rounded-tr-none px-sm py-xs max-w-[85%] ml-auto">¿Tienen libros de bases de datos?</div>
+    </div>
+    <div class="border-t border-outline-variant p-sm flex items-center gap-xs">
+      <input type="text" placeholder="Escribe un mensaje..." class="flex-1 text-body-sm bg-surface-container-low rounded px-sm py-xs border-none focus:ring-0" />
+      <button class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center"><span class="material-symbols-outlined text-[16px]">send</span></button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

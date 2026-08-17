@@ -1,0 +1,109 @@
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
+  <div class="mb-lg">
+    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Auditoría</h1>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">GET /api/v1/auditoria — GERENTE y ADMIN. Bitácora de INSERT/UPDATE/DELETE/LOGIN_OK/LOGIN_FAIL/LOGOUT</p>
+  </div>
+
+  @if (errorMsg) {
+    <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
+  }
+
+  <!-- Filtros: usuarioId, modulo, desde, hasta -->
+  <div class="rounded-lg border border-outline-variant bg-white glass-panel p-md mb-md">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-sm items-end">
+      <div>
+        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Usuario (ID)</label>
+        <input type="number" min="1" [(ngModel)]="filtroUsuarioId" placeholder="ej: 14"
+          class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+      </div>
+      <div>
+        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Módulo</label>
+        <select [(ngModel)]="filtroModulo"
+          class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white cursor-pointer">
+          <option value="">Todos</option>
+          @for (modulo of modulos; track modulo) {
+            <option [value]="modulo">{{ modulo }}</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
+        <input type="date" [(ngModel)]="filtroDesde"
+          class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+      </div>
+      <div>
+        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hasta</label>
+        <input type="date" [(ngModel)]="filtroHasta"
+          class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+      </div>
+      <button (click)="filtrar()"
+        class="h-10 rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar
+      </button>
+    </div>
+  </div>
+
+  @if (cargando && eventos.length === 0) {
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando bitácora…</p>
+  }
+
+  <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
+    <table class="w-full text-left">
+      <thead class="bg-surface-container-low">
+        <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+          <th class="px-md py-sm">Fecha/hora</th>
+          <th class="px-md py-sm">Usuario</th>
+          <th class="px-md py-sm">Acción</th>
+          <th class="px-md py-sm hidden md:table-cell">Módulo</th>
+          <th class="px-md py-sm hidden lg:table-cell">Detalle</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+        @for (evento of eventos; track evento.id) {
+          <tr>
+            <td class="px-md py-sm text-on-surface-variant whitespace-nowrap">{{ formatoFecha(evento.fechaHora) }}</td>
+            <td class="px-md py-sm">{{ usuarioLabel(evento) }}</td>
+            <td class="px-md py-sm">
+              <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]"
+                [class]="claseAccion(evento.accion)">
+                <span class="material-symbols-outlined text-[14px]">{{ iconoAccion(evento.accion) }}</span>
+                {{ evento.accion }}
+              </span>
+            </td>
+            <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ evento.modulo }}</td>
+            <td class="px-md py-sm hidden lg:table-cell text-on-surface-variant max-w-md truncate">{{ evento.detalle || '—' }}</td>
+          </tr>
+        } @empty {
+          @if (!cargando) {
+            <tr>
+              <td colspan="5" class="px-md py-lg text-center text-on-surface-variant">No hay eventos para los filtros aplicados</td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (totalPages > 1) {
+    <div class="flex justify-center mt-lg gap-xs">
+      <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
+        class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+      </button>
+      @for (pagina of paginasVisibles; track pagina) {
+        <button (click)="currentPage = pagina; cargarPagina()"
+          class="w-8 h-8 rounded font-label-sm text-label-sm cursor-pointer"
+          [class.bg-primary]="pagina === currentPage"
+          [class.text-on-primary]="pagina === currentPage"
+          [class.hover:bg-surface-container-low]="pagina !== currentPage"
+          [class.text-on-surface-variant]="pagina !== currentPage">
+          {{ pagina + 1 }}
+        </button>
+      }
+      <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
+        class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+      </button>
+    </div>
+  }
+</main>

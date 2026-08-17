@@ -1,12 +1,22 @@
-# Evidencia — Bloque C.4: cobertura JaCoCo tras tests reales de seguridad/auth (VIGENTE)
+# Evidencia — Bloque C.4: cobertura JaCoCo tras tests reales de seguridad/auth
 
-**Este es el reporte vigente.** Reemplaza el número reportado en
+**Registro histórico — NO vigente.** Reemplazado por
+[`2026-08-13-cobertura-jacoco-post-merge-8-modulos.md`](2026-08-13-cobertura-jacoco-post-merge-8-modulos.md)
+tras el merge a `main` de las 8 ramas de módulos nuevos de Cajas (config,
+préstamos avanzado, notificaciones, QR, favoritos, admin, seguridad,
+chatbot), que cambió la base de código analizable de 501 a 1242 líneas.
+Para el número de cobertura actual (81,64\,% líneas), ver ese archivo —
+este se conserva sin editar como evidencia de cuál era el estado antes de
+ese merge.
+
+**Este fue el reporte vigente entre el 2026-07-30 y el 2026-08-13.**
+Reemplazó el número reportado en
 `2026-07-30-cobertura-jacoco-dominio-servicios.md` (53.69%), que se
 conserva como registro histórico del hallazgo que motivó este trabajo —
 no lo edites para "corregir" el número viejo. `docs/mediciones/jacoco/report.xml`,
-`report.csv` y `html/` ya están sobrescritos con esta corrida (son
-artefactos generados, no un log append-only; siempre reflejan la última
-corrida real de `mvnw clean verify`).
+`report.csv` y `html/` ya están sobrescritos con la corrida vigente
+actual (son artefactos generados, no un log append-only; siempre
+reflejan la última corrida real de `mvnw clean verify`).
 
 ## Cabecera de medición
 

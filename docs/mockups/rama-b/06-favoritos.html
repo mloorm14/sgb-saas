@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SGB · Mis favoritos</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          "secondary-container": "#76f4e0","surface": "#f8f9ff","surface-container-highest": "#d5e3fc",
+          "on-error": "#ffffff","error-container": "#ffdad6","surface-container": "#e6eeff",
+          "on-secondary-fixed": "#00201c","on-secondary-container": "#006f63","surface-bright": "#f8f9ff",
+          "tertiary": "#503a00","surface-variant": "#d5e3fc","outline-variant": "#c4c6d5",
+          "inverse-primary": "#b4c5ff","primary-container": "#1e4db7","on-tertiary-fixed-variant": "#5b4300",
+          "on-primary-fixed-variant": "#003ea8","inverse-on-surface": "#eaf1ff","surface-dim": "#ccdbf3",
+          "error": "#ba1a1a","on-tertiary-fixed": "#261a00","primary-fixed-dim": "#b4c5ff",
+          "on-tertiary": "#ffffff","on-surface-variant": "#434653","secondary-fixed": "#79f7e3",
+          "background": "#f8f9ff","on-background": "#0d1c2e","tertiary-fixed": "#ffdf9e",
+          "on-surface": "#0d1c2e","primary-fixed": "#dbe1ff","surface-container-lowest": "#ffffff",
+          "on-tertiary-container": "#fec004","surface-container-high": "#dce9ff","surface-container-low": "#eff4ff",
+          "tertiary-container": "#6c5000","surface-tint": "#2c57c1","primary": "#003694",
+          "on-secondary": "#ffffff","on-primary-fixed": "#00174b","outline": "#747684",
+          "on-secondary-fixed-variant": "#005047","secondary": "#006b5f","tertiary-fixed-dim": "#fabd00",
+          "secondary-fixed-dim": "#59dbc7","on-primary-container": "#b8c8ff","on-error-container": "#93000a",
+          "on-primary": "#ffffff","inverse-surface": "#233144",
+          "success": "#1d9e75","warning": "#fec004"
+        },
+        borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" },
+        spacing: { gutter: "24px", xl: "40px", lg: "24px", md: "16px", "container-max": "1280px", sm: "8px", xs: "4px", "margin-mobile": "16px", base: "4px" },
+        fontFamily: {
+          "headline-lg": ["Plus Jakarta Sans"], "body-md": ["Inter"], "label-md": ["Inter"],
+          "headline-lg-mobile": ["Plus Jakarta Sans"], "headline-xl": ["Plus Jakarta Sans"],
+          "label-sm": ["Inter"], "body-lg": ["Inter"], "body-sm": ["Inter"], "headline-md": ["Plus Jakarta Sans"]
+        },
+        fontSize: {
+          "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+          "label-md": ["14px", { lineHeight: "20px", letterSpacing: "0.05em", fontWeight: "600" }],
+          "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+          "headline-xl": ["40px", { lineHeight: "48px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "label-sm": ["12px", { lineHeight: "16px", fontWeight: "500" }],
+          "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+          "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+          "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Inter', sans-serif; background:#f8f9ff; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align:middle; }
+  .glass-panel { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
+</style>
+</head>
+<body>
+<nav class="sticky top-0 z-40 bg-surface/90 backdrop-blur border-b border-outline-variant">
+  <div class="max-w-container-max mx-auto px-md md:px-lg h-16 flex items-center justify-between">
+    <div class="flex items-center gap-sm">
+      <div class="w-9 h-9 rounded bg-primary flex items-center justify-center text-on-primary">
+        <span class="material-symbols-outlined text-[20px]" style="font-variation-settings:'FILL' 1;">menu_book</span>
+      </div>
+      <span class="font-headline-md text-headline-md text-primary hidden sm:inline">SGB</span>
+    </div>
+    <div class="hidden md:flex items-center gap-lg font-label-sm text-label-sm text-on-surface-variant">
+      <a href="04-catalogo.html" class="hover:text-primary ">Catálogo</a><a href="09-mis-prestamos.html" class="hover:text-primary ">Mis préstamos</a><a href="12-reservaciones.html" class="hover:text-primary">Reservaciones</a><a href="13-multas.html" class="hover:text-primary">Multas</a><a href="06-favoritos.html" class="hover:text-primary text-primary font-semibold">Favoritos</a><a href="08-mis-solicitudes.html" class="hover:text-primary ">Sugerencias</a><a href="11-mi-credencial.html" class="hover:text-primary">Mi credencial</a>
+    </div>
+    <div class="flex items-center gap-sm">
+      <button class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container-low relative">
+        <span class="material-symbols-outlined text-[22px] text-on-surface-variant">notifications</span>
+        <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-error"></span>
+      </button>
+      <div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center font-label-sm text-label-sm text-on-primary-fixed-variant">ML</div>
+    </div>
+  </div>
+</nav>
+
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
+  <div class="mb-lg">
+    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Mis favoritos</h1>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Libros que marcaste con ★ desde el catálogo (FavoritoService.listar)</p>
+  </div>
+
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-md">
+    <div class="rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow">
+      <a href="05-libro-detalle.html" class="block relative aspect-[3/4] bg-surface-container-low overflow-hidden">
+        <img src="https://picsum.photos/seed/libro1/300/400" class="w-full h-full object-cover" alt="Portada" />
+      </a>
+      <div class="p-sm">
+        <p class="font-label-md text-[13px] text-on-surface leading-tight line-clamp-2">Clean Code</p>
+        <p class="font-label-sm text-[11px] text-on-surface-variant mt-1">Agregado el 12 ago 2026</p>
+        <button class="mt-xs text-error font-label-sm text-[11px] flex items-center gap-1 hover:underline">
+          <span class="material-symbols-outlined text-[14px]">close</span> Quitar
+        </button>
+      </div>
+    </div>
+    <div class="rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow">
+      <a href="05-libro-detalle.html" class="block relative aspect-[3/4] bg-surface-container-low overflow-hidden">
+        <img src="https://picsum.photos/seed/libro5/300/400" class="w-full h-full object-cover" alt="Portada" />
+      </a>
+      <div class="p-sm">
+        <p class="font-label-md text-[13px] text-on-surface leading-tight line-clamp-2">Redes de Computadoras</p>
+        <p class="font-label-sm text-[11px] text-on-surface-variant mt-1">Agregado el 03 ago 2026</p>
+        <button class="mt-xs text-error font-label-sm text-[11px] flex items-center gap-1 hover:underline">
+          <span class="material-symbols-outlined text-[14px]">close</span> Quitar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado vacío (para cuando no hay favoritos) -->
+  <div class="hidden mt-xl flex flex-col items-center justify-center text-center py-3xl text-on-surface-variant">
+    <span class="material-symbols-outlined text-[48px] mb-sm text-outline-variant">star_border</span>
+    <p class="font-body-md text-body-md">Todavía no tenés favoritos</p>
+    <a href="04-catalogo.html" class="mt-sm text-primary font-label-md text-label-sm hover:underline">Explorar el catálogo</a>
+  </div>
+</main>
+</body>
+</html>

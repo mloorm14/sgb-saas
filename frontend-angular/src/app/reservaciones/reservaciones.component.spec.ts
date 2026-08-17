@@ -1,54 +1,137 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { of, throwError } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
 import { ReservacionesComponent } from './reservaciones.component';
 import { AuthService } from '../core/services/auth.service';
+import { ReservacionService } from '../core/services/reservacion.service';
+import { LibroService } from '../core/services/libro.service';
 
 describe('ReservacionesComponent', () => {
   let component: ReservacionesComponent;
   let fixture: ComponentFixture<ReservacionesComponent>;
-  let httpMock: HttpTestingController;
+  let reservacionService: jasmine.SpyObj<ReservacionService>;
+  let libroService: jasmine.SpyObj<LibroService>;
+  let roles: string[];
 
   beforeEach(async () => {
+    roles = ['LECTOR'];
+    reservacionService = jasmine.createSpyObj('ReservacionService', ['listarPorUsuario', 'crear', 'cambiarEstado']);
+    libroService = jasmine.createSpyObj('LibroService', ['obtener', 'sugerencias']);
+    libroService.sugerencias.and.returnValue(of([]));
+    libroService.obtener.and.returnValue(of({} as any));
+
     await TestBed.configureTestingModule({
       imports: [ReservacionesComponent],
       providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        { provide: AuthService, useValue: { getUserId: () => 2, hasRole: (...roles: string[]) => roles.includes('LECTOR') } }
+        { provide: ReservacionService, useValue: reservacionService },
+        { provide: LibroService, useValue: libroService },
+        { provide: ActivatedRoute, useValue: { snapshot: {} } },
+        {
+          provide: AuthService,
+          useValue: {
+            getUserId: () => 2,
+            hasRole: (...r: string[]) => r.some(rol => roles.includes(rol))
+          }
+        }
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ReservacionesComponent);
     component = fixture.componentInstance;
-    httpMock = TestBed.inject(HttpTestingController);
-  });
-
-  afterEach(() => {
-    httpMock.verify();
   });
 
   it('carga el listado inicial de reservaciones propias correctamente (rol lector)', () => {
+    reservacionService.listarPorUsuario.and.returnValue(
+      of({ content: [{ id: 1, libroId: 9, estadoReservacionId: 1 }], totalPages: 1 } as any)
+    );
+
     fixture.detectChanges(); // ngOnInit -> como es lector, busca automaticamente
 
-    const req = httpMock.expectOne(
-      r => r.url.startsWith('https://sgb-backend-b058.onrender.com/api/v1/reservaciones/usuario/2')
-    );
-    req.flush({ content: [{ id: 1, libroId: 9, estadoReservacionId: 1 }], totalPages: 1 });
-
+    expect(reservacionService.listarPorUsuario).toHaveBeenCalledWith(2, jasmine.anything());
     expect(component.reservaciones.length).toBe(1);
     expect(component.errorMsg).toBe('');
   });
 
-  it('muestra errorMsg sin romper la UI si el backend falla', () => {
+  it('separa "Pendientes de retiro" del "Historial" en el modo lector', () => {
+    reservacionService.listarPorUsuario.and.returnValue(
+      of({
+        content: [
+          { id: 1, libroId: 9, estadoReservacionId: 1 },
+          { id: 2, libroId: 8, estadoReservacionId: 3 }
+        ],
+        totalPages: 1
+      } as any)
+    );
+
     fixture.detectChanges();
 
-    const req = httpMock.expectOne(
-      r => r.url.startsWith('https://sgb-backend-b058.onrender.com/api/v1/reservaciones/usuario/2')
-    );
-    req.flush('error', { status: 500, statusText: 'Server Error' });
+    expect(component.pendientesDeRetiro.length).toBe(1);
+    expect(component.historial.length).toBe(1);
+    expect(component.pendientesDeRetiro[0].estadoReservacionId).toBe(1);
+    expect(component.historial[0].estadoReservacionId).toBe(3);
+  });
+
+  it('el modo gestión crea con el formulario manual de usuarioId/libroId', () => {
+    roles = ['BIBLIOTECARIO'];
+
+    fixture.detectChanges();
+
+    expect(component.esLector).toBeFalse();
+    expect(reservacionService.listarPorUsuario).not.toHaveBeenCalled();
+
+    component.formCrear.patchValue({ usuarioId: 1, libroId: 9 });
+    reservacionService.crear.and.returnValue(of({
+      id: 9, usuarioId: 1, libroId: 9, estadoReservacionId: 1,
+      fechaReserva: '', fechaLimiteRetiro: ''
+    } as any));
+
+    component.crearReservacion();
+
+    expect(reservacionService.crear).toHaveBeenCalledWith({ usuarioId: 1, libroId: 9 });
+  });
+
+  it('resuelve el título del libro con LibroService.obtener y lo cachea por id', () => {
+    libroService.obtener.and.returnValue(of({ id: 9, titulo: 'Refactoring' } as any));
+
+    expect(component.tituloLibro(9)).toBe('Libro #9'); // placeholder mientras carga
+    expect(component.tituloLibro(9)).toBe('Refactoring'); // cacheado
+
+    expect(libroService.obtener).toHaveBeenCalledTimes(1);
+  });
+
+  it('muestra errorMsg sin romper la UI si el backend falla', () => {
+    reservacionService.listarPorUsuario.and.returnValue(throwError(() => ({ status: 500 })));
+
+    fixture.detectChanges();
 
     expect(component.errorMsg).toBe('Error al buscar las reservaciones');
     expect(component.cargando).toBeFalse();
+  });
+
+  it('el staff acepta una reservación pendiente y recarga la página', () => {
+    roles = ['BIBLIOTECARIO'];
+    fixture.detectChanges();
+    reservacionService.cambiarEstado.and.returnValue(of({ id: 7 } as any));
+    reservacionService.listarPorUsuario.and.returnValue(of({ content: [], totalPages: 1 } as any));
+
+    component.cambiarEstadoReservacion(
+      { id: 7, libroId: 9, estadoReservacionId: 1 } as any, 'LISTA_PARA_RETIRO');
+
+    expect(reservacionService.cambiarEstado).toHaveBeenCalledWith(7, { nuevoEstado: 'LISTA_PARA_RETIRO' });
+    expect(reservacionService.listarPorUsuario).toHaveBeenCalled();
+  });
+
+  it('muestra el detail del backend si el PATCH de estado falla', () => {
+    roles = ['GERENTE'];
+    fixture.detectChanges();
+    reservacionService.cambiarEstado.and.returnValue(
+      throwError(() => ({ error: { detail: 'Solo se puede aceptar o rechazar una reservación pendiente.' } }))
+    );
+
+    component.cambiarEstadoReservacion(
+      { id: 7, libroId: 9, estadoReservacionId: 1 } as any, 'CANCELADA');
+
+    expect(component.errorMsg).toContain('pendiente');
+    expect(component.accionandoId).toBeNull();
   });
 });

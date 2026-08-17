@@ -1,1 +1,53 @@
+@if (estaLogueado()) {
+  <header class="sticky top-0 z-40 bg-surface/90 backdrop-blur border-b border-outline-variant">
+    <div class="max-w-container-max mx-auto px-margin-mobile lg:px-xl flex items-center gap-lg h-16">
+
+      <a routerLink="/prestamos" class="flex items-center gap-sm text-primary shrink-0">
+        <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">local_library</span>
+        <span class="font-headline-md text-headline-md text-primary tracking-tight hidden sm:inline">SGB UTEQ</span>
+      </a>
+
+      <nav class="flex-1 flex items-center gap-xs overflow-x-auto py-2">
+
+        @if (esLector()) {
+          @for (enlace of enlacesLector; track enlace.ruta) {
+            <a [routerLink]="enlace.ruta"
+               routerLinkActive="bg-primary-fixed text-primary"
+               [routerLinkActiveOptions]="{ exact: true }"
+               [class.opacity-50]="enlace.futuro"
+               [title]="enlace.futuro ? 'Disponible en una próxima versión' : enlace.etiqueta"
+               class="flex items-center gap-1.5 px-sm py-2 rounded-lg font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors whitespace-nowrap cursor-pointer">
+              <span class="material-symbols-outlined text-[18px]">{{ enlace.icono }}</span>
+              {{ enlace.etiqueta }}
+            </a>
+          }
+        }
+
+        @if (esStaff()) {
+          @for (enlace of enlacesStaff; track enlace.ruta) {
+            @if (permiteEnlace(enlace)) {
+              <a [routerLink]="enlace.ruta"
+                 routerLinkActive="bg-primary-fixed text-primary"
+                 [routerLinkActiveOptions]="{ exact: true }"
+                 [class.opacity-50]="enlace.futuro"
+                 [title]="enlace.futuro ? 'Disponible en una próxima versión' : enlace.etiqueta"
+                 class="flex items-center gap-1.5 px-sm py-2 rounded-lg font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors whitespace-nowrap cursor-pointer">
+                <span class="material-symbols-outlined text-[18px]">{{ enlace.icono }}</span>
+                {{ enlace.etiqueta }}
+              </a>
+            }
+          }
+        }
+
+      </nav>
+
+      <button (click)="cerrarSesion()"
+        class="flex items-center gap-1.5 px-sm py-2 rounded-lg font-label-sm text-label-sm text-error hover:bg-error-container/60 transition-colors shrink-0 cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">logout</span>
+        Cerrar sesión
+      </button>
+    </div>
+  </header>
+}
+
 <router-outlet />

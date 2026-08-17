@@ -1,10 +1,13 @@
 package com.uteq.backend.service;
 
+import com.uteq.backend.dto.CambioEstadoReservacionRequestDTO;
 import com.uteq.backend.dto.ReservacionRequestDTO;
 import com.uteq.backend.dto.ReservacionResponseDTO;
+import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.EstadoReservacion;
 import com.uteq.backend.entity.Reservacion;
 import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.EstadoReservacionRepository;
 import com.uteq.backend.repository.ReservacionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
@@ -23,8 +26,10 @@ import java.time.OffsetDateTime;
 public class ReservacionService {
 
     private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado: ";
+    private static final String RESERVACION_NO_ENCONTRADA = "Reservación no encontrada: ";
     private static final String ESTADO_INICIAL = "PENDIENTE";
     private static final String ROL_LECTOR = "LECTOR";
+    private static final String TABLA_RESERVACIONES = "reservaciones";
 
     // Valor pendiente para el limite que pueda retirar un libro prestado
     // quedara con un día de limite para retirar un libro pedido.
@@ -33,13 +38,16 @@ public class ReservacionService {
     private final ReservacionRepository reservacionRepo;
     private final EstadoReservacionRepository estadoReservacionRepo;
     private final UsuarioRepository usuarioRepo;
+    private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     public ReservacionService(ReservacionRepository reservacionRepo,
                               EstadoReservacionRepository estadoReservacionRepo,
-                              UsuarioRepository usuarioRepo) {
+                              UsuarioRepository usuarioRepo,
+                              BitacoraAuditoriaRepository bitacoraAuditoriaRepo) {
         this.reservacionRepo = reservacionRepo;
         this.estadoReservacionRepo = estadoReservacionRepo;
         this.usuarioRepo = usuarioRepo;
+        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
     }
 
     @Transactional
@@ -72,6 +80,58 @@ public class ReservacionService {
         r.setFechaReserva(ahora);
         r.setFechaLimiteRetiro(ahora.plusDays(DIAS_LIMITE_RETIRO));
         return r;
+    }
+
+    @Transactional
+    public ReservacionResponseDTO cambiarEstado(
+            Long reservacionId, CambioEstadoReservacionRequestDTO dto, Authentication authentication) {
+        Reservacion reservacion = reservacionRepo.findById(reservacionId)
+                .orElseThrow(() -> new EntityNotFoundException(RESERVACION_NO_ENCONTRADA + reservacionId));
+
+        // Transición válida solo desde PENDIENTE (aceptar o rechazar). Las
+        // demás transiciones ya no son decisión del staff: RETIRADA/EXPIRADA
+        // pertenecen al flujo de entrega/vencimiento y CANCELADA de una
+        // reservación ya aceptada no tiene endpoint (fuera del alcance del
+        // RF-10, documentado en el resumen de la rama).
+        EstadoReservacion estadoInicial = estadoReservacionRepo.findByNombre(ESTADO_INICIAL)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Catálogo estados_reservacion sin fila '" + ESTADO_INICIAL + "'"));
+        if (!estadoInicial.getId().equals(reservacion.getEstadoReservacionId())) {
+            throw new IllegalStateException(
+                    "Solo se puede aceptar o rechazar una reservación pendiente.");
+        }
+
+        EstadoReservacion estadoDestino = estadoReservacionRepo.findByNombre(dto.nuevoEstado())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Catálogo estados_reservacion sin fila '" + dto.nuevoEstado() + "'"));
+
+        reservacion.setEstadoReservacionId(estadoDestino.getId());
+        reservacionRepo.save(reservacion);
+
+        Long ejecutorId = resolverIdPorCorreo(authentication.getName());
+        String accion = "LISTA_PARA_RETIRO".equals(dto.nuevoEstado()) ? "Aceptación" : "Rechazo";
+        registrarAuditoria(ejecutorId, reservacion.getId(),
+                accion + " de la reservación " + reservacion.getId()
+                        + " del usuario " + reservacion.getUsuarioId()
+                        + " para el libro " + reservacion.getLibroId()
+                        + " (" + ESTADO_INICIAL + " -> " + dto.nuevoEstado() + ")");
+
+        return toDTO(reservacion);
+    }
+
+    // Mismo patrón que UsuarioAdminService.registrarAuditoria(): el ejecutor
+    // se resuelve desde el JWT autenticado (nunca del body) y el registro
+    // afectado va en registroId para distinguir "quién hizo qué a quién".
+    private void registrarAuditoria(Long ejecutorId, Long reservacionAfectadaId, String detalles) {
+        BitacoraAuditoria evento = BitacoraAuditoria.builder()
+                .usuarioId(ejecutorId)
+                .tipoOperacion("UPDATE")
+                .tablaAfectada(TABLA_RESERVACIONES)
+                .registroId(reservacionAfectadaId)
+                .detalles(detalles)
+                .fechaHora(OffsetDateTime.now())
+                .build();
+        bitacoraAuditoriaRepo.save(evento);
     }
 
     @Transactional(readOnly = true)

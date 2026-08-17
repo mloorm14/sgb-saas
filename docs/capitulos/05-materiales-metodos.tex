@@ -1,0 +1,245 @@
+% ============================================================
+% Capítulo: Materiales y Métodos (Bloque B.7)
+% ============================================================
+\chapter{Materiales y métodos}
+\label{cap:materiales-metodos}
+
+\section{Enfoque metodológico: Design Science Research}
+\label{sec:mm-dsr}
+
+SGB-SaaS se desarrolló siguiendo, de forma implícita durante el proyecto
+y reconstruida aquí de forma explícita, la estructura de seis actividades
+de \emph{Design Science Research} (DSR) de Peffers et al.\footnote{La
+formulación de DSR de Peffers et al. (2007), \emph{A Design Science
+Research Methodology for Information Systems Research}, no está incluida
+todavía en \texttt{docs/bibliografia.bib}: esta tarea recibió instrucción
+explícita de no agregar referencias nuevas más allá de la excepción de
+Brooke (1996) para SUS, así que se nombra el enfoque metodológico por
+autor y año sin \texttt{\textbackslash cite\{\}} formal. Queda pendiente
+verificar su DOI real contra Crossref y agregarlo en una tarea futura,
+con el mismo rigor aplicado al resto de este acervo.} -- un proceso
+iterativo pensado específicamente para investigación que produce un
+artefacto (en este caso, software) como resultado, no solo conocimiento
+descriptivo. Las seis actividades se mapean así contra la evolución real
+y documentada del proyecto:
+
+\begin{enumerate}[leftmargin=1.4cm]
+  \item \textbf{Identificación del problema y motivación.} La fricción
+    operativa real de la gestión bibliotecaria manual
+    (\autoref{cap:introduccion}), delimitada en la fase de planificación
+    del proyecto (Entrega~1A).
+  \item \textbf{Definición de objetivos de una solución.} Las cuatro
+    preguntas de investigación (RQ1--RQ4) y los cinco objetivos
+    específicos (OE1--OE5) declarados en el \autoref{cap:introduccion}.
+  \item \textbf{Diseño y desarrollo.} Construcción incremental del
+    artefacto en sucesivas entregas -- Entrega~1B (primer módulo
+    funcional), Entrega~3 (candidato estable con los ocho módulos y
+    evidencia empírica inicial), Entrega Final (\texttt{v1.0.0}, este
+    documento) -- con las decisiones de arquitectura formalizadas como
+    ADR y el modelo C4 (\autoref{cap:diseno-arquitectura}).
+  \item \textbf{Demostración.} Ejecución de casos de uso reales de punta
+    a punta contra el stack Docker completo, no simulados:
+    \texttt{docs/mediciones/backend/2026-07-29-flujo-prestamo-devolucion-multa-e2e.md}
+    y
+    \texttt{docs/mediciones/frontend/2026-07-30-flujo-frontend-prestamos-reservaciones-multas-e2e.md}.
+  \item \textbf{Evaluación.} El conjunto de instrumentos de medición
+    descrito en la \autoref{sec:mm-instrumentos} de este mismo capítulo
+    (k6, JaCoCo, Lighthouse, auditoría OWASP, y SUS pendiente de
+    ejecución).
+  \item \textbf{Comunicación.} Este mismo informe académico, el checklist
+    de calidad de requisitos INCOSE~v4
+    (\texttt{docs/checklists/incose2023-req.md}), la documentación
+    arquitectónica versionada como código (\texttt{docs/arquitectura/}),
+    y el artefacto de software archivado con DOI persistente en Zenodo
+    (\autoref{cap:introduccion}).
+\end{enumerate}
+
+\section{Instrumentos de medición}
+\label{sec:mm-instrumentos}
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{System Usability Scale (SUS)} \citep{brooke1996sus}: 10
+    ítems tipo Likert de 5 puntos, alternando afirmaciones positivas y
+    negativas, que producen una puntuación agregada de 0 a 100 por
+    participante mediante la fórmula estándar del instrumento. Es el
+    instrumento del Bloque~C.3 de esta guía; su estado de ejecución real
+    -- todavía pendiente -- se declara con honestidad en la
+    \autoref{sec:mm-poblacion}.
+  \item \textbf{k6} (\texttt{k6/libros-listado-test.js},
+    \texttt{k6/opts.js}): herramienta de prueba de carga HTTP, usada para
+    medir la latencia del endpoint de catálogo bajo 50~VUs concurrentes
+    en los escenarios \texttt{cache\_caliente}/\texttt{cache\_frio}. Su
+    protocolo completo se describe en la \autoref{sec:mm-protocolo-perf}.
+  \item \textbf{Lighthouse} (\texttt{docs/mediciones/lighthouse/lhci-20260731-0300.json}):
+    auditoría automatizada de calidad del frontend, con puntuaciones
+    reales obtenidas de 0,95 en Performance, 0,95 en Accessibility, 1,00
+    en Best Practices y 0,82 en SEO sobre una escala de 0 a 1.
+  \item \textbf{JaCoCo} (\texttt{jacoco-maven-plugin} en
+    \texttt{backend-springboot/pom.xml}): cobertura de línea/rama/complejidad
+    ciclomática sobre el backend, con objetivo declarado de la guía de
+    $\geq$70\,\% de líneas para la Entrega Final. El resultado real
+    vigente es \textbf{81,64\,\%} de líneas (1014/1242) y
+    \textbf{58,05\,\%} de ramas (137/236), por encima del umbral de
+    líneas -- tras un primer ciclo de trabajo dirigido específicamente a
+    cinco clases de autenticación/autorización que partían de cobertura
+    casi nula, y una medición posterior que confirmó que el porcentaje se
+    mantuvo (de hecho subió) tras el merge de los ocho módulos de dominio
+    nuevos que casi triplicaron la base de código analizable
+    (\texttt{docs/mediciones/jacoco/2026-08-13-cobertura-jacoco-post-merge-8-modulos.md}).
+  \item \textbf{Auditoría OWASP} (\texttt{scripts/owasp-audit.sh},
+    \texttt{docs/mediciones/sec/}): verificación reproducible vía
+    \texttt{curl} contra el stack Docker real de un subconjunto
+    representativo de controles del OWASP Top~10:2021
+    (\autoref{sec:mt-owasp}), con hallazgo y corrección documentados por
+    control.
+\end{itemize}
+
+\section{Enfoque de métricas: Goal-Question-Metric (GQM)}
+\label{sec:mm-gqm}
+
+El bloque de evaluación de rendimiento de SGB-SaaS se estructuró,
+retrospectivamente, según el patrón Goal-Question-Metric:
+
+\begin{quote}
+\textbf{Meta (\emph{Goal}).} Analizar el uso de caché Redis sobre el
+endpoint de catálogo, con el propósito de evaluar su efecto sobre el
+rendimiento observable (latencia), desde el punto de vista del equipo de
+desarrollo, en el contexto de carga concurrente controlada (k6, 50~VUs).
+
+\textbf{Preguntas (\emph{Questions}).}
+\begin{itemize}[leftmargin=1cm]
+  \item Q1. ¿Cuál es la latencia p95 del endpoint con caché caliente
+    frente a caché frío?
+  \item Q2. ¿La diferencia observada entre ambos escenarios es
+    estadísticamente significativa, y de qué magnitud es el efecto?
+  \item Q3. ¿Se cumplen los umbrales de latencia exigidos por la guía
+    para cada escenario?
+\end{itemize}
+
+\textbf{Métricas (\emph{Metrics}).}
+\begin{itemize}[leftmargin=1cm]
+  \item M1. Percentiles p50/p90/p95/p99 de \texttt{http\_req\_duration}
+    (ms) por escenario, sobre las 5 corridas agregadas
+    (\texttt{scripts/perf-analysis.py}).
+  \item M2. Estadístico y $p$-valor de la prueba de Wilcoxon de rangos
+    con signo (pareada, sobre el p95 de cada corrida), y tamaño de
+    efecto de Cliff's delta.
+  \item M3. Cumplimiento binario (sí/no) de los umbrales exigidos: p95
+    $<$200\,ms en caliente, p95 $<$500\,ms en frío.
+\end{itemize}
+\end{quote}
+
+Los resultados reales obtenidos para M1--M3 están en
+\texttt{docs/mediciones/perf/REPORT.md} y se transcriben en el
+\autoref{cap:diseno-arquitectura}. Este mismo patrón GQM podría
+extenderse a los otros bloques de evaluación (seguridad, cobertura,
+usabilidad); no se desarrolla aquí para cada uno por disciplina de
+alcance de este capítulo -- un GQM completo es suficiente para
+documentar el enfoque de métricas adoptado, sin redundar en una
+plantilla repetida para cada bloque.
+
+\section{Población, muestreo y participantes}
+\label{sec:mm-poblacion}
+
+La población objetivo real de este proyecto es la comunidad de la
+Universidad Técnica Estatal de Quevedo (UTEQ) en sus roles de dominio
+(lector, bibliotecario) -- no una muestra sintética ni un panel externo
+contratado. \citet{baltes2022sampling}, en su revisión crítica de
+prácticas de muestreo en investigación de ingeniería de software,
+advierten que muestras pequeñas y no aleatorizadas -- el perfil esperable
+de cualquier estudio de este alcance, reclutado por conveniencia dentro
+de una única institución -- limitan severamente la generalización de
+cualquier conclusión más allá de la muestra concreta estudiada, y
+recomiendan declarar explícitamente el método de reclutamiento en vez de
+presentar el resultado como representativo de una población más amplia.
+
+\textbf{Nota de honestidad -- estado real de ejecución.} La muestra SUS
+\textbf{no se ha reclutado ni ejecutado todavía} al momento de escribir
+este capítulo (\texttt{OBS-08} en
+\texttt{docs/observaciones/OBSERVACIONES.md}: ``Pendiente -- en progreso,
+asignada a Panama''). Lo que sí existe, ya definido y versionado antes de
+la primera ejecución real (no de forma retroactiva), es el protocolo
+completo: plantilla de consentimiento informado
+(\texttt{docs/etica/consentimientos/plantilla.md}), técnica de muestreo
+por conveniencia dentro de la comunidad UTEQ, tamaño mínimo de muestra
+$N\geq15$ participantes exigido por la guía, y anonimización mediante
+código de participante (\texttt{P01}, \texttt{P02}, \ldots, ver
+\texttt{docs/etica/ETHICS.md}, sección~iii) -- nunca nombre ni correo. No
+se declara una muestra ya obtenida para no incurrir en el mismo tipo de
+afirmación no verificada que este documento evita de forma sistemática en
+el resto de sus capítulos.
+
+\section{Protocolo experimental de rendimiento (replicable)}
+\label{sec:mm-protocolo-perf}
+
+El bloque de rendimiento sigue un protocolo completamente reproducible,
+documentado con el comando exacto ejecutado:
+
+\begin{lstlisting}[language=bash]
+docker run --rm --network sgb-saas_default \
+  -v "$(pwd)/k6:/scripts" -v "$(pwd)/docs/mediciones/perf:/out" \
+  grafana/k6 run --out json=/out/k6-run{N}.json /scripts/libros-listado-test.js
+\end{lstlisting}
+
+Se ejecutó 5 veces de forma independiente (el mínimo exigido por la
+guía), cada corrida cubriendo ambos escenarios de forma secuencial
+(\texttt{cache\_caliente}: siempre \texttt{page=0}, para forzar
+repetidos aciertos de caché sobre la misma clave; \texttt{cache\_frio}:
+página elegida por un PRNG determinista (\texttt{mulberry32}, semilla
+fija~42) en cada petición, para forzar fallo de caché en cada una), con
+un perfil de carga común de 10s de \emph{ramp-up} a 50~VUs, 30s
+sostenidos, 10s de \emph{ramp-down}
+(\texttt{k6/opts.js}). Autenticación real vía \texttt{POST /api/auth/login}
+en el \texttt{setup()} del script, reutilizando el mismo
+\texttt{accessToken} entre VUs. Los cinco archivos de datos crudos
+(\texttt{k6-run1.json}--\texttt{k6-run5.json}, formato NDJSON de k6) están
+versionados en \texttt{docs/mediciones/perf/}, permitiendo reanalizar los
+mismos datos sin repetir la carga. El detalle completo -- entorno exacto
+(versiones de Docker, Java, PostgreSQL, Redis, k6), resultados por
+corrida y agregados -- está en \texttt{docs/mediciones/perf/REPORT.md} y
+se resume en el \autoref{cap:diseno-arquitectura}.
+
+\section{Análisis estadístico}
+\label{sec:mm-estadistica}
+
+El análisis agregado de las 5 corridas (\texttt{scripts/perf-analysis.py})
+calcula, por escenario, sobre la métrica \texttt{http\_req\_duration}: la
+media, la mediana, la desviación típica ($\sigma$), el intervalo de
+confianza al 95\,\% de la media, los percentiles p50/p90/p95/p99, la tasa
+de error HTTP $\geq$500 y el \emph{throughput} (peticiones/segundo). Sobre
+la comparación pareada \texttt{cache\_caliente} vs.\ \texttt{cache\_frio}
+(p95 de cada una de las 5 corridas, no el \emph{pool} de peticiones
+agregado, precisamente porque las corridas son las mismas 5 sesiones de
+carga y no muestras independientes) se aplica la prueba de Wilcoxon de
+rangos con signo (método exacto, vía \texttt{scipy.stats.wilcoxon}) y el
+tamaño de efecto de Cliff's delta. Los resultados reales obtenidos --
+Wilcoxon $p=0{,}0625$, Cliff's delta $=-0{,}68$ -- y su interpretación
+correcta en función de la potencia estadística del tamaño de muestra
+mínimo se desarrollan en el \autoref{cap:amenazas-validez} (validez de
+conclusión).
+
+\section{Determinismo y semillas}
+\label{sec:mm-semillas}
+
+Para que los resultados sean reproducibles bit a bit donde el diseño
+experimental usa aleatoriedad, se fijaron semillas explícitas en los dos
+únicos puntos del repositorio donde se generan números pseudoaleatorios
+con fines de medición (verificado por búsqueda directa en el código):
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{Selección de página en el escenario \texttt{cache\_frio}}
+    (\texttt{k6/libros-listado-test.js}): PRNG \texttt{mulberry32} con
+    semilla fija \textbf{42}, de modo que la secuencia de páginas pedidas
+    en cada corrida es la misma si se re-ejecuta el script.
+  \item \textbf{Intervalo de confianza al 95\,\% por \emph{bootstrap} del
+    percentil p95} en el gráfico comparativo
+    (\texttt{scripts/perf-analysis.py},
+    \texttt{BOOTSTRAP\_SEED = 42}): 2000 réplicas de remuestreo con
+    reemplazo, con la misma semilla \textbf{42} -- un percentil, a
+    diferencia de la media, no tiene una fórmula cerrada de intervalo de
+    confianza, de ahí el uso de \emph{bootstrap}.
+\end{itemize}
+
+Ninguna otra parte del repositorio (scripts de prueba, seed de base de
+datos, generación de datos de ejemplo) usa aleatoriedad con fines de
+medición que requiera declarar una semilla adicional.

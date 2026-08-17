@@ -3,6 +3,7 @@ package com.uteq.backend.service;
 import com.uteq.backend.dto.LibroRequestDTO;
 import com.uteq.backend.dto.LibroResponseDTO;
 import com.uteq.backend.dto.LibroSugerenciaDTO;
+import com.uteq.backend.dto.PortadaImagenDTO;
 import com.uteq.backend.entity.EstadoLibro;
 import com.uteq.backend.entity.Libro;
 import com.uteq.backend.repository.AutorRepository;
@@ -20,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,7 +30,9 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,6 +50,10 @@ class LibroServiceTest {
     // esperado.
     @Mock CategoriaRepository categoriaRepo;
     @Mock AutorRepository autorRepo;
+    // Módulo portada binaria: para leer max_tamano_portada_mb (límite de
+    // tamaño de portada en configuracion_sistema). Solo se stubea en los
+    // tests de actualizarPortada_*.
+    @Mock ConfiguracionSistemaService configuracionSistemaService;
 
     @InjectMocks LibroService libroService;
 
@@ -137,6 +145,126 @@ class LibroServiceTest {
         assertThat(resultado).isEmpty();
     }
 
+    // ── Test 8 (portada binaria): archivo válido guarda binario y ──
+    // limpia portadaUrl ────────────────────────────────────
+    @Test
+    void actualizarPortada_conArchivoValido_guardaBinarioYLimpiarPortadaUrl() {
+        Libro libro = libroConId();
+        libro.setPortadaUrl("https://host-externo/portada.png");
+        given(libroRepo.findById(1L)).willReturn(Optional.of(libro));
+        given(configuracionSistemaService.obtenerValorEntero("max_tamano_portada_mb")).willReturn(2);
+        given(libroRepo.save(any())).willReturn(libro);
+        byte[] binario = new byte[1024];
+        MockMultipartFile archivo = new MockMultipartFile(
+                "archivo", "portada.png", "image/png", binario);
+
+        LibroResponseDTO resultado = libroService.actualizarPortada(1L, archivo);
+
+        assertThat(resultado.tienePortada()).isTrue();
+        assertThat(resultado.portadaNombre()).isEqualTo("portada.png");
+        assertThat(resultado.portadaTipo()).isEqualTo("image/png");
+        // El binario queda en la entidad (y de ahi viaja a la BD) exacto.
+        assertThat(libro.getPortadaImagen()).isEqualTo(binario);
+        assertThat(libro.getPortadaTamanio()).isEqualTo(binario.length);
+        // La URL externa se descarta: la fuente vigente es el binario.
+        assertThat(libro.getPortadaUrl()).isNull();
+        verify(libroRepo).save(libro);
+    }
+
+    // ── Test 9: tipo no permitido -> 400 (IllegalArgumentException) ──
+    @Test
+    void actualizarPortada_conTipoNoPermitido_lanzaExcepcion() {
+        given(libroRepo.findById(1L)).willReturn(Optional.of(libroConId()));
+        MockMultipartFile archivo = new MockMultipartFile(
+                "archivo", "portada.gif", "image/gif", new byte[10]);
+
+        assertThatThrownBy(() -> libroService.actualizarPortada(1L, archivo))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Tipo de imagen no permitido");
+        verify(libroRepo, never()).save(any());
+    }
+
+    // ── Test 10: tamaño excedido -> 400 (IllegalArgumentException) ──
+    // MockMultipartFile no pasa por el límite de servlet (spring.servlet
+    // .multipart), así que el corte lo hace la regla de negocio con el
+    // límite leído de configuracion_sistema.
+    @Test
+    void actualizarPortada_conTamanoExcedido_lanzaExcepcion() {
+        given(libroRepo.findById(1L)).willReturn(Optional.of(libroConId()));
+        given(configuracionSistemaService.obtenerValorEntero("max_tamano_portada_mb")).willReturn(2);
+        MockMultipartFile archivo = new MockMultipartFile(
+                "archivo", "grande.png", "image/png", new byte[2 * 1024 * 1024 + 1]);
+
+        assertThatThrownBy(() -> libroService.actualizarPortada(1L, archivo))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("excede el tamaño máximo");
+        verify(libroRepo, never()).save(any());
+    }
+
+    // ── Test 11: subir portada de libro inexistente -> 404 ──
+    @Test
+    void actualizarPortada_cuandoLibroNoExiste_lanzaEntityNotFound() {
+        given(libroRepo.findById(999L)).willReturn(Optional.empty());
+        MockMultipartFile archivo = new MockMultipartFile(
+                "archivo", "portada.png", "image/png", new byte[10]);
+
+        assertThatThrownBy(() -> libroService.actualizarPortada(999L, archivo))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    // ── Test 12: obtenerPortada de libro sin portada -> 404 ──
+    @Test
+    void obtenerPortada_cuandoNoTienePortada_lanzaEntityNotFound() {
+        given(libroRepo.findById(1L)).willReturn(Optional.of(libroConId()));
+
+        assertThatThrownBy(() -> libroService.obtenerPortada(1L))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessageContaining("no tiene portada");
+    }
+
+    // ── Test 13: obtenerPortada con portada devuelve bytes y tipo ──
+    @Test
+    void obtenerPortada_cuandoTienePortada_retornaBytesYTipo() {
+        Libro libro = libroConId();
+        libro.setPortadaImagen(new byte[]{1, 2, 3});
+        libro.setPortadaTipo("image/png");
+        given(libroRepo.findById(1L)).willReturn(Optional.of(libro));
+
+        PortadaImagenDTO portada = libroService.obtenerPortada(1L);
+
+        assertThat(portada.bytes()).containsExactly(1, 2, 3);
+        assertThat(portada.contentType()).isEqualTo("image/png");
+    }
+
+    // ── Test 14 (FIX inventario): crear persiste ubicacionFisica y el ──
+    // DTO de respuesta la devuelve (LibroRequestDTO.ubicacionFisica) ──
+    @Test
+    void crearLibro_persisteUbicacionFisicaYLaDevuelveEnDTO() {
+        given(libroRepo.existsByIsbn("978-1234567890")).willReturn(false);
+        given(libroRepo.save(any())).willAnswer(inv -> inv.getArgument(0));
+
+        LibroResponseDTO resultado = libroService.crear(requestDTO());
+
+        assertThat(resultado.ubicacionFisica()).isEqualTo("Estante A-12");
+        verify(libroRepo).save(argThat(l -> "Estante A-12".equals(l.getUbicacionFisica())));
+    }
+
+    // ── Test 15 (FIX inventario): actualizar mapea la ubicación al ──
+    // libro existente y el DTO la refleja ──────────────────────
+    @Test
+    void actualizarLibro_mapeaUbicacionFisicaYLaDevuelveEnDTO() {
+        Libro libro = libroConId();
+        libro.setUbicacionFisica("Estante viejo");
+        given(libroRepo.findById(1L)).willReturn(Optional.of(libro));
+        given(libroRepo.existsByIsbnAndIdNot("978-1234567890", 1L)).willReturn(false);
+        given(libroRepo.save(any())).willReturn(libro);
+
+        LibroResponseDTO resultado = libroService.actualizar(1L, requestDTO());
+
+        assertThat(resultado.ubicacionFisica()).isEqualTo("Estante A-12");
+        assertThat(libro.getUbicacionFisica()).isEqualTo("Estante A-12");
+    }
+
     // ── Helpers ───────────────────────────────────────────
     private Libro libroConId() {
         Libro libro = new Libro();
@@ -160,6 +288,7 @@ class LibroServiceTest {
                 "978-1234567890",
                 2008,
                 null,
+                "Estante A-12",
                 null,
                 1,
                 1,
