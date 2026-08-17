@@ -53,7 +53,12 @@ module.exports = {
         "on-primary-container": "#b8c8ff",
         "on-error-container": "#93000a",
         "on-primary": "#ffffff",
-        "inverse-surface": "#233144"
+        "inverse-surface": "#233144",
+        // Tokens funcionales del mockup de "Mis préstamos" (semáforo de
+        // días restantes: verde >3, amarillo 1-3, rojo vencido). Mismo
+        // valor que en la paleta de los mockups de Rama B.
+        "success": "#1d9e75",
+        "warning": "#fec004"
       },
       borderRadius: {
         DEFAULT: "0.125rem",
