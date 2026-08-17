@@ -191,25 +191,34 @@
               </select>
             </div>
             <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">
-                Editorial <span class="opacity-60">(sin catálogo — ingresá el ID)</span>
-              </label>
-              <input formControlName="editorialId" type="number"
-                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Editorial</label>
+              <select formControlName="editorialId"
+                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white">
+                <option [ngValue]="null" disabled>Seleccioná una editorial</option>
+                @for (item of editoriales; track item.id) {
+                  <option [ngValue]="item.id">{{ item.nombre }}</option>
+                }
+              </select>
             </div>
             <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">
-                Idioma <span class="opacity-60">(ID)</span>
-              </label>
-              <input formControlName="idiomaId" type="number"
-                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Idioma</label>
+              <select formControlName="idiomaId"
+                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white">
+                <option [ngValue]="null" disabled>Seleccioná un idioma</option>
+                @for (item of idiomas; track item.id) {
+                  <option [ngValue]="item.id">{{ item.nombre }}</option>
+                }
+              </select>
             </div>
             <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">
-                Estado <span class="opacity-60">(ID)</span>
-              </label>
-              <input formControlName="estadoId" type="number"
-                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Estado</label>
+              <select formControlName="estadoId"
+                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white">
+                <option [ngValue]="null" disabled>Seleccioná un estado</option>
+                @for (item of estados; track item.id) {
+                  <option [ngValue]="item.id">{{ item.nombre }}</option>
+                }
+              </select>
             </div>
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Stock total</label>
