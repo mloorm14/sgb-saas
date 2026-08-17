@@ -1,59 +1,97 @@
-<div style="padding:2rem;max-width:1100px;margin:0 auto">
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
 
-  <div style="margin-bottom:1.5rem">
-    <h2 style="color:#005c2f;margin:0">Mis préstamos</h2>
+  <div class="mb-lg">
+    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Mis préstamos</h1>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Préstamos activos e historial completo</p>
   </div>
 
   @if (errorMsg) {
-    <div style="color:red;margin-bottom:1rem">{{ errorMsg }}</div>
+    <div class="rounded-lg bg-error-container text-on-error-container font-body-sm text-body-sm p-sm mb-lg">{{ errorMsg }}</div>
   }
+  @if (errorMsgActivos) {
+    <div class="rounded-lg bg-error-container text-on-error-container font-body-sm text-body-sm p-sm mb-lg">{{ errorMsgActivos }}</div>
+  }
+
+  <h2 class="font-headline-md text-headline-md text-on-background mb-sm">Préstamos activos</h2>
+  @if (cargandoActivos) {
+    <div class="text-center py-md font-body-sm text-body-sm text-on-surface-variant">Cargando préstamos activos...</div>
+  }
+  @if (!cargandoActivos && prestamosActivos.length > 0) {
+    <div class="grid md:grid-cols-2 gap-md mb-xl">
+      @for (activo of prestamosActivos; track activo.prestamoId) {
+        <div class="rounded-lg border border-outline-variant bg-white p-md flex gap-md">
+          <div class="w-4 shrink-0 rounded-full" [class]="claseLinea(activo.diasRestantes)"></div>
+          <div class="flex-1">
+            <p class="font-label-md text-[14px] text-on-surface">{{ activo.libroTitulo }}</p>
+            <p class="font-label-sm text-[12px] text-on-surface-variant mt-1">
+              Vence el {{ activo.fechaDevolucionEstimada | date:'dd MMM yyyy' }} ·
+              <span [class]="claseDias(activo.diasRestantes)">{{ textoVencimiento(activo.diasRestantes) }}</span>
+            </p>
+            <button
+              (click)="renovar(activo.prestamoId)"
+              [disabled]="activo.diasRestantes < 0 || renovandoId === activo.prestamoId"
+              class="mt-sm h-8 px-sm rounded border border-outline-variant text-on-surface font-label-sm text-[12px] hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed">
+              {{ renovandoId === activo.prestamoId ? 'Renovando...' : 'Renovar' }}
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+  @if (!cargandoActivos && prestamosActivos.length === 0) {
+    <div class="text-center py-md font-body-sm text-body-sm text-on-surface-variant mb-xl">No tenés préstamos activos</div>
+  }
+
+  <h2 class="font-headline-md text-headline-md text-on-background mb-sm">Historial</h2>
   @if (cargando) {
-    <div style="text-align:center;padding:2rem">Cargando préstamos...</div>
+    <div class="text-center py-md font-body-sm text-body-sm text-on-surface-variant">Cargando préstamos...</div>
+  }
+  @if (!cargando && prestamos.length > 0) {
+    <div class="rounded-lg border border-outline-variant bg-white overflow-hidden mb-lg">
+      <table class="w-full text-left">
+        <thead class="bg-surface-container-low">
+          <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+            <th class="px-md py-sm">Libro</th>
+            <th class="px-md py-sm hidden sm:table-cell">Prestado</th>
+            <th class="px-md py-sm hidden sm:table-cell">Devolución estimada</th>
+            <th class="px-md py-sm hidden sm:table-cell">Devuelto</th>
+            <th class="px-md py-sm">Estado</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+          @for (prestamo of prestamos; track prestamo.id) {
+            <tr>
+              <td class="px-md py-sm">{{ tituloLibro(prestamo.libroId) }}</td>
+              <td class="px-md py-sm hidden sm:table-cell text-on-surface-variant">{{ prestamo.fechaPrestamo | date:'dd MMM yyyy' }}</td>
+              <td class="px-md py-sm hidden sm:table-cell text-on-surface-variant">{{ prestamo.fechaDevolucionEstimada | date:'dd MMM yyyy' }}</td>
+              <td class="px-md py-sm hidden sm:table-cell text-on-surface-variant">{{ prestamo.fechaDevolucionReal ? (prestamo.fechaDevolucionReal | date:'dd MMM yyyy') : '—' }}</td>
+              <td class="px-md py-sm">
+                <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]" [class]="claseEstado(prestamo.estadoPrestamoId)">
+                  {{ estadosPrestamo[prestamo.estadoPrestamoId] }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+  @if (!cargando && prestamos.length === 0) {
+    <div class="text-center py-lg font-body-sm text-body-sm text-on-surface-variant mb-lg">No tenés préstamos registrados</div>
   }
 
-  @if (!cargando) {
-    <table style="width:100%;border-collapse:collapse;font-size:14px">
-      <thead>
-        <tr style="background:#005c2f;color:white">
-          <th style="padding:10px;text-align:left">ID</th>
-          <th style="padding:10px;text-align:left">Libro</th>
-          <th style="padding:10px;text-align:left">Fecha préstamo</th>
-          <th style="padding:10px;text-align:left">Devolución estimada</th>
-          <th style="padding:10px;text-align:left">Devolución real</th>
-          <th style="padding:10px;text-align:left">Estado</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (prestamo of prestamos; track prestamo; let i = $index) {
-          <tr
-            [style.background]="i % 2 === 0 ? '#f9f9f9' : 'white'">
-            <td style="padding:10px">{{ prestamo.id }}</td>
-            <td style="padding:10px">{{ prestamo.libroId }}</td>
-            <td style="padding:10px">{{ prestamo.fechaPrestamo | date:'short' }}</td>
-            <td style="padding:10px">{{ prestamo.fechaDevolucionEstimada | date:'short' }}</td>
-            <td style="padding:10px">{{ prestamo.fechaDevolucionReal ? (prestamo.fechaDevolucionReal | date:'short') : '—' }}</td>
-            <td style="padding:10px">{{ prestamo.estadoPrestamoId }}</td>
-          </tr>
-        }
-        @if (prestamos.length === 0) {
-          <tr>
-            <td colspan="6" style="text-align:center;padding:2rem;color:#888">No tenés préstamos registrados</td>
-          </tr>
-        }
-      </tbody>
-    </table>
+  @if (prestamos.length > 0) {
+    <div class="flex justify-center items-center gap-md font-body-sm text-body-sm">
+      <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
+        class="px-sm h-8 rounded border border-outline-variant text-on-surface hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed">
+        ← Anterior
+      </button>
+      <span class="text-on-surface-variant">Página {{ currentPage + 1 }} de {{ totalPages }}</span>
+      <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
+        class="px-sm h-8 rounded border border-outline-variant text-on-surface hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed">
+        Siguiente →
+      </button>
+    </div>
   }
 
-  <div style="display:flex;justify-content:center;align-items:center;gap:16px;margin-top:1rem">
-    <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
-      style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
-      ← Anterior
-    </button>
-    <span style="font-size:14px">Página {{ currentPage + 1 }} de {{ totalPages }}</span>
-    <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
-      style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
-      Siguiente →
-    </button>
-  </div>
-
-</div>
+</main>
