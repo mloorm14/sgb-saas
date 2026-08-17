@@ -18,13 +18,8 @@ authors:
     given-names: "Moises Antonio"
     affiliation: "Universidad Técnica Estatal de Quevedo"
     orcid: "https://orcid.org/0009-0009-8113-242X"
-version: "0.9.0-rc"
-# date-released se actualiza al valor real (YYYY-MM-DD) en el momento de
-# crear el tag correspondiente (ver docs/VERSIONING.md) — placeholder de
-# hoy mientras tanto para que el archivo sea válido contra el esquema CFF
-# (date-released es un campo recomendado, no obligatorio, pero se deja
-# fijado para evitar un campo ausente sin explicación).
-date-released: "2026-07-22"
+version: "1.0.0"
+date-released: "2026-08-17"
 license: MIT
 repository-code: "https://github.com/mloorm14/sgb-saas"
 keywords:
@@ -34,13 +29,19 @@ keywords:
   - Angular
   - PostgreSQL
   - RBAC
+# El DOI de abajo sigue siendo el de v0.9.0-rc: no hubo tiempo de
+# re-archivar en Zenodo antes del cierre de la Entrega Final, y
+# docs/VERSIONING.md ya advierte explícitamente contra re-archivar sobre
+# un tag desactualizado sin verificar primero que el commit archivado sea
+# el commit final real. No se fabrica un DOI nuevo. Pendiente: re-archivar
+# sobre el tag v1.0.0 (commit 8610ab0, build verde, informe y evidencia ya
+# incluidos en el árbol) y reemplazar este valor por el DOI real que
+# Zenodo asigne a esa versión.
 doi: 10.5281/zenodo.21712467
 # ---
-# Al cortar el tag v1.0.0 definitivo, completar aquí (mismos valores que en
-# la tabla "Imágenes Docker publicadas" del README.md, que quedan pendientes
-# hasta entonces por la misma razón — ver docs/VERSIONING.md):
-# digest-backend: sha256:...
-# digest-frontend: sha256:...
+# Digests reales de las imágenes v1.0.0 (docker pull + docker inspect,
+# mismos valores que la tabla "Imágenes Docker publicadas" del README.md):
+# digest-backend: sha256:2cb9f065d4c81cce11ab8b6d113fe20eb8603828ac2a087535280cb54d3f8598
+# digest-frontend: sha256:ea3d681b322c06ea3d2657e46d712fadf080e0074575336f0aa27399bd6cd91f
 # CFF 1.2.0 no tiene un campo estándar para digests de imágenes: se deja
-# como comentario (como el placeholder de date-released arriba) para no
-# inventar un campo no contemplado por el esquema.
+# como comentario para no inventar un campo no contemplado por el esquema.
