@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -235,6 +236,35 @@ class LibroServiceTest {
         assertThat(portada.contentType()).isEqualTo("image/png");
     }
 
+    // ── Test 14 (FIX inventario): crear persiste ubicacionFisica y el ──
+    // DTO de respuesta la devuelve (LibroRequestDTO.ubicacionFisica) ──
+    @Test
+    void crearLibro_persisteUbicacionFisicaYLaDevuelveEnDTO() {
+        given(libroRepo.existsByIsbn("978-1234567890")).willReturn(false);
+        given(libroRepo.save(any())).willAnswer(inv -> inv.getArgument(0));
+
+        LibroResponseDTO resultado = libroService.crear(requestDTO());
+
+        assertThat(resultado.ubicacionFisica()).isEqualTo("Estante A-12");
+        verify(libroRepo).save(argThat(l -> "Estante A-12".equals(l.getUbicacionFisica())));
+    }
+
+    // ── Test 15 (FIX inventario): actualizar mapea la ubicación al ──
+    // libro existente y el DTO la refleja ──────────────────────
+    @Test
+    void actualizarLibro_mapeaUbicacionFisicaYLaDevuelveEnDTO() {
+        Libro libro = libroConId();
+        libro.setUbicacionFisica("Estante viejo");
+        given(libroRepo.findById(1L)).willReturn(Optional.of(libro));
+        given(libroRepo.existsByIsbnAndIdNot("978-1234567890", 1L)).willReturn(false);
+        given(libroRepo.save(any())).willReturn(libro);
+
+        LibroResponseDTO resultado = libroService.actualizar(1L, requestDTO());
+
+        assertThat(resultado.ubicacionFisica()).isEqualTo("Estante A-12");
+        assertThat(libro.getUbicacionFisica()).isEqualTo("Estante A-12");
+    }
+
     // ── Helpers ───────────────────────────────────────────
     private Libro libroConId() {
         Libro libro = new Libro();
@@ -258,6 +288,7 @@ class LibroServiceTest {
                 "978-1234567890",
                 2008,
                 null,
+                "Estante A-12",
                 null,
                 1,
                 1,

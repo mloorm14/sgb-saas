@@ -29,6 +29,7 @@ export interface LibroRequest {
   isbn: string;
   anioPublicacion: number;
   resumen?: string;
+  ubicacionFisica?: string;
   portadaUrl?: string;
   editorialId: number;
   idiomaId: number;

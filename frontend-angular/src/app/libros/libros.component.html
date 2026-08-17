@@ -135,10 +135,6 @@
               @if (autocompletarAutor) {
                 <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Autor sugerido: {{ autocompletarAutor }}</p>
               }
-              @if (portadaPreviewUrl) {
-                <img [src]="portadaPreviewUrl" alt="Portada"
-                  class="mt-xs w-12 h-16 object-cover rounded border border-outline-variant" />
-              }
               @if (lookupMensaje) {
                 <p class="font-body-sm text-body-sm text-secondary mt-xs">{{ lookupMensaje }}</p>
               }
@@ -157,11 +153,31 @@
                 class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm resize-y"></textarea>
             </div>
             <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Año de publicación</label>
+              <input formControlName="anioPublicacion" type="number" min="1000" max="2100"
+                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Ubicación física <span class="opacity-60">(opcional)</span></label>
+              <input formControlName="ubicacionFisica" type="text" maxlength="50" placeholder="Ej: Estante A-12"
+                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Portada <span class="opacity-60">(opcional)</span></label>
+              <input type="file" accept="image/png,image/jpeg,image/webp"
+                (change)="onArchivoPortadaSeleccionado($event)"
+                class="w-full text-body-sm text-on-surface-variant file:mr-sm file:h-9 file:px-sm file:rounded file:border-0 file:bg-primary-fixed file:text-on-primary-fixed-variant file:cursor-pointer" />
+              @if (portadaPreviewUrl) {
+                <img [src]="portadaPreviewUrl" alt="Portada"
+                  class="mt-xs w-16 h-20 object-cover rounded border border-outline-variant" />
+              }
+            </div>
+            <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Categorías</label>
               <select multiple formControlName="categoriaIds"
                 class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm h-24 bg-white">
                 @for (categoria of categorias; track categoria.id) {
-                  <option [value]="categoria.id">{{ categoria.nombre }}</option>
+                  <option [ngValue]="categoria.id">{{ categoria.nombre }}</option>
                 }
               </select>
             </div>
@@ -170,7 +186,7 @@
               <select multiple formControlName="autorIds"
                 class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm h-24 bg-white">
                 @for (autor of autores; track autor.id) {
-                  <option [value]="autor.id">{{ autor.nombre }}</option>
+                  <option [ngValue]="autor.id">{{ autor.nombre }}</option>
                 }
               </select>
             </div>

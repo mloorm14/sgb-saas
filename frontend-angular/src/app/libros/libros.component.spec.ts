@@ -22,6 +22,7 @@ describe('LibrosComponent', () => {
     editorialId: 1,
     idiomaId: 1,
     estadoId: 1,
+    ubicacionFisica: 'Estante A-12',
     categorias: ['Tecnología'],
     autores: ['Robert C. Martin']
   };
@@ -69,6 +70,15 @@ describe('LibrosComponent', () => {
 
     expect(component.form.get('categoriaIds')!.value).toEqual([1]);
     expect(component.form.get('autorIds')!.value).toEqual([7]);
+  });
+
+  it('precarga ubicacionFisica y los ids de editorial/idioma/estado al editar', () => {
+    component.abrirFormularioEditar(libroBase as any);
+
+    expect(component.form.get('ubicacionFisica')!.value).toBe('Estante A-12');
+    expect(component.form.get('editorialId')!.value).toBe(1);
+    expect(component.form.get('idiomaId')!.value).toBe(1);
+    expect(component.form.get('estadoId')!.value).toBe(1);
   });
 
   it('filtra el listado por categoría y vuelve a la primera página', () => {
@@ -209,6 +219,90 @@ describe('LibrosComponent', () => {
       component.guardarLibro();
       expect(libroService.crear).not.toHaveBeenCalled();
       expect(libroService.actualizar).not.toHaveBeenCalled();
+    });
+
+    it('crea un libro SIN autocompletar ISBN: año tipeado a mano deja el form válido', () => {
+      const creado = { ...libroBase };
+      libroService.crear.and.returnValue(of(creado as any));
+
+      component.abrirFormularioCrear();
+      component.form.patchValue({
+        isbn: '9789878001234',
+        titulo: 'Libro tipeado a mano',
+        anioPublicacion: 2020,
+        stockTotal: 1,
+        stockDisponible: 1,
+        editorialId: 1,
+        idiomaId: 1,
+        estadoId: 1
+      });
+
+      expect(component.form.valid).toBeTrue();
+      component.guardarLibro();
+      expect(libroService.crear).toHaveBeenCalled();
+      expect(libroService.buscarPorIsbn).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('portada manual', () => {
+    function eventoConArchivo(archivo: File | null): Event {
+      const input = document.createElement('input');
+      Object.defineProperty(input, 'files', { value: archivo ? [archivo] : [] });
+      const event = new Event('change');
+      Object.defineProperty(event, 'target', { value: input });
+      return event;
+    }
+
+    it('acepta PNG/JPEG/WEBP de hasta 2MB y deja el preview listo para guardar', () => {
+      const archivo = new File(['img'], 'portada.png', { type: 'image/png' });
+
+      component.onArchivoPortadaSeleccionado(eventoConArchivo(archivo));
+
+      expect(component.portadaPreviewBlob).toBe(archivo);
+      expect(component.portadaPreviewUrl).toContain('blob:');
+      expect(component.lookupError).toBe('');
+    });
+
+    it('rechaza un tipo no permitido (gif) sin tocar el preview previo', () => {
+      const archivo = new File(['img'], 'portada.gif', { type: 'image/gif' });
+
+      component.onArchivoPortadaSeleccionado(eventoConArchivo(archivo));
+
+      expect(component.lookupError).toBe('Formato no permitido. Usá PNG, JPEG o WEBP.');
+      expect(component.portadaPreviewBlob).toBeNull();
+    });
+
+    it('rechaza una imagen de más de 2MB (max_tamano_portada_mb = 2 en V13)', () => {
+      const archivo = new File([new Uint8Array(2 * 1024 * 1024 + 1)], 'grande.png', { type: 'image/png' });
+
+      component.onArchivoPortadaSeleccionado(eventoConArchivo(archivo));
+
+      expect(component.lookupError).toBe('La imagen supera los 2MB permitidos.');
+      expect(component.portadaPreviewBlob).toBeNull();
+    });
+
+    it('sube la portada manual al guardar con el nombre derivado del tipo', () => {
+      const creado = { ...libroBase };
+      libroService.crear.and.returnValue(of(creado as any));
+      libroService.subirPortada.and.returnValue(of(creado as any));
+      component.portadaPreviewBlob = new Blob(['img'], { type: 'image/png' });
+      component.form.patchValue({
+        isbn: '9789878001234',
+        titulo: 'Con portada manual',
+        anioPublicacion: 2020,
+        stockTotal: 1,
+        stockDisponible: 1,
+        editorialId: 1,
+        idiomaId: 1,
+        estadoId: 1
+      });
+
+      component.guardarLibro();
+
+      expect(libroService.crear).toHaveBeenCalled();
+      expect(libroService.subirPortada).toHaveBeenCalledWith(1, jasmine.any(File));
+      const archivo = libroService.subirPortada.calls.mostRecent().args[1] as File;
+      expect(archivo.name).toBe('portada.png');
     });
   });
 });
