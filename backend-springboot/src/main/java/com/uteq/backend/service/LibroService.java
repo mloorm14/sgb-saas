@@ -159,6 +159,7 @@ public class LibroService {
         libro.setIsbn(dto.isbn());
         libro.setResumen(dto.resumen());
         libro.setPortadaUrl(dto.portadaUrl());
+        libro.setUbicacionFisica(dto.ubicacionFisica());
         libro.setAnioPublicacion(dto.anioPublicacion().shortValue());
         libro.setStockTotal(dto.stockTotal().shortValue());
         libro.setStockDisponible(dto.stockDisponible().shortValue());
@@ -316,6 +317,7 @@ public class LibroService {
         l.setIsbn(dto.isbn());
         l.setResumen(dto.resumen());
         l.setPortadaUrl(dto.portadaUrl());
+        l.setUbicacionFisica(dto.ubicacionFisica());
         l.setAnioPublicacion(dto.anioPublicacion().shortValue());
         l.setStockTotal(dto.stockTotal().shortValue());
         l.setStockDisponible(dto.stockDisponible().shortValue());
