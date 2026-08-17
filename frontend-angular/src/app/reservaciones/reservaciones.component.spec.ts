@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
 import { ReservacionesComponent } from './reservaciones.component';
 import { AuthService } from '../core/services/auth.service';
 import { ReservacionService } from '../core/services/reservacion.service';
@@ -10,8 +11,10 @@ describe('ReservacionesComponent', () => {
   let fixture: ComponentFixture<ReservacionesComponent>;
   let reservacionService: jasmine.SpyObj<ReservacionService>;
   let libroService: jasmine.SpyObj<LibroService>;
+  let roles: string[];
 
   beforeEach(async () => {
+    roles = ['LECTOR'];
     reservacionService = jasmine.createSpyObj('ReservacionService', ['listarPorUsuario', 'crear']);
     libroService = jasmine.createSpyObj('LibroService', ['obtener', 'sugerencias']);
     libroService.sugerencias.and.returnValue(of([]));
@@ -22,7 +25,14 @@ describe('ReservacionesComponent', () => {
       providers: [
         { provide: ReservacionService, useValue: reservacionService },
         { provide: LibroService, useValue: libroService },
-        { provide: AuthService, useValue: { getUserId: () => 2, hasRole: (...roles: string[]) => roles.includes('LECTOR') } }
+        { provide: ActivatedRoute, useValue: { snapshot: {} } },
+        {
+          provide: AuthService,
+          useValue: {
+            getUserId: () => 2,
+            hasRole: (...r: string[]) => r.some(rol => roles.includes(rol))
+          }
+        }
       ]
     }).compileComponents();
 
@@ -42,18 +52,42 @@ describe('ReservacionesComponent', () => {
     expect(component.errorMsg).toBe('');
   });
 
-  it('guarda el libro elegido en el buscador predictivo en el formulario', () => {
-    component.onLibroSeleccionado({ id: 9, titulo: 'Refactoring', disponible: true });
+  it('separa "Pendientes de retiro" del "Historial" en el modo lector', () => {
+    reservacionService.listarPorUsuario.and.returnValue(
+      of({
+        content: [
+          { id: 1, libroId: 9, estadoReservacionId: 1 },
+          { id: 2, libroId: 8, estadoReservacionId: 3 }
+        ],
+        totalPages: 1
+      } as any)
+    );
 
-    expect(component.formCrear.get('libroId')!.value).toBe(9);
+    fixture.detectChanges();
+
+    expect(component.pendientesDeRetiro.length).toBe(1);
+    expect(component.historial.length).toBe(1);
+    expect(component.pendientesDeRetiro[0].estadoReservacionId).toBe(1);
+    expect(component.historial[0].estadoReservacionId).toBe(3);
   });
 
-  it('invalida el libroId cuando el buscador descarta la selección', () => {
-    component.formCrear.patchValue({ libroId: 9 });
-    component.onLibroSeleccionado(null);
+  it('el modo gestión crea con el formulario manual de usuarioId/libroId', () => {
+    roles = ['BIBLIOTECARIO'];
 
-    expect(component.formCrear.get('libroId')!.value).toBe('');
-    expect(component.formCrear.invalid).toBeTrue();
+    fixture.detectChanges();
+
+    expect(component.esLector).toBeFalse();
+    expect(reservacionService.listarPorUsuario).not.toHaveBeenCalled();
+
+    component.formCrear.patchValue({ usuarioId: 1, libroId: 9 });
+    reservacionService.crear.and.returnValue(of({
+      id: 9, usuarioId: 1, libroId: 9, estadoReservacionId: 1,
+      fechaReserva: '', fechaLimiteRetiro: ''
+    } as any));
+
+    component.crearReservacion();
+
+    expect(reservacionService.crear).toHaveBeenCalledWith({ usuarioId: 1, libroId: 9 });
   });
 
   it('resuelve el título del libro con LibroService.obtener y lo cachea por id', () => {

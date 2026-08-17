@@ -1,21 +1,21 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../core/services/auth.service';
 import { ReservacionService } from '../core/services/reservacion.service';
 import { LibroService } from '../core/services/libro.service';
 import { Reservacion, ReservacionRequest } from '../core/models/reservacion.model';
-import { LibroSugerencia } from '../core/models/libro.model';
-import { BuscadorLibroComponent } from '../shared/buscador-libro/buscador-libro.component';
 
-// Dos roles en un mismo componente (como antes): LECTOR ve "Mis
-// reservaciones" y elige el libro con el buscador predictivo compartido;
-// BIBLIOTECARIO/GERENTE ven "Gestión de reservaciones" con usuarioId
-// manual (no hay endpoint de búsqueda de usuarios, gap documentado del
-// roadmap) y el campo libroId numérico se mantiene tal cual.
+// Dos roles en un mismo componente. Desde el mockup 18, el LECTOR ya no
+// crea reservaciones acá (se hacen desde el catálogo/detalle): su vista
+// tiene solo "Pendientes de retiro" + "Historial" con link al catálogo.
+// BIBLIOTECARIO/GERENTE conservan "Gestión de reservaciones" con el
+// formulario usuarioId/libroId manual tal cual (no hay endpoint de
+// búsqueda de usuarios, gap documentado del roadmap).
 @Component({
   selector: 'app-reservaciones',
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, BuscadorLibroComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink],
   templateUrl: './reservaciones.component.html'
 })
 export class ReservacionesComponent implements OnInit {
@@ -52,8 +52,6 @@ export class ReservacionesComponent implements OnInit {
   private titulosLibros = new Map<number, string>();
   private titulosEnCarga = new Set<number>();
 
-  @ViewChild(BuscadorLibroComponent) buscador?: BuscadorLibroComponent;
-
   constructor(
     private reservacionService: ReservacionService,
     private libroService: LibroService,
@@ -70,18 +68,47 @@ export class ReservacionesComponent implements OnInit {
     this.esLector = this.authService.hasRole('LECTOR') && !this.authService.hasRole('BIBLIOTECARIO', 'GERENTE', 'ADMIN');
 
     if (this.esLector) {
-      // El lector reserva y ve solo lo propio: no necesita elegir usuarioId
-      const miId = this.authService.getUserId();
-      this.formCrear.patchValue({ usuarioId: miId });
-      this.usuarioIdBusqueda = miId;
-      this.buscarReservaciones();
+      // El lector ya no crea acá: ve solo lo suyo (mockup 18)
+      this.usuarioIdBusqueda = this.authService.getUserId();
+      this.cargarReservacionesLector();
     }
   }
 
-  // El buscador compartido emite el libro elegido (o null si el texto
-  // cambió y la selección quedó inválida).
-  onLibroSeleccionado(libro: LibroSugerencia | null): void {
-    this.formCrear.patchValue({ libroId: libro ? libro.id : '' });
+  // LECTOR: un solo fetch (size 100, escala demo) y la vista divide en
+  // "Pendientes de retiro" vs "Historial" con los getters de abajo. La
+  // paginación del backend queda solo para el modo gestión.
+  private cargarReservacionesLector(): void {
+    if (!this.usuarioIdBusqueda) return;
+    this.cargando = true;
+    this.reservacionService.listarPorUsuario(this.usuarioIdBusqueda, {
+      page: 0,
+      size: 100,
+      sort: 'id,desc'
+    }).subscribe({
+      next: (data) => {
+        this.reservaciones = data.content;
+        this.cargando = false;
+      },
+      error: () => {
+        this.errorMsg = 'Error al buscar las reservaciones';
+        this.cargando = false;
+      }
+    });
+  }
+
+  // "Pendientes de retiro" = PENDIENTE(1) o LISTA_PARA_RETIRO(2), mismo
+  // criterio de reserva vigente que PrestamoService.renovar(); el resto
+  // (RETIRADA/EXPIRADA/CANCELADA) es Historial.
+  get pendientesDeRetiro(): Reservacion[] {
+    return this.reservaciones.filter(
+      r => r.estadoReservacionId === 1 || r.estadoReservacionId === 2
+    );
+  }
+
+  get historial(): Reservacion[] {
+    return this.reservaciones.filter(
+      r => r.estadoReservacionId !== 1 && r.estadoReservacionId !== 2
+    );
   }
 
   crearReservacion(): void {
@@ -90,7 +117,6 @@ export class ReservacionesComponent implements OnInit {
     this.reservacionService.crear(this.formCrear.value as ReservacionRequest).subscribe({
       next: () => {
         this.formCrear.patchValue({ libroId: '' });
-        this.buscador?.limpiar();
         if (this.usuarioIdBusqueda === Number(this.formCrear.value.usuarioId)) {
           this.cargarPagina();
         }
