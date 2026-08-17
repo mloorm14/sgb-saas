@@ -2,6 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { LibrosComponent } from './libros.component';
 import { LibroService } from '../core/services/libro.service';
+import { CategoriaService } from '../core/services/categoria.service';
+import { AutorService } from '../core/services/autor.service';
 import { AuthService } from '../core/services/auth.service';
 import { Router } from '@angular/router';
 
@@ -9,6 +11,8 @@ describe('LibrosComponent', () => {
   let component: LibrosComponent;
   let fixture: ComponentFixture<LibrosComponent>;
   let libroService: jasmine.SpyObj<LibroService>;
+  let categoriaService: jasmine.SpyObj<CategoriaService>;
+  let autorService: jasmine.SpyObj<AutorService>;
   let authService: jasmine.SpyObj<AuthService>;
 
   const libroBase = {
@@ -20,21 +24,30 @@ describe('LibrosComponent', () => {
     stockDisponible: 2,
     editorialId: 1,
     idiomaId: 1,
-    estadoId: 1
+    estadoId: 1,
+    categorias: ['Tecnología'],
+    autores: ['Robert C. Martin']
   };
 
   beforeEach(async () => {
     libroService = jasmine.createSpyObj('LibroService', [
       'listar', 'crear', 'actualizar', 'eliminar', 'subirPortada',
-      'buscarPorIsbn', 'portadaPorIsbn'
+      'buscarPorIsbn', 'portadaPorIsbn', 'obtenerPortada'
     ]);
+    categoriaService = jasmine.createSpyObj('CategoriaService', ['listar']);
+    autorService = jasmine.createSpyObj('AutorService', ['listar']);
     authService = jasmine.createSpyObj('AuthService', ['logout']);
     libroService.listar.and.returnValue(of({ content: [libroBase], totalPages: 1 } as any));
+    libroService.obtenerPortada.and.returnValue(of(new Blob(['img'], { type: 'image/jpeg' })));
+    categoriaService.listar.and.returnValue(of([{ id: 1, nombre: 'Tecnología' }, { id: 2, nombre: 'Ficción' }]));
+    autorService.listar.and.returnValue(of([{ id: 7, nombre: 'Robert C. Martin' }]));
 
     await TestBed.configureTestingModule({
       imports: [LibrosComponent],
       providers: [
         { provide: LibroService, useValue: libroService },
+        { provide: CategoriaService, useValue: categoriaService },
+        { provide: AutorService, useValue: autorService },
         { provide: AuthService, useValue: authService },
         { provide: Router, useValue: { navigate: jasmine.createSpy('navigate') } }
       ]
@@ -48,6 +61,31 @@ describe('LibrosComponent', () => {
   it('carga el listado inicial de libros', () => {
     expect(libroService.listar).toHaveBeenCalled();
     expect(component.libros.length).toBe(1);
+  });
+
+  it('carga el catálogo de categorías y autores para los selects del formulario', () => {
+    expect(categoriaService.listar).toHaveBeenCalled();
+    expect(autorService.listar).toHaveBeenCalled();
+    expect(component.categorias.length).toBe(2);
+    expect(component.autores.length).toBe(1);
+  });
+
+  it('preselecciona categorías y autores por nombre al editar (el DTO trae nombres, no ids)', () => {
+    component.abrirFormularioEditar(libroBase as any);
+
+    expect(component.form.get('categoriaIds')!.value).toEqual([1]);
+    expect(component.form.get('autorIds')!.value).toEqual([7]);
+  });
+
+  it('filtra el listado por categoría y vuelve a la primera página', () => {
+    component.currentPage = 3;
+    component.categoriaFiltro = '1';
+    component.filtrarPorCategoria();
+
+    expect(component.currentPage).toBe(0);
+    expect(libroService.listar).toHaveBeenCalledWith(
+      jasmine.objectContaining({ categoriaId: 1 })
+    );
   });
 
   it('abre el formulario de crear sin portada ni estado de autocompletar previo', () => {
