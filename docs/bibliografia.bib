@@ -1,0 +1,536 @@
+% Bibliografia compartida del informe final (docs/informe-final.tex).
+%
+% Construida en dos tandas:
+%   1) baltes2022sampling -- ya existia, exigida por el capitulo de
+%      Amenazas a la Validez (Bloque B.12) para justificar el umbral de
+%      N>=15 participantes en la evidencia SUS.
+%   2) Las 29 entradas restantes -- agregadas para el capitulo de
+%      Trabajos Relacionados (Bloque B.6). 27 de ellas fueron provistas
+%      por el usuario a partir de documentos academicos previos del
+%      equipo; 2 (colley2018ormperformance, kusuma2017rediscaching)
+%      fueron identificadas mediante busqueda dirigida en Crossref/IEEE
+%      Xplore para cubrir los vacios tematicos de arquitectura hibrida
+%      ORM+SP y cache-aside con Redis, ambos patrones usados en SGB-SaaS.
+%
+% VERIFICACION (2026-08-13): cada entrada nueva se contrasto contra el
+% registro oficial de Crossref (api.crossref.org/works/<DOI>) antes de
+% transcribirla. Esa verificacion encontro 5 discrepancias reales entre
+% los datos que trajo el usuario y el registro oficial del DOI dado.
+% Se uso el dato verificado por Crossref (no el dato original) en la
+% entrada .bib correspondiente, y se deja constancia aqui de cada caso
+% para que el equipo decida si el DOI original era el que realmente
+% queria citar:
+%
+%   - wayesa2023recsys: el usuario listo los autores como
+%     "Wayesa, Guyo, Meko, Uddin". Crossref (DOI 10.1038/s41598-023-30987-0)
+%     registra en cambio "Wayesa, Leranso, Asefa, Kedir" (Wachemo
+%     University, Etiopia). Se uso el dato de Crossref.
+%
+%   - bano2019elicitation: el usuario listo "Bano, Zowghi, da Cunha".
+%     Crossref (DOI 10.1007/s00766-019-00313-0) registra
+%     "Bano, Zowghi, Ferrari, Spoletini, Donati" -- no existe un
+%     coautor "da Cunha" en el registro oficial. Se uso el dato de
+%     Crossref.
+%
+%   - palomares2021elicitation: el usuario atribuyo el DOI
+%     10.1007/s00766-020-00345-x a "Yousuf, Mahmoud, Asadullah". Ese
+%     DOI en Crossref corresponde en realidad a un articulo distinto:
+%     "The state-of-practice in requirements elicitation: an extended
+%     interview study at 12 companies", de Palomares, Franch, Quer,
+%     Chatzipetrou, Lopez y Gorschek (Requirements Engineering 26,
+%     pp. 273-299, 2021) -- mismo tema (elicitacion de requisitos),
+%     pero autoria y paginas distintas a lo indicado. Se cito el
+%     articulo real al que apunta el DOI, bajo una key que refleja su
+%     autoria verdadera, y se renombro para no atribuir falsamente el
+%     trabajo a "Yousuf et al.". No se encontro (ni se fabrico) un DOI
+%     alternativo para un articulo real de "Yousuf, Mahmoud, Asadullah";
+%     si el equipo tenia en mente un articulo distinto, hace falta el
+%     DOI correcto.
+%
+%   - rahman2024agile: el usuario listo el primer autor como "Pradita".
+%     Crossref (DOI 10.33395/sinkron.v8i3.13853) registra el primer
+%     autor como "Abdul Rahman" (Indrajit, Unggul y Dazki si coinciden).
+%     Se uso el dato de Crossref.
+%
+%   - mckay2019tls: el usuario indico "NIST SP 800-52 Rev.2 (2024),
+%     Stine et al.". Crossref (DOI 10.6028/NIST.SP.800-52r2) registra
+%     autores "McKay, Kerry A." y "Cooper, David A.", ano de
+%     publicacion 2019 (no 2024) -- no existe un autor "Stine" en el
+%     registro oficial de este SP. Se uso el dato de Crossref.
+%
+% El resto de las entradas coincidio con Crossref salvo diferencias
+% menores de titulo abreviado/completo (se prefirio el titulo completo
+% de Crossref) y normalizacion de diacriticos.
+%
+% ------------------------------------------------------------------
+% VERIFICACION 2 (2026-08-13, misma sesion de trabajo): 3 candidatos
+% nuevos sobre JWT/autenticacion, propuestos para subir el conteo de
+% referencias de "alto impacto". Los 3 se verificaron contra Crossref
+% antes de agregarse -- ninguno presento datos fabricados o erroneos
+% (a diferencia de los 5 casos de la tanda anterior), asi que los 3 SE
+% AGREGAN. Pero solo 1 de los 3 cuenta como "alto impacto" bajo el
+% criterio literal de la guia (JCR Q1/Q2, o conferencia de primer nivel
+% tipo ICSE/FSE/ASE/MSR/EASE/ESEM/RE):
+%
+%   - bucko2023jwtbehavior (Computers, MDPI, DOI 10.3390/computers12040078):
+%     verificado -- autores, volumen, numero de articulo y DOI coinciden
+%     con Crossref. La revista SI tiene Journal Impact Factor oficial de
+%     Clarivate (JCR) con cuartil Q2 en "Computer Science, Interdisciplinary
+%     Applications" (confirmado de forma cruzada en dos fuentes
+%     independientes de metricas de revista) -- CUENTA como alto impacto.
+%
+%   - shatnawi2024pythonjwt (Procedia Computer Science 238, DOI
+%     10.1016/j.procs.2024.06.099): verificado -- autores reales
+%     Shatnawi/Al-Duwairi/Samarneh confirmados en Crossref (el usuario no
+%     tenia el nombre completo de los autores; se completo con el dato
+%     oficial). Es una publicacion real e indexada (Scopus SJR Q2,
+%     Web of Science Conference Proceedings Citation Index) pero NO
+%     tiene Journal Impact Factor de JCR -- las series "Procedia" de
+%     Elsevier son actas de conferencia, no revistas core de JCR/SCIE.
+%     NO CUENTA como alto impacto bajo el criterio literal de la guia,
+%     aunque se agrega igual como referencia real y directamente
+%     relevante (JWT en Python).
+%
+%   - ahmed2019jwtscheme (2019 22nd International Multitopic Conference
+%     INMIC, DOI 10.1109/inmic48123.2019.9022766): verificado -- autores
+%     reales Ahmed/Mahmood confirmados en Crossref/IEEE Xplore. Es una
+%     conferencia IEEE real e indexada, pero regional/generalista (no
+%     figura en rankings CORE de primer nivel). NO CUENTA como alto
+%     impacto por el mismo criterio.
+%
+% AUTOCORRECCION: al aplicar este mismo criterio de forma consistente,
+% se revisa hacia atras la clasificacion de "alto impacto" reportada
+% previamente para colley2018ormperformance (iCCECE) y
+% kusuma2017rediscaching (ICST) -- ambas son conferencias IEEE reales
+% e indexadas, pero igual de regionales/tematicas que ahmed2019jwtscheme
+% (INMIC), no de primer nivel. Contarlas como "alto impacto" en el
+% reporte anterior fue inconsistente con el criterio ahora aplicado a
+% ahmed2019jwtscheme; se corrige el conteo total en el reporte de esta
+% tarea (ver mensaje al usuario), no solo en este comentario.
+% ------------------------------------------------------------------
+%
+% ------------------------------------------------------------------
+% VERIFICACION 3 (2026-08-13, tarea de Marco Teorico / Materiales y
+% Metodos): brooke1996sus agregada como UNICA excepcion a la instruccion
+% de "no agregar referencias nuevas" en esa tarea, por ser el instrumento
+% metodologico central del Bloque C.3 (SUS) que Materiales y Metodos debe
+% citar. Verificada via Crossref (query bibliografica) y contrastada
+% ademas contra multiples agregadores de citas academicas independientes
+% (todos coinciden en autor y paginacion del original). Nota sobre una
+% particularidad real de esta referencia: el DOI que Crossref asocia al
+% capitulo (10.1201/9781498710411-35) apunta a la reedicion de 2014 de
+% "Usability Evaluation in Industry" bajo CRC Press, con paginacion
+% distinta (207-212) a la de la edicion original de 1996 bajo Taylor &
+% Francis (189-194, la paginacion universalmente citada en la literatura
+% de usabilidad). Se citan year=1996 y pages=189-194 (la edicion y
+% paginacion que la comunidad HCI cita de forma abrumadoramente mayoritaria,
+% incluido el propio autor en trabajos posteriores) y se incluye el DOI
+% verificado como identificador adicional, no como fuente de la
+% paginacion mostrada.
+% ------------------------------------------------------------------
+
+@article{baltes2022sampling,
+  author  = {Baltes, Sebastian and Ralph, Paul},
+  title   = {Sampling in software engineering research: a critical review and guidelines},
+  journal = {Empirical Software Engineering},
+  year    = {2022},
+  volume  = {27},
+  number  = {4},
+  pages   = {94},
+  doi     = {10.1007/s10664-021-10072-8}
+}
+
+% ===== Dominio: sistemas de gestion de bibliotecas / IA aplicada =====
+
+@article{ayinde2026ai,
+  author  = {Ayinde, Lateef and Ebiefung, Raphael and Oladokun, Bolaji David},
+  title   = {Adoption of artificial intelligence in academic libraries: A systematic review of current practices, challenges, and research opportunities},
+  journal = {The Journal of Academic Librarianship},
+  year    = {2026},
+  volume  = {52},
+  number  = {1},
+  pages   = {103185},
+  doi     = {10.1016/j.acalib.2025.103185}
+}
+
+@article{liabor2023cataloging,
+  author  = {Liabor, Vanessa Gay R.},
+  title   = {Enhancing Library Services through Digital Cataloging Techniques},
+  journal = {International Journal of Advanced Research in Science, Communication and Technology},
+  year    = {2023},
+  pages   = {516--526},
+  doi     = {10.48175/ijarsct-12989}
+}
+
+@article{shivaji2024intelligentlms,
+  author  = {More, Nikita Shivaji},
+  title   = {Intelligent library management system},
+  journal = {Trends in Computer Science and Information Technology},
+  year    = {2024},
+  volume  = {9},
+  number  = {1},
+  pages   = {001--009},
+  doi     = {10.17352/tcsit.000074}
+}
+
+@article{rajacic2025gdpr,
+  author  = {Raja{\v{c}}i{\'c}, Tijana and Boberi{\'c}-Krsti{\'c}ev, Danijela and Te{\v{s}}endi{\'c}, Danijela and Milosavljevi{\'c}, Gordana},
+  title   = {Validation of {GDPR} Compliance in a Library Management System: A {BISIS} and {TeMDA} Case Study},
+  journal = {Information Technology and Libraries},
+  year    = {2025},
+  volume  = {44},
+  number  = {4},
+  doi     = {10.5860/ital.v44i4.17407}
+}
+
+@inproceedings{supriyono2018qr,
+  author    = {Supriyono, Heru and Fitriyan, Muhammad Ramadhan and Muamaroh},
+  title     = {Developing a {QR} Code-based Library Management System with Case Study of Private School in Surakarta City Indonesia},
+  booktitle = {2018 Third International Conference on Informatics and Computing (ICIC)},
+  year      = {2018},
+  pages     = {1--6},
+  publisher = {IEEE},
+  doi       = {10.1109/iac.2018.8780424}
+}
+
+@article{ng2024libbot,
+  author  = {Ng, Tong-Jun and Ng, Kok-Why and Haw, Su-Cheng},
+  title   = {Lib-Bot: A Smart Librarian-Chatbot Assistant},
+  journal = {International Journal of Computing and Digital Systems},
+  year    = {2024},
+  volume  = {15},
+  number  = {1},
+  pages   = {1--11},
+  doi     = {10.12785/ijcds/160101}
+}
+
+@inproceedings{mukund2021rfid,
+  author    = {Mukund, R. Neha and Arun, Sanjana and Kusuma, S. M. and Vishak, K. R. and Monisha, M.},
+  title     = {Intelligent {RFID} Based Library Management System},
+  booktitle = {2021 IEEE International Conference on Electronics, Computing and Communication Technologies (CONECCT)},
+  year      = {2021},
+  pages     = {1--6},
+  publisher = {IEEE},
+  doi       = {10.1109/conecct52877.2021.9622566}
+}
+
+@article{adetayo2023chatgpt,
+  author  = {Adetayo, Adebowale Jeremy},
+  title   = {Artificial intelligence chatbots in academic libraries: the rise of {ChatGPT}},
+  journal = {Library Hi Tech News},
+  year    = {2023},
+  volume  = {40},
+  number  = {3},
+  pages   = {18--21},
+  doi     = {10.1108/lhtn-01-2023-0007}
+}
+
+@article{yan2023chatbotsslr,
+  author  = {Yan, Rumeng and Zhao, Xin and Mazumdar, Suvodeep},
+  title   = {Chatbots in libraries: A systematic literature review},
+  journal = {Education for Information},
+  year    = {2023},
+  volume  = {39},
+  number  = {4},
+  pages   = {431--449},
+  doi     = {10.3233/efi-230045}
+}
+
+@article{ehrenpreis2022chatbot,
+  author  = {Ehrenpreis, Michelle and DeLooper, John P.},
+  title   = {Implementing a Chatbot on a Library Website},
+  journal = {Journal of Web Librarianship},
+  year    = {2022},
+  volume  = {16},
+  number  = {2},
+  pages   = {120--142},
+  doi     = {10.1080/19322909.2022.2060893}
+}
+
+@article{wayesa2023recsys,
+  author  = {Wayesa, Fikadu and Leranso, Mesfin and Asefa, Girma and Kedir, Abduljebar},
+  title   = {Pattern-based hybrid book recommendation system using semantic relationships},
+  journal = {Scientific Reports},
+  year    = {2023},
+  volume  = {13},
+  pages   = {3693},
+  doi     = {10.1038/s41598-023-30987-0}
+}
+
+@article{hu2025bigdata,
+  author  = {Hu, Pinjia and Zhang, Yichi},
+  title   = {Big Data Analytics in Library Services With {AI}: Personalized Content Recommendations and Catalog Optimization},
+  journal = {IEEE Access},
+  year    = {2025},
+  volume  = {13},
+  pages   = {88412--88420},
+  doi     = {10.1109/access.2025.3570200}
+}
+
+@article{ayemowa2024genai,
+  author  = {Ayemowa, Matthew O. and Ibrahim, Roliana and Khan, Muhammad Murad},
+  title   = {Analysis of Recommender System Using Generative Artificial Intelligence: A Systematic Literature Review},
+  journal = {IEEE Access},
+  year    = {2024},
+  volume  = {12},
+  pages   = {87742--87766},
+  doi     = {10.1109/access.2024.3416962}
+}
+
+% ===== Ingenieria de requisitos =====
+
+@article{bano2019elicitation,
+  author  = {Bano, Muneera and Zowghi, Didar and Ferrari, Alessio and Spoletini, Paola and Donati, Beatrice},
+  title   = {Teaching requirements elicitation interviews: an empirical study of learning from mistakes},
+  journal = {Requirements Engineering},
+  year    = {2019},
+  volume  = {24},
+  pages   = {259--289},
+  doi     = {10.1007/s00766-019-00313-0}
+}
+
+@article{palomares2021elicitation,
+  author  = {Palomares, Cristina and Franch, Xavier and Quer, Carme and Chatzipetrou, Panagiota and L{\'o}pez, Lidia and Gorschek, Tony},
+  title   = {The state-of-practice in requirements elicitation: an extended interview study at 12 companies},
+  journal = {Requirements Engineering},
+  year    = {2021},
+  volume  = {26},
+  pages   = {273--299},
+  doi     = {10.1007/s00766-020-00345-x}
+}
+
+@inproceedings{yu1997istar,
+  author    = {Yu, Eric S. K.},
+  title     = {Towards modelling and reasoning support for early-phase requirements engineering},
+  booktitle = {Proceedings of {ISRE} '97: 3rd {IEEE} International Symposium on Requirements Engineering},
+  year      = {1997},
+  pages     = {226--235},
+  publisher = {IEEE},
+  doi       = {10.1109/isre.1997.566873}
+}
+
+@inproceedings{kurtanovic2017classifying,
+  author    = {Kurtanovi{\'c}, Zijad and Maalej, Walid},
+  title     = {Automatically Classifying Functional and Non-functional Requirements Using Supervised Machine Learning},
+  booktitle = {2017 IEEE 25th International Requirements Engineering Conference (RE)},
+  year      = {2017},
+  pages     = {490--495},
+  publisher = {IEEE},
+  doi       = {10.1109/re.2017.82}
+}
+
+% ===== Practicas agiles =====
+
+@article{truong2025personality,
+  author  = {Truong, Duc Minh and Xu, Lai and de Vrieze, Paul Ton},
+  title   = {The impact of personality traits on scrum team effectiveness: Insights from Vietnamese software development companies},
+  journal = {Information and Software Technology},
+  year    = {2025},
+  volume  = {188},
+  pages   = {107878},
+  doi     = {10.1016/j.infsof.2025.107878}
+}
+
+@article{rahman2024agile,
+  author  = {Rahman, Abdul and Indrajit, Eko and Unggul, Akhmad and Dazki, Erick},
+  title   = {Agile Project Management Impacts Software Development Team Productivity},
+  journal = {Sinkron},
+  year    = {2024},
+  volume  = {8},
+  number  = {3},
+  pages   = {1847--1858},
+  doi     = {10.33395/sinkron.v8i3.13853}
+}
+
+% ===== Diseno responsivo de interfaces web =====
+
+@article{parlakkilic2022responsive,
+  author  = {Parlakk{\i}l{\i}{\c{c}}, Alaattin},
+  title   = {Evaluating the effects of responsive design on the usability of academic websites in the pandemic},
+  journal = {Education and Information Technologies},
+  year    = {2022},
+  volume  = {27},
+  number  = {1},
+  pages   = {1307--1322},
+  doi     = {10.1007/s10639-021-10650-9}
+}
+
+@article{aienobe2025responsive,
+  author  = {Aienobe, Victor and Iqbal, Muhammad Zahid},
+  title   = {Responsive Web Design for Enhanced User Experience ({UX}) and User Interface ({UI})},
+  journal = {International Journal of Computer Applications},
+  year    = {2025},
+  volume  = {187},
+  number  = {34},
+  pages   = {72--93},
+  doi     = {10.5120/ijca2025925533}
+}
+
+% ===== Seguridad de transporte =====
+
+@techreport{mckay2019tls,
+  author      = {McKay, Kerry A. and Cooper, David A.},
+  title       = {Guidelines for the Selection, Configuration, and Use of Transport Layer Security ({TLS}) Implementations},
+  institution = {National Institute of Standards and Technology},
+  type        = {NIST Special Publication},
+  number      = {800-52 Rev. 2},
+  year        = {2019},
+  doi         = {10.6028/nist.sp.800-52r2}
+}
+
+% ===== JWT / autenticacion -- reservadas para el capitulo de Marco
+% Teorico (docs/capitulos/04-marco-teorico.tex), que todavia no existe.
+% No se integran en el capitulo de Trabajos Relacionados porque no son
+% sistemas comparables a SGB-SaaS ni fundamento metodologico general:
+% son evidencia tecnica especifica sobre el mecanismo JWT que SGB-SaaS
+% ya usa para autenticacion (ver nota de alcance en
+% docs/capitulos/03-trabajos-relacionados.tex). =====
+
+@article{bucko2023jwtbehavior,
+  author  = {Bucko, Ahmet and Vishi, Kamer and Krasniqi, Bujar and Rexha, Blerim},
+  title   = {Enhancing {JWT} Authentication and Authorization in Web Applications Based on User Behavior History},
+  journal = {Computers},
+  year    = {2023},
+  volume  = {12},
+  number  = {4},
+  pages   = {78},
+  doi     = {10.3390/computers12040078}
+}
+
+@article{shatnawi2024pythonjwt,
+  author  = {Shatnawi, Ahmed S. and Al-Duwairi, Basheer and Samarneh, Ala' A.},
+  title   = {Comprehensive Empirical Study of {P}ython {JWT} Libraries},
+  journal = {Procedia Computer Science},
+  year    = {2024},
+  volume  = {238},
+  pages   = {827--832},
+  doi     = {10.1016/j.procs.2024.06.099}
+}
+
+@inproceedings{ahmed2019jwtscheme,
+  author    = {Ahmed, Salman and Mahmood, Qamar},
+  title     = {An authentication based scheme for applications using {JSON} web token},
+  booktitle = {2019 22nd International Multitopic Conference (INMIC)},
+  year      = {2019},
+  pages     = {1--6},
+  publisher = {IEEE},
+  doi       = {10.1109/inmic48123.2019.9022766}
+}
+
+% ===== Instrumentos de medicion (Materiales y Metodos, Bloque B.7) =====
+
+@incollection{brooke1996sus,
+  author    = {Brooke, John},
+  title     = {{SUS}: A ``Quick and Dirty'' Usability Scale},
+  booktitle = {Usability Evaluation in Industry},
+  editor    = {Jordan, Patrick W. and Thomas, Bruce and Weerdmeester, Bernard A. and McClelland, Ian L.},
+  publisher = {Taylor \& Francis},
+  address   = {London},
+  year      = {1996},
+  pages     = {189--194},
+  doi       = {10.1201/9781498710411-35}
+}
+
+% ===== Fundamentos de arquitectura y desarrollo de software =====
+
+@book{sommerville2011se,
+  author    = {Sommerville, Ian},
+  title     = {Software Engineering},
+  edition   = {9th},
+  publisher = {Addison-Wesley},
+  year      = {2011}
+}
+
+@book{fowler2002poeaa,
+  author    = {Fowler, Martin},
+  title     = {Patterns of Enterprise Application Architecture},
+  publisher = {Addison-Wesley},
+  year      = {2002}
+}
+
+@book{walls2022springinaction,
+  author    = {Walls, Craig},
+  title     = {Spring in Action},
+  edition   = {6th},
+  publisher = {Manning Publications},
+  year      = {2022}
+}
+
+@book{bass2021softwarearch,
+  author    = {Bass, Len and Clements, Paul and Kazman, Rick},
+  title     = {Software Architecture in Practice},
+  edition   = {4th},
+  publisher = {Addison-Wesley},
+  year      = {2021}
+}
+
+@misc{brown2023c4model,
+  author       = {Brown, Simon},
+  title        = {The {C4} Model for Visualising Software Architecture},
+  year         = {2023},
+  howpublished = {Leanpub. \url{https://c4model.com/}},
+  note         = {Recurso t{\'e}cnico autopublicado, no arbitrado por pares; se cita como referencia normativa de notaci{\'o}n, no como evidencia de investigaci{\'o}n emp{\'i}rica}
+}
+
+% ===== Arquitectura hibrida ORM/SP y cache-aside (busqueda dirigida) =====
+
+@inproceedings{colley2018ormperformance,
+  author    = {Colley, Derek and Stanier, Clare and Asaduzzaman, Md},
+  title     = {The Impact of Object-Relational Mapping Frameworks on Relational Query Performance},
+  booktitle = {2018 International Conference on Computing, Electronics \& Communications Engineering (iCCECE)},
+  year      = {2018},
+  pages     = {47--52},
+  publisher = {IEEE},
+  doi       = {10.1109/iccecome.2018.8659222}
+}
+
+@inproceedings{kusuma2017rediscaching,
+  author    = {Kusuma, Mandahadi and Widyawan and Ferdiana, Ridi},
+  title     = {Performance comparison of caching strategy on {WordPress} multisite},
+  booktitle = {2017 3rd International Conference on Science and Technology - Computer (ICST)},
+  year      = {2017},
+  publisher = {IEEE},
+  doi       = {10.1109/icstc.2017.8011874}
+}
+
+% ===== Estandares empiricos (Bloque E, docs/checklists/) =====
+%
+% ralph2021empiricalstandards: unica excepcion a "no agregar referencias
+% nuevas" de esta tarea (explicitamente permitida por el usuario). Se
+% verifico via arXiv (no via Crossref, porque el registro de Crossref
+% para el DOI 10.1145/3437479.3437483 corresponde a un anuncio corto de
+% una sola pagina firmado solo por Ralph -- "ACM SIGSOFT Empirical
+% Standards Released", ACM SIGSOFT Software Engineering Notes 46(1):19 --
+% NO al documento completo de estandares con sus 42 coautores). El
+% documento real que define los estandares (incluido el estandar
+% "Engineering Research" usado en docs/checklists/ralph2021-engineering-
+% research.md) es el preprint de arXiv:2010.03525, confirmado via la API
+% de arXiv: version v1 depositada 2020-10-07, v2 revisada 2021-03-04, sin
+% DOI asignado a la fecha de esta verificacion. Se cita con año 2021
+% siguiendo la convencion de citacion recomendada por los propios
+% autores del estandar (confirmada por busqueda web independiente), no
+% el año de depósito original de la v1.
+@misc{ralph2021empiricalstandards,
+  author       = {Ralph, Paul and Ali, Nauman bin and Baltes, Sebastian and
+                   Bianculli, Domenico and Diaz, Jessica and Dittrich, Yvonne and
+                   Ernst, Neil and Felderer, Michael and Feldt, Robert and
+                   Filieri, Antonio and de Fran{\c{c}}a, Breno Bernard Nicolau and
+                   Furia, Carlo Alberto and Gay, Greg and Gold, Nicolas and
+                   Graziotin, Daniel and He, Pinjia and Hoda, Rashina and
+                   Juristo, Natalia and Kitchenham, Barbara and Lenarduzzi, Valentina and
+                   Mart{\'i}nez, Jorge and Melegati, Jorge and Mendez, Daniel and
+                   Menzies, Tim and Molleri, Jefferson and Pfahl, Dietmar and
+                   Robbes, Romain and Russo, Daniel and Saarim{\"a}ki, Nyyti and
+                   Sarro, Federica and Siegmund, Janet and Spinellis, Diomidis and
+                   Staron, Miroslaw and Stol, Klaas and Storey, Margaret-Anne and
+                   Taibi, Davide and Tamburri, Damian and Torchiano, Marco and
+                   Treude, Christoph and Turhan, Burak and Wang, Xiaofeng and Vegas, Sira},
+  title        = {Empirical Standards for Software Engineering Research},
+  year         = {2021},
+  howpublished = {arXiv:2010.03525 [cs.SE]. \url{https://arxiv.org/abs/2010.03525}},
+  note         = {ACM SIGSOFT Paper and Peer Review Quality Initiative;
+                   documento vivo mantenido en
+                   \url{https://github.com/acmsigsoft/EmpiricalStandards}. Sin
+                   DOI asignado a la fecha de verificaci{\'o}n
+                   (2026-08-13); identificado por su ID de arXiv}
+}

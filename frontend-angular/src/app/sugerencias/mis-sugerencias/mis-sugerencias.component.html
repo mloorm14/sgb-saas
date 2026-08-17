@@ -1,0 +1,81 @@
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
+  <div class="mb-lg flex items-center justify-between flex-wrap gap-sm">
+    <div>
+      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Mis solicitudes</h1>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">Sugerencias de adquisición que enviaste</p>
+    </div>
+    <a routerLink="/sugerencias/nueva"
+      class="h-10 px-md rounded bg-primary text-on-primary font-label-md text-label-sm flex items-center gap-xs hover:bg-on-primary-fixed-variant">
+      <span class="material-symbols-outlined text-[18px]">add</span> Nueva sugerencia
+    </a>
+  </div>
+
+  @if (errorMsg) {
+    <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
+  }
+
+  @if (cargando && sugerencias.length === 0) {
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando solicitudes…</p>
+  }
+
+  @if (!cargando && sugerencias.length === 0 && !errorMsg) {
+    <div class="mt-xl flex flex-col items-center justify-center text-center py-3xl text-on-surface-variant">
+      <span class="material-symbols-outlined text-[48px] mb-sm text-outline-variant">lightbulb</span>
+      <p class="font-body-md text-body-md">Todavía no enviaste sugerencias</p>
+      <a routerLink="/sugerencias/nueva" class="mt-sm text-primary font-label-md text-label-sm hover:underline">Sugerir un libro</a>
+    </div>
+  }
+
+  @if (sugerencias.length > 0) {
+    <div class="rounded-lg border border-outline-variant bg-white overflow-hidden">
+      <table class="w-full text-left">
+        <thead class="bg-surface-container-low">
+          <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+            <th class="px-md py-sm">Título</th>
+            <th class="px-md py-sm hidden md:table-cell">Autor</th>
+            <th class="px-md py-sm">Estado</th>
+            <th class="px-md py-sm hidden sm:table-cell">Fecha</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+          @for (sugerencia of sugerencias; track sugerencia.id) {
+            <tr>
+              <td class="px-md py-sm">{{ sugerencia.titulo }}</td>
+              <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ sugerencia.autor || '—' }}</td>
+              <td class="px-md py-sm">
+                @if (esRechazada(sugerencia.estado)) {
+                  <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full bg-error-container text-on-error-container font-label-sm text-[11px]">
+                    <span class="material-symbols-outlined text-[14px]">{{ badgeIcono(sugerencia.estado) }}</span> {{ estadoTexto(sugerencia.estado) }}
+                  </span>
+                } @else {
+                  <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]"
+                    [style.background]="badgeEstilo(sugerencia.estado)['background']"
+                    [style.color]="badgeEstilo(sugerencia.estado)['color']">
+                    <span class="material-symbols-outlined text-[14px]">{{ badgeIcono(sugerencia.estado) }}</span> {{ estadoTexto(sugerencia.estado) }}
+                  </span>
+                }
+              </td>
+              <td class="px-md py-sm hidden sm:table-cell text-on-surface-variant">{{ formatearFecha(sugerencia.creadoEn) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (totalPages > 1) {
+      <div class="flex justify-center mt-lg gap-xs">
+        @for (pagina of paginasVisibles; track pagina) {
+          <button (click)="irAPagina(pagina)"
+            [class.bg-primary]="pagina === currentPage"
+            [class.text-on-primary]="pagina === currentPage"
+            [class.border]="pagina !== currentPage"
+            [class.border-outline-variant]="pagina !== currentPage"
+            [class.text-on-surface]="pagina !== currentPage"
+            class="w-8 h-8 rounded font-label-sm text-label-sm cursor-pointer">
+            {{ pagina + 1 }}
+          </button>
+        }
+      </div>
+    }
+  }
+</main>

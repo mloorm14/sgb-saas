@@ -1,0 +1,372 @@
+% ============================================================
+% Capítulo: Implementación (Bloque B.9)
+% Todos los listados de código de este capítulo son código REAL del
+% repositorio (backend-springboot/src/main/java, db/procs/), citados con
+% su ruta exacta -- ninguno fue inventado ni parafraseado.
+% ============================================================
+\chapter{Implementación}
+\label{cap:implementacion}
+
+Este capítulo documenta decisiones críticas de implementación del
+backend, cada una con al menos un listado de código real extraído
+directamente del repositorio.
+
+\section{Procedimiento almacenado y su invocación desde Spring Data JPA}
+\label{sec:sp-invocacion}
+
+La estrategia híbrida de acceso a datos (ADR-013, \autoref{sec:adrs})
+exige que las operaciones con validación cruzada multi-tabla se
+implementen como procedimiento o función SQL. El siguiente listado es
+\texttt{db/procs/sp\_crear\_prestamo.sql} completo: registra un préstamo
+de forma atómica, validando que el usuario no esté bloqueado por multas
+y que el libro tenga stock disponible, usando \texttt{SQLSTATE}
+personalizados (\texttt{LB404}/\texttt{LB422}) para que el backend
+traduzca el error sin parsear texto.
+
+\begin{lstlisting}[language=SQL, caption={\texttt{db/procs/sp\_crear\_prestamo.sql} (completo)}, label={lst:sp-crear-prestamo}]
+CREATE OR REPLACE FUNCTION sp_crear_prestamo(
+    p_usuario_id BIGINT,
+    p_libro_id BIGINT,
+    p_bibliotecario_id BIGINT,
+    p_dias_prestamo INTEGER
+)
+RETURNS BIGINT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_estado_usuario_id     INTEGER;
+    v_estado_bloqueado_id   INTEGER;
+    v_stock_disponible      SMALLINT;
+    v_estado_activo_prestamo_id INTEGER;
+    v_prestamo_id           BIGINT;
+BEGIN
+    SELECT id INTO v_estado_bloqueado_id
+      FROM estados_usuario
+     WHERE nombre = 'BLOQUEADO_POR_MULTA';
+
+    SELECT estado_id INTO v_estado_usuario_id
+      FROM usuarios
+     WHERE id = p_usuario_id
+     FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'El usuario % no existe', p_usuario_id
+            USING ERRCODE = 'LB404';
+    END IF;
+
+    IF v_estado_usuario_id = v_estado_bloqueado_id THEN
+        RAISE EXCEPTION 'El usuario % esta bloqueado por multas pendientes ...',
+            p_usuario_id USING ERRCODE = 'LB422';
+    END IF;
+
+    SELECT stock_disponible INTO v_stock_disponible
+      FROM libros WHERE id = p_libro_id FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'El libro % no existe', p_libro_id
+            USING ERRCODE = 'LB404';
+    END IF;
+
+    IF v_stock_disponible <= 0 THEN
+        RAISE EXCEPTION 'El libro % no tiene stock disponible', p_libro_id
+            USING ERRCODE = 'LB422';
+    END IF;
+
+    UPDATE libros SET stock_disponible = stock_disponible - 1
+     WHERE id = p_libro_id;
+
+    INSERT INTO prestamos (usuario_id, libro_id, bibliotecario_id,
+        fecha_prestamo, fecha_devolucion_estimada, estado_prestamo_id)
+    VALUES (p_usuario_id, p_libro_id, p_bibliotecario_id, NOW(),
+        NOW() + make_interval(days => p_dias_prestamo),
+        v_estado_activo_prestamo_id)
+    RETURNING id INTO v_prestamo_id;
+
+    RETURN v_prestamo_id;
+END;
+$$;
+\end{lstlisting}
+
+\textbf{Nota de honestidad sobre el mecanismo de invocación.} La guía de
+esta entrega espera que el método Java invoque el procedimiento con la
+anotación \texttt{@Procedure} de Jakarta Persistence. En este
+repositorio, ese \emph{fue} el mecanismo original, pero se reemplazó por
+\texttt{@Query(nativeQuery = true)} tras un fallo real en tiempo de
+ejecución: Hibernate genera sintaxis de parámetros nombrados de
+PostgreSQL (\texttt{nombre => valor}) dentro del escape JDBC
+\texttt{\{call ...\}} usado por \texttt{@Procedure}, que el driver
+\texttt{pgjdbc} no soporta ahí -- \texttt{PrestamoMultaProcedureIntegrationTest}
+(test de integración real contra PostgreSQL, no mocks) confirmó el fallo
+en la primera ejecución. La migración de los 5 métodos afectados está
+documentada en
+\texttt{docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md}
+y referenciada como \emph{issue} conocido de Spring Data JPA
+(\texttt{spring-projects/spring-data-jpa\#3393}). El siguiente listado
+muestra el método real vigente hoy en
+\texttt{PrestamoProcedureRepository.java}, incluyendo el comentario del
+propio código que documenta por qué ya no usa \texttt{@Procedure}:
+
+\begin{lstlisting}[language=Java, caption={\texttt{PrestamoProcedureRepository.spCrearPrestamo} (mecanismo vigente)}, label={lst:sp-crear-prestamo-java}]
+/**
+ * sp_crear_prestamo: retorno escalar unico (BIGINT). Antes usaba
+ * @Procedure(procedureName=...) -- fallaba en runtime con
+ * "syntax error at or near '=>'" porque Hibernate genera sintaxis de
+ * parametros nombrados de PostgreSQL dentro del escape JDBC
+ * {call ...}, que pgjdbc no soporta. @Query nativa con SELECT evita
+ * el CallableStatement por completo.
+ */
+@Query(value = "SELECT sp_crear_prestamo(:p_usuario_id, :p_libro_id, " +
+               ":p_bibliotecario_id, :p_dias_prestamo)",
+        nativeQuery = true)
+Long spCrearPrestamo(
+        @Param("p_usuario_id") Long usuarioId,
+        @Param("p_libro_id") Long libroId,
+        @Param("p_bibliotecario_id") Long bibliotecarioId,
+        @Param("p_dias_prestamo") Integer diasPrestamo
+);
+\end{lstlisting}
+
+Los parámetros siguen bindeándose por nombre (\texttt{:p\_usuario\_id},
+etc.) exactamente igual que con \texttt{@Procedure} -- la única
+diferencia es el mecanismo JDBC que usa Hibernate para transportar la
+llamada (\texttt{PreparedStatement} en vez de
+\texttt{CallableStatement}), por lo que la prohibición de SQL dinámico o
+concatenación de entrada de usuario (regla A.2.3 de la guía) se sigue
+cumpliendo igual (\texttt{docs/basedatos/CATALOGO-SP.md}, sección
+``Nota de diseño: por qué 5 usan \texttt{@Procedure}\ldots y 2 usan
+\texttt{@Query}''). De los 7 objetos SQL del catálogo, los 5 con efectos
+secundarios usaban originalmente \texttt{@Procedure}/
+\texttt{@NamedStoredProcedureQuery} y hoy usan
+\texttt{@Query(nativeQuery = true)} tras esta migración; las 2 funciones
+de solo lectura que retornan \texttt{TABLE} (varias filas) usaron
+\texttt{@Query} nativa desde el principio, porque la API de \emph{stored
+procedures} de JPA~2.1 no tiene una forma estándar de exponer un
+\texttt{RETURNS TABLE} de PostgreSQL a través de \texttt{@Procedure}.
+
+\subsection*{¿Esto viola la prohibición de SQL dinámico de la guía (A.2.1)?}
+
+No. La guía (Bloque~A.2.1) establece textualmente que ``queda prohibido
+invocarlos mediante concatenación de cadenas en
+\texttt{createNativeQuery(...)}''. Esa prohibición apunta a un patrón
+concreto y distinto del usado en este proyecto: construir la sentencia
+SQL en tiempo de ejecución \textbf{concatenando texto de entrada del
+usuario} dentro del propio literal de la consulta -- p.~ej.
+\texttt{createNativeQuery("SELECT sp\_crear\_prestamo(" + idUsuario +
+")")}, donde \texttt{idUsuario} pasa a formar parte literal de la
+cadena SQL antes de ejecutarse, el vector clásico de inyección SQL.
+
+El código real de este proyecto \textbf{no hace eso en ningún punto}.
+El listado~\ref{lst:sp-crear-prestamo-java} usa
+\texttt{@Query(value = "SELECT sp\_crear\_prestamo(:p\_usuario\_id, ...)",
+nativeQuery = true)} con \textbf{parámetros nombrados bindeados}
+(\texttt{:p\_usuario\_id}, \texttt{:p\_libro\_id}, \ldots) resueltos por
+Spring Data JPA/Hibernate vía \texttt{PreparedStatement} antes de llegar
+al driver JDBC -- el valor de cada parámetro nunca se concatena, formatea
+ni interpola dentro del literal de la cadena SQL; el literal que Java
+compila es fijo (\texttt{"SELECT sp\_crear\_prestamo(:p\_usuario\_id, :p\_libro\_id, :p\_bibliotecario\_id, :p\_dias\_prestamo)"})
+y el binding ocurre por separado, exactamente como con
+\texttt{@Procedure}. Esta forma de \texttt{@Query} nativo con
+parámetros nombrados es, en sí misma, un mecanismo formal y documentado
+de Spring Data JPA para invocar funciones/procedimientos parametrizados
+-- no es un atajo informal ni una forma disimulada de SQL dinámico.
+
+En síntesis: \textbf{la regla A.2.1 prohíbe construir SQL concatenando
+entrada de usuario dentro del texto de la consulta; los parámetros
+bindeados de \texttt{@Query} nativa no construyen SQL a partir de
+input en absoluto, por lo que este patrón no cae bajo esa prohibición}.
+El motivo del cambio desde \texttt{@Procedure}/
+\texttt{@NamedStoredProcedureQuery} tampoco fue estilístico: está
+documentado con evidencia real y verificable en
+\texttt{docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md}
+(fallo reproducido en runtime, con el mensaje de error real de
+PostgreSQL/pgjdbc) y corresponde a un defecto conocido de la
+combinación Hibernate~6.2+/7.x con procedimientos multi-\texttt{OUT} en
+PostgreSQL, reportado en el repositorio público de Spring Data JPA
+(\texttt{spring-projects/spring-data-jpa\#3393}) -- no una decisión
+arbitraria del equipo para eludir el mecanismo que pide la guía.
+
+\textbf{Nota sobre verificación automática.} Al momento de escribir este
+capítulo no existe todavía en el repositorio un script de análisis
+estático tipo \texttt{scripts/audit-sql-dynamic.sh} que detecte
+patrones de SQL dinámico en el código fuente -- se deja constancia aquí
+para que, cuando se incorpore, su regla de detección distinga
+explícitamente entre concatenación real de entrada de usuario dentro
+del texto de una consulta (el patrón que sí debe marcar) y
+\texttt{@Query(nativeQuery = true)} con parámetros nombrados bindeados
+(\texttt{:p\_...}) como el de esta sección, que no debería marcarse
+como hallazgo -- un análisis ingenuo basado solo en buscar la cadena
+\texttt{nativeQuery = true} sin inspeccionar si el valor de
+\texttt{value} contiene variables Java concatenadas produciría un falso
+positivo contra este patrón, ya verificado como seguro.
+
+\section{Manejo uniforme de errores (RFC 7807)}
+
+Todas las respuestas de error del backend se devuelven como
+\texttt{ProblemDetail} (RFC~7807), vía un único
+\texttt{@RestControllerAdvice} (\texttt{GlobalExceptionHandler}). Un
+caso particularmente representativo es la traducción de los
+\texttt{SQLSTATE} personalizados de los procedimientos almacenados
+(\autoref{sec:sp-invocacion}) a códigos HTTP, sin que el backend tenga
+que parsear el texto del mensaje de error:
+
+\begin{lstlisting}[language=Java, caption={\texttt{GlobalExceptionHandler.handleStoredProcedureError} (extracto real)}, label={lst:global-exception-handler}]
+@ExceptionHandler({
+        InvalidDataAccessResourceUsageException.class,
+        UncategorizedSQLException.class,
+        DataAccessException.class
+})
+public ProblemDetail handleStoredProcedureError(Exception ex) {
+    Throwable causa = ex;
+    while (causa != null && !(causa instanceof SQLException)) {
+        causa = causa.getCause();
+    }
+
+    if (causa instanceof SQLException sqlEx) {
+        String sqlState = sqlEx.getSQLState();
+        HttpStatus status = switch (sqlState) {
+            case "LB404" -> HttpStatus.NOT_FOUND;
+            case "LB409" -> HttpStatus.CONFLICT;
+            case "LB422" -> HttpStatus.UNPROCESSABLE_ENTITY;
+            default -> null;
+        };
+        if (status != null) {
+            return ProblemDetail.forStatusAndDetail(status, sqlEx.getMessage());
+        }
+    }
+
+    log.error("Error no controlado en procedimiento almacenado", ex);
+    return ProblemDetail.forStatusAndDetail(
+            HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor");
+}
+\end{lstlisting}
+
+Sin este manejador dedicado, cualquier \texttt{RAISE EXCEPTION ... USING
+ERRCODE = 'LBxxx'} de un procedimiento llegaba envuelto en una
+\texttt{DataAccessException} genérica de Spring, y caía en el
+\emph{catch-all} de último recurso -- un error de negocio real (p.~ej.
+``préstamo ya devuelto'') se veía como un \texttt{500} genérico en vez
+de un \texttt{409} con el mensaje real. El mismo patrón de un
+\texttt{@ExceptionHandler} dedicado por tipo de excepción se repite para
+excepciones de dominio Java (p.~ej.
+\texttt{CorreoYaRegistradoException} $\to$ \texttt{409},
+\texttt{LoginRateLimitExcedidoException} $\to$ \texttt{429}) y para
+excepciones del propio framework que antes caían también en el
+\emph{catch-all}: \texttt{AuthorizationDeniedException} (autorización de
+método vía \texttt{@PreAuthorize}, antes producía \texttt{500} en vez de
+\texttt{403}) y \texttt{NoResourceFoundException} (recurso estático
+inexistente bajo el perfil \texttt{prod}, corregido en esta misma
+entrega -- ver \texttt{docs/mediciones/sec/2026-08-11-owasp-a05-verificacion-real.md}).
+
+\section{Configuración paramétrica del sistema}
+
+\texttt{ConfiguracionSistemaService} expone parámetros de la tabla
+\texttt{configuracion\_sistema} (p.~ej. el máximo de renovaciones de un
+préstamo, ver \texttt{REQ-F-018}) para leerse en cada operación de
+negocio sin ir a la base de datos cada vez, con un caché en memoria
+simple (\texttt{ConcurrentHashMap} por instancia, no Redis) invalidado
+clave por clave al escribir:
+
+\begin{lstlisting}[language=Java, caption={\texttt{ConfiguracionSistemaService} (extracto real: lectura cacheada y escritura)}, label={lst:config-service}]
+private final ConcurrentHashMap<String, String> cache = new ConcurrentHashMap<>();
+
+@Transactional(readOnly = true)
+public String obtenerValor(String clave) {
+    String cacheado = cache.get(clave);
+    if (cacheado != null) {
+        return cacheado;
+    }
+    String valor = repo.findById(clave)
+            .orElseThrow(() -> new EntityNotFoundException(CLAVE_NO_ENCONTRADA + clave))
+            .getValor();
+    cache.put(clave, valor);
+    return valor;
+}
+
+@Transactional
+public ConfiguracionSistemaResponseDTO actualizar(String clave, String nuevoValor) {
+    ConfiguracionSistema config = repo.findById(clave)
+            .orElseThrow(() -> new EntityNotFoundException(CLAVE_NO_ENCONTRADA + clave));
+    config.setValor(nuevoValor);
+    repo.save(config);
+    cache.remove(clave);
+    return new ConfiguracionSistemaResponseDTO(config.getClave(), config.getValor());
+}
+\end{lstlisting}
+
+La elección deliberada de un \texttt{ConcurrentHashMap} local en vez de
+Redis (que sí se usa para el caché del catálogo, ver
+\autoref{sec:cache-redis}) está documentada en el propio Javadoc de la
+clase: este valor cambia con muy poca frecuencia (un \texttt{ADMIN}
+ajustando un parámetro puntual), a diferencia del caché ``libros'', que
+sí necesita compartirse entre instancias e invalidarse por TTL. Además,
+\texttt{actualizar} solo permite modificar claves \textbf{ya
+existentes} -- el catálogo de parámetros válidos lo define el dominio
+(migraciones/\emph{seed}), no quien llama al endpoint, evitando que
+quede una clave suelta sin ningún consumidor real.
+
+\section{Estrategia de caché Redis del catálogo}
+\label{sec:cache-redis}
+
+El listado de libros usa caché declarativo de Spring
+(\texttt{@Cacheable}/\texttt{@CacheEvict}) sobre Redis, con TTL
+configurable externamente (ADR-008):
+
+\begin{lstlisting}[language=Java, caption={\texttt{LibroService} (extracto real: lectura cacheada y evicción en escritura)}, label={lst:libro-service-cache}]
+@Cacheable("libros")
+@Transactional(readOnly = true)
+public Page<LibroResponseDTO> listar(Pageable pageable) {
+    return libroRepo.findByEstado_Nombre(ESTADO_ACTIVO, pageable)
+            .map(this::toDTO);
+}
+
+@CacheEvict(value = "libros", allEntries = true)
+@Transactional
+public LibroResponseDTO crear(LibroRequestDTO dto) {
+    if (libroRepo.existsByIsbn(dto.isbn())) {
+        throw new IllegalArgumentException("ISBN ya registrado: " + dto.isbn());
+    }
+    validarStock(dto.stockTotal(), dto.stockDisponible());
+    return toDTO(libroRepo.save(fromDTO(dto)));
+}
+\end{lstlisting}
+
+\texttt{crear}, \texttt{actualizar} y \texttt{eliminar} invalidan el
+caché completo del listado (\texttt{allEntries = true}) para no dejar
+una respuesta paginada obsoleta tras cualquier escritura. El método
+\texttt{listarPorCategoria} (filtro por categoría/autor) deliberadamente
+\textbf{no} lleva \texttt{@Cacheable}: combinar el filtro con el caché
+exigiría una clave compuesta fuera del alcance de la rama que lo
+introdujo, y no es el camino más transitado del catálogo -- decisión
+documentada como comentario en el propio código, no un descuido. El
+método \texttt{sugerir} (autocompletado) usa un caché \emph{distinto}
+(\texttt{"sugerencias-libros"}) con TTL propio, mucho más corto (5--10\,s),
+porque su patrón de invalidación (una entrada por texto de búsqueda) es
+incompatible con el caché de listado general.
+
+\section{Transporte del token de sesión en cookie \texttt{HttpOnly}}
+
+El \texttt{refreshToken} viaja exclusivamente en una cookie
+\texttt{HttpOnly}, \texttt{Secure}, \texttt{SameSite=Strict}, con
+\texttt{path=/api/auth} (ADR-007) -- nunca en el cuerpo JSON, para que
+JavaScript del frontend no pueda leerlo ni reenviarlo manualmente:
+
+\begin{lstlisting}[language=Java, caption={\texttt{AuthController.buildRefreshCookie} (real, completo)}, label={lst:jwt-cookie}]
+private ResponseCookie buildRefreshCookie(String valor, long maxAgeMs) {
+    return ResponseCookie.from(REFRESH_COOKIE_NAME, valor)
+            .httpOnly(true)
+            .secure(true)
+            .sameSite("Strict")
+            .path("/api/auth")
+            .maxAge(Duration.ofMillis(maxAgeMs))
+            .build();
+}
+\end{lstlisting}
+
+El mismo método se reutiliza para \emph{limpiar} la cookie en
+\texttt{logout} (\texttt{buildRefreshCookie("", 0)}, valor vacío y
+\texttt{maxAge=0}). El \texttt{accessToken}, de vida corta (1\,h), sigue
+viajando en el cuerpo JSON de la respuesta -- migrarlo también a cookie
+está deliberadamente diferido (ver la nota de honestidad de
+\texttt{ADR-007} y \texttt{REQ-NF-002}, \autoref{cap:ingenieria-requisitos})
+por el impacto que tendría en \texttt{jwt.interceptor.ts}/
+\texttt{auth.service.ts} del frontend, no por un olvido.

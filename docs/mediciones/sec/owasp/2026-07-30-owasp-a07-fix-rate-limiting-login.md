@@ -143,3 +143,9 @@ Antes: 6/6 intentos fallidos devolvían `401` sin ningún límite.
 Ahora: intentos 1–5 devuelven `401`, intento 6 devuelve `429` con
 `ProblemDetail` y tiempo de espera informado. Verificado en vivo
 contra el stack Docker real, mismo comando que la auditoría original.
+
+> **Actualización posterior (2026-08-14, misma rama):** el comportamiento
+> del sistema ante caída de Redis fue evaluado por componente y decidido
+> de forma deliberada: rate limiting **fail-open**, verificación de JWT
+> revocados **fail-closed**. Ver
+> [`decision-fail-closed-jwt-redis.md`](decision-fail-closed-jwt-redis.md).

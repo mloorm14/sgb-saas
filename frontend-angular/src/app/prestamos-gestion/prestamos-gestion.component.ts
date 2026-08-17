@@ -1,13 +1,13 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { PrestamoService } from '../core/services/prestamo.service';
+import { Prestamo, PrestamoRequest } from '../core/models/prestamo.model';
 
 @Component({
-  selector: 'app-prestamos-gestion',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
-  templateUrl: './prestamos-gestion.component.html'
+    selector: 'app-prestamos-gestion',
+    imports: [CommonModule, ReactiveFormsModule, FormsModule],
+    templateUrl: './prestamos-gestion.component.html'
 })
 export class PrestamosGestionComponent {
   // Formulario de creación
@@ -16,16 +16,14 @@ export class PrestamosGestionComponent {
 
   // Búsqueda de préstamos por usuario (no existe endpoint de "listar todos")
   usuarioIdBusqueda: number | null = null;
-  prestamos: any[] = [];
+  prestamos: Prestamo[] = [];
   totalPages: number = 0;
   currentPage: number = 0;
   pageSize: number = 10;
   cargando: boolean = false;
   errorMsg: string = '';
 
-  private apiUrl = 'https://sgb-backend-b058.onrender.com/api/v1';
-
-  constructor(private http: HttpClient, private fb: FormBuilder) {
+  constructor(private prestamoService: PrestamoService, private fb: FormBuilder) {
     this.formCrear = this.fb.group({
       usuarioId: ['', [Validators.required]],
       libroId: ['', [Validators.required]],
@@ -36,7 +34,9 @@ export class PrestamosGestionComponent {
   crearPrestamo(): void {
     if (this.formCrear.invalid) return;
     this.errorMsgCrear = '';
-    this.http.post(`${this.apiUrl}/prestamos`, this.formCrear.value).subscribe({
+    // Los valores del form viajan tal cual (el backend convierte strings);
+    // solo cambia el canal de transporte.
+    this.prestamoService.crear(this.formCrear.value as PrestamoRequest).subscribe({
       next: () => {
         this.formCrear.reset();
         // Si el usuario recien prestado es el mismo que se esta buscando, refrescamos
@@ -61,9 +61,11 @@ export class PrestamosGestionComponent {
 
   private cargarPagina(): void {
     this.cargando = true;
-    this.http.get<any>(
-      `${this.apiUrl}/prestamos/usuario/${this.usuarioIdBusqueda}?page=${this.currentPage}&size=${this.pageSize}&sort=id,desc`
-    ).subscribe({
+    this.prestamoService.listarPorUsuario(this.usuarioIdBusqueda!, {
+      page: this.currentPage,
+      size: this.pageSize,
+      sort: 'id,desc'
+    }).subscribe({
       next: (data) => {
         this.prestamos = data.content;
         this.totalPages = data.totalPages;
@@ -92,7 +94,7 @@ export class PrestamosGestionComponent {
 
   registrarDevolucion(prestamoId: number): void {
     if (!confirm('¿Confirmar la devolución de este préstamo?')) return;
-    this.http.post(`${this.apiUrl}/prestamos/${prestamoId}/devolucion`, {}).subscribe({
+    this.prestamoService.devolver(prestamoId).subscribe({
       next: () => { this.cargarPagina(); },
       error: () => { this.errorMsg = 'Error al registrar la devolución'; }
     });

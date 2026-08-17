@@ -1,13 +1,21 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../core/services/auth.service';
+import { ReservacionService } from '../core/services/reservacion.service';
+import { LibroService } from '../core/services/libro.service';
+import { Reservacion, ReservacionRequest } from '../core/models/reservacion.model';
 
+// Dos roles en un mismo componente. Desde el mockup 18, el LECTOR ya no
+// crea reservaciones acá (se hacen desde el catálogo/detalle): su vista
+// tiene solo "Pendientes de retiro" + "Historial" con link al catálogo.
+// BIBLIOTECARIO/GERENTE conservan "Gestión de reservaciones" con el
+// formulario usuarioId/libroId manual tal cual (no hay endpoint de
+// búsqueda de usuarios, gap documentado del roadmap).
 @Component({
   selector: 'app-reservaciones',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink],
   templateUrl: './reservaciones.component.html'
 })
 export class ReservacionesComponent implements OnInit {
@@ -17,17 +25,40 @@ export class ReservacionesComponent implements OnInit {
   errorMsgCrear: string = '';
 
   usuarioIdBusqueda: number | null = null;
-  reservaciones: any[] = [];
+  reservaciones: Reservacion[] = [];
   totalPages: number = 0;
   currentPage: number = 0;
   pageSize: number = 10;
   cargando: boolean = false;
   errorMsg: string = '';
 
-  private apiUrl = 'https://sgb-backend-b058.onrender.com/api/v1';
+  // Mapa local de estados: EstadoReservacion existe como entidad +
+  // repository en el backend, pero ningún controller expone el catálogo
+  // (gap del roadmap, mismo criterio que con tipoNotificacionId).
+  // Workaround temporal hasta que exista un endpoint de catálogo.
+  // IDs/nombres confirmados contra db/seed.sql y
+  // V10__seed_catalogos_y_admin.sql (SERIAL: 1 PENDIENTE, 2
+  // LISTA_PARA_RETIRO, 3 RETIRADA, 4 EXPIRADA, 5 CANCELADA).
+  readonly estadosReservacion: Record<number, string> = {
+    1: 'Pendiente',
+    2: 'Lista para retiro',
+    3: 'Retirada',
+    4: 'Expirada',
+    5: 'Cancelada'
+  };
+
+  // Cache de títulos por libroId: ReservacionResponseDTO solo trae
+  // libroId; se resuelve con LibroService.obtener() UNA vez por libro.
+  private titulosLibros = new Map<number, string>();
+  private titulosEnCarga = new Set<number>();
+
+  // Id de la reservación con acción (aceptar/rechazar) en curso: deshabilita
+  // sus botones hasta que responda el PATCH.
+  accionandoId: number | null = null;
 
   constructor(
-    private http: HttpClient,
+    private reservacionService: ReservacionService,
+    private libroService: LibroService,
     private fb: FormBuilder,
     private authService: AuthService
   ) {
@@ -41,18 +72,53 @@ export class ReservacionesComponent implements OnInit {
     this.esLector = this.authService.hasRole('LECTOR') && !this.authService.hasRole('BIBLIOTECARIO', 'GERENTE', 'ADMIN');
 
     if (this.esLector) {
-      // El lector reserva y ve solo lo propio: no necesita elegir usuarioId
-      const miId = this.authService.getUserId();
-      this.formCrear.patchValue({ usuarioId: miId });
-      this.usuarioIdBusqueda = miId;
-      this.buscarReservaciones();
+      // El lector ya no crea acá: ve solo lo suyo (mockup 18)
+      this.usuarioIdBusqueda = this.authService.getUserId();
+      this.cargarReservacionesLector();
     }
+  }
+
+  // LECTOR: un solo fetch (size 100, escala demo) y la vista divide en
+  // "Pendientes de retiro" vs "Historial" con los getters de abajo. La
+  // paginación del backend queda solo para el modo gestión.
+  private cargarReservacionesLector(): void {
+    if (!this.usuarioIdBusqueda) return;
+    this.cargando = true;
+    this.reservacionService.listarPorUsuario(this.usuarioIdBusqueda, {
+      page: 0,
+      size: 100,
+      sort: 'id,desc'
+    }).subscribe({
+      next: (data) => {
+        this.reservaciones = data.content;
+        this.cargando = false;
+      },
+      error: () => {
+        this.errorMsg = 'Error al buscar las reservaciones';
+        this.cargando = false;
+      }
+    });
+  }
+
+  // "Pendientes de retiro" = PENDIENTE(1) o LISTA_PARA_RETIRO(2), mismo
+  // criterio de reserva vigente que PrestamoService.renovar(); el resto
+  // (RETIRADA/EXPIRADA/CANCELADA) es Historial.
+  get pendientesDeRetiro(): Reservacion[] {
+    return this.reservaciones.filter(
+      r => r.estadoReservacionId === 1 || r.estadoReservacionId === 2
+    );
+  }
+
+  get historial(): Reservacion[] {
+    return this.reservaciones.filter(
+      r => r.estadoReservacionId !== 1 && r.estadoReservacionId !== 2
+    );
   }
 
   crearReservacion(): void {
     if (this.formCrear.invalid) return;
     this.errorMsgCrear = '';
-    this.http.post(`${this.apiUrl}/reservaciones`, this.formCrear.value).subscribe({
+    this.reservacionService.crear(this.formCrear.value as ReservacionRequest).subscribe({
       next: () => {
         this.formCrear.patchValue({ libroId: '' });
         if (this.usuarioIdBusqueda === Number(this.formCrear.value.usuarioId)) {
@@ -61,6 +127,30 @@ export class ReservacionesComponent implements OnInit {
       },
       error: () => { this.errorMsgCrear = 'Error al crear la reservación'; }
     });
+  }
+
+  tituloLibro(libroId: number): string {
+    const cacheado = this.titulosLibros.get(libroId);
+    if (cacheado) return cacheado;
+    if (!this.titulosEnCarga.has(libroId)) {
+      this.titulosEnCarga.add(libroId);
+      this.libroService.obtener(libroId).subscribe({
+        next: (libro) => this.titulosLibros.set(libroId, libro.titulo),
+        error: () => this.titulosLibros.set(libroId, `Libro #${libroId}`)
+      });
+    }
+    return `Libro #${libroId}`; // placeholder mientras llega la respuesta
+  }
+
+  claseEstadoReservacion(estadoId: number): string {
+    switch (estadoId) {
+      case 1: return 'bg-tertiary-fixed text-on-tertiary-fixed';            // Pendiente
+      case 2: return 'bg-secondary-container text-on-secondary-container';  // Lista para retiro
+      case 3: return 'bg-surface-container-low text-on-surface-variant';    // Retirada
+      case 4: return 'bg-error-container text-on-error-container';          // Expirada
+      case 5: return 'bg-error-container text-on-error-container';          // Cancelada
+      default: return 'bg-surface-container-low text-on-surface-variant';
+    }
   }
 
   buscarReservaciones(): void {
@@ -73,11 +163,32 @@ export class ReservacionesComponent implements OnInit {
     this.cargarPagina();
   }
 
+  // PATCH /api/v1/reservaciones/{id}/estado (solo staff, botones visibles
+  // únicamente en filas PENDIENTE). Aceptar -> LISTA_PARA_RETIRO,
+  // rechazar -> CANCELADA; el estado nuevo queda visible en la tabla y se
+  // audita en el backend (tabla reservaciones, UPDATE).
+  cambiarEstadoReservacion(r: Reservacion, nuevoEstado: 'LISTA_PARA_RETIRO' | 'CANCELADA'): void {
+    if (this.accionandoId !== null || r.estadoReservacionId !== 1) return;
+    this.accionandoId = r.id;
+    this.errorMsg = '';
+    this.reservacionService.cambiarEstado(r.id, { nuevoEstado }).subscribe({
+      next: () => this.cargarPagina(),
+      error: (err) => {
+        this.errorMsg = (err as { error?: { detail?: string } })?.error?.detail
+          ?? 'No se pudo cambiar el estado de la reservación';
+        this.accionandoId = null;
+      },
+      complete: () => { this.accionandoId = null; }
+    });
+  }
+
   private cargarPagina(): void {
     this.cargando = true;
-    this.http.get<any>(
-      `${this.apiUrl}/reservaciones/usuario/${this.usuarioIdBusqueda}?page=${this.currentPage}&size=${this.pageSize}&sort=id,desc`
-    ).subscribe({
+    this.reservacionService.listarPorUsuario(this.usuarioIdBusqueda!, {
+      page: this.currentPage,
+      size: this.pageSize,
+      sort: 'id,desc'
+    }).subscribe({
       next: (data) => {
         this.reservaciones = data.content;
         this.totalPages = data.totalPages;

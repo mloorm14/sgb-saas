@@ -3,17 +3,23 @@ package com.uteq.backend.controller;
 import com.uteq.backend.dto.LibroRequestDTO;
 import com.uteq.backend.dto.LibroResponseDTO;
 import com.uteq.backend.dto.LibroSugerenciaDTO;
+import com.uteq.backend.dto.LibroIsbnLookupDTO;
+import com.uteq.backend.dto.PortadaImagenDTO;
 import com.uteq.backend.service.LibroService;
+import com.uteq.backend.service.LibroIsbnLookupService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -23,9 +29,11 @@ import java.util.List;
 public class LibroController {
 
     private final LibroService libroService;
+    private final LibroIsbnLookupService libroIsbnLookupService;
 
-    public LibroController(LibroService libroService) {
+    public LibroController(LibroService libroService, LibroIsbnLookupService libroIsbnLookupService) {
         this.libroService = libroService;
+        this.libroIsbnLookupService = libroIsbnLookupService;
     }
 
     // ── GET /api/v1/libros?page=0&size=10 ────────────────
@@ -56,6 +64,33 @@ public class LibroController {
     public ResponseEntity<List<LibroSugerenciaDTO>> sugerencias(
             @RequestParam @Size(min = 2, max = 60, message = "El texto de búsqueda debe tener entre 2 y 60 caracteres") String texto) {
         return ResponseEntity.ok(libroService.sugerir(texto));
+    }
+
+    // ── GET /api/v1/libros/lookup-isbn?isbn= ─────────────
+    // Módulo inventario (mockup 14): autocompletar desde Google Books.
+    // La ruta literal /lookup-isbn gana sobre /{id} (Spring elige el
+    // patrón más específico). 404 con ProblemDetail si no hay resultado.
+    @GetMapping("/lookup-isbn")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    public ResponseEntity<LibroIsbnLookupDTO> lookupIsbn(
+            @RequestParam @Pattern(regexp = "^[0-9\\-]{10,17}$", message = "ISBN inválido")
+            @Size(max = 13, message = "El ISBN no puede superar 13 caracteres") String isbn) {
+        return ResponseEntity.ok(libroIsbnLookupService.buscarPorIsbn(isbn));
+    }
+
+    // ── GET /api/v1/libros/lookup-isbn/portada?isbn= ─────
+    // Proxy de la portada de Google Books: el backend descarga el
+    // thumbnail y lo devuelve como binario (el navegador no debe llamar
+    // a Google Books directo). Igual que /{id}/portada, 404 si no hay.
+    @GetMapping("/lookup-isbn/portada")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    public ResponseEntity<byte[]> lookupIsbnPortada(
+            @RequestParam @Pattern(regexp = "^[0-9\\-]{10,17}$", message = "ISBN inválido")
+            @Size(max = 13, message = "El ISBN no puede superar 13 caracteres") String isbn) {
+        PortadaImagenDTO portada = libroIsbnLookupService.obtenerPortada(isbn);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(portada.contentType()))
+                .body(portada.bytes());
     }
 
     // ── GET /api/v1/libros/{id} ───────────────────────────
@@ -89,5 +124,34 @@ public class LibroController {
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         libroService.eliminar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // ── POST /api/v1/libros/{id}/portada ───────────────────
+    // Módulo portada binaria (V13__portada_imagen.sql): multipart con un
+    // solo campo "archivo". La validación (tipo/tamaño) vive en
+    // LibroService.actualizarPortada y responde 400 con ProblemDetail vía
+    // GlobalExceptionHandler, no acá. Admin/Gerente heredan el rol de
+    // bibliotecario, mismo criterio que el resto del controller.
+    @PostMapping(value = "/{id}/portada", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    public ResponseEntity<LibroResponseDTO> subirPortada(
+            @PathVariable Long id,
+            @RequestParam("archivo") MultipartFile archivo) {
+        return ResponseEntity.ok(libroService.actualizarPortada(id, archivo));
+    }
+
+    // ── GET /api/v1/libros/{id}/portada ────────────────────
+    // Devuelve el binario con Content-Type dinámico según portada_tipo
+    // (image/png|image/jpeg|image/webp). LECTURA para todos los roles
+    // autenticados, igual que el resto del catálogo. 404 (no un
+    // placeholder) si el libro no existe o no tiene portada -- eso es
+    // decisión del frontend.
+    @GetMapping("/{id}/portada")
+    @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')")
+    public ResponseEntity<byte[]> obtenerPortada(@PathVariable Long id) {
+        PortadaImagenDTO portada = libroService.obtenerPortada(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(portada.contentType()))
+                .body(portada.bytes());
     }
 }

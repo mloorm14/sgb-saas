@@ -1,0 +1,125 @@
+% ============================================================
+% Capítulo: Trabajo Futuro (Bloque B.13)
+% ============================================================
+\chapter{Trabajo futuro}
+\label{cap:trabajo-futuro}
+
+Este capítulo enumera las líneas de trabajo que quedan explícitamente
+fuera del alcance de esta Entrega Final -- no genéricas ni especulativas,
+sino los gaps reales ya identificados en el propio repositorio a lo largo
+de este documento. Cada una indica por qué quedó fuera de alcance y cómo
+se abordaría.
+
+\section{Completar la evidencia de usabilidad (SUS, $N\geq15$)}
+\label{sec:tf-sus}
+
+El Bloque~5 de evaluación empírica (\autoref{sec:res-usabilidad}) quedó
+con $N=0$ de los $N\geq15$ participantes que exige la guía. Quedó fuera
+de alcance de esta entrega porque su ejecución depende de una condición
+externa al propio código: un despliegue público funcional donde
+participantes reales puedan interactuar con el sistema bajo el protocolo
+ya definido (plantilla de consentimiento informado, técnica de muestreo
+por conveniencia dentro de la comunidad UTEQ, anonimización por código de
+participante). Ese despliegue está en curso (trabajo de Cajas); una vez
+disponible, la línea de trabajo es directa y ya está protocolizada: (i)
+reclutar $\geq15$ participantes con roles representativos del dominio
+(lector, bibliotecario), (ii) aplicar el instrumento SUS de 10 ítems
+\citep{brooke1996sus} bajo el protocolo de
+\texttt{docs/etica/consentimientos/plantilla.md}, (iii) calcular la
+puntuación agregada y aplicar el criterio de \citet{baltes2022sampling}
+sobre generalización de muestras pequeñas al interpretar el resultado, y
+(iv) actualizar el \autoref{cap:resultados} y el
+\autoref{cap:amenazas-validez} con el dato real obtenido -- ya asignada a
+Panama según el plan del equipo (\texttt{OBS-08} en
+\texttt{docs/observaciones/OBSERVACIONES.md}).
+
+\section{Análisis estático de SQL dinámico}
+\label{sec:tf-audit-sql}
+
+El \autoref{cap:implementacion} señaló, al aclarar por qué
+\texttt{@Query(nativeQuery=true)} con parámetros bindeados no viola la
+prohibición de concatenación de cadenas de la guía, que un script de
+análisis estático dedicado (\texttt{scripts/audit-sql-dynamic.sh}) para
+detectar SQL dinámico construido por concatenación de entrada de usuario
+todavía no existía en el repositorio en ese momento. Se verificó de
+nuevo al escribir este capítulo (búsqueda directa en
+\texttt{scripts/}) y ese script \textbf{sigue sin existir} -- no se
+completó entre ambas verificaciones. Quedó fuera de alcance de esta
+entrega porque ninguna tarea de este ciclo lo priorizó explícitamente por
+sobre las auditorías manuales ya ejecutadas (\autoref{sec:res-seguridad}),
+que cubren el mismo riesgo de forma directa aunque no automatizada. La
+línea de trabajo futura es concreta: un script que recorra
+\texttt{backend-springboot/src/main/java} buscando invocaciones a
+\texttt{createNativeQuery(...)} o construcciones de \texttt{String} que
+terminen pasadas a un método de ejecución de SQL, distinguiendo
+explícitamente -- como ya advirtió el
+\autoref{cap:implementacion} -- entre concatenación real de variables
+Java dentro del literal de la consulta (el patrón a marcar) y
+\texttt{@Query} nativa con parámetros nombrados bindeados (el patrón ya
+verificado como seguro) -- un análisis ingenuo basado solo en buscar la
+cadena \texttt{nativeQuery = true}, sin esa distinción, marcaría este
+patrón como falso positivo.
+
+\section{Auditoría ZAP baseline scan}
+\label{sec:tf-zap}
+
+El \autoref{cap:resultados} (\autoref{sec:res-seguridad}) declaró la
+auditoría automatizada OWASP ZAP como \textbf{aún no ejecutada},
+asignada a Cajas según el plan del equipo. Quedó fuera de alcance de esta
+entrega porque las 6 verificaciones manuales control-por-control ya
+cerradas (\autoref{tab:res-owasp}) se priorizaron primero, al ser más
+directamente accionables sobre hallazgos concretos que un escaneo
+automatizado de superficie amplia. La línea de trabajo futura es ejecutar
+\texttt{zap-baseline.py} (o el contenedor oficial
+\texttt{owasp/zap2docker-stable}) contra el stack Docker real en un
+entorno no productivo, documentar cada alerta con el mismo criterio de
+honestidad ya aplicado al resto de este documento (real vs.\ falso
+positivo, corregido vs.\ diferido), y consolidar su resultado junto al de
+las 6 verificaciones manuales ya existentes -- sin descartar alertas sin
+justificación documentada.
+
+\section{Completar Lighthouse a 6 corridas (3 móvil + 3 escritorio)}
+\label{sec:tf-lighthouse}
+
+El Bloque~4 de evaluación empírica (\autoref{sec:res-lighthouse}) declaró
+explícitamente que solo existen 2 corridas totales, ambas de perfil
+móvil, frente a las 3 corridas por perfil (móvil + escritorio, 6 en
+total) que exige la guía -- una limitación reconocida, no un resultado
+completo presentado como si lo fuera. Quedó fuera de alcance de esta
+entrega porque las 2 corridas existentes ya bastaron para identificar y
+corregir el único hallazgo real que tenían (SEO $82\to100$,
+\autoref{sec:res-lighthouse}), y ampliar la muestra no cambia una
+corrección ya aplicada. La línea de trabajo futura es ejecutar 2 corridas
+adicionales de perfil móvil (para completar 3) y 3 corridas de perfil
+escritorio (\texttt{formFactor: desktop}, sin \emph{throttling} de Slow~4G,
+en \texttt{frontend-angular/lighthouserc.js}, ya preparado para un
+\emph{runner} Linux), y entonces sí calcular media/desviación
+típica/IC~95\% por perfil -- una estadística que, con $n=2$ en un único
+perfil, este documento decidió no forzar (\autoref{sec:res-lighthouse}).
+
+\section{Salvaguarda contra auto-degradación del rol ADMIN}
+\label{sec:tf-admin-safeguard}
+
+Al revisar el código real de \texttt{UsuarioAdminService.cambiarRol}
+(\texttt{backend-springboot/src/main/java/com/uteq/backend/service/UsuarioAdminService.java},
+método \texttt{cambiarRol}, líneas 79--95) para este capítulo se
+confirmó un gap de seguridad real: el método reemplaza el conjunto de
+roles de \emph{cualquier} \texttt{usuarioId} recibido por parámetro, sin
+comparar ese id contra el del ejecutor autenticado
+(\texttt{Authentication}) ni verificar si es el último usuario con rol
+\texttt{ADMIN} del sistema. En la práctica, un ADMIN autenticado puede
+degradarse a sí mismo -- o degradar al único otro ADMIN existente -- sin
+ninguna salvaguarda, quedando el sistema potencialmente sin ningún
+usuario con ese rol y sin una vía de recuperación dentro de la propia
+aplicación. Quedó fuera de alcance de corregirse en esta entrega porque
+se detectó durante la revisión de este mismo capítulo, no antes -- se
+documenta aquí en vez de corregirse apresuradamente sin las pruebas
+correspondientes, siguiendo el mismo criterio ya aplicado en otros
+hallazgos de este documento (declarar antes que parchear sin verificar).
+La línea de trabajo futura es agregar, en \texttt{cambiarRol}, una
+comprobación explícita de que (a) el usuario objetivo no sea el mismo
+ejecutor autenticado cuando el nuevo rol no incluya \texttt{ADMIN}, y (b)
+si lo es, que exista al menos otro usuario activo con rol \texttt{ADMIN}
+antes de aplicar el cambio -- junto con un test de seguridad dedicado
+(análogo a \texttt{UsuarioAdminServiceTest} ya existente) que reproduzca
+ambos casos y falle si la salvaguarda se elimina en el futuro.

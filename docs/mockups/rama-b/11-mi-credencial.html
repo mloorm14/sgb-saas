@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SGB · Mi credencial QR</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          "secondary-container": "#76f4e0","surface": "#f8f9ff","surface-container-highest": "#d5e3fc",
+          "on-error": "#ffffff","error-container": "#ffdad6","surface-container": "#e6eeff",
+          "on-secondary-fixed": "#00201c","on-secondary-container": "#006f63","surface-bright": "#f8f9ff",
+          "tertiary": "#503a00","surface-variant": "#d5e3fc","outline-variant": "#c4c6d5",
+          "inverse-primary": "#b4c5ff","primary-container": "#1e4db7","on-tertiary-fixed-variant": "#5b4300",
+          "on-primary-fixed-variant": "#003ea8","inverse-on-surface": "#eaf1ff","surface-dim": "#ccdbf3",
+          "error": "#ba1a1a","on-tertiary-fixed": "#261a00","primary-fixed-dim": "#b4c5ff",
+          "on-tertiary": "#ffffff","on-surface-variant": "#434653","secondary-fixed": "#79f7e3",
+          "background": "#f8f9ff","on-background": "#0d1c2e","tertiary-fixed": "#ffdf9e",
+          "on-surface": "#0d1c2e","primary-fixed": "#dbe1ff","surface-container-lowest": "#ffffff",
+          "on-tertiary-container": "#fec004","surface-container-high": "#dce9ff","surface-container-low": "#eff4ff",
+          "tertiary-container": "#6c5000","surface-tint": "#2c57c1","primary": "#003694",
+          "on-secondary": "#ffffff","on-primary-fixed": "#00174b","outline": "#747684",
+          "on-secondary-fixed-variant": "#005047","secondary": "#006b5f","tertiary-fixed-dim": "#fabd00",
+          "secondary-fixed-dim": "#59dbc7","on-primary-container": "#b8c8ff","on-error-container": "#93000a",
+          "on-primary": "#ffffff","inverse-surface": "#233144",
+          "success": "#1d9e75","warning": "#fec004"
+        },
+        borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" },
+        spacing: { gutter: "24px", xl: "40px", lg: "24px", md: "16px", "container-max": "1280px", sm: "8px", xs: "4px", "margin-mobile": "16px", base: "4px" },
+        fontFamily: {
+          "headline-lg": ["Plus Jakarta Sans"], "body-md": ["Inter"], "label-md": ["Inter"],
+          "headline-lg-mobile": ["Plus Jakarta Sans"], "headline-xl": ["Plus Jakarta Sans"],
+          "label-sm": ["Inter"], "body-lg": ["Inter"], "body-sm": ["Inter"], "headline-md": ["Plus Jakarta Sans"]
+        },
+        fontSize: {
+          "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+          "label-md": ["14px", { lineHeight: "20px", letterSpacing: "0.05em", fontWeight: "600" }],
+          "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+          "headline-xl": ["40px", { lineHeight: "48px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "label-sm": ["12px", { lineHeight: "16px", fontWeight: "500" }],
+          "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+          "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+          "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Inter', sans-serif; background:#f8f9ff; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align:middle; }
+  .glass-panel { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
+</style>
+</head>
+<body>
+<nav class="sticky top-0 z-40 bg-surface/90 backdrop-blur border-b border-outline-variant">
+  <div class="max-w-container-max mx-auto px-md md:px-lg h-16 flex items-center justify-between">
+    <div class="flex items-center gap-sm">
+      <div class="w-9 h-9 rounded bg-primary flex items-center justify-center text-on-primary">
+        <span class="material-symbols-outlined text-[20px]" style="font-variation-settings:'FILL' 1;">menu_book</span>
+      </div>
+      <span class="font-headline-md text-headline-md text-primary hidden sm:inline">SGB</span>
+    </div>
+    <div class="hidden md:flex items-center gap-lg font-label-sm text-label-sm text-on-surface-variant">
+      <a href="04-catalogo.html" class="hover:text-primary ">Catálogo</a><a href="09-mis-prestamos.html" class="hover:text-primary ">Mis préstamos</a><a href="12-reservaciones.html" class="hover:text-primary">Reservaciones</a><a href="13-multas.html" class="hover:text-primary">Multas</a><a href="06-favoritos.html" class="hover:text-primary ">Favoritos</a><a href="08-mis-solicitudes.html" class="hover:text-primary ">Sugerencias</a><a href="11-mi-credencial.html" class="hover:text-primary text-primary font-semibold">Mi credencial</a>
+    </div>
+    <div class="flex items-center gap-sm">
+      <button class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container-low relative">
+        <span class="material-symbols-outlined text-[22px] text-on-surface-variant">notifications</span>
+        <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-error"></span>
+      </button>
+      <div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center font-label-sm text-label-sm text-on-primary-fixed-variant">ML</div>
+    </div>
+  </div>
+</nav>
+
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg flex justify-center">
+  <div class="w-full max-w-sm">
+    <div class="mb-lg text-center">
+      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Mi credencial</h1>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">CredencialQrService.obtenerImagen() — mostrala en el mostrador para préstamos rápidos</p>
+    </div>
+
+    <div class="rounded-xl glass-panel p-xl flex flex-col items-center">
+      <div class="w-14 h-14 rounded bg-primary flex items-center justify-center text-on-primary mb-sm">
+        <span class="material-symbols-outlined text-[26px]" style="font-variation-settings:'FILL' 1;">menu_book</span>
+      </div>
+      <p class="font-headline-md text-headline-md text-on-background">Marlon Loor</p>
+      <p class="font-label-sm text-label-sm text-on-surface-variant mb-md">LECTOR · Usuario #4821</p>
+
+      <div class="bg-white p-md rounded-lg border border-outline-variant">
+        <!-- Placeholder de QR: en real es el Blob de GET /credencial-qr/mi-credencial -->
+        <svg width="180" height="180" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+          <rect width="180" height="180" fill="#ffffff"/>
+          <g fill="#0d1c2e">
+            <rect x="10" y="10" width="40" height="40"/><rect x="20" y="20" width="20" height="20" fill="#fff"/>
+            <rect x="130" y="10" width="40" height="40"/><rect x="140" y="20" width="20" height="20" fill="#fff"/>
+            <rect x="10" y="130" width="40" height="40"/><rect x="20" y="140" width="20" height="20" fill="#fff"/>
+            <rect x="60" y="10" width="10" height="10"/><rect x="80" y="10" width="10" height="10"/><rect x="100" y="20" width="10" height="10"/>
+            <rect x="60" y="60" width="60" height="60"/><rect x="75" y="75" width="30" height="30" fill="#fff"/>
+            <rect x="60" y="140" width="10" height="10"/><rect x="90" y="150" width="10" height="10"/><rect x="120" y="140" width="10" height="10"/>
+            <rect x="140" y="70" width="10" height="10"/><rect x="150" y="90" width="10" height="10"/><rect x="140" y="110" width="10" height="10"/>
+          </g>
+        </svg>
+      </div>
+
+      <button class="w-full mt-lg h-11 bg-primary text-on-primary font-label-md text-label-md rounded flex items-center justify-center gap-sm hover:bg-on-primary-fixed-variant transition-colors">
+        <span class="material-symbols-outlined text-[20px]">download</span> Descargar credencial
+      </button>
+    </div>
+  </div>
+</main>
+</body>
+</html>

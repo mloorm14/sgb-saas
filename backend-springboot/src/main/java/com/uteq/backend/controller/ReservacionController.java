@@ -1,5 +1,6 @@
 package com.uteq.backend.controller;
 
+import com.uteq.backend.dto.CambioEstadoReservacionRequestDTO;
 import com.uteq.backend.dto.ReservacionRequestDTO;
 import com.uteq.backend.dto.ReservacionResponseDTO;
 import com.uteq.backend.service.ReservacionService;
@@ -31,6 +32,20 @@ public class ReservacionController {
             Authentication authentication) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(reservacionService.crear(dto, authentication));
+    }
+
+    // ── PATCH /api/v1/reservaciones/{id}/estado ────────────
+    // El staff acepta (PENDIENTE -> LISTA_PARA_RETIRO) o rechaza
+    // (PENDIENTE -> CANCELADA) la reservación de un lector. Es la acción
+    // manual que faltaba del RF-10: hasta ahora el LECTOR podía crear y el
+    // sistema expirar, pero nadie podía marcar "listo para retirar".
+    @PatchMapping("/{id}/estado")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    public ResponseEntity<ReservacionResponseDTO> cambiarEstado(
+            @PathVariable Long id,
+            @Valid @RequestBody CambioEstadoReservacionRequestDTO dto,
+            Authentication authentication) {
+        return ResponseEntity.ok(reservacionService.cambiarEstado(id, dto, authentication));
     }
 
     // ── GET /api/v1/reservaciones/usuario/{usuarioId} ─────

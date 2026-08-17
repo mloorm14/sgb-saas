@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 interface JwtPayload {
   sub: string;
@@ -18,7 +19,7 @@ interface JwtPayload {
 })
 export class AuthService {
 
-  private apiUrl = 'https://sgb-backend-b058.onrender.com/api';
+  private apiUrl = environment.apiUrl;
 
   // El token se guarda AQUI en memoria, nunca en localStorage
   private accessToken: string | null = null;
@@ -33,8 +34,12 @@ export class AuthService {
     );
   }
 
-  registro(nombre: string, correo: string, password: string): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/auth/registro`, { nombre, correo, password });
+  registro(nombre: string, apellido: string, correo: string, password: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/auth/registro`, { nombre, apellido, correo, password });
+  }
+
+  verificarCorreo(correo: string, codigo: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/auth/verificar-correo`, { correo, codigo });
   }
 
   logout(): void {
@@ -104,5 +109,14 @@ export class AuthService {
   hasRole(...roles: string[]): boolean {
     const misRoles = this.getRoles();
     return roles.some(r => misRoles.includes(r));
+  }
+
+  // Reusa decodePayload(): sin token o sin claim exp => no esta expirado
+  // (el backend decidira); con exp pasado => la sesion caduco y el guard
+  // no debe esperar el 403 del backend para desloguear.
+  tokenExpirado(): boolean {
+    const payload = this.decodePayload();
+    if (!payload?.exp) return false;
+    return payload.exp * 1000 <= Date.now();
   }
 }

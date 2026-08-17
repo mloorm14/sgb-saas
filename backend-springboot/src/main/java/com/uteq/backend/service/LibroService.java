@@ -3,6 +3,7 @@ package com.uteq.backend.service;
 import com.uteq.backend.dto.LibroRequestDTO;
 import com.uteq.backend.dto.LibroResponseDTO;
 import com.uteq.backend.dto.LibroSugerenciaDTO;
+import com.uteq.backend.dto.PortadaImagenDTO;
 import com.uteq.backend.entity.Autor;
 import com.uteq.backend.entity.Categoria;
 import com.uteq.backend.entity.EstadoLibro;
@@ -20,7 +21,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,6 +34,12 @@ public class LibroService {
     private static final String LIBRO_NO_ENCONTRADO = "Libro no encontrado con id: ";
     private static final String ESTADO_ACTIVO = "ACTIVO";
     private static final String ESTADO_DADO_DE_BAJA = "DADO_DE_BAJA";
+    // Módulo portada binaria: límite de tamaño (MB) en configuracion_sistema
+    // (misma clave que inserta V13__portada_imagen.sql), no hardcodeada acá
+    // -- el Admin la ajusta sin despliegue nuevo vía ConfiguracionSistema.
+    private static final String CLAVE_MAX_TAMANO_PORTADA_MB = "max_tamano_portada_mb";
+    private static final List<String> TIPOS_PORTADA_PERMITIDOS =
+            List.of("image/png", "image/jpeg", "image/webp");
 
     private final LibroRepository libroRepo;
     private final EditorialRepository editorialRepo;
@@ -43,19 +52,25 @@ public class LibroService {
     // intermedio, a diferencia de LibroService en sí).
     private final CategoriaRepository categoriaRepo;
     private final AutorRepository autorRepo;
+    // Módulo portada binaria: para leer max_tamano_portada_mb con cache en
+    // memoria (ver ConfiguracionSistemaService), mismo patrón que
+    // PrestamoService con dias_prestamo_default/max_renovaciones_default.
+    private final ConfiguracionSistemaService configuracionSistemaService;
 
     public LibroService(LibroRepository libroRepo,
                         EditorialRepository editorialRepo,
                         IdiomaRepository idiomaRepo,
                         EstadoLibroRepository estadoRepo,
                         CategoriaRepository categoriaRepo,
-                        AutorRepository autorRepo) {
+                        AutorRepository autorRepo,
+                        ConfiguracionSistemaService configuracionSistemaService) {
         this.libroRepo     = libroRepo;
         this.editorialRepo = editorialRepo;
         this.idiomaRepo    = idiomaRepo;
         this.estadoRepo    = estadoRepo;
         this.categoriaRepo = categoriaRepo;
         this.autorRepo     = autorRepo;
+        this.configuracionSistemaService = configuracionSistemaService;
     }
 
     @Cacheable("libros")
@@ -144,6 +159,7 @@ public class LibroService {
         libro.setIsbn(dto.isbn());
         libro.setResumen(dto.resumen());
         libro.setPortadaUrl(dto.portadaUrl());
+        libro.setUbicacionFisica(dto.ubicacionFisica());
         libro.setAnioPublicacion(dto.anioPublicacion().shortValue());
         libro.setStockTotal(dto.stockTotal().shortValue());
         libro.setStockDisponible(dto.stockDisponible().shortValue());
@@ -167,6 +183,70 @@ public class LibroService {
                         "Catalogo estados_libro sin fila '" + ESTADO_DADO_DE_BAJA + "'"));
         libro.setEstado(estadoDadoDeBaja);
         libroRepo.save(libro);
+    }
+
+    // ── Portada binaria (V13__portada_imagen.sql) ─────────────
+    // POST /api/v1/libros/{id}/portada (multipart/form-data). Guarda el
+    // binario dentro de la BD y limpia portadaUrl a null: una vez que la
+    // portada vive en la base, una URL externa que el sistema no controla
+    // ya no tiene razón de ser -- si quedara, el frontend no sabría cuál
+    // es la fuente vigente.
+    @CacheEvict(value = "libros", allEntries = true)
+    @Transactional
+    public LibroResponseDTO actualizarPortada(Long libroId, MultipartFile archivo) {
+        Libro libro = libroRepo.findById(libroId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        LIBRO_NO_ENCONTRADO + libroId));
+        validarPortada(archivo);
+        try {
+            libro.setPortadaImagen(archivo.getBytes());
+        } catch (IOException ex) {
+            // MultipartFile.getBytes() sobre un archivo ya transferido no
+            // debería fallar; si lo hace, es un problema de la request, no
+            // del libro -- 400, no 500.
+            throw new IllegalArgumentException(
+                    "No se pudo leer el archivo de portada: " + ex.getMessage());
+        }
+        libro.setPortadaNombre(archivo.getOriginalFilename());
+        libro.setPortadaTipo(archivo.getContentType());
+        libro.setPortadaTamanio((int) archivo.getSize());
+        libro.setPortadaUrl(null);
+        return toDTO(libroRepo.save(libro));
+    }
+
+    // GET /api/v1/libros/{id}/portada. Devuelve el binario junto al
+    // Content-Type dinámico (portada_tipo) para que el controller defina
+    // el header de la respuesta. 404 si el libro no existe O no tiene
+    // portada -- el placeholder lo resuelve el frontend, no el backend.
+    @Transactional(readOnly = true)
+    public PortadaImagenDTO obtenerPortada(Long libroId) {
+        Libro libro = libroRepo.findById(libroId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        LIBRO_NO_ENCONTRADO + libroId));
+        if (libro.getPortadaImagen() == null || libro.getPortadaTipo() == null) {
+            throw new EntityNotFoundException("El libro con id: " + libroId + " no tiene portada");
+        }
+        return new PortadaImagenDTO(libro.getPortadaImagen(), libro.getPortadaTipo());
+    }
+
+    private void validarPortada(MultipartFile archivo) {
+        if (archivo == null || archivo.isEmpty()) {
+            throw new IllegalArgumentException("Debe adjuntar un archivo de imagen");
+        }
+        String contentType = archivo.getContentType();
+        if (contentType == null || !TIPOS_PORTADA_PERMITIDOS.contains(contentType)) {
+            throw new IllegalArgumentException(
+                    "Tipo de imagen no permitido: " + contentType
+                            + ". Solo se admiten PNG, JPEG y WEBP.");
+        }
+        int maxTamanoMb = configuracionSistemaService
+                .obtenerValorEntero(CLAVE_MAX_TAMANO_PORTADA_MB);
+        long maxTamanoBytes = maxTamanoMb * 1024L * 1024L;
+        if (archivo.getSize() > maxTamanoBytes) {
+            throw new IllegalArgumentException(
+                    "La imagen excede el tamaño máximo permitido de "
+                            + maxTamanoMb + " MB");
+        }
     }
 
     private void validarStock(Integer stockTotal, Integer stockDisponible) {
@@ -210,6 +290,9 @@ public class LibroService {
                 l.getIsbn(),
                 l.getResumen(),
                 l.getPortadaUrl(),
+                l.getPortadaImagen() != null,
+                l.getPortadaNombre(),
+                l.getPortadaTipo(),
                 l.getAnioPublicacion() != null ? l.getAnioPublicacion().intValue() : null,
                 l.getEditorial()  != null ? l.getEditorial().getId()     : null,
                 l.getEditorial()  != null ? l.getEditorial().getNombre() : null,
@@ -234,6 +317,7 @@ public class LibroService {
         l.setIsbn(dto.isbn());
         l.setResumen(dto.resumen());
         l.setPortadaUrl(dto.portadaUrl());
+        l.setUbicacionFisica(dto.ubicacionFisica());
         l.setAnioPublicacion(dto.anioPublicacion().shortValue());
         l.setStockTotal(dto.stockTotal().shortValue());
         l.setStockDisponible(dto.stockDisponible().shortValue());

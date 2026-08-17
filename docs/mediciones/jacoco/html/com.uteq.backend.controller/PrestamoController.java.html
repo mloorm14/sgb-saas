@@ -5,13 +5,19 @@ import com.uteq.backend.dto.LibroMasPrestadoResponseDTO;
 import com.uteq.backend.dto.PrestamoActivoResponseDTO;
 import com.uteq.backend.dto.PrestamoRequestDTO;
 import com.uteq.backend.dto.PrestamoResponseDTO;
+import com.uteq.backend.dto.RenovacionResponseDTO;
+import com.uteq.backend.dto.ReporteMorosidadResponseDTO;
+import com.uteq.backend.dto.ReporteUsoPorPeriodoResponseDTO;
 import com.uteq.backend.service.PrestamoService;
+import com.uteq.backend.service.ReportePdfService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -25,10 +31,12 @@ import java.util.List;
 public class PrestamoController {
 
     private final PrestamoService prestamoService;
+    private final ReportePdfService reportePdfService;
 
-<span class="fc" id="L29">    public PrestamoController(PrestamoService prestamoService) {</span>
-<span class="fc" id="L30">        this.prestamoService = prestamoService;</span>
-<span class="fc" id="L31">    }</span>
+<span class="fc" id="L36">    public PrestamoController(PrestamoService prestamoService, ReportePdfService reportePdfService) {</span>
+<span class="fc" id="L37">        this.prestamoService = prestamoService;</span>
+<span class="fc" id="L38">        this.reportePdfService = reportePdfService;</span>
+<span class="fc" id="L39">    }</span>
 
     // ── POST /api/v1/prestamos ────────────────────────────
     @PostMapping
@@ -36,15 +44,25 @@ public class PrestamoController {
     public ResponseEntity&lt;PrestamoResponseDTO&gt; crear(
             @Valid @RequestBody PrestamoRequestDTO dto,
             Authentication authentication) {
-<span class="nc" id="L39">        return ResponseEntity.status(HttpStatus.CREATED)</span>
-<span class="nc" id="L40">                .body(prestamoService.crear(dto, authentication));</span>
+<span class="nc" id="L47">        return ResponseEntity.status(HttpStatus.CREATED)</span>
+<span class="nc" id="L48">                .body(prestamoService.crear(dto, authentication));</span>
     }
 
     // ── POST /api/v1/prestamos/{id}/devolucion ────────────
     @PostMapping(&quot;/{id}/devolucion&quot;)
     @PreAuthorize(&quot;hasAnyRole('BIBLIOTECARIO','GERENTE')&quot;)
     public ResponseEntity&lt;DevolucionResponseDTO&gt; registrarDevolucion(@PathVariable Long id) {
-<span class="nc" id="L47">        return ResponseEntity.ok(prestamoService.registrarDevolucion(id));</span>
+<span class="nc" id="L55">        return ResponseEntity.ok(prestamoService.registrarDevolucion(id));</span>
+    }
+
+    // ── POST /api/v1/prestamos/{id}/renovacion ────────────
+    // LECTOR solo su propio préstamo (verificado dentro de
+    // PrestamoService.renovar()); BIBLIOTECARIO/GERENTE/ADMIN, cualquiera.
+    @PostMapping(&quot;/{id}/renovacion&quot;)
+    @PreAuthorize(&quot;hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;RenovacionResponseDTO&gt; renovar(
+            @PathVariable Long id, Authentication authentication) {
+<span class="nc" id="L65">        return ResponseEntity.ok(prestamoService.renovar(id, authentication));</span>
     }
 
     // ── GET /api/v1/prestamos/usuario/{usuarioId}?page=0&amp;size=10 ──
@@ -54,8 +72,8 @@ public class PrestamoController {
             @PathVariable Long usuarioId,
             Authentication authentication,
             @PageableDefault(size = 10, sort = &quot;fechaPrestamo&quot;) Pageable pageable) {
-<span class="nc" id="L57">        return ResponseEntity.ok(</span>
-<span class="nc" id="L58">                prestamoService.listarPorUsuario(usuarioId, authentication, pageable));</span>
+<span class="nc" id="L75">        return ResponseEntity.ok(</span>
+<span class="nc" id="L76">                prestamoService.listarPorUsuario(usuarioId, authentication, pageable));</span>
     }
 
     // ── GET /api/v1/prestamos/usuario/{usuarioId}/activos ─
@@ -64,8 +82,8 @@ public class PrestamoController {
     public ResponseEntity&lt;List&lt;PrestamoActivoResponseDTO&gt;&gt; listarActivosPorUsuario(
             @PathVariable Long usuarioId,
             Authentication authentication) {
-<span class="nc" id="L67">        return ResponseEntity.ok(</span>
-<span class="nc" id="L68">                prestamoService.listarActivosPorUsuario(usuarioId, authentication));</span>
+<span class="nc" id="L85">        return ResponseEntity.ok(</span>
+<span class="nc" id="L86">                prestamoService.listarActivosPorUsuario(usuarioId, authentication));</span>
     }
 
     // ── GET /api/v1/prestamos/reportes/libros-mas-prestados ──
@@ -77,8 +95,49 @@ public class PrestamoController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta) {
-<span class="nc" id="L80">        return ResponseEntity.ok(</span>
-<span class="nc" id="L81">                prestamoService.reporteLibrosMasPrestados(limite, desde, hasta));</span>
+<span class="nc" id="L98">        return ResponseEntity.ok(</span>
+<span class="nc" id="L99">                prestamoService.reporteLibrosMasPrestados(limite, desde, hasta));</span>
+    }
+
+    // ── GET /api/v1/prestamos/reportes/morosidad ──────────
+    // Mismo criterio de acceso que reporteLibrosMasPrestados (arriba):
+    // BIBLIOTECARIO/GERENTE, no GERENTE/ADMIN -- se sigue el patrón que ya
+    // existe en este controller en vez del roadmap original del Módulo 7
+    // (que sugería GERENTE/ADMIN sin haber revisado el código real).
+    @GetMapping(&quot;/reportes/morosidad&quot;)
+    @PreAuthorize(&quot;hasAnyRole('BIBLIOTECARIO','GERENTE')&quot;)
+    public ResponseEntity&lt;List&lt;ReporteMorosidadResponseDTO&gt;&gt; reporteMorosidad(
+            @RequestParam(required = false) Integer limite) {
+<span class="nc" id="L111">        return ResponseEntity.ok(prestamoService.reporteMorosidad(limite));</span>
+    }
+
+    // ── GET /api/v1/prestamos/reportes/uso?granularidad=dia|semana|mes ──
+    @GetMapping(&quot;/reportes/uso&quot;)
+    @PreAuthorize(&quot;hasAnyRole('BIBLIOTECARIO','GERENTE')&quot;)
+    public ResponseEntity&lt;List&lt;ReporteUsoPorPeriodoResponseDTO&gt;&gt; reporteUsoPorPeriodo(
+            @RequestParam(required = false, defaultValue = &quot;dia&quot;) String granularidad,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta) {
+<span class="nc" id="L123">        return ResponseEntity.ok(</span>
+<span class="nc" id="L124">                prestamoService.reporteUsoPorPeriodo(granularidad, desde, hasta));</span>
+    }
+
+    // ── GET /api/v1/prestamos/reportes/morosidad/pdf ──────
+    // Exportación a PDF del mismo reporte de arriba (ReportePdfService),
+    // transmitida directo en el cuerpo de la respuesta -- nunca se guarda
+    // en disco del servidor (ver Javadoc de ReportePdfService).
+    @GetMapping(value = &quot;/reportes/morosidad/pdf&quot;, produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize(&quot;hasAnyRole('BIBLIOTECARIO','GERENTE')&quot;)
+    public ResponseEntity&lt;byte[]&gt; reporteMorosidadPdf(
+            @RequestParam(required = false) Integer limite) {
+<span class="nc" id="L135">        List&lt;ReporteMorosidadResponseDTO&gt; reporte = prestamoService.reporteMorosidad(limite);</span>
+<span class="nc" id="L136">        byte[] pdf = reportePdfService.generarReporteMorosidad(reporte);</span>
+<span class="nc" id="L137">        return ResponseEntity.ok()</span>
+<span class="nc" id="L138">                .header(HttpHeaders.CONTENT_DISPOSITION, &quot;attachment; filename=reporte-morosidad.pdf&quot;)</span>
+<span class="nc" id="L139">                .contentType(MediaType.APPLICATION_PDF)</span>
+<span class="nc" id="L140">                .body(pdf);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

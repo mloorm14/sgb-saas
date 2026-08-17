@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ConfiguracionSistemaController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.controller</a> &gt; <span class="el_source">ConfiguracionSistemaController.java</span></div><h1>ConfiguracionSistemaController.java</h1><pre class="source lang-java linenums">package com.uteq.backend.controller;
+
+import com.uteq.backend.dto.ConfiguracionSistemaRequestDTO;
+import com.uteq.backend.dto.ConfiguracionSistemaResponseDTO;
+import com.uteq.backend.service.ConfiguracionSistemaService;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+// Solo ADMIN (Modulo 9.4/5.3 del roadmap: separacion entre quien administra
+// permisos/parametros del sistema -ADMIN- y quien administra la operacion
+// diaria -GERENTE-, ver Modulo 5).
+@RestController
+@RequestMapping(&quot;/api/v1/configuracion&quot;)
+@PreAuthorize(&quot;hasRole('ADMIN')&quot;)
+public class ConfiguracionSistemaController {
+
+    private final ConfiguracionSistemaService service;
+
+<span class="fc" id="L23">    public ConfiguracionSistemaController(ConfiguracionSistemaService service) {</span>
+<span class="fc" id="L24">        this.service = service;</span>
+<span class="fc" id="L25">    }</span>
+
+    @GetMapping
+    public ResponseEntity&lt;List&lt;ConfiguracionSistemaResponseDTO&gt;&gt; listar() {
+<span class="fc" id="L29">        return ResponseEntity.ok(service.listar());</span>
+    }
+
+    @PutMapping(&quot;/{clave}&quot;)
+    public ResponseEntity&lt;ConfiguracionSistemaResponseDTO&gt; actualizar(
+            @PathVariable String clave,
+            @Valid @RequestBody ConfiguracionSistemaRequestDTO dto) {
+<span class="fc" id="L36">        return ResponseEntity.ok(service.actualizar(clave, dto.valor()));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
