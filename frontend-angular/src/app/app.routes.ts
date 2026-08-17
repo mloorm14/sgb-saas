@@ -8,16 +8,19 @@ import { PrestamosLectorComponent } from './prestamos-lector/prestamos-lector.co
 import { PrestamosGestionComponent } from './prestamos-gestion/prestamos-gestion.component';
 import { ReservacionesComponent } from './reservaciones/reservaciones.component';
 import { MultasComponent } from './multas/multas.component';
+import { ReportesComponent } from './reportes/reportes.component';
 import { NoAutorizadoComponent } from './shared/no-autorizado/no-autorizado.component';
 import { CatalogoComponent } from './catalogo/catalogo.component';
 import { LibroDetalleComponent } from './catalogo/libro-detalle/libro-detalle.component';
 import { FavoritosComponent } from './favoritos/favoritos.component';
 import { SugerenciasFormComponent } from './sugerencias/sugerencias-form/sugerencias-form.component';
 import { MisSugerenciasComponent } from './sugerencias/mis-sugerencias/mis-sugerencias.component';
+import { GestionSugerenciasComponent } from './sugerencias/gestion-sugerencias/gestion-sugerencias.component';
 import { PortalPublicoComponent } from './portal-publico/portal-publico.component';
 import { DetallePublicoComponent } from './portal-publico/detalle-publico/detalle-publico.component';
-import { AdminUsuariosComponent } from './admin-usuarios/admin-usuarios.component';
 import { ConfiguracionSistemaComponent } from './configuracion-sistema/configuracion-sistema.component';
+import { UsuariosComponent } from './admin/usuarios/usuarios.component';
+import { AuditoriaComponent } from './admin/auditoria/auditoria.component';
 
 // Los roleGuard de abajo reflejan los @PreAuthorize reales de cada
 // controller en backend-springboot (verificado en el codigo, no asumido):
@@ -47,14 +50,13 @@ export const routes: Routes = [
   { path: 'prestamos/gestion', component: PrestamosGestionComponent, canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE'])] },
   { path: 'reservaciones', component: ReservacionesComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
   { path: 'multas', component: MultasComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
-  // Listado accesible a ADMIN y GERENTE (igual que el backend, ver
-  // UsuarioAdminController#listar); cambiar rol/estado queda gateado
-  // dentro del propio componente porque ahí sí es solo ADMIN.
-  { path: 'admin/usuarios', component: AdminUsuariosComponent, canActivate: [authGuard, roleGuard(['ADMIN', 'GERENTE'])] },
   // Solo ADMIN (ver ConfiguracionSistemaController, @PreAuthorize a nivel
   // de clase) -- roleGuard evita que un GERENTE/BIBLIOTECARIO/LECTOR
   // navegue acá por URL y vea un componente vacío condenado a fallar.
   { path: 'admin/configuracion', component: ConfiguracionSistemaComponent, canActivate: [authGuard, roleGuard(['ADMIN'])] },
+  // Reportes gerenciales: BIBLIOTECARIO/GERENTE (PrestamoController; el
+  // ADMIN no tiene acceso).
+  { path: 'reportes', component: ReportesComponent, canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE'])] },
   // Rama B (frontend/estudiante-catalogo-social): las 5 rutas del
   // consumidor son 100% LECTOR — verificado en FavoritoController.java y
   // SugerenciaAdquisicionController.java (los endpoints de favoritos y de
@@ -65,6 +67,14 @@ export const routes: Routes = [
   { path: 'favoritos', component: FavoritosComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
   { path: 'sugerencias', component: MisSugerenciasComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
   { path: 'sugerencias/nueva', component: SugerenciasFormComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
+  // Revisión de sugerencias: GERENTE/ADMIN listan todas y cambian estado
+  // a APROBADA/RECHAZADA (SugerenciaAdquisicionController real).
+  { path: 'sugerencias/gestion', component: GestionSugerenciasComponent, canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])] },
+  // Rama F (panel administrativo): gestión de usuarios -- listado ADMIN/GERENTE,
+  // PATCH de rol/estado solo ADMIN (UsuarioAdminController real).
+  { path: 'admin/usuarios', component: UsuariosComponent, canActivate: [authGuard, roleGuard(['ADMIN', 'GERENTE'])] },
+  // Auditoría: bitácora de eventos, GERENTE/ADMIN (AuditoriaController real).
+  { path: 'auditoria', component: AuditoriaComponent, canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])] },
   { path: 'no-autorizado', component: NoAutorizadoComponent },
   { path: '**', redirectTo: '' }
 ];

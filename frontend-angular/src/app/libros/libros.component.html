@@ -1,183 +1,227 @@
-<div style="padding:2rem;max-width:1100px;margin:0 auto">
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
 
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
-    <h2 style="color:#005c2f;margin:0">Catálogo de Libros — SGB-SaaS</h2>
-    <div style="display:flex;gap:10px">
-      <button (click)="abrirFormularioCrear()"
-        style="padding:8px 16px;background:#005c2f;color:white;border:none;border-radius:4px;cursor:pointer">
-        + Nuevo libro
-      </button>
-      @if (verAdminUsuarios) {
-        <button (click)="irAUsuarios()"
-          style="padding:8px 16px;background:#2980b9;color:white;border:none;border-radius:4px;cursor:pointer">
-          Usuarios
-        </button>
-      }
-      @if (verAdminConfiguracion) {
-        <button (click)="irAConfiguracion()"
-          style="padding:8px 16px;background:#2980b9;color:white;border:none;border-radius:4px;cursor:pointer">
-          Configuración
-        </button>
-      }
-      <button (click)="cerrarSesion()"
-        style="padding:8px 16px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer">
-        Cerrar sesión
-      </button>
+  <div class="mb-lg flex items-center justify-between flex-wrap gap-sm">
+    <div>
+      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Inventario de libros</h1>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">LibroService.listar / crear / actualizar / eliminar — BIBLIOTECARIO y GERENTE</p>
     </div>
+    <button (click)="abrirFormularioCrear()"
+      class="h-10 px-md rounded bg-primary text-on-primary font-label-md text-label-sm flex items-center gap-xs hover:bg-on-primary-fixed-variant cursor-pointer">
+      <span class="material-symbols-outlined text-[18px]">add</span> Nuevo libro
+    </button>
   </div>
 
   @if (errorMsg) {
-    <div style="color:red;margin-bottom:1rem">{{ errorMsg }}</div>
-  }
-  @if (cargando) {
-    <div style="text-align:center;padding:2rem">Cargando libros...</div>
+    <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
   }
 
-  <!-- TABLA DE LIBROS -->
-  @if (!cargando) {
-    <table style="width:100%;border-collapse:collapse;font-size:14px">
-      <thead>
-        <tr style="background:#005c2f;color:white">
-          <th style="padding:10px;text-align:left">ID</th>
-          <th style="padding:10px;text-align:left">ISBN</th>
-          <th style="padding:10px;text-align:left">Título</th>
-          <th style="padding:10px;text-align:left">Año</th>
-          <th style="padding:10px;text-align:left">Stock</th>
-          <th style="padding:10px;text-align:left">Acciones</th>
+  <!-- Filtro por categoría (contrato real de LibroController: ?categoriaId=).
+       El backend no expone búsqueda por texto en el listado de inventario,
+       así que el buscador del mockup 19 no se implementa. -->
+  <div class="rounded border border-outline-variant bg-white flex items-center px-sm mb-md glass-panel">
+    <span class="material-symbols-outlined text-on-surface-variant text-[20px]">filter_list</span>
+    <select (change)="filtrarPorCategoria()" [(ngModel)]="categoriaFiltro"
+      class="flex-1 h-11 px-sm bg-transparent outline-none font-body-sm text-body-sm text-on-surface-variant cursor-pointer">
+      <option value="">Todas las categorías</option>
+      @for (categoria of categorias; track categoria.id) {
+        <option [value]="categoria.id">{{ categoria.nombre }}</option>
+      }
+    </select>
+  </div>
+
+  @if (cargando && libros.length === 0) {
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando inventario…</p>
+  }
+
+  <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
+    <table class="w-full text-left">
+      <thead class="bg-surface-container-low">
+        <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+          <th class="px-md py-sm">Portada</th>
+          <th class="px-md py-sm">ISBN</th>
+          <th class="px-md py-sm">Título</th>
+          <th class="px-md py-sm hidden md:table-cell">Categorías</th>
+          <th class="px-md py-sm hidden sm:table-cell">Año</th>
+          <th class="px-md py-sm">Stock</th>
+          <th class="px-md py-sm">Acciones</th>
         </tr>
       </thead>
-      <tbody>
-        @for (libro of libros; track libro; let i = $index) {
-          <tr
-            [style.background]="i % 2 === 0 ? '#f9f9f9' : 'white'">
-            <td style="padding:10px">{{ libro.id }}</td>
-            <td style="padding:10px">{{ libro.isbn }}</td>
-            <td style="padding:10px">{{ libro.titulo }}</td>
-            <td style="padding:10px">{{ libro.anioPublicacion }}</td>
-            <td style="padding:10px">{{ libro.stockDisponible }}/{{ libro.stockTotal }}</td>
-            <td style="padding:10px;display:flex;gap:8px">
-              <button (click)="abrirFormularioEditar(libro)"
-                style="padding:4px 10px;background:#2980b9;color:white;border:none;border-radius:4px;cursor:pointer">
-                Editar
-              </button>
-              <button (click)="eliminarLibro(libro.id)"
-                style="padding:4px 10px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer">
-                Eliminar
-              </button>
+      <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+        @for (libro of libros; track libro.id) {
+          <tr>
+            <td class="px-md py-sm">
+              <app-portada-libro [libroId]="libro.id" [tienePortada]="libro.tienePortada" />
+            </td>
+            <td class="px-md py-sm text-on-surface-variant">{{ libro.isbn }}</td>
+            <td class="px-md py-sm font-medium">{{ libro.titulo }}</td>
+            <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">
+              {{ libro.categorias.length ? libro.categorias.join(', ') : '—' }}
+            </td>
+            <td class="px-md py-sm hidden sm:table-cell text-on-surface-variant">{{ libro.anioPublicacion }}</td>
+            <td class="px-md py-sm">
+              <span class="inline-flex items-center px-sm py-xs rounded-full font-label-sm text-[11px]"
+                [class]="libro.stockDisponible > 0 ? 'bg-success/15 text-success' : 'bg-warning/25 text-on-tertiary-container'">
+                {{ libro.stockDisponible }}/{{ libro.stockTotal }}
+              </span>
+            </td>
+            <td class="px-md py-sm">
+              <div class="flex gap-xs">
+                <button (click)="abrirFormularioEditar(libro)" title="Editar"
+                  class="w-8 h-8 rounded flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant cursor-pointer">
+                  <span class="material-symbols-outlined text-[18px]">edit</span>
+                </button>
+                <button (click)="eliminarLibro(libro.id)" title="Eliminar"
+                  class="w-8 h-8 rounded flex items-center justify-center hover:bg-error-container/40 text-error cursor-pointer">
+                  <span class="material-symbols-outlined text-[18px]">delete</span>
+                </button>
+              </div>
             </td>
           </tr>
-        }
-        @if (libros.length === 0) {
-          <tr>
-            <td colspan="6" style="text-align:center;padding:2rem;color:#888">No hay libros registrados</td>
-          </tr>
+        } @empty {
+          @if (!cargando) {
+            <tr>
+              <td colspan="7" class="px-md py-lg text-center text-on-surface-variant">No hay libros registrados</td>
+            </tr>
+          }
         }
       </tbody>
     </table>
-  }
-
-  <!-- PAGINACION -->
-  <div style="display:flex;justify-content:center;align-items:center;gap:16px;margin-top:1rem">
-    <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
-      style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
-      ← Anterior
-    </button>
-    <span style="font-size:14px">Página {{ currentPage + 1 }} de {{ totalPages }}</span>
-    <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
-      style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
-      Siguiente →
-    </button>
   </div>
 
-  <!-- FORMULARIO CREAR/EDITAR -->
+  <!-- Paginación numerada -->
+  @if (totalPages > 1) {
+    <div class="flex justify-center mt-lg gap-xs">
+      <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
+        class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+      </button>
+      @for (pagina of paginasVisibles; track pagina) {
+        <button (click)="currentPage = pagina; cargarLibros()"
+          class="w-8 h-8 rounded font-label-sm text-label-sm cursor-pointer"
+          [class.bg-primary]="$index === currentPage"
+          [class.text-on-primary]="$index === currentPage"
+          [class.hover:bg-surface-container-low]="$index !== currentPage"
+          [class.text-on-surface-variant]="$index !== currentPage">
+          {{ $index + 1 }}
+        </button>
+      }
+      <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
+        class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+      </button>
+    </div>
+  }
+
+  <!-- Modal crear/editar (mockup 19) -->
   @if (mostrarFormulario) {
-    <div
-      style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999">
-      <div style="background:white;padding:2rem;border-radius:8px;width:100%;max-width:500px">
-        <h3 style="color:#005c2f;margin-top:0">{{ modoEdicion ? 'Editar libro' : 'Nuevo libro' }}</h3>
+    <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-md">
+      <div class="bg-white rounded-xl glass-panel w-full max-w-xl p-xl max-h-[90vh] overflow-y-auto">
+        <h2 class="font-headline-md text-headline-md text-on-background mb-md">
+          {{ modoEdicion ? 'Editar libro' : 'Nuevo libro' }}
+        </h2>
         <form [formGroup]="form" (ngSubmit)="guardarLibro()">
-          <div style="margin-bottom:1rem">
-            <label style="display:block;font-size:13px;margin-bottom:4px">ISBN</label>
-            <input formControlName="isbn" type="text"
-              style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"/>
-            <div style="display:flex;gap:10px;align-items:center;margin-top:6px">
-              <button type="button" (click)="autocompletar()"
-                [disabled]="!esIsbnAutocompletable() || buscandoIsbn"
-                style="padding:6px 12px;background:#005c2f;color:white;border:none;border-radius:4px;cursor:pointer">
-                {{ buscandoIsbn ? 'Buscando...' : 'Autocompletar' }}
-              </button>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-md">
+            <div class="sm:col-span-2">
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">ISBN</label>
+              <div class="flex gap-xs">
+                <input formControlName="isbn" type="text" placeholder="978..."
+                  class="flex-1 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+                <button type="button" (click)="autocompletar()"
+                  [disabled]="!esIsbnAutocompletable() || buscandoIsbn"
+                  class="h-11 px-md rounded border border-primary text-primary font-label-sm text-label-sm hover:bg-primary/5 disabled:opacity-40 cursor-pointer">
+                  {{ buscandoIsbn ? 'Buscando…' : 'Autocompletar' }}
+                </button>
+              </div>
               @if (autocompletarAutor) {
-                <span style="font-size:13px;color:#555">Autor: {{ autocompletarAutor }}</span>
+                <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Autor sugerido: {{ autocompletarAutor }}</p>
               }
               @if (portadaPreviewUrl) {
                 <img [src]="portadaPreviewUrl" alt="Portada"
-                  style="width:48px;height:64px;object-fit:cover;border:1px solid #ccc;border-radius:4px"/>
+                  class="mt-xs w-12 h-16 object-cover rounded border border-outline-variant" />
+              }
+              @if (lookupMensaje) {
+                <p class="font-body-sm text-body-sm text-secondary mt-xs">{{ lookupMensaje }}</p>
+              }
+              @if (lookupError) {
+                <p class="font-body-sm text-body-sm text-error mt-xs">{{ lookupError }}</p>
               }
             </div>
-            @if (lookupMensaje) {
-              <div style="font-size:13px;color:#005c2f;margin-top:4px">{{ lookupMensaje }}</div>
-            }
-            @if (lookupError) {
-              <div style="font-size:13px;color:#c0392b;margin-top:4px">{{ lookupError }}</div>
-            }
-            </div>
-            <div style="margin-bottom:1rem">
-              <label style="display:block;font-size:13px;margin-bottom:4px">Título</label>
+            <div class="sm:col-span-2">
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Título</label>
               <input formControlName="titulo" type="text"
-                style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"/>
-              </div>
-              <div style="margin-bottom:1rem">
-                <label style="display:block;font-size:13px;margin-bottom:4px">Resumen</label>
-                <textarea formControlName="resumen" rows="3"
-                  style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box;resize:vertical"></textarea>
-                </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem">
-                <div>
-                  <label style="display:block;font-size:13px;margin-bottom:4px">Año publicación</label>
-                  <input formControlName="anioPublicacion" type="number"
-                    style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"/>
-                  </div>
-                  <div>
-                    <label style="display:block;font-size:13px;margin-bottom:4px">Stock total</label>
-                    <input formControlName="stockTotal" type="number"
-                      style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"/>
-                    </div>
-                  </div>
-                  <div style="margin-bottom:1rem">
-                    <label style="display:block;font-size:13px;margin-bottom:4px">Stock disponible</label>
-                    <input formControlName="stockDisponible" type="number"
-                      style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"/>
-                    </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:1rem">
-                      <div>
-                        <label style="display:block;font-size:13px;margin-bottom:4px">Editorial ID</label>
-                        <input formControlName="editorialId" type="number"
-                          style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"/>
-                        </div>
-                        <div>
-                          <label style="display:block;font-size:13px;margin-bottom:4px">Idioma ID</label>
-                          <input formControlName="idiomaId" type="number"
-                            style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"/>
-                          </div>
-                          <div>
-                            <label style="display:block;font-size:13px;margin-bottom:4px">Estado ID</label>
-                            <input formControlName="estadoId" type="number"
-                              style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"/>
-                            </div>
-                          </div>
-                          <div style="display:flex;gap:10px;justify-content:flex-end">
-                            <button type="button" (click)="cerrarFormulario()"
-                              style="padding:8px 16px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
-                              Cancelar
-                            </button>
-                            <button type="submit" [disabled]="form.invalid"
-                              style="padding:8px 16px;background:#005c2f;color:white;border:none;border-radius:4px;cursor:pointer">
-                              {{ modoEdicion ? 'Actualizar' : 'Crear' }}
-                            </button>
-                          </div>
-                        </form>
-                      </div>
-                    </div>
-                  }
+                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Resumen</label>
+              <textarea formControlName="resumen" rows="3"
+                class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm resize-y"></textarea>
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Categorías</label>
+              <select multiple formControlName="categoriaIds"
+                class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm h-24 bg-white">
+                @for (categoria of categorias; track categoria.id) {
+                  <option [value]="categoria.id">{{ categoria.nombre }}</option>
+                }
+              </select>
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Autores</label>
+              <select multiple formControlName="autorIds"
+                class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm h-24 bg-white">
+                @for (autor of autores; track autor.id) {
+                  <option [value]="autor.id">{{ autor.nombre }}</option>
+                }
+              </select>
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">
+                Editorial <span class="opacity-60">(sin catálogo — ingresá el ID)</span>
+              </label>
+              <input formControlName="editorialId" type="number"
+                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">
+                Idioma <span class="opacity-60">(ID)</span>
+              </label>
+              <input formControlName="idiomaId" type="number"
+                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">
+                Estado <span class="opacity-60">(ID)</span>
+              </label>
+              <input formControlName="estadoId" type="number"
+                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Stock total</label>
+              <input formControlName="stockTotal" type="number"
+                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Stock disponible</label>
+              <input formControlName="stockDisponible" type="number"
+                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+            </div>
+          </div>
+          @if (errorCatalogo) {
+            <p class="font-body-sm text-body-sm text-warning mt-sm">{{ errorCatalogo }}</p>
+          }
+          <div class="flex justify-end gap-sm mt-lg">
+            <button type="button" (click)="cerrarFormulario()"
+              class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm hover:bg-surface-container-low cursor-pointer">
+              Cancelar
+            </button>
+            <button type="submit" [disabled]="form.invalid"
+              class="h-10 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm disabled:opacity-40 cursor-pointer">
+              {{ modoEdicion ? 'Actualizar' : 'Guardar' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
 
-                </div>
+</main>

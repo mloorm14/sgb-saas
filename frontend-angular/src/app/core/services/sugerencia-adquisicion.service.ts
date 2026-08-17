@@ -9,7 +9,8 @@ import { SugerenciaAdquisicion, SugerenciaAdquisicionRequest } from '../models/s
 // Contrato de SugerenciaAdquisicionController (/api/v1/sugerencias-adquisicion),
 // verificado en backend-springboot. crear() y listarMias() son 100% LECTOR
 // (el usuario sale del token); listarTodas()/cambiarEstado() son
-// GERENTE/ADMIN y pertenecen a la rama F — no se implementan aquí.
+// GERENTE/ADMIN (rama F) y el backend solo acepta APROBADA o RECHAZADA
+// como nuevo estado (CambioEstadoSugerenciaRequestDTO @Pattern).
 export interface SugerenciaListarParams {
   page?: number;
   size?: number;
@@ -38,6 +39,29 @@ export class SugerenciaAdquisicionService {
     if (params.sort) httpParams = httpParams.set('sort', params.sort);
 
     return this.http.get<Page<SugerenciaAdquisicion>>(`${this.apiUrl}/mias`, { params: httpParams }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  // GET /v1/sugerencias-adquisicion?estado= (GERENTE/ADMIN): todas las
+  // sugerencias, con filtro opcional PENDIENTE|APROBADA|RECHAZADA.
+  listarTodas(estado: string, params: SugerenciaListarParams = {}): Observable<Page<SugerenciaAdquisicion>> {
+    let httpParams = new HttpParams();
+    if (params.page !== undefined) httpParams = httpParams.set('page', params.page);
+    if (params.size !== undefined) httpParams = httpParams.set('size', params.size);
+    if (params.sort) httpParams = httpParams.set('sort', params.sort);
+    if (estado) httpParams = httpParams.set('estado', estado);
+
+    return this.http.get<Page<SugerenciaAdquisicion>>(this.apiUrl, { params: httpParams }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  // PATCH /v1/sugerencias-adquisicion/{id}/estado -- body { nuevoEstado }.
+  // El backend solo acepta APROBADA o RECHAZADA (@Pattern del DTO); no hay
+  // forma de volver una sugerencia a PENDIENTE.
+  cambiarEstado(id: number, nuevoEstado: 'APROBADA' | 'RECHAZADA'): Observable<SugerenciaAdquisicion> {
+    return this.http.patch<SugerenciaAdquisicion>(`${this.apiUrl}/${id}/estado`, { nuevoEstado }).pipe(
       catchError(err => this.manejarError(err))
     );
   }
