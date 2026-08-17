@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { catchError, Observable, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Libro, LibroRequest, LibroSugerencia } from '../models/libro.model';
+import { Libro, LibroRequest, LibroSugerencia, LibroIsbnLookup } from '../models/libro.model';
 import { Page } from '../models/pagina.model';
 import { ProblemDetail } from '../models/problem-detail.model';
 
@@ -80,6 +80,23 @@ export class LibroService {
     const formData = new FormData();
     formData.append('archivo', archivo);
     return this.http.post<Libro>(`${this.apiUrl}/${id}/portada`, formData).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  // GET /v1/libros/lookup-isbn?isbn= (autocompletar del inventario desde
+  // Google Books). 404 con ProblemDetail si no hay resultado.
+  buscarPorIsbn(isbn: string): Observable<LibroIsbnLookup> {
+    return this.http.get<LibroIsbnLookup>(`${this.apiUrl}/lookup-isbn`, { params: new HttpParams().set('isbn', isbn) }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  // GET /v1/libros/lookup-isbn/portada?isbn=: proxy de la portada de
+  // Google Books (el backend descarga el thumbnail, el navegador no llama
+  // a Google directo). Blob para el preview con URL.createObjectURL.
+  portadaPorIsbn(isbn: string): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/lookup-isbn/portada`, { params: new HttpParams().set('isbn', isbn), responseType: 'blob' }).pipe(
       catchError(err => this.manejarError(err))
     );
   }
