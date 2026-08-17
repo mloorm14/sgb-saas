@@ -199,14 +199,14 @@ registrarse. No modifica ni comparte la cuenta `admin@sgb-saas.local`.
 
 Las imágenes se publican en GitHub Container Registry (GHCR) por el
 workflow `publish-ghcr.yml`, que se dispara con el push del tag `v1.0.0`
-(no por push a rama ni por PR). Los digests sha256 se declaran acá cuando
-se corte el tag definitivo — por ahora quedan pendientes a propósito, no se
-inventan ni se copian de corridas de prueba.
+(no por push a rama ni por PR). Digests verificados con `docker pull` +
+`docker inspect` real contra el commit `8610ab0` (el mismo que main y
+demo/interfaces-completas, y el que está sirviendo en producción).
 
 | Servicio  | Imagen                                   | Digest sha256 |
 |-----------|------------------------------------------|---------------|
-| Backend   | `ghcr.io/mloorm14/sgb-saas-backend:v1.0.0`  | _pendiente — se completa al cortar el tag final_ |
-| Frontend  | `ghcr.io/mloorm14/sgb-saas-frontend:v1.0.0` | _pendiente — se completa al cortar el tag final_ |
+| Backend   | `ghcr.io/mloorm14/sgb-saas-backend:v1.0.0`  | `sha256:2cb9f065d4c81cce11ab8b6d113fe20eb8603828ac2a087535280cb54d3f8598` |
+| Frontend  | `ghcr.io/mloorm14/sgb-saas-frontend:v1.0.0` | `sha256:ea3d681b322c06ea3d2657e46d712fadf080e0074575336f0aa27399bd6cd91f` |
 
 ## 🔁 Reproducibilidad (D.1 / D.2)
 
