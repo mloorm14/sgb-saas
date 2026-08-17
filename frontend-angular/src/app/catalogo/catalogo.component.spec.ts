@@ -5,6 +5,8 @@ import { LibroService } from '../core/services/libro.service';
 import { CategoriaService } from '../core/services/categoria.service';
 import { AutorService } from '../core/services/autor.service';
 import { FavoritoService } from '../core/services/favorito.service';
+import { ReservacionService } from '../core/services/reservacion.service';
+import { AuthService } from '../core/services/auth.service';
 import { Libro } from '../core/models/libro.model';
 import { ActivatedRoute } from '@angular/router';
 
@@ -15,6 +17,7 @@ describe('CatalogoComponent', () => {
   let categoriaService: jasmine.SpyObj<CategoriaService>;
   let autorService: jasmine.SpyObj<AutorService>;
   let favoritoService: jasmine.SpyObj<FavoritoService>;
+  let reservacionService: jasmine.SpyObj<ReservacionService>;
 
   const libro = (id: number, titulo: string, stockDisponible: number): Libro => ({
     id, titulo, isbn: 'x', resumen: '', portadaUrl: '', tienePortada: false,
@@ -29,11 +32,13 @@ describe('CatalogoComponent', () => {
     categoriaService = jasmine.createSpyObj('CategoriaService', ['listar']);
     autorService = jasmine.createSpyObj('AutorService', ['listar']);
     favoritoService = jasmine.createSpyObj('FavoritoService', ['listar', 'agregar', 'quitar']);
+    reservacionService = jasmine.createSpyObj('ReservacionService', ['crear', 'listarPorUsuario']);
 
     libroService.listar.and.returnValue(of({ content: [libro(1, 'Clean Code', 4)], totalPages: 1 } as any));
     categoriaService.listar.and.returnValue(of([{ id: 1, nombre: 'Ingeniería de Software' }]));
     autorService.listar.and.returnValue(of([{ id: 1, nombre: 'Robert C. Martin' }]));
     favoritoService.listar.and.returnValue(of([]));
+    reservacionService.listarPorUsuario.and.returnValue(of({ content: [], totalPages: 0 } as any));
 
     await TestBed.configureTestingModule({
       imports: [CatalogoComponent],
@@ -42,16 +47,19 @@ describe('CatalogoComponent', () => {
         { provide: CategoriaService, useValue: categoriaService },
         { provide: AutorService, useValue: autorService },
         { provide: FavoritoService, useValue: favoritoService },
+        { provide: ReservacionService, useValue: reservacionService },
+        { provide: AuthService, useValue: { getUserId: () => 2, hasRole: () => false } },
         { provide: ActivatedRoute, useValue: { snapshot: {} } }
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(CatalogoComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
   it('carga el grid del catálogo con el sort por título', () => {
+    fixture.detectChanges();
+
     expect(libroService.listar).toHaveBeenCalledWith({
       page: 0,
       size: 10,
@@ -66,6 +74,7 @@ describe('CatalogoComponent', () => {
   });
 
   it('muestra el estado de error sin romper la UI si el backend falla', () => {
+    fixture.detectChanges();
     libroService.listar.and.returnValue(throwError(() => ({ status: 500 })));
     component.cargarPagina();
     expect(component.errorMsg).toBe('Error al cargar el catálogo');
@@ -73,6 +82,7 @@ describe('CatalogoComponent', () => {
   });
 
   it('busca sugerencias solo con 2+ caracteres y tras el debounce de 300ms', fakeAsync(() => {
+    fixture.detectChanges();
     libroService.sugerencias.and.returnValue(of([{ id: 1, titulo: 'Estructuras', disponible: true }]));
 
     component.textoBusqueda = 'es';
@@ -87,6 +97,7 @@ describe('CatalogoComponent', () => {
   }));
 
   it('con menos de 2 caracteres limpia el dropdown sin llamar al backend', fakeAsync(() => {
+    fixture.detectChanges();
     component.textoBusqueda = 'e';
     component.onBusquedaChange();
     tick(400);
@@ -96,6 +107,7 @@ describe('CatalogoComponent', () => {
   }));
 
   it('alterna favoritos: agrega y marca la tarjeta', () => {
+    fixture.detectChanges();
     favoritoService.agregar.and.returnValue(of({ usuarioId: 1, libroId: 1, tituloLibro: 'x', agregadoEn: '' }));
     component.alternarFavorito(new Event('click'), component.libros[0]);
 
@@ -104,6 +116,7 @@ describe('CatalogoComponent', () => {
   });
 
   it('alterna favoritos: quita y desmarca la tarjeta', () => {
+    fixture.detectChanges();
     component.favoritosIds.add(1);
     favoritoService.quitar.and.returnValue(of(undefined));
 
@@ -114,10 +127,12 @@ describe('CatalogoComponent', () => {
   });
 
   it('carga el estado inicial de favoritos desde FavoritoService.listar', () => {
+    fixture.detectChanges();
     expect(favoritoService.listar).toHaveBeenCalled();
   });
 
   it('filtra por categoría y reinicia a la primera página', () => {
+    fixture.detectChanges();
     component.currentPage = 2;
     component.onCategoriaChange({ target: { value: '5' } } as any);
 
@@ -126,12 +141,14 @@ describe('CatalogoComponent', () => {
   });
 
   it('filtra por autor', () => {
+    fixture.detectChanges();
     component.onAutorChange({ target: { value: '7' } } as any);
 
     expect(libroService.listar).toHaveBeenCalledWith(jasmine.objectContaining({ autorId: 7 }));
   });
 
   it('pagina con la barra de navegación numerada', () => {
+    fixture.detectChanges();
     libroService.listar.and.returnValue(of({ content: [], totalPages: 3 } as any));
     component.totalPages = 3;
     expect(component.paginasVisibles).toEqual([0, 1, 2]);
@@ -145,5 +162,42 @@ describe('CatalogoComponent', () => {
 
     component.paginaAnterior();
     expect(component.currentPage).toBe(1);
+  });
+
+  it('carga las reservaciones pendientes del lector y marca "Ya reservado"', () => {
+    reservacionService.listarPorUsuario.and.returnValue(
+      of({ content: [{ id: 1, libroId: 1, estadoReservacionId: 1 }], totalPages: 1 } as any)
+    );
+
+    fixture.detectChanges();
+
+    expect(reservacionService.listarPorUsuario).toHaveBeenCalledWith(2, jasmine.anything());
+    expect(component.estaReservado(1)).toBeTrue();
+  });
+
+  it('reserva un libro desde la tarjeta, lo marca como reservado y muestra el toast', () => {
+    fixture.detectChanges();
+    reservacionService.crear.and.returnValue(of({
+      id: 9, usuarioId: 2, libroId: 1, estadoReservacionId: 1,
+      fechaReserva: '', fechaLimiteRetiro: '2026-08-18T12:00:00Z'
+    } as any));
+
+    component.reservarLibro(new Event('click'), component.libros[0]);
+
+    expect(reservacionService.crear).toHaveBeenCalledWith({ usuarioId: 2, libroId: 1 });
+    expect(component.estaReservado(1)).toBeTrue();
+    expect(component.toastMsg).toContain('Reservado');
+    expect(component.toastMsg).toContain('18/08/2026');
+  });
+
+  it('no rompe la tarjeta si la reserva falla', () => {
+    fixture.detectChanges();
+    reservacionService.crear.and.returnValue(throwError(() => ({ status: 500 })));
+
+    component.reservarLibro(new Event('click'), component.libros[0]);
+
+    expect(component.errorMsg).toBe('Error al reservar el libro');
+    expect(component.estaReservado(1)).toBeFalse();
+    expect(component.toastMsg).toBeNull();
   });
 });
