@@ -96,11 +96,12 @@ export class CatalogoComponent implements OnInit, OnDestroy {
 
   // Igual patron que estiloIconoFavorito: las clases del boton segun stock
   // (relleno si hay stock, outline si queda en cola) sin condicionales
-  // complejos en el template.
+  // complejos en el template. mt-auto ancla el boton abajo de la tarjeta
+  // (tarjeta flex-col) para que quede al mismo alto en todo el grid.
   clasesBotonReservar(libro: Libro): string {
     return libro.stockDisponible > 0
-      ? 'w-full mt-sm h-8 rounded bg-primary text-on-primary font-label-sm text-[12px] flex items-center justify-center gap-1 hover:bg-on-primary-fixed-variant cursor-pointer'
-      : 'w-full mt-sm h-8 rounded border border-primary text-primary font-label-sm text-[12px] flex items-center justify-center gap-1 hover:bg-primary/5 cursor-pointer';
+      ? 'w-full mt-auto h-8 rounded bg-primary text-on-primary font-label-sm text-[12px] flex items-center justify-center gap-1 hover:bg-on-primary-fixed-variant cursor-pointer'
+      : 'w-full mt-auto h-8 rounded border border-primary text-primary font-label-sm text-[12px] flex items-center justify-center gap-1 hover:bg-primary/5 cursor-pointer';
   }
 
   reservarLibro(event: Event, libro: Libro): void {

@@ -69,7 +69,7 @@
   <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-md">
     @for (libro of libros; track libro.id) {
       <a [routerLink]="['/catalogo', libro.id]"
-        class="group rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow">
+        class="group rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow flex flex-col">
         <div class="relative aspect-[3/4] bg-surface-container-low overflow-hidden">
           <app-portada-libro [libroId]="libro.id" [tienePortada]="libro.tienePortada" />
           <button (click)="alternarFavorito($event, libro)"
@@ -81,17 +81,17 @@
               [style.font-variation-settings]="estiloIconoFavorito(libro.id)">star</span>
           </button>
         </div>
-        <div class="p-sm">
+        <div class="p-sm flex flex-col flex-1 gap-xs">
           <p class="font-label-md text-[13px] text-on-surface leading-tight line-clamp-2">{{ libro.titulo }}</p>
-          <p class="font-label-sm text-[11px] text-on-surface-variant mt-1">{{ autoresTexto(libro) }}</p>
+          <p class="font-label-sm text-[11px] text-on-surface-variant line-clamp-1">{{ autoresTexto(libro) }}</p>
           @if (libro.stockDisponible > 0) {
-            <span class="inline-block mt-xs font-label-sm text-[11px] text-secondary">{{ libro.stockDisponible }} disponibles</span>
+            <span class="inline-block font-label-sm text-[11px] text-secondary">{{ libro.stockDisponible }} disponibles</span>
           } @else {
-            <span class="inline-block mt-xs font-label-sm text-[11px] text-error">Sin stock</span>
+            <span class="inline-block font-label-sm text-[11px] text-error">Sin stock</span>
           }
           @if (estaReservado(libro.id)) {
             <button disabled
-              class="w-full mt-sm h-8 rounded bg-surface-container text-on-surface-variant font-label-sm text-[12px] flex items-center justify-center gap-1 cursor-not-allowed">
+              class="w-full mt-auto h-8 rounded bg-surface-container text-on-surface-variant font-label-sm text-[12px] flex items-center justify-center gap-1 cursor-not-allowed">
               <span class="material-symbols-outlined text-[16px]">check_circle</span> Ya reservado
             </button>
           } @else {
