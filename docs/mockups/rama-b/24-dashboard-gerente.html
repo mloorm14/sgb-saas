@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SGB · Dashboard Gerencial</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          "secondary-container": "#76f4e0","surface": "#f8f9ff","surface-container-highest": "#d5e3fc",
+          "on-error": "#ffffff","error-container": "#ffdad6","surface-container": "#e6eeff",
+          "on-secondary-fixed": "#00201c","on-secondary-container": "#006f63","surface-bright": "#f8f9ff",
+          "tertiary": "#503a00","surface-variant": "#d5e3fc","outline-variant": "#c4c6d5",
+          "inverse-primary": "#b4c5ff","primary-container": "#1e4db7","on-tertiary-fixed-variant": "#5b4300",
+          "on-primary-fixed-variant": "#003ea8","inverse-on-surface": "#eaf1ff","surface-dim": "#ccdbf3",
+          "error": "#ba1a1a","on-tertiary-fixed": "#261a00","primary-fixed-dim": "#b4c5ff",
+          "on-tertiary": "#ffffff","on-surface-variant": "#434653","secondary-fixed": "#79f7e3",
+          "background": "#f8f9ff","on-background": "#0d1c2e","tertiary-fixed": "#ffdf9e",
+          "on-surface": "#0d1c2e","primary-fixed": "#dbe1ff","surface-container-lowest": "#ffffff",
+          "on-tertiary-container": "#fec004","surface-container-high": "#dce9ff","surface-container-low": "#eff4ff",
+          "tertiary-container": "#6c5000","surface-tint": "#2c57c1","primary": "#003694",
+          "on-secondary": "#ffffff","on-primary-fixed": "#00174b","outline": "#747684",
+          "on-secondary-fixed-variant": "#005047","secondary": "#006b5f","tertiary-fixed-dim": "#fabd00",
+          "secondary-fixed-dim": "#59dbc7","on-primary-container": "#b8c8ff","on-error-container": "#93000a",
+          "on-primary": "#ffffff","inverse-surface": "#233144",
+          "success": "#1d9e75","warning": "#fec004"
+        },
+        borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" },
+        spacing: { gutter: "24px", xl: "40px", lg: "24px", md: "16px", "container-max": "1280px", sm: "8px", xs: "4px", "margin-mobile": "16px", base: "4px" },
+        fontFamily: {
+          "headline-lg": ["Plus Jakarta Sans"], "body-md": ["Inter"], "label-md": ["Inter"],
+          "headline-lg-mobile": ["Plus Jakarta Sans"], "headline-xl": ["Plus Jakarta Sans"],
+          "label-sm": ["Inter"], "body-lg": ["Inter"], "body-sm": ["Inter"], "headline-md": ["Plus Jakarta Sans"]
+        },
+        fontSize: {
+          "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+          "label-md": ["14px", { lineHeight: "20px", letterSpacing: "0.05em", fontWeight: "600" }],
+          "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+          "headline-xl": ["40px", { lineHeight: "48px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "label-sm": ["12px", { lineHeight: "16px", fontWeight: "500" }],
+          "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+          "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+          "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Inter', sans-serif; background:#f8f9ff; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align:middle; }
+  .glass-panel { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
+</style>
+</head>
+<body>
+<header class="sticky top-0 z-40 bg-surface/90 backdrop-blur border-b border-outline-variant">
+  <div class="max-w-container-max mx-auto px-md lg:px-xl flex items-center gap-lg h-16">
+    <div class="flex items-center gap-sm text-primary shrink-0">
+      <span class="material-symbols-outlined text-3xl" style="font-variation-settings:'FILL' 1;">local_library</span>
+      <span class="font-headline-md text-headline-md text-primary hidden sm:inline">SGB UTEQ</span>
+    </div>
+    <nav class="flex-1 flex items-center gap-xs overflow-x-auto py-2 font-label-sm text-label-sm text-on-surface-variant">
+      <a class="px-sm py-2 rounded-lg bg-primary-fixed text-primary flex items-center gap-1.5"><span class="material-symbols-outlined text-[18px]">dashboard</span>Dashboard</a>
+      <a class="px-sm py-2 rounded-lg hover:bg-surface-container-low flex items-center gap-1.5"><span class="material-symbols-outlined text-[18px]">inventory_2</span>Libros</a>
+      <a class="px-sm py-2 rounded-lg hover:bg-surface-container-low flex items-center gap-1.5"><span class="material-symbols-outlined text-[18px]">bar_chart</span>Reportes</a>
+      <a class="px-sm py-2 rounded-lg hover:bg-surface-container-low flex items-center gap-1.5"><span class="material-symbols-outlined text-[18px]">lightbulb</span>Sugerencias</a>
+      <a class="px-sm py-2 rounded-lg hover:bg-surface-container-low flex items-center gap-1.5"><span class="material-symbols-outlined text-[18px]">manage_accounts</span>Usuarios</a>
+      <a class="px-sm py-2 rounded-lg hover:bg-surface-container-low flex items-center gap-1.5"><span class="material-symbols-outlined text-[18px]">receipt_long</span>Auditoría</a>
+    </nav>
+  </div>
+</header>
+
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
+  <div class="mb-lg">
+    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Bienvenida, Gerencia</h1>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Resumen del estado actual de la biblioteca</p>
+  </div>
+
+  <!-- KPIs: todos con datos reales de reporte-gerencial.service.ts + sugerencia-adquisicion.service.ts, sin numeros inventados -->
+  <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-md mb-xl">
+    <div class="rounded-xl glass-panel p-md">
+      <div class="flex items-center justify-between mb-xs">
+        <span class="material-symbols-outlined text-[22px] text-primary">payments</span>
+      </div>
+      <p class="font-headline-lg text-[28px] text-on-background font-bold">$142.50</p>
+      <p class="font-label-sm text-[12px] text-on-surface-variant">Morosidad acumulada</p>
+    </div>
+    <div class="rounded-xl glass-panel p-md">
+      <div class="flex items-center justify-between mb-xs">
+        <span class="material-symbols-outlined text-[22px] text-error">warning</span>
+      </div>
+      <p class="font-headline-lg text-[28px] text-on-background font-bold">7</p>
+      <p class="font-label-sm text-[12px] text-on-surface-variant">Usuarios con multas vencidas</p>
+    </div>
+    <div class="rounded-xl glass-panel p-md">
+      <div class="flex items-center justify-between mb-xs">
+        <span class="material-symbols-outlined text-[22px]" style="color:#a37a00">lightbulb</span>
+      </div>
+      <p class="font-headline-lg text-[28px] text-on-background font-bold">4</p>
+      <p class="font-label-sm text-[12px] text-on-surface-variant">Sugerencias pendientes de revisión</p>
+    </div>
+    <div class="rounded-xl glass-panel p-md">
+      <div class="flex items-center justify-between mb-xs">
+        <span class="material-symbols-outlined text-[22px] text-secondary">trending_up</span>
+      </div>
+      <p class="font-headline-lg text-[28px] text-on-background font-bold">312</p>
+      <p class="font-label-sm text-[12px] text-on-surface-variant">Préstamos este mes</p>
+    </div>
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-lg mb-xl">
+    <div class="rounded-xl border border-outline-variant bg-white p-lg">
+      <h2 class="font-headline-md text-headline-md text-on-background mb-md">Libros más prestados</h2>
+      <div class="space-y-sm">
+        <div class="flex items-center justify-between">
+          <p class="font-body-sm text-body-sm text-on-surface">1. Clean Code</p>
+          <span class="font-label-sm text-[12px] text-on-surface-variant">38 préstamos</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <p class="font-body-sm text-body-sm text-on-surface">2. Introducción a los Algoritmos</p>
+          <span class="font-label-sm text-[12px] text-on-surface-variant">29 préstamos</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <p class="font-body-sm text-body-sm text-on-surface">3. Redes de Computadoras</p>
+          <span class="font-label-sm text-[12px] text-on-surface-variant">21 préstamos</span>
+        </div>
+      </div>
+      <a href="#" class="inline-flex items-center gap-xs mt-md font-label-sm text-label-sm text-primary hover:underline">Ver reporte completo <span class="material-symbols-outlined text-[16px]">arrow_forward</span></a>
+    </div>
+
+    <div class="rounded-xl border border-outline-variant bg-white p-lg">
+      <h2 class="font-headline-md text-headline-md text-on-background mb-md">Accesos rápidos</h2>
+      <div class="grid grid-cols-2 gap-sm">
+        <a href="#" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
+          <span class="material-symbols-outlined text-[22px] text-primary">lightbulb</span>
+          <span class="font-label-sm text-[13px] text-on-surface">Revisar sugerencias</span>
+        </a>
+        <a href="#" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
+          <span class="material-symbols-outlined text-[22px] text-primary">manage_accounts</span>
+          <span class="font-label-sm text-[13px] text-on-surface">Gestionar usuarios</span>
+        </a>
+        <a href="#" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
+          <span class="material-symbols-outlined text-[22px] text-primary">receipt_long</span>
+          <span class="font-label-sm text-[13px] text-on-surface">Ver auditoría</span>
+        </a>
+        <a href="#" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
+          <span class="material-symbols-outlined text-[22px] text-primary">picture_as_pdf</span>
+          <span class="font-label-sm text-[13px] text-on-surface">Exportar morosidad</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</main>
+</body>
+</html>
