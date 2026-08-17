@@ -17,6 +17,7 @@ import { MisSugerenciasComponent } from './sugerencias/mis-sugerencias/mis-suger
 import { PortalPublicoComponent } from './portal-publico/portal-publico.component';
 import { DetallePublicoComponent } from './portal-publico/detalle-publico/detalle-publico.component';
 import { UsuariosComponent } from './admin/usuarios/usuarios.component';
+import { AuditoriaComponent } from './admin/auditoria/auditoria.component';
 
 // Los roleGuard de abajo reflejan los @PreAuthorize reales de cada
 // controller en backend-springboot (verificado en el codigo, no asumido):
@@ -54,6 +55,8 @@ export const routes: Routes = [
   // Rama F (panel administrativo): gestión de usuarios -- listado ADMIN/GERENTE,
   // PATCH de rol/estado solo ADMIN (UsuarioAdminController real).
   { path: 'admin/usuarios', component: UsuariosComponent, canActivate: [authGuard, roleGuard(['ADMIN', 'GERENTE'])] },
+  // Auditoría: bitácora de eventos, GERENTE/ADMIN (AuditoriaController real).
+  { path: 'auditoria', component: AuditoriaComponent, canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])] },
   { path: 'no-autorizado', component: NoAutorizadoComponent },
   { path: '**', redirectTo: '' }
 ];
