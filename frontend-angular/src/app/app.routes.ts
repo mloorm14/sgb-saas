@@ -21,6 +21,7 @@ import { PortalPublicoComponent } from './portal-publico/portal-publico.componen
 import { DetallePublicoComponent } from './portal-publico/detalle-publico/detalle-publico.component';
 import { ConfiguracionSistemaComponent } from './configuracion-sistema/configuracion-sistema.component';
 import { UsuariosComponent } from './admin/usuarios/usuarios.component';
+import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { AuditoriaComponent } from './admin/auditoria/auditoria.component';
 
 // Los roleGuard de abajo reflejan los @PreAuthorize reales de cada
@@ -80,6 +81,9 @@ export const routes: Routes = [
   { path: 'admin/usuarios', component: UsuariosComponent, canActivate: [authGuard, roleGuard(['ADMIN', 'GERENTE'])] },
   // Auditoría: bitácora de eventos, GERENTE/ADMIN (AuditoriaController real).
   { path: 'auditoria', component: AuditoriaComponent, canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])] },
+  // Notificaciones: todas las roles autenticadas ven sus propias notificaciones
+  // (el controller valida que solo veas las tuyas).
+  { path: 'notificaciones', component: NotificacionesComponent, canActivate: [authGuard] },
   { path: 'no-autorizado', component: NoAutorizadoComponent },
   { path: '**', redirectTo: '' }
 ];
