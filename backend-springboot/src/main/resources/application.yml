@@ -92,7 +92,7 @@ server:
 
 # Módulo 2: notificaciones por correo.
 notificaciones:
-  remitente: no-reply@sgb-saas.local
+  remitente: ${MAIL_FROM:no-reply@sgb-saas.local}
   # Ventana de anticipación con la que NotificacionVencimientoScheduler
   # detecta préstamos por vencer (minutos antes de
   # fecha_devolucion_estimada). Config externa, mismo criterio que
