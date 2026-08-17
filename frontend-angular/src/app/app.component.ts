@@ -21,10 +21,9 @@ export class AppComponent {
 
   constructor(private authService: AuthService) {}
 
-  // Rama B completada: /catalogo, /favoritos y /sugerencias ya son reales
-  // y salen de la lista de futuros. Mi Credencial y Notificaciones
-  // (rama frontend/estudiante-cuenta, no integrada) NO se listan: el
-  // LECTOR no debe ver enlaces a rutas inexistentes, ni siquiera con
+  // Rama B completada: /catalogo, /favoritos, /sugerencias y /notificaciones ya son reales
+  // y salen de la lista de futuros. Mi Credencial (rama frontend/estudiante-cuenta, no integrada)
+  // NO se lista: el LECTOR no debe ver enlaces a rutas inexistentes, ni siquiera con
   // opacity -- se agregan cuando la rama de cuenta se integre.
   enlacesLector: EnlaceNav[] = [
     { ruta: '/prestamos', etiqueta: 'Mis Préstamos', icono: 'menu_book' },
@@ -32,7 +31,8 @@ export class AppComponent {
     { ruta: '/multas', etiqueta: 'Multas', icono: 'payments' },
     { ruta: '/catalogo', etiqueta: 'Catálogo', icono: 'search' },
     { ruta: '/favoritos', etiqueta: 'Favoritos', icono: 'favorite' },
-    { ruta: '/sugerencias', etiqueta: 'Sugerencias', icono: 'lightbulb' }
+    { ruta: '/sugerencias', etiqueta: 'Sugerencias', icono: 'lightbulb' },
+    { ruta: '/notificaciones', etiqueta: 'Notificaciones', icono: 'notifications' }
   ];
 
   // Navbar compartido del staff (mockup 23: SGB · Staff). roles por enlace
