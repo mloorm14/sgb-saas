@@ -7,6 +7,9 @@ import { LibroService } from '../core/services/libro.service';
 import { CategoriaService } from '../core/services/categoria.service';
 import { AutorService } from '../core/services/autor.service';
 import { FavoritoService } from '../core/services/favorito.service';
+import { ReservacionService } from '../core/services/reservacion.service';
+import { ReservacionPendienteService } from '../core/services/reservacion-pendiente.service';
+import { AuthService } from '../core/services/auth.service';
 import { Libro, LibroSugerencia } from '../core/models/libro.model';
 import { Categoria } from '../core/models/categoria.model';
 import { Autor } from '../core/models/autor.model';
@@ -19,6 +22,12 @@ import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.com
 // El estado de favoritos se resuelve con FavoritoService.listar al montar
 // (FavoritoResponseDTO no trae stock ni portada: para saber si una tarjeta
 // esta marcada hay que conocer el set completo).
+// Reservar (mockup 16): el boton "Reservar"/"Reservar en cola" llama a
+// ReservacionService.crear con el id del token (AuthService.getUserId) y
+// el estado "Ya reservado" sale de ReservacionPendienteService (un solo
+// listarPorUsuario compartido con el detalle). El backend NO valida stock
+// en ReservacionService.crear (verificado en backend-springboot): reservar
+// con stock 0 queda en cola, por eso el boton sigue habilitado.
 // TODO(frontend/estudiante-chatbot): la Rama D montara el widget de chatbot
 // flotante sobre este componente raiz del catalogo.
 @Component({
@@ -36,6 +45,8 @@ export class CatalogoComponent implements OnInit, OnDestroy {
   pageSize: number = 10;
   cargando: boolean = false;
   errorMsg: string = '';
+  toastMsg: string | null = null;
+  private toastTimer: ReturnType<typeof setTimeout> | undefined;
 
   textoBusqueda: string = '';
   sugerencias: LibroSugerencia[] = [];
@@ -49,13 +60,17 @@ export class CatalogoComponent implements OnInit, OnDestroy {
     private libroService: LibroService,
     private categoriaService: CategoriaService,
     private autorService: AutorService,
-    private favoritoService: FavoritoService
+    private favoritoService: FavoritoService,
+    private reservacionService: ReservacionService,
+    private reservacionesPendientes: ReservacionPendienteService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
     this.cargarCategorias();
     this.cargarAutores();
     this.cargarFavoritos();
+    this.cargarReservacionesPendientes();
     this.cargarPagina();
 
     this.busqueda$.pipe(
@@ -66,6 +81,59 @@ export class CatalogoComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.busqueda$.complete();
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+  }
+
+  private cargarReservacionesPendientes(): void {
+    this.reservacionesPendientes.cargar().subscribe({
+      error: () => {} // sin el set, el boton solo permite reservar
+    });
+  }
+
+  estaReservado(libroId: number): boolean {
+    return this.reservacionesPendientes.esPendiente(libroId);
+  }
+
+  // Igual patron que estiloIconoFavorito: las clases del boton segun stock
+  // (relleno si hay stock, outline si queda en cola) sin condicionales
+  // complejos en el template.
+  clasesBotonReservar(libro: Libro): string {
+    return libro.stockDisponible > 0
+      ? 'w-full mt-sm h-8 rounded bg-primary text-on-primary font-label-sm text-[12px] flex items-center justify-center gap-1 hover:bg-on-primary-fixed-variant cursor-pointer'
+      : 'w-full mt-sm h-8 rounded border border-primary text-primary font-label-sm text-[12px] flex items-center justify-center gap-1 hover:bg-primary/5 cursor-pointer';
+  }
+
+  reservarLibro(event: Event, libro: Libro): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const usuarioId = this.authService.getUserId();
+    if (usuarioId === null) {
+      this.errorMsg = 'Iniciá sesión para reservar';
+      return;
+    }
+    this.reservacionService.crear({ usuarioId, libroId: libro.id }).subscribe({
+      next: (r) => {
+        this.reservacionesPendientes.marcarReservada(libro.id);
+        this.mostrarToast(
+          `Reservado. Tenés hasta el ${this.formatearFecha(r.fechaLimiteRetiro)} para retirarlo.`
+        );
+      },
+      error: () => (this.errorMsg = 'Error al reservar el libro')
+    });
+  }
+
+  private mostrarToast(mensaje: string): void {
+    this.toastMsg = mensaje;
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => (this.toastMsg = null), 3000);
+  }
+
+  private formatearFecha(iso: string): string {
+    return new Date(iso).toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   }
 
   onBusquedaChange(): void {

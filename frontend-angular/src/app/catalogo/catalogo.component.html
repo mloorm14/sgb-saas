@@ -1,5 +1,13 @@
 <main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
 
+  <!-- Toast de confirmación de reserva (mockup 16) -->
+  @if (toastMsg) {
+    <div class="fixed top-20 left-1/2 -translate-x-1/2 bg-success text-white px-md py-sm rounded shadow-lg flex items-center gap-sm z-50">
+      <span class="material-symbols-outlined text-[18px]">event_available</span>
+      <span class="font-label-md text-label-sm">{{ toastMsg }}</span>
+    </div>
+  }
+
   <div class="mb-lg">
     <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Catálogo</h1>
     <p class="font-body-sm text-body-sm text-on-surface-variant">Busca por título, autor o categoría</p>
@@ -80,6 +88,18 @@
             <span class="inline-block mt-xs font-label-sm text-[11px] text-secondary">{{ libro.stockDisponible }} disponibles</span>
           } @else {
             <span class="inline-block mt-xs font-label-sm text-[11px] text-error">Sin stock</span>
+          }
+          @if (estaReservado(libro.id)) {
+            <button disabled
+              class="w-full mt-sm h-8 rounded bg-surface-container text-on-surface-variant font-label-sm text-[12px] flex items-center justify-center gap-1 cursor-not-allowed">
+              <span class="material-symbols-outlined text-[16px]">check_circle</span> Ya reservado
+            </button>
+          } @else {
+            <button (click)="reservarLibro($event, libro)"
+              [class]="clasesBotonReservar(libro)">
+              <span class="material-symbols-outlined text-[16px]">event_available</span>
+              {{ libro.stockDisponible > 0 ? 'Reservar' : 'Reservar en cola' }}
+            </button>
           }
         </div>
       </a>
