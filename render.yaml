@@ -67,6 +67,18 @@ services:
         sync: false
       - key: REDIS_PORT
         sync: false
+      # Upstash (Redis gestionado usado en este despliegue, ver sección 2
+      # de docs/despliegue/DEPLOYMENT.md) exige autenticación por
+      # password y conexión TLS -- sin estas dos variables,
+      # application.yml cae en sus defaults de desarrollo local
+      # (REDIS_PASSWORD vacío, REDIS_SSL false) y la conexión a Upstash
+      # falla. REDIS_PASSWORD es secreto (sync: false); REDIS_SSL no es
+      # sensible y su valor correcto para este proveedor es siempre
+      # "true", así que se fija acá igual que SPRING_PROFILES_ACTIVE.
+      - key: REDIS_PASSWORD
+        sync: false
+      - key: REDIS_SSL
+        value: "true"
       - key: SMTP_HOST
         sync: false
       - key: SMTP_USER
@@ -80,6 +92,13 @@ services:
       # deshabilita Swagger UI/OpenAPI y oculta stacktraces en /error).
       - key: SPRING_PROFILES_ACTIVE
         value: prod
+      # Mismo límite ya verificado en docker-compose.yml: el plan free
+      # de Render da 512MB. Sin este límite, Spring Boot + springdoc/
+      # Hibernate llenan el metaspace por defecto y el proceso muere con
+      # OutOfMemoryError: Metaspace al arrancar. JAVA_TOOL_OPTIONS lo lee
+      # la JVM directamente al iniciar, no pasa por application.yml.
+      - key: JAVA_TOOL_OPTIONS
+        value: "-Xmx300m -Xms128m -XX:MaxMetaspaceSize=224m -XX:+UseSerialGC -XX:MaxRAM=450m"
       # Igual al override ya usado en docker-compose.yml -- dentro del
       # contenedor el cwd es /app y el Dockerfile copia
       # database/migrations a /app/database/migrations.

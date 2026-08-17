@@ -54,6 +54,12 @@ services:
       DB_PASSWORD: changeme
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      # Limites de memoria del contenedor backend para caber en el free tier
+      # de Render (512MB). MaxMetaspaceSize=100m era demasiado bajo: Spring
+      # Boot + springdoc/Hibernate llenaban el metaspace al cargar clases y
+      # el contenedor moria con OutOfMemoryError: Metaspace. 224m deja margen
+      # de arranque; heap 300m max / 128m inicial + SerialGC + MaxRAM=450m.
+      JAVA_TOOL_OPTIONS: "-Xmx300m -Xms128m -XX:MaxMetaspaceSize=224m -XX:+UseSerialGC -XX:MaxRAM=450m"
       # Modulo 10.2 (REQ-NF-014): activa el perfil 'prod' de application.yml
       # (Swagger UI/OpenAPI deshabilitados, sin stacktraces en /error) --
       # ver ADR-015 y docs/mediciones/sec/2026-08-10-owasp-a05-fix-*.md.
