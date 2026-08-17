@@ -16,6 +16,7 @@ import { SugerenciasFormComponent } from './sugerencias/sugerencias-form/sugeren
 import { MisSugerenciasComponent } from './sugerencias/mis-sugerencias/mis-sugerencias.component';
 import { PortalPublicoComponent } from './portal-publico/portal-publico.component';
 import { DetallePublicoComponent } from './portal-publico/detalle-publico/detalle-publico.component';
+import { UsuariosComponent } from './admin/usuarios/usuarios.component';
 
 // Los roleGuard de abajo reflejan los @PreAuthorize reales de cada
 // controller en backend-springboot (verificado en el codigo, no asumido):
@@ -50,6 +51,9 @@ export const routes: Routes = [
   { path: 'favoritos', component: FavoritosComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
   { path: 'sugerencias', component: MisSugerenciasComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
   { path: 'sugerencias/nueva', component: SugerenciasFormComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
+  // Rama F (panel administrativo): gestión de usuarios -- listado ADMIN/GERENTE,
+  // PATCH de rol/estado solo ADMIN (UsuarioAdminController real).
+  { path: 'admin/usuarios', component: UsuariosComponent, canActivate: [authGuard, roleGuard(['ADMIN', 'GERENTE'])] },
   { path: 'no-autorizado', component: NoAutorizadoComponent },
   { path: '**', redirectTo: '' }
 ];
