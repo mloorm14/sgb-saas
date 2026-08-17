@@ -415,3 +415,169 @@ corrección aparte (candidato: reservar el espacio del panel con
    y desviación típica reportadas por categoría — las 2 corridas
    originales contra `localhost` se conservan arriba como evidencia
    histórica del hallazgo y la corrección de SEO, no se eliminan.
+
+## Actualización — investigación y corrección real del defecto de CLS
+
+El hallazgo de CLS de la actualización anterior (desktop ~0,236
+consistente en 3/3 corridas; móvil intermitente, 0,013 en 2 corridas y
+0,338 en la tercera) se investigó a fondo para identificar el elemento
+real responsable -- no se asumió cuál era a partir de la sospecha inicial
+("el panel CTA") de la sección anterior.
+
+### Identificación del elemento real (no adivinado)
+
+El audit `cumulative-layout-shift` del JSON crudo no trae el elemento
+(solo el score agregado), pero **sí existe un audit separado con el
+detalle real, `layout-shifts`** ("Avoid large layout shifts", id
+`layout-shifts`, distinto del `layout-shift-elements` que se buscó sin
+éxito) -- confirmado corriendo `lighthouse` con `--output=json --output=html`
+contra producción y leyendo `audits['layout-shifts'].details.items`
+directamente del JSON (no del HTML, aunque el HTML lo confirma también).
+Con las 4 instancias de shift de esa corrida:
+
+| # | Elemento (`selector`) | Score del shift | Causa reportada |
+|---|---|---|---|
+| 1 | `main.max-w-container-max` (el `<main>` completo) | **0,2305** (≈99,9 % del CLS total) | Ninguna (Lighthouse no logra atribuir una causa automática a este) |
+| 2 | `h1.font-headline-xl` | 0,0020 | Web font loaded (`plus-jakarta-sans-latin`) |
+| 3 | `p.font-body-lg` | 0,0018 | Web font loaded (`inter-latin`) |
+| 4 | `input.w-full` | 0,0007 | Web font loaded (`material-symbols-outlined`) |
+
+El elemento dominante (99,9 % del CLS) es el **`<main>` de
+`PortalPublicoComponent`, no el panel CTA** que se había señalado como
+sospechoso en la sección anterior sin confirmarlo -- se corrige aquí esa
+suposición explícitamente en vez de dejarla como si hubiera sido
+correcta. Las otras 3 instancias sí son por fuentes web (`font-display:
+swap`, ya configurado en `styles.scss`), pero su contribución conjunta
+(0,0045) es marginal (<2 % del CLS total) frente al shift de `<main>` --
+no se tocó `font-display` por esta razón: el costo de cambiarlo
+(`optional` arriesga no aplicar la tipografía en redes lentas) no se
+justifica para una ganancia de ese tamaño.
+
+### Causa raíz real (confirmada en el código fuente, no supuesta)
+
+`frontend-angular/src/app/portal-publico/portal-publico.component.html`
+(antes de esta corrección) mostraba, mientras `cargando &&
+libros.length === 0`, una sola línea de texto: `<p>Cargando
+catálogo…</p>`. Cuando `LibroPublicoService.listar()` resolvía,
+`libros` (10 elementos, `pageSize=10`) reemplazaba esa línea por el
+grid completo (`grid-cols-2 sm:grid-cols-3 md:grid-cols-4
+lg:grid-cols-5`, 2 filas de tarjetas `aspect-[3/4]` en escritorio) --
+una sola línea de texto (~24 px) creciendo de golpe a un grid de
+cientos de píxeles de alto es exactamente el tipo de contenido
+"insertado sin espacio reservado" que causa CLS grande, y coincide con
+que Lighthouse no pudo atribuirle una causa automática (no es una
+fuente ni una imagen sin `width`/`height`, categorías que sí detecta
+solo): es un cambio de contenido de la aplicación, no un recurso
+externo.
+
+### Fix aplicado
+
+1. **`portal-publico.component.html`**: el grid ahora renderiza, cuando
+   `cargando && libros.length === 0`, `skeletonSlots.length` (=10,
+   igual a `pageSize`) tarjetas esqueleto con la misma estructura que
+   las reales (`aspect-[3/4]` + 2 líneas de texto, `animate-pulse`) en
+   el mismo contenedor `grid` -- reservan aproximadamente el mismo alto
+   que el grid real, en vez de que "Cargando catálogo…" (una línea) sea
+   reemplazado de golpe.
+2. **`portal-publico.component.ts`**: se agregó `skeletonSlots =
+   Array.from({length: this.pageSize}, ...)`. Además, **`cargando`
+   cambió su valor inicial de `false` a `true`** -- este segundo cambio
+   fue necesario porque la primera versión del fix (solo el esqueleto,
+   con `cargando` arrancando en `false`) **no bajó el CLS en la
+   verificación local, lo empeoró** (ver más abajo): con `cargando`
+   arrancando en `false`, el primer render de Angular (antes de que
+   `ngOnInit` → `cargarPagina()` corra) pintaba la rama `@empty` ("No
+   hay libros para mostrar", una línea) y *después* aparecía el
+   esqueleto completo -- el salto de "vacío" a "esqueleto" reemplazó al
+   salto de "cargando" a "grid real" en vez de eliminarlo. Arrancar en
+   `true` pinta el esqueleto ya en el primer frame, sin salto
+   intermedio.
+
+### Verificación local -- por qué fue más difícil de lo esperado (documentado con honestidad)
+
+La verificación local no fue directa; se documentan los intentos
+fallidos porque explican por qué el número final es confiable y no un
+resultado de la primera corrida que "dio bien":
+
+1. **Primer intento (solo esqueleto, `cargando` en `false`)**: CLS
+   **subió** a 0,47 en local, peor que producción. Diagnóstico con las
+   miniaturas de captura de pantalla del propio trace de Lighthouse
+   (`audits['screenshot-thumbnails']`, decodificadas de base64 a JPG e
+   inspeccionadas): a los 750 ms aparecía el texto **"Error al cargar
+   el catálogo"** en rojo -- la llamada a la API estaba fallando en la
+   corrida de verificación.
+2. **Investigación del error**: `curl` directo a
+   `http://localhost:8080/api/publico/libros` respondía `200` con datos
+   reales -- el backend local funcionaba. El error era del navegador:
+   `errors-in-console` del JSON de Lighthouse mostraba un rechazo real
+   de **CORS** (`Access to XMLHttpRequest ... has been blocked by CORS
+   policy`). Causa raíz, en dos capas:
+   - El build Docker de producción usa
+     `frontend-angular/src/environments/environment.prod.ts`
+     (`fileReplacements` de `angular.json`), que apunta
+     `apiUrl` al backend real de Render
+     (`https://sgb-backend-b058.onrender.com/api`) -- **la imagen
+     local nunca llamó al backend local**, llamaba al backend de
+     producción por internet real, con la latencia/CORS que eso
+     implica. Esto es correcto para la imagen que se despliega, pero
+     invalida "levantar el stack local" como prueba aislada sin
+     ajustarlo.
+   - Al apuntar `apiUrl` temporalmente a `http://localhost:8080/api`
+     para probar contra el backend local real, **seguía fallando por
+     CORS** -- `SecurityConfig.java` (`corsConfigurationSource()`) solo
+     permite `http://localhost:4200` y
+     `https://biblora-sgb.onrender.com` como orígenes, y el
+     `docker-compose.yml` de esta máquina remapea el frontend a
+     `14200:80` (workaround ya documentado en este repo para un rango
+     de puertos excluido por Hyper-V/WSL2 en Windows) -- `localhost:14200`
+     nunca estuvo en la lista blanca de CORS del backend.
+3. **Reproducción limpia**: se corrió `lighthouse` con
+   `--chrome-flags="--disable-web-security"` (desactiva CORS **solo en
+   el navegador descartable de la prueba**, no en el código de la
+   aplicación ni en ningún archivo commiteado) contra el frontend
+   apuntando al backend local (`apiUrl` cambiado temporalmente, revertido
+   antes de este commit -- `git diff` confirmado limpio contra
+   `environment.prod.ts` antes de compilar la imagen final). Con la
+   llamada a la API realmente exitosa (`200` confirmado en
+   `network-requests` del JSON), los números fueron:
+
+| Corrida | CLS -- código original (antes) | CLS -- código con el fix (después) |
+|---|---|---|
+| 1 | 0,236 | 0,031 |
+| 2 | 0,236 | 0,032 |
+| 3 | 0,236 | 0,033 |
+| **Media** | **0,236** | **0,032** |
+| **DT** | **0,000** | **0,001** |
+
+El código original, en condiciones locales limpias (misma llamada
+exitosa, sin el ruido de CORS), reproduce casi exactamente el 0,235-0,236
+medido en las 3 corridas desktop de producción -- confirma que el
+defecto es real y reproducible, no un artefacto de producción. Con el
+fix, CLS baja a ~0,032 de media, **por debajo del umbral de "bueno"
+(<0,1)** y una reducción real del 86 % frente al original, con
+desviación típica casi nula (0,001) en las 3 corridas.
+
+### Verificación adicional
+
+- **Suite de tests completa**: `npx ng test --watch=false
+  --browsers=ChromeHeadless` → **141/141 SUCCESS**, exit 0, sin
+  regresiones. Ninguna prueba existente afirmaba sobre el texto
+  "Cargando catálogo…" ni sobre el valor inicial de `cargando`.
+- **Build de producción**: `ng build --configuration production` →
+  exit 0, mismo warning preexistente de presupuesto de bundle (no
+  relacionado).
+- **Estado de `environment.prod.ts`**: confirmado sin cambios respecto
+  al commit anterior (`https://sgb-backend-b058.onrender.com/api`) --
+  el apuntado a `localhost` fue exclusivamente para la verificación
+  local descrita arriba, nunca se commiteó.
+
+### Pendiente -- confirmación final en producción
+
+Esta sección documenta la corrección y su verificación local (contra el
+backend real, con la llamada exitosa confirmada, no contra un mock). La
+confirmación definitiva -- 3 corridas mobile + 3 desktop reales contra
+`https://biblora-sgb.onrender.com/` después de que Render redeploye este
+commit -- se ejecuta y se documenta por separado a continuación en
+cuanto el despliegue esté listo (ver la sección siguiente si ya existe,
+o considerar esta sección como el estado al momento de commitear el
+fix si todavía no).
