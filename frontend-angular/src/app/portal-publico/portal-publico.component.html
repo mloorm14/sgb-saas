@@ -55,32 +55,48 @@
     <p class="font-body-sm text-body-sm text-error mb-md text-center">{{ errorMsg }}</p>
   }
 
-  @if (cargando && libros.length === 0) {
-    <p class="font-body-sm text-body-sm text-on-surface-variant text-center mb-xl">Cargando catálogo…</p>
-  }
-
-  <!-- Grid: SIN boton de favorito, SIN boton de reservar (mockup 12) -->
+  <!-- Grid: SIN boton de favorito, SIN boton de reservar (mockup 12).
+       Mientras carga la primera página (cargando && libros vacío) se
+       rinden skeletonSlots.length tarjetas esqueleto con la misma
+       estructura (aspect-[3/4] + 2 líneas de texto) para reservar el
+       alto real del grid -- antes, una sola línea de texto ("Cargando
+       catálogo…") ocupaba ese lugar y el grid completo aparecía de
+       golpe al llegar los datos, el layout shift dominante medido en
+       producción (CLS ~0.23 de 0.231 total, ver
+       docs/mediciones/lighthouse/REPORT.md). -->
   <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-md mb-xl">
-    @for (libro of libros; track libro.id) {
-      <a [routerLink]="['/portal', libro.id]"
-        class="rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow">
-        <div class="aspect-[3/4] bg-surface-container-low overflow-hidden">
-          @if (libro.tienePortada) {
-            <img [src]="portadaUrl(libro.id)" [alt]="'Portada de ' + libro.titulo" class="w-full h-full object-cover" />
-          } @else {
-            <div class="w-full h-full flex items-center justify-center">
-              <span class="material-symbols-outlined text-outline-variant text-[48px]">menu_book</span>
-            </div>
-          }
+    @if (cargando && libros.length === 0) {
+      @for (slot of skeletonSlots; track slot) {
+        <div class="rounded-lg overflow-hidden bg-white border border-outline-variant animate-pulse" aria-hidden="true">
+          <div class="aspect-[3/4] bg-surface-container-low"></div>
+          <div class="p-sm">
+            <div class="h-3 bg-surface-container-low rounded mb-1"></div>
+            <div class="h-2 bg-surface-container-low rounded w-2/3"></div>
+          </div>
         </div>
-        <div class="p-sm">
-          <p class="font-label-md text-[13px] text-on-surface leading-tight line-clamp-2">{{ libro.titulo }}</p>
-          <p class="font-label-sm text-[11px] text-on-surface-variant mt-1">{{ autoresTexto(libro) }}</p>
-        </div>
-      </a>
-    } @empty {
-      @if (!cargando) {
-        <p class="font-body-sm text-body-sm text-on-surface-variant col-span-full">No hay libros para mostrar.</p>
+      }
+    } @else {
+      @for (libro of libros; track libro.id) {
+        <a [routerLink]="['/portal', libro.id]"
+          class="rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow">
+          <div class="aspect-[3/4] bg-surface-container-low overflow-hidden">
+            @if (libro.tienePortada) {
+              <img [src]="portadaUrl(libro.id)" [alt]="'Portada de ' + libro.titulo" class="w-full h-full object-cover" />
+            } @else {
+              <div class="w-full h-full flex items-center justify-center">
+                <span class="material-symbols-outlined text-outline-variant text-[48px]">menu_book</span>
+              </div>
+            }
+          </div>
+          <div class="p-sm">
+            <p class="font-label-md text-[13px] text-on-surface leading-tight line-clamp-2">{{ libro.titulo }}</p>
+            <p class="font-label-sm text-[11px] text-on-surface-variant mt-1">{{ autoresTexto(libro) }}</p>
+          </div>
+        </a>
+      } @empty {
+        @if (!cargando) {
+          <p class="font-body-sm text-body-sm text-on-surface-variant col-span-full">No hay libros para mostrar.</p>
+        }
       }
     }
   </div>
