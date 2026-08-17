@@ -1,0 +1,94 @@
+<main class="max-w-container-max mx-auto px-margin-mobile lg:px-xl py-lg">
+
+  <div class="mb-lg flex items-center justify-between flex-wrap gap-sm">
+    <div>
+      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Mis notificaciones</h1>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">Todas tus notificaciones (enviadas y no enviadas)</p>
+    </div>
+  </div>
+
+  @if (errorMsg) {
+    <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
+  }
+
+  @if (cargando && notificaciones.length === 0) {
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando notificaciones…</p>
+  }
+
+  <div class="rounded-lg border border-outline-variant bg-white overflow-hidden">
+    @if (notificaciones.length > 0) {
+      <div class="overflow-x-auto">
+        <table class="w-full text-left">
+          <thead class="bg-surface-container-low">
+            <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+              <th class="px-md py-sm">Fecha</th>
+              <th class="px-md py-sm">Mensaje</th>
+              <th class="px-md py-sm hidden md:table-cell">Préstamo</th>
+              <th class="px-md py-sm">Estado</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+            @for (notif of notificaciones; track notif.id) {
+              <tr class="hover:bg-surface-container-low/50">
+                <td class="px-md py-sm whitespace-nowrap text-on-surface-variant">
+                  {{ formatearFecha(notif.fechaEnvio) }}
+                </td>
+                <td class="px-md py-sm font-medium text-on-background max-w-xs truncate">
+                  {{ notif.mensaje }}
+                </td>
+                <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">
+                  @if (notif.prestamoId) {
+                    Préstamo #{{ notif.prestamoId }}
+                  } @else {
+                    —
+                  }
+                </td>
+                <td class="px-md py-sm">
+                  <span class="inline-flex items-center px-sm py-xs rounded-full font-label-sm text-[11px]"
+                    [class]="badgeEnviadoOk(notif.enviadoOk)">
+                    {{ textoEnviado(notif.enviadoOk) }}
+                  </span>
+                </td>
+              </tr>
+            } @empty {
+              @if (!cargando) {
+                <tr>
+                  <td colspan="4" class="px-md py-lg text-center text-on-surface-variant">No hay notificaciones</td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      @if (!cargando) {
+        <div class="px-md py-lg text-center text-on-surface-variant">No hay notificaciones</div>
+      }
+    }
+  </div>
+
+  <!-- Paginación numerada (mismo patrón que libros/reservaciones) -->
+  @if (totalPages > 1) {
+    <div class="flex justify-center mt-lg gap-xs">
+      <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
+        class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+      </button>
+      @for (pagina of paginasVisibles; track pagina) {
+        <button (click)="irAPagina(pagina)"
+          class="w-8 h-8 rounded font-label-sm text-label-sm cursor-pointer"
+          [class.bg-primary]="$index === currentPage"
+          [class.text-on-primary]="$index === currentPage"
+          [class.hover:bg-surface-container-low]="$index !== currentPage"
+          [class.text-on-surface-variant]="$index !== currentPage">
+          {{ $index + 1 }}
+        </button>
+      }
+      <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
+        class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+      </button>
+    </div>
+  }
+
+</main>

@@ -22,9 +22,8 @@ export class AppComponent {
   constructor(private authService: AuthService) {}
 
   // TODO(frontend/estudiante-cuenta): los enlaces con futuro=true apuntan
-  // a rutas que todavia no existen en esta rama (mi-credencial,
-  // notificaciones). Se completan cuando se mergeen esas ramas.
-  // Rama B completada: /catalogo, /favoritos y /sugerencias ya son reales
+  // a rutas que todavia no existen en esta rama (mi-credencial).
+  // Rama B completada: /catalogo, /favoritos, /sugerencias y /notificaciones ya son reales
   // y salen de la lista de futuros.
   enlacesLector: EnlaceNav[] = [
     { ruta: '/prestamos', etiqueta: 'Mis Préstamos', icono: 'menu_book' },
@@ -34,7 +33,7 @@ export class AppComponent {
     { ruta: '/favoritos', etiqueta: 'Favoritos', icono: 'favorite' },
     { ruta: '/mi-credencial', etiqueta: 'Mi Credencial', icono: 'qr_code_2', futuro: true },
     { ruta: '/sugerencias', etiqueta: 'Sugerencias', icono: 'lightbulb' },
-    { ruta: '/notificaciones', etiqueta: 'Notificaciones', icono: 'notifications', futuro: true }
+    { ruta: '/notificaciones', etiqueta: 'Notificaciones', icono: 'notifications' }
   ];
 
   // Navbar compartido del staff (mockup 23: SGB · Staff). roles por enlace
