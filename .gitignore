@@ -24,6 +24,10 @@ db/init/
 *.aux
 *.out
 *.toc
+*.bbl
+*.blg
+*.lof
+*.lot
 *.fdb_latexmk
 *.fls
 *.synctex.gz

@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UsuarioAdminService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.service</a> &gt; <span class="el_source">UsuarioAdminService.java</span></div><h1>UsuarioAdminService.java</h1><pre class="source lang-java linenums">package com.uteq.backend.service;
+
+import com.uteq.backend.dto.UsuarioListadoResponseDTO;
+import com.uteq.backend.entity.BitacoraAuditoria;
+import com.uteq.backend.entity.EstadoUsuario;
+import com.uteq.backend.entity.Rol;
+import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
+import com.uteq.backend.repository.EstadoUsuarioRepository;
+import com.uteq.backend.repository.RolRepository;
+import com.uteq.backend.repository.UsuarioRepository;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * Panel de administración de usuarios (Módulo 5 del roadmap): listado
+ * paginado con filtro, cambio de rol y cambio de estado (bloqueo/activación
+ * manual). Corresponde a RF-01 y al actor &quot;Gerente/Admin&quot; del documento de
+ * requisitos original.
+ * &lt;p&gt;
+ * Separación ADMIN vs GERENTE (ver {@code docs/adr/adr-014-separacion-admin-gerente.md}):
+ * este service asume que quien invoca {@link #cambiarRol} y
+ * {@link #cambiarEstado} ya fue autorizado como ADMIN por
+ * {@code @PreAuthorize} en {@code UsuarioAdminController} -- no repite la
+ * comprobación de rol acá (a diferencia de {@code MultaService}, donde el
+ * mismo endpoint admite dos roles distintos y el service necesita saber
+ * cuál de los dos ejecuta la acción). Acá cada método del controller ya
+ * tiene un único rol fijo requerido, así que no hay ambigüedad que resolver
+ * en tiempo de ejecución.
+ */
+@Service
+public class UsuarioAdminService {
+
+    private static final String USUARIO_NO_ENCONTRADO = &quot;Usuario no encontrado: &quot;;
+    private static final String ROL_NO_ENCONTRADO = &quot;Rol no válido: &quot;;
+    private static final String ESTADO_NO_ENCONTRADO = &quot;Estado no válido: &quot;;
+    private static final String TABLA_USUARIOS = &quot;usuarios&quot;;
+
+    private final UsuarioRepository usuarioRepo;
+    private final RolRepository rolRepo;
+    private final EstadoUsuarioRepository estadoUsuarioRepo;
+    private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
+
+    public UsuarioAdminService(UsuarioRepository usuarioRepo,
+                                RolRepository rolRepo,
+                                EstadoUsuarioRepository estadoUsuarioRepo,
+<span class="fc" id="L57">                                BitacoraAuditoriaRepository bitacoraAuditoriaRepo) {</span>
+<span class="fc" id="L58">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L59">        this.rolRepo = rolRepo;</span>
+<span class="fc" id="L60">        this.estadoUsuarioRepo = estadoUsuarioRepo;</span>
+<span class="fc" id="L61">        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;</span>
+<span class="fc" id="L62">    }</span>
+
+    @Transactional(readOnly = true)
+    public Page&lt;UsuarioListadoResponseDTO&gt; listar(String filtro, Pageable pageable) {
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        String texto = filtro == null ? &quot;&quot; : filtro.trim();</span>
+<span class="fc" id="L67">        return usuarioRepo</span>
+<span class="fc" id="L68">                .findByNombreContainingIgnoreCaseOrCorreoContainingIgnoreCase(texto, texto, pageable)</span>
+<span class="fc" id="L69">                .map(this::toListadoDTO);</span>
+    }
+
+    /**
+     * Reemplaza el conjunto de roles del usuario por uno solo (
+     * {@code nuevoRol}). No es un &quot;agregar rol&quot; -- simplifica el modelo de
+     * administración a &quot;cada usuario tiene un rol operativo vigente&quot;,
+     * consistente con que hoy {@code AuthService.registrar} también asigna
+     * un único rol (LECTOR) al crear la cuenta.
+     */
+    @Transactional
+    public void cambiarRol(Long usuarioId, String nuevoRol, Authentication authentication) {
+<span class="fc" id="L81">        Usuario usuario = usuarioRepo.findById(usuarioId)</span>
+<span class="fc" id="L82">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));</span>
+<span class="fc" id="L83">        Rol rol = rolRepo.findByNombre(nuevoRol)</span>
+<span class="fc" id="L84">                .orElseThrow(() -&gt; new IllegalArgumentException(ROL_NO_ENCONTRADO + nuevoRol));</span>
+
+<span class="fc" id="L86">        Set&lt;Rol&gt; roles = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L87">        roles.add(rol);</span>
+<span class="fc" id="L88">        usuario.setRoles(roles);</span>
+<span class="fc" id="L89">        usuario.setActualizadoEn(Instant.now());</span>
+<span class="fc" id="L90">        usuarioRepo.save(usuario);</span>
+
+<span class="fc" id="L92">        Long ejecutorId = resolverIdPorCorreo(authentication.getName());</span>
+<span class="fc" id="L93">        registrarAuditoria(ejecutorId, usuario.getId(),</span>
+<span class="fc" id="L94">                &quot;Cambio de rol del usuario &quot; + usuario.getCorreo() + &quot; a &quot; + nuevoRol);</span>
+<span class="fc" id="L95">    }</span>
+
+    /**
+     * Cambia el estado del usuario (p.ej. ACTIVO -&gt; INACTIVO para dar de
+     * baja, o INACTIVO -&gt; ACTIVO para reactivar). {@code motivo} es
+     * obligatorio a nivel de DTO ({@link com.uteq.backend.dto.CambioEstadoUsuarioRequestDTO})
+     * y queda registrado en la bitácora -- distinto del bloqueo automático
+     * por multas impagas, que lo aplica {@code sp_pagar_multa}/
+     * {@code sp_anular_multa} sin intervención de un ADMIN.
+     */
+    @Transactional
+    public void cambiarEstado(Long usuarioId, String nuevoEstado, String motivo, Authentication authentication) {
+<span class="fc" id="L107">        Usuario usuario = usuarioRepo.findById(usuarioId)</span>
+<span class="fc" id="L108">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));</span>
+<span class="fc" id="L109">        EstadoUsuario estado = estadoUsuarioRepo.findByNombre(nuevoEstado)</span>
+<span class="fc" id="L110">                .orElseThrow(() -&gt; new IllegalArgumentException(ESTADO_NO_ENCONTRADO + nuevoEstado));</span>
+
+<span class="fc" id="L112">        usuario.setEstado(estado);</span>
+<span class="fc" id="L113">        usuario.setActualizadoEn(Instant.now());</span>
+<span class="fc" id="L114">        usuarioRepo.save(usuario);</span>
+
+<span class="fc" id="L116">        Long ejecutorId = resolverIdPorCorreo(authentication.getName());</span>
+<span class="fc" id="L117">        registrarAuditoria(ejecutorId, usuario.getId(),</span>
+<span class="fc" id="L118">                &quot;Cambio de estado del usuario &quot; + usuario.getCorreo() + &quot; a &quot; + nuevoEstado</span>
+                        + &quot;. Motivo: &quot; + motivo);
+<span class="fc" id="L120">    }</span>
+
+    // Mismo patrón que MultaService/PrestamoService: el ejecutor real
+    // (quién hizo el cambio) se resuelve desde el JWT autenticado, nunca
+    // desde un campo del body -- evita que alguien falsifique &quot;quién&quot;
+    // aparece en la bitácora.
+    private Long resolverIdPorCorreo(String correo) {
+<span class="fc" id="L127">        return usuarioRepo.findByCorreo(correo)</span>
+<span class="pc" id="L128">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo))</span>
+<span class="fc" id="L129">                .getId();</span>
+    }
+
+    // Mismo criterio que AuthService.registrarAuditoria(): INSERT plano de
+    // una sola tabla, sin lógica cruzada -- no justifica un procedimiento
+    // almacenado (ver adr-013-acceso-datos-orm-sp.md). usuarioId acá es el
+    // ejecutor (el ADMIN que hizo el cambio), no el usuario afectado --
+    // ese va en registroId, para poder distinguir &quot;quién hizo qué a quién&quot;
+    // al leer la bitácora.
+    private void registrarAuditoria(Long ejecutorId, Long usuarioAfectadoId, String detalles) {
+<span class="fc" id="L139">        BitacoraAuditoria evento = BitacoraAuditoria.builder()</span>
+<span class="fc" id="L140">                .usuarioId(ejecutorId)</span>
+<span class="fc" id="L141">                .tipoOperacion(&quot;UPDATE&quot;)</span>
+<span class="fc" id="L142">                .tablaAfectada(TABLA_USUARIOS)</span>
+<span class="fc" id="L143">                .registroId(usuarioAfectadoId)</span>
+<span class="fc" id="L144">                .detalles(detalles)</span>
+<span class="fc" id="L145">                .fechaHora(OffsetDateTime.now())</span>
+<span class="fc" id="L146">                .build();</span>
+<span class="fc" id="L147">        bitacoraAuditoriaRepo.save(evento);</span>
+<span class="fc" id="L148">    }</span>
+
+    private UsuarioListadoResponseDTO toListadoDTO(Usuario usuario) {
+<span class="fc" id="L151">        List&lt;String&gt; roles = usuario.getRoles().stream()</span>
+<span class="fc" id="L152">                .map(Rol::getNombre)</span>
+<span class="fc" id="L153">                .toList();</span>
+<span class="fc" id="L154">        boolean multasPendientes = &quot;BLOQUEADO_POR_MULTA&quot;.equals(usuario.getEstado().getNombre());</span>
+<span class="fc" id="L155">        return new UsuarioListadoResponseDTO(</span>
+<span class="fc" id="L156">                usuario.getId(),</span>
+<span class="fc" id="L157">                usuario.getNombre(),</span>
+<span class="fc" id="L158">                usuario.getApellido(),</span>
+<span class="fc" id="L159">                usuario.getCorreo(),</span>
+                roles,
+<span class="fc" id="L161">                usuario.getEstado().getNombre(),</span>
+                multasPendientes);
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

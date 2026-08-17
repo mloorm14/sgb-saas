@@ -107,8 +107,88 @@ mecanismo de invocación de esos 5 métodos. Ver evidencia completa en
   runtime) y resuelto migrando a `@Query(nativeQuery = true)`, ver
   Status arriba.
 
+## Actualización (2026-08-16): mecanismo de invocación uniforme vía `@Query(nativeQuery = true)`
+
+Esta sección actualiza el ADR sin reescribir la decisión original: el fondo
+de la decisión (estrategia híbrida: CRUD elemental en Spring Data JPA,
+lógica compleja multi-tabla en objetos SQL de `db/procs/`) **no cambia**. Lo
+que cambió es el mecanismo de invocación concreto desde Java hacia esos
+objetos.
+
+### Qué se asumió originalmente
+
+La decisión original asumía que las funciones con efectos secundarios se
+invocarían con la API de stored procedures de JPA 2.1 (`@Procedure` sobre
+método de repositorio, o `@NamedStoredProcedureQuery` sobre entidad) — el
+mecanismo literal que nombra el requisito A.2.1 de la guía de la Tercera
+Entrega — y que solo las funciones tabulares (`RETURNS TABLE`) usarían
+`@Query(nativeQuery = true)`.
+
+### Qué pasó en la práctica
+
+La verificación en runtime del primer caso real (evidencia en
+`docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md`)
+confirmó que **todos** los intentos con `@Procedure`/`@NamedStoredProcedureQuery`
+fallaban con el mismo error: Hibernate genera la llamada dentro del escape
+JDBC `{call ...}` con la sintaxis de parámetros nombrados de PostgreSQL
+(`nombre => valor`), que el driver `pgjdbc` rechaza ahí — bug conocido de
+Hibernate 6.2+/7.x, referenciado como `spring-projects/spring-data-jpa#3393`,
+sin fix oficial a la fecha. El fallo no era exclusivo de los parámetros OUT:
+afectó igualmente al retorno escalar de `sp_crear_prestamo` y a la
+invocación de `sp_expirar_reservaciones_vencidas` (que además Postgres
+rechaza como `call ...` porque el objeto es `FUNCTION`, no `PROCEDURE`
+nativo).
+
+### Decisión de esta actualización
+
+Los 9 objetos SQL de `db/procs/` (ver el catálogo actualizado en
+`docs/basedatos/CATALOGO-SP.md`) se invocan hoy de forma uniforme vía
+`@Query(nativeQuery = true)` con parámetros nombrados `@Param` — incluidas
+las 5 funciones con efectos secundarios que el ADR original pensaba invocar
+con `@Procedure`. Las 4 funciones tabulares usaban ese mecanismo desde el
+inicio (JPA 2.1 no expone `RETURNS TABLE`, ver CATALOGO-SP.md).
+
+Esto es una **desviación conocida y deliberada** del mecanismo literal que
+nombra el requisito A.2.1 de la guía ("`@Procedure` sobre método de
+repositorio Spring Data o `@NamedStoredProcedureQuery` sobre entidad"). Se
+reporta explícitamente en lugar de ocultarlo, porque el criterio de
+evaluación A.2.1/A.2.2 revisa este punto.
+
+### Justificación honesta
+
+La intención de fondo del requisito (A.2.3) es impedir SQL dinámico o
+construido por concatenación de entrada de usuario. Eso se cumple: los
+parámetros se bindean por nombre con `@Param` y se transportan como
+parámetros vinculados de `PreparedStatement`, idéntico a lo que hace
+`@Procedure` internamente; no existe `EXECUTE`, `sp_executesql` ni
+concatenación de strings en ningún acceso a datos del backend. El
+cumplimiento de parametrización se verifica además con la regla estática
+`SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE` (Find Security Bugs), añadida al
+build.
+
+El mecanismo literal de A.2.1 se volvió técnicamente inviable para esta
+combinación concreta de ORM (Hibernate 6.2+/7.x) + driver (`pgjdbc`) + motor
+(PostgreSQL): aplicar la API de stored procedures de JPA 2.1 produce SQL que
+el driver no puede ejecutar. Elegir el mecanismo funcionalmente equivalente
+(`@Query` nativa parametrizada) en lugar de romper el runtime es la opción
+que preserva la intención del requisito (seguridad de parámetros, sin SQL
+dinámico) y mantiene la estrategia híbrida exigida (los objetos SQL complejos
+siguen existiendo y ejecutándose).
+
+### Impacto
+
+- No cambió ninguna decisión funcional del ADR: la estrategia híbrida y la
+  existencia de los objetos SQL se mantienen.
+- El código Java ya estaba correcto y verificado (tests de integración en
+  verde); este ADR y el catálogo se alinean con la realidad del código, que
+  no se modificó.
+- Quedaba pendiente en el código el comentario "pendiente de actualizar
+  ADR-013" presente en `PrestamoProcedureRepository.java`; con esta
+  actualización, esa deuda documental queda saldada.
+
 ## Referencias
 
 - [[adr-011-gestor-base-datos]] (PostgreSQL como motor que hace posible PL/pgSQL)
-- `docs/basedatos/CATALOGO-SP.md` (catálogo completo de los 7 procedimientos/funciones, criterio `@Procedure` vs `@Query(nativeQuery)`)
-- `db/procs/` (fuente SQL de los 7 objetos)
+- `docs/basedatos/CATALOGO-SP.md` (catálogo completo de los 9 procedimientos/funciones y su mecanismo de invocación)
+- `db/procs/` (fuente SQL de los 9 objetos)
+- `docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md` (evidencia del fallo de `@Procedure`/`@NamedStoredProcedureQuery` y de la migración a `@Query(nativeQuery)`)

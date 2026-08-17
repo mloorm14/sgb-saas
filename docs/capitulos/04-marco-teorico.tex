@@ -1,0 +1,188 @@
+% ============================================================
+% Capítulo: Marco Teórico (Bloque B.5)
+% ============================================================
+\chapter{Marco teórico}
+\label{cap:marco-teorico}
+
+Este capítulo sienta únicamente los fundamentos conceptuales
+\textbf{estrictamente necesarios} para entender las decisiones y la
+evidencia presentadas en el resto del documento -- no es un compendio
+general de cada tema que toca este proyecto. Cuando un concepto ya se
+desarrolla en profundidad en otro capítulo (la categorización completa
+de los 43 requisitos, el detalle de las 13 ADR, el código real de cada
+control OWASP), aquí se presenta solo el marco conceptual mínimo y se
+remite explícitamente al capítulo que lo aplica.
+
+\section{Ingeniería de requisitos: ISO/IEC/IEEE 29148:2018}
+\label{sec:mt-requisitos}
+
+La norma ISO/IEC/IEEE 29148:2018 define el vocabulario y el proceso de
+referencia para la ingeniería de requisitos de sistemas y software,
+incluyendo el patrón sintáctico ``[condición] [sujeto] \emph{shall}
+[acción] [objeto] [restricción]'' que este proyecto usa como vara de
+medida en su checklist de calidad
+(\texttt{docs/checklists/incose2023-req.md}, aplicado en detalle en el
+\autoref{cap:ingenieria-requisitos}). La elicitación de requisitos --
+la actividad de descubrir, no solo registrar, lo que un sistema debe
+hacer -- es un proceso empíricamente estudiado y propenso a errores
+sistemáticos incluso en manos experimentadas: \citet{bano2019elicitation}
+documentan, a partir de un análisis de errores comunes en entrevistas de
+elicitación, que problemas como preguntas cerradas prematuras o la
+proyección de soluciones antes de entender el problema son recurrentes
+incluso en practicantes entrenados, y \citet{palomares2021elicitation}
+confirman en un estudio de estado de la práctica en 12 empresas reales
+que las técnicas de elicitación usadas en la industria rara vez siguen
+un proceso formal completo, sino una combinación pragmática de entrevistas,
+prototipado y retroalimentación iterativa -- exactamente el patrón que el
+\autoref{cap:ingenieria-requisitos} documenta para SGB-SaaS. Este
+capítulo no repite esa aplicación concreta; solo establece que la
+elicitación de requisitos es, por naturaleza, un proceso falible que debe
+verificarse después de ejecutado, no asumirse correcto por haberse
+seguido un procedimiento nominal.
+
+\section{Características de calidad de requisitos: INCOSE v4}
+\label{sec:mt-incose}
+
+El marco INCOSE v4 (Guide for Writing Requirements) define nueve
+características que un requisito individual bien escrito debería
+cumplir (Necessary, Appropriate, Unambiguous, Complete, Singular,
+Feasible, Verifiable, Correct, Conforming) y seis características
+adicionales a nivel de conjunto de requisitos (Complete, Consistent,
+Feasible, Comprehensible, Able to be validated, Correct). Este capítulo
+solo nombra el marco como fundamento conceptual; su aplicación completa,
+requisito por requisito, con hallazgos y excepciones documentadas, está
+en \texttt{docs/checklists/incose2023-req.md} y se resume en el
+\autoref{cap:ingenieria-requisitos}.
+
+\section{Modelo arquitectónico C4}
+\label{sec:mt-c4}
+
+El modelo C4 \citep{brown2023c4model} propone documentar la arquitectura
+de un sistema de software en cuatro niveles de abstracción anidados --
+Contexto, Contenedores, Componentes y Código -- cada uno pensado para una
+audiencia y un nivel de detalle distintos, en vez de un único diagrama
+monolítico que intenta servir a todas las audiencias a la vez. SGB-SaaS
+usa los primeros tres niveles (el nivel de Código se considera cubierto
+por el propio código fuente versionado). Este capítulo solo introduce el
+modelo como notación; su aplicación concreta -- los tres niveles
+completos, incluyendo el detalle de los 21 componentes del backend -- se
+desarrolla en el \autoref{cap:diseno-arquitectura}.
+
+\section{ISO/IEC 25010: modelo de calidad de producto de software}
+\label{sec:mt-25010}
+
+ISO/IEC 25010:2011 (SQuaRE) organiza la calidad de un producto de
+software en ocho características de alto nivel -- Adecuación funcional,
+Eficiencia de desempeño, Compatibilidad, Usabilidad, Fiabilidad,
+Seguridad, Mantenibilidad y Portabilidad -- cada una con subcaracterísticas
+propias, pensadas como un vocabulario común para discutir atributos de
+calidad no funcionales de forma comparable entre proyectos. Este
+capítulo solo introduce el marco conceptual; el mapeo completo de
+SGB-SaaS contra las ocho características, con evidencia y prioridad
+declarada para cada una, está en \texttt{docs/arquitectura/ISO25010.md}
+y se transcribe en el \autoref{cap:diseno-arquitectura}.
+
+\section{Principios REST}
+\label{sec:mt-rest}
+
+El estilo arquitectónico REST (\emph{Representational State Transfer})
+describe un conjunto de restricciones para servicios web -- interfaz
+uniforme, comunicación cliente-servidor sin estado (\emph{stateless}),
+cacheabilidad explícita, y direccionamiento de recursos mediante URIs --
+que SGB-SaaS adopta para el diseño de su API backend, tal como lo
+implementa el framework usado en este proyecto \citep{walls2022springinaction}
+mediante controladores anotados (\texttt{@RestController}) que exponen
+recursos (\texttt{/api/v1/libros}, \texttt{/api/v1/prestamos}, etc.) sobre
+los verbos HTTP estándar. La restricción de ausencia de estado en el
+servidor es la que motiva, en particular, que la sesión del usuario
+autenticado se transporte completa en cada petición (vía el token JWT,
+\autoref{sec:mt-jwt}) en vez de mantenerse en memoria del servidor entre
+peticiones.
+
+\section{Autenticación con JWT y transporte seguro}
+\label{sec:mt-jwt}
+
+JSON Web Token (JWT, RFC~7519) es un formato compacto y auto-contenido
+para representar afirmaciones (\emph{claims}) entre dos partes,
+estructurado en tres segmentos separados por puntos -- \emph{header},
+\emph{payload} y \emph{signature} -- codificados en Base64URL y firmados
+(en el caso de SGB-SaaS, con un secreto simétrico HMAC), de modo que el
+servidor puede verificar la integridad y autenticidad del token sin
+necesidad de una consulta a base de datos ni de mantener estado de sesión
+en memoria -- coherente con la restricción \emph{stateless} de REST
+(\autoref{sec:mt-rest}). Este mecanismo no está exento de riesgos de
+diseño: \citet{bucko2023jwtbehavior} muestran que un esquema JWT ingenuo
+es vulnerable a robo y reuso de token, y proponen reforzarlo con
+historial de comportamiento del usuario; \citet{shatnawi2024pythonjwt}
+documentan, en un estudio empírico comparativo de librerías JWT en
+Python, defectos de seguridad concretos (advertencias de \emph{linting}
+de seguridad) presentes incluso en librerías JWT de uso común; y
+\citet{ahmed2019jwtscheme} proponen regenerar el JWT en cada petición
+del cliente con un componente de marca de tiempo verdaderamente aleatorio
+para reducir la ventana de reuso de un token robado. Frente a este
+panorama de riesgos documentados, la decisión de diseño de SGB-SaaS de
+transportar el JWT en una cookie \texttt{HttpOnly} (en vez de en
+almacenamiento accesible por JavaScript, como \texttt{localStorage}) --
+detallada con código real en el \autoref{cap:implementacion} -- responde
+directamente a la clase de riesgo que esta literatura describe: un
+token en una cookie \texttt{HttpOnly} no puede leerse ni exfiltrarse
+mediante una inyección de \emph{script} en el cliente (XSS), que es
+precisamente el vector de robo de token más citado en la literatura de
+seguridad de JWT. El transporte de esa cookie sobre una conexión cifrada
+sigue, a su vez, las guías oficiales de configuración TLS de
+\citet{mckay2019tls} (NIST SP~800-52 Rev.~2).
+
+\section{Controles OWASP Top 10:2021}
+\label{sec:mt-owasp}
+
+El OWASP Top~10:2021 es una lista de referencia, mantenida por la
+comunidad de seguridad web OWASP y actualizada periódicamente, de las
+diez categorías de riesgo de seguridad más críticas y frecuentes en
+aplicaciones web (control de acceso roto, fallos criptográficos,
+inyección, mala configuración de seguridad, fallos de identificación y
+autenticación, fallos de registro y monitoreo, entre otras). Este
+capítulo solo nombra el marco como referencia; la auditoría real
+ejecutada contra el stack Docker de SGB-SaaS, control por control, con
+evidencia reproducible (\texttt{curl}) y corrección aplicada a cada
+hallazgo, está documentada en \texttt{docs/mediciones/sec/} y se
+instrumenta mediante \texttt{scripts/owasp-audit.sh}
+(\autoref{cap:materiales-metodos}).
+
+\section{Patrones de acceso a datos: ORM, procedimientos almacenados y \emph{cache-aside}}
+\label{sec:mt-acceso-datos}
+
+Un \emph{Object-Relational Mapper} (ORM) traduce automáticamente entre el
+modelo de objetos de un lenguaje orientado a objetos y el modelo
+relacional de una base de datos, a costa de un control más limitado sobre
+la sentencia SQL exacta que finalmente se ejecuta. Spring Data JPA,
+usado en el backend de SGB-SaaS \citep{walls2022springinaction}, genera
+esas sentencias automáticamente para operaciones CRUD simples de una sola
+tabla. Sin embargo, ese mismo automatismo puede degradar el rendimiento
+en operaciones que involucran múltiples tablas relacionadas o lógica
+transaccional compleja: \citet{colley2018ormperformance} documentan
+empíricamente, comparando configuraciones de un framework ORM líder
+contra SQL manualmente optimizado, patrones de rendimiento indeseables
+(\emph{anti-patrones}) que el uso no cuidadoso de un ORM introduce. Un
+procedimiento almacenado (\emph{stored procedure}, SP), en contraste,
+ejecuta lógica SQL directamente dentro del motor de base de datos, con
+control explícito sobre el plan de ejecución. SGB-SaaS adopta una
+estrategia híbrida -- ORM para CRUD elemental, SP para operaciones
+multi-tabla transaccionalmente sensibles -- cuyo mecanismo concreto de
+invocación segura (parámetros nombrados bindeados, no concatenación de
+cadenas) se documenta con código real en el \autoref{cap:implementacion}.
+
+El patrón \emph{cache-aside} (también llamado \emph{lazy loading} de
+caché) consulta primero una caché de acceso rápido (en este proyecto,
+Redis) y solo recurre a la base de datos relacional cuando hay un fallo
+de caché (\emph{cache miss}), momento en el que el resultado se escribe
+de vuelta en la caché para peticiones futuras. \citet{kusuma2017rediscaching}
+miden empíricamente el efecto de este patrón -- separando el tipo de
+objeto cacheado (contenido estático vía acelerador HTTP, resultados de
+consulta vía Redis) -- documentando reducciones reales de carga sobre la
+base de datos relacional bajo tráfico concurrente. La instancia concreta
+de este patrón en SGB-SaaS (anotación \texttt{@Cacheable} sobre el
+catálogo de libros, con invalidación explícita vía \texttt{@CacheEvict})
+y su evaluación empírica bajo carga (k6, comparación estadística
+cache\_caliente vs.\ cache\_frío) se desarrollan en el
+\autoref{cap:diseno-arquitectura} y en el \autoref{cap:materiales-metodos},
+respectivamente.

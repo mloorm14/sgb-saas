@@ -28,7 +28,8 @@ describe('LibrosComponent', () => {
       'listar', 'crear', 'actualizar', 'eliminar', 'subirPortada',
       'buscarPorIsbn', 'portadaPorIsbn'
     ]);
-    authService = jasmine.createSpyObj('AuthService', ['logout']);
+    authService = jasmine.createSpyObj('AuthService', ['logout', 'hasRole']);
+    authService.hasRole.and.returnValue(false);
     libroService.listar.and.returnValue(of({ content: [libroBase], totalPages: 1 } as any));
 
     await TestBed.configureTestingModule({

@@ -1,0 +1,372 @@
+% ============================================================
+% Capítulo: Evaluación Empírica y Resultados (Bloque B.10)
+% ============================================================
+\chapter{Evaluación empírica y resultados}
+\label{cap:resultados}
+
+Este capítulo reporta, bloque por bloque, la evidencia empírica reunida
+para responder las cuatro preguntas de investigación del
+\autoref{cap:introduccion}. Cada bloque sigue el mismo formato: pregunta
+de investigación asociada, métrica reportada, datos crudos con su
+ubicación exacta en el repositorio, estadística descriptiva real (no
+estimada) y una interpretación en prosa. \textbf{No todos los bloques
+están completos.} Dos (rendimiento, cobertura) tienen evidencia cerrada;
+uno (seguridad) está mayoritariamente cerrado con un componente diferido
+explícitamente a la Entrega Final; uno (calidad web) tiene evidencia real
+pero incompleta frente a lo que exige la guía; y uno (usabilidad) no se
+ha ejecutado todavía. Cada sección declara su estado real sin ajustar el
+texto para que suene más completo de lo que es -- el mismo criterio que
+ya aplica el \autoref{cap:amenazas-validez}.
+
+\section{Bloque 1 -- Rendimiento (k6)}
+\label{sec:res-rendimiento}
+
+\textbf{Pregunta de investigación.} RQ1 -- ¿en qué medida el uso de caché
+(Redis) reduce la latencia observable del endpoint de catálogo bajo carga
+concurrente controlada, y con qué margen se cumplen los umbrales de
+rendimiento exigidos?
+
+\textbf{Métrica.} Latencia \texttt{http\_req\_duration} (ms) de
+\texttt{GET /api/v1/libros} bajo 50~VUs concurrentes, en dos escenarios
+(\texttt{cache\_caliente}, \texttt{cache\_frio}), agregada sobre 5
+corridas independientes.
+
+\textbf{Datos crudos.}
+\texttt{docs/mediciones/perf/k6-run1.json} a \texttt{k6-run5.json}
+(formato NDJSON de k6, un \texttt{Point} por métrica por petición),
+analizados con \texttt{scripts/perf-analysis.py}. Detalle completo del
+protocolo (comando exacto, entorno, semillas) en el
+\autoref{cap:materiales-metodos}.
+
+\textbf{Estadística descriptiva (5 corridas agregadas).}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrrrrrrrr}
+\toprule
+Escenario & $n$ & Media & Mediana & $\sigma$ & IC95\% media & p90 & p95 & p99 \\
+\midrule
+cache\_caliente & 9\,929 & 18,89 & 5,49 & 150,74 & [15,93; 21,86] & 11,66 & \textbf{19,49} & 104,79 \\
+cache\_frio     & 10\,074 & 4,84 & 4,34 & 2,88 & [4,78; 4,89] & 6,70 & \textbf{7,50} & 12,32 \\
+\bottomrule
+\end{tabular}
+\caption{Estadística descriptiva de \texttt{http\_req\_duration} (ms) por escenario, 5 corridas agregadas}
+\label{tab:res-perf-descriptivo}
+\end{table}
+
+Ambos umbrales exigidos se cumplen con margen amplio: p95
+$19{,}49$\,ms $<200$\,ms (caliente), p95 $7{,}50$\,ms $<500$\,ms (frío).
+Tasa de error HTTP $\geq$500: $0{,}00$\,\% (0 de 20\,003 peticiones
+totales).
+
+\textbf{Comparación estadística pareada.} Prueba de Wilcoxon de rangos
+con signo sobre el p95 de cada una de las 5 corridas (no sobre el
+\emph{pool} agregado): estadístico $=0{,}0000$, $p=0{,}0625$ -- no
+alcanza el umbral convencional de significancia ($p<0{,}05$), por el
+límite de potencia estadística de $n=5$ pares con dirección
+perfectamente consistente (\texttt{cache\_caliente}~$>$~\texttt{cache\_frio}
+en las 5 corridas, sin excepción; el $p$-valor exacto de dos colas mínimo
+alcanzable con $n=5$ es exactamente $0{,}0625$). Tamaño de efecto de
+Cliff's delta $=-0{,}68$ (efecto \textbf{grande}, convención
+$|\delta|\geq0{,}474$).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.85\textwidth]{mediciones/perf/p95-comparacion-escenarios.pdf}
+\caption{p95 de \texttt{http\_req\_duration} por corrida, \texttt{cache\_caliente} vs.\ \texttt{cache\_frio}, con barras de error de IC~95\% (bootstrap, 2000 réplicas, semilla~42). Paleta accesible a daltonismo (Okabe-Ito).}
+\label{fig:res-perf-comparacion}
+\end{figure}
+
+\textbf{Interpretación.} La \autoref{fig:res-perf-comparacion} muestra un
+efecto grande y consistente en las 5 corridas -- \texttt{cache\_caliente}
+es sistemáticamente más lento que \texttt{cache\_frio}, un resultado que
+a primera vista es contraintuitivo (se esperaría que el escenario
+\emph{con} caché fuera el más rápido). La explicación no es que el caché
+perjudique el rendimiento: es una limitación metodológica ya documentada
+del escenario \texttt{cache\_frio}, que --por construcción del PRNG
+determinista y el tamaño reducido de la tabla \texttt{libro} en la seed
+de desarrollo-- termina midiendo sobre todo consultas con página vacía
+fuera de rango, no el costo real de traer una página llena sin caché
+(\texttt{docs/mediciones/perf/REPORT.md}, punto~3 de su ``Análisis
+breve''; también citado en \texttt{docs/arquitectura/ISO25010.md}). Esta
+limitación se retoma con detalle en el \autoref{cap:amenazas-validez}
+(validez de constructo y de conclusión) y es la razón por la que este
+capítulo no interpreta el resultado como ``el caché no ayuda'' -- ambos
+umbrales de la guía se cumplen igual, con margen amplio, y esa es la
+respuesta directa a RQ1 dentro del alcance que esta comparación sí puede
+sostener.
+
+\section{Bloque 2 -- Seguridad (OWASP Top~10:2021)}
+\label{sec:res-seguridad}
+
+\textbf{Pregunta de investigación.} RQ2 -- ¿qué proporción de los
+controles auditados del OWASP Top~10:2021 presenta hallazgos reales en la
+implementación, y en qué proporción de esos hallazgos el propio equipo
+aplicó una corrección verificable dentro del mismo ciclo de desarrollo?
+
+\textbf{Métrica.} Estado por control (hallazgo real: sí/no; corrección
+verificada: sí/no/diferida), sobre 6 controles evaluados contra el stack
+Docker real. \textbf{Nota metodológica}: esta métrica es categórica, no
+continua -- no aplica una estadística de media/desviación típica/IC~95\%
+en el sentido del Bloque~1; la estadística descriptiva pertinente aquí es
+la proporción simple sobre 6 controles, reportada abajo.
+
+\textbf{Datos crudos y resultado por control.}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabularx}{\linewidth}{@{}p{2.3cm}X p{3.5cm}@{}}
+\toprule
+Control & Estado real & Evidencia \\
+\midrule
+A01 -- Control de acceso roto & Hallazgo real encontrado y corregido (rol admin en libros) & \texttt{2026-07-30-owasp-a01-\allowbreak control-acceso-roto.md} + \texttt{-fix-rol-admin-\allowbreak libros.md} \\
+A02 -- Fallos criptográficos / TLS & Decisión de arquitectura y preparación del backend \textbf{CERRADAS} (ADR-015, \texttt{forward-headers-strategy}). \textbf{Parcial / pendiente de verificación con despliegue real:} TLS end-to-end y header \texttt{Strict-Transport-Security} aún no verificados en producción. & \texttt{2026-08-10-owasp-a02-\allowbreak fix-tls-\allowbreak transporte.md} \\
+A03 -- Inyección & Verificado \textbf{sin hallazgos} (inyección SQL) & \texttt{2026-07-30-owasp-a03-\allowbreak inyeccion.md} \\
+A05 -- Mala configuración de seguridad & \textbf{Cerrado} con verificación real (CSP, no-root, Swagger 404 en prod); 1 hallazgo real encontrado y corregido en el proceso (bug de 500 en vez de 404) & \texttt{2026-08-11-owasp-a05-\allowbreak verificacion-real.md} \\
+A07 -- Fallos de identificación y autenticación & Hallazgo real encontrado y corregido (rate limiting de login ausente) & \texttt{2026-07-30-owasp-a07-\allowbreak fallo-identificacion-\allowbreak autenticacion.md} + \texttt{-fix-rate-\allowbreak limiting-login.md} \\
+A09 -- Fallos de registro y monitoreo & Hallazgo real encontrado y corregido (logging de autenticación insuficiente) & \texttt{2026-07-30-owasp-a09-\allowbreak fallo-registro-\allowbreak monitoreo.md} + \texttt{-fix-logging-\allowbreak autenticacion.md} \\
+\bottomrule
+\end{tabularx}
+\caption{Estado real por control OWASP evaluado (rutas relativas a \texttt{docs/mediciones/sec/})}
+\label{tab:res-owasp}
+\end{table}
+
+\textbf{Re-verificación automatizada.} Los 4 controles con hallazgo
+corregido y verificable por \texttt{curl} (A01, A03, A07, A09) se
+re-verificaron con \texttt{scripts/owasp-audit.sh} contra el flujo real
+de verificación de correo obligatoria agregado después del hallazgo
+original, y los 4 vuelven a pasar
+(\texttt{docs/mediciones/sec/2026-08-11-owasp-audit-automatizado.md}).
+
+\textbf{Estadística descriptiva (proporciones sobre 6 controles).}
+Hallazgo real encontrado: \textbf{4 de 6} (A01, A05, A07, A09), $=66{,}7$\,\%.
+De esos 4, corrección verificada dentro del mismo ciclo:
+\textbf{4 de 4}, $=100$\,\%. Verificado sin hallazgo: 1 de 6 (A03). Parcial
+con componente diferido: 1 de 6 (A02).
+
+\textbf{ZAP baseline scan.} \textbf{AÚN NO EJECUTADO.} Pendiente, asignado
+a Cajas según el plan del equipo -- no se declara ni se infiere un
+resultado que no existe.
+
+\textbf{Interpretación.} La respuesta directa a RQ2, con los números
+reales de arriba: de 6 controles auditados, 4 (66,7\,\%) presentaron un
+hallazgo real, y de esos 4, el 100\,\% recibió una corrección verificable
+dentro del mismo ciclo de desarrollo, re-confirmada después contra un
+flujo de autenticación que cambió (verificación de correo obligatoria).
+
+Sobre A02 (parte ya cerrada): la decisión de arquitectura y la
+preparación del backend están documentadas (ADR-015,
+\texttt{forward-headers-strategy}) y no se fuerzan dentro de la categoría
+``corregido'' ni ``pendiente sin avance''.
+
+% --- SUSTITUIR la oración siguiente cuando exista despliegue TLS real ---
+Sobre A02 (parte pendiente): la verificación del header
+\texttt{Strict-Transport-Security} queda pendiente de verificación con
+despliegue real; no se simula ni se asume ese resultado.
+% --- fin marcador A02-HSTS ---
+
+La auditoría ZAP, un instrumento adicional exigido por la guía y distinto
+de la verificación manual control por control, sigue sin ejecutarse.
+
+\section{Bloque 3 -- Cobertura de pruebas automatizadas (JaCoCo)}
+\label{sec:res-cobertura}
+
+\textbf{Pregunta de investigación.} RQ4 (componente de cobertura) -- qué
+proporción de la base de código cuenta con prueba automatizada real, como
+parte de evaluar el efecto de la estrategia híbrida de acceso a datos
+sobre la cobertura de pruebas.
+
+\textbf{Métrica.} Porcentaje de líneas, ramas y complejidad ciclomática
+cubiertas por los 203 tests del backend, medido con
+\texttt{jacoco-maven-plugin} sobre el commit \texttt{a2c88f8}.
+
+\textbf{Datos crudos.} \texttt{docs/mediciones/jacoco/report.xml},
+\texttt{report.csv}, \texttt{html/index.html} (reporte navegable
+completo); narrativa y desglose por clase en
+\texttt{docs/mediciones/jacoco/2026-08-13-cobertura-jacoco-post-merge-8-modulos.md}.
+
+\textbf{Estadística descriptiva.} Esta métrica es una medición agregada
+sobre la totalidad del código analizado (50 clases, tras exclusiones
+documentadas de DTOs/entidades/configuración de framework), no una
+muestra de un proceso aleatorio -- no aplica media/desviación
+típica/IC~95\% de la misma forma que el Bloque~1; el número reportado es
+el porcentaje real exacto, sin margen de muestreo.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+Métrica & Corrida 30-jul (pre-merge) & \textbf{Corrida vigente (post-merge)} & Umbral \\
+\midrule
+Lines & 75,85\,\% (380/501) & \textbf{81,64\,\% (1014/1242)} & $\geq$70\,\% Sí \\
+Branches & 49,02\,\% (50/102) & \textbf{58,05\,\% (137/236)} & -- \\
+Complexity & 58,42\,\% (111/190) & \textbf{65,16\,\% (288/442)} & -- \\
+\bottomrule
+\end{tabular}
+\caption{Cobertura JaCoCo: antes/después del merge de 8 módulos de dominio}
+\label{tab:res-jacoco}
+\end{table}
+
+\textbf{Interpretación.} El resultado responde a RQ4 con un dato
+concreto: pese a que la base de líneas analizables casi se triplicó
+(501$\to$1242) al mergear ocho módulos de dominio nuevos, el porcentaje
+de cobertura de líneas \textbf{subió} en vez de diluirse (75,85\,\%
+$\to$ 81,64\,\%), permaneciendo muy por encima del umbral de $\geq$70\,\%
+exigido para la Entrega Final. El paquete más bajo es
+\texttt{integration} (20,0\,\% de líneas, una sola clase:
+\texttt{GeminiClient}), un resultado esperable y no alarmante: es el
+cliente HTTP hacia la API externa de Gemini (REQ-F-028), y un test
+unitario típico lo mockea en vez de ejercitar sus ramas reales de manejo
+de errores de red -- el mismo patrón, en menor escala, que motivó el
+trabajo dirigido sobre las clases de autenticación en la corrida del 30
+de julio. No se investiga esa causa en profundidad en este capítulo por
+alcance (ver \texttt{docs/mediciones/jacoco/2026-08-13-cobertura-jacoco-post-merge-8-modulos.md}
+para el detalle completo por clase).
+
+\section{Bloque 4 -- Calidad web (Lighthouse)}
+\label{sec:res-lighthouse}
+
+\textbf{Pregunta de investigación.} \textbf{Ninguna de las cuatro RQ del
+\autoref{cap:introduccion} cubre explícitamente calidad web/Lighthouse}
+-- se declara esto con honestidad en vez de forzar una relación artificial
+con RQ1--RQ4; este bloque documenta un instrumento exigido por la guía
+(Bloque~C.5) sin una pregunta de investigación propia todavía formulada
+para él.
+
+\textbf{Métrica.} \emph{Scores} 0--100 de Lighthouse en las categorías
+Performance, Accessibility, Best Practices y SEO, perfil móvil con
+\emph{throttling} Slow~4G.
+
+\textbf{Datos crudos.}
+\texttt{docs/mediciones/lighthouse/lhci-20260731-0300.json} (corrida
+``antes''), \texttt{lhci-20260731-0330.json} (corrida ``después'', tras 2
+correcciones de SEO); narrativa completa en
+\texttt{docs/mediciones/lighthouse/REPORT.md}.
+
+% Tabla lista para agregar filas (mismo esquema de columnas) hasta completar
+% 3 móvil + 3 escritorio = 6 corridas exigidas por la guía.
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{llrrrr}
+\toprule
+Perfil & Corrida & Performance & Accessibility & Best Practices & SEO \\
+\midrule
+Móvil & \texttt{lhci-20260731-0300} & 95 & 95 & 100 & 82 \\
+Móvil & \texttt{lhci-20260731-0330} & \textbf{99} & \textbf{100} & \textbf{100} & \textbf{100} \\
+% --- AGREGAR aquí hasta 4 filas más (móvil/escritorio) sin cambiar columnas ---
+\midrule
+\multicolumn{2}{l}{Umbral exigido} & $\geq$80 & $\geq$90 & $\geq$90 & $\geq$90 \\
+\bottomrule
+\end{tabular}
+\caption{Scores Lighthouse reales por corrida (filas existentes; ampliar
+  sin reconstruir la tabla)}
+\label{tab:res-lighthouse}
+\end{table}
+
+\textbf{Estadística descriptiva (sobre las corridas ya medidas).}
+Este capítulo reporta los valores crudos de cada corrida existente en
+vez de una estadística agregada que sugeriría más robustez de la que
+hay con la muestra actual.
+
+% --- SUSTITUIR el párrafo siguiente cuando existan las 6 corridas ---
+\textbf{Cobertura de corridas -- estado pendiente.} Solo existen
+\textbf{2 corridas totales} en todo el repositorio, ambas de perfil
+móvil (Slow~4G); \textbf{cero corridas de perfil escritorio}. La guía
+exige 3 corridas por perfil (móvil + escritorio, 6 en total). Con
+$n=2$ no se calcula media/desviación típica/IC~95\% de forma
+significativa. Trabajo en progreso asignado a Panama; no es un
+hallazgo cerrado.
+% --- fin marcador Lighthouse-cobertura ---
+
+\textbf{Interpretación (solo sobre las 2 corridas existentes).}
+Con los datos disponibles, los 4 umbrales se cumplen en la corrida más
+reciente (Performance~99, Accessibility~100, Best Practices~100,
+SEO~100), incluyendo SEO, que no cumplía en la primera corrida (82) y
+se corrigió agregando una meta descripción y un \texttt{robots.txt}
+real. Una nota de honestidad ya documentada en \texttt{REPORT.md} y
+que este capítulo preserva: Accessibility subió de 95 a 100 y
+Performance de 95 a 99 \textbf{sin que se tocara ningún estilo, color
+ni optimización de rendimiento} entre ambas corridas -- la explicación
+más probable es variabilidad normal entre corridas de Lighthouse (el
+\emph{audit} \texttt{color-contrast} depende del render exacto en el
+momento de la captura), no un efecto causal de las correcciones de SEO.
+Atribuir esa mejora a los cambios habría sido una lectura causal no
+respaldada por los datos; se documenta como coincidencia observada, no
+como resultado.
+
+% --- SUSTITUIR cuando n>=6 permita sostener lecturas robustas ---
+La limitación de alcance actual es de muestra (2 corridas, un solo
+perfil), no del formato de reporte: no basta todavía para sostener con
+la robustez exigida por la guía ni ``se cumplen los umbrales'' de forma
+robusta ni la hipótesis de variabilidad run-to-run.
+% --- fin marcador Lighthouse-limitacion ---
+
+\section{Bloque 5 -- Usabilidad (SUS)}
+\label{sec:res-usabilidad}
+
+\textbf{Pregunta de investigación.} RQ3 -- ¿cómo perciben usuarios reales
+la usabilidad del sistema, medida con el instrumento estandarizado System
+Usability Scale (SUS)?
+
+\textbf{Métrica.} Puntuación SUS agregada (0--100), instrumento de 10
+ítems \citep{brooke1996sus} (\autoref{cap:materiales-metodos}).
+
+% --- BLOQUE SUSTITUIBLE: datos + estadística SUS (hoy N=0) ---
+\textbf{Datos crudos.} \textbf{Ninguno todavía.} \texttt{N=0} de los
+$N\geq15$ participantes que exige la guía
+(\texttt{docs/mediciones/sus/respuestas.csv} aún no existe; ver
+\texttt{scripts/sus-analysis.ipynb}).
+
+\textbf{Estadística descriptiva.} No aplica -- no hay datos que agregar.
+% Cuando existan respuestas reales, reemplazar este párrafo por una
+% tabla tabular/booktabs (p.~ej.\ N, media, mediana, $\sigma$, IC~95\%
+% del score SUS 0--100) sin abrir un entorno table vacío de antemano.
+% --- fin marcador SUS-datos ---
+
+\textbf{Protocolo (permanente, ya versionado).}
+Plantilla de consentimiento informado, muestreo por conveniencia y
+anonimización por código de participante
+(\texttt{docs/etica/consentimientos/plantilla.md},
+\autoref{cap:materiales-metodos}).
+
+% --- SUSTITUIR el estado siguiente tras la primera corrida real ---
+\textbf{Estado real.} \textbf{Pendiente de ejecución ($N=0$).}
+Declarado en \texttt{OBS-08} de
+\texttt{docs/observaciones/OBSERVACIONES.md}, asignado a Panama,
+bloqueado hasta que el despliegue público esté funcionando (trabajo en
+curso por Cajas). Este capítulo no reporta ninguna cifra de SUS porque
+no existe ninguna que reportar.
+% --- fin marcador SUS-estado ---
+
+\section{Resumen de bloques}
+\label{sec:res-resumen}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabularx}{\linewidth}{@{}p{2.5cm}Xp{2.0cm}p{2.0cm}@{}}
+\toprule
+Bloque & Estado & Completo/ Parcial/ Pendiente & Umbral cumplido \\
+\midrule
+1. Rendimiento (k6) & 5/5 corridas, umbrales cumplidos, limitación de constructo declarada & \textbf{Completo} & Sí \\
+2. Seguridad (OWASP) & 5/6 controles con resultado cerrado; A02 parcial; ZAP sin ejecutar & \textbf{Parcial} & Parcial \\
+3. Cobertura (JaCoCo) & Medición vigente post-merge, por encima del umbral & \textbf{Completo} & Sí \\
+4. Calidad web (Lighthouse) & 2/6 corridas exigidas (solo perfil móvil), umbrales cumplidos en lo medido & \textbf{Parcial} & Sí (en lo medido) \\
+5. Usabilidad (SUS) & $N=0$ de $N\geq15$, protocolo listo, no ejecutado & \textbf{Pendiente} & N/A \\
+\bottomrule
+\end{tabularx}
+\caption{Estado real de cada bloque de evaluación empírica al cierre de este capítulo}
+\label{tab:res-resumen}
+\end{table}
+
+De los cinco bloques exigidos por la guía, dos están completos con
+umbral cumplido, dos están parcialmente cerrados con el componente
+faltante explícitamente identificado (no oculto), y uno no se ha
+ejecutado. Esta distribución -- no ``5 de 5 completos'' -- es el estado
+real del proyecto al momento de escribir este capítulo, y se reporta así
+deliberadamente en vez de presentarse como un cierre completo que todavía
+no existe.
