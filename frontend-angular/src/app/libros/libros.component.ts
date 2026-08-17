@@ -1,14 +1,17 @@
 import { Component, OnInit } from '@angular/core';
 
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-import { AuthService } from '../core/services/auth.service';
+import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { LibroService } from '../core/services/libro.service';
+import { CategoriaService } from '../core/services/categoria.service';
+import { AutorService } from '../core/services/autor.service';
+import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
+import { Categoria } from '../core/models/categoria.model';
+import { Autor } from '../core/models/autor.model';
 import { Libro, LibroRequest, LibroIsbnLookup } from '../core/models/libro.model';
 
 @Component({
     selector: 'app-libros',
-    imports: [ReactiveFormsModule],
+    imports: [ReactiveFormsModule, FormsModule, PortadaLibroComponent],
     templateUrl: './libros.component.html'
 })
 export class LibrosComponent implements OnInit {
@@ -28,19 +31,20 @@ export class LibrosComponent implements OnInit {
   portadaPreviewUrl: string | null = null;
   portadaPreviewBlob: Blob | null = null;
   autocompletarAutor: string = '';
+  categorias: Categoria[] = [];
+  autores: Autor[] = [];
+  categoriaFiltro: string = '';
+  errorCatalogo: string = '';
 
-  // Libros es la pantalla a la que se llega tras el login (ver
-  // LoginComponent#submit): no hay un layout/nav compartido en el
-  // proyecto todavía, así que los accesos a las pantallas ADMIN se
-  // exponen acá, gateados por rol igual que el resto de la UI.
-  verAdminUsuarios: boolean = false;
-  verAdminConfiguracion: boolean = false;
+  get paginasVisibles(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i);
+  }
 
   constructor(
     private libroService: LibroService,
-    private fb: FormBuilder,
-    private authService: AuthService,
-    private router: Router
+    private categoriaService: CategoriaService,
+    private autorService: AutorService,
+    private fb: FormBuilder
   ) {
     this.form = this.fb.group({
       isbn: ['', [Validators.required]],
@@ -51,14 +55,29 @@ export class LibrosComponent implements OnInit {
       stockDisponible: ['', [Validators.required]],
       editorialId: ['', [Validators.required]],
       idiomaId: ['', [Validators.required]],
-      estadoId: ['', [Validators.required]]
+      estadoId: ['', [Validators.required]],
+      // <select multiple> nativo: el control lleva el array de ids de las
+      // opciones seleccionadas (null o vacío es válido -- el backend acepta
+      // un libro sin categoría/autor, ver LibroRequestDTO.categoriaIds).
+      categoriaIds: [[]],
+      autorIds: [[]]
     });
   }
 
   ngOnInit(): void {
-    this.verAdminUsuarios = this.authService.hasRole('ADMIN', 'GERENTE');
-    this.verAdminConfiguracion = this.authService.hasRole('ADMIN');
     this.cargarLibros();
+    this.cargarCatalogo();
+  }
+
+  private cargarCatalogo(): void {
+    this.categoriaService.listar().subscribe({
+      next: (categorias) => { this.categorias = categorias; },
+      error: () => { this.errorCatalogo = 'No se pudieron cargar las categorías'; }
+    });
+    this.autorService.listar().subscribe({
+      next: (autores) => { this.autores = autores; },
+      error: () => { this.errorCatalogo = 'No se pudieron cargar los autores'; }
+    });
   }
 
   cargarLibros(): void {
@@ -66,7 +85,8 @@ export class LibrosComponent implements OnInit {
     this.libroService.listar({
       page: this.currentPage,
       size: this.pageSize,
-      sort: 'id,asc'
+      sort: 'id,asc',
+      ...(this.categoriaFiltro ? { categoriaId: Number(this.categoriaFiltro) } : {})
     }).subscribe({
       next: (data) => {
         this.libros = data.content;
@@ -78,6 +98,11 @@ export class LibrosComponent implements OnInit {
         this.cargando = false;
       }
     });
+  }
+
+  filtrarPorCategoria(): void {
+    this.currentPage = 0;
+    this.cargarLibros();
   }
 
   paginaAnterior(): void {
@@ -97,7 +122,7 @@ export class LibrosComponent implements OnInit {
   abrirFormularioCrear(): void {
     this.modoEdicion = false;
     this.libroSeleccionadoId = null;
-    this.form.reset();
+    this.form.reset({ categoriaIds: [], autorIds: [] });
     this.limpiarAutocompletar();
     this.mostrarFormulario = true;
   }
@@ -115,14 +140,29 @@ export class LibrosComponent implements OnInit {
       stockDisponible: libro.stockDisponible,
       editorialId: libro.editorialId,
       idiomaId: libro.idiomaId,
-      estadoId: libro.estadoId
+      estadoId: libro.estadoId,
+      // El DTO trae solo NOMBRES (LibroResponseDTO.categorias/autores);
+      // se resuelven a los ids del catálogo cargado para preseleccionar
+      // el <select multiple>.
+      categoriaIds: this.idsDeNombres(this.categorias, libro.categorias),
+      autorIds: this.idsDeNombres(this.autores, libro.autores)
     });
     this.mostrarFormulario = true;
   }
 
+  // match por nombre (único en el catálogo sembrado): el libro que no
+  // matchee ninguna categoría/autor cargado se deja sin selección en vez
+  // de inventar un id.
+  private idsDeNombres(catalogo: { id: number; nombre: string }[], nombres: string[]): number[] {
+    if (!nombres?.length) return [];
+    return nombres
+      .map(nombre => catalogo.find(item => item.nombre === nombre)?.id)
+      .filter((id): id is number => id !== undefined);
+  }
+
   cerrarFormulario(): void {
     this.mostrarFormulario = false;
-    this.form.reset();
+    this.form.reset({ categoriaIds: [], autorIds: [] });
     this.limpiarAutocompletar();
   }
 
@@ -238,15 +278,4 @@ export class LibrosComponent implements OnInit {
     });
   }
 
-  cerrarSesion(): void {
-    this.authService.logout();
-  }
-
-  irAUsuarios(): void {
-    this.router.navigate(['/admin/usuarios']);
-  }
-
-  irAConfiguracion(): void {
-    this.router.navigate(['/admin/configuracion']);
-  }
 }
