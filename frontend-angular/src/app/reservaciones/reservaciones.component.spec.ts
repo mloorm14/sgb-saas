@@ -15,7 +15,7 @@ describe('ReservacionesComponent', () => {
 
   beforeEach(async () => {
     roles = ['LECTOR'];
-    reservacionService = jasmine.createSpyObj('ReservacionService', ['listarPorUsuario', 'crear']);
+    reservacionService = jasmine.createSpyObj('ReservacionService', ['listarPorUsuario', 'crear', 'cambiarEstado']);
     libroService = jasmine.createSpyObj('LibroService', ['obtener', 'sugerencias']);
     libroService.sugerencias.and.returnValue(of([]));
     libroService.obtener.and.returnValue(of({} as any));
@@ -106,5 +106,32 @@ describe('ReservacionesComponent', () => {
 
     expect(component.errorMsg).toBe('Error al buscar las reservaciones');
     expect(component.cargando).toBeFalse();
+  });
+
+  it('el staff acepta una reservación pendiente y recarga la página', () => {
+    roles = ['BIBLIOTECARIO'];
+    fixture.detectChanges();
+    reservacionService.cambiarEstado.and.returnValue(of({ id: 7 } as any));
+    reservacionService.listarPorUsuario.and.returnValue(of({ content: [], totalPages: 1 } as any));
+
+    component.cambiarEstadoReservacion(
+      { id: 7, libroId: 9, estadoReservacionId: 1 } as any, 'LISTA_PARA_RETIRO');
+
+    expect(reservacionService.cambiarEstado).toHaveBeenCalledWith(7, { nuevoEstado: 'LISTA_PARA_RETIRO' });
+    expect(reservacionService.listarPorUsuario).toHaveBeenCalled();
+  });
+
+  it('muestra el detail del backend si el PATCH de estado falla', () => {
+    roles = ['GERENTE'];
+    fixture.detectChanges();
+    reservacionService.cambiarEstado.and.returnValue(
+      throwError(() => ({ error: { detail: 'Solo se puede aceptar o rechazar una reservación pendiente.' } }))
+    );
+
+    component.cambiarEstadoReservacion(
+      { id: 7, libroId: 9, estadoReservacionId: 1 } as any, 'CANCELADA');
+
+    expect(component.errorMsg).toContain('pendiente');
+    expect(component.accionandoId).toBeNull();
   });
 });
