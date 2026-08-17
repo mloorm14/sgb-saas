@@ -146,15 +146,72 @@ De esos 4, corrección verificada dentro del mismo ciclo:
 \textbf{4 de 4}, $=100$\,\%. Verificado sin hallazgo: 1 de 6 (A03). Parcial
 con componente diferido: 1 de 6 (A02).
 
-\textbf{ZAP baseline scan.} \textbf{AÚN NO EJECUTADO.} Pendiente, asignado
-a Cajas según el plan del equipo -- no se declara ni se infiere un
-resultado que no existe.
+\textbf{ZAP -- baseline y Ajax Spider (ejecutados).} Dos corridas de
+OWASP ZAP quedaron ejecutadas y versionadas después de escribirse el
+párrafo original de este bloque -- por eso decía ``aún no ejecutado'';
+ese estado ya no es real y se corrige aquí --: un \emph{baseline scan}
+(\texttt{docs/mediciones/sec/zap/2026-08-16-zap-baseline-report}, en
+JSON/HTML/MD) y un \emph{Ajax Spider scan} más exhaustivo
+(\texttt{docs/mediciones/sec/zap/2026-08-17-zap-ajax-full-report}, en
+JSON/HTML/MD). Ambas corridas apuntan al stack Docker \textbf{local}
+(\texttt{host.docker.internal}, puertos 4200 y 14200 respectivamente),
+no al despliegue público de producción -- una corrida anterior y más
+limitada sí apuntó a producción
+(\texttt{docs/mediciones/sec/zap/reporte-zap-baseline-\allowbreak
+frontend-prod-2026-08-14-v3.xml}, contra
+\texttt{https://biblora-sgb.onrender.com}) y no reportó hallazgos
+\emph{High} (0~High, 1~Medium, 1~Low), pero es una corrida más antigua y
+menos exhaustiva que las dos de esta sección, y no sustituye su
+cobertura.
+
+\textbf{Estadística descriptiva (ambas corridas, local).}
+\emph{Baseline} (2026-08-16): 1~\emph{High}, 1~\emph{Medium}, 5~\emph{Low},
+2~\emph{Informational}. \emph{Ajax Spider} (2026-08-17): 2~\emph{High},
+2~\emph{Medium}, 5~\emph{Low}, 2~\emph{Informational}.
+
+\textbf{Los 2 hallazgos \emph{High} del Ajax Spider, explicados con
+honestidad, no ocultados ni retirados del reporte.} Los archivos
+versionados en \texttt{docs/mediciones/sec/zap/} no se editan -- son el
+registro real de lo que esa corrida encontró en ese momento --, pero
+ninguno de los dos refleja hoy una vulnerabilidad activa en el código
+propio del proyecto:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item \textbf{DOM-based XSS (taint flow)}, 8 instancias. Se verificó
+    con \texttt{grep} sobre \texttt{frontend-angular/src/app/} que el
+    código propio de la aplicación tiene \textbf{cero} usos de
+    \texttt{insertBefore}, \texttt{.innerHTML} o
+    \texttt{bypassSecurityTrust*} -- las tres vías reales de XSS
+    DOM-based en una aplicación Angular. El flujo de contaminación que
+    ZAP detecta vive dentro del motor de renderizado interno de
+    Angular, empaquetado en el \emph{bundle} minificado
+    (\texttt{main-*.js}), no en código de este proyecto; el análisis
+    estático de ZAP no distingue entre ambos orígenes.
+  \item \textbf{Vulnerable JS Library}, 1 instancia. La evidencia
+    reportada es literalmente \texttt{["ng-version","17.3.12"]} -- pero
+    \texttt{frontend-angular/package.json} especifica hoy
+    \texttt{@angular/core} en la versión 21.2.20. La corrida escaneó un
+    \emph{build} de ANTES del \emph{upgrade} de Angular hecho hoy mismo
+    (17.3 $\to$ 21.2.20, específicamente para cerrar los CVE conocidos
+    de Angular hasta la 18.2.14); es un hallazgo desactualizado por
+    construcción del propio experimento, no una vulnerabilidad vigente.
+    Repetir la corrida contra el \emph{build} ya actualizado habría sido
+    lo correcto para confirmarlo, pero no hubo tiempo antes del cierre
+    de esta entrega -- se declara esa limitación en vez de asumir el
+    resultado sin verificarlo.
+\end{itemize}
 
 \textbf{Interpretación.} La respuesta directa a RQ2, con los números
 reales de arriba: de 6 controles auditados, 4 (66,7\,\%) presentaron un
 hallazgo real, y de esos 4, el 100\,\% recibió una corrección verificable
 dentro del mismo ciclo de desarrollo, re-confirmada después contra un
 flujo de autenticación que cambió (verificación de correo obligatoria).
+La auditoría ZAP automatizada, distinta de la verificación manual
+control por control, sí quedó ejecutada dos veces contra el entorno
+local -- no aporta hallazgos \emph{High} vigentes contra el código
+propio del proyecto, aunque sí dos hallazgos reales que quedan
+explicados arriba en vez de ocultados, y una re-corrida post-\emph{upgrade}
+de Angular queda como trabajo pendiente explícito.
 
 Sobre A02 (parte ya cerrada): la decisión de arquitectura y la
 preparación del backend están documentadas (ADR-015,
@@ -167,8 +224,9 @@ Sobre A02 (parte pendiente): la verificación del header
 despliegue real; no se simula ni se asume ese resultado.
 % --- fin marcador A02-HSTS ---
 
-La auditoría ZAP, un instrumento adicional exigido por la guía y distinto
-de la verificación manual control por control, sigue sin ejecutarse.
+Los tres reportes ZAP completos (JSON/HTML/MD, incluida la corrida más
+antigua contra producción) quedan versionados sin editar en
+\texttt{docs/mediciones/sec/zap/} como registro crudo de cada corrida.
 
 \section{Bloque 3 -- Cobertura de pruebas automatizadas (JaCoCo)}
 \label{sec:res-cobertura}
@@ -179,42 +237,55 @@ parte de evaluar el efecto de la estrategia híbrida de acceso a datos
 sobre la cobertura de pruebas.
 
 \textbf{Métrica.} Porcentaje de líneas, ramas y complejidad ciclomática
-cubiertas por los 203 tests del backend, medido con
-\texttt{jacoco-maven-plugin} sobre el commit \texttt{a2c88f8}.
+cubiertas por los 247 tests del backend (0 fallos, 2 \emph{skipped}),
+medido con \texttt{jacoco-maven-plugin}. Cifra re-verificada con una
+corrida real de \texttt{./mvnw clean verify} sobre el commit vigente al
+cierre de esta entrega (\texttt{0d1474d}) -- sube de los 203 tests / 50
+clases citados en una versión anterior de este párrafo (commit
+\texttt{a2c88f8}), porque 13 commits de backend adicionales (nuevos
+controladores de catálogo, endpoint de aceptar/rechazar reservaciones,
+autocompletado por ISBN, portal público, entre otros) se mergearon
+después de esa medición.
 
 \textbf{Datos crudos.} \texttt{docs/mediciones/jacoco/report.xml},
 \texttt{report.csv}, \texttt{html/index.html} (reporte navegable
-completo); narrativa y desglose por clase en
+completo, commit \texttt{a2c88f8}); narrativa y desglose por clase en
 \texttt{docs/mediciones/jacoco/2026-08-13-cobertura-jacoco-post-merge-8-modulos.md}.
+La corrida vigente (\texttt{0d1474d}, tabla abajo) se generó en el mismo
+formato pero su reporte HTML/XML no se re-versionó en este commit por
+tiempo -- el número se toma directo de \texttt{target/site/jacoco/jacoco.csv}
+de esa corrida real.
 
 \textbf{Estadística descriptiva.} Esta métrica es una medición agregada
-sobre la totalidad del código analizado (50 clases, tras exclusiones
-documentadas de DTOs/entidades/configuración de framework), no una
-muestra de un proceso aleatorio -- no aplica media/desviación
-típica/IC~95\% de la misma forma que el Bloque~1; el número reportado es
-el porcentaje real exacto, sin margen de muestreo.
+sobre la totalidad del código analizado (56 clases en la corrida
+vigente, tras exclusiones documentadas de DTOs/entidades/configuración
+de framework), no una muestra de un proceso aleatorio -- no aplica
+media/desviación típica/IC~95\% de la misma forma que el Bloque~1; el
+número reportado es el porcentaje real exacto, sin margen de muestreo.
 
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{lrrr}
+\begin{tabular}{lrrrr}
 \toprule
-Métrica & Corrida 30-jul (pre-merge) & \textbf{Corrida vigente (post-merge)} & Umbral \\
+Métrica & 30-jul (pre-merge) & 13-ago (post-merge, \texttt{a2c88f8}) & \textbf{Vigente (\texttt{0d1474d})} & Umbral \\
 \midrule
-Lines & 75,85\,\% (380/501) & \textbf{81,64\,\% (1014/1242)} & $\geq$70\,\% Sí \\
-Branches & 49,02\,\% (50/102) & \textbf{58,05\,\% (137/236)} & -- \\
-Complexity & 58,42\,\% (111/190) & \textbf{65,16\,\% (288/442)} & -- \\
+Lines & 75,85\,\% (380/501) & 81,64\,\% (1014/1242) & \textbf{82,97\,\% (1208/1456)} & $\geq$70\,\% Sí \\
+Branches & 49,02\,\% (50/102) & 58,05\,\% (137/236) & \textbf{64,75\,\% (180/278)} & -- \\
+Complexity & 58,42\,\% (111/190) & 65,16\,\% (288/442) & \textbf{68,32\,\% (345/505)} & -- \\
 \bottomrule
 \end{tabular}
-\caption{Cobertura JaCoCo: antes/después del merge de 8 módulos de dominio}
+\caption{Cobertura JaCoCo: pre-merge, post-merge de 8 módulos de dominio, y corrida vigente al cierre de la Entrega Final}
 \label{tab:res-jacoco}
 \end{table}
 
 \textbf{Interpretación.} El resultado responde a RQ4 con un dato
 concreto: pese a que la base de líneas analizables casi se triplicó
-(501$\to$1242) al mergear ocho módulos de dominio nuevos, el porcentaje
-de cobertura de líneas \textbf{subió} en vez de diluirse (75,85\,\%
-$\to$ 81,64\,\%), permaneciendo muy por encima del umbral de $\geq$70\,\%
+entre pre-merge y post-merge (501$\to$1242), y siguió creciendo hasta
+1456 con los commits posteriores al cierre, el porcentaje de cobertura
+de líneas \textbf{subió} en cada corrida en vez de diluirse (75,85\,\%
+$\to$ 81,64\,\%
+$\to$ 82,97\,\%), permaneciendo muy por encima del umbral de $\geq$70\,\%
 exigido para la Entrega Final. El paquete más bajo es
 \texttt{integration} (20,0\,\% de líneas, una sola clase:
 \texttt{GeminiClient}), un resultado esperable y no alarmante: es el
@@ -353,7 +424,7 @@ no existe ninguna que reportar.
 Bloque & Estado & Completo/ Parcial/ Pendiente & Umbral cumplido \\
 \midrule
 1. Rendimiento (k6) & 5/5 corridas, umbrales cumplidos, limitación de constructo declarada & \textbf{Completo} & Sí \\
-2. Seguridad (OWASP) & 5/6 controles con resultado cerrado; A02 parcial; ZAP sin ejecutar & \textbf{Parcial} & Parcial \\
+2. Seguridad (OWASP) & 5/6 controles con resultado cerrado; A02 parcial; ZAP ejecutado (0 High en producción, 2 High en local explicados) & \textbf{Parcial} & Parcial \\
 3. Cobertura (JaCoCo) & Medición vigente post-merge, por encima del umbral & \textbf{Completo} & Sí \\
 4. Calidad web (Lighthouse) & 2/6 corridas exigidas (solo perfil móvil), umbrales cumplidos en lo medido & \textbf{Parcial} & Sí (en lo medido) \\
 5. Usabilidad (SUS) & $N=0$ de $N\geq15$, protocolo listo, no ejecutado & \textbf{Pendiente} & N/A \\
