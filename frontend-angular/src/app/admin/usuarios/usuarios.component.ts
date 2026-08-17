@@ -72,7 +72,8 @@ export class UsuariosComponent implements OnInit {
     this.cargarPagina();
   }
 
-  private cargarPagina(): void {
+  // Se llama desde el template (paginacion numerada) -> no private.
+  cargarPagina(): void {
     this.cargando = true;
     this.errorMsg = '';
     this.usuarioAdminService.listar(this.filtro, this.currentPage, this.pageSize).subscribe({
