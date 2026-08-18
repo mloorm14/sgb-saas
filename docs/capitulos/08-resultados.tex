@@ -218,11 +218,15 @@ preparación del backend están documentadas (ADR-015,
 \texttt{forward-headers-strategy}) y no se fuerzan dentro de la categoría
 ``corregido'' ni ``pendiente sin avance''.
 
-% --- SUSTITUIR la oración siguiente cuando exista despliegue TLS real ---
-Sobre A02 (parte pendiente): la verificación del header
-\texttt{Strict-Transport-Security} queda pendiente de verificación con
-despliegue real; no se simula ni se asume ese resultado.
-% --- fin marcador A02-HSTS ---
+Sobre A02 (parte pendiente, ahora cerrada): el header
+\texttt{Strict-Transport-Security} se verificó activo en el despliegue
+real de producción (\texttt{curl -sI https://biblora-sgb.onrender.com/},
+18-ago-2026), no simulado ni asumido:
+\texttt{strict-transport-security: max-age=315360000;\allowbreak
+includeSubdomains; preload}. Con el header real confirmado en
+producción, A02 queda resuelto en su totalidad (decisión de
+arquitectura, preparación de backend y verificación de despliegue),
+no solo preparado.
 
 Los tres reportes ZAP completos (JSON/HTML/MD, incluida la corrida más
 antigua contra producción) quedan versionados sin editar en
@@ -314,11 +318,19 @@ Performance, Accessibility, Best Practices y SEO, perfil móvil con
 \textbf{Datos crudos.}
 \texttt{docs/mediciones/lighthouse/lhci-20260731-0300.json} (corrida
 ``antes''), \texttt{lhci-20260731-0330.json} (corrida ``después'', tras 2
-correcciones de SEO); narrativa completa en
-\texttt{docs/mediciones/lighthouse/REPORT.md}.
+correcciones de SEO, ambas contra \texttt{localhost}); 6 corridas reales
+contra producción (\texttt{https://biblora-sgb.onrender.com/}) que
+expusieron un defecto real de \emph{layout shift}:
+\texttt{lhci-mobile-prod-20260817-*.json} (3),
+\texttt{lhci-desktop-prod-20260817-*.json} (3); y 6 corridas reales de
+re-confirmación contra producción, ejecutadas después de corregir ese
+defecto y verificar el redeploy (commit \texttt{fced67d}):
+\texttt{lhci-mobile-prod-20260818-*.json} (3),
+\texttt{lhci-desktop-prod-20260818-*.json} (3) -- \textbf{12 corridas de
+producción en total}, sumadas a las 2 originales contra
+\texttt{localhost}. Narrativa completa, con comandos ejecutados y cada
+paso de verificación, en \texttt{docs/mediciones/lighthouse/REPORT.md}.
 
-% Tabla lista para agregar filas (mismo esquema de columnas) hasta completar
-% 3 móvil + 3 escritorio = 6 corridas exigidas por la guía.
 \begin{table}[h]
 \centering
 \small
@@ -326,55 +338,121 @@ correcciones de SEO); narrativa completa en
 \toprule
 Perfil & Corrida & Performance & Accessibility & Best Practices & SEO \\
 \midrule
-Móvil & \texttt{lhci-20260731-0300} & 95 & 95 & 100 & 82 \\
-Móvil & \texttt{lhci-20260731-0330} & \textbf{99} & \textbf{100} & \textbf{100} & \textbf{100} \\
-% --- AGREGAR aquí hasta 4 filas más (móvil/escritorio) sin cambiar columnas ---
+Móvil & \texttt{lhci-20260731-0300} (localhost) & 95 & 95 & 100 & 82 \\
+Móvil & \texttt{lhci-20260731-0330} (localhost) & 99 & 100 & 100 & 100 \\
+Móvil & prod. 17-ago, antes del fix (media, 3) & 86,0 (DT 13,0) & 100,0 (DT 0,0) & 100,0 (DT 0,0) & 100,0 (DT 0,0) \\
+Escritorio & prod. 17-ago, antes del fix (media, 3) & 88,0 (DT 0,0) & 100,0 (DT 0,0) & 100,0 (DT 0,0) & 100,0 (DT 0,0) \\
+Móvil & prod. 18-ago, después del fix (media, 3) & 86,3 (DT 1,5) & 100,0 (DT 0,0) & 100,0 (DT 0,0) & 100,0 (DT 0,0) \\
+Escritorio & prod. 18-ago, después del fix (media, 3) & \textbf{100,0} (DT 0,0) & 100,0 (DT 0,0) & 100,0 (DT 0,0) & 100,0 (DT 0,0) \\
 \midrule
 \multicolumn{2}{l}{Umbral exigido} & $\geq$80 & $\geq$90 & $\geq$90 & $\geq$90 \\
 \bottomrule
 \end{tabular}
-\caption{Scores Lighthouse reales por corrida (filas existentes; ampliar
-  sin reconstruir la tabla)}
+\caption{Scores Lighthouse reales por corrida. Las 2 primeras filas son
+  la muestra histórica contra \texttt{localhost}; las 4 filas
+  siguientes agregan media y desviación típica de las 12 corridas
+  reales de producción (2 rondas $\times$ 2 perfiles $\times$ 3
+  corridas)}
 \label{tab:res-lighthouse}
 \end{table}
 
-\textbf{Estadística descriptiva (sobre las corridas ya medidas).}
-Este capítulo reporta los valores crudos de cada corrida existente en
-vez de una estadística agregada que sugeriría más robustez de la que
-hay con la muestra actual.
+\textbf{Estadística descriptiva.} Con 3 corridas por perfil en cada una
+de las dos rondas de producción (12 corridas en total, sumadas a las 2
+originales contra \texttt{localhost}), ya hay muestra suficiente para
+reportar media y desviación típica reales por categoría y perfil --
+calculadas directo de los \emph{scores} crudos de cada JSON, sin
+estimar. Esto reemplaza la limitación de muestra ($n=2$, un solo
+perfil) declarada en una versión anterior de este capítulo.
 
-% --- SUSTITUIR el párrafo siguiente cuando existan las 6 corridas ---
-\textbf{Cobertura de corridas -- estado pendiente.} Solo existen
-\textbf{2 corridas totales} en todo el repositorio, ambas de perfil
-móvil (Slow~4G); \textbf{cero corridas de perfil escritorio}. La guía
-exige 3 corridas por perfil (móvil + escritorio, 6 en total). Con
-$n=2$ no se calcula media/desviación típica/IC~95\% de forma
-significativa. Trabajo en progreso asignado a Panama; no es un
-hallazgo cerrado.
-% --- fin marcador Lighthouse-cobertura ---
+\textbf{Cobertura de corridas -- resuelta.} Existen \textbf{12 corridas
+reales contra producción}: 3 móvil + 3 escritorio en la ronda del
+17-ago (que expuso el defecto de CLS descrito abajo) y 3 móvil + 3
+escritorio en la ronda del 18-ago, después de corregirlo y verificar el
+redeploy -- cumpliendo con margen el requisito de la guía de ``al menos
+3 corridas por perfil (móvil, escritorio)''. Las 2 corridas originales
+contra \texttt{localhost} se conservan como evidencia histórica del
+hallazgo y corrección de SEO, no se descartan.
 
-\textbf{Interpretación (solo sobre las 2 corridas existentes).}
-Con los datos disponibles, los 4 umbrales se cumplen en la corrida más
-reciente (Performance~99, Accessibility~100, Best Practices~100,
-SEO~100), incluyendo SEO, que no cumplía en la primera corrida (82) y
-se corrigió agregando una meta descripción y un \texttt{robots.txt}
-real. Una nota de honestidad ya documentada en \texttt{REPORT.md} y
-que este capítulo preserva: Accessibility subió de 95 a 100 y
-Performance de 95 a 99 \textbf{sin que se tocara ningún estilo, color
-ni optimización de rendimiento} entre ambas corridas -- la explicación
-más probable es variabilidad normal entre corridas de Lighthouse (el
-\emph{audit} \texttt{color-contrast} depende del render exacto en el
-momento de la captura), no un efecto causal de las correcciones de SEO.
-Atribuir esa mejora a los cambios habría sido una lectura causal no
-respaldada por los datos; se documenta como coincidencia observada, no
-como resultado.
+\textbf{Hallazgo real -- defecto de \emph{Cumulative Layout Shift}
+encontrado, diagnosticado y corregido con evidencia de producción.}
+Las 6 corridas de la ronda del 17-ago expusieron un defecto real:
+\textbf{CLS de 0,235--0,236, consistente en las 3 corridas de
+escritorio} (franja ``pobre'' de Lighthouse, $>0,25$), y un pico
+intermitente de \textbf{0,338 en 1 de 3 corridas móviles} (las otras 2
+en 0,013). Se investigó la causa raíz con el \emph{audit}
+\texttt{layout-shifts} del propio JSON (no se adivinó): el elemento
+responsable del 99,9\,\% del CLS es \texttt{main.max-w-container-max}
+de \texttt{PortalPublicoComponent} -- no el panel CTA que se había
+señalado como sospechoso en una nota preliminar de \texttt{REPORT.md},
+corrección que se documenta ahí explícitamente en vez de dejarse como
+si hubiera sido correcta. La causa concreta, confirmada en el código
+fuente: el grid del catálogo público mostraba una sola línea de texto
+(``Cargando catálogo\ldots'') mientras cargaba, reemplazada de golpe por
+un grid completo de 10 tarjetas al llegar los datos, sin espacio
+reservado. Se corrigió con un estado de carga tipo \emph{skeleton} (10
+tarjetas placeholder con la estructura real) en
+\texttt{portal-publico.component.html/.ts} (commit \texttt{fced67d}).
 
-% --- SUSTITUIR cuando n>=6 permita sostener lecturas robustas ---
-La limitación de alcance actual es de muestra (2 corridas, un solo
-perfil), no del formato de reporte: no basta todavía para sostener con
-la robustez exigida por la guía ni ``se cumplen los umbrales'' de forma
-robusta ni la hipótesis de variabilidad run-to-run.
-% --- fin marcador Lighthouse-limitacion ---
+Verificado primero en local (CLS de 0,236 a 0,032 de media, 86\,\% de
+reducción, \emph{stack} completo con backend real, 141/141 tests sin
+regresión) y luego \textbf{re-confirmado contra producción real} tras
+el redeploy -- verificado comparando el hash del \emph{bundle} servido
+(\texttt{main-CCW77Z7S.js} $\to$ \texttt{main-KA6MN67F.js}) antes de
+medir nada, sin asumir el redeploy por un aviso informal de que ``ya
+estaba arreglado''. Las 6 corridas de re-confirmación (18-ago) dan:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+Perfil & CLS antes (producción, 17-ago) & CLS después (producción, 18-ago) \\
+\midrule
+Escritorio & 0,236 / 0,236 / 0,235 (media 0,236, DT 0,000) & 0,031 / 0,031 / 0,031 (media 0,031, DT 0,0003) \\
+Móvil & 0,013 / 0,013 / 0,338\textsuperscript{*} & 0,005 / 0,011 / 0,011 (media 0,009, DT 0,003) \\
+\bottomrule
+\end{tabular}
+\caption{Cumulative Layout Shift antes y después del fix, 12 corridas
+  reales de producción. \textsuperscript{*}Móvil ``antes'' no se
+  resume en media/DT: 2 corridas en 0,013 y 1 anómala en 0,338 (ver
+  \texttt{REPORT.md} para el detalle de esa corrida puntual)}
+\label{tab:res-cls}
+\end{table}
+
+Escritorio pasa de la franja ``pobre'' ($>0,25$) a ``buena'' ($<0,1$),
+una reducción del 87\,\%; el pico anómalo de móvil no se repite en
+ninguna de las 3 corridas de re-confirmación. \emph{Score} de
+\emph{audit} de CLS: 1,0 (perfecto) en las 6 corridas post-fix. Los
+números de producción coinciden casi exactamente con la verificación
+local (0,031 producción vs. 0,031--0,033 local), confirmando que la
+verificación local había sido representativa y no un artefacto del
+entorno de prueba.
+
+\textbf{Interpretación.} Con las 12 corridas de producción, las 4
+categorías de Lighthouse cumplen su umbral en las 6 corridas
+individuales de la ronda post-fix (no solo en la media), y CLS queda
+confirmado en rango ``bueno'' en producción real, no solo en
+verificación local -- este es un hallazgo empírico completo: un defecto
+real detectado por la propia medición (no buscado a propósito), con
+causa raíz confirmada en código fuente, corrección aplicada y
+verificación antes/después en producción, no solo localmente. Una nota
+de honestidad ya documentada en \texttt{REPORT.md} sobre la muestra
+histórica contra \texttt{localhost}, que este capítulo preserva:
+Accessibility subió de 95 a 100 y Performance de 95 a 99 entre esas 2
+corridas \textbf{sin que se tocara ningún estilo, color ni optimización
+de rendimiento} -- la explicación más probable es variabilidad normal
+entre corridas de Lighthouse, no un efecto causal de las correcciones
+de SEO aplicadas en ese momento; no se le atribuye esa mejora a los
+cambios.
+
+\textbf{Limitación restante.} La anomalía puntual de Performance móvil
+en la ronda ``antes'' (Run~3, 71<80, con Speed Index de 48,1\,s y TTFB
+10$\times$ más alto que las otras 2 corridas de esa ronda) no se repite
+en ninguna de las 3 corridas post-fix -- se documenta como variabilidad
+de infraestructura compartida del \emph{hosting} en el momento de esa
+captura puntual, no como un defecto de aplicación reproducible, y no se
+le atribuye causalmente al fix de CLS (son métricas distintas). No se
+investiga más a fondo por alcance de esta entrega.
 
 \section{Bloque 5 -- Usabilidad (SUS)}
 \label{sec:res-usabilidad}
@@ -426,7 +504,7 @@ Bloque & Estado & Completo/ Parcial/ Pendiente & Umbral cumplido \\
 1. Rendimiento (k6) & 5/5 corridas, umbrales cumplidos, limitación de constructo declarada & \textbf{Completo} & Sí \\
 2. Seguridad (OWASP) & 5/6 controles con resultado cerrado; A02 parcial; ZAP ejecutado (0 High en producción, 2 High en local explicados) & \textbf{Parcial} & Parcial \\
 3. Cobertura (JaCoCo) & Medición vigente post-merge, por encima del umbral & \textbf{Completo} & Sí \\
-4. Calidad web (Lighthouse) & 2/6 corridas exigidas (solo perfil móvil), umbrales cumplidos en lo medido & \textbf{Parcial} & Sí (en lo medido) \\
+4. Calidad web (Lighthouse) & 12 corridas reales de producción (2 rondas $\times$ 2 perfiles $\times$ 3), umbral cumplido en las 6 corridas post-fix; defecto real de CLS encontrado y corregido, verificado antes/después en producción & \textbf{Completo} & Sí \\
 5. Usabilidad (SUS) & $N=0$ de $N\geq15$, protocolo listo, no ejecutado & \textbf{Pendiente} & N/A \\
 \bottomrule
 \end{tabularx}
