@@ -122,7 +122,7 @@ la proporción simple sobre 6 controles, reportada abajo.
 Control & Estado real & Evidencia \\
 \midrule
 A01 -- Control de acceso roto & Hallazgo real encontrado y corregido (rol admin en libros) & \texttt{2026-07-30-owasp-a01-\allowbreak control-acceso-roto.md} + \texttt{-fix-rol-admin-\allowbreak libros.md} \\
-A02 -- Fallos criptográficos / TLS & Decisión de arquitectura y preparación del backend \textbf{CERRADAS} (ADR-015, \texttt{forward-headers-strategy}). \textbf{Parcial / pendiente de verificación con despliegue real:} TLS end-to-end y header \texttt{Strict-Transport-Security} aún no verificados en producción. & \texttt{2026-08-10-owasp-a02-\allowbreak fix-tls-\allowbreak transporte.md} \\
+A02 -- Fallos criptográficos / TLS & Decisión de arquitectura, preparación del backend y verificación de despliegue real \textbf{CERRADAS} (ADR-015, \texttt{forward-headers-strategy}; header \texttt{Strict-Transport-Security} confirmado activo en producción por \texttt{curl}, 18-ago-2026). & \texttt{2026-08-10-owasp-a02-\allowbreak fix-tls-\allowbreak transporte.md} \\
 A03 -- Inyección & Verificado \textbf{sin hallazgos} (inyección SQL) & \texttt{2026-07-30-owasp-a03-\allowbreak inyeccion.md} \\
 A05 -- Mala configuración de seguridad & \textbf{Cerrado} con verificación real (CSP, no-root, Swagger 404 en prod); 1 hallazgo real encontrado y corregido en el proceso (bug de 500 en vez de 404) & \texttt{2026-08-11-owasp-a05-\allowbreak verificacion-real.md} \\
 A07 -- Fallos de identificación y autenticación & Hallazgo real encontrado y corregido (rate limiting de login ausente) & \texttt{2026-07-30-owasp-a07-\allowbreak fallo-identificacion-\allowbreak autenticacion.md} + \texttt{-fix-rate-\allowbreak limiting-login.md} \\
@@ -143,8 +143,13 @@ original, y los 4 vuelven a pasar
 \textbf{Estadística descriptiva (proporciones sobre 6 controles).}
 Hallazgo real encontrado: \textbf{4 de 6} (A01, A05, A07, A09), $=66{,}7$\,\%.
 De esos 4, corrección verificada dentro del mismo ciclo:
-\textbf{4 de 4}, $=100$\,\%. Verificado sin hallazgo: 1 de 6 (A03). Parcial
-con componente diferido: 1 de 6 (A02).
+\textbf{4 de 4}, $=100$\,\%. Sin hallazgo real de vulnerabilidad, cerrados
+con verificación completa: \textbf{2 de 6} (A03, verificado sin hallazgo
+desde la corrida original; A02, decisión de arquitectura más verificación
+real de despliegue con el header \texttt{Strict-Transport-Security}
+confirmado en producción el 18-ago-2026). Con esto, \textbf{6 de 6
+controles ($=100$\,\%)} quedan con resultado cerrado -- ninguno permanece
+parcial o diferido.
 
 \textbf{ZAP -- baseline y Ajax Spider (ejecutados).} Dos corridas de
 OWASP ZAP quedaron ejecutadas y versionadas después de escribirse el
@@ -213,20 +218,18 @@ propio del proyecto, aunque sí dos hallazgos reales que quedan
 explicados arriba en vez de ocultados, y una re-corrida post-\emph{upgrade}
 de Angular queda como trabajo pendiente explícito.
 
-Sobre A02 (parte ya cerrada): la decisión de arquitectura y la
+Sobre A02, cerrado en su totalidad: la decisión de arquitectura y la
 preparación del backend están documentadas (ADR-015,
-\texttt{forward-headers-strategy}) y no se fuerzan dentro de la categoría
-``corregido'' ni ``pendiente sin avance''.
-
-Sobre A02 (parte pendiente, ahora cerrada): el header
-\texttt{Strict-Transport-Security} se verificó activo en el despliegue
-real de producción (\texttt{curl -sI https://biblora-sgb.onrender.com/},
-18-ago-2026), no simulado ni asumido:
+\texttt{forward-headers-strategy}), y la verificación de despliegue
+real que antes faltaba ya se completó -- el header
+\texttt{Strict-Transport-Security} se verificó activo en producción
+(\texttt{curl -sI https://biblora-sgb.onrender.com/}, 18-ago-2026, no
+simulado ni asumido):
 \texttt{strict-transport-security: max-age=315360000;\allowbreak
-includeSubdomains; preload}. Con el header real confirmado en
-producción, A02 queda resuelto en su totalidad (decisión de
-arquitectura, preparación de backend y verificación de despliegue),
-no solo preparado.
+includeSubdomains; preload}. Con el header real confirmado, A02 no
+queda solo preparado arquitectónicamente: queda resuelto por completo
+(arquitectura, backend y despliegue verificado), el sexto y último de
+los 6 controles auditados en cerrar.
 
 Los tres reportes ZAP completos (JSON/HTML/MD, incluida la corrida más
 antigua contra producción) quedan versionados sin editar en
@@ -502,7 +505,7 @@ no existe ninguna que reportar.
 Bloque & Estado & Completo/ Parcial/ Pendiente & Umbral cumplido \\
 \midrule
 1. Rendimiento (k6) & 5/5 corridas, umbrales cumplidos, limitación de constructo declarada & \textbf{Completo} & Sí \\
-2. Seguridad (OWASP) & 5/6 controles con resultado cerrado; A02 parcial; ZAP ejecutado (0 High en producción, 2 High en local explicados) & \textbf{Parcial} & Parcial \\
+2. Seguridad (OWASP) & 6/6 controles con resultado cerrado (A02 incluido, HSTS verificado en producción); ZAP ejecutado (0 High en producción, 2 High en local explicados) & \textbf{Completo} & Sí \\
 3. Cobertura (JaCoCo) & Medición vigente post-merge, por encima del umbral & \textbf{Completo} & Sí \\
 4. Calidad web (Lighthouse) & 12 corridas reales de producción (2 rondas $\times$ 2 perfiles $\times$ 3), umbral cumplido en las 6 corridas post-fix; defecto real de CLS encontrado y corregido, verificado antes/después en producción & \textbf{Completo} & Sí \\
 5. Usabilidad (SUS) & $N=0$ de $N\geq15$, protocolo listo, no ejecutado & \textbf{Pendiente} & N/A \\
