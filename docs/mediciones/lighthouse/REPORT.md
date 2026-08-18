@@ -571,13 +571,96 @@ desviación típica casi nula (0,001) en las 3 corridas.
   el apuntado a `localhost` fue exclusivamente para la verificación
   local descrita arriba, nunca se commiteó.
 
-### Pendiente -- confirmación final en producción
+### Confirmación final en producción (después del redeploy)
 
-Esta sección documenta la corrección y su verificación local (contra el
-backend real, con la llamada exitosa confirmada, no contra un mock). La
-confirmación definitiva -- 3 corridas mobile + 3 desktop reales contra
-`https://biblora-sgb.onrender.com/` después de que Render redeploye este
-commit -- se ejecuta y se documenta por separado a continuación en
-cuanto el despliegue esté listo (ver la sección siguiente si ya existe,
-o considerar esta sección como el estado al momento de commitear el
-fix si todavía no).
+El commit `fced67d` se pushbeó a `demo/interfaces-completas` y quedó a
+la espera de que Render redeployara. Se verificó el redeploy real antes
+de correr nada, comparando el hash del bundle servido
+(`curl -s "https://biblora-sgb.onrender.com/?cachebust=<ts>"`, con
+`cf-cache-status: MISS` confirmado para descartar una respuesta de CDN
+cacheada) contra el hash pre-fix conocido:
+
+- Antes del redeploy: `main-CCW77Z7S.js` (el mismo hash pre-fix, visto
+  en dos verificaciones espaciadas ~1 hora, incluyendo una vez que
+  alguien del equipo reportó de forma informal "ya lo arreglé" sin
+  detalles -- no se asumió que el redeploy había ocurrido solo por ese
+  comentario, se verificó igual).
+- Después del redeploy: `main-KA6MN67F.js` -- **coincide exactamente
+  con el hash del build local de la corrección** generado durante la
+  verificación local de esta misma sección arriba, confirmando que es
+  el mismo código, no un cambio distinto hecho manualmente en el
+  dashboard de Render.
+
+Confirmado el redeploy, se corrieron las 6 corridas reales (3 mobile +
+3 desktop) contra `https://biblora-sgb.onrender.com/`, mismo comando y
+metodología documentados en la sección "3 corridas mobile + 3 desktop
+contra producción" de arriba (`--form-factor=mobile
+--screenEmulation.mobile --throttling-method=simulate` para móvil,
+`--preset=desktop` para desktop, `--only-categories=performance,
+accessibility,best-practices,seo`).
+
+- **Fecha (ISO 8601 UTC)**: 2026-08-18T06:02Z – 2026-08-18T06:07Z
+- **Commit en producción**: `fced67d`
+- **Lighthouse**: v13.4.1, mismo mecanismo `CHROME_PATH` (Edge headless)
+
+Los 6 JSON crudos quedan versionados sin editar:
+[`lhci-mobile-prod-20260818-0602-run1.json`](lhci-mobile-prod-20260818-0602-run1.json),
+[`lhci-mobile-prod-20260818-0603-run2.json`](lhci-mobile-prod-20260818-0603-run2.json),
+[`lhci-mobile-prod-20260818-0604-run3.json`](lhci-mobile-prod-20260818-0604-run3.json),
+[`lhci-desktop-prod-20260818-0606-run1.json`](lhci-desktop-prod-20260818-0606-run1.json),
+[`lhci-desktop-prod-20260818-0606-run2.json`](lhci-desktop-prod-20260818-0606-run2.json),
+[`lhci-desktop-prod-20260818-0606-run3.json`](lhci-desktop-prod-20260818-0606-run3.json).
+`runtimeError` en las 6: `undefined` (sin error). `finalDisplayedUrl` en
+las 6: `https://biblora-sgb.onrender.com/` (confirmado, sin redirección).
+
+#### Resultados — perfil móvil, producción, post-fix
+
+| Categoría | Run 1 | Run 2 | Run 3 | **Media** | **DT** | Umbral | Cumple |
+|---|---|---|---|---|---|---|---|
+| Performance | 86 | 88 | 85 | **86,3** | **1,5** | ≥80 | ✅ Sí, las 3 corridas |
+| Accessibility | 100 | 100 | 100 | **100,0** | **0,0** | ≥90 | ✅ Sí |
+| Best Practices | 100 | 100 | 100 | **100,0** | **0,0** | ≥90 | ✅ Sí |
+| SEO | 100 | 100 | 100 | **100,0** | **0,0** | ≥90 | ✅ Sí |
+| **CLS** (no es categoría, es la métrica corregida) | 0,005 | 0,011 | 0,011 | **0,009** | **0,003** | <0,1 (bueno) | ✅ **Sí, las 3 corridas** (score de audit = 1,0 en las 3) |
+
+La anomalía puntual de la medición anterior (Run 3 móvil = 71 < 80) **no
+se repite** en esta corrida -- las 3 corridas móviles cumplen el umbral
+de Performance esta vez. No se afirma que el fix de CLS haya causado
+esa mejora (son métricas distintas: esa anomalía estaba en Performance,
+no en CLS); se documenta como observación honesta, no como causalidad
+comprobada.
+
+#### Resultados — perfil desktop, producción, post-fix
+
+| Categoría | Run 1 | Run 2 | Run 3 | **Media** | **DT** | Umbral | Cumple |
+|---|---|---|---|---|---|---|---|
+| Performance | 100 | 100 | 100 | **100,0** | **0,0** | ≥80 | ✅ Sí |
+| Accessibility | 100 | 100 | 100 | **100,0** | **0,0** | ≥90 | ✅ Sí |
+| Best Practices | 100 | 100 | 100 | **100,0** | **0,0** | ≥90 | ✅ Sí |
+| SEO | 100 | 100 | 100 | **100,0** | **0,0** | ≥90 | ✅ Sí |
+| **CLS** | 0,031 | 0,031 | 0,031 | **0,031** | **0,0003** | <0,1 (bueno) | ✅ **Sí, las 3 corridas** (score de audit = 1,0 en las 3) |
+
+Performance desktop además subió de 88,0 (media, corrida anterior) a
+100,0 -- consistente con LCP desktop de 0,4s (vs. el shift tardío que
+antes empujaba contenido después de pintado) y TBT 0ms en las 3
+corridas.
+
+#### Comparación antes vs. después (producción real, no local)
+
+| Perfil | CLS antes (3 corridas) | CLS después (3 corridas) | Reducción |
+|---|---|---|---|
+| Desktop | 0,236 / 0,236 / 0,235 (media 0,236) | 0,031 / 0,031 / 0,031 (media 0,031) | **~87%**, de "pobre" (>0,25) a "buena" (<0,1) |
+| Mobile | 0,013 / 0,013 / 0,338 (Run 3 anómalo) | 0,005 / 0,011 / 0,011 (media 0,009) | El pico anómalo de Run 3 desaparece; las 3 corridas quedan en rango "bueno" |
+
+Los números de producción post-fix (CLS desktop 0,031 medio) coinciden
+de forma casi exacta con la verificación local reportada arriba (0,031
+/ 0,032 / 0,033) -- confirmando que la verificación local había sido
+representativa del comportamiento real en producción, y no un artefacto
+del entorno de prueba local.
+
+**Conclusión**: las **4 categorías cumplen su umbral en las 6 corridas
+de producción** (no solo en la media -- en cada corrida individual), y
+**CLS queda confirmado en rango "bueno" (<0,1) en producción real**,
+no solo en la verificación local. El defecto identificado y corregido
+en esta actualización queda cerrado con evidencia de producción, no
+solo con evidencia local.
