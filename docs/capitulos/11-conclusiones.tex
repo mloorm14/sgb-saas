@@ -15,10 +15,12 @@ declarada -- el umbral se cumple, la atribución causal exacta queda
 matizada.
 
 \textbf{RQ2 (seguridad).} De 6 controles OWASP auditados, 4 presentaron
-un hallazgo real corregido dentro del mismo ciclo ($66{,}7$\,\%), 1 se
-verificó limpio sin hallazgo, y 1 quedó parcialmente cerrado a la espera
-de un despliegue público con TLS real -- la auditoría encontró y forzó a
-corregir defectos concretos, no fue un ejercicio cosmético.
+un hallazgo real corregido dentro del mismo ciclo ($66{,}7$\,\%), y 2 se
+verificaron sin hallazgo real de código (A03 desde la corrida original;
+A02 tras completarse la verificación de TLS/HSTS contra el despliegue
+público real, 18-ago-2026) -- los 6 controles quedan con resultado
+cerrado; la auditoría encontró y forzó a corregir defectos concretos, no
+fue un ejercicio cosmético.
 
 \textbf{RQ3 (usabilidad).} Sin respuesta todavía: $N=0$ de los
 $N\geq15$ participantes exigidos por la guía. Queda como trabajo en
@@ -28,10 +30,14 @@ como una omisión.
 
 \textbf{RQ4 (arquitectura híbrida).} La estrategia CRUD-ORM/SP no
 perjudicó la trazabilidad ($48{,}8$\,\% CRUD-ORM, $18{,}6$\,\% SP,
-$4{,}7$\,\% híbrido de los 43 requisitos) ni la cobertura de pruebas
-($81{,}64$\,\% de líneas), pero tuvo un costo real de implementación: una
-migración forzada de \texttt{@Procedure} a \texttt{@Query} nativa por un
-defecto documentado de Hibernate con procedimientos multi-\texttt{OUT}.
+$4{,}7$\,\% híbrido, distribución medida sobre los 43 requisitos
+originales de \autoref{sec:matriz-resumen} -- la matriz creció a 46
+requisitos tras el cierre, ver \autoref{cap:ingenieria-requisitos}; el
+desglose porcentual no se recalculó para los 3 nuevos por alcance de
+esta corrección) ni la cobertura de pruebas ($82{,}97$\,\% de líneas),
+pero tuvo un costo real de implementación: una migración forzada de
+\texttt{@Procedure} a \texttt{@Query} nativa por un defecto documentado
+de Hibernate con procedimientos multi-\texttt{OUT}.
 
 \section{Contribuciones -- recapituladas con evidencia del capítulo de resultados}
 \label{sec:concl-contribuciones}
@@ -41,16 +47,16 @@ proyecto. Con la evidencia empírica del \autoref{cap:resultados} ya
 reunida, se sostienen así:
 
 \begin{itemize}[leftmargin=1.2cm]
-  \item Un sistema web funcional con 43 requisitos trazados, de los
-    cuales el $100$\,\% de los de prioridad \texttt{Must} cuenta con
+  \item Un sistema web funcional con 46 requisitos trazados, de los
+    cuales el $100$\,\% de los 23 de prioridad \texttt{Must} cuenta con
     evidencia de verificación real (\autoref{cap:ingenieria-requisitos}) --
     sostenida, no solo declarada: la matriz de trazabilidad
     (\autoref{sec:matriz-resumen}) asigna un mecanismo de acceso a datos
-    concreto a cada uno de los 43.
+    concreto a cada uno de los 46.
   \item Evidencia empírica reproducible y versionada como código: 5
     corridas de k6 con análisis estadístico formal (Wilcoxon, Cliff's
-    delta), cobertura JaCoCo real ($81{,}64$\,\% de líneas, commit
-    \texttt{a2c88f8}), y auditoría de accesibilidad/rendimiento con
+    delta), cobertura JaCoCo real ($82{,}97$\,\% de líneas, commit
+    \texttt{0d1474d}), y auditoría de accesibilidad/rendimiento con
     Lighthouse -- las tres con datos crudos versionados en
     \texttt{docs/mediciones/}, no capturas de pantalla editadas a mano
     (\autoref{cap:resultados}).
@@ -78,15 +84,14 @@ módulos de dominio mergeadas a \texttt{main} durante el ciclo de esta
 entrega (configuración paramétrica, préstamos avanzado, notificaciones y
 verificación, catálogo avanzado, panel de administración, seguridad de
 transporte, asistente con IA generativa, e infraestructura de CI), sobre
-una base de 43 requisitos especificados y trazados, con el $100$\,\% de
+una base de 46 requisitos especificados y trazados, con el $100$\,\% de
 los requisitos \texttt{Must} verificados
-(\autoref{cap:ingenieria-requisitos}) y $81{,}64$\,\% de cobertura de
-línea en 203 pruebas automatizadas del backend
+(\autoref{cap:ingenieria-requisitos}) y $82{,}97$\,\% de cobertura de
+línea en 247 pruebas automatizadas del backend
 (\autoref{sec:res-cobertura}). De los cinco bloques de evaluación
-empírica exigidos por la guía, dos están completos con umbral cumplido
-(rendimiento, cobertura), dos están parcialmente cerrados con el
-componente faltante explícitamente identificado (seguridad, calidad web),
-y uno -- usabilidad -- no se ha ejecutado todavía
+empírica exigidos por la guía, cuatro están completos con umbral
+cumplido (rendimiento, seguridad, cobertura, calidad web), y uno --
+usabilidad -- no se ha ejecutado todavía
 (\autoref{tab:res-resumen}). El \autoref{cap:trabajo-futuro} deja
 protocolizadas las cinco líneas concretas que cerrarían esos gaps, incluida
 una vulnerabilidad de auto-degradación del rol \texttt{ADMIN} detectada

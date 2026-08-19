@@ -18,3 +18,9 @@ export interface MultaAccionResponse {
   multaId: number;
   usuarioDesbloqueado: boolean;
 }
+
+// GET /api/v1/multas/reportes/resumen-financiero (dashboard GERENTE/ADMIN).
+export interface ResumenFinancieroMultas {
+  totalRecaudado: number;
+  totalPendiente: number;
+}

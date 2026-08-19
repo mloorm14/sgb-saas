@@ -212,10 +212,10 @@ Portabilidad & Alta & Docker Compose con imágenes base pinadas por digest sha25
 \section{Matriz de trazabilidad -- resumen por tipo de acceso a datos}
 \label{sec:matriz-resumen}
 
-La matriz completa de los 43 requisitos vive en
+La matriz completa de los 46 requisitos vive en
 \texttt{docs/trazabilidad/matriz.csv} y se valida automáticamente en
 cada ejecución de CI vía \texttt{scripts/validate-traceability.sh}. Este
-capítulo no reproduce las 43 filas (el detalle completo por requisito
+capítulo no reproduce las 46 filas (el detalle completo por requisito
 vive en \autoref{cap:ingenieria-requisitos} y en la propia matriz);
 resume aquí la columna \texttt{tipo\_acceso}, relevante para esta
 sección por ser la evidencia directa de que la estrategia híbrida
@@ -259,7 +259,19 @@ Redis + SMTP (sin tabla Postgres nueva; no aplica CRUD-ORM ni SP)\footnote{\text
 \end{tabularx}
 \end{center}
 
-De los 43 requisitos, 10 (23{,}3\,\%) involucran al menos un
+\textbf{Nota de alcance (cierre de la Entrega Final).} La matriz creció
+de 43 a 46 requisitos tras esta tabla (\texttt{REQ-F-030},
+\texttt{REQ-F-031}, y una extensión de \texttt{REQ-F-021} a la capa
+frontend) -- los 3 no se reclasificaron en la tabla de arriba porque la
+categorización por \texttt{tipo\_acceso} exige revisar el valor completo
+de cada campo a mano, no solo una coincidencia de texto (ver el caso de
+\texttt{REQ-F-018} más abajo, que una primera pasada automática
+clasificó mal por esa misma razón); no hubo tiempo de repetir esa
+revisión manual para los 3 antes del cierre. Los porcentajes de esta
+tabla y del párrafo siguiente siguen describiendo, con honestidad, la
+distribución de los 43 requisitos originales, no los 46 vigentes.
+
+De los 43 requisitos originales de esta tabla, 10 (23{,}3\,\%) involucran al menos un
 procedimiento o función SQL (8 exclusivamente, 2 en combinación con
 CRUD-ORM: \texttt{REQ-NF-004}, transversal a los módulos de
 préstamos/multas/reservaciones vs.\ auth/libros/bitácora, y

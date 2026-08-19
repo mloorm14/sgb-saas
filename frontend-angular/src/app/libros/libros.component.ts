@@ -4,9 +4,15 @@ import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } 
 import { LibroService } from '../core/services/libro.service';
 import { CategoriaService } from '../core/services/categoria.service';
 import { AutorService } from '../core/services/autor.service';
+import { EditorialService } from '../core/services/editorial.service';
+import { IdiomaService } from '../core/services/idioma.service';
+import { EstadoLibroService } from '../core/services/estado-libro.service';
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
 import { Categoria } from '../core/models/categoria.model';
 import { Autor } from '../core/models/autor.model';
+import { Editorial } from '../core/models/editorial.model';
+import { Idioma } from '../core/models/idioma.model';
+import { EstadoLibro } from '../core/models/estado-libro.model';
 import { Libro, LibroRequest, LibroIsbnLookup } from '../core/models/libro.model';
 
 @Component({
@@ -33,6 +39,12 @@ export class LibrosComponent implements OnInit {
   autocompletarAutor: string = '';
   categorias: Categoria[] = [];
   autores: Autor[] = [];
+  // FIX 3: catálogos editorial/idioma/estado para los <select> del
+  // formulario (GET /api/v1/editoriales, /api/v1/idiomas,
+  // /api/v1/estados-libro — antes eran inputs de ID a mano).
+  editoriales: Editorial[] = [];
+  idiomas: Idioma[] = [];
+  estados: EstadoLibro[] = [];
   categoriaFiltro: string = '';
   errorCatalogo: string = '';
 
@@ -44,6 +56,9 @@ export class LibrosComponent implements OnInit {
     private libroService: LibroService,
     private categoriaService: CategoriaService,
     private autorService: AutorService,
+    private editorialService: EditorialService,
+    private idiomaService: IdiomaService,
+    private estadoLibroService: EstadoLibroService,
     private fb: FormBuilder
   ) {
     this.form = this.fb.group({
@@ -78,6 +93,18 @@ export class LibrosComponent implements OnInit {
     this.autorService.listar().subscribe({
       next: (autores) => { this.autores = autores; },
       error: () => { this.errorCatalogo = 'No se pudieron cargar los autores'; }
+    });
+    this.editorialService.listar().subscribe({
+      next: (editoriales) => { this.editoriales = editoriales; },
+      error: () => { this.errorCatalogo = 'No se pudieron cargar las editoriales'; }
+    });
+    this.idiomaService.listar().subscribe({
+      next: (idiomas) => { this.idiomas = idiomas; },
+      error: () => { this.errorCatalogo = 'No se pudieron cargar los idiomas'; }
+    });
+    this.estadoLibroService.listar().subscribe({
+      next: (estados) => { this.estados = estados; },
+      error: () => { this.errorCatalogo = 'No se pudieron cargar los estados del libro'; }
     });
   }
 

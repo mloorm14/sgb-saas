@@ -114,4 +114,4 @@ describe('AppComponent', () => {
     expect(compiled.textContent).not.toContain('Reportes');
     expect(compiled.textContent).not.toContain('Préstamos');
   });
-});
+}
