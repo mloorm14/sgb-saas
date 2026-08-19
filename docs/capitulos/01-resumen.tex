@@ -4,36 +4,67 @@
 \chapter*{Resumen}
 \addcontentsline{toc}{chapter}{Resumen}
 
-\textbf{PENDIENTE: se escribe al final, cuando el resto del documento
-esté completo.} El resumen estructurado que exige el Bloque~B.2 de la
-guía (problema, método, resultados principales con cifras reales,
-conclusión) tiene que sintetizar el documento completo -- Introducción,
-Trabajos Relacionados, Diseño y Arquitectura, Implementación, Resultados,
-Ingeniería de Requisitos, Amenazas a la Validez, Discusión y
-Conclusiones -- y varios de esos capítulos todavía no existen (ver la
-nota de estado en \texttt{docs/informe-final.tex}). Redactarlo ahora
-obligaría a inventar resultados y conclusiones que este documento
-todavía no sostiene, exactamente el tipo de contenido fabricado que este
-proyecto evita en el resto de su documentación.
+La gestión de bibliotecas universitarias -- como la de la Universidad
+Técnica Estatal de Quevedo (UTEQ) -- se resuelve todavía con procesos
+manuales o herramientas genéricas, sin trazabilidad de requisitos,
+evidencia empírica reproducible, verificación automática de multas, ni
+autoservicio real para lectores. Este trabajo evalúa empíricamente la
+calidad de SGB-SaaS, plataforma web de gestión bibliotecaria (Spring
+Boot, Angular, PostgreSQL, Redis) con control de acceso por roles, en
+rendimiento, seguridad, usabilidad y arquitectura híbrida de acceso a
+datos, con evidencia versionada y verificable. Bajo \emph{Design
+Science Research} se aplicaron k6 (50~VUs, 5~corridas, Wilcoxon y
+Cliff's delta), auditoría OWASP manual y automatizada (Top~10:2021 +
+ZAP), JaCoCo, Lighthouse, y un protocolo SUS con consentimiento
+definido pero aún no ejecutado. Ambos umbrales p95 se cumplen con
+margen amplio ($19{,}49$/$7{,}50$\,ms, bajo $200$/$500$\,ms); de
+6~controles OWASP, 4 presentaron hallazgos reales, $100$\,\%
+corregidos y re-verificados; ZAP en producción no reportó hallazgos
+\emph{High} (1~\emph{Medium}, 1~\emph{Low}), aunque un escaneo
+adicional en desarrollo detectó \emph{High} aún en triage; JaCoCo
+alcanza $82{,}97$\,\% de líneas sobre 247 pruebas de backend y 141 de
+frontend, y el $100$\,\% de los 23~requisitos \texttt{Must} (de 46
+totales) tiene verificación real. Usabilidad ($N=0$ de 15) y calidad
+web (2 de 6~corridas Lighthouse) permanecen incompletas. SGB-SaaS
+cumple sus umbrales de rendimiento y cobertura con margen sólido; su
+auditoría de seguridad, con hallazgos reales corregidos, confirma un
+proceso genuino; los gaps de usabilidad, TLS extremo a extremo y
+ZAP/Lighthouse completos quedan declarados como trabajo futuro, no
+ocultados.
 
-\iffalse
-Esqueleto de referencia para cuando se redacte (no es contenido real,
-solo la estructura esperada por el Bloque B.2 -- eliminar todo este
-bloque oculto al escribir el resumen definitivo):
+\textbf{Palabras clave:} ingeniería de requisitos; control de acceso;
+seguridad de aplicaciones web; rendimiento de software; pruebas de
+usabilidad; arquitectura de software; bases de datos relacionales.
 
-- Problema/contexto: gestión bibliotecaria universitaria manual o
-  parcialmente digitalizada, sin trazabilidad de requisitos ni evidencia
-  empírica reproducible de calidad.
-- Método: desarrollo del sistema SGB-SaaS (Spring Boot + Angular +
-  PostgreSQL + Redis), con evaluación empírica en 4 frentes (rendimiento
-  vía k6, seguridad vía auditoría OWASP Top 10, usabilidad vía SUS,
-  ingeniería de requisitos vía checklist INCOSE v4), toda la evidencia
-  versionada y reproducible.
-- Resultados principales (con cifras reales, citando el archivo fuente
-  de cada una -- no resumir de memoria): p95 de latencia con/sin cache,
-  hallazgos OWASP corregidos, puntaje SUS (cuando exista), % de
-  requisitos Must verificados, tasa de estabilidad de requisitos.
-- Conclusión: qué tan bien se cumplieron los objetivos específicos
-  (trazado a las RQ de la Introducción), y qué queda como limitación
-  reconocida (no oculta).
-\fi
+\section*{Abstract}
+
+University library management -- as at Universidad Técnica Estatal de
+Quevedo (UTEQ) -- is still commonly handled through manual processes or
+generic tools, without requirements traceability, reproducible quality
+evidence, automatic fine checks, or real self-service for readers. This
+work empirically evaluates the quality of SGB-SaaS, a role-based
+library management web platform (Spring Boot, Angular, PostgreSQL,
+Redis), across performance, security, usability, and hybrid data-access
+architecture, backed by versioned, verifiable evidence. Under Design
+Science Research, the team ran k6 (50~VUs, 5~runs, paired Wilcoxon and
+Cliff's delta), a manual and automated OWASP audit (Top~10:2021 + ZAP),
+JaCoCo coverage, Lighthouse auditing, and a System Usability Scale
+(SUS) protocol with consent defined but not yet executed. Both p95
+latency thresholds are met with a wide margin (19.49~ms and 7.50~ms,
+under 200/500~ms limits); of 6~audited OWASP controls, 4 had real
+findings, 100\% fixed and re-verified; the production ZAP scan reported
+zero \emph{High} findings (1~\emph{Medium}, 1~\emph{Low}), though a
+separate development scan did surface \emph{High} issues still under
+triage; JaCoCo coverage reaches 82.97\% of lines across 247~backend and
+141~frontend tests, and 100\% of the 23~\texttt{Must}-priority
+requirements (out of 46~total) carry real verification. Usability
+($N=0$ of 15) and web-quality auditing (2 of 6~required runs) remain
+incomplete. SGB-SaaS meets its performance and coverage thresholds with
+a solid margin; its security audit, with real findings fixed, confirms
+a genuine process; the usability, end-to-end TLS, and full
+ZAP/Lighthouse gaps are explicitly declared as future work rather than
+hidden.
+
+\textbf{Keywords:} requirements engineering; access control; web
+application security; software performance; usability testing; software
+architecture; relational databases.

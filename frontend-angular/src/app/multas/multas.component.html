@@ -1,120 +1,156 @@
-<div style="padding:2rem;max-width:1100px;margin:0 auto">
+<div class="max-w-container-max mx-auto px-md md:px-lg py-lg">
+  <div class="mb-lg flex flex-col md:flex-row md:items-end md:justify-between gap-sm">
+    <div>
+      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">
+        {{ esLector ? 'Mis multas' : 'Gestión de multas' }}
+      </h1>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">
+        {{ esLector ? 'Consultá tus multas y su estado' : 'Gestioná pagos y anulaciones de multas' }}
+      </p>
+    </div>
 
-  <h2 style="color:#005c2f;margin:0 0 1.5rem 0">
-    {{ esLector ? 'Mis multas' : 'Gestión de multas' }}
-  </h2>
-
-  <!-- BUSQUEDA POR USUARIO: solo bibliotecario/gerente -->
-  @if (!esLector) {
-    <div style="display:flex;gap:12px;align-items:flex-end;margin-bottom:1.5rem">
-      <div>
-        <label style="display:block;font-size:13px;margin-bottom:4px">Ver multas del usuario ID</label>
-        <input [(ngModel)]="usuarioIdBusqueda" [ngModelOptions]="{standalone: true}" type="number"
-          style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
+    <!-- BUSQUEDA POR USUARIO: solo bibliotecario/gerente -->
+    @if (!esLector) {
+      <div class="flex flex-col md:flex-row gap-sm items-end mb-md">
+        <div class="flex-1 min-w-0">
+          <label class="block font-label-sm text-label-sm text-on-surface-variant mb-xs">Ver multas del usuario ID</label>
+          <input [(ngModel)]="usuarioIdBusqueda" [ngModelOptions]="{standalone: true}" type="number"
+            class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm" />
         </div>
         <button (click)="buscarMultas()"
-          style="padding:8px 16px;background:#2980b9;color:white;border:none;border-radius:4px;cursor:pointer">
-          Buscar
+          class="h-10 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center gap-xs hover:bg-on-primary-fixed-variant cursor-pointer shrink-0">
+          <span class="material-symbols-outlined text-[18px]">search</span> Buscar
         </button>
       </div>
     }
 
     @if (errorMsg) {
-      <div style="color:red;margin-bottom:1rem">{{ errorMsg }}</div>
+      <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
     }
-    @if (cargando) {
-      <div style="text-align:center;padding:2rem">Cargando multas...</div>
+    @if (cargando && multas.length === 0) {
+      <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando multas…</p>
     }
 
     @if (!cargando && multas.length > 0) {
-      <table style="width:100%;border-collapse:collapse;font-size:14px">
-        <thead>
-          <tr style="background:#005c2f;color:white">
-            <th style="padding:10px;text-align:left">ID</th>
-            <th style="padding:10px;text-align:left">Monto</th>
-            <th style="padding:10px;text-align:left">Fecha generada</th>
-            <th style="padding:10px;text-align:left">Estado</th>
-            @if (puedeGestionar) {
-              <th style="padding:10px;text-align:left">Acciones</th>
-            }
-          </tr>
-        </thead>
-        <tbody>
-          @for (multa of multas; track multa; let i = $index) {
-            <tr
-              [style.background]="i % 2 === 0 ? '#f9f9f9' : 'white'">
-              <td style="padding:10px">{{ multa.id }}</td>
-              <td style="padding:10px">{{ multa.monto | currency }}</td>
-              <td style="padding:10px">{{ multa.fechaGenerada | date:'short' }}</td>
-              <td style="padding:10px">{{ multa.estadoMultaId }}</td>
+      <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
+        <table class="w-full text-left">
+          <thead class="bg-surface-container-low">
+            <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+              <th class="px-md py-sm">ID</th>
+              <th class="px-md py-sm">Monto</th>
+              <th class="px-md py-sm hidden md:table-cell">Fecha generada</th>
+              <th class="px-md py-sm">Fecha pagada</th>
+              <th class="px-md py-sm">Estado</th>
+              <th class="px-md py-sm hidden lg:table-cell">Observaciones</th>
               @if (puedeGestionar) {
-                <td style="padding:10px;display:flex;gap:8px">
-                  <button (click)="pagarMulta(multa.id)"
-                    style="padding:4px 10px;background:#005c2f;color:white;border:none;border-radius:4px;cursor:pointer">
-                    Pagar
-                  </button>
-                  @if (puedeAnular) {
-                    <button (click)="abrirModalAnular(multa.id)"
-                      style="padding:4px 10px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer">
-                      Anular
-                    </button>
-                  }
-                </td>
+                <th class="px-md py-sm">Acciones</th>
               }
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+            @for (multa of multas; track multa.id) {
+              <tr class="hover:bg-surface-container-low/50">
+                <td class="px-md py-sm">{{ multa.id }}</td>
+                <td class="px-md py-sm">{{ multa.monto | currency }}</td>
+                <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ multa.fechaGenerada | date:'dd MMM yyyy' }}</td>
+                <td class="px-md py-sm text-on-surface-variant">
+                  {{ multa.fechaPagada ? (multa.fechaPagada | date:'dd MMM yyyy') : '—' }}
+                </td>
+                <td class="px-md py-sm">
+                  <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]"
+                    [class]="claseEstadoMulta(multa.estadoMultaId)">
+                    {{ (estadosMulta[multa.estadoMultaId] || 'Desconocido (' + multa.estadoMultaId + ')') }}
+                  </span>
+                </td>
+                <td class="px-md py-sm hidden lg:table-cell text-on-surface-variant max-w-xs truncate">
+                  {{ multa.observaciones || '—' }}
+                </td>
+                @if (puedeGestionar) {
+                  <td class="px-md py-sm">
+                    <div class="flex items-center gap-xs">
+                      <button (click)="pagarMulta(multa.id)"
+                        class="h-8 px-sm rounded bg-primary text-on-primary font-label-sm text-label-sm hover:bg-on-primary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-xs"
+                        [disabled]="multa.estadoMultaId === 2">
+                        <span class="material-symbols-outlined text-[16px]">payments</span> Pagar
+                      </button>
+                      @if (puedeAnular) {
+                        <button (click)="abrirModalAnular(multa.id)"
+                          class="h-8 px-sm rounded border border-error text-error font-label-sm text-label-sm hover:bg-error-container/40 flex items-center gap-xs cursor-pointer">
+                          <span class="material-symbols-outlined text-[16px]">cancel</span> Anular
+                        </button>
+                      }
+                    </div>
+                  </td>
+                }
+              </tr>
+            } @empty {
+              @if (!cargando) {
+                <tr>
+                  <td colspan="7" class="px-md py-lg text-center text-on-surface-variant">No hay multas registradas</td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
     }
 
     @if (!cargando && multas.length === 0) {
-      <div style="text-align:center;padding:2rem;color:#888">
-        No hay multas pendientes
+      <div class="rounded-lg border border-dashed border-outline-variant bg-white p-xl text-center">
+        <span class="material-symbols-outlined text-[40px] text-outline">payments</span>
+        <p class="font-body-md text-body-md text-on-surface-variant mt-sm">No hay multas para mostrar</p>
       </div>
     }
 
     <!-- El lector no puede pagar ni anular desde la UI: solo consulta -->
     @if (esLector && multas.length > 0) {
-      <div style="margin-top:1rem;color:#666;font-size:13px">
+      <div class="mt-md text-center text-sm text-on-surface-variant/70">
         Para regularizar una multa pendiente, acercate a la biblioteca.
       </div>
     }
 
     @if (multas.length > 0) {
-      <div style="display:flex;justify-content:center;align-items:center;gap:16px;margin-top:1rem">
+      <div class="flex justify-center items-center gap-md font-body-sm text-body-sm mt-lg">
         <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
-          style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
-          ← Anterior
+          class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
+          <span class="material-symbols-outlined text-[18px]">chevron_left</span>
         </button>
-        <span style="font-size:14px">Página {{ currentPage + 1 }} de {{ totalPages }}</span>
+        @for (pagina of paginasVisibles; track pagina) {
+          <button (click)="irAPagina(pagina)"
+            class="w-8 h-8 rounded font-label-sm text-label-sm cursor-pointer"
+            [class.bg-primary]="$index === currentPage"
+            [class.text-on-primary]="$index === currentPage"
+            [class.hover:bg-surface-container-low]="$index !== currentPage"
+            [class.text-on-surface-variant]="$index !== currentPage">
+            {{ $index + 1 }}
+          </button>
+        }
         <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
-          style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
-          Siguiente →
+          class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
+          <span class="material-symbols-outlined text-[18px]">chevron_right</span>
         </button>
       </div>
     }
 
     <!-- MODAL ANULAR: motivo obligatorio -->
     @if (mostrarModalAnular) {
-      <div
-        style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:999">
-        <div style="background:white;padding:2rem;border-radius:8px;width:100%;max-width:450px">
-          <h3 style="color:#c0392b;margin-top:0">Anular multa</h3>
-          <label style="display:block;font-size:13px;margin-bottom:4px">Motivo (obligatorio)</label>
+      <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-md">
+        <div class="bg-white rounded-xl glass-panel w-full max-w-md p-xl">
+          <h3 class="font-headline-md text-headline-md text-on-background mb-xs" style="color:#c0392b">Anular multa</h3>
+          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Motivo (obligatorio)</label>
           <textarea [(ngModel)]="motivoAnulacion" [ngModelOptions]="{standalone: true}" rows="3"
-          style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"></textarea>
-          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:1rem">
-            <button type="button" (click)="cerrarModalAnular()"
-              style="padding:8px 16px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
+            style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box"></textarea>
+          <div class="flex justify-end gap-sm mt-md">
+            <button (click)="cerrarModalAnular()"
+              class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm hover:bg-surface-container-low cursor-pointer">
               Cancelar
             </button>
-            <button type="button" [disabled]="!motivoAnulacion.trim()" (click)="confirmarAnulacion()"
-              style="padding:8px 16px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer">
+            <button (click)="confirmarAnulacion()" [disabled]="!motivoAnulacion.trim()"
+              class="h-10 px-md rounded bg-red-700 text-white font-label-sm text-label-sm disabled:opacity-50 cursor-pointer">
               Confirmar anulación
             </button>
           </div>
         </div>
       </div>
     }
-
   </div>

@@ -36,6 +36,14 @@ export class PrestamosGestionComponent {
     this.errorMsgCrear = '';
     // Los valores del form viajan tal cual (el backend convierte strings);
     // solo cambia el canal de transporte.
+    // TODO(Fase 1/C2): PrestamoRequestDTO también acepta credencialQrToken
+    // como alternativa a usuarioId/libroId para crear un préstamo escaneando
+    // la credencial QR del lector. No se implementa aquí porque depende de:
+    // - mecanismo de escaneo QR (cámara/webcam + librería de decoding)
+    // - pantalla "Mi credencial QR" del lector (rama frontend/estudiante-cuenta, C2)
+    //   que genera y muestra el token JWT firmado (credencialQrToken).
+    // Cuando exista esa rama, aquí solo hay que agregar el campo opcional
+    // credencialQrToken al formCrear y enviarlo en el POST.
     this.prestamoService.crear(this.formCrear.value as PrestamoRequest).subscribe({
       next: () => {
         this.formCrear.reset();

@@ -63,9 +63,10 @@
           <th class="px-md py-sm">Título</th>
           <th class="px-md py-sm hidden md:table-cell">Autor / ISBN</th>
           <th class="px-md py-sm hidden lg:table-cell">Justificación</th>
-          <th class="px-md py-sm hidden sm:table-cell">Solicitante</th>
-          <th class="px-md py-sm">Estado</th>
-          <th class="px-md py-sm">Acciones</th>
+<th class="px-md py-sm hidden sm:table-cell">Solicitante</th>
+            <th class="px-md py-sm hidden md:table-cell">Revisado por</th>
+            <th class="px-md py-sm">Estado</th>
+            <th class="px-md py-sm">Acciones</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
@@ -78,6 +79,7 @@
             </td>
             <td class="px-md py-sm hidden lg:table-cell text-on-surface-variant max-w-xs truncate">{{ sugerencia.justificacion || '—' }}</td>
             <td class="px-md py-sm hidden sm:table-cell text-on-surface-variant">{{ solicitanteLabel(sugerencia) }}</td>
+            <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ revisadoPorLabel(sugerencia) }}</td>
             <td class="px-md py-sm">
               @if (sugerencia.estado === 'PENDIENTE') {
                 <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-warning/25 text-on-tertiary-container">
@@ -113,7 +115,7 @@
         } @empty {
           @if (!cargando) {
             <tr>
-              <td colspan="6" class="px-md py-lg text-center text-on-surface-variant">No hay sugerencias para este filtro</td>
+              <td colspan="7" class="px-md py-lg text-center text-on-surface-variant">No hay sugerencias para este filtro</td>
             </tr>
           }
         }

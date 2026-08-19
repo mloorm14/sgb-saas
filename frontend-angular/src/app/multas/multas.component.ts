@@ -28,6 +28,13 @@ export class MultasComponent implements OnInit {
   multaSeleccionadaId: number | null = null;
   motivoAnulacion: string = '';
 
+  // Catálogo local de estados de multa (ids desde db/seed.sql: 1=PENDIENTE, 2=PAGADA, 3=ANULADA)
+  readonly estadosMulta: Record<number, string> = {
+    1: 'Pendiente',
+    2: 'Pagada',
+    3: 'Anulada'
+  };
+
   constructor(
     private multaService: MultaService,
     private authService: AuthService
@@ -83,6 +90,41 @@ export class MultasComponent implements OnInit {
   paginaSiguiente(): void {
     if (this.currentPage < this.totalPages - 1) {
       this.currentPage++;
+      this.cargarPagina();
+    }
+  }
+
+  // Devuelve la clase Tailwind para el badge de estado, coherente con
+  // el patrón de ReservacionesComponent.claseEstadoReservacion
+  claseEstadoMulta(estadoId: number): string {
+    switch (estadoId) {
+      case 1: return 'bg-tertiary-fixed text-on-tertiary-fixed';      // Pendiente
+      case 2: return 'bg-secondary-container text-on-secondary-container'; // Pagada
+      case 3: return 'bg-surface-container-low text-on-surface-variant';   // Anulada
+      default: return 'bg-surface-container-low text-on-surface-variant';
+    }
+  }
+
+  // Formato corto de fecha ISO (OffsetDateTime), igual que en otros componentes
+  formatearFecha(iso: string): string {
+    if (!iso) return '—';
+    const fecha = new Date(iso);
+    const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    return `${fecha.getDate()} ${meses[fecha.getMonth()]} ${fecha.getFullYear()}`;
+  }
+
+  // Paginación numerada (mismo patrón que libros/reservaciones)
+  get paginasVisibles(): number[] {
+    if (this.totalPages <= 5) {
+      return Array.from({ length: this.totalPages }, (_, i) => i);
+    }
+    const inicio = Math.max(0, Math.min(this.currentPage - 2, this.totalPages - 5));
+    return Array.from({ length: 5 }, (_, i) => inicio + i);
+  }
+
+  irAPagina(pagina: number): void {
+    if (pagina >= 0 && pagina < this.totalPages && pagina !== this.currentPage) {
+      this.currentPage = pagina;
       this.cargarPagina();
     }
   }

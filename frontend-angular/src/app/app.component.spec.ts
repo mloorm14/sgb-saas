@@ -58,10 +58,11 @@ describe('AppComponent', () => {
     expect(compiled.textContent).toContain('Mis Préstamos');
     expect(compiled.textContent).toContain('Reservaciones');
     expect(compiled.textContent).not.toContain('Libros');
-    // Rama de cuenta no integrada: Mi Credencial y Notificaciones NO se
-    // muestran (ni siquiera con opacity -- el clic caería en el comodin).
+    // Rama de cuenta no integrada: Mi Credencial NO se
+    // muestra (ni siquiera con opacity -- el clic caería en el comodin).
+    // Notificaciones YA está implementada y sí se muestra.
     expect(compiled.textContent).not.toContain('Mi Credencial');
-    expect(compiled.textContent).not.toContain('Notificaciones');
+    expect(compiled.textContent).toContain('Notificaciones');
 
     const botonCerrar = Array.from(compiled.querySelectorAll('button'))
       .find(b => b.textContent?.includes('Cerrar sesión'));
