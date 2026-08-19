@@ -45,6 +45,7 @@
           <th class="px-md py-sm hidden md:table-cell">Correo</th>
           <th class="px-md py-sm">Rol</th>
           <th class="px-md py-sm">Estado</th>
+          <th class="px-md py-sm hidden md:table-cell">Multas pend.</th>
           <th class="px-md py-sm">Acciones</th>
         </tr>
       </thead>
@@ -85,6 +86,15 @@
                 </span>
               }
             </td>
+            <td class="px-md py-sm hidden md:table-cell text-center">
+              @if (usuario.multasPendientes) {
+                <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-warning/25 text-on-tertiary-container">
+                  <span class="material-symbols-outlined text-[14px]">warning</span> Con multas pendientes
+                </span>
+              } @else {
+                <span class="text-on-surface-variant text-[12px]">—</span>
+              }
+            </td>
             <td class="px-md py-sm">
               @if (puedeGestionar) {
                 @if (esBloqueable(usuario)) {
@@ -111,7 +121,7 @@
         } @empty {
           @if (!cargando) {
             <tr>
-              <td colspan="5" class="px-md py-lg text-center text-on-surface-variant">No hay usuarios para mostrar</td>
+              <td colspan="6" class="px-md py-lg text-center text-on-surface-variant">No hay usuarios para mostrar</td>
             </tr>
           }
         }
