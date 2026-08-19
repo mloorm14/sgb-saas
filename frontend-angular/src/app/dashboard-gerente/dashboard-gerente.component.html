@@ -55,4 +55,76 @@
       </div>
     </div>
   </div>
+
+  <!-- 3 widgets agregados (pedido de Cajas, dashboard GERENTE/ADMIN ampliado) -->
+  <div class="grid lg:grid-cols-3 gap-lg mb-xl">
+    <!-- Resumen financiero: GET /api/v1/multas/reportes/resumen-financiero -->
+    <div class="rounded-xl border border-outline-variant bg-white p-lg">
+      <h2 class="font-headline-md text-headline-md text-on-background mb-md">Resumen financiero</h2>
+      @if (cargandoFinanciero) {
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando…</p>
+      } @else if (errorFinanciero) {
+        <p class="font-body-sm text-body-sm text-error">{{ errorFinanciero }}</p>
+      } @else if (resumenFinanciero) {
+        <div class="space-y-sm">
+          <div class="flex items-center justify-between">
+            <span class="font-body-sm text-body-sm text-on-surface-variant">Recaudado</span>
+            <span class="font-label-md text-label-md text-secondary">{{ resumenFinanciero.totalRecaudado | currency }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="font-body-sm text-body-sm text-on-surface-variant">Pendiente de cobro</span>
+            <span class="font-label-md text-label-md text-error">{{ resumenFinanciero.totalPendiente | currency }}</span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Morosidad: reutiliza GET /api/v1/prestamos/reportes/morosidad (top 10
+         por defecto en el backend -- no es un porcentaje, ver Javadoc del
+         componente). -->
+    <div class="rounded-xl border border-outline-variant bg-white p-lg">
+      <h2 class="font-headline-md text-headline-md text-on-background mb-md">Morosidad (top 10)</h2>
+      @if (cargandoMorosidad) {
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando…</p>
+      } @else if (errorMorosidad) {
+        <p class="font-body-sm text-body-sm text-error">{{ errorMorosidad }}</p>
+      } @else {
+        <div class="space-y-sm">
+          <div class="flex items-center justify-between">
+            <span class="font-body-sm text-body-sm text-on-surface-variant">Usuarios en mora</span>
+            <span class="font-label-md text-label-md text-on-surface">{{ usuariosEnMora.length }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="font-body-sm text-body-sm text-on-surface-variant">Monto adeudado</span>
+            <span class="font-label-md text-label-md text-error">{{ montoTotalAdeudado | currency }}</span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Actividad de auditoría reciente: GET /api/v1/auditoria?size=5 (lista
+         compacta -- la tabla completa vive en /auditoria). -->
+    <div class="rounded-xl border border-outline-variant bg-white p-lg">
+      <h2 class="font-headline-md text-headline-md text-on-background mb-md">Actividad reciente</h2>
+      @if (cargandoAuditoria) {
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando…</p>
+      } @else if (errorAuditoria) {
+        <p class="font-body-sm text-body-sm text-error">{{ errorAuditoria }}</p>
+      } @else {
+        <div class="space-y-sm">
+          @for (evento of eventosAuditoria; track evento.id) {
+            <div class="flex items-center justify-between gap-sm">
+              <p class="font-body-sm text-body-sm text-on-surface truncate">{{ evento.accion }} · {{ evento.usuario ?? '—' }}</p>
+              <span class="font-label-sm text-[11px] text-on-surface-variant shrink-0">{{ evento.fechaHora | date:'short' }}</span>
+            </div>
+          } @empty {
+            <p class="font-body-sm text-body-sm text-on-surface-variant">Sin actividad registrada</p>
+          }
+        </div>
+        <a routerLink="/auditoria" class="inline-flex items-center gap-xs mt-md font-label-sm text-label-sm text-primary hover:underline">
+          Ver auditoría completa <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+        </a>
+      }
+    </div>
+  </div>
 </main>
