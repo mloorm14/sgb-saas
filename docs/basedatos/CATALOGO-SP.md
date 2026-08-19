@@ -8,7 +8,7 @@ compleja va en un procedimiento almacenado o función SQL.
 
 ## Nota de diseño: FUNCTION en todos los casos, no PROCEDURE nativo
 
-Los 9 objetos están implementados como `CREATE OR REPLACE FUNCTION` (no
+Los 10 objetos están implementados como `CREATE OR REPLACE FUNCTION` (no
 `CREATE PROCEDURE`), incluidos los que tienen efectos secundarios (INSERT/
 UPDATE). Razón: Spring Data JPA (`@Procedure`, `@NamedStoredProcedureQuery`)
 y el driver JDBC de PostgreSQL tienen soporte más amplio y predecible para
@@ -20,7 +20,7 @@ atomicidad requerida por la guía se cumple igual: cada función corre en la
 transacción implícita de su propia invocación — cualquier `RAISE EXCEPTION`
 revierte todos los cambios hechos dentro de esa llamada.
 
-## Nota de diseño: los 9 objetos se invocan vía `@Query(nativeQuery = true)`, no `@Procedure`
+## Nota de diseño: los 10 objetos se invocan vía `@Query(nativeQuery = true)`, no `@Procedure`
 
 El plan original (ADR-013, requisito A.2.1 de la guía) era invocar las 5
 funciones con efectos secundarios (`sp_crear_prestamo`,
@@ -48,7 +48,7 @@ de retorno `INTEGER` (`sp_expirar_reservaciones_vencidas`, que además
 Postgres rechaza como `call ...` porque el objeto es `FUNCTION`, no
 `PROCEDURE` nativo).
 
-**Estado actual (verificado en código):** los 9 objetos se invocan de forma
+**Estado actual (verificado en código):** los 10 objetos se invocan de forma
 uniforme vía `@Query(nativeQuery = true)` con parámetros nombrados `@Param`
 (p. ej. `SELECT * FROM sp_registrar_devolucion(:p_prestamo_id)`). La
 decisión quedó registrada como addendum en
@@ -206,6 +206,17 @@ mensaje:
 | Tablas afectadas | Solo lectura: `prestamos` |
 | Justificación A.2 | Agregación por período (`date_trunc` en dos CTEs combinadas con `FULL OUTER JOIN`) — imposible de expresar como método derivado de Spring Data. |
 
+### 10. `fn_reporte_resumen_financiero_multas`
+
+| Campo | Detalle |
+|-------|---------|
+| Tipo | Función (SQL puro, `STABLE`, retorna `TABLE`, siempre 1 fila) |
+| Propósito | Reporte financiero gerencial (dashboard GERENTE/ADMIN, pedido ampliado de Cajas): total recaudado en multas PAGADAs y total pendiente de cobro en multas PENDIENTEs |
+| Parámetros | `p_desde TIMESTAMPTZ DEFAULT NULL`, `p_hasta TIMESTAMPTZ DEFAULT NULL` (filtro opcional sobre `fecha_generada`) |
+| Retorno | `TABLE(total_recaudado, total_pendiente)` |
+| Tablas afectadas | Solo lectura: `multas`, `estados_multa` |
+| Justificación A.2 | JOIN + agregación condicional (`SUM(...) FILTER (WHERE ...)`) sobre 2 tablas — el caso "agregación" que la guía reserva para SP/función, imposible de expresar como método derivado de Spring Data. |
+
 ## Validación
 
 Los 9 objetos fueron aplicados y probados manualmente contra una instancia
@@ -232,11 +243,21 @@ Postgres vacío: las 26 tablas, las 10 funciones (9 procs + el trigger de
 sola pasada, sin errores, incluyendo un `sp_crear_prestamo` de humo
 inmediatamente después.
 
+**Nota de honestidad sobre el objeto #10 (`fn_reporte_resumen_financiero_multas`,
+agregado después de esta validación):** cubierto por pruebas unitarias con
+repositorio mockeado en `MultaServiceTest`
+(`reporteResumenFinanciero_*`), mismo patrón que las otras 3 funciones de
+reporte. **No** pasó por la validación manual contra Postgres real descrita
+arriba ni por el `docker compose down -v` + `make up` de volumen vacío --
+por presupuesto de tiempo del pedido puntual que lo originó (dashboard
+GERENTE/ADMIN de 2 días). Queda como seguimiento si se prioriza una
+verificación de integración real antes del cierre.
+
 ## Reproducibilidad automática: `scripts/build-init-sql.sh`
 
 `db/procs/*.sql` vive en un subdirectorio de `db/`, y PostgreSQL **no**
 recorre subdirectorios de `docker-entrypoint-initdb.d/` — si se montara
-`db/` completo, los 9 archivos de `procs/` nunca se ejecutarían en un
+`db/` completo, los 10 archivos de `procs/` nunca se ejecutarían en un
 `make up` desde cero (bug real detectado y cerrado, no solo señalado).
 
 Solución adoptada: `scripts/build-init-sql.sh` concatena
