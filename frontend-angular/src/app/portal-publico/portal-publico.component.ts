@@ -22,8 +22,24 @@ export class PortalPublicoComponent implements OnInit, OnDestroy {
   totalPages: number = 0;
   currentPage: number = 0;
   pageSize: number = 10;
-  cargando: boolean = false;
+  // Arranca en true (no false): ngOnInit siempre llama cargarPagina() de
+  // forma síncrona, así que con el valor inicial en false el primer
+  // render de Angular alcanza a pintar la rama @empty ("No hay libros
+  // para mostrar") antes de que cargarPagina() ponga cargando=true --
+  // un salto real de "vacío" a "grid esqueleto" que causaba el layout
+  // shift dominante incluso con el esqueleto ya agregado (detectado
+  // verificando la corrida local: CLS empeoró a 0.466 con el esqueleto
+  // solo, en vez de bajar). Arrancar en true pinta el esqueleto desde
+  // el primer frame, sin el salto intermedio.
+  cargando: boolean = true;
   errorMsg: string = '';
+
+  // Tarjetas esqueleto mientras carga la primera página (misma cantidad
+  // que pageSize): reservan el alto real del grid para evitar el layout
+  // shift medido en producción (CLS ~0.23, ver
+  // docs/mediciones/lighthouse/REPORT.md) cuando "Cargando catálogo…"
+  // (una sola línea) era reemplazado de golpe por el grid completo.
+  readonly skeletonSlots: number[] = Array.from({ length: this.pageSize }, (_, i) => i);
 
   textoBusqueda: string = '';
   sugerencias: LibroSugerencia[] = [];

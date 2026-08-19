@@ -54,13 +54,18 @@ perfil \texttt{prod}). No fue una auditoría de casillas vacías que
 confirma lo que ya se sabía: encontró y forzó a corregir defectos de
 seguridad concretos. El control A03 (inyección) se verificó limpio, sin
 hallazgo -- un resultado real también, no la ausencia de una prueba. A02
-queda en un estado genuinamente mixto que RQ2 no puede resolver del todo
-todavía: la decisión de arquitectura y la preparación del backend para
-TLS están cerradas, pero la verificación final del header
-\texttt{Strict-Transport-Security} depende de un despliegue público que
-todavía no existe -- no es un hallazgo sin corregir, es una verificación
-que no puede completarse sin una pieza de infraestructura externa al
-propio código.
+también queda cerrado: la decisión de arquitectura y la preparación del
+backend para TLS ya estaban cerradas, y la verificación final que
+dependía de una pieza de infraestructura externa al propio código -- un
+despliegue público real, no trabajo de ingeniería adicional -- se
+completó el 18-ago-2026 contra el despliegue real de producción
+(\texttt{https://biblora-sgb.onrender.com/}): el header
+\texttt{Strict-Transport-Security} está activo
+(\texttt{max-age=315360000; includeSubdomains; preload}). Con los 6
+controles auditados cerrados, RQ2 se responde de forma completa, no
+solo con la proporción de hallazgos y su corrección, sino también con
+la verificación final del único control que dependía de un despliegue
+público.
 
 \subsection*{RQ3 -- ¿Cómo perciben usuarios reales la usabilidad del sistema (SUS)?}
 
@@ -133,7 +138,7 @@ evaluación formal es la que expuso la limitación metodológica de
 \texttt{cache\_frio} que un enfoque menos riguroso no habría descubierto.
 Ningún trabajo comparado en el \autoref{cap:trabajos-relacionados} reporta una auditoría de
 seguridad control por control con hallazgos reales corregidos
-verificablemente (RQ2) ni una matriz de trazabilidad de 43 requisitos con
+verificablemente (RQ2) ni una matriz de trazabilidad de 46 requisitos con
 patrón de acceso a datos declarado por requisito (RQ4) -- estas dos
 piezas de evidencia son, hasta donde este acervo bibliográfico permite
 afirmar, una contribución metodológica de este proyecto más allá del
@@ -184,14 +189,17 @@ su superficie de seguridad auditada (6 de los controles OWASP más
 relevantes para una aplicación con autenticación y datos personales) no
 llegó limpia a la primera revisión -- tuvo defectos reales que se
 corrigieron, lo cual es una señal de proceso saludable, no una alarma, si
-se compara contra la alternativa de no auditar en absoluto. Lo que
-todavía no está listo para una decisión de adopción informada es la
-evidencia de usabilidad percibida por usuarios reales (RQ3, pendiente) y
-la verificación de TLS end-to-end en un entorno de despliegue público
-real (A02, parcial) -- ambas son, precisamente, las piezas que dependen
-de infraestructura o de participantes externos al propio código, no de
-trabajo de ingeniería adicional dentro del repositorio. Una institución
-que considere este sistema debería tratar la Entrega Final como una base
-arquitectónica y de calidad de código sólida, pero condicionar cualquier
-decisión de producción a que esas dos piezas -- SUS y TLS real -- se
-completen primero.
+se compara contra la alternativa de no auditar en absoluto. Su última
+pieza pendiente, la verificación de TLS end-to-end en un entorno de
+despliegue público real (A02), también se completó -- el header
+\texttt{Strict-Transport-Security} se confirmó activo en producción el
+18-ago-2026, dejando los 6 controles auditados con resultado cerrado. Lo
+que todavía no está listo para una decisión de adopción informada es la
+evidencia de usabilidad percibida por usuarios reales (RQ3, pendiente,
+$N=0$) -- la única pieza que sigue dependiendo de participantes externos
+al propio código, no de trabajo de ingeniería adicional dentro del
+repositorio. Una institución que considere este sistema debería tratar
+la Entrega Final como una base arquitectónica y de calidad de código
+sólida -- incluyendo su superficie de seguridad, ya verificada en su
+totalidad --, pero condicionar cualquier decisión de producción a que la
+pieza de usabilidad (SUS) se complete primero.

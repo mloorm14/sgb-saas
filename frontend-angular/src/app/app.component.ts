@@ -48,6 +48,10 @@ export class AppComponent {
   //   se movió acá al traer este navbar de otra rama, mismo criterio que
   //   el resto de enlaces de staff.
   // - /libros: todo el staff (inventario).
+  // - /dashboard-gerente: Dashboard real del GERENTE (mockup 24, rama fix/sincronizar-despliegue-y-dashboard-gerente).
+  //   Reemplaza al placeholder futuro:true de /dashboard, que prometía la
+  //   pantalla a todo el staff sin ruta real detrás. BIBLIOTECARIO y ADMIN
+  //   no la ven (tienen /reportes y el resto del panel respectivamente).
   enlacesStaff: EnlaceNav[] = [
     { ruta: '/libros', etiqueta: 'Libros', icono: 'inventory_2', roles: ['BIBLIOTECARIO', 'GERENTE', 'ADMIN'] },
     { ruta: '/prestamos/gestion', etiqueta: 'Préstamos', icono: 'assignment_return', roles: ['BIBLIOTECARIO', 'GERENTE'] },
@@ -58,7 +62,7 @@ export class AppComponent {
     { ruta: '/admin/usuarios', etiqueta: 'Usuarios', icono: 'manage_accounts', roles: ['GERENTE', 'ADMIN'] },
     { ruta: '/auditoria', etiqueta: 'Auditoría', icono: 'receipt_long', roles: ['GERENTE', 'ADMIN'] },
     { ruta: '/admin/configuracion', etiqueta: 'Configuración', icono: 'settings', roles: ['ADMIN'] },
-    { ruta: '/dashboard', etiqueta: 'Dashboard', icono: 'dashboard', futuro: true, roles: ['BIBLIOTECARIO', 'GERENTE', 'ADMIN'] }
+    { ruta: '/dashboard-gerente', etiqueta: 'Dashboard', icono: 'dashboard', roles: ['GERENTE'] }
   ];
 
   estaLogueado(): boolean {

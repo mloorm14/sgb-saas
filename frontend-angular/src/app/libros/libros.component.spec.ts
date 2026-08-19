@@ -4,6 +4,9 @@ import { LibrosComponent } from './libros.component';
 import { LibroService } from '../core/services/libro.service';
 import { CategoriaService } from '../core/services/categoria.service';
 import { AutorService } from '../core/services/autor.service';
+import { EditorialService } from '../core/services/editorial.service';
+import { IdiomaService } from '../core/services/idioma.service';
+import { EstadoLibroService } from '../core/services/estado-libro.service';
 
 describe('LibrosComponent', () => {
   let component: LibrosComponent;
@@ -11,6 +14,9 @@ describe('LibrosComponent', () => {
   let libroService: jasmine.SpyObj<LibroService>;
   let categoriaService: jasmine.SpyObj<CategoriaService>;
   let autorService: jasmine.SpyObj<AutorService>;
+  let editorialService: jasmine.SpyObj<EditorialService>;
+  let idiomaService: jasmine.SpyObj<IdiomaService>;
+  let estadoLibroService: jasmine.SpyObj<EstadoLibroService>;
 
   const libroBase = {
     id: 1,
@@ -34,17 +40,26 @@ describe('LibrosComponent', () => {
     ]);
     categoriaService = jasmine.createSpyObj('CategoriaService', ['listar']);
     autorService = jasmine.createSpyObj('AutorService', ['listar']);
+    editorialService = jasmine.createSpyObj('EditorialService', ['listar']);
+    idiomaService = jasmine.createSpyObj('IdiomaService', ['listar']);
+    estadoLibroService = jasmine.createSpyObj('EstadoLibroService', ['listar']);
     libroService.listar.and.returnValue(of({ content: [libroBase], totalPages: 1 } as any));
     libroService.obtenerPortada.and.returnValue(of(new Blob(['img'], { type: 'image/jpeg' })));
     categoriaService.listar.and.returnValue(of([{ id: 1, nombre: 'Tecnología' }, { id: 2, nombre: 'Ficción' }]));
     autorService.listar.and.returnValue(of([{ id: 7, nombre: 'Robert C. Martin' }]));
+    editorialService.listar.and.returnValue(of([{ id: 1, nombre: 'Prentice Hall' }, { id: 2, nombre: 'O\'Reilly' }]));
+    idiomaService.listar.and.returnValue(of([{ id: 1, nombre: 'Español' }, { id: 2, nombre: 'Inglés' }]));
+    estadoLibroService.listar.and.returnValue(of([{ id: 1, nombre: 'Activo' }, { id: 2, nombre: 'Dado de baja' }]));
 
     await TestBed.configureTestingModule({
       imports: [LibrosComponent],
       providers: [
         { provide: LibroService, useValue: libroService },
         { provide: CategoriaService, useValue: categoriaService },
-        { provide: AutorService, useValue: autorService }
+        { provide: AutorService, useValue: autorService },
+        { provide: EditorialService, useValue: editorialService },
+        { provide: IdiomaService, useValue: idiomaService },
+        { provide: EstadoLibroService, useValue: estadoLibroService }
       ]
     }).compileComponents();
 
@@ -63,6 +78,19 @@ describe('LibrosComponent', () => {
     expect(autorService.listar).toHaveBeenCalled();
     expect(component.categorias.length).toBe(2);
     expect(component.autores.length).toBe(1);
+  });
+
+  // FIX 3: editorial/idioma/estado ahora son <select> con [ngValue]
+  // (antes inputs de ID a mano) — se cargan de sus catálogos nuevos y
+  // el valor numérico del libro preselecciona la opción correcta al editar.
+  it('carga editoriales, idiomas y estados para los selects del formulario', () => {
+    expect(editorialService.listar).toHaveBeenCalled();
+    expect(idiomaService.listar).toHaveBeenCalled();
+    expect(estadoLibroService.listar).toHaveBeenCalled();
+    expect(component.editoriales.length).toBe(2);
+    expect(component.idiomas.length).toBe(2);
+    expect(component.estados.length).toBe(2);
+    expect(component.errorCatalogo).toBe('');
   });
 
   it('preselecciona categorías y autores por nombre al editar (el DTO trae nombres, no ids)', () => {
