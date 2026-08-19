@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { catchError, Observable, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Page } from '../models/pagina.model';
-import { Multa, MultaAccionResponse } from '../models/multa.model';
+import { Multa, MultaAccionResponse, ResumenFinancieroMultas } from '../models/multa.model';
 import { ProblemDetail } from '../models/problem-detail.model';
 
 export interface MultaListarParams {
@@ -42,6 +42,19 @@ export class MultaService {
   // POST /v1/multas/{id}/anulacion con { motivo }: solo GERENTE/ADMIN.
   anular(id: number, motivo: string): Observable<MultaAccionResponse> {
     return this.http.post<MultaAccionResponse>(`${this.apiUrl}/${id}/anulacion`, { motivo }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  // GET /v1/multas/reportes/resumen-financiero?desde=&hasta=: solo
+  // GERENTE/ADMIN (dashboard gerencial). desde/hasta son opcionales, mismo
+  // formato ISO que AuditoriaService.
+  resumenFinanciero(desde?: string, hasta?: string): Observable<ResumenFinancieroMultas> {
+    let params = new HttpParams();
+    if (desde) params = params.set('desde', desde);
+    if (hasta) params = params.set('hasta', hasta);
+
+    return this.http.get<ResumenFinancieroMultas>(`${this.apiUrl}/reportes/resumen-financiero`, { params }).pipe(
       catchError(err => this.manejarError(err))
     );
   }

@@ -1,16 +1,25 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { ReporteService, LibroMasPrestado } from '../core/services/reporte-gerencial.service';
+import { ReporteService, LibroMasPrestado, ReporteMorosidad } from '../core/services/reporte-gerencial.service';
 import { AuthService } from '../core/services/auth.service';
+import { MultaService } from '../core/services/multa.service';
+import { ResumenFinancieroMultas } from '../core/models/multa.model';
+import { AuditoriaService } from '../core/services/auditoria.service';
+import { EventoAuditoria } from '../core/models/evento-auditoria.model';
 
 // Dashboard del GERENTE (mockup docs/mockups/rama-b/24-dashboard-gerente.html).
-// Solo secciones con datos reales detrás: "Bienvenida, Gerencia" +
-// "Libros más prestados" (GET /api/v1/prestamos/reportes/libros-mas-prestados,
-// reutiliza ReporteService) + "Accesos rápidos" a rutas que ya existen.
-// Los KPIs numéricos del mockup ($142.50, 7, 4, 312) NO se reproducen:
-// no tienen endpoint real que los respalde (reportes/uso y morosidad
-// existen, pero el KPI mezclaría datos sin contrato verificado).
+// Secciones con datos reales detrás: "Bienvenida, Gerencia" + "Libros más
+// prestados" (GET /prestamos/reportes/libros-mas-prestados, reutiliza
+// ReporteService) + "Accesos rápidos" + 3 widgets agregados a pedido de
+// Cajas (dashboard GERENTE/ADMIN ampliado, priorizado a 4 métricas
+// alcanzables de una lista más larga por el plazo de 2 días):
+// resumen financiero (nuevo GET /multas/reportes/resumen-financiero),
+// morosidad (reutiliza ReporteService.morosidad(), ya existente) y
+// actividad de auditoría reciente (reutiliza AuditoriaService, ya
+// existente). Los KPIs numéricos del mockup original ($142.50, 7, 4, 312)
+// seguían sin endpoint real hasta ahora; el de recaudado/pendiente sí
+// queda cubierto por el nuevo endpoint.
 @Component({
   selector: 'app-dashboard-gerente',
   standalone: true,
@@ -22,9 +31,33 @@ export class DashboardGerenteComponent implements OnInit {
   cargando = true;
   error = '';
 
+  // Resumen financiero (multas): recaudado vs pendiente de cobro.
+  resumenFinanciero: ResumenFinancieroMultas | null = null;
+  cargandoFinanciero = true;
+  errorFinanciero = '';
+
+  // Morosidad: la guía original hablaba de una "tasa" de morosidad, pero
+  // el endpoint real (verificado en ReporteMorosidadResponseDTO/
+  // ReporteMorosidad) no devuelve un porcentaje -- devuelve una lista de
+  // usuarios con multas pendientes (top 10 por defecto en el backend, ver
+  // PrestamoService.LIMITE_REPORTE_DEFAULT). Se deriva acá un resumen real
+  // a partir de esa lista (cantidad + monto total adeudado) en vez de
+  // inventar un porcentaje que el backend no respalda.
+  usuariosEnMora: ReporteMorosidad[] = [];
+  cargandoMorosidad = true;
+  errorMorosidad = '';
+
+  // Actividad de auditoría reciente: últimos 5 eventos (lista compacta,
+  // no la tabla completa -- para eso está /auditoria).
+  eventosAuditoria: EventoAuditoria[] = [];
+  cargandoAuditoria = true;
+  errorAuditoria = '';
+
   constructor(
     private reporteService: ReporteService,
-    private authService: AuthService
+    private authService: AuthService,
+    private multaService: MultaService,
+    private auditoriaService: AuditoriaService
   ) {}
 
   ngOnInit(): void {
@@ -38,5 +71,42 @@ export class DashboardGerenteComponent implements OnInit {
         this.cargando = false;
       }
     });
+
+    this.multaService.resumenFinanciero().subscribe({
+      next: (resumen) => {
+        this.resumenFinanciero = resumen;
+        this.cargandoFinanciero = false;
+      },
+      error: () => {
+        this.errorFinanciero = 'No se pudo cargar el resumen financiero.';
+        this.cargandoFinanciero = false;
+      }
+    });
+
+    this.reporteService.morosidad().subscribe({
+      next: (usuarios) => {
+        this.usuariosEnMora = usuarios;
+        this.cargandoMorosidad = false;
+      },
+      error: () => {
+        this.errorMorosidad = 'No se pudo cargar el reporte de morosidad.';
+        this.cargandoMorosidad = false;
+      }
+    });
+
+    this.auditoriaService.listar({ page: 0, size: 5 }).subscribe({
+      next: (pagina) => {
+        this.eventosAuditoria = pagina.content;
+        this.cargandoAuditoria = false;
+      },
+      error: () => {
+        this.errorAuditoria = 'No se pudo cargar la actividad de auditoría.';
+        this.cargandoAuditoria = false;
+      }
+    });
+  }
+
+  get montoTotalAdeudado(): number {
+    return this.usuariosEnMora.reduce((suma, u) => suma + u.montoTotalAdeudado, 0);
   }
 }
