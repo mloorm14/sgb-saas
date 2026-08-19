@@ -2,11 +2,13 @@ package com.uteq.backend.service;
 
 import com.uteq.backend.dto.MultaAccionResponseDTO;
 import com.uteq.backend.dto.MultaResponseDTO;
+import com.uteq.backend.dto.ResumenFinancieroMultasResponseDTO;
 import com.uteq.backend.entity.Multa;
 import com.uteq.backend.entity.Usuario;
 import com.uteq.backend.repository.MultaProcedureRepository;
 import com.uteq.backend.repository.MultaRepository;
 import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.repository.projection.ResumenFinancieroMultasProjection;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +18,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.Set;
 
@@ -100,6 +103,13 @@ public class MultaService {
         Usuario usuario = usuarioRepo.findByCorreo(correo)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo));
         return usuario.getId();
+    }
+
+    // ── GET /reportes/resumen-financiero (dashboard GERENTE/ADMIN) ──
+    @Transactional(readOnly = true)
+    public ResumenFinancieroMultasResponseDTO reporteResumenFinanciero(OffsetDateTime desde, OffsetDateTime hasta) {
+        ResumenFinancieroMultasProjection p = multaProcRepo.fnReporteResumenFinanciero(desde, hasta);
+        return new ResumenFinancieroMultasResponseDTO(p.getTotalRecaudado(), p.getTotalPendiente());
     }
 
     private MultaResponseDTO toDTO(Multa m) {

@@ -1,10 +1,12 @@
 package com.uteq.backend.service;
 
 import com.uteq.backend.dto.MultaAccionResponseDTO;
+import com.uteq.backend.dto.ResumenFinancieroMultasResponseDTO;
 import com.uteq.backend.entity.Usuario;
 import com.uteq.backend.repository.MultaProcedureRepository;
 import com.uteq.backend.repository.MultaRepository;
 import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.repository.projection.ResumenFinancieroMultasProjection;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -14,6 +16,8 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -117,6 +121,40 @@ class MultaServiceTest {
 
         assertThatThrownBy(() -> multaService.listarPorUsuario(2L, auth, null))
                 .isInstanceOf(AuthorizationDeniedException.class);
+    }
+
+    // ── Test 7: resumen financiero mapea la proyección a DTO ──
+    @Test
+    void reporteResumenFinanciero_conDatos_mapeaProjectionADTO() {
+        ResumenFinancieroMultasProjection fila = mock(ResumenFinancieroMultasProjection.class);
+        given(fila.getTotalRecaudado()).willReturn(new BigDecimal("125.00"));
+        given(fila.getTotalPendiente()).willReturn(new BigDecimal("40.50"));
+        OffsetDateTime desde = OffsetDateTime.parse("2026-08-01T00:00:00Z");
+        OffsetDateTime hasta = OffsetDateTime.parse("2026-08-31T23:59:59Z");
+        given(multaProcRepo.fnReporteResumenFinanciero(desde, hasta)).willReturn(fila);
+
+        ResumenFinancieroMultasResponseDTO resultado = multaService.reporteResumenFinanciero(desde, hasta);
+
+        assertThat(resultado.totalRecaudado()).isEqualTo(new BigDecimal("125.00"));
+        assertThat(resultado.totalPendiente()).isEqualTo(new BigDecimal("40.50"));
+    }
+
+    // ── Test 8: resumen financiero sin rango de fechas envía null tal cual ──
+    // (el filtro es opcional -- ver fn_reporte_resumen_financiero_multas.sql,
+    // p_desde/p_hasta DEFAULT NULL -- el service no aplica ningún default
+    // propio, a diferencia de reporteMorosidad/reporteLibrosMasPrestados que
+    // sí normalizan `limite` porque ahí un NULL produce "LIMIT NULL" sin
+    // querer; acá NULL es exactamente el comportamiento "sin filtro" deseado).
+    @Test
+    void reporteResumenFinanciero_sinRangoDeFechas_envianullAlRepositorio() {
+        ResumenFinancieroMultasProjection fila = mock(ResumenFinancieroMultasProjection.class);
+        given(fila.getTotalRecaudado()).willReturn(BigDecimal.ZERO);
+        given(fila.getTotalPendiente()).willReturn(BigDecimal.ZERO);
+        given(multaProcRepo.fnReporteResumenFinanciero(null, null)).willReturn(fila);
+
+        multaService.reporteResumenFinanciero(null, null);
+
+        verify(multaProcRepo).fnReporteResumenFinanciero(null, null);
     }
 
     // ── Helpers ────────────────────────────────────────────
