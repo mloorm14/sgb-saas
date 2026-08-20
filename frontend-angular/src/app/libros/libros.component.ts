@@ -37,6 +37,9 @@ export class LibrosComponent implements OnInit {
   portadaPreviewUrl: string | null = null;
   portadaPreviewBlob: Blob | null = null;
   portadaPreviewTipo: string | null = null;
+  portadaModalVisible: boolean = false;
+  portadaModalUrl: string | null = null;
+  portadaModalCargando: boolean = false;
   autocompletarAutor: string = '';
   categorias: Categoria[] = [];
   autores: Autor[] = [];
@@ -421,6 +424,31 @@ export class LibrosComponent implements OnInit {
       next: () => { this.cargarLibros(); },
       error: () => { this.errorMsg = 'Error al eliminar el libro'; }
     });
+  }
+
+  abrirPortada(libroId: number, tienePortada: boolean): void {
+    if (!tienePortada) return;
+    this.portadaModalVisible = true;
+    this.portadaModalCargando = true;
+    this.portadaModalUrl = null;
+    this.libroService.obtenerPortada(libroId).subscribe({
+      next: (blob) => {
+        this.portadaModalUrl = URL.createObjectURL(blob);
+        this.portadaModalCargando = false;
+      },
+      error: () => {
+        this.portadaModalCargando = false;
+      }
+    });
+  }
+
+  cerrarPortada(): void {
+    if (this.portadaModalUrl) {
+      URL.revokeObjectURL(this.portadaModalUrl);
+    }
+    this.portadaModalVisible = false;
+    this.portadaModalUrl = null;
+    this.portadaModalCargando = false;
   }
 
 }

@@ -250,59 +250,51 @@
       <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando inventario…</p>
     }
 
-    <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
-      <table class="w-full text-left">
-        <thead class="bg-surface-container-low">
-          <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
-            <th class="px-md py-sm">Portada</th>
-            <th class="px-md py-sm">ISBN</th>
-            <th class="px-md py-sm">Título</th>
-            <th class="px-md py-sm hidden md:table-cell">Categorías</th>
-            <th class="px-md py-sm hidden sm:table-cell">Año</th>
-            <th class="px-md py-sm">Stock</th>
-            <th class="px-md py-sm">Acciones</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-          @for (libro of libros; track libro.id) {
-            <tr>
-              <td class="px-md py-sm">
-                <app-portada-libro [libroId]="libro.id" [tienePortada]="libro.tienePortada" />
-              </td>
-              <td class="px-md py-sm text-on-surface-variant">{{ libro.isbn }}</td>
-              <td class="px-md py-sm font-medium">{{ libro.titulo }}</td>
-              <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">
-                {{ libro.categorias.length ? libro.categorias.join(', ') : '—' }}
-              </td>
-              <td class="px-md py-sm hidden sm:table-cell text-on-surface-variant">{{ libro.anioPublicacion }}</td>
-              <td class="px-md py-sm">
-                <span class="inline-flex items-center px-sm py-xs rounded-full font-label-sm text-[11px]"
-                  [class]="libro.stockDisponible > 0 ? 'bg-success/15 text-success' : 'bg-warning/25 text-on-tertiary-container'">
-                  {{ libro.stockDisponible }}/{{ libro.stockTotal }}
-                </span>
-              </td>
-              <td class="px-md py-sm">
-                <div class="flex gap-xs">
-                  <button (click)="abrirFormularioEditar(libro)" title="Editar"
-                    class="w-8 h-8 rounded flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant cursor-pointer">
-                    <span class="material-symbols-outlined text-[18px]">edit</span>
-                  </button>
-                  <button (click)="eliminarLibro(libro.id)" title="Eliminar"
-                    class="w-8 h-8 rounded flex items-center justify-center hover:bg-error-container/40 text-error cursor-pointer">
-                    <span class="material-symbols-outlined text-[18px]">delete</span>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          } @empty {
-            @if (!cargando) {
-              <tr>
-                <td colspan="7" class="px-md py-lg text-center text-on-surface-variant">No hay libros registrados</td>
-              </tr>
-            }
-          }
-        </tbody>
-      </table>
+    <!-- Tarjetas de libros -->
+    <div class="flex flex-col gap-sm font-body-sm text-body-sm text-on-surface">
+      @for (libro of libros; track libro.id) {
+        <div class="flex items-center gap-md rounded-lg border border-outline-variant bg-white px-md py-sm hover:shadow-sm transition-shadow">
+          <!-- Portada clickable -->
+          <button type="button" (click)="abrirPortada(libro.id, libro.tienePortada)"
+            class="w-16 h-20 sm:w-20 sm:h-28 shrink-0 rounded overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary">
+            <app-portada-libro [libroId]="libro.id" [tienePortada]="libro.tienePortada" />
+          </button>
+          <!-- Info -->
+          <div class="flex-1 min-w-0">
+            <p class="font-label-sm text-label-sm text-on-surface-variant mb-xxs">{{ libro.isbn }}</p>
+            <p class="font-body-md text-body-md font-medium truncate">{{ libro.titulo }}</p>
+            <div class="flex items-center gap-sm mt-xs flex-wrap">
+              @for (cat of libro.categorias.slice(0, 2); track cat) {
+                <span class="inline-block px-xs py-xxs rounded-full bg-surface-container-high text-[11px] font-label-sm text-on-surface-variant">{{ cat }}</span>
+              }
+              @if (libro.categorias.length > 2) {
+                <span class="text-[11px] text-on-surface-variant">+{{ libro.categorias.length - 2 }}</span>
+              }
+              <span class="text-on-surface-variant text-[11px]">{{ libro.anioPublicacion }}</span>
+            </div>
+          </div>
+          <!-- Stock -->
+          <span class="hidden sm:inline-flex items-center px-sm py-xs rounded-full font-label-sm text-[11px] shrink-0"
+            [class]="libro.stockDisponible > 0 ? 'bg-success/15 text-success' : 'bg-warning/25 text-on-tertiary-container'">
+            {{ libro.stockDisponible }}/{{ libro.stockTotal }}
+          </span>
+          <!-- Acciones -->
+          <div class="flex gap-xs shrink-0">
+            <button (click)="abrirFormularioEditar(libro)" title="Editar"
+              class="w-8 h-8 rounded flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant cursor-pointer">
+              <span class="material-symbols-outlined text-[18px]">edit</span>
+            </button>
+            <button (click)="eliminarLibro(libro.id)" title="Eliminar"
+              class="w-8 h-8 rounded flex items-center justify-center hover:bg-error-container/40 text-error cursor-pointer">
+              <span class="material-symbols-outlined text-[18px]">delete</span>
+            </button>
+          </div>
+        </div>
+      } @empty {
+        @if (!cargando) {
+          <p class="text-center text-on-surface-variant py-lg">No hay libros registrados</p>
+        }
+      }
     </div>
 
     <!-- Paginación -->
@@ -328,6 +320,34 @@
         </button>
       </div>
     }
+  }
+
+  <!-- ─── MODAL PORTADA ─── -->
+  @if (portadaModalVisible) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
+      (click)="cerrarPortada()">
+      <!-- Overlay -->
+      <div class="absolute inset-0 bg-black/60"></div>
+      <!-- Contenido -->
+      <div class="relative z-10 max-w-lg w-full bg-white rounded-xl shadow-xl overflow-hidden"
+        (click)="$event.stopPropagation()">
+        <div class="relative bg-surface-container-low flex items-center justify-center"
+          style="min-height: 300px; max-height: 70vh;">
+          @if (portadaModalCargando) {
+            <span class="material-symbols-outlined text-[48px] text-outline-variant animate-pulse">image</span>
+          } @else if (portadaModalUrl) {
+            <img [src]="portadaModalUrl" alt="Portada del libro"
+              class="max-w-full max-h-[70vh] object-contain" />
+          } @else {
+            <span class="material-symbols-outlined text-[64px] text-outline-variant">menu_book</span>
+          }
+        </div>
+        <button type="button" (click)="cerrarPortada()"
+          class="absolute top-sm right-sm w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 cursor-pointer">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+    </div>
   }
 
 </main>
