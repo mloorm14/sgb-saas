@@ -41,27 +41,11 @@
 
       </nav>
 
-      <!-- Menú de usuario: iniciales + correo, dropdown hacia arriba -->
-      <div class="relative shrink-0" data-menu-usuario>
-        <button (click)="mostrarMenuUsuario = !mostrarMenuUsuario"
-          class="flex items-center gap-sm px-sm py-2 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer">
-          <span class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-sm text-label-sm">{{ inicialesUsuario }}</span>
-          <span class="font-body-sm text-body-sm text-on-surface hidden sm:inline max-w-[120px] truncate">{{ correoUsuario }}</span>
-          <span class="material-symbols-outlined text-[16px] text-on-surface-variant"
-            [class.rotate-180]="mostrarMenuUsuario"
-            style="transition: transform 0.2s">expand_less</span>
-        </button>
-
-        @if (mostrarMenuUsuario) {
-          <div class="absolute right-0 bottom-full mb-xs w-48 bg-white rounded-lg border border-outline-variant shadow-lg z-50 overflow-hidden">
-            <button (click)="cerrarSesion()"
-              class="w-full flex items-center gap-sm px-md py-sm text-left font-body-sm text-body-sm text-error hover:bg-error-container/40 transition-colors cursor-pointer">
-              <span class="material-symbols-outlined text-[18px]">logout</span>
-              Cerrar sesión
-            </button>
-          </div>
-        }
-      </div>
+      <button (click)="cerrarSesion()"
+        class="flex items-center gap-1.5 px-sm py-2 rounded-lg font-label-sm text-label-sm text-error hover:bg-error-container/60 transition-colors shrink-0 cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">logout</span>
+        Cerrar sesión
+      </button>
     </div>
   </header>
 }

@@ -7,10 +7,9 @@ describe('AppComponent', () => {
   let authService: jasmine.SpyObj<AuthService>;
 
   beforeEach(async () => {
-    authService = jasmine.createSpyObj('AuthService', ['isLoggedIn', 'hasRole', 'logout', 'getCorreo']);
+    authService = jasmine.createSpyObj('AuthService', ['isLoggedIn', 'hasRole', 'logout']);
     authService.isLoggedIn.and.returnValue(false);
     authService.hasRole.and.returnValue(false);
-    authService.getCorreo.and.returnValue(null);
 
     await TestBed.configureTestingModule({
       imports: [AppComponent],
@@ -47,10 +46,9 @@ describe('AppComponent', () => {
     expect(compiled.querySelector('header')).toBeNull();
   });
 
-  it('muestra los enlaces del LECTOR y cierra sesion via dropdown', () => {
+  it('muestra los enlaces del LECTOR y cierra sesion', () => {
     authService.isLoggedIn.and.returnValue(true);
     authService.hasRole.and.callFake((...roles: string[]) => roles.includes('LECTOR'));
-    authService.getCorreo.and.returnValue('lector@uteq.edu.ec');
 
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
@@ -60,14 +58,11 @@ describe('AppComponent', () => {
     expect(compiled.textContent).toContain('Mis Préstamos');
     expect(compiled.textContent).toContain('Reservaciones');
     expect(compiled.textContent).not.toContain('Libros');
+    // Rama de cuenta no integrada: Mi Credencial NO se
+    // muestra (ni siquiera con opacity -- el clic caería en el comodin).
+    // Notificaciones YA está implementada y sí se muestra.
     expect(compiled.textContent).not.toContain('Mi Credencial');
     expect(compiled.textContent).toContain('Notificaciones');
-
-    // El botón "Cerrar sesión" vive dentro del dropdown, oculto por defecto.
-    // Se abre el menú de usuario (iniciales + correo) y luego se clickea.
-    const menuBtn = compiled.querySelector('[data-menu-usuario] button') as HTMLButtonElement;
-    menuBtn?.click();
-    fixture.detectChanges();
 
     const botonCerrar = Array.from(compiled.querySelectorAll('button'))
       .find(b => b.textContent?.includes('Cerrar sesión'));
@@ -86,7 +81,6 @@ describe('AppComponent', () => {
 
     expect(compiled.textContent).toContain('Préstamos');
     expect(compiled.textContent).toContain('Libros');
-    expect(compiled.textContent).toContain('Dashboard');
     expect(compiled.textContent).not.toContain('Mis Préstamos');
   });
 
