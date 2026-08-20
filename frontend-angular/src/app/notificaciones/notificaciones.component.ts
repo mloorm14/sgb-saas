@@ -1,11 +1,12 @@
+// Mis notificaciones (Rama B, mockup 10). El backend devuelve Page<NotificacionResponseDTO>
+// con paginación (page/size). La LECTOR ve solo las suyas (enforced server-side).
+// tipoNotificacionId: catálogo local (ids desde db/migrations/V6__notificaciones.sql: 1=VENCIMIENTO, 2=MULTA, 3=RESERVA_CADUCADA).
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NotificacionService } from '../core/services/notificacion.service';
 import { Notificacion } from '../core/models/notificacion.model';
 import { Page } from '../core/models/pagina.model';
 
-// Mis notificaciones (Rama B, mockup 10). El backend devuelve Page<NotificacionResponseDTO>
-// con paginación (page/size). La LECTOR ve solo las suyas (enforced server-side).
 @Component({
   selector: 'app-notificaciones',
   imports: [CommonModule],
@@ -18,6 +19,13 @@ export class NotificacionesComponent implements OnInit {
   pageSize = 10;
   cargando = false;
   errorMsg = '';
+
+  // Catálogo local de tipos de notificación (ids según db/migrations/V6__notificaciones.sql)
+  readonly tiposNotificacion: Record<number, string> = {
+    1: 'Vencimiento',
+    2: 'Multa',
+    3: 'Reserva caducada'
+  };
 
   constructor(private notificacionService: NotificacionService) {}
 
@@ -84,5 +92,10 @@ export class NotificacionesComponent implements OnInit {
 
   textoEnviado(enviadoOk: boolean): string {
     return enviadoOk ? 'Enviada' : 'No enviada';
+  }
+
+  // Devuelve la etiqueta legible del tipo de notificación
+  tipoNotificacionLabel(tipoId: number): string {
+    return this.tiposNotificacion[tipoId] ?? `Desconocido (${tipoId})`;
   }
 }
