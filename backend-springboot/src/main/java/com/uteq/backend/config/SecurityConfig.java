@@ -70,7 +70,12 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/actuator/health/**"
                         ).permitAll()
-                        .anyRequest().authenticated()
+                        // Desde fix-sesion-2026-08: el backend sirve el SPA de
+                        // Angular (mismo origen, ver WebConfig). Por eso la única
+                        // superficie protegida es /api/**: el resto (index.html,
+                        // assets, rutas de la SPA) debe ser público.
+                        .requestMatchers("/api/**").authenticated()
+                        .anyRequest().permitAll()
                 )
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .headers(headers -> headers
@@ -80,15 +85,17 @@ public class SecurityConfig {
                         // docs/mediciones/sec/2026-07-30-owasp-a05-mala-configuracion-seguridad.md
                         // ("Content-Security-Policy ausente en ambos" -- backend y
                         // frontend, causa independiente del gap de TLS). Se cierra
-                        // acá para el backend: la única superficie HTML que sirve
-                        // hoy es Swagger UI (deshabilitado en el perfil `prod`, ver
-                        // application.yml y adr-015-tls-transporte.md), así que una
-                        // política restrictiva no rompe ningún flujo de la API JSON.
-                        // Si Swagger UI llegase a necesitar estilos/scripts inline en
-                        // algún perfil de desarrollo, ampliar acá explícitamente en
-                        // vez de relajar por defecto.
+                        // acá para el backend, que desde el fix de sesión 2026-08
+                        // también sirve el SPA de Angular (mismo origen, ver
+                        // WebConfig). 'style-src' con 'unsafe-inline': Angular
+                        // inyecta los estilos de componentes en <style> en runtime
+                        // (viewEncapsulation Emulated). 'img-src' con blob: para
+                        // las portadas que el frontend materializa como objetos
+                        // blob en el modal de detalle.
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
                                 "default-src 'self'; "
+                                        + "img-src 'self' data: blob:; "
+                                        + "style-src 'self' 'unsafe-inline'; "
                                         + "frame-ancestors 'none'; "
                                         + "base-uri 'self'; "
                                         + "object-src 'none'"
@@ -101,7 +108,10 @@ public class SecurityConfig {
 
     private CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:4200", "https://biblora-sgb.onrender.com"));
+        // Desde el fix de sesión 2026-08 el SPA se sirve desde este mismo origen
+        // (ver WebConfig), así que en prod no hay CORS. Se mantiene únicamente
+        // el origen de desarrollo local (ng serve).
+        configuration.setAllowedOrigins(List.of("http://localhost:4200"));
         // PATCH incluido desde el fix de CORS: los 3 endpoints PATCH
         // (sugerencias-adquisicion/{id}/estado, admin/usuarios/{id}/rol,
         // admin/usuarios/{id}/estado) morían en el preflight OPTIONS
