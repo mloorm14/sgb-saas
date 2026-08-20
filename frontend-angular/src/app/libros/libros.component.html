@@ -261,23 +261,21 @@
           </button>
           <!-- Info -->
           <div class="flex-1 min-w-0">
-            <p class="font-label-sm text-label-sm text-on-surface-variant mb-xxs">{{ libro.isbn }}</p>
-            <p class="font-body-md text-body-md font-medium truncate">{{ libro.titulo }}</p>
-            <div class="flex items-center gap-sm mt-xs flex-wrap">
-              @for (cat of libro.categorias.slice(0, 2); track cat) {
-                <span class="inline-block px-xs py-xxs rounded-full bg-surface-container-high text-[11px] font-label-sm text-on-surface-variant">{{ cat }}</span>
+            <p class="text-on-surface-variant text-[12px] truncate">{{ libro.autores.length ? libro.autores.join(', ') : 'Sin autor' }}</p>
+            <p class="text-on-surface font-semibold text-[15px] leading-snug truncate">{{ libro.titulo }}</p>
+            <p class="text-on-surface-variant text-[12px] mt-xxs">{{ libro.isbn }}</p>
+            <div class="flex items-center gap-sm mt-xxs flex-wrap">
+              @for (cat of libro.categorias.slice(0, 1); track cat) {
+                <span class="inline-block px-xs py-xxs rounded bg-primary-fixed text-[11px] font-label-sm text-on-primary-fixed-variant">{{ cat }}</span>
               }
-              @if (libro.categorias.length > 2) {
-                <span class="text-[11px] text-on-surface-variant">+{{ libro.categorias.length - 2 }}</span>
+              @if (libro.categorias.length > 1) {
+                <span class="text-on-surface-variant text-[11px]">+{{ libro.categorias.length - 1 }}</span>
               }
               <span class="text-on-surface-variant text-[11px]">{{ libro.anioPublicacion }}</span>
+              <span class="text-on-surface-variant text-[11px]">·</span>
+              <span class="text-on-surface-variant text-[11px]">Stock: {{ libro.stockDisponible }} disponibles</span>
             </div>
           </div>
-          <!-- Stock -->
-          <span class="hidden sm:inline-flex items-center px-sm py-xs rounded-full font-label-sm text-[11px] shrink-0"
-            [class]="libro.stockDisponible > 0 ? 'bg-success/15 text-success' : 'bg-warning/25 text-on-tertiary-container'">
-            {{ libro.stockDisponible }}/{{ libro.stockTotal }}
-          </span>
           <!-- Acciones -->
           <div class="flex gap-xs shrink-0">
             <button (click)="abrirFormularioEditar(libro)" title="Editar"
