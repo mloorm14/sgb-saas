@@ -150,7 +150,7 @@ describe('LibrosComponent', () => {
       expect(libroService.buscarPorIsbn).not.toHaveBeenCalled();
     });
 
-    it('rellena título, resumen y año; y descarga la portada como blob', () => {
+    it('rellena título, resumen y año; y descarga la portada como blob', async () => {
       const info = {
         titulo: 'Clean Code',
         autor: 'Robert C. Martin',
@@ -163,6 +163,7 @@ describe('LibrosComponent', () => {
 
       component.form.patchValue({ isbn: '9780132350884' });
       component.autocompletar();
+      await fixture.whenStable();
 
       expect(libroService.buscarPorIsbn).toHaveBeenCalledWith('9780132350884');
       expect(component.form.get('titulo')!.value).toBe('Clean Code');
@@ -172,6 +173,7 @@ describe('LibrosComponent', () => {
       expect(component.lookupMensaje).not.toBe('');
       expect(libroService.portadaPorIsbn).toHaveBeenCalledWith('9780132350884');
       expect(component.portadaPreviewUrl).toContain('blob:');
+      expect(component.portadaPreviewTipo).toBe('image/jpeg');
       expect(component.portadaPreviewBlob).not.toBeNull();
     });
 
@@ -196,11 +198,12 @@ describe('LibrosComponent', () => {
   });
 
   describe('guardarLibro', () => {
-    it('crea el libro y sube la portada del autocompletar como archivo', () => {
+    it('crea el libro y sube la portada del autocompletar como archivo', async () => {
       const creado = { ...libroBase };
       libroService.crear.and.returnValue(of(creado as any));
       libroService.subirPortada.and.returnValue(of(creado as any));
       component.portadaPreviewBlob = new Blob(['img'], { type: 'image/jpeg' });
+      component.portadaPreviewTipo = 'image/jpeg';
       component.form.patchValue({
         isbn: '9780132350884',
         titulo: 'Clean Code',
@@ -214,6 +217,7 @@ describe('LibrosComponent', () => {
       });
 
       component.guardarLibro();
+      await fixture.whenStable();
 
       expect(libroService.crear).toHaveBeenCalled();
       expect(libroService.subirPortada).toHaveBeenCalledWith(1, jasmine.any(File));
@@ -281,39 +285,53 @@ describe('LibrosComponent', () => {
       return event;
     }
 
-    it('acepta PNG/JPEG/WEBP de hasta 2MB y deja el preview listo para guardar', () => {
+    it('acepta PNG/JPEG/WEBP de hasta 2MB y deja el preview listo para guardar', async () => {
       const archivo = new File(['img'], 'portada.png', { type: 'image/png' });
 
-      component.onArchivoPortadaSeleccionado(eventoConArchivo(archivo));
+      await component.onArchivoPortadaSeleccionado(eventoConArchivo(archivo));
 
       expect(component.portadaPreviewBlob).toBe(archivo);
+      expect(component.portadaPreviewTipo).toBe('image/png');
       expect(component.portadaPreviewUrl).toContain('blob:');
       expect(component.lookupError).toBe('');
     });
 
-    it('rechaza un tipo no permitido (gif) sin tocar el preview previo', () => {
+    it('detecta por magic bytes una imagen cuyo type es application/octet-stream', async () => {
+      const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
+      const archivo = new File([bytes], 'portada.bin', { type: 'application/octet-stream' });
+
+      await component.onArchivoPortadaSeleccionado(eventoConArchivo(archivo));
+
+      expect(component.portadaPreviewBlob).toBe(archivo);
+      expect(component.portadaPreviewTipo).toBe('image/png');
+      expect(component.portadaPreviewUrl).toContain('blob:');
+      expect(component.lookupError).toBe('');
+    });
+
+    it('rechaza un tipo no permitido (gif) y desconocido sin tocar el preview previo', async () => {
       const archivo = new File(['img'], 'portada.gif', { type: 'image/gif' });
 
-      component.onArchivoPortadaSeleccionado(eventoConArchivo(archivo));
+      await component.onArchivoPortadaSeleccionado(eventoConArchivo(archivo));
 
       expect(component.lookupError).toBe('Formato no permitido. Usá JPG, JPEG, PNG, WebP o AVIF.');
       expect(component.portadaPreviewBlob).toBeNull();
     });
 
-    it('rechaza una imagen de más de 2MB (max_tamano_portada_mb = 2 en V13)', () => {
+    it('rechaza una imagen de más de 2MB (max_tamano_portada_mb = 2 en V13)', async () => {
       const archivo = new File([new Uint8Array(2 * 1024 * 1024 + 1)], 'grande.png', { type: 'image/png' });
 
-      component.onArchivoPortadaSeleccionado(eventoConArchivo(archivo));
+      await component.onArchivoPortadaSeleccionado(eventoConArchivo(archivo));
 
       expect(component.lookupError).toBe('La imagen supera los 2MB permitidos.');
       expect(component.portadaPreviewBlob).toBeNull();
     });
 
-    it('sube la portada manual al guardar con el nombre derivado del tipo', () => {
+    it('sube la portada manual al guardar con el nombre y tipo derivados', async () => {
       const creado = { ...libroBase };
       libroService.crear.and.returnValue(of(creado as any));
       libroService.subirPortada.and.returnValue(of(creado as any));
       component.portadaPreviewBlob = new Blob(['img'], { type: 'image/png' });
+      component.portadaPreviewTipo = 'image/png';
       component.form.patchValue({
         isbn: '9789878001234',
         titulo: 'Con portada manual',
@@ -326,11 +344,40 @@ describe('LibrosComponent', () => {
       });
 
       component.guardarLibro();
+      await fixture.whenStable();
 
       expect(libroService.crear).toHaveBeenCalled();
       expect(libroService.subirPortada).toHaveBeenCalledWith(1, jasmine.any(File));
       const archivo = libroService.subirPortada.calls.mostRecent().args[1] as File;
       expect(archivo.name).toBe('portada.png');
+      expect(archivo.type).toBe('image/png');
+    });
+
+    it('al guardar, si el blob quedó sin tipo usa image/jpeg como fallback', async () => {
+      const creado = { ...libroBase };
+      libroService.crear.and.returnValue(of(creado as any));
+      libroService.subirPortada.and.returnValue(of(creado as any));
+      const bytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+      component.portadaPreviewBlob = new File([bytes], 'foto.bin', { type: 'application/octet-stream' });
+      component.portadaPreviewTipo = null;
+      component.form.patchValue({
+        isbn: '9789878001235',
+        titulo: 'Con portada sin tipo',
+        anioPublicacion: 2020,
+        stockTotal: 1,
+        stockDisponible: 1,
+        editorialId: 1,
+        idiomaId: 1,
+        estadoId: 1
+      });
+
+      component.guardarLibro();
+      await fixture.whenStable();
+
+      expect(libroService.subirPortada).toHaveBeenCalledWith(1, jasmine.any(File));
+      const archivo = libroService.subirPortada.calls.mostRecent().args[1] as File;
+      expect(archivo.type).toBe('image/jpeg');
+      expect(archivo.name).toBe('portada.jpeg');
     });
   });
 });

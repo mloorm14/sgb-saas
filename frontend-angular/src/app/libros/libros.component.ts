@@ -36,6 +36,7 @@ export class LibrosComponent implements OnInit {
   lookupError: string = '';
   portadaPreviewUrl: string | null = null;
   portadaPreviewBlob: Blob | null = null;
+  portadaPreviewTipo: string | null = null;
   autocompletarAutor: string = '';
   categorias: Categoria[] = [];
   autores: Autor[] = [];
@@ -281,12 +282,18 @@ export class LibrosComponent implements OnInit {
 
     if (info.portadaDisponible) {
       this.libroService.portadaPorIsbn(isbn).subscribe({
-        next: (blob) => {
+        next: async (blob) => {
+          const tipo = await this.sniffMimePortada(blob);
+          if (!tipo) {
+            return;
+          }
           this.portadaPreviewBlob = blob;
+          this.portadaPreviewTipo = tipo;
           this.portadaPreviewUrl = URL.createObjectURL(blob);
         },
         error: () => {
           this.portadaPreviewBlob = null;
+          this.portadaPreviewTipo = null;
           this.portadaPreviewUrl = null;
         }
       });
@@ -299,6 +306,7 @@ export class LibrosComponent implements OnInit {
     }
     this.portadaPreviewUrl = null;
     this.portadaPreviewBlob = null;
+    this.portadaPreviewTipo = null;
     this.autocompletarAutor = '';
     this.lookupMensaje = '';
     this.lookupError = '';
@@ -307,13 +315,40 @@ export class LibrosComponent implements OnInit {
 
   // ── Portada: preview en tiempo real ──
 
-  onArchivoPortadaSeleccionado(event: Event): void {
+  private static readonly TIPOS_PORTADA_PERMITIDOS = ['image/png', 'image/jpeg', 'image/webp', 'image/avif'];
+
+  private esTipoPortadaPermitido(tipo: string | null | undefined): boolean {
+    return !!tipo && LibrosComponent.TIPOS_PORTADA_PERMITIDOS.includes(tipo);
+  }
+
+  // Detecta el MIME real por magic bytes cuando el navegador no lo asignó
+  // (type '' o application/octet-stream): el backend exige un Content-Type
+  // de la whitelist y el multipart envía octet-stream cuando no hay tipo.
+  private async sniffMimePortada(archivo: Blob): Promise<string | null> {
+    if (this.esTipoPortadaPermitido(archivo.type)) {
+      return archivo.type;
+    }
+    try {
+      const buf = new Uint8Array(await archivo.slice(0, 16).arrayBuffer());
+      const ascii = (inicio: number, fin: number): string =>
+        String.fromCharCode(...buf.subarray(inicio, fin));
+      if (buf.length >= 8 && ascii(0, 8) === '\x89PNG\r\n\x1a\n') return 'image/png';
+      if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg';
+      if (buf.length >= 12 && ascii(0, 4) === 'RIFF' && ascii(8, 12) === 'WEBP') return 'image/webp';
+      if (buf.length >= 12 && ascii(4, 8) === 'ftyp' && (ascii(8, 12) === 'avif' || ascii(8, 12) === 'avis')) return 'image/avif';
+    } catch {
+      // archivo ilegible: se rechaza en el llamador
+    }
+    return null;
+  }
+
+  async onArchivoPortadaSeleccionado(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const archivo = input.files?.[0];
     if (!archivo) return;
 
-    const tiposPermitidos = ['image/png', 'image/jpeg', 'image/webp', 'image/avif'];
-    if (!tiposPermitidos.includes(archivo.type)) {
+    const tipo = await this.sniffMimePortada(archivo);
+    if (!tipo) {
       this.lookupError = 'Formato no permitido. Usá JPG, JPEG, PNG, WebP o AVIF.';
       return;
     }
@@ -326,6 +361,7 @@ export class LibrosComponent implements OnInit {
       URL.revokeObjectURL(this.portadaPreviewUrl);
     }
     this.portadaPreviewBlob = archivo;
+    this.portadaPreviewTipo = tipo;
     this.portadaPreviewUrl = URL.createObjectURL(archivo);
     this.lookupError = '';
   }
@@ -360,12 +396,16 @@ export class LibrosComponent implements OnInit {
   }
 
   private guardarPortadaPendiente(libroId: number): void {
-    if (!this.portadaPreviewBlob) {
+    const blob = this.portadaPreviewBlob;
+    if (!blob) {
       this.cargarLibros();
       return;
     }
-    const tipo = this.portadaPreviewBlob.type.split('/')[1] ?? 'jpg';
-    const archivo = new File([this.portadaPreviewBlob], `portada.${tipo}`);
+    // El tipo ya fue resuelto por sniff al entrar el blob al preview
+    // (onArchivoPortadaSeleccionado / autocompletar); el ?? es solo defensivo.
+    const tipo = this.portadaPreviewTipo ?? 'image/jpeg';
+    const ext = tipo.split('/')[1] ?? 'jpg';
+    const archivo = new File([blob], `portada.${ext}`, { type: tipo });
     this.libroService.subirPortada(libroId, archivo).subscribe({
       next: () => this.cargarLibros(),
       error: () => {

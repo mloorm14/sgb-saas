@@ -237,7 +237,7 @@ public class LibroService {
         if (contentType == null || !TIPOS_PORTADA_PERMITIDOS.contains(contentType)) {
             throw new IllegalArgumentException(
                     "Tipo de imagen no permitido: " + contentType
-                            + ". Solo se admiten PNG, JPEG y WEBP.");
+                            + ". Solo se admiten PNG, JPEG, WEBP y AVIF.");
         }
         int maxTamanoMb = configuracionSistemaService
                 .obtenerValorEntero(CLAVE_MAX_TAMANO_PORTADA_MB);
