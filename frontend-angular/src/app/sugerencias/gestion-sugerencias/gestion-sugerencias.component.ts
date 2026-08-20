@@ -109,4 +109,13 @@ export class GestionSugerenciasComponent implements OnInit {
   solicitanteLabel(sugerencia: SugerenciaAdquisicion): string {
     return `Usuario #${sugerencia.usuarioId}`;
   }
+
+  // Muestra quién revisó la sugerencia (solo cuando ya no está PENDIENTE).
+  // El DTO trae revisadoPor (number, id del usuario que revisó).
+  // No hay endpoint para resolver id->nombre: queda como "Usuario #{id}".
+  // TODO: cuando exista endpoint de catálogo de usuarios, resolver nombre real.
+  revisadoPorLabel(sugerencia: SugerenciaAdquisicion): string {
+    if (!sugerencia.revisadoPor) return '—';
+    return `Usuario #${sugerencia.revisadoPor}`;
+  }
 }

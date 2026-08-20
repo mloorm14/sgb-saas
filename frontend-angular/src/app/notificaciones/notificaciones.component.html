@@ -22,6 +22,7 @@
           <thead class="bg-surface-container-low">
             <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
               <th class="px-md py-sm">Fecha</th>
+              <th class="px-md py-sm">Tipo</th>
               <th class="px-md py-sm">Mensaje</th>
               <th class="px-md py-sm hidden md:table-cell">Préstamo</th>
               <th class="px-md py-sm">Estado</th>
@@ -32,6 +33,9 @@
               <tr class="hover:bg-surface-container-low/50">
                 <td class="px-md py-sm whitespace-nowrap text-on-surface-variant">
                   {{ formatearFecha(notif.fechaEnvio) }}
+                </td>
+                <td class="px-md py-sm text-on-surface-variant">
+                  {{ tipoNotificacionLabel(notif.tipoNotificacionId) }}
                 </td>
                 <td class="px-md py-sm font-medium text-on-background max-w-xs truncate">
                   {{ notif.mensaje }}
@@ -53,7 +57,7 @@
             } @empty {
               @if (!cargando) {
                 <tr>
-                  <td colspan="4" class="px-md py-lg text-center text-on-surface-variant">No hay notificaciones</td>
+                  <td colspan="5" class="px-md py-lg text-center text-on-surface-variant">No hay notificaciones</td>
                 </tr>
               }
             }

@@ -58,9 +58,9 @@ describe('AppComponent', () => {
     expect(compiled.textContent).toContain('Mis Préstamos');
     expect(compiled.textContent).toContain('Reservaciones');
     expect(compiled.textContent).not.toContain('Libros');
-    // Mi Credencial (rama de cuenta no integrada) sigue sin mostrarse (ni
-    // siquiera con opacity -- el clic caería en el comodin). Notificaciones
-    // ya es una ruta real (ver notificaciones.component.ts) y sí se muestra.
+    // Rama de cuenta no integrada: Mi Credencial NO se
+    // muestra (ni siquiera con opacity -- el clic caería en el comodin).
+    // Notificaciones YA está implementada y sí se muestra.
     expect(compiled.textContent).not.toContain('Mi Credencial');
     expect(compiled.textContent).toContain('Notificaciones');
 
@@ -114,4 +114,4 @@ describe('AppComponent', () => {
     expect(compiled.textContent).not.toContain('Reportes');
     expect(compiled.textContent).not.toContain('Préstamos');
   });
-});
+}
