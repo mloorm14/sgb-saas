@@ -342,11 +342,14 @@ export class LibrosComponent implements OnInit {
 
     accion.subscribe({
       next: (libro) => {
-        this.cerrarFormulario();
-        // La recarga de la lista va después de terminar la subida de la
-        // portada: si se recarga antes, el libro nuevo llega con
+        // La subida de la portada va ANTES de cerrar el formulario:
+        // cerrarFormulario() → limpiarAutocompletar() limpia
+        // portadaPreviewBlob, y sin blob la portada nunca se sube.
+        // La recarga de la lista va después de terminar la subida:
+        // si se recarga antes, el libro nuevo llega con
         // tienePortada=false y el placeholder ya no se actualiza.
         this.guardarPortadaPendiente(libro.id);
+        this.cerrarFormulario();
       },
       error: () => {
         this.errorMsg = this.modoEdicion
