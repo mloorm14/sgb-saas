@@ -13,7 +13,7 @@ import { Autor } from '../core/models/autor.model';
 import { Editorial } from '../core/models/editorial.model';
 import { Idioma } from '../core/models/idioma.model';
 import { EstadoLibro } from '../core/models/estado-libro.model';
-import { Libro, LibroRequest, LibroIsbnLookup } from '../core/models/libro.model';
+import { Libro, LibroRequest } from '../core/models/libro.model';
 
 @Component({
     selector: 'app-libros',
@@ -31,8 +31,6 @@ export class LibrosComponent implements OnInit {
   modoEdicion: boolean = false;
   libroSeleccionadoId: number | null = null;
   form: FormGroup;
-  buscandoIsbn: boolean = false;
-  lookupMensaje: string = '';
   lookupError: string = '';
   portadaPreviewUrl: string | null = null;
   portadaPreviewBlob: Blob | null = null;
@@ -40,7 +38,6 @@ export class LibrosComponent implements OnInit {
   portadaModalVisible: boolean = false;
   portadaModalUrl: string | null = null;
   portadaModalCargando: boolean = false;
-  autocompletarAutor: string = '';
   categorias: Categoria[] = [];
   autores: Autor[] = [];
   editoriales: Editorial[] = [];
@@ -152,7 +149,7 @@ export class LibrosComponent implements OnInit {
     this.modoEdicion = false;
     this.libroSeleccionadoId = null;
     this.form.reset({ categoriaIds: [], autorIds: [], editorialId: null, idiomaId: null, estadoId: null });
-    this.limpiarAutocompletar();
+    this.limpiarPortada();
     this.textoAutor = '';
     this.textoCategoria = '';
     this.mostrarFormulario = true;
@@ -161,7 +158,7 @@ export class LibrosComponent implements OnInit {
   abrirFormularioEditar(libro: Libro): void {
     this.modoEdicion = true;
     this.libroSeleccionadoId = libro.id;
-    this.limpiarAutocompletar();
+    this.limpiarPortada();
     this.textoAutor = '';
     this.textoCategoria = '';
     this.form.patchValue({
@@ -191,7 +188,7 @@ export class LibrosComponent implements OnInit {
   cerrarFormulario(): void {
     this.mostrarFormulario = false;
     this.form.reset({ categoriaIds: [], autorIds: [], editorialId: null, idiomaId: null, estadoId: null });
-    this.limpiarAutocompletar();
+    this.limpiarPortada();
     this.textoAutor = '';
     this.textoCategoria = '';
   }
@@ -246,74 +243,16 @@ export class LibrosComponent implements OnInit {
     this.form.patchValue({ categoriaIds: ids });
   }
 
-  // ── Autocompletar por ISBN ──
+  // ── Portada: cleanup ──
 
-  esIsbnAutocompletable(): boolean {
-    const digitos = this.form.get('isbn')?.value?.replace(/\D/g, '') ?? '';
-    return digitos.length >= 10 && digitos.length <= 13;
-  }
-
-  autocompletar(): void {
-    if (!this.esIsbnAutocompletable()) return;
-    const isbn = this.form.get('isbn')!.value as string;
-    this.buscandoIsbn = true;
-    this.lookupMensaje = '';
-    this.lookupError = '';
-
-    this.libroService.buscarPorIsbn(isbn).subscribe({
-      next: (info) => this.aplicarAutocompletar(info, isbn),
-      error: (err) => {
-        this.buscandoIsbn = false;
-        if ((err as { status?: number })?.status === 404) {
-          this.lookupError = 'No se encontró información para ese ISBN, completá los campos manualmente';
-        } else {
-          this.lookupError = 'Error al consultar Google Books, intentá de nuevo';
-        }
-      }
-    });
-  }
-
-  private aplicarAutocompletar(info: LibroIsbnLookup, isbn: string): void {
-    this.form.patchValue({
-      titulo: info.titulo ?? '',
-      resumen: info.resumen ?? '',
-      anioPublicacion: info.anioPublicacion ?? ''
-    });
-    this.autocompletarAutor = info.autor ?? '';
-    this.buscandoIsbn = false;
-    this.lookupMensaje = 'Encontrado en Google Books — campos rellenados abajo, revisalos antes de guardar';
-
-    if (info.portadaDisponible) {
-      this.libroService.portadaPorIsbn(isbn).subscribe({
-        next: async (blob) => {
-          const tipo = await this.sniffMimePortada(blob);
-          if (!tipo) {
-            return;
-          }
-          this.portadaPreviewBlob = blob;
-          this.portadaPreviewTipo = tipo;
-          this.portadaPreviewUrl = URL.createObjectURL(blob);
-        },
-        error: () => {
-          this.portadaPreviewBlob = null;
-          this.portadaPreviewTipo = null;
-          this.portadaPreviewUrl = null;
-        }
-      });
-    }
-  }
-
-  private limpiarAutocompletar(): void {
+  private limpiarPortada(): void {
     if (this.portadaPreviewUrl) {
       URL.revokeObjectURL(this.portadaPreviewUrl);
     }
     this.portadaPreviewUrl = null;
     this.portadaPreviewBlob = null;
     this.portadaPreviewTipo = null;
-    this.autocompletarAutor = '';
-    this.lookupMensaje = '';
     this.lookupError = '';
-    this.buscandoIsbn = false;
   }
 
   // ── Portada: preview en tiempo real ──

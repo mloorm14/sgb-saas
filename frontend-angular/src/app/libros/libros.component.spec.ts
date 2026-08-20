@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { of } from 'rxjs';
 import { LibrosComponent } from './libros.component';
 import { LibroService } from '../core/services/libro.service';
 import { CategoriaService } from '../core/services/categoria.service';
@@ -35,8 +35,7 @@ describe('LibrosComponent', () => {
 
   beforeEach(async () => {
     libroService = jasmine.createSpyObj('LibroService', [
-      'listar', 'crear', 'actualizar', 'eliminar', 'subirPortada',
-      'buscarPorIsbn', 'portadaPorIsbn', 'obtenerPortada'
+      'listar', 'crear', 'actualizar', 'eliminar', 'subirPortada', 'obtenerPortada'
     ]);
     categoriaService = jasmine.createSpyObj('CategoriaService', ['listar']);
     autorService = jasmine.createSpyObj('AutorService', ['listar']);
@@ -120,7 +119,7 @@ describe('LibrosComponent', () => {
     );
   });
 
-  it('abre el formulario de crear sin portada ni estado de autocompletar previo', () => {
+  it('abre el formulario de crear sin portada ni estado previo', () => {
     component.lookupError = 'sobra';
     component.portadaPreviewUrl = 'blob:previo';
 
@@ -130,71 +129,6 @@ describe('LibrosComponent', () => {
     expect(component.modoEdicion).toBeFalse();
     expect(component.lookupError).toBe('');
     expect(component.portadaPreviewUrl).toBeNull();
-  });
-
-  describe('autocompletar por ISBN', () => {
-    it('habilita el botón solo cuando el ISBN tiene 10-13 dígitos', () => {
-      component.form.patchValue({ isbn: '9780132350884' });
-      expect(component.esIsbnAutocompletable()).toBeTrue();
-
-      component.form.patchValue({ isbn: '978-0132350884' });
-      expect(component.esIsbnAutocompletable()).toBeTrue();
-
-      component.form.patchValue({ isbn: '12345' });
-      expect(component.esIsbnAutocompletable()).toBeFalse();
-    });
-
-    it('no consulta con ISBN inválido', () => {
-      component.form.patchValue({ isbn: '123' });
-      component.autocompletar();
-      expect(libroService.buscarPorIsbn).not.toHaveBeenCalled();
-    });
-
-    it('rellena título, resumen y año; y descarga la portada como blob', async () => {
-      const info = {
-        titulo: 'Clean Code',
-        autor: 'Robert C. Martin',
-        resumen: 'resumen largo',
-        anioPublicacion: 2008,
-        portadaDisponible: true
-      };
-      libroService.buscarPorIsbn.and.returnValue(of(info as any));
-      libroService.portadaPorIsbn.and.returnValue(of(new Blob(['img'], { type: 'image/jpeg' })));
-
-      component.form.patchValue({ isbn: '9780132350884' });
-      component.autocompletar();
-      await fixture.whenStable();
-
-      expect(libroService.buscarPorIsbn).toHaveBeenCalledWith('9780132350884');
-      expect(component.form.get('titulo')!.value).toBe('Clean Code');
-      expect(component.form.get('resumen')!.value).toBe('resumen largo');
-      expect(component.form.get('anioPublicacion')!.value).toBe(2008);
-      expect(component.autocompletarAutor).toBe('Robert C. Martin');
-      expect(component.lookupMensaje).not.toBe('');
-      expect(libroService.portadaPorIsbn).toHaveBeenCalledWith('9780132350884');
-      expect(component.portadaPreviewUrl).toContain('blob:');
-      expect(component.portadaPreviewTipo).toBe('image/jpeg');
-      expect(component.portadaPreviewBlob).not.toBeNull();
-    });
-
-    it('muestra el mensaje exacto cuando el backend responde 404', () => {
-      libroService.buscarPorIsbn.and.returnValue(throwError(() => ({ status: 404 })));
-
-      component.form.patchValue({ isbn: '0000000000000' });
-      component.autocompletar();
-
-      expect(component.lookupError).toBe('No se encontró información para ese ISBN, completá los campos manualmente');
-      expect(component.buscandoIsbn).toBeFalse();
-    });
-
-    it('muestra error genérico si Google Books falla de otra forma', () => {
-      libroService.buscarPorIsbn.and.returnValue(throwError(() => ({ status: 500 })));
-
-      component.form.patchValue({ isbn: '0000000000000' });
-      component.autocompletar();
-
-      expect(component.lookupError).toBe('Error al consultar Google Books, intentá de nuevo');
-    });
   });
 
   describe('guardarLibro', () => {
@@ -272,7 +206,6 @@ describe('LibrosComponent', () => {
       expect(component.form.valid).toBeTrue();
       component.guardarLibro();
       expect(libroService.crear).toHaveBeenCalled();
-      expect(libroService.buscarPorIsbn).not.toHaveBeenCalled();
     });
   });
 
