@@ -1,0 +1,11 @@
+# Contexto de build de backend-springboot/Dockerfile = raíz del repo
+# (docker-compose.yml: build.context: .). Se excluyen artefactos locales
+# para que el contexto no arrastre gigas innecesarios (node_modules del
+# frontend, builds previos, git). El SPA se construye DENTRO del stage
+# frontend-build del Dockerfile, nunca se copia desde el host.
+**/node_modules
+**/dist
+**/target
+.git
+.idea
+*.log

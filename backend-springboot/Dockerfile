@@ -4,6 +4,17 @@
 # src/main/resources/ (ver application.yml + SPRING_FLYWAY_LOCATIONS en
 # docker-compose.yml).
 
+# Stage frontend: build del SPA de Angular. Desde el fix de sesión 2026-08
+# el backend sirve el frontend desde el mismo origen (ver WebConfig), así
+# que el jar empaqueta el dist de Angular en classpath:/static. Misma imagen
+# node:20-alpine (y mismo digest) que usa frontend-angular/Dockerfile.
+FROM node@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS frontend-build
+WORKDIR /fe
+COPY frontend-angular/package.json frontend-angular/package-lock.json ./
+RUN npm ci
+COPY frontend-angular/ ./
+RUN npm run build
+
 # Pinado por digest sha256 (ver docs/DIGESTS-LOG.md): eclipse-temurin:21-jdk-alpine,
 # obtenido con `docker pull` + `docker inspect` el 2026-07-22.
 FROM eclipse-temurin@sha256:1ff763083f2993d57d0bf374ab10bb3e2cb873af6c13a04458ebbd3e0337dc76 AS build
@@ -16,6 +27,8 @@ RUN chmod +x mvnw
 RUN ./mvnw dependency:go-offline -B
 
 COPY backend-springboot/src/ src/
+# El dist del SPA entra al jar antes del package (mismo origen, ver WebConfig).
+COPY --from=frontend-build /fe/dist/frontend-angular/browser/ src/main/resources/static/
 RUN ./mvnw clean package -DskipTests -B
 
 # Pinado por digest sha256 (ver docs/DIGESTS-LOG.md): eclipse-temurin:21-jre-alpine,
