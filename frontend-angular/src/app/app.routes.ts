@@ -10,7 +10,6 @@ import { ReservacionesComponent } from './reservaciones/reservaciones.component'
 import { MultasComponent } from './multas/multas.component';
 import { ReportesComponent } from './reportes/reportes.component';
 import { DashboardGerenteComponent } from './dashboard-gerente/dashboard-gerente.component';
-import { DashboardBibliotecarioComponent } from './dashboard/dashboard-bibliotecario.component';
 import { NoAutorizadoComponent } from './shared/no-autorizado/no-autorizado.component';
 import { CatalogoComponent } from './catalogo/catalogo.component';
 import { LibroDetalleComponent } from './catalogo/libro-detalle/libro-detalle.component';
@@ -64,9 +63,6 @@ export const routes: Routes = [
   // el mismo PrestamoController de reportes, por eso queda SOLO GERENTE
   // (el BIBLIOTECARIO tiene /reportes, no esta pantalla).
   { path: 'dashboard-gerente', component: DashboardGerenteComponent, canActivate: [authGuard, roleGuard(['GERENTE'])] },
-  // Dashboard del BIBLIOTECARIO (Rama E §8.1 / Fase 1 E2): accesos
-  // rápidos sin métricas (el backend no expone agregados globales).
-  { path: 'dashboard-bibliotecario', component: DashboardBibliotecarioComponent, canActivate: [authGuard, roleGuard(['BIBLIOTECARIO'])] },
   // Rama B (frontend/estudiante-catalogo-social): las 5 rutas del
   // consumidor son 100% LECTOR — verificado en FavoritoController.java y
   // SugerenciaAdquisicionController.java (los endpoints de favoritos y de
