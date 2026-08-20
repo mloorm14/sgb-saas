@@ -55,7 +55,7 @@ export class LoginComponent implements OnInit {
     } else if (this.authService.hasRole('LECTOR')) {
       this.router.navigate(['/catalogo']);
     } else if (this.authService.hasRole('BIBLIOTECARIO')) {
-      this.router.navigate(['/prestamos/gestion']);
+      this.router.navigate(['/dashboard-bibliotecario']);
     } else {
       this.router.navigate(['/libros']);
     }
