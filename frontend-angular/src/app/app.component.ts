@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 
@@ -18,8 +18,17 @@ interface EnlaceNav {
 })
 export class AppComponent {
   title = 'frontend-angular';
+  mostrarMenuUsuario = false;
 
   constructor(private authService: AuthService) {}
+
+  @HostListener('document:click', ['$event'])
+  cerrarMenuFuera(event: Event): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('[data-menu-usuario]')) {
+      this.mostrarMenuUsuario = false;
+    }
+  }
 
   // Rama B completada: /catalogo, /favoritos, /sugerencias y /notificaciones ya son reales
   // y salen de la lista de futuros. Mi Credencial (rama frontend/estudiante-cuenta, no integrada)
@@ -62,7 +71,8 @@ export class AppComponent {
     { ruta: '/admin/usuarios', etiqueta: 'Usuarios', icono: 'manage_accounts', roles: ['GERENTE', 'ADMIN'] },
     { ruta: '/auditoria', etiqueta: 'Auditoría', icono: 'receipt_long', roles: ['GERENTE', 'ADMIN'] },
     { ruta: '/admin/configuracion', etiqueta: 'Configuración', icono: 'settings', roles: ['ADMIN'] },
-    { ruta: '/dashboard-gerente', etiqueta: 'Dashboard', icono: 'dashboard', roles: ['GERENTE'] }
+    { ruta: '/dashboard-gerente', etiqueta: 'Dashboard', icono: 'dashboard', roles: ['GERENTE'] },
+    { ruta: '/dashboard-bibliotecario', etiqueta: 'Dashboard', icono: 'dashboard', roles: ['BIBLIOTECARIO'] }
   ];
 
   estaLogueado(): boolean {
@@ -82,6 +92,18 @@ export class AppComponent {
   }
 
   cerrarSesion(): void {
+    this.mostrarMenuUsuario = false;
     this.authService.logout();
+  }
+
+  get correoUsuario(): string {
+    return this.authService.getCorreo() ?? '';
+  }
+
+  get inicialesUsuario(): string {
+    const correo = this.correoUsuario;
+    if (!correo) return '??';
+    const parte = correo.split('@')[0];
+    return parte.substring(0, 2).toUpperCase();
   }
 }
