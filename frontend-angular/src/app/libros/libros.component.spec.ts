@@ -380,4 +380,28 @@ describe('LibrosComponent', () => {
       expect(archivo.name).toBe('portada.jpeg');
     });
   });
+
+  describe('modal portada', () => {
+    it('abrirPortada muestra el modal', () => {
+      component.abrirPortada(1, true);
+
+      expect(component.portadaModalVisible).toBeTrue();
+    });
+
+    it('cerrarPortada oculta el modal y limpia la url', () => {
+      component.portadaModalVisible = true;
+      component.portadaModalUrl = 'blob:test';
+      component.cerrarPortada();
+
+      expect(component.portadaModalVisible).toBeFalse();
+      expect(component.portadaModalUrl).toBeNull();
+      expect(component.portadaModalCargando).toBeFalse();
+    });
+
+    it('no abre el modal si el libro no tiene portada', () => {
+      component.abrirPortada(2, false);
+
+      expect(component.portadaModalVisible).toBeFalse();
+    });
+  });
 });
