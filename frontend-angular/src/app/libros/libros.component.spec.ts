@@ -296,7 +296,7 @@ describe('LibrosComponent', () => {
 
       component.onArchivoPortadaSeleccionado(eventoConArchivo(archivo));
 
-      expect(component.lookupError).toBe('Formato no permitido. Usá PNG, JPEG o WEBP.');
+      expect(component.lookupError).toBe('Formato no permitido. Usá JPG, JPEG, PNG, WebP o AVIF.');
       expect(component.portadaPreviewBlob).toBeNull();
     });
 

@@ -39,14 +39,14 @@ export class LibrosComponent implements OnInit {
   autocompletarAutor: string = '';
   categorias: Categoria[] = [];
   autores: Autor[] = [];
-  // FIX 3: catálogos editorial/idioma/estado para los <select> del
-  // formulario (GET /api/v1/editoriales, /api/v1/idiomas,
-  // /api/v1/estados-libro — antes eran inputs de ID a mano).
   editoriales: Editorial[] = [];
   idiomas: Idioma[] = [];
   estados: EstadoLibro[] = [];
   categoriaFiltro: string = '';
   errorCatalogo: string = '';
+
+  textoAutor: string = '';
+  textoCategoria: string = '';
 
   get paginasVisibles(): number[] {
     return Array.from({ length: this.totalPages }, (_, i) => i);
@@ -69,12 +69,9 @@ export class LibrosComponent implements OnInit {
       anioPublicacion: ['', [Validators.required]],
       stockTotal: ['', [Validators.required]],
       stockDisponible: ['', [Validators.required]],
-      editorialId: ['', [Validators.required]],
-      idiomaId: ['', [Validators.required]],
-      estadoId: ['', [Validators.required]],
-      // <select multiple> nativo: el control lleva el array de ids de las
-      // opciones seleccionadas (null o vacío es válido -- el backend acepta
-      // un libro sin categoría/autor, ver LibroRequestDTO.categoriaIds).
+      editorialId: [null, [Validators.required]],
+      idiomaId: [null, [Validators.required]],
+      estadoId: [null, [Validators.required]],
       categoriaIds: [[]],
       autorIds: [[]]
     });
@@ -150,8 +147,10 @@ export class LibrosComponent implements OnInit {
   abrirFormularioCrear(): void {
     this.modoEdicion = false;
     this.libroSeleccionadoId = null;
-    this.form.reset({ categoriaIds: [], autorIds: [] });
+    this.form.reset({ categoriaIds: [], autorIds: [], editorialId: null, idiomaId: null, estadoId: null });
     this.limpiarAutocompletar();
+    this.textoAutor = '';
+    this.textoCategoria = '';
     this.mostrarFormulario = true;
   }
 
@@ -159,6 +158,8 @@ export class LibrosComponent implements OnInit {
     this.modoEdicion = true;
     this.libroSeleccionadoId = libro.id;
     this.limpiarAutocompletar();
+    this.textoAutor = '';
+    this.textoCategoria = '';
     this.form.patchValue({
       isbn: libro.isbn,
       titulo: libro.titulo,
@@ -170,18 +171,12 @@ export class LibrosComponent implements OnInit {
       editorialId: libro.editorialId,
       idiomaId: libro.idiomaId,
       estadoId: libro.estadoId,
-      // El DTO trae solo NOMBRES (LibroResponseDTO.categorias/autores);
-      // se resuelven a los ids del catálogo cargado para preseleccionar
-      // el <select multiple>.
       categoriaIds: this.idsDeNombres(this.categorias, libro.categorias),
       autorIds: this.idsDeNombres(this.autores, libro.autores)
     });
     this.mostrarFormulario = true;
   }
 
-  // match por nombre (único en el catálogo sembrado): el libro que no
-  // matchee ninguna categoría/autor cargado se deja sin selección en vez
-  // de inventar un id.
   private idsDeNombres(catalogo: { id: number; nombre: string }[], nombres: string[]): number[] {
     if (!nombres?.length) return [];
     return nombres
@@ -191,14 +186,64 @@ export class LibrosComponent implements OnInit {
 
   cerrarFormulario(): void {
     this.mostrarFormulario = false;
-    this.form.reset({ categoriaIds: [], autorIds: [] });
+    this.form.reset({ categoriaIds: [], autorIds: [], editorialId: null, idiomaId: null, estadoId: null });
     this.limpiarAutocompletar();
+    this.textoAutor = '';
+    this.textoCategoria = '';
   }
 
-  // ── Autocompletar por ISBN (mockup 14, LibroIsbnLookupService) ──
+  // ── Tag input: Autores ──
 
-  // El botón se habilita solo cuando el ISBN tiene 10-13 dígitos (se
-  // ignoran guiones/espacios); coincide con la validación del backend.
+  nombreAutor(id: number): string {
+    return this.autores.find(a => a.id === id)?.nombre ?? `#${id}`;
+  }
+
+  agregarAutor(event: Event): void {
+    event.preventDefault();
+    const texto = this.textoAutor.trim();
+    if (!texto) return;
+    const autor = this.autores.find(a => a.nombre.toLowerCase() === texto.toLowerCase());
+    if (autor) {
+      const ids = this.form.get('autorIds')?.value as number[];
+      if (!ids.includes(autor.id)) {
+        this.form.patchValue({ autorIds: [...ids, autor.id] });
+      }
+    }
+    this.textoAutor = '';
+  }
+
+  quitarAutor(id: number): void {
+    const ids = (this.form.get('autorIds')?.value as number[]).filter(i => i !== id);
+    this.form.patchValue({ autorIds: ids });
+  }
+
+  // ── Tag input: Categorías ──
+
+  nombreCategoria(id: number): string {
+    return this.categorias.find(c => c.id === id)?.nombre ?? `#${id}`;
+  }
+
+  agregarCategoria(event: Event): void {
+    event.preventDefault();
+    const texto = this.textoCategoria.trim();
+    if (!texto) return;
+    const cat = this.categorias.find(c => c.nombre.toLowerCase() === texto.toLowerCase());
+    if (cat) {
+      const ids = this.form.get('categoriaIds')?.value as number[];
+      if (!ids.includes(cat.id)) {
+        this.form.patchValue({ categoriaIds: [...ids, cat.id] });
+      }
+    }
+    this.textoCategoria = '';
+  }
+
+  quitarCategoria(id: number): void {
+    const ids = (this.form.get('categoriaIds')?.value as number[]).filter(i => i !== id);
+    this.form.patchValue({ categoriaIds: ids });
+  }
+
+  // ── Autocompletar por ISBN ──
+
   esIsbnAutocompletable(): boolean {
     const digitos = this.form.get('isbn')?.value?.replace(/\D/g, '') ?? '';
     return digitos.length >= 10 && digitos.length <= 13;
@@ -241,8 +286,6 @@ export class LibrosComponent implements OnInit {
           this.portadaPreviewUrl = URL.createObjectURL(blob);
         },
         error: () => {
-          // El thumbnail puede faltar aunque el flag diga que existe:
-          // se muestra el preview solo si la descarga funcionó.
           this.portadaPreviewBlob = null;
           this.portadaPreviewUrl = null;
         }
@@ -262,19 +305,16 @@ export class LibrosComponent implements OnInit {
     this.buscandoIsbn = false;
   }
 
-  // Subida manual de portada (no solo por ISBN): misma whitelist de tipos
-  // y límite que valida el backend (V13: max_tamano_portada_mb = 2 en
-  // configuracion_sistema, tope duro de servlet 5MB). El preview reusa
-  // portadaPreviewUrl/portadaPreviewBlob -- el mismo canal que usa el
-  // autocompletar, para que guardarPortadaPendiente() no distinga origen.
+  // ── Portada: preview en tiempo real ──
+
   onArchivoPortadaSeleccionado(event: Event): void {
     const input = event.target as HTMLInputElement;
     const archivo = input.files?.[0];
     if (!archivo) return;
 
-    const tiposPermitidos = ['image/png', 'image/jpeg', 'image/webp'];
+    const tiposPermitidos = ['image/png', 'image/jpeg', 'image/webp', 'image/avif'];
     if (!tiposPermitidos.includes(archivo.type)) {
-      this.lookupError = 'Formato no permitido. Usá PNG, JPEG o WEBP.';
+      this.lookupError = 'Formato no permitido. Usá JPG, JPEG, PNG, WebP o AVIF.';
       return;
     }
     if (archivo.size > 2 * 1024 * 1024) {
@@ -290,10 +330,10 @@ export class LibrosComponent implements OnInit {
     this.lookupError = '';
   }
 
+  // ── Guardar ──
+
   guardarLibro(): void {
     if (this.form.invalid) return;
-    // Los valores del form siguen viajando tal cual (el backend convierte
-    // los strings a Integer); solo cambia el canal de transporte.
     const datos = this.form.value as LibroRequest;
 
     if (this.modoEdicion && this.libroSeleccionadoId) {
@@ -317,9 +357,6 @@ export class LibrosComponent implements OnInit {
     }
   }
 
-  // La portada pendiente (Google Books o selección manual, ambas dejan el
-  // Blob en portadaPreviewBlob) se sube como archivo al libro recién
-  // guardado; el backend la persiste como PortadaImagen (V13).
   private guardarPortadaPendiente(libroId: number): void {
     if (!this.portadaPreviewBlob) return;
     const tipo = this.portadaPreviewBlob.type.split('/')[1] ?? 'jpg';
