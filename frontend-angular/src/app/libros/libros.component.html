@@ -44,14 +44,9 @@
                 <span class="font-body-sm text-body-sm text-on-surface-variant/60 text-center px-sm">Portada del libro</span>
               </div>
             }
-            <label class="mt-sm block">
-              <span class="inline-block h-9 px-sm rounded bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-label-sm cursor-pointer hover:bg-primary-fixed/80 transition-colors">
-                Seleccionar archivo
-              </span>
-              <input type="file" accept="image/png,image/jpeg,image/webp,image/avif"
-                (change)="onArchivoPortadaSeleccionado($event)"
-                class="hidden" />
-            </label>
+            <input type="file" accept="image/png,image/jpeg,image/webp,image/avif"
+              (change)="onArchivoPortadaSeleccionado($event)"
+              class="mt-sm w-full text-body-sm text-on-surface-variant file:mr-sm file:h-9 file:px-sm file:rounded file:border-0 file:bg-primary-fixed file:text-on-primary-fixed-variant file:cursor-pointer" />
             <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">JPG / JPEG / PNG / WebP / AVIF</p>
           </div>
 
