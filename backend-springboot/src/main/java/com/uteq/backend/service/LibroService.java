@@ -39,7 +39,7 @@ public class LibroService {
     // -- el Admin la ajusta sin despliegue nuevo vía ConfiguracionSistema.
     private static final String CLAVE_MAX_TAMANO_PORTADA_MB = "max_tamano_portada_mb";
     private static final List<String> TIPOS_PORTADA_PERMITIDOS =
-            List.of("image/png", "image/jpeg", "image/webp");
+            List.of("image/png", "image/jpeg", "image/webp", "image/avif");
 
     private final LibroRepository libroRepo;
     private final EditorialRepository editorialRepo;

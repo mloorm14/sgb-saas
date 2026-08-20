@@ -1,135 +1,104 @@
 <main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
 
-  <div class="mb-lg flex items-center justify-between flex-wrap gap-sm">
-    <div>
-      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Inventario de libros</h1>
-      <p class="font-body-sm text-body-sm text-on-surface-variant">Gestión de inventario — BIBLIOTECARIO y GERENTE</p>
+  <!-- ─── ENCABEZADO ─── -->
+  @if (!mostrarFormulario) {
+    <div class="mb-lg flex items-center justify-between flex-wrap gap-sm">
+      <div>
+        <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Inventario de libros</h1>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Gestión de inventario — BIBLIOTECARIO y GERENTE</p>
+      </div>
+      <button (click)="abrirFormularioCrear()"
+        class="h-10 px-md rounded bg-primary text-on-primary font-label-md text-label-sm flex items-center gap-xs hover:bg-on-primary-fixed-variant cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">add</span> Nuevo libro
+      </button>
     </div>
-    <button (click)="abrirFormularioCrear()"
-      class="h-10 px-md rounded bg-primary text-on-primary font-label-md text-label-sm flex items-center gap-xs hover:bg-on-primary-fixed-variant cursor-pointer">
-      <span class="material-symbols-outlined text-[18px]">add</span> Nuevo libro
-    </button>
-  </div>
+  }
 
   @if (errorMsg) {
     <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
   }
 
-  <!-- Filtro por categoría (contrato real de LibroController: ?categoriaId=).
-       El backend no expone búsqueda por texto en el listado de inventario,
-       así que el buscador del mockup 19 no se implementa. -->
-  <div class="rounded border border-outline-variant bg-white flex items-center px-sm mb-md glass-panel">
-    <span class="material-symbols-outlined text-on-surface-variant text-[20px]">filter_list</span>
-    <select (change)="filtrarPorCategoria()" [(ngModel)]="categoriaFiltro"
-      class="flex-1 h-11 px-sm bg-transparent outline-none font-body-sm text-body-sm text-on-surface-variant cursor-pointer">
-      <option value="">Todas las categorías</option>
-      @for (categoria of categorias; track categoria.id) {
-        <option [value]="categoria.id">{{ categoria.nombre }}</option>
-      }
-    </select>
-  </div>
-
-  @if (cargando && libros.length === 0) {
-    <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando inventario…</p>
-  }
-
-  <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
-    <table class="w-full text-left">
-      <thead class="bg-surface-container-low">
-        <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
-          <th class="px-md py-sm">Portada</th>
-          <th class="px-md py-sm">ISBN</th>
-          <th class="px-md py-sm">Título</th>
-          <th class="px-md py-sm hidden md:table-cell">Categorías</th>
-          <th class="px-md py-sm hidden sm:table-cell">Año</th>
-          <th class="px-md py-sm">Stock</th>
-          <th class="px-md py-sm">Acciones</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-        @for (libro of libros; track libro.id) {
-          <tr>
-            <td class="px-md py-sm">
-              <app-portada-libro [libroId]="libro.id" [tienePortada]="libro.tienePortada" />
-            </td>
-            <td class="px-md py-sm text-on-surface-variant">{{ libro.isbn }}</td>
-            <td class="px-md py-sm font-medium">{{ libro.titulo }}</td>
-            <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">
-              {{ libro.categorias.length ? libro.categorias.join(', ') : '—' }}
-            </td>
-            <td class="px-md py-sm hidden sm:table-cell text-on-surface-variant">{{ libro.anioPublicacion }}</td>
-            <td class="px-md py-sm">
-              <span class="inline-flex items-center px-sm py-xs rounded-full font-label-sm text-[11px]"
-                [class]="libro.stockDisponible > 0 ? 'bg-success/15 text-success' : 'bg-warning/25 text-on-tertiary-container'">
-                {{ libro.stockDisponible }}/{{ libro.stockTotal }}
-              </span>
-            </td>
-            <td class="px-md py-sm">
-              <div class="flex gap-xs">
-                <button (click)="abrirFormularioEditar(libro)" title="Editar"
-                  class="w-8 h-8 rounded flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant cursor-pointer">
-                  <span class="material-symbols-outlined text-[18px]">edit</span>
-                </button>
-                <button (click)="eliminarLibro(libro.id)" title="Eliminar"
-                  class="w-8 h-8 rounded flex items-center justify-center hover:bg-error-container/40 text-error cursor-pointer">
-                  <span class="material-symbols-outlined text-[18px]">delete</span>
-                </button>
-              </div>
-            </td>
-          </tr>
-        } @empty {
-          @if (!cargando) {
-            <tr>
-              <td colspan="7" class="px-md py-lg text-center text-on-surface-variant">No hay libros registrados</td>
-            </tr>
-          }
-        }
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Paginación numerada -->
-  @if (totalPages > 1) {
-    <div class="flex justify-center mt-lg gap-xs">
-      <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
-        class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
-        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
-      </button>
-      @for (pagina of paginasVisibles; track pagina) {
-        <button (click)="currentPage = pagina; cargarLibros()"
-          class="w-8 h-8 rounded font-label-sm text-label-sm cursor-pointer"
-          [class.bg-primary]="$index === currentPage"
-          [class.text-on-primary]="$index === currentPage"
-          [class.hover:bg-surface-container-low]="$index !== currentPage"
-          [class.text-on-surface-variant]="$index !== currentPage">
-          {{ $index + 1 }}
-        </button>
-      }
-      <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
-        class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
-        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
-      </button>
-    </div>
-  }
-
-  <!-- Modal crear/editar (mockup 19) -->
+  <!-- ─── FORMULARIO INLINE ─── -->
   @if (mostrarFormulario) {
-    <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-md">
-      <div class="bg-white rounded-xl glass-panel w-full max-w-xl p-xl max-h-[90vh] overflow-y-auto">
-        <h2 class="font-headline-md text-headline-md text-on-background mb-md">
-          {{ modoEdicion ? 'Editar libro' : 'Nuevo libro' }}
-        </h2>
-        <form [formGroup]="form" (ngSubmit)="guardarLibro()">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-md">
-            <div class="sm:col-span-2">
+    <div class="mb-md">
+      <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">
+        {{ modoEdicion ? 'Editar libro' : 'Nuevo libro' }}
+      </h2>
+      <p class="font-body-sm text-body-sm text-on-surface-variant mb-lg">Completá los datos para agregarlo al catálogo</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="guardarLibro()">
+      <div class="flex flex-col lg:flex-row gap-xl">
+
+        <!-- ══ COLUMNA IZQUIERDA: Portada + Stock ══ -->
+        <div class="w-full lg:w-56 shrink-0 flex flex-col gap-lg">
+
+          <!-- Portada -->
+          <div>
+            @if (portadaPreviewUrl) {
+              <img [src]="portadaPreviewUrl" alt="Portada del libro"
+                class="w-full aspect-[3/4] object-cover rounded-xl border border-outline-variant" />
+            } @else {
+              <div class="w-full aspect-[3/4] rounded-xl border-2 border-dashed border-outline-variant bg-surface-container-low flex flex-col items-center justify-center gap-xs">
+                <span class="material-symbols-outlined text-[40px] text-on-surface-variant/40">image</span>
+                <span class="font-body-sm text-body-sm text-on-surface-variant/60 text-center px-sm">Portada del libro</span>
+              </div>
+            }
+            <label class="mt-sm block">
+              <span class="inline-block h-9 px-sm rounded bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-label-sm cursor-pointer hover:bg-primary-fixed/80 transition-colors">
+                Seleccionar archivo
+              </span>
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/avif"
+                (change)="onArchivoPortadaSeleccionado($event)"
+                class="hidden" />
+            </label>
+            <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">JPG / JPEG / PNG / WebP / AVIF</p>
+          </div>
+
+          <!-- Disponibilidad -->
+          <div class="rounded-xl border border-outline-variant bg-white p-md">
+            <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">Disponibilidad</p>
+            <div class="flex flex-col gap-md">
+              <div>
+                <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Stock total *</label>
+                <input formControlName="stockTotal" type="number" min="0"
+                  class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+              </div>
+              <div>
+                <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Stock disponible *</label>
+                <input formControlName="stockDisponible" type="number" min="0"
+                  class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+              </div>
+              <div>
+                <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Ubicación física</label>
+                <input formControlName="ubicacionFisica" type="text" maxlength="50" placeholder="Ej: Estante A-12"
+                  class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ COLUMNA DERECHA: Datos del libro ══ -->
+        <div class="flex-1 min-w-0">
+
+          <!-- Título -->
+          <div class="mb-md">
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Título *</label>
+            <input formControlName="titulo" type="text" placeholder="Título del libro"
+              class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+          </div>
+
+          <!-- Fila: ISBN + Año + Idioma -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-md mb-md">
+            <div class="sm:col-span-1">
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">ISBN</label>
               <div class="flex gap-xs">
                 <input formControlName="isbn" type="text" placeholder="978..."
                   class="flex-1 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
                 <button type="button" (click)="autocompletar()"
                   [disabled]="!esIsbnAutocompletable() || buscandoIsbn"
-                  class="h-11 px-md rounded border border-primary text-primary font-label-sm text-label-sm hover:bg-primary/5 disabled:opacity-40 cursor-pointer">
-                  {{ buscandoIsbn ? 'Buscando…' : 'Autocompletar' }}
+                  class="h-11 px-md rounded border border-primary text-primary font-label-sm text-label-sm hover:bg-primary/5 disabled:opacity-40 whitespace-nowrap cursor-pointer">
+                  {{ buscandoIsbn ? '…' : 'Autocompletar' }}
                 </button>
               </div>
               @if (autocompletarAutor) {
@@ -142,70 +111,96 @@
                 <p class="font-body-sm text-body-sm text-error mt-xs">{{ lookupError }}</p>
               }
             </div>
-            <div class="sm:col-span-2">
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Título</label>
-              <input formControlName="titulo" type="text"
-                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
-            </div>
-            <div class="sm:col-span-2">
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Resumen</label>
-              <textarea formControlName="resumen" rows="3"
-                class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm resize-y"></textarea>
-            </div>
             <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Año de publicación</label>
-              <input formControlName="anioPublicacion" type="number" min="1000" max="2100"
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Año de publicación *</label>
+              <input formControlName="anioPublicacion" type="number" min="1000" max="2100" placeholder="2024"
                 class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
             </div>
             <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Ubicación física <span class="opacity-60">(opcional)</span></label>
-              <input formControlName="ubicacionFisica" type="text" maxlength="50" placeholder="Ej: Estante A-12"
-                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
-            </div>
-            <div class="sm:col-span-2">
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Portada <span class="opacity-60">(opcional)</span></label>
-              <input type="file" accept="image/png,image/jpeg,image/webp"
-                (change)="onArchivoPortadaSeleccionado($event)"
-                class="w-full text-body-sm text-on-surface-variant file:mr-sm file:h-9 file:px-sm file:rounded file:border-0 file:bg-primary-fixed file:text-on-primary-fixed-variant file:cursor-pointer" />
-              @if (portadaPreviewUrl) {
-                <img [src]="portadaPreviewUrl" alt="Portada"
-                  class="mt-xs w-16 h-20 object-cover rounded border border-outline-variant" />
-              }
-            </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Categorías</label>
-              <select multiple formControlName="categoriaIds"
-                class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm h-24 bg-white">
-                @for (categoria of categorias; track categoria.id) {
-                  <option [ngValue]="categoria.id">{{ categoria.nombre }}</option>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Idioma *</label>
+              <select formControlName="idiomaId"
+                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white">
+                <option [ngValue]="null" disabled>Seleccioná un idioma</option>
+                @for (item of idiomas; track item.id) {
+                  <option [ngValue]="item.id">{{ item.nombre }}</option>
                 }
               </select>
             </div>
+          </div>
+
+          <!-- Resumen -->
+          <div class="mb-md">
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Resumen</label>
+            <textarea formControlName="resumen" rows="3" placeholder="Breve descripción del libro..."
+              class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm resize-y"></textarea>
+          </div>
+
+          <!-- Fila: Autores + Categorías (tag input) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-md mb-md">
+            <!-- Autores -->
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Autores</label>
-              <select multiple formControlName="autorIds"
-                class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm h-24 bg-white">
-                @for (autor of autores; track autor.id) {
-                  <option [ngValue]="autor.id">{{ autor.nombre }}</option>
-                }
-              </select>
+              <div class="rounded-lg border border-outline-variant bg-white p-sm min-h-[80px]">
+                <div class="flex flex-wrap gap-xs mb-xs">
+                  @for (autorId of form.get('autorIds')?.value ?? []; track autorId) {
+                    <span class="inline-flex items-center gap-1 px-sm py-xs rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-[11px]">
+                      {{ nombreAutor(autorId) }}
+                      <button type="button" (click)="quitarAutor(autorId)"
+                        class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-on-primary-fixed-variant/20 cursor-pointer">
+                        <span class="material-symbols-outlined text-[12px]">close</span>
+                      </button>
+                    </span>
+                  }
+                </div>
+                <div class="flex gap-xs">
+                  <input type="text" [(ngModel)]="textoAutor" [ngModelOptions]="{standalone: true}"
+                    placeholder="Agregar autor..."
+                    (keydown.enter)="agregarAutor($event)"
+                    class="flex-1 h-8 px-sm rounded font-body-sm text-body-sm outline-none" />
+                  <button type="button" (click)="agregarAutor($event)"
+                    class="w-8 h-8 rounded bg-primary text-on-primary flex items-center justify-center cursor-pointer">
+                    <span class="material-symbols-outlined text-[16px]">add</span>
+                  </button>
+                </div>
+              </div>
             </div>
+            <!-- Categorías -->
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Categorías</label>
+              <div class="rounded-lg border border-outline-variant bg-white p-sm min-h-[80px]">
+                <div class="flex flex-wrap gap-xs mb-xs">
+                  @for (catId of form.get('categoriaIds')?.value ?? []; track catId) {
+                    <span class="inline-flex items-center gap-1 px-sm py-xs rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-[11px]">
+                      {{ nombreCategoria(catId) }}
+                      <button type="button" (click)="quitarCategoria(catId)"
+                        class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-on-primary-fixed-variant/20 cursor-pointer">
+                        <span class="material-symbols-outlined text-[12px]">close</span>
+                      </button>
+                    </span>
+                  }
+                </div>
+                <div class="flex gap-xs">
+                  <input type="text" [(ngModel)]="textoCategoria" [ngModelOptions]="{standalone: true}"
+                    placeholder="Agregar categoría..."
+                    (keydown.enter)="agregarCategoria($event)"
+                    class="flex-1 h-8 px-sm rounded font-body-sm text-body-sm outline-none" />
+                  <button type="button" (click)="agregarCategoria($event)"
+                    class="w-8 h-8 rounded bg-primary text-on-primary flex items-center justify-center cursor-pointer">
+                    <span class="material-symbols-outlined text-[16px]">add</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fila: Editorial + Estado -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-md mb-lg">
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Editorial</label>
               <select formControlName="editorialId"
                 class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white">
                 <option [ngValue]="null" disabled>Seleccioná una editorial</option>
                 @for (item of editoriales; track item.id) {
-                  <option [ngValue]="item.id">{{ item.nombre }}</option>
-                }
-              </select>
-            </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Idioma</label>
-              <select formControlName="idiomaId"
-                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white">
-                <option [ngValue]="null" disabled>Seleccioná un idioma</option>
-                @for (item of idiomas; track item.id) {
                   <option [ngValue]="item.id">{{ item.nombre }}</option>
                 }
               </select>
@@ -220,33 +215,124 @@
                 }
               </select>
             </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Stock total</label>
-              <input formControlName="stockTotal" type="number"
-                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
-            </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Stock disponible</label>
-              <input formControlName="stockDisponible" type="number"
-                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
-            </div>
           </div>
+
           @if (errorCatalogo) {
-            <p class="font-body-sm text-body-sm text-warning mt-sm">{{ errorCatalogo }}</p>
+            <p class="font-body-sm text-body-sm text-warning mb-md">{{ errorCatalogo }}</p>
           }
-          <div class="flex justify-end gap-sm mt-lg">
+
+          <!-- Botones -->
+          <div class="flex justify-end gap-sm">
             <button type="button" (click)="cerrarFormulario()"
-              class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm hover:bg-surface-container-low cursor-pointer">
+              class="h-10 px-md rounded-lg border border-outline-variant font-label-sm text-label-sm hover:bg-surface-container-low cursor-pointer">
               Cancelar
             </button>
             <button type="submit" [disabled]="form.invalid"
-              class="h-10 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm disabled:opacity-40 cursor-pointer">
+              class="h-10 px-lg rounded-lg bg-primary text-on-primary font-label-sm text-label-sm disabled:opacity-40 cursor-pointer">
               {{ modoEdicion ? 'Actualizar' : 'Guardar' }}
             </button>
           </div>
-        </form>
+        </div>
       </div>
+    </form>
+  }
+
+  <!-- ─── TABLA DE INVENTARIO ─── -->
+  @if (!mostrarFormulario) {
+    <!-- Filtro por categoría -->
+    <div class="rounded border border-outline-variant bg-white flex items-center px-sm mb-md glass-panel">
+      <span class="material-symbols-outlined text-on-surface-variant text-[20px]">filter_list</span>
+      <select (change)="filtrarPorCategoria()" [(ngModel)]="categoriaFiltro"
+        class="flex-1 h-11 px-sm bg-transparent outline-none font-body-sm text-body-sm text-on-surface-variant cursor-pointer">
+        <option value="">Todas las categorías</option>
+        @for (categoria of categorias; track categoria.id) {
+          <option [value]="categoria.id">{{ categoria.nombre }}</option>
+        }
+      </select>
     </div>
+
+    @if (cargando && libros.length === 0) {
+      <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando inventario…</p>
+    }
+
+    <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
+      <table class="w-full text-left">
+        <thead class="bg-surface-container-low">
+          <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+            <th class="px-md py-sm">Portada</th>
+            <th class="px-md py-sm">ISBN</th>
+            <th class="px-md py-sm">Título</th>
+            <th class="px-md py-sm hidden md:table-cell">Categorías</th>
+            <th class="px-md py-sm hidden sm:table-cell">Año</th>
+            <th class="px-md py-sm">Stock</th>
+            <th class="px-md py-sm">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+          @for (libro of libros; track libro.id) {
+            <tr>
+              <td class="px-md py-sm">
+                <app-portada-libro [libroId]="libro.id" [tienePortada]="libro.tienePortada" />
+              </td>
+              <td class="px-md py-sm text-on-surface-variant">{{ libro.isbn }}</td>
+              <td class="px-md py-sm font-medium">{{ libro.titulo }}</td>
+              <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">
+                {{ libro.categorias.length ? libro.categorias.join(', ') : '—' }}
+              </td>
+              <td class="px-md py-sm hidden sm:table-cell text-on-surface-variant">{{ libro.anioPublicacion }}</td>
+              <td class="px-md py-sm">
+                <span class="inline-flex items-center px-sm py-xs rounded-full font-label-sm text-[11px]"
+                  [class]="libro.stockDisponible > 0 ? 'bg-success/15 text-success' : 'bg-warning/25 text-on-tertiary-container'">
+                  {{ libro.stockDisponible }}/{{ libro.stockTotal }}
+                </span>
+              </td>
+              <td class="px-md py-sm">
+                <div class="flex gap-xs">
+                  <button (click)="abrirFormularioEditar(libro)" title="Editar"
+                    class="w-8 h-8 rounded flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">edit</span>
+                  </button>
+                  <button (click)="eliminarLibro(libro.id)" title="Eliminar"
+                    class="w-8 h-8 rounded flex items-center justify-center hover:bg-error-container/40 text-error cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            @if (!cargando) {
+              <tr>
+                <td colspan="7" class="px-md py-lg text-center text-on-surface-variant">No hay libros registrados</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    @if (totalPages > 1) {
+      <div class="flex justify-center mt-lg gap-xs">
+        <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
+          class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
+          <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+        </button>
+        @for (pagina of paginasVisibles; track pagina) {
+          <button (click)="currentPage = pagina; cargarLibros()"
+            class="w-8 h-8 rounded font-label-sm text-label-sm cursor-pointer"
+            [class.bg-primary]="$index === currentPage"
+            [class.text-on-primary]="$index === currentPage"
+            [class.hover:bg-surface-container-low]="$index !== currentPage"
+            [class.text-on-surface-variant]="$index !== currentPage">
+            {{ $index + 1 }}
+          </button>
+        }
+        <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
+          class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
+          <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+        </button>
+      </div>
+    }
   }
 
 </main>
