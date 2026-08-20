@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Component, HostListener } from '@angular/core';
+import { RouterLink, RouterLinkActive, RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
+import { filter } from 'rxjs/operators';
 
 interface EnlaceNav {
   ruta: string;
@@ -18,8 +19,28 @@ interface EnlaceNav {
 })
 export class AppComponent {
   title = 'frontend-angular';
+  mostrarMenuUsuario = false;
+  enRutaBibliotecario = false;
 
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe((event) => {
+      const url = (event as NavigationEnd).urlAfterRedirects || (event as NavigationEnd).url;
+      this.enRutaBibliotecario = url.startsWith('/dashboard-bibliotecario');
+    });
+  }
+
+  @HostListener('document:click', ['$event'])
+  cerrarMenuFuera(event: Event): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('[data-menu-usuario]')) {
+      this.mostrarMenuUsuario = false;
+    }
+  }
 
   // Rama B completada: /catalogo, /favoritos, /sugerencias y /notificaciones ya son reales
   // y salen de la lista de futuros. Mi Credencial (rama frontend/estudiante-cuenta, no integrada)
@@ -82,6 +103,18 @@ export class AppComponent {
   }
 
   cerrarSesion(): void {
+    this.mostrarMenuUsuario = false;
     this.authService.logout();
+  }
+
+  get correoUsuario(): string {
+    return this.authService.getCorreo() ?? '';
+  }
+
+  get inicialesUsuario(): string {
+    const correo = this.correoUsuario;
+    if (!correo) return '??';
+    const parte = correo.split('@')[0];
+    return parte.substring(0, 2).toUpperCase();
   }
 }
