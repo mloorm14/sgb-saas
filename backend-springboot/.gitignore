@@ -31,8 +31,3 @@ build/
 
 ### VS Code ###
 .vscode/
-
-# Build del SPA de Angular (fix de sesión 2026-08): no se commitea; lo
-# genera el Build Command del despliegue (build de frontend-angular +
-# copia de dist/frontend-angular/browser/ a src/main/resources/static/).
-/src/main/resources/static/
