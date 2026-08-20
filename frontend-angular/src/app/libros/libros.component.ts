@@ -336,33 +336,39 @@ export class LibrosComponent implements OnInit {
     if (this.form.invalid) return;
     const datos = this.form.value as LibroRequest;
 
-    if (this.modoEdicion && this.libroSeleccionadoId) {
-      this.libroService.actualizar(this.libroSeleccionadoId, datos).subscribe({
-        next: (libro) => {
-          this.guardarPortadaPendiente(libro.id);
-          this.cerrarFormulario();
-          this.cargarLibros();
-        },
-        error: () => { this.errorMsg = 'Error al actualizar el libro'; }
-      });
-    } else {
-      this.libroService.crear(datos).subscribe({
-        next: (libro) => {
-          this.guardarPortadaPendiente(libro.id);
-          this.cerrarFormulario();
-          this.cargarLibros();
-        },
-        error: () => { this.errorMsg = 'Error al crear el libro'; }
-      });
-    }
+    const accion = this.modoEdicion && this.libroSeleccionadoId
+      ? this.libroService.actualizar(this.libroSeleccionadoId, datos)
+      : this.libroService.crear(datos);
+
+    accion.subscribe({
+      next: (libro) => {
+        this.cerrarFormulario();
+        // La recarga de la lista va después de terminar la subida de la
+        // portada: si se recarga antes, el libro nuevo llega con
+        // tienePortada=false y el placeholder ya no se actualiza.
+        this.guardarPortadaPendiente(libro.id);
+      },
+      error: () => {
+        this.errorMsg = this.modoEdicion
+          ? 'Error al actualizar el libro'
+          : 'Error al crear el libro';
+      }
+    });
   }
 
   private guardarPortadaPendiente(libroId: number): void {
-    if (!this.portadaPreviewBlob) return;
+    if (!this.portadaPreviewBlob) {
+      this.cargarLibros();
+      return;
+    }
     const tipo = this.portadaPreviewBlob.type.split('/')[1] ?? 'jpg';
     const archivo = new File([this.portadaPreviewBlob], `portada.${tipo}`);
     this.libroService.subirPortada(libroId, archivo).subscribe({
-      error: () => { this.errorMsg = 'El libro se guardó, pero hubo un error al subir su portada'; }
+      next: () => this.cargarLibros(),
+      error: () => {
+        this.errorMsg = 'El libro se guardó, pero hubo un error al subir su portada';
+        this.cargarLibros();
+      }
     });
   }
 
