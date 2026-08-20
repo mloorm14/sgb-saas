@@ -272,13 +272,13 @@ public class LibroService {
         return categorias;
     }
 
-    private Set<Autor> resolverAutores(Set<Long> autorIds) {
+    private Set<Autor> resolverAutores(Set<Integer> autorIds) {
         if (autorIds == null || autorIds.isEmpty()) {
             return new HashSet<>();
         }
         Set<Autor> autores = new HashSet<>();
-        for (Long id : autorIds) {
-            autores.add(autorRepo.getReferenceById(id));
+        for (Integer id : autorIds) {
+            autores.add(autorRepo.getReferenceById(id.longValue()));
         }
         return autores;
     }

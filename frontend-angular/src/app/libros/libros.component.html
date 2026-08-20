@@ -87,24 +87,8 @@
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-md mb-md">
             <div class="sm:col-span-1">
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">ISBN</label>
-              <div class="flex gap-xs">
-                <input formControlName="isbn" type="text" placeholder="978..."
-                  class="flex-1 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
-                <button type="button" (click)="autocompletar()"
-                  [disabled]="!esIsbnAutocompletable() || buscandoIsbn"
-                  class="h-11 px-md rounded border border-primary text-primary font-label-sm text-label-sm hover:bg-primary/5 disabled:opacity-40 whitespace-nowrap cursor-pointer">
-                  {{ buscandoIsbn ? '…' : 'Autocompletar' }}
-                </button>
-              </div>
-              @if (autocompletarAutor) {
-                <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Autor sugerido: {{ autocompletarAutor }}</p>
-              }
-              @if (lookupMensaje) {
-                <p class="font-body-sm text-body-sm text-secondary mt-xs">{{ lookupMensaje }}</p>
-              }
-              @if (lookupError) {
-                <p class="font-body-sm text-body-sm text-error mt-xs">{{ lookupError }}</p>
-              }
+              <input formControlName="isbn" type="text" placeholder="978..."
+                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
             </div>
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Año de publicación *</label>
