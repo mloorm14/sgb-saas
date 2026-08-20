@@ -16,7 +16,7 @@ La política realmente cargada en el Dashboard (verificada con
 
 | Cabecera | Valor en producción (Dashboard) |
 |---|---|
-| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://sgb-backend-b058.onrender.com; frame-ancestors 'none'; base-uri 'self'; form-action 'none'; object-src 'none'` |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://sgb-backend-b058.onrender.com; frame-ancestors 'none'; base-uri 'self'; form-action 'none'; object-src 'none'` |
 | `X-Frame-Options` | `DENY` |
 | `X-Content-Type-Options` | `nosniff` |
 | `Strict-Transport-Security` | aplicada automáticamente por el edge de Render (`max-age=315360000; includeSubdomains; preload`) — no se configura manualmente |
