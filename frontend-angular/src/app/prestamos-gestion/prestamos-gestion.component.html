@@ -120,7 +120,7 @@
           </div>
         }
 
-        <!-- ═══ CASO C: USUARIO BLOQUEADO ═══ -->
+        <!-- ═══ USUARIO BLOQUEADO ═══ -->
         @if (estaBloqueado) {
           <div class="bg-red-50 border border-red-200 rounded-2xl p-6 flex items-start gap-4">
             <div class="p-3 bg-red-100 rounded-full text-red-600 shrink-0">
@@ -137,87 +137,12 @@
           </div>
         }
 
-        <!-- ═══ CASO A: NUEVO PRÉSTAMO (Reserva) ═══ -->
-        @if (!estaBloqueado && cargandoReserva) {
-          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-6">
-            <p class="text-on-surface-variant flex items-center gap-2">
-              <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
-              Consultando reservas vigentes...
-            </p>
-          </div>
-        }
-
-        @if (!estaBloqueado && reserva) {
-          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-6">
-            <h3 class="font-headline-sm text-on-surface mb-4 flex items-center gap-2">
-              <span class="material-symbols-outlined text-primary">bookmark_added</span>
-              Nuevo Préstamo
-            </h3>
-
-            <div class="flex gap-5 p-4 bg-surface-container-low rounded-xl border border-outline-variant/30 mb-5">
-              <!-- Portada clickable -->
-              <button type="button" (click)="abrirPortada(reserva.libroId, reserva.tienePortada)"
-                class="w-24 h-32 sm:w-28 sm:h-36 shrink-0 rounded-lg overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-low flex items-center justify-center">
-                @if (reserva.tienePortada) {
-                  <app-portada-libro [libroId]="reserva.libroId" [tienePortada]="reserva.tienePortada" />
-                } @else {
-                  <span class="material-symbols-outlined text-[48px] text-outline-variant">menu_book</span>
-                }
-              </button>
-
-              <!-- Info del libro -->
-              <div class="flex-1 min-w-0">
-                <h4 class="font-bold text-on-surface text-lg mb-1">{{ reserva.titulo }}</h4>
-                <p class="text-sm text-on-surface-variant mb-1">ISBN • {{ reserva.isbn }}</p>
-                <p class="text-sm text-on-surface-variant mb-2">{{ reserva.autores.length > 0 ? reserva.autores.join(', ') : 'Autor desconocido' }}</p>
-                @if (reserva.categorias.length > 0) {
-                  <div class="flex flex-wrap gap-1.5 mb-2">
-                    @for (cat of reserva.categorias; track cat) {
-                      <span class="px-2 py-0.5 bg-surface-container border border-outline-variant/50 rounded text-xs font-medium text-on-surface-variant">{{ cat }}</span>
-                    }
-                  </div>
-                }
-                <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-on-surface-variant">
-                  <span>Año • {{ reserva.anioPublicacion }}</span>
-                  <span>Stock • {{ reserva.stockDisponible }} disponibles</span>
-                  @if (reserva.ubicacionFisica) {
-                    <span>Lugar • {{ reserva.ubicacionFisica }}</span>
-                  }
-                </div>
-              </div>
-
-              <!-- Fecha reserva -->
-              <div class="shrink-0 text-right">
-                <p class="text-xs text-on-surface-variant flex items-center gap-1 justify-end">
-                  <span class="material-symbols-outlined text-[14px]">schedule</span>
-                  Reservado: {{ formatearFechaHora(reserva.fechaReserva) }}
-                </p>
-              </div>
-            </div>
-
-            <div class="flex flex-wrap items-end gap-5">
-              <div class="w-36">
-                <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Días de Préstamo</label>
-                <input [(ngModel)]="diasReserva" type="number" min="1" max="90"
-                  class="w-full border border-outline-variant/50 rounded-lg px-3 py-2 text-body-md bg-white focus:ring-primary focus:border-primary" />
-              </div>
-              <p class="text-sm font-medium text-on-surface-variant pb-2.5">Devolución: <span class="font-semibold text-on-surface">{{ fechaDevolucionEstimada(diasReserva) }}</span></p>
-              <button (click)="confirmarEntrega()"
-                [disabled]="!diasReserva || diasReserva < 1 || confirmandoEntrega"
-                class="bg-primary hover:bg-on-primary-fixed-variant text-white font-medium py-3 px-6 rounded-xl transition-colors shadow-sm text-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ml-auto">
-                <span class="material-symbols-outlined">how_to_reg</span>
-                {{ confirmandoEntrega ? 'Confirmando...' : 'Confirmar Entrega' }}
-              </button>
-            </div>
-          </div>
-        }
-
-        <!-- ═══ CASO B: PRÉSTAMO DIRECTO ═══ -->
-        @if (!estaBloqueado && !cargandoReserva && !reserva) {
+        <!-- ═══ PRÉSTAMO ═══ -->
+        @if (!estaBloqueado) {
           <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-6">
             <h3 class="font-headline-sm text-on-surface mb-4 flex items-center gap-2">
               <span class="material-symbols-outlined text-success">menu_book</span>
-              Registrar Préstamo Directo
+              Registrar Préstamo
             </h3>
 
             <div class="flex flex-wrap items-end gap-5 mb-5">
@@ -264,16 +189,16 @@
 
               <div class="w-24">
                 <label class="block text-sm font-medium text-on-surface mb-2">Días</label>
-                <input [(ngModel)]="diasDirecto" type="number" min="1" max="90"
+                <input [(ngModel)]="diasPrestamo" type="number" min="1" max="90"
                   class="block w-full px-3 py-2.5 border border-outline-variant rounded-xl focus:ring-success focus:border-success transition-shadow" />
               </div>
 
               <div class="flex flex-col items-end gap-1">
-                <p class="text-xs text-on-surface-variant">Devolución: <span class="font-semibold text-on-surface">{{ fechaDevolucionEstimada(diasDirecto) }}</span></p>
-                <button (click)="registrarPrestamoDirecto()" [disabled]="!puedeRegistrarDirecto"
+                <p class="text-xs text-on-surface-variant">Devolución: <span class="font-semibold text-on-surface">{{ fechaDevolucionEstimada(diasPrestamo) }}</span></p>
+                <button (click)="registrarPrestamo()" [disabled]="!puedeRegistrarPrestamo"
                   class="bg-success hover:bg-success/80 text-white font-medium py-2.5 px-5 rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2 h-[42px] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
                   <span class="material-symbols-outlined text-sm">add_circle</span>
-                  {{ registrandoDirecto ? 'Registrando...' : 'Registrar Préstamo' }}
+                  {{ registrandoPrestamo ? 'Registrando...' : 'Registrar Préstamo' }}
                 </button>
               </div>
             </div>
