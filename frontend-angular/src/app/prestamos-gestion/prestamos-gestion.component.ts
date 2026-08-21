@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -12,23 +12,17 @@ import {
   ReservaActiva,
   UsuarioPrestamos
 } from '../core/models/prestamos-gestion.model';
+import { BuscadorUsuarioComponent } from '../shared/buscador-usuario/buscador-usuario.component';
+import { BuscadorLibroComponent } from '../shared/buscador-libro/buscador-libro.component';
 
-// Ventanilla de préstamos del BIBLIOTECARIO (módulo "Préstamos" del
-// sidebar). Flujo según la especificación del módulo:
-// 1. Estado vacío hasta ingresar un correo válido y buscar.
-// 2. Tarjeta de identificación del usuario encontrado.
-// 3. Caso A: reserva vigente -> "Confirmar Entrega" (convierte la reserva
-//    en préstamo vía reservacionId).
-// 4. Caso B: sin reserva -> préstamo directo con buscador de libros.
-// 5. Caso C: usuario bloqueado (estado != ACTIVO o multas pendientes) ->
-//    alerta con el motivo exacto y acceso a Multas filtrado por el usuario.
-// 6. Historial reciente como línea de tiempo (siempre visible tras buscar).
 @Component({
   selector: 'app-prestamos-gestion',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BuscadorUsuarioComponent, BuscadorLibroComponent],
   templateUrl: './prestamos-gestion.component.html'
 })
 export class PrestamosGestionComponent {
+
+  @ViewChild('buscadorLibro') buscadorLibro!: BuscadorLibroComponent;
 
   // ── Búsqueda por correo ─────────────────────────────────
   correoBusqueda: string = '';
@@ -43,10 +37,6 @@ export class PrestamosGestionComponent {
   confirmandoEntrega: boolean = false;
 
   // ── Caso B: préstamo directo ────────────────────────────
-  textoLibro: string = '';
-  sugerenciasLibro: LibroSugerencia[] = [];
-  mostrarSugerencias: boolean = false;
-  buscandoSugerencias: boolean = false;
   libroSeleccionado: Libro | null = null;
   advertenciaStock: string = '';
   diasDirecto: number | null = null;
@@ -65,11 +55,6 @@ export class PrestamosGestionComponent {
     private libroService: LibroService,
     private router: Router
   ) {}
-
-  // Normaliza el correo mientras se escribe: sin espacios sobrantes.
-  onInputCorreo(): void {
-    this.correoBusqueda = this.correoBusqueda.replace(/\s/g, '');
-  }
 
   get esCorreoValido(): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.correoBusqueda);
@@ -98,6 +83,17 @@ export class PrestamosGestionComponent {
     return `El usuario no puede realizar nuevos préstamos debido a que ${motivos.join(' y ')}.`;
   }
 
+  // ── Handlers del BuscadorUsuario ────────────────────────
+  onUsuarioSeleccionado(correo: string): void {
+    this.correoBusqueda = correo;
+    this.buscarUsuario();
+  }
+
+  onBuscarAhora(correo: string): void {
+    this.correoBusqueda = correo;
+    this.buscarUsuario();
+  }
+
   buscarUsuario(): void {
     if (!this.esCorreoValido) {
       this.errorBusqueda = 'Ingresa un correo electrónico válido';
@@ -110,11 +106,9 @@ export class PrestamosGestionComponent {
       next: (usuario) => {
         this.usuario = usuario;
         this.buscando = false;
-        // Días de préstamo prellenados según la configuración del sistema.
         this.diasReserva = usuario.diasPrestamoSugerido;
         this.diasDirecto = usuario.diasPrestamoSugerido;
         this.cargarHistorial(usuario.id);
-        // Caso C: no tiene sentido consultar reserva ni ofrecer formularios.
         if (this.estaBloqueado) return;
         this.consultarReservaActiva(usuario.id);
       },
@@ -157,7 +151,6 @@ export class PrestamosGestionComponent {
       },
       error: (err: HttpErrorResponse) => {
         this.cargandoReserva = false;
-        // 404 = sin reserva vigente -> Caso B (préstamo directo). No es error.
         if (err.status !== 404) {
           this.errorMsgAccion = 'Error al consultar la reserva del usuario.';
         }
@@ -179,8 +172,6 @@ export class PrestamosGestionComponent {
     });
   }
 
-  // Reconsulta reserva e historial tras crear un préstamo (la reserva pasa
-  // a RETIRADA y el historial gana una entrada).
   private refrescarTrasAccion(): void {
     if (!this.usuario) return;
     this.consultarReservaActiva(this.usuario.id);
@@ -213,35 +204,15 @@ export class PrestamosGestionComponent {
   }
 
   // ── Caso B: préstamo directo ────────────────────────────
-  buscarSugerencias(): void {
-    const texto = this.textoLibro.trim();
+  onLibroSeleccionadoDirecto(sugerencia: LibroSugerencia | null): void {
     this.advertenciaStock = '';
-    if (texto.length < 2) {
-      this.sugerenciasLibro = [];
-      this.mostrarSugerencias = false;
+    if (!sugerencia) {
+      this.libroSeleccionado = null;
       return;
     }
-    this.buscandoSugerencias = true;
-    this.libroService.sugerencias(texto).subscribe({
-      next: (lista) => {
-        this.sugerenciasLibro = lista;
-        this.mostrarSugerencias = true;
-        this.buscandoSugerencias = false;
-      },
-      error: () => {
-        this.buscandoSugerencias = false;
-      }
-    });
-  }
-
-  seleccionarLibro(sugerencia: LibroSugerencia): void {
-    this.mostrarSugerencias = false;
-    this.libroSeleccionado = null;
-    this.advertenciaStock = '';
     this.libroService.obtener(sugerencia.id).subscribe({
       next: (libro) => {
         this.libroSeleccionado = libro;
-        // Validación de ejemplares disponibles: sin stock se bloquea el botón.
         if (libro.stockDisponible <= 0) {
           this.advertenciaStock = 'Este libro no tiene ejemplares disponibles.';
         }
@@ -253,11 +224,11 @@ export class PrestamosGestionComponent {
   }
 
   limpiarFormularioLibro(): void {
-    this.textoLibro = '';
-    this.sugerenciasLibro = [];
-    this.mostrarSugerencias = false;
     this.libroSeleccionado = null;
     this.advertenciaStock = '';
+    if (this.buscadorLibro) {
+      this.buscadorLibro.limpiar();
+    }
   }
 
   get puedeRegistrarDirecto(): boolean {
@@ -292,9 +263,6 @@ export class PrestamosGestionComponent {
   }
 
   // ── Caso C: gestionar multas en el módulo existente ─────
-  // Lleva al módulo de Multas ya existente, filtrado por este usuario. Si
-  // la pantalla corre dentro del panel del bibliotecario se navega a la
-  // ruta hija (mantiene el sidebar); si no, a la ruta suelta /multas.
   gestionarMultas(): void {
     if (!this.usuario) return;
     const dentroDelPanel = this.router.url.includes('/dashboard-bibliotecario');
@@ -317,10 +285,10 @@ export class PrestamosGestionComponent {
 
   claseEstadoCuenta(estado: string): string {
     switch (estado) {
-      case 'ACTIVO': return 'bg-success text-white';                       // verde
-      case 'BLOQUEADO_POR_MULTA': return 'bg-error text-on-error';         // rojo
-      case 'PENDIENTE_VERIFICACION': return 'bg-warning text-tertiary';    // ámbar
-      default: return 'bg-surface-container-highest text-on-surface-variant'; // INACTIVO u otro
+      case 'ACTIVO': return 'bg-success text-white';
+      case 'BLOQUEADO_POR_MULTA': return 'bg-error text-on-error';
+      case 'PENDIENTE_VERIFICACION': return 'bg-warning text-tertiary';
+      default: return 'bg-surface-container-highest text-on-surface-variant';
     }
   }
 
@@ -343,7 +311,6 @@ export class PrestamosGestionComponent {
     }
   }
 
-  // Fecha de devolución estimada en tiempo real: hoy + días de préstamo.
   fechaDevolucionEstimada(dias: number | null): string {
     if (!dias || dias < 1) return '—';
     const fecha = new Date();
@@ -366,8 +333,6 @@ export class PrestamosGestionComponent {
     return `${this.formatearFecha(iso)} ${hh}:${mm}`;
   }
 
-  // Días de atraso de un préstamo: contra la devolución real si ya se
-  // devolvió, o contra hoy si sigue pendiente.
   diasDeAtraso(item: HistorialPrestamo): number {
     const fin = item.fechaDevolucionReal ? new Date(item.fechaDevolucionReal) : new Date();
     const esperada = new Date(item.fechaDevolucionEstimada);
@@ -412,8 +377,6 @@ export class PrestamosGestionComponent {
   }
 }
 
-// Extrae el detalle legible de un ProblemDetail (RFC 7807) del backend;
-// cae al mensaje genérico si la respuesta no lo trae.
 function detalleDeError(err: HttpErrorResponse, fallback: string): string {
   const problem = err?.error as { detail?: string } | undefined;
   return problem?.detail ?? fallback;
