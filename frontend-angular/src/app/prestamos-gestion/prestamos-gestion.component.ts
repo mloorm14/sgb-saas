@@ -15,7 +15,7 @@ import {
 
 // Ventanilla de préstamos del BIBLIOTECARIO (módulo "Préstamos" del
 // sidebar). Flujo según la especificación del módulo:
-// 1. Estado vacío hasta ingresar una cédula válida y buscar.
+// 1. Estado vacío hasta ingresar un correo válido y buscar.
 // 2. Tarjeta de identificación del usuario encontrado.
 // 3. Caso A: reserva vigente -> "Confirmar Entrega" (convierte la reserva
 //    en préstamo vía reservacionId).
@@ -30,10 +30,10 @@ import {
 })
 export class PrestamosGestionComponent {
 
-  // ── Búsqueda por cédula ─────────────────────────────────
-  cedulaBusqueda: string = '';
+  // ── Búsqueda por correo ─────────────────────────────────
+  correoBusqueda: string = '';
   buscando: boolean = false;
-  errorCedula: string = '';
+  errorBusqueda: string = '';
   usuario: UsuarioPrestamos | null = null;
 
   // ── Caso A: reserva activa ──────────────────────────────
@@ -66,13 +66,13 @@ export class PrestamosGestionComponent {
     private router: Router
   ) {}
 
-  // Solo números, formato de cédula: exactamente 10 dígitos.
-  onInputCedula(): void {
-    this.cedulaBusqueda = this.cedulaBusqueda.replace(/\D/g, '').slice(0, 10);
+  // Normaliza el correo mientras se escribe: sin espacios sobrantes.
+  onInputCorreo(): void {
+    this.correoBusqueda = this.correoBusqueda.replace(/\s/g, '');
   }
 
-  get esCedulaValida(): boolean {
-    return /^[0-9]{10}$/.test(this.cedulaBusqueda);
+  get esCorreoValido(): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.correoBusqueda);
   }
 
   // Caso C: suspendido/bloqueado O con multas pendientes de pago.
@@ -99,14 +99,14 @@ export class PrestamosGestionComponent {
   }
 
   buscarUsuario(): void {
-    if (!this.esCedulaValida) {
-      this.errorCedula = 'Ingresa una cédula válida de 10 dígitos';
+    if (!this.esCorreoValido) {
+      this.errorBusqueda = 'Ingresa un correo electrónico válido';
       return;
     }
     this.buscando = true;
-    this.errorCedula = '';
+    this.errorBusqueda = '';
     this.limpiarResultado();
-    this.prestamoService.buscarUsuarioPorCedula(this.cedulaBusqueda).subscribe({
+    this.prestamoService.buscarUsuarioPorCorreo(this.correoBusqueda).subscribe({
       next: (usuario) => {
         this.usuario = usuario;
         this.buscando = false;
@@ -121,17 +121,17 @@ export class PrestamosGestionComponent {
       error: (err: HttpErrorResponse) => {
         this.buscando = false;
         if (err.status === 404) {
-          this.errorCedula = 'No se encontró ningún usuario con esta cédula';
+          this.errorBusqueda = 'No se encontró ningún usuario con este correo';
         } else {
-          this.errorCedula = 'Error al buscar el usuario. Intenta nuevamente.';
+          this.errorBusqueda = 'Error al buscar el usuario. Intenta nuevamente.';
         }
       }
     });
   }
 
   limpiarBusqueda(): void {
-    this.cedulaBusqueda = '';
-    this.errorCedula = '';
+    this.correoBusqueda = '';
+    this.errorBusqueda = '';
     this.limpiarResultado();
   }
 
