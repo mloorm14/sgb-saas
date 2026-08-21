@@ -1,0 +1,63 @@
+<div class="flex h-screen">
+
+  <!-- Sidebar -->
+  <aside class="w-64 bg-white border-r border-outline-variant flex flex-col shrink-0">
+
+    <!-- Logo -->
+    <div class="px-lg py-md border-b border-outline-variant">
+      <span class="flex items-center gap-sm">
+        <span class="material-symbols-outlined text-3xl text-primary" style="font-variation-settings: 'FILL' 1;">local_library</span>
+        <span class="font-headline-md text-headline-md text-primary tracking-tight">SGB UTEQ</span>
+      </span>
+    </div>
+
+    <!-- Navegación -->
+    <nav class="flex-1 overflow-y-auto py-md">
+      @for (seccion of secciones; track seccion.titulo) {
+        <div class="mb-sm">
+          <p class="px-lg font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">{{ seccion.titulo }}</p>
+          @for (enlace of seccion.enlaces; track enlace.ruta) {
+            <a [routerLink]="enlace.ruta"
+               routerLinkActive="bg-primary-fixed text-primary"
+               [routerLinkActiveOptions]="{ exact: true }"
+               class="flex items-center gap-sm px-lg py-sm mx-sm rounded-lg font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer">
+              <span class="material-symbols-outlined text-[20px]">{{ enlace.icono }}</span>
+              {{ enlace.etiqueta }}
+            </a>
+          }
+        </div>
+      }
+    </nav>
+
+    <!-- Usuario -->
+    <div class="border-t border-outline-variant px-lg py-md" data-menu-usuario-sidebar>
+      <button (click)="mostrarMenuUsuario = !mostrarMenuUsuario"
+        class="w-full flex items-center gap-sm cursor-pointer">
+        <span class="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-sm text-label-sm shrink-0">{{ inicialesUsuario }}</span>
+        <div class="flex-1 text-left min-w-0">
+          <p class="font-body-sm text-body-sm text-on-surface truncate">{{ correoUsuario }}</p>
+          <p class="font-label-sm text-label-sm text-on-surface-variant">{{ nombreRol }}</p>
+        </div>
+        <span class="material-symbols-outlined text-[18px] text-on-surface-variant"
+          [class.rotate-180]="mostrarMenuUsuario"
+          style="transition: transform 0.2s">expand_less</span>
+      </button>
+
+      @if (mostrarMenuUsuario) {
+        <div class="mt-xs bg-surface-container-low rounded-lg border border-outline-variant overflow-hidden">
+          <button (click)="cerrarSesion()"
+            class="w-full flex items-center gap-sm px-md py-sm text-left font-body-sm text-body-sm text-error hover:bg-error-container/40 transition-colors cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]">logout</span>
+            Cerrar sesión
+          </button>
+        </div>
+      }
+    </div>
+  </aside>
+
+  <!-- Contenido principal -->
+  <main class="flex-1 overflow-y-auto bg-surface">
+    <router-outlet />
+  </main>
+
+</div>
