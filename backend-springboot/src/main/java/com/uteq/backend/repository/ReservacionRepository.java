@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * CRUD elemental sobre {@code reservaciones}. La expiración masiva vive
@@ -34,4 +35,12 @@ public interface ReservacionRepository extends JpaRepository<Reservacion, Long> 
     // individualmente antes de que el UPDATE masivo las marque EXPIRADA.
     List<Reservacion> findByEstadoReservacionIdInAndFechaLimiteRetiroBefore(
             List<Integer> estadosReservacionIds, OffsetDateTime ahora);
+
+    // Módulo de préstamos (ventanilla): reserva vigente más reciente del
+    // usuario (PENDIENTE o LISTA_PARA_RETIRO -- ids resueltos por el
+    // llamador desde EstadoReservacionRepository, mismo criterio que
+    // PrestamoService.existeReservaVigenteDeOtroUsuario). Es la reserva que
+    // la tarjeta "Reserva Encontrada" convierte en préstamo.
+    Optional<Reservacion> findFirstByUsuarioIdAndEstadoReservacionIdInOrderByFechaReservaDesc(
+            Long usuarioId, List<Integer> estadosReservacionIds);
 }
