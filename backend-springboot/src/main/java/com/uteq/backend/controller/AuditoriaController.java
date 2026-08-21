@@ -4,6 +4,7 @@ import com.uteq.backend.dto.EventoAuditoriaResponseDTO;
 import com.uteq.backend.service.AuditoriaService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -41,7 +42,10 @@ public class AuditoriaController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta,
-            @PageableDefault(size = 20, sort = "fechaHora") Pageable pageable) {
+            // sort con el nombre FISICO de columna (fecha_hora): la query del
+            // repositorio es NATIVA (BitacoraAuditoriaRepository) y Spring Data
+            // inyecta el sort tal cual, sin traducir propiedad->columna.
+            @PageableDefault(size = 20, sort = "fecha_hora", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(
                 auditoriaService.listar(usuarioId, modulo, desde, hasta, pageable));
     }

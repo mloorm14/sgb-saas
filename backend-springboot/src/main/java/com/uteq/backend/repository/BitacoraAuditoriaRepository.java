@@ -13,23 +13,34 @@ import java.time.OffsetDateTime;
 /**
  * CRUD elemental sobre {@code bitacora_auditoria}, más el filtro paginado
  * que consume {@code AuditoriaService} (Módulo 6). Los 4 filtros son
- * opcionales e independientes entre sí (usuario, módulo, rango de fecha):
- * en vez de armar 2^4 variantes de {@code findBy...} derivado, se usa una
- * única @Query JPQL con "(:param IS NULL OR columna = :param)" por cada
- * filtro -- patrón estándar de Spring Data JPA para filtros combinables sin
- * Specification/Criteria API, que este proyecto no usa en ningún otro
- * repositorio (ver ADR-013: la estrategia de acceso a datos ya es
- * CRUD-ORM + SP, no se agrega una tercera vía solo para esto).
+ * opcionales e independientes entre sí (usuario, módulo, rango de fecha).
+ *
+ * Query NATIVA con casts explícitos de PostgreSQL: la versión JPQL con
+ * "(:param IS NULL OR columna = :param)" falla con 500 cuando TODOS los
+ * filtros vienen vacíos (caso real: abrir la pantalla sin filtrar) --
+ * Hibernate envía los parámetros NULL sin tipo y PostgreSQL no puede
+ * inferirlo para la comparación ("could not determine data type of
+ * parameter"). Los CAST(:param AS tipo) fijan el tipo en el SQL y el
+ * planificador resuelve siempre.
  */
 @Repository
 public interface BitacoraAuditoriaRepository extends JpaRepository<BitacoraAuditoria, Long> {
 
-    @Query("SELECT b FROM BitacoraAuditoria b WHERE "
-            + "(:usuarioId IS NULL OR b.usuarioId = :usuarioId) AND "
-            + "(:modulo IS NULL OR b.tablaAfectada = :modulo) AND "
-            + "(:desde IS NULL OR b.fechaHora >= :desde) AND "
-            + "(:hasta IS NULL OR b.fechaHora <= :hasta) "
-            + "ORDER BY b.fechaHora DESC")
+    // Sin ORDER BY interno: el orden lo inyecta Spring Data desde el
+    // Pageable del controller (@PageableDefault sort="fecha_hora"), que en
+    // queries nativas pasa el nombre de columna TAL CUAL -- por eso el sort
+    // debe usar el nombre fisico (fecha_hora), no la propiedad (fechaHora).
+    @Query(value = "SELECT * FROM bitacora_auditoria b WHERE "
+            + "(CAST(:usuarioId AS bigint) IS NULL OR b.usuario_id = CAST(:usuarioId AS bigint)) AND "
+            + "(CAST(:modulo AS text) IS NULL OR b.tabla_afectada = CAST(:modulo AS text)) AND "
+            + "(CAST(:desde AS timestamptz) IS NULL OR b.fecha_hora >= CAST(:desde AS timestamptz)) AND "
+            + "(CAST(:hasta AS timestamptz) IS NULL OR b.fecha_hora <= CAST(:hasta AS timestamptz))",
+           countQuery = "SELECT count(*) FROM bitacora_auditoria b WHERE "
+            + "(CAST(:usuarioId AS bigint) IS NULL OR b.usuario_id = CAST(:usuarioId AS bigint)) AND "
+            + "(CAST(:modulo AS text) IS NULL OR b.tabla_afectada = CAST(:modulo AS text)) AND "
+            + "(CAST(:desde AS timestamptz) IS NULL OR b.fecha_hora >= CAST(:desde AS timestamptz)) AND "
+            + "(CAST(:hasta AS timestamptz) IS NULL OR b.fecha_hora <= CAST(:hasta AS timestamptz))",
+           nativeQuery = true)
     Page<BitacoraAuditoria> buscarConFiltros(
             @Param("usuarioId") Long usuarioId,
             @Param("modulo") String modulo,
