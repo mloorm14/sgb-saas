@@ -26,6 +26,7 @@ import { NotificacionesComponent } from './notificaciones/notificaciones.compone
 import { AuditoriaComponent } from './admin/auditoria/auditoria.component';
 import { DashboardGerenteAdminComponent } from './dashboard-gerente-admin/dashboard-gerente-admin.component';
 import { DashboardLectorComponent } from './dashboard-lector/dashboard-lector.component';
+import { MiCredencialComponent } from './mi-credencial/mi-credencial.component';
 
 // Los roleGuard de abajo reflejan los @PreAuthorize reales de cada
 // controller en backend-springboot (verificado en el codigo, no asumido):
@@ -125,6 +126,7 @@ export const routes: Routes = [
       { path: 'sugerencias', component: MisSugerenciasComponent },
       { path: 'sugerencias/nueva', component: SugerenciasFormComponent },
       { path: 'notificaciones', component: NotificacionesComponent },
+      { path: 'mi-credencial', component: MiCredencialComponent },
     ]
   },
   // Rama B (frontend/estudiante-catalogo-social): las 5 rutas del
