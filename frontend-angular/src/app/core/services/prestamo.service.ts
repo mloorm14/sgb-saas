@@ -16,7 +16,6 @@ import {
 } from '../models/prestamo.model';
 import {
   HistorialPrestamo,
-  ReservaActiva,
   UsuarioPrestamos,
   UsuarioSugerencia
 } from '../models/prestamos-gestion.model';
@@ -90,17 +89,6 @@ export class PrestamoService {
   sugerenciasUsuarios(correo: string): Observable<UsuarioSugerencia[]> {
     return this.http.get<UsuarioSugerencia[]>(`${this.apiUrl}/gestion/sugerencias-usuarios`, {
       params: new HttpParams().set('correo', correo)
-    }).pipe(
-      catchError(err => this.manejarError(err))
-    );
-  }
-
-  // reservaActiva: 404 cuando el usuario NO tiene reserva vigente; ese caso
-  // NO es un error de pantalla (cae al préstamo directo), por eso se expone
-  // tal cual y lo interpreta el componente.
-  reservaActiva(usuarioId: number): Observable<ReservaActiva> {
-    return this.http.get<ReservaActiva>(`${this.apiUrl}/gestion/reserva-activa`, {
-      params: new HttpParams().set('usuarioId', usuarioId)
     }).pipe(
       catchError(err => this.manejarError(err))
     );

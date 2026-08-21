@@ -1,6 +1,6 @@
 // Contratos exactos de PrestamosGestionController (/api/v1/prestamos/gestion),
 // ver los DTOs en backend-springboot. Módulo de ventanilla del bibliotecario:
-// buscar usuario por cédula, reserva vigente e historial reciente.
+// buscar usuario por correo, préstamo directo e historial reciente.
 
 // UsuarioPrestamosGestionDTO: tarjeta de identificación del usuario
 // encontrado. "cedula" es usuarios.identificacion_usuario; "tiposUsuario"
@@ -17,26 +17,6 @@ export interface UsuarioPrestamos {
   montoMultasPendientes: number;
   cantidadMultasPendientes: number;
   diasPrestamoSugerido: number;
-}
-
-// ReservaActivaDTO: reserva vigente (PENDIENTE o LISTA_PARA_RETIRO) que la
-// pantalla convierte en préstamo ("Confirmar Entrega"). El backend responde
-// 404 cuando no existe -> Caso B (préstamo directo).
-export interface ReservaActiva {
-  reservacionId: number;
-  libroId: number;
-  titulo: string;
-  autores: string[];
-  isbn: string;
-  fechaReserva: string;
-  fechaLimiteRetiro: string;
-  diasPrestamoSugerido: number;
-  anioPublicacion: number;
-  stockDisponible: number;
-  stockTotal: number;
-  ubicacionFisica: string | null;
-  categorias: string[];
-  tienePortada: boolean;
 }
 
 // HistorialPrestamoDTO: línea de tiempo del historial reciente. El ícono y
