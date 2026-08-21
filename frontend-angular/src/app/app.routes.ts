@@ -91,8 +91,11 @@ export const routes: Routes = [
     component: DashboardGerenteAdminComponent,
     canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])],
     children: [
-      { path: '', redirectTo: 'libros', pathMatch: 'full' },
+      { path: '', component: DashboardGerenteComponent },
       { path: 'libros', component: LibrosComponent },
+      { path: 'prestamos/gestion', component: PrestamosGestionComponent },
+      { path: 'reservaciones', component: ReservacionesComponent },
+      { path: 'multas', component: MultasComponent },
       { path: 'sugerencias/gestion', component: GestionSugerenciasComponent },
       { path: 'admin/usuarios', component: UsuariosComponent },
       { path: 'auditoria', component: AuditoriaComponent },

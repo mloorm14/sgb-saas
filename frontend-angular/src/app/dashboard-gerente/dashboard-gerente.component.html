@@ -1,6 +1,6 @@
 <main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
   <div class="mb-lg">
-    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Bienvenida, Gerencia</h1>
+    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">{{ tituloBienvenida }}</h1>
     <p class="font-body-sm text-body-sm text-on-surface-variant">Resumen del estado actual de la biblioteca</p>
   </div>
 
@@ -11,7 +11,10 @@
     <p class="font-body-sm text-body-sm text-on-surface-variant mb-md">Cargando dashboard…</p>
   }
 
-  <!-- Libros más prestados: datos reales de GET /api/v1/prestamos/reportes/libros-mas-prestados -->
+  <!-- Libros más prestados: datos reales de GET /api/v1/prestamos/reportes/libros-mas-prestados.
+       Solo GERENTE: ADMIN no tiene acceso a este endpoint (@PreAuthorize
+       hasAnyRole('BIBLIOTECARIO','GERENTE')). -->
+  @if (esGerente) {
   <div class="grid lg:grid-cols-2 gap-lg mb-xl">
     <div class="rounded-xl border border-outline-variant bg-white p-lg">
       <h2 class="font-headline-md text-headline-md text-on-background mb-md">Libros más prestados</h2>
@@ -27,7 +30,7 @@
           }
         }
       </div>
-      <a routerLink="/reportes" class="inline-flex items-center gap-xs mt-md font-label-sm text-label-sm text-primary hover:underline">
+      <a routerLink="/dashboard-admin/reportes" class="inline-flex items-center gap-xs mt-md font-label-sm text-label-sm text-primary hover:underline">
         Ver reporte completo <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
       </a>
     </div>
@@ -36,29 +39,31 @@
     <div class="rounded-xl border border-outline-variant bg-white p-lg">
       <h2 class="font-headline-md text-headline-md text-on-background mb-md">Accesos rápidos</h2>
       <div class="grid grid-cols-2 gap-sm">
-        <a routerLink="/sugerencias/gestion" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
+        <a routerLink="/dashboard-admin/sugerencias/gestion" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
           <span class="material-symbols-outlined text-[22px] text-primary">lightbulb</span>
           <span class="font-label-sm text-[13px] text-on-surface">Revisar sugerencias</span>
         </a>
-        <a routerLink="/admin/usuarios" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
+        <a routerLink="/dashboard-admin/admin/usuarios" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
           <span class="material-symbols-outlined text-[22px] text-primary">manage_accounts</span>
           <span class="font-label-sm text-[13px] text-on-surface">Gestionar usuarios</span>
         </a>
-        <a routerLink="/auditoria" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
+        <a routerLink="/dashboard-admin/auditoria" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
           <span class="material-symbols-outlined text-[22px] text-primary">receipt_long</span>
           <span class="font-label-sm text-[13px] text-on-surface">Ver auditoría</span>
         </a>
-        <a routerLink="/reportes" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
+        <a routerLink="/dashboard-admin/reportes" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
           <span class="material-symbols-outlined text-[22px] text-primary">picture_as_pdf</span>
           <span class="font-label-sm text-[13px] text-on-surface">Exportar morosidad</span>
         </a>
       </div>
     </div>
   </div>
+  }
 
   <!-- 3 widgets agregados (pedido de Cajas, dashboard GERENTE/ADMIN ampliado) -->
   <div class="grid lg:grid-cols-3 gap-lg mb-xl">
-    <!-- Resumen financiero: GET /api/v1/multas/reportes/resumen-financiero -->
+    <!-- Resumen financiero: GET /api/v1/multas/reportes/resumen-financiero
+         GERENTE/ADMIN: admite ambos roles (MultaController). -->
     <div class="rounded-xl border border-outline-variant bg-white p-lg">
       <h2 class="font-headline-md text-headline-md text-on-background mb-md">Resumen financiero</h2>
       @if (cargandoFinanciero) {
@@ -81,7 +86,9 @@
 
     <!-- Morosidad: reutiliza GET /api/v1/prestamos/reportes/morosidad (top 10
          por defecto en el backend -- no es un porcentaje, ver Javadoc del
-         componente). -->
+         componente). Solo GERENTE: ADMIN no tiene acceso
+         (@PreAuthorize hasAnyRole('BIBLIOTECARIO','GERENTE')). -->
+    @if (esGerente) {
     <div class="rounded-xl border border-outline-variant bg-white p-lg">
       <h2 class="font-headline-md text-headline-md text-on-background mb-md">Morosidad (top 10)</h2>
       @if (cargandoMorosidad) {
@@ -101,6 +108,7 @@
         </div>
       }
     </div>
+    }
 
     <!-- Actividad de auditoría reciente: GET /api/v1/auditoria?size=5 (lista
          compacta -- la tabla completa vive en /auditoria). -->
@@ -121,7 +129,7 @@
             <p class="font-body-sm text-body-sm text-on-surface-variant">Sin actividad registrada</p>
           }
         </div>
-        <a routerLink="/auditoria" class="inline-flex items-center gap-xs mt-md font-label-sm text-label-sm text-primary hover:underline">
+        <a routerLink="/dashboard-admin/auditoria" class="inline-flex items-center gap-xs mt-md font-label-sm text-label-sm text-primary hover:underline">
           Ver auditoría completa <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
         </a>
       }

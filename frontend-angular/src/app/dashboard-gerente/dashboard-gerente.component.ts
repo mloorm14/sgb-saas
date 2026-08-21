@@ -61,16 +61,37 @@ export class DashboardGerenteComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.reporteService.librosMasPrestados().subscribe({
-      next: (libros) => {
-        this.librosMasPrestados = libros.slice(0, 5); // top 5, igual que el mockup
-        this.cargando = false;
-      },
-      error: () => {
-        this.error = 'No se pudo cargar el reporte de libros más prestados.';
-        this.cargando = false;
-      }
-    });
+    // "Libros màs prestados" y "Morosidad" usan endpoints @PreAuthorize
+    // hasAnyRole('BIBLIOTECARIO','GERENTE') -- ADMIN no tiene acceso y
+    // recibiria 403. Se ocultan para ADMIN (solo GERENTE): no se disparan
+    // los requests y no aparecen los widgets, evitando errores en consola.
+    if (this.authService.hasRole('GERENTE')) {
+      this.reporteService.librosMasPrestados().subscribe({
+        next: (libros) => {
+          this.librosMasPrestados = libros.slice(0, 5); // top 5, igual que el mockup
+          this.cargando = false;
+        },
+        error: () => {
+          this.error = 'No se pudo cargar el reporte de libros más prestados.';
+          this.cargando = false;
+        }
+      });
+
+      this.reporteService.morosidad().subscribe({
+        next: (usuarios) => {
+          this.usuariosEnMora = usuarios;
+          this.cargandoMorosidad = false;
+        },
+        error: () => {
+          this.errorMorosidad = 'No se pudo cargar el reporte de morosidad.';
+          this.cargandoMorosidad = false;
+        }
+      });
+    } else {
+      // ADMIN: esos 2 endpoints no existen para su rol, no dispara nada.
+      this.cargando = false;
+      this.cargandoMorosidad = false;
+    }
 
     this.multaService.resumenFinanciero().subscribe({
       next: (resumen) => {
@@ -80,17 +101,6 @@ export class DashboardGerenteComponent implements OnInit {
       error: () => {
         this.errorFinanciero = 'No se pudo cargar el resumen financiero.';
         this.cargandoFinanciero = false;
-      }
-    });
-
-    this.reporteService.morosidad().subscribe({
-      next: (usuarios) => {
-        this.usuariosEnMora = usuarios;
-        this.cargandoMorosidad = false;
-      },
-      error: () => {
-        this.errorMorosidad = 'No se pudo cargar el reporte de morosidad.';
-        this.cargandoMorosidad = false;
       }
     });
 
@@ -108,5 +118,18 @@ export class DashboardGerenteComponent implements OnInit {
 
   get montoTotalAdeudado(): number {
     return this.usuariosEnMora.reduce((suma, u) => suma + u.montoTotalAdeudado, 0);
+  }
+
+  // El titulo no asume rol: GERENTE ve "Bienvenida, Gerencia" y ADMIN
+  // ve "Bienvenida, Administración".
+  get tituloBienvenida(): string {
+    if (this.authService.hasRole('ADMIN')) return 'Bienvenida, Administración';
+    return 'Bienvenida, Gerencia';
+  }
+
+  // GERENTE: libros más prestados y morosidad (endpoints exclusivos del rol).
+  // ADMIN: esos endpoints no existen -> la vista los oculta.
+  get esGerente(): boolean {
+    return this.authService.hasRole('GERENTE');
   }
 }
