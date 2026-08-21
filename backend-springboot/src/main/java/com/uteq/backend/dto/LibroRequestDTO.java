@@ -54,5 +54,5 @@ public record LibroRequestDTO(
         // obligatorios.
         Set<Integer> categoriaIds,
 
-        Set<Long> autorIds
+        Set<Integer> autorIds
 ) {}

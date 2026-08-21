@@ -10,6 +10,7 @@ import com.uteq.backend.dto.ReporteMorosidadResponseDTO;
 import com.uteq.backend.dto.ReporteUsoPorPeriodoResponseDTO;
 import com.uteq.backend.entity.EstadoPrestamo;
 import com.uteq.backend.entity.Prestamo;
+import com.uteq.backend.entity.Reservacion;
 import com.uteq.backend.entity.Usuario;
 import com.uteq.backend.repository.EstadoPrestamoRepository;
 import com.uteq.backend.repository.EstadoReservacionRepository;
@@ -50,6 +51,7 @@ public class PrestamoService {
     // CANCELADA). No existe un estado literal "ACTIVA" en estados_reservacion
     // (ver db/seed.sql) -- son estos dos los que cuentan como "en curso".
     private static final List<String> ESTADOS_RESERVA_VIGENTE = List.of("PENDIENTE", "LISTA_PARA_RETIRO");
+    private static final String ESTADO_RESERVA_RETIRADA = "RETIRADA";
     private static final String CLAVE_DIAS_PRESTAMO_DEFAULT = "dias_prestamo_default";
     private static final String CLAVE_MAX_RENOVACIONES_DEFAULT = "max_renovaciones_default";
 
@@ -87,11 +89,58 @@ public class PrestamoService {
     public PrestamoResponseDTO crear(PrestamoRequestDTO dto, Authentication authentication) {
         Long usuarioId = resolverUsuarioId(dto);
         Long bibliotecarioId = resolverIdPorCorreo(authentication.getName());
+        // Ventanilla: si el préstamo nace de una reserva, se valida ANTES de
+        // tocar stock (falla rápido, sin efectos secundarios) y se vincula
+        // DESPUÉS del SP -- sp_crear_prestamo no conoce reservaciones (no
+        // acepta ese parámetro) y la conversión reserva->préstamo son dos
+        // UPDATEs simples sobre filas ya cargadas, sin la atomicidad multi-
+        // tabla que sí justifica un procedimiento.
+        Reservacion reservaOrigen = validarReservaSiAplica(dto, usuarioId);
         Long prestamoId = prestamoProcRepo.spCrearPrestamo(
                 usuarioId, dto.libroId(), bibliotecarioId, dto.diasPrestamo());
         Prestamo prestamo = prestamoRepo.findById(prestamoId)
                 .orElseThrow(() -> new EntityNotFoundException(PRESTAMO_NO_ENCONTRADO + prestamoId));
+        if (reservaOrigen != null) {
+            prestamo.setReservacionId(reservaOrigen.getId());
+            prestamoRepo.save(prestamo);
+            reservaOrigen.setEstadoReservacionId(idEstadoReservacion(ESTADO_RESERVA_RETIRADA));
+            reservacionRepo.save(reservaOrigen);
+        }
         return toDTO(prestamo);
+    }
+
+    // Valida que la reservacionId del body sea una reserva VIGENTE del mismo
+    // usuario y sobre el MISMO libro del préstamo. Devuelve la entidad para
+    // reutilizarla en crear() (vincular + marcar RETIRADA), o null cuando el
+    // préstamo es directo (sin reservacionId).
+    private Reservacion validarReservaSiAplica(PrestamoRequestDTO dto, Long usuarioId) {
+        if (dto.reservacionId() == null) {
+            return null;
+        }
+        Reservacion reservacion = reservacionRepo.findById(dto.reservacionId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Reservación no encontrada: " + dto.reservacionId()));
+        if (!usuarioId.equals(reservacion.getUsuarioId())) {
+            throw new IllegalArgumentException(
+                    "La reservación " + dto.reservacionId() + " no pertenece al usuario del préstamo.");
+        }
+        if (!dto.libroId().equals(reservacion.getLibroId())) {
+            throw new IllegalArgumentException(
+                    "El libro del préstamo no coincide con el de la reservación "
+                            + dto.reservacionId() + ".");
+        }
+        List<Integer> idsVigentes = ESTADOS_RESERVA_VIGENTE.stream()
+                .map(nombre -> estadoReservacionRepo.findByNombre(nombre)
+                        .orElseThrow(() -> new IllegalStateException(
+                                "Catálogo estados_reservacion sin fila '" + nombre + "'"))
+                        .getId())
+                .toList();
+        if (!idsVigentes.contains(reservacion.getEstadoReservacionId())) {
+            throw new IllegalStateException(
+                    "La reservación " + dto.reservacionId()
+                            + " ya no está vigente (pendiente o lista para retiro).");
+        }
+        return reservacion;
     }
 
     // Módulo 8 (credencial QR): resuelve el usuario del préstamo por
@@ -219,6 +268,15 @@ public class PrestamoService {
         return estadoPrestamoRepo.findByNombre(nombre)
                 .orElseThrow(() -> new IllegalStateException(
                         "Catálogo estados_prestamo sin fila '" + nombre + "'"))
+                .getId();
+    }
+
+    // Ventanilla: conversión de reserva en préstamo (crear() marca la
+    // reserva origen como RETIRADA para que no quede pendiente).
+    private Integer idEstadoReservacion(String nombre) {
+        return estadoReservacionRepo.findByNombre(nombre)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Catálogo estados_reservacion sin fila '" + nombre + "'"))
                 .getId();
     }
 

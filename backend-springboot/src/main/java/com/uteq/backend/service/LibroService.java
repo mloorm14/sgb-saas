@@ -39,7 +39,7 @@ public class LibroService {
     // -- el Admin la ajusta sin despliegue nuevo vía ConfiguracionSistema.
     private static final String CLAVE_MAX_TAMANO_PORTADA_MB = "max_tamano_portada_mb";
     private static final List<String> TIPOS_PORTADA_PERMITIDOS =
-            List.of("image/png", "image/jpeg", "image/webp");
+            List.of("image/png", "image/jpeg", "image/webp", "image/avif");
 
     private final LibroRepository libroRepo;
     private final EditorialRepository editorialRepo;
@@ -237,7 +237,7 @@ public class LibroService {
         if (contentType == null || !TIPOS_PORTADA_PERMITIDOS.contains(contentType)) {
             throw new IllegalArgumentException(
                     "Tipo de imagen no permitido: " + contentType
-                            + ". Solo se admiten PNG, JPEG y WEBP.");
+                            + ". Solo se admiten PNG, JPEG, WEBP y AVIF.");
         }
         int maxTamanoMb = configuracionSistemaService
                 .obtenerValorEntero(CLAVE_MAX_TAMANO_PORTADA_MB);
@@ -272,13 +272,13 @@ public class LibroService {
         return categorias;
     }
 
-    private Set<Autor> resolverAutores(Set<Long> autorIds) {
+    private Set<Autor> resolverAutores(Set<Integer> autorIds) {
         if (autorIds == null || autorIds.isEmpty()) {
             return new HashSet<>();
         }
         Set<Autor> autores = new HashSet<>();
-        for (Long id : autorIds) {
-            autores.add(autorRepo.getReferenceById(id));
+        for (Integer id : autorIds) {
+            autores.add(autorRepo.getReferenceById(id.longValue()));
         }
         return autores;
     }

@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Component, HostListener } from '@angular/core';
+import { RouterLink, RouterLinkActive, RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
+import { filter } from 'rxjs/operators';
 
 interface EnlaceNav {
   ruta: string;
@@ -18,14 +19,40 @@ interface EnlaceNav {
 })
 export class AppComponent {
   title = 'frontend-angular';
+  mostrarMenuUsuario = false;
+  enRutaBibliotecario = false;
+  enRutaAdmin = false;
+  enRutaLector = false;
 
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe((event) => {
+      const url = (event as NavigationEnd).urlAfterRedirects || (event as NavigationEnd).url;
+      this.enRutaBibliotecario = url.startsWith('/dashboard-bibliotecario');
+      this.enRutaAdmin = url.startsWith('/dashboard-admin');
+      this.enRutaLector = url.startsWith('/dashboard-lector');
+    });
+  }
+
+  @HostListener('document:click', ['$event'])
+  cerrarMenuFuera(event: Event): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('[data-menu-usuario]')) {
+      this.mostrarMenuUsuario = false;
+    }
+  }
 
   // Rama B completada: /catalogo, /favoritos, /sugerencias y /notificaciones ya son reales
   // y salen de la lista de futuros. Mi Credencial (rama frontend/estudiante-cuenta, no integrada)
   // NO se lista: el LECTOR no debe ver enlaces a rutas inexistentes, ni siquiera con
   // opacity -- se agregan cuando la rama de cuenta se integre.
   enlacesLector: EnlaceNav[] = [
+    // Entrada al panel con sidebar del LECTOR (mismo patron que Cajas).
+    { ruta: '/dashboard-lector', etiqueta: 'Panel', icono: 'dashboard' },
     { ruta: '/prestamos', etiqueta: 'Mis Préstamos', icono: 'menu_book' },
     { ruta: '/reservaciones', etiqueta: 'Reservaciones', icono: 'event_available' },
     { ruta: '/multas', etiqueta: 'Multas', icono: 'payments' },
@@ -53,6 +80,8 @@ export class AppComponent {
   //   pantalla a todo el staff sin ruta real detrás. BIBLIOTECARIO y ADMIN
   //   no la ven (tienen /reportes y el resto del panel respectivamente).
   enlacesStaff: EnlaceNav[] = [
+    // Entrada al panel con sidebar GERENTE/ADMIN (mismo patron que Cajas).
+    { ruta: '/dashboard-admin', etiqueta: 'Panel', icono: 'dashboard', roles: ['GERENTE', 'ADMIN'] },
     { ruta: '/libros', etiqueta: 'Libros', icono: 'inventory_2', roles: ['BIBLIOTECARIO', 'GERENTE', 'ADMIN'] },
     { ruta: '/prestamos/gestion', etiqueta: 'Préstamos', icono: 'assignment_return', roles: ['BIBLIOTECARIO', 'GERENTE'] },
     { ruta: '/reservaciones', etiqueta: 'Reservaciones', icono: 'event_available', roles: ['BIBLIOTECARIO', 'GERENTE'] },
@@ -82,6 +111,18 @@ export class AppComponent {
   }
 
   cerrarSesion(): void {
+    this.mostrarMenuUsuario = false;
     this.authService.logout();
+  }
+
+  get correoUsuario(): string {
+    return this.authService.getCorreo() ?? '';
+  }
+
+  get inicialesUsuario(): string {
+    const correo = this.correoUsuario;
+    if (!correo) return '??';
+    const parte = correo.split('@')[0];
+    return parte.substring(0, 2).toUpperCase();
   }
 }
