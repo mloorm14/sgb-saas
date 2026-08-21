@@ -25,11 +25,14 @@ export interface PrestamoActivo {
 }
 
 // PrestamoRequestDTO: exactamente uno de usuarioId o credencialQrToken.
+// reservacionId es opcional (ventanilla): cuando viene, el backend convierte
+// esa reserva en préstamo y la marca RETIRADA.
 export interface PrestamoRequest {
   usuarioId?: number;
   credencialQrToken?: string;
   libroId: number;
   diasPrestamo: number;
+  reservacionId?: number;
 }
 
 export interface RenovacionResponse {
