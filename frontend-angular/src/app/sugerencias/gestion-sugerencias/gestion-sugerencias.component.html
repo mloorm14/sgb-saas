@@ -2,7 +2,8 @@
   <div class="mb-lg flex items-center justify-between flex-wrap gap-sm">
     <div>
       <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Sugerencias de adquisición</h1>
-      <p class="font-body-sm text-body-sm text-on-surface-variant">GET /api/v1/sugerencias-adquisicion?estado= · PATCH .../{{ '{' }}id{{ '}' }}/estado (APROBADA | RECHAZADA) — GERENTE/ADMIN</p>
+      <!-- Ref. técnica: GET /api/v1/sugerencias-adquisicion?estado= · PATCH /api/v1/sugerencias-adquisicion/{id}/estado (APROBADA | RECHAZADA) — roles GERENTE/ADMIN -->
+<p class="font-body-sm text-body-sm text-on-surface-variant">Revisá y aprobá las solicitudes de nuevos libros.</p>
     </div>
     <div class="flex gap-xs flex-wrap">
       <button (click)="cambiarFiltro('PENDIENTE')"
