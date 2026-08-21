@@ -74,11 +74,11 @@ export class PrestamoService {
   }
 
   // ── Ventanilla del bibliotecario (/gestion/*) ────────────
-  // buscarUsuarioPorCedula: 404 (ProblemDetail) si la cédula no coincide
+  // buscarUsuarioPorCorreo: 404 (ProblemDetail) si el correo no coincide
   // con ningún usuario -> el componente muestra el mensaje de error.
-  buscarUsuarioPorCedula(cedula: string): Observable<UsuarioPrestamos> {
+  buscarUsuarioPorCorreo(correo: string): Observable<UsuarioPrestamos> {
     return this.http.get<UsuarioPrestamos>(`${this.apiUrl}/gestion/buscar-usuario`, {
-      params: new HttpParams().set('cedula', cedula)
+      params: new HttpParams().set('correo', correo)
     }).pipe(
       catchError(err => this.manejarError(err))
     );

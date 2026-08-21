@@ -12,7 +12,7 @@ function usuarioActivo(): UsuarioPrestamos {
     id: 7,
     nombreCompleto: 'Ana Pérez',
     cedula: '1712345678',
-    correo: 'ana@uteq.edu.ec',
+    correo: 'ana.perez@uteq.edu.ec',
     tiposUsuario: ['LECTOR'],
     estadoCuenta: 'ACTIVO',
     montoMultasPendientes: 0,
@@ -30,7 +30,7 @@ describe('PrestamosGestionComponent', () => {
 
   beforeEach(async () => {
     prestamoService = jasmine.createSpyObj('PrestamoService', [
-      'buscarUsuarioPorCedula', 'reservaActiva', 'historial', 'crear'
+      'buscarUsuarioPorCorreo', 'reservaActiva', 'historial', 'crear'
     ]);
     libroService = jasmine.createSpyObj('LibroService', ['sugerencias', 'obtener']);
     router = jasmine.createSpyObj('Router', ['navigate']);
@@ -48,41 +48,41 @@ describe('PrestamosGestionComponent', () => {
     component = fixture.componentInstance;
   });
 
-  it('busca al usuario por cédula y carga reserva e historial', () => {
-    prestamoService.buscarUsuarioPorCedula.and.returnValue(of(usuarioActivo()));
+  it('busca al usuario por correo y carga reserva e historial', () => {
+    prestamoService.buscarUsuarioPorCorreo.and.returnValue(of(usuarioActivo()));
     prestamoService.reservaActiva.and.returnValue(throwError(() => ({ status: 404 })));
     prestamoService.historial.and.returnValue(of([]));
 
-    component.cedulaBusqueda = '1712345678';
+    component.correoBusqueda = 'ana.perez@uteq.edu.ec';
     component.buscarUsuario();
 
-    expect(prestamoService.buscarUsuarioPorCedula).toHaveBeenCalledWith('1712345678');
+    expect(prestamoService.buscarUsuarioPorCorreo).toHaveBeenCalledWith('ana.perez@uteq.edu.ec');
     expect(component.usuario?.id).toBe(7);
     // Días de préstamo prellenados con el valor de configuración del sistema
     expect(component.diasReserva).toBe(15);
     expect(component.diasDirecto).toBe(15);
-    expect(component.errorCedula).toBe('');
+    expect(component.errorBusqueda).toBe('');
     expect(prestamoService.historial).toHaveBeenCalledWith(7);
   });
 
-  it('muestra el mensaje de error cuando la cédula no corresponde a ningún usuario', () => {
-    prestamoService.buscarUsuarioPorCedula.and.returnValue(
+  it('muestra el mensaje de error cuando el correo no corresponde a ningún usuario', () => {
+    prestamoService.buscarUsuarioPorCorreo.and.returnValue(
       throwError(() => ({ status: 404 }))
     );
 
-    component.cedulaBusqueda = '9999999999';
+    component.correoBusqueda = 'nadie@uteq.edu.ec';
     component.buscarUsuario();
 
-    expect(component.errorCedula).toBe('No se encontró ningún usuario con esta cédula');
+    expect(component.errorBusqueda).toBe('No se encontró ningún usuario con este correo');
     expect(component.usuario).toBeNull();
   });
 
-  it('rechaza una cédula con formato inválido sin llamar al backend', () => {
-    component.cedulaBusqueda = '123';
+  it('rechaza un correo con formato inválido sin llamar al backend', () => {
+    component.correoBusqueda = 'correo-sin-arroba';
     component.buscarUsuario();
 
-    expect(component.errorCedula).toBe('Ingresa una cédula válida de 10 dígitos');
-    expect(prestamoService.buscarUsuarioPorCedula).not.toHaveBeenCalled();
+    expect(component.errorBusqueda).toBe('Ingresa un correo electrónico válido');
+    expect(prestamoService.buscarUsuarioPorCorreo).not.toHaveBeenCalled();
   });
 
   it('detecta el Caso C (bloqueado por multas pendientes) y no consulta reservas', () => {
@@ -92,10 +92,10 @@ describe('PrestamosGestionComponent', () => {
       montoMultasPendientes: 3.5,
       cantidadMultasPendientes: 1
     };
-    prestamoService.buscarUsuarioPorCedula.and.returnValue(of(bloqueado));
+    prestamoService.buscarUsuarioPorCorreo.and.returnValue(of(bloqueado));
     prestamoService.historial.and.returnValue(of([]));
 
-    component.cedulaBusqueda = '1712345678';
+    component.correoBusqueda = 'ana.perez@uteq.edu.ec';
     component.buscarUsuario();
 
     expect(component.estaBloqueado).toBeTrue();

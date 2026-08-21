@@ -6,23 +6,23 @@
     <p class="font-body-sm text-body-sm text-on-surface-variant">Atención en ventanilla — BIBLIOTECARIO y GERENTE</p>
   </div>
 
-  <!-- ─── BUSCAR USUARIO POR CÉDULA ─── -->
+  <!-- ─── BUSCAR USUARIO POR CORREO ─── -->
   <div class="mb-md max-w-xl">
     <div class="relative">
-      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[22px] pointer-events-none">search</span>
-      <input [(ngModel)]="cedulaBusqueda"
-        (ngModelChange)="onInputCedula()"
+      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[22px] pointer-events-none">mail</span>
+      <input [(ngModel)]="correoBusqueda"
+        (ngModelChange)="onInputCorreo()"
         (keyup.enter)="buscarUsuario()"
-        type="text" inputmode="numeric" maxlength="10"
-        placeholder="Ingresa la cédula del usuario"
+        type="email" autocomplete="off" maxlength="100"
+        placeholder="Ingresa el correo del usuario"
         class="w-full h-11 pl-11 pr-28 rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" />
-      <button (click)="buscarUsuario()" [disabled]="!esCedulaValida || buscando"
+      <button (click)="buscarUsuario()" [disabled]="!esCorreoValido || buscando"
         class="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center gap-xs hover:bg-on-primary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
         Buscar
       </button>
     </div>
-    @if (!esCedulaValida && cedulaBusqueda.length > 0) {
-      <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">La cédula tiene 10 dígitos (solo números)</p>
+    @if (!esCorreoValido && correoBusqueda.length > 0) {
+      <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Formato esperado: nombre@dominio.com</p>
     }
   </div>
 
@@ -33,19 +33,19 @@
     </p>
   }
 
-  @if (errorCedula) {
+  @if (errorBusqueda) {
     <div class="mb-md flex items-center gap-sm rounded-lg border border-error/30 bg-error-container px-md py-sm max-w-xl">
       <span class="material-symbols-outlined text-error text-[20px]">error</span>
-      <p class="font-body-sm text-body-sm text-error">{{ errorCedula }}</p>
+      <p class="font-body-sm text-body-sm text-error">{{ errorBusqueda }}</p>
       <button (click)="limpiarBusqueda()" class="ml-auto font-label-sm text-label-sm text-error hover:underline cursor-pointer">Limpiar</button>
     </div>
   }
 
   <!-- ─── ESTADO VACÍO (fondo gris más oscuro que la pantalla) ─── -->
-  @if (!usuario && !buscando && !errorCedula) {
+  @if (!usuario && !buscando && !errorBusqueda) {
     <div class="rounded-xl bg-surface-container-high border border-outline-variant/60 py-16 flex flex-col items-center justify-center gap-sm">
       <span class="material-symbols-outlined text-[64px] text-outline-variant select-none">person_search</span>
-      <p class="font-body-md text-body-md text-on-surface-variant">Ingresa una cédula para comenzar</p>
+      <p class="font-body-md text-body-md text-on-surface-variant">Ingresa un correo para comenzar</p>
     </div>
   }
 
