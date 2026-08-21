@@ -27,12 +27,14 @@ import java.util.stream.Collectors;
 
 /**
  * Lecturas de la ventanilla de préstamos del bibliotecario (módulo
- * "Préstamos" del sidebar): encontrar al usuario por cédula y armar todo lo
+ * "Préstamos" del sidebar): encontrar al usuario por correo y armar todo lo
  * que la pantalla necesita en una pasada -- tarjeta de identificación,
  * reserva vigente (Caso A) e historial reciente.
  *
  * Reutiliza el modelo existente sin duplicar nada (ver Javadoc de los DTOs):
- * - cédula          -> usuarios.identificacion_usuario
+ * - correo           -> usuarios.correo (identidad de login, UNIQUE; misma
+ *                       columna que resuelve findByCorreo en todo el sistema)
+ * - cédula (informativa en la tarjeta) -> usuarios.identificacion_usuario
  * - tipo de usuario -> roles del usuario
  * - estado de cuenta-> estados_usuario.nombre
  * - multas pendientes -> agregado sobre multas x prestamos (no es columna)
@@ -52,7 +54,7 @@ import java.util.stream.Collectors;
 public class PrestamosGestionService {
 
     private static final String USUARIO_NO_ENCONTRADO =
-            "No se encontró ningún usuario con esta cédula";
+            "No se encontró ningún usuario con este correo";
     private static final String SIN_RESERVA_VIGENTE = "El usuario no tiene reservas vigentes";
     private static final String ESTADO_MULTA_PENDIENTE = "PENDIENTE";
 
@@ -98,10 +100,10 @@ public class PrestamosGestionService {
         this.configuracionSistemaService = configuracionSistemaService;
     }
 
-    // ── GET /gestion/buscar-usuario?cedula= ──────────────────
+    // ── GET /gestion/buscar-usuario?correo= ──────────────────
     @Transactional(readOnly = true)
-    public UsuarioPrestamosGestionDTO buscarPorCedula(String cedula) {
-        Usuario usuario = usuarioRepo.findFirstByIdentificacionUsuarioOrderByIdAsc(cedula)
+    public UsuarioPrestamosGestionDTO buscarPorCorreo(String correo) {
+        Usuario usuario = usuarioRepo.findByCorreo(correo)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO));
 
         Integer idMultaPendiente = idEstadoMulta(ESTADO_MULTA_PENDIENTE);

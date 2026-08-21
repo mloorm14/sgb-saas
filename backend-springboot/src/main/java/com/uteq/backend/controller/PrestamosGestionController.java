@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * Lecturas de la ventanilla de préstamos (módulo "Préstamos" del sidebar
- * del BIBLIOTECARIO): encontrar al usuario por cédula y armar la pantalla
+ * del BIBLIOTECARIO): encontrar al usuario por correo y armar la pantalla
  * -- tarjeta de identificación, reserva vigente e historial reciente.
  *
  * La CREACIÓN del préstamo no vive acá: se reutiliza POST /api/v1/prestamos
@@ -36,17 +36,19 @@ public class PrestamosGestionController {
         this.prestamosGestionService = prestamosGestionService;
     }
 
-    // ── GET /api/v1/prestamos/gestion/buscar-usuario?cedula= ──
-    // Cédula = usuarios.identificacion_usuario: exactamente 10 dígitos
-    // (mismo formato que exige el input del frontend). 404 con ProblemDetail
-    // si no hay coincidencia; el mensaje es el que muestra la pantalla.
+    // ── GET /api/v1/prestamos/gestion/buscar-usuario?correo= ──
+    // Correo = usuarios.correo: es la identidad de login (UNIQUE), misma
+    // columna que resuelve findByCorreo en el resto del sistema. 404 con
+    // ProblemDetail si no hay coincidencia; el mensaje es el que muestra
+    // la pantalla.
     @GetMapping("/buscar-usuario")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
     public ResponseEntity<UsuarioPrestamosGestionDTO> buscarUsuario(
             @RequestParam
-            @Pattern(regexp = "^[0-9]{10}$", message = "La cédula debe tener exactamente 10 dígitos")
-            String cedula) {
-        return ResponseEntity.ok(prestamosGestionService.buscarPorCedula(cedula));
+            @Pattern(regexp = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
+                     message = "Ingresa un correo electrónico válido")
+            String correo) {
+        return ResponseEntity.ok(prestamosGestionService.buscarPorCorreo(correo));
     }
 
     // ── GET /api/v1/prestamos/gestion/reserva-activa?usuarioId= ──
