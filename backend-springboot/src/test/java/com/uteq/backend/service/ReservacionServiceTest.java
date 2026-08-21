@@ -57,7 +57,7 @@ class ReservacionServiceTest {
         });
 
         ReservacionResponseDTO resultado = reservacionService.crear(
-                new ReservacionRequestDTO(1L, 3L), auth);
+                new ReservacionRequestDTO(1L, 3L, null), auth);
 
         assertThat(resultado.id()).isEqualTo(50L);
         assertThat(resultado.usuarioId()).isEqualTo(1L);
@@ -74,7 +74,7 @@ class ReservacionServiceTest {
                 .willReturn(Optional.of(usuarioConId(1L)));
 
         assertThatThrownBy(() -> reservacionService.crear(
-                new ReservacionRequestDTO(2L, 3L), auth))
+                new ReservacionRequestDTO(2L, 3L, null), auth))
                 .isInstanceOf(AuthorizationDeniedException.class);
     }
 
@@ -87,7 +87,7 @@ class ReservacionServiceTest {
         given(reservacionRepo.save(any())).willAnswer(inv -> inv.getArgument(0));
 
         ReservacionResponseDTO resultado = reservacionService.crear(
-                new ReservacionRequestDTO(2L, 3L), auth);
+                new ReservacionRequestDTO(2L, 3L, null), auth);
 
         assertThat(resultado.usuarioId()).isEqualTo(2L);
     }
@@ -100,7 +100,7 @@ class ReservacionServiceTest {
                 .willReturn(Optional.empty());
 
         assertThatThrownBy(() -> reservacionService.crear(
-                new ReservacionRequestDTO(2L, 3L), auth))
+                new ReservacionRequestDTO(2L, 3L, null), auth))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("PENDIENTE");
     }
