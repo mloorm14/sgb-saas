@@ -112,7 +112,9 @@ export class AppComponent {
 
   cerrarSesion(): void {
     this.mostrarMenuUsuario = false;
-    this.authService.logout();
+    if (confirm('¿Seguro que querés cerrar sesión?')) {
+      this.authService.logout();
+    }
   }
 
   get correoUsuario(): string {
