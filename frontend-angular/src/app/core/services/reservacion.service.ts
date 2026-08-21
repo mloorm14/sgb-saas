@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import { Page } from '../models/pagina.model';
 import { ProblemDetail } from '../models/problem-detail.model';
 import { CambioEstadoReservacionRequest, Reservacion, ReservacionRequest } from '../models/reservacion.model';
+import { HistorialReservacion, UsuarioReservaciones } from '../models/reservaciones-gestion.model';
 
 export interface ReservacionListarParams {
   page?: number;
@@ -54,5 +55,26 @@ export class ReservacionService {
       console.warn(`[reservacion.service] ${problem.title} (${problem.status}): ${problem.detail}`);
     }
     return throwError(() => err);
+  }
+
+  // ── Ventanilla del bibliotecario (/gestion/*) ────────────
+  // buscarUsuarioPorCorreo: 404 (ProblemDetail) si el correo no coincide
+  // con ningún usuario -> el componente muestra el mensaje de error.
+  buscarUsuarioPorCorreo(correo: string): Observable<UsuarioReservaciones> {
+    return this.http.get<UsuarioReservaciones>(`${this.apiUrl}/gestion/buscar-usuario`, {
+      params: new HttpParams().set('correo', correo)
+    }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  // historialReservaciones: retorna las reservaciones del usuario
+  // con el título del libro resuelto.
+  historialReservaciones(usuarioId: number): Observable<HistorialReservacion[]> {
+    return this.http.get<HistorialReservacion[]>(`${this.apiUrl}/gestion/historial-reservaciones`, {
+      params: new HttpParams().set('usuarioId', usuarioId)
+    }).pipe(
+      catchError(err => this.manejarError(err))
+    );
   }
 }
