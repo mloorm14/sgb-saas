@@ -26,6 +26,7 @@ import { NotificacionesComponent } from './notificaciones/notificaciones.compone
 import { AuditoriaComponent } from './admin/auditoria/auditoria.component';
 import { DashboardGerenteAdminComponent } from './dashboard-gerente-admin/dashboard-gerente-admin.component';
 import { DashboardLectorComponent } from './dashboard-lector/dashboard-lector.component';
+import { MiCredencialComponent } from './mi-credencial/mi-credencial.component';
 
 // Los roleGuard de abajo reflejan los @PreAuthorize reales de cada
 // controller en backend-springboot (verificado en el codigo, no asumido):
@@ -91,8 +92,11 @@ export const routes: Routes = [
     component: DashboardGerenteAdminComponent,
     canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])],
     children: [
-      { path: '', redirectTo: 'libros', pathMatch: 'full' },
+      { path: '', component: DashboardGerenteComponent },
       { path: 'libros', component: LibrosComponent },
+      { path: 'prestamos/gestion', component: PrestamosGestionComponent },
+      { path: 'reservaciones', component: ReservacionesComponent },
+      { path: 'multas', component: MultasComponent },
       { path: 'sugerencias/gestion', component: GestionSugerenciasComponent },
       { path: 'admin/usuarios', component: UsuariosComponent },
       { path: 'auditoria', component: AuditoriaComponent },
@@ -120,7 +124,9 @@ export const routes: Routes = [
       { path: 'multas', component: MultasComponent },
       { path: 'favoritos', component: FavoritosComponent },
       { path: 'sugerencias', component: MisSugerenciasComponent },
+      { path: 'sugerencias/nueva', component: SugerenciasFormComponent },
       { path: 'notificaciones', component: NotificacionesComponent },
+      { path: 'mi-credencial', component: MiCredencialComponent },
     ]
   },
   // Rama B (frontend/estudiante-catalogo-social): las 5 rutas del
