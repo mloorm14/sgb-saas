@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { MultaService } from '../core/services/multa.service';
 import { Multa } from '../core/models/multa.model';
@@ -37,7 +38,8 @@ export class MultasComponent implements OnInit {
 
   constructor(
     private multaService: MultaService,
-    private authService: AuthService
+    private authService: AuthService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -47,6 +49,14 @@ export class MultasComponent implements OnInit {
 
     if (this.esLector) {
       this.usuarioIdBusqueda = this.authService.getUserId();
+      this.cargarPagina();
+      return;
+    }
+
+    // Llegada desde Préstamos ("Gestionar Multas"): prefiltra por el usuario.
+    const usuarioIdParam = Number(this.route.snapshot.queryParamMap.get('usuarioId'));
+    if (Number.isInteger(usuarioIdParam) && usuarioIdParam > 0) {
+      this.usuarioIdBusqueda = usuarioIdParam;
       this.cargarPagina();
     }
   }
