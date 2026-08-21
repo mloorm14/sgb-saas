@@ -3,6 +3,7 @@ package com.uteq.backend.service;
 import com.uteq.backend.dto.HistorialPrestamoDTO;
 import com.uteq.backend.dto.ReservaActivaDTO;
 import com.uteq.backend.dto.UsuarioPrestamosGestionDTO;
+import com.uteq.backend.dto.UsuarioSugerenciaDTO;
 import com.uteq.backend.entity.Libro;
 import com.uteq.backend.entity.Prestamo;
 import com.uteq.backend.entity.Reservacion;
@@ -125,6 +126,24 @@ public class PrestamosGestionService {
                 montoPendiente,
                 cantidadPendientes,
                 diasPrestamoSugerido());
+    }
+
+    // ── GET /gestion/sugerencias-usuarios?correo= ───────────
+    // Autocompletado predictivo: retorna hasta 3 usuarios cuyo correo
+    // contenga el texto ingresado (case-insensitive).
+    @Transactional(readOnly = true)
+    public List<UsuarioSugerenciaDTO> sugerenciasUsuarios(String correo) {
+        if (correo == null || correo.trim().length() < 2) {
+            return List.of();
+        }
+        return usuarioRepo.findTop3ByCorreoContainingIgnoreCaseOrderByNombreAsc(correo.trim())
+                .stream()
+                .map(u -> new UsuarioSugerenciaDTO(
+                        u.getId(),
+                        (u.getNombre() + " " + u.getApellido()).trim(),
+                        u.getCorreo(),
+                        u.getEstado().getNombre()))
+                .toList();
     }
 
     // ── GET /gestion/reserva-activa?usuarioId= ───────────────
