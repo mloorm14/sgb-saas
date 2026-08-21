@@ -10,6 +10,7 @@ import { Libro, LibroSugerencia } from '../core/models/libro.model';
 import { PrestamoRequest } from '../core/models/prestamo.model';
 import {
   HistorialPrestamo,
+  ReservaActiva,
   UsuarioPrestamos,
   UsuarioSugerencia
 } from '../core/models/prestamos-gestion.model';
@@ -36,15 +37,21 @@ export class PrestamosGestionComponent {
   private busquedaCorreo$ = new Subject<string>();
   private destroy$ = new Subject<void>();
 
-  // ── Préstamo ───────────────────────────────────────────
+  // ── Caso A: reserva activa ──────────────────────────────
+  reserva: ReservaActiva | null = null;
+  cargandoReserva: boolean = false;
+  diasReserva: number | null = null;
+  confirmandoEntrega: boolean = false;
+
+  // ── Caso B: préstamo directo ────────────────────────────
   textoLibro: string = '';
   sugerenciasLibro: LibroSugerencia[] = [];
   mostrarSugerenciasLibro: boolean = false;
   buscandoSugerenciasLibro: boolean = false;
   libroSeleccionado: Libro | null = null;
   advertenciaStock: string = '';
-  diasPrestamo: number | null = null;
-  registrandoPrestamo: boolean = false;
+  diasDirecto: number | null = null;
+  registrandoDirecto: boolean = false;
 
   // ── Historial reciente ──────────────────────────────────
   historial: HistorialPrestamo[] = [];
@@ -223,8 +230,11 @@ export class PrestamosGestionComponent {
       next: (usuario) => {
         this.usuario = usuario;
         this.buscando = false;
-        this.diasPrestamo = usuario.diasPrestamoSugerido;
+        this.diasReserva = usuario.diasPrestamoSugerido;
+        this.diasDirecto = usuario.diasPrestamoSugerido;
         this.cargarHistorial(usuario.id);
+        if (this.estaBloqueado) return;
+        this.consultarReservaActiva(usuario.id);
       },
       error: (err: HttpErrorResponse) => {
         this.buscando = false;
@@ -246,11 +256,31 @@ export class PrestamosGestionComponent {
 
   private limpiarResultado(): void {
     this.usuario = null;
+    this.reserva = null;
+    this.cargandoReserva = false;
     this.historial = [];
     this.cargandoHistorial = false;
     this.limpiarFormularioLibro();
     this.exitoMsg = '';
     this.errorMsgAccion = '';
+  }
+
+  private consultarReservaActiva(usuarioId: number): void {
+    this.cargandoReserva = true;
+    this.reserva = null;
+    this.prestamoService.reservaActiva(usuarioId).subscribe({
+      next: (reserva) => {
+        this.reserva = reserva;
+        this.diasReserva = reserva.diasPrestamoSugerido;
+        this.cargandoReserva = false;
+      },
+      error: (err: HttpErrorResponse) => {
+        this.cargandoReserva = false;
+        if (err.status !== 404) {
+          this.errorMsgAccion = 'Error al consultar la reserva del usuario.';
+        }
+      }
+    });
   }
 
   private cargarHistorial(usuarioId: number): void {
@@ -269,10 +299,36 @@ export class PrestamosGestionComponent {
 
   private refrescarTrasAccion(): void {
     if (!this.usuario) return;
+    this.consultarReservaActiva(this.usuario.id);
     this.cargarHistorial(this.usuario.id);
   }
 
-  // ── Préstamo ─────────────────────────────────────────────
+  // ── Caso A: confirmar entrega ────────────────────────────
+  confirmarEntrega(): void {
+    if (!this.usuario || !this.reserva || !this.diasReserva || this.diasReserva < 1) return;
+    this.confirmandoEntrega = true;
+    this.exitoMsg = '';
+    this.errorMsgAccion = '';
+    const request: PrestamoRequest = {
+      usuarioId: this.usuario.id,
+      libroId: this.reserva.libroId,
+      diasPrestamo: this.diasReserva,
+      reservacionId: this.reserva.reservacionId
+    };
+    this.prestamoService.crear(request).subscribe({
+      next: () => {
+        this.confirmandoEntrega = false;
+        this.exitoMsg = 'Entrega confirmada: el préstamo quedó registrado y la reserva marcada como retirada.';
+        this.refrescarTrasAccion();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.confirmandoEntrega = false;
+        this.errorMsgAccion = detalleDeError(err, 'No se pudo confirmar la entrega.');
+      }
+    });
+  }
+
+  // ── Caso B: préstamo directo ─────────────────────────────
   buscarSugerenciasLibro(): void {
     const texto = this.textoLibro.trim();
     this.advertenciaStock = '';
@@ -319,32 +375,32 @@ export class PrestamosGestionComponent {
     this.advertenciaStock = '';
   }
 
-  get puedeRegistrarPrestamo(): boolean {
+  get puedeRegistrarDirecto(): boolean {
     return !!this.libroSeleccionado
-      && !!this.diasPrestamo && this.diasPrestamo >= 1
+      && !!this.diasDirecto && this.diasDirecto >= 1
       && (this.libroSeleccionado?.stockDisponible ?? 0) > 0
-      && !this.registrandoPrestamo;
+      && !this.registrandoDirecto;
   }
 
-  registrarPrestamo(): void {
-    if (!this.usuario || !this.puedeRegistrarPrestamo) return;
-    this.registrandoPrestamo = true;
+  registrarPrestamoDirecto(): void {
+    if (!this.usuario || !this.puedeRegistrarDirecto) return;
+    this.registrandoDirecto = true;
     this.exitoMsg = '';
     this.errorMsgAccion = '';
     const request: PrestamoRequest = {
       usuarioId: this.usuario.id,
       libroId: this.libroSeleccionado!.id,
-      diasPrestamo: this.diasPrestamo!
+      diasPrestamo: this.diasDirecto!
     };
     this.prestamoService.crear(request).subscribe({
       next: () => {
-        this.registrandoPrestamo = false;
-        this.exitoMsg = `Préstamo registrado: "${this.libroSeleccionado!.titulo}" prestado por ${this.diasPrestamo} día(s).`;
+        this.registrandoDirecto = false;
+        this.exitoMsg = `Préstamo registrado: "${this.libroSeleccionado!.titulo}" prestado por ${this.diasDirecto} día(s).`;
         this.limpiarFormularioLibro();
         this.refrescarTrasAccion();
       },
       error: (err: HttpErrorResponse) => {
-        this.registrandoPrestamo = false;
+        this.registrandoDirecto = false;
         this.errorMsgAccion = detalleDeError(err, 'No se pudo registrar el préstamo.');
       }
     });
