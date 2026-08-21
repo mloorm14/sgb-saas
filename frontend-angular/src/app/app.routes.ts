@@ -120,6 +120,7 @@ export const routes: Routes = [
       { path: 'multas', component: MultasComponent },
       { path: 'favoritos', component: FavoritosComponent },
       { path: 'sugerencias', component: MisSugerenciasComponent },
+      { path: 'sugerencias/nueva', component: SugerenciasFormComponent },
       { path: 'notificaciones', component: NotificacionesComponent },
     ]
   },
