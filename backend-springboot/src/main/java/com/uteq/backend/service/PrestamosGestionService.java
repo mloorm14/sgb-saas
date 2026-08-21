@@ -174,7 +174,16 @@ public class PrestamosGestionService {
                 libro.getIsbn(),
                 reservacion.getFechaReserva(),
                 reservacion.getFechaLimiteRetiro(),
-                diasPrestamoSugerido());
+                diasPrestamoSugerido(),
+                libro.getAnioPublicacion(),
+                libro.getStockDisponible(),
+                libro.getStockTotal(),
+                libro.getUbicacionFisica(),
+                libro.getCategorias().stream()
+                        .map(cat -> cat.getNombre())
+                        .sorted()
+                        .toList(),
+                libro.getPortadaImagen() != null || (libro.getPortadaUrl() != null && !libro.getPortadaUrl().isBlank()));
     }
 
     // ── GET /gestion/historial?usuarioId= ────────────────────

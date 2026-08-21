@@ -10,8 +10,8 @@ import java.util.List;
  * bloquear renovaciones). Responde 404 con ProblemDetail si no existe, lo
  * que el frontend interpreta como "Caso B: préstamo directo".
  *
- * Los datos del libro (título/autores/ISBN) viajan resueltos para que la
- * tarjeta "Reserva Encontrada" no tenga que hacer N consultas extra.
+ * Los datos del libro viajan resueltos para que la tarjeta "Nuevo Préstamo"
+ * no tenga que hacer N consultas extra.
  */
 public record ReservaActivaDTO(
         Long reservacionId,
@@ -21,5 +21,11 @@ public record ReservaActivaDTO(
         String isbn,
         OffsetDateTime fechaReserva,
         OffsetDateTime fechaLimiteRetiro,
-        Integer diasPrestamoSugerido
+        Integer diasPrestamoSugerido,
+        Short anioPublicacion,
+        Short stockDisponible,
+        Short stockTotal,
+        String ubicacionFisica,
+        List<String> categorias,
+        boolean tienePortada
 ) {}

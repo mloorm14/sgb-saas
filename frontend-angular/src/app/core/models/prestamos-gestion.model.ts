@@ -31,6 +31,12 @@ export interface ReservaActiva {
   fechaReserva: string;
   fechaLimiteRetiro: string;
   diasPrestamoSugerido: number;
+  anioPublicacion: number;
+  stockDisponible: number;
+  stockTotal: number;
+  ubicacionFisica: string | null;
+  categorias: string[];
+  tienePortada: boolean;
 }
 
 // HistorialPrestamoDTO: línea de tiempo del historial reciente. El ícono y
