@@ -21,6 +21,7 @@ export class AppComponent {
   title = 'frontend-angular';
   mostrarMenuUsuario = false;
   enRutaBibliotecario = false;
+  enRutaAdmin = false;
 
   constructor(
     private authService: AuthService,
@@ -31,6 +32,7 @@ export class AppComponent {
     ).subscribe((event) => {
       const url = (event as NavigationEnd).urlAfterRedirects || (event as NavigationEnd).url;
       this.enRutaBibliotecario = url.startsWith('/dashboard-bibliotecario');
+      this.enRutaAdmin = url.startsWith('/dashboard-admin');
     });
   }
 
@@ -74,6 +76,8 @@ export class AppComponent {
   //   pantalla a todo el staff sin ruta real detrás. BIBLIOTECARIO y ADMIN
   //   no la ven (tienen /reportes y el resto del panel respectivamente).
   enlacesStaff: EnlaceNav[] = [
+    // Entrada al panel con sidebar GERENTE/ADMIN (mismo patron que Cajas).
+    { ruta: '/dashboard-admin', etiqueta: 'Panel', icono: 'dashboard', roles: ['GERENTE', 'ADMIN'] },
     { ruta: '/libros', etiqueta: 'Libros', icono: 'inventory_2', roles: ['BIBLIOTECARIO', 'GERENTE', 'ADMIN'] },
     { ruta: '/prestamos/gestion', etiqueta: 'Préstamos', icono: 'assignment_return', roles: ['BIBLIOTECARIO', 'GERENTE'] },
     { ruta: '/reservaciones', etiqueta: 'Reservaciones', icono: 'event_available', roles: ['BIBLIOTECARIO', 'GERENTE'] },
