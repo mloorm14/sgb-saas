@@ -1,8 +1,9 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { PrestamoService } from '../core/services/prestamo.service';
 import { LibroService } from '../core/services/libro.service';
 import { Libro, LibroSugerencia } from '../core/models/libro.model';
@@ -10,25 +11,30 @@ import { PrestamoRequest } from '../core/models/prestamo.model';
 import {
   HistorialPrestamo,
   ReservaActiva,
-  UsuarioPrestamos
+  UsuarioPrestamos,
+  UsuarioSugerencia
 } from '../core/models/prestamos-gestion.model';
-import { BuscadorUsuarioComponent } from '../shared/buscador-usuario/buscador-usuario.component';
-import { BuscadorLibroComponent } from '../shared/buscador-libro/buscador-libro.component';
 
 @Component({
   selector: 'app-prestamos-gestion',
-  imports: [CommonModule, FormsModule, BuscadorUsuarioComponent, BuscadorLibroComponent],
+  imports: [CommonModule, FormsModule],
   templateUrl: './prestamos-gestion.component.html'
 })
 export class PrestamosGestionComponent {
 
-  @ViewChild('buscadorLibro') buscadorLibro!: BuscadorLibroComponent;
-
-  // ── Búsqueda por correo ─────────────────────────────────
+  // ── Búsqueda por correo (con autocompletado) ─────────────
   correoBusqueda: string = '';
   buscando: boolean = false;
   errorBusqueda: string = '';
   usuario: UsuarioPrestamos | null = null;
+
+  sugerenciasCorreo: UsuarioSugerencia[] = [];
+  mostrarSugerenciasCorreo: boolean = false;
+  buscandoSugerenciasCorreo: boolean = false;
+  placeholderCorreo: string = 'Ingresa el correo del usuario';
+  indiceActivoCorreo: number = -1;
+  private busquedaCorreo$ = new Subject<string>();
+  private destroy$ = new Subject<void>();
 
   // ── Caso A: reserva activa ──────────────────────────────
   reserva: ReservaActiva | null = null;
@@ -37,6 +43,10 @@ export class PrestamosGestionComponent {
   confirmandoEntrega: boolean = false;
 
   // ── Caso B: préstamo directo ────────────────────────────
+  textoLibro: string = '';
+  sugerenciasLibro: LibroSugerencia[] = [];
+  mostrarSugerenciasLibro: boolean = false;
+  buscandoSugerenciasLibro: boolean = false;
   libroSeleccionado: Libro | null = null;
   advertenciaStock: string = '';
   diasDirecto: number | null = null;
@@ -46,7 +56,6 @@ export class PrestamosGestionComponent {
   historial: HistorialPrestamo[] = [];
   cargandoHistorial: boolean = false;
 
-  // Mensajes de las acciones (confirmar entrega / registrar directo)
   exitoMsg: string = '';
   errorMsgAccion: string = '';
 
@@ -54,13 +63,132 @@ export class PrestamosGestionComponent {
     private prestamoService: PrestamoService,
     private libroService: LibroService,
     private router: Router
-  ) {}
+  ) {
+    this.busquedaCorreo$.pipe(
+      debounceTime(1300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(texto => this.buscarSugerenciasCorreo(texto));
+  }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    this.busquedaCorreo$.complete();
+  }
+
+  // ── Autocompletado de correo ──────────────────────────────
+  onInputCorreo(): void {
+    this.correoBusqueda = this.correoBusqueda.replace(/\s/g, '');
+    this.indiceActivoCorreo = -1;
+    const texto = this.correoBusqueda.trim();
+    if (texto.length < 2) {
+      this.sugerenciasCorreo = [];
+      this.mostrarSugerenciasCorreo = false;
+      this.placeholderCorreo = 'Ingresa el correo del usuario';
+      return;
+    }
+    this.busquedaCorreo$.next(texto);
+  }
+
+  private buscarSugerenciasCorreo(texto: string): void {
+    if (texto.length < 2) {
+      this.sugerenciasCorreo = [];
+      this.mostrarSugerenciasCorreo = false;
+      return;
+    }
+    this.buscandoSugerenciasCorreo = true;
+    this.prestamoService.sugerenciasUsuarios(texto).subscribe({
+      next: (lista) => {
+        this.sugerenciasCorreo = lista;
+        this.mostrarSugerenciasCorreo = lista.length > 0;
+        this.buscandoSugerenciasCorreo = false;
+        if (lista.length > 0) {
+          this.placeholderCorreo = lista[0].correo;
+        } else {
+          this.placeholderCorreo = 'Ingresa el correo del usuario';
+        }
+      },
+      error: () => {
+        this.sugerenciasCorreo = [];
+        this.mostrarSugerenciasCorreo = false;
+        this.buscandoSugerenciasCorreo = false;
+      }
+    });
+  }
+
+  onKeydownCorreo(event: KeyboardEvent): void {
+    if (!this.mostrarSugerenciasCorreo || this.sugerenciasCorreo.length === 0) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        this.buscarUsuario();
+      }
+      return;
+    }
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        this.indiceActivoCorreo = Math.min(this.indiceActivoCorreo + 1, this.sugerenciasCorreo.length - 1);
+        this.placeholderCorreo = this.sugerenciasCorreo[this.indiceActivoCorreo].correo;
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.indiceActivoCorreo = Math.max(this.indiceActivoCorreo - 1, -1);
+        if (this.indiceActivoCorreo >= 0) {
+          this.placeholderCorreo = this.sugerenciasCorreo[this.indiceActivoCorreo].correo;
+        } else {
+          this.placeholderCorreo = 'Ingresa el correo del usuario';
+        }
+        break;
+      case 'Tab':
+        event.preventDefault();
+        if (this.indiceActivoCorreo >= 0) {
+          this.seleccionarSugerenciaCorreo(this.sugerenciasCorreo[this.indiceActivoCorreo]);
+        } else if (this.sugerenciasCorreo.length > 0) {
+          this.seleccionarSugerenciaCorreo(this.sugerenciasCorreo[0]);
+        }
+        break;
+      case 'Enter':
+        event.preventDefault();
+        if (this.indiceActivoCorreo >= 0) {
+          this.seleccionarSugerenciaCorreo(this.sugerenciasCorreo[this.indiceActivoCorreo]);
+        } else {
+          this.buscarUsuario();
+        }
+        break;
+      case 'Escape':
+        this.mostrarSugerenciasCorreo = false;
+        this.indiceActivoCorreo = -1;
+        break;
+    }
+  }
+
+  onFocusCorreo(): void {
+    if (this.sugerenciasCorreo.length > 0 && this.correoBusqueda.trim().length >= 2) {
+      this.mostrarSugerenciasCorreo = true;
+    }
+  }
+
+  onBlurCorreo(): void {
+    setTimeout(() => {
+      this.mostrarSugerenciasCorreo = false;
+      this.indiceActivoCorreo = -1;
+    }, 200);
+  }
+
+  seleccionarSugerenciaCorreo(sugerencia: UsuarioSugerencia): void {
+    this.correoBusqueda = sugerencia.correo;
+    this.sugerenciasCorreo = [];
+    this.mostrarSugerenciasCorreo = false;
+    this.placeholderCorreo = sugerencia.correo;
+    this.buscarUsuario();
+  }
+
+  // ── Búsqueda de usuario ────────────────────────────────
   get esCorreoValido(): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.correoBusqueda);
   }
 
-  // Caso C: suspendido/bloqueado O con multas pendientes de pago.
   get estaBloqueado(): boolean {
     if (!this.usuario) return false;
     return this.usuario.estadoCuenta !== 'ACTIVO'
@@ -83,24 +211,14 @@ export class PrestamosGestionComponent {
     return `El usuario no puede realizar nuevos préstamos debido a que ${motivos.join(' y ')}.`;
   }
 
-  // ── Handlers del BuscadorUsuario ────────────────────────
-  onUsuarioSeleccionado(correo: string): void {
-    this.correoBusqueda = correo;
-    this.buscarUsuario();
-  }
-
-  onBuscarAhora(correo: string): void {
-    this.correoBusqueda = correo;
-    this.buscarUsuario();
-  }
-
   buscarUsuario(): void {
-    if (!this.esCorreoValido) {
+    if (this.correoBusqueda.trim().length < 2) {
       this.errorBusqueda = 'Ingresa un correo electrónico válido';
       return;
     }
     this.buscando = true;
     this.errorBusqueda = '';
+    this.mostrarSugerenciasCorreo = false;
     this.limpiarResultado();
     this.prestamoService.buscarUsuarioPorCorreo(this.correoBusqueda).subscribe({
       next: (usuario) => {
@@ -126,6 +244,7 @@ export class PrestamosGestionComponent {
   limpiarBusqueda(): void {
     this.correoBusqueda = '';
     this.errorBusqueda = '';
+    this.placeholderCorreo = 'Ingresa el correo del usuario';
     this.limpiarResultado();
   }
 
@@ -178,7 +297,7 @@ export class PrestamosGestionComponent {
     this.cargarHistorial(this.usuario.id);
   }
 
-  // ── Caso A: confirmar entrega de la reserva ─────────────
+  // ── Caso A: confirmar entrega ────────────────────────────
   confirmarEntrega(): void {
     if (!this.usuario || !this.reserva || !this.diasReserva || this.diasReserva < 1) return;
     this.confirmandoEntrega = true;
@@ -203,13 +322,32 @@ export class PrestamosGestionComponent {
     });
   }
 
-  // ── Caso B: préstamo directo ────────────────────────────
-  onLibroSeleccionadoDirecto(sugerencia: LibroSugerencia | null): void {
+  // ── Caso B: préstamo directo ─────────────────────────────
+  buscarSugerenciasLibro(): void {
+    const texto = this.textoLibro.trim();
     this.advertenciaStock = '';
-    if (!sugerencia) {
-      this.libroSeleccionado = null;
+    if (texto.length < 2) {
+      this.sugerenciasLibro = [];
+      this.mostrarSugerenciasLibro = false;
       return;
     }
+    this.buscandoSugerenciasLibro = true;
+    this.libroService.sugerencias(texto).subscribe({
+      next: (lista) => {
+        this.sugerenciasLibro = lista;
+        this.mostrarSugerenciasLibro = true;
+        this.buscandoSugerenciasLibro = false;
+      },
+      error: () => {
+        this.buscandoSugerenciasLibro = false;
+      }
+    });
+  }
+
+  seleccionarLibro(sugerencia: LibroSugerencia): void {
+    this.mostrarSugerenciasLibro = false;
+    this.libroSeleccionado = null;
+    this.advertenciaStock = '';
     this.libroService.obtener(sugerencia.id).subscribe({
       next: (libro) => {
         this.libroSeleccionado = libro;
@@ -224,11 +362,11 @@ export class PrestamosGestionComponent {
   }
 
   limpiarFormularioLibro(): void {
+    this.textoLibro = '';
+    this.sugerenciasLibro = [];
+    this.mostrarSugerenciasLibro = false;
     this.libroSeleccionado = null;
     this.advertenciaStock = '';
-    if (this.buscadorLibro) {
-      this.buscadorLibro.limpiar();
-    }
   }
 
   get puedeRegistrarDirecto(): boolean {
@@ -262,7 +400,7 @@ export class PrestamosGestionComponent {
     });
   }
 
-  // ── Caso C: gestionar multas en el módulo existente ─────
+  // ── Caso C ──────────────────────────────────────────────
   gestionarMultas(): void {
     if (!this.usuario) return;
     const dentroDelPanel = this.router.url.includes('/dashboard-bibliotecario');
@@ -271,7 +409,6 @@ export class PrestamosGestionComponent {
   }
 
   // ── Presentación ────────────────────────────────────────
-
   iniciales(nombreCompleto: string): string {
     const partes = nombreCompleto.trim().split(/\s+/).filter(Boolean);
     if (partes.length === 0) return '??';
