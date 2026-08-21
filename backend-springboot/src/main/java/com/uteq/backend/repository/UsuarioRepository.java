@@ -5,12 +5,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     Optional<Usuario> findByCorreo(String correo);
+
+    // Autocompletado de usuarios por correo parcial (ventanilla de préstamos).
+    // Retorna los 3 usuarios más coincidentes, ordenados por nombre.
+    List<Usuario> findTop3ByCorreoContainingIgnoreCaseOrderByNombreAsc(String correo);
 
     // Usado por CredencialQrService.resolverPorToken() al leer un QR
     // escaneado en ventanilla.

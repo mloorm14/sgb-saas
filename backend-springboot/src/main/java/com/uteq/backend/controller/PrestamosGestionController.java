@@ -3,6 +3,7 @@ package com.uteq.backend.controller;
 import com.uteq.backend.dto.HistorialPrestamoDTO;
 import com.uteq.backend.dto.ReservaActivaDTO;
 import com.uteq.backend.dto.UsuarioPrestamosGestionDTO;
+import com.uteq.backend.dto.UsuarioSugerenciaDTO;
 import com.uteq.backend.service.PrestamosGestionService;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.http.ResponseEntity;
@@ -49,6 +50,17 @@ public class PrestamosGestionController {
                      message = "Ingresa un correo electrónico válido")
             String correo) {
         return ResponseEntity.ok(prestamosGestionService.buscarPorCorreo(correo));
+    }
+
+    // ── GET /api/v1/prestamos/gestion/sugerencias-usuarios?correo= ──
+    // Autocompletado predictivo: retorna hasta 3 usuarios cuyo correo
+    // contenga el texto ingresado (case-insensitive). El frontend lo usa
+    // para el dropdown y el placeholder dinámico.
+    @GetMapping("/sugerencias-usuarios")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    public ResponseEntity<List<UsuarioSugerenciaDTO>> sugerenciasUsuarios(
+            @RequestParam String correo) {
+        return ResponseEntity.ok(prestamosGestionService.sugerenciasUsuarios(correo));
     }
 
     // ── GET /api/v1/prestamos/gestion/reserva-activa?usuarioId= ──
