@@ -1,6 +1,7 @@
 import { Component, HostListener } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
+import { ChatbotWidgetComponent } from '../shared/chatbot-widget/chatbot-widget.component';
 
 interface EnlaceSidebar {
   ruta: string;
@@ -11,7 +12,7 @@ interface EnlaceSidebar {
 @Component({
   selector: 'app-dashboard-lector',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, ChatbotWidgetComponent],
   templateUrl: './dashboard-lector.component.html'
 })
 export class DashboardLectorComponent {
@@ -36,6 +37,7 @@ export class DashboardLectorComponent {
         { ruta: '/dashboard-lector/favoritos', etiqueta: 'Favoritos', icono: 'favorite' },
         { ruta: '/dashboard-lector/sugerencias', etiqueta: 'Sugerencias', icono: 'lightbulb' },
         { ruta: '/dashboard-lector/notificaciones', etiqueta: 'Notificaciones', icono: 'notifications' },
+        { ruta: '/dashboard-lector/mi-credencial', etiqueta: 'Mi Credencial', icono: 'qr_code_2' },
       ] as EnlaceSidebar[]
     }
   ];
