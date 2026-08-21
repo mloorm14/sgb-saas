@@ -24,112 +24,200 @@
       </div>
     }
 
-    @if (errorMsg) {
-      <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
-    }
-    @if (cargando && multas.length === 0) {
-      <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando multas…</p>
-    }
+  </div>
 
-    @if (!cargando && multas.length > 0) {
-      <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
-        <table class="w-full text-left">
-          <thead class="bg-surface-container-low">
-            <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
-              <th class="px-md py-sm">ID</th>
-              <th class="px-md py-sm">Monto</th>
-              <th class="px-md py-sm hidden md:table-cell">Fecha generada</th>
-              <th class="px-md py-sm">Fecha pagada</th>
-              <th class="px-md py-sm">Estado</th>
-              <th class="px-md py-sm hidden lg:table-cell">Observaciones</th>
-              @if (puedeGestionar) {
-                <th class="px-md py-sm">Acciones</th>
-              }
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-            @for (multa of multas; track multa.id) {
-              <tr class="hover:bg-surface-container-low/50">
-                <td class="px-md py-sm">{{ multa.id }}</td>
-                <td class="px-md py-sm">{{ multa.monto | currency }}</td>
-                <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ multa.fechaGenerada | date:'dd MMM yyyy' }}</td>
-                <td class="px-md py-sm text-on-surface-variant">
-                  {{ multa.fechaPagada ? (multa.fechaPagada | date:'dd MMM yyyy') : '—' }}
-                </td>
-                <td class="px-md py-sm">
-                  <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]"
-                    [class]="claseEstadoMulta(multa.estadoMultaId)">
-                    {{ (estadosMulta[multa.estadoMultaId] || 'Desconocido (' + multa.estadoMultaId + ')') }}
-                  </span>
-                </td>
-                <td class="px-md py-sm hidden lg:table-cell text-on-surface-variant max-w-xs truncate">
-                  {{ multa.observaciones || '—' }}
-                </td>
+  @if (errorMsg) {
+    <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
+  }
+  @if (cargando && multas.length === 0) {
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando multas…</p>
+  }
+
+  @if (esLector) {
+      <!-- ═══════════════════════════════════════════════════════════════════
+           VISTA LECTOR: tarjetas de resumen + lista de multas (mockup 29)
+           ═══════════════════════════════════════════════════════════════════ -->
+
+      @if (!cargando && multas.length > 0) {
+        <div class="grid grid-cols-2 gap-md mb-lg">
+          <div class="rounded-xl border border-outline-variant bg-white p-md">
+            <p class="font-label-sm text-[12px] text-on-surface-variant mb-1">Total pendiente</p>
+            <p class="font-headline-lg text-[26px] text-error font-bold">{{ totalPendiente | currency }}</p>
+          </div>
+          <div class="rounded-xl border border-outline-variant bg-white p-md">
+            <p class="font-label-sm text-[12px] text-on-surface-variant mb-1">Multas en esta página</p>
+            <p class="font-headline-lg text-[26px] text-on-background font-bold">{{ totalHistoricas }}</p>
+          </div>
+        </div>
+
+        <div class="space-y-sm mb-xl">
+          @for (multa of multas; track multa.id) {
+            <div class="rounded-xl border border-outline-variant bg-white p-md flex items-center gap-md"
+              [class.opacity-70]="multa.estadoMultaId !== 1">
+              <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                [class]="multa.estadoMultaId === 1 ? 'bg-error-container/40' : 'bg-surface-container-low'">
+                <span class="material-symbols-outlined text-[20px]"
+                  [class.text-error]="multa.estadoMultaId === 1"
+                  [class.text-secondary]="multa.estadoMultaId === 2"
+                  [class.text-on-surface-variant]="multa.estadoMultaId === 3">
+                  {{ iconoEstadoMulta(multa.estadoMultaId) }}
+                </span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-label-md text-[14px] text-on-surface">Préstamo #{{ multa.prestamoId }}</p>
+                <p class="font-body-sm text-[13px] text-on-surface-variant">
+                  {{ motivoMulta(multa) }} · Generada el {{ formatearFecha(multa.fechaGenerada) }}
+                </p>
+              </div>
+              <div class="text-right shrink-0">
+                <p class="font-headline-md text-[18px] font-semibold"
+                  [class.text-error]="multa.estadoMultaId === 1"
+                  [class.text-on-surface-variant]="multa.estadoMultaId !== 1">
+                  {{ multa.monto | currency }}
+                </p>
+                <span class="font-label-sm text-[11px]"
+                  [class]="claseEstadoMulta(multa.estadoMultaId)">
+                  {{ estadosMulta[multa.estadoMultaId] || 'Desconocido' }}
+                </span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      @if (!cargando && multas.length === 0) {
+        <div class="rounded-xl border border-dashed border-outline-variant bg-white p-xl flex flex-col items-center text-center">
+          <div class="w-14 h-14 rounded-full bg-secondary-container/30 flex items-center justify-center mb-sm">
+            <span class="material-symbols-outlined text-[26px] text-secondary">celebration</span>
+          </div>
+          <p class="font-label-md text-[15px] text-on-surface mb-1">No tenés multas pendientes</p>
+          <p class="font-body-sm text-[13px] text-on-surface-variant max-w-xs">Devolvé tus préstamos a tiempo y esta pantalla se mantiene así de vacía.</p>
+        </div>
+      }
+
+      @if (multas.length > 0 && totalPages > 1) {
+        <div class="flex justify-center items-center gap-md font-body-sm text-body-sm mt-lg">
+          <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
+            class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+          </button>
+          @for (pagina of paginasVisibles; track pagina) {
+            <button (click)="irAPagina(pagina)"
+              class="w-8 h-8 rounded font-label-sm text-label-sm cursor-pointer"
+              [class.bg-primary]="$index === currentPage"
+              [class.text-on-primary]="$index === currentPage"
+              [class.hover:bg-surface-container-low]="$index !== currentPage"
+              [class.text-on-surface-variant]="$index !== currentPage">
+              {{ $index + 1 }}
+            </button>
+          }
+          <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
+            class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+          </button>
+        </div>
+      }
+
+      @if (multas.length > 0) {
+        <div class="mt-md text-center text-sm text-on-surface-variant/70">
+          Para regularizar una multa pendiente, acercate a la biblioteca.
+        </div>
+      }
+    } @else {
+      <!-- Vista gestión (BIBLIOTECARIO/GERENTE): tabla original -->
+      @if (!cargando && multas.length > 0) {
+        <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
+          <table class="w-full text-left">
+            <thead class="bg-surface-container-low">
+              <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+                <th class="px-md py-sm">ID</th>
+                <th class="px-md py-sm">Monto</th>
+                <th class="px-md py-sm hidden md:table-cell">Fecha generada</th>
+                <th class="px-md py-sm">Fecha pagada</th>
+                <th class="px-md py-sm">Estado</th>
+                <th class="px-md py-sm hidden lg:table-cell">Observaciones</th>
                 @if (puedeGestionar) {
-                  <td class="px-md py-sm">
-                    <div class="flex items-center gap-xs">
-                      <button (click)="pagarMulta(multa.id)"
-                        class="h-8 px-sm rounded bg-primary text-on-primary font-label-sm text-label-sm hover:bg-on-primary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-xs"
-                        [disabled]="multa.estadoMultaId === 2">
-                        <span class="material-symbols-outlined text-[16px]">payments</span> Pagar
-                      </button>
-                      @if (puedeAnular) {
-                        <button (click)="abrirModalAnular(multa.id)"
-                          class="h-8 px-sm rounded border border-error text-error font-label-sm text-label-sm hover:bg-error-container/40 flex items-center gap-xs cursor-pointer">
-                          <span class="material-symbols-outlined text-[16px]">cancel</span> Anular
-                        </button>
-                      }
-                    </div>
-                  </td>
+                  <th class="px-md py-sm">Acciones</th>
                 }
               </tr>
-            } @empty {
-              @if (!cargando) {
-                <tr>
-                  <td colspan="7" class="px-md py-lg text-center text-on-surface-variant">No hay multas registradas</td>
+            </thead>
+            <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+              @for (multa of multas; track multa.id) {
+                <tr class="hover:bg-surface-container-low/50">
+                  <td class="px-md py-sm">{{ multa.id }}</td>
+                  <td class="px-md py-sm">{{ multa.monto | currency }}</td>
+                  <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ multa.fechaGenerada | date:'dd MMM yyyy' }}</td>
+                  <td class="px-md py-sm text-on-surface-variant">
+                    {{ multa.fechaPagada ? (multa.fechaPagada | date:'dd MMM yyyy') : '—' }}
+                  </td>
+                  <td class="px-md py-sm">
+                    <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]"
+                      [class]="claseEstadoMulta(multa.estadoMultaId)">
+                      {{ (estadosMulta[multa.estadoMultaId] || 'Desconocido (' + multa.estadoMultaId + ')') }}
+                    </span>
+                  </td>
+                  <td class="px-md py-sm hidden lg:table-cell text-on-surface-variant max-w-xs truncate">
+                    {{ multa.observaciones || '—' }}
+                  </td>
+                  @if (puedeGestionar) {
+                    <td class="px-md py-sm">
+                      <div class="flex items-center gap-xs">
+                        <button (click)="pagarMulta(multa.id)"
+                          class="h-8 px-sm rounded bg-primary text-on-primary font-label-sm text-label-sm hover:bg-on-primary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-xs"
+                          [disabled]="multa.estadoMultaId === 2">
+                          <span class="material-symbols-outlined text-[16px]">payments</span> Pagar
+                        </button>
+                        @if (puedeAnular) {
+                          <button (click)="abrirModalAnular(multa.id)"
+                            class="h-8 px-sm rounded border border-error text-error font-label-sm text-label-sm hover:bg-error-container/40 flex items-center gap-xs cursor-pointer">
+                            <span class="material-symbols-outlined text-[16px]">cancel</span> Anular
+                          </button>
+                        }
+                      </div>
+                    </td>
+                  }
                 </tr>
+              } @empty {
+                @if (!cargando) {
+                  <tr>
+                    <td colspan="7" class="px-md py-lg text-center text-on-surface-variant">No hay multas registradas</td>
+                  </tr>
+                }
               }
-            }
-          </tbody>
-        </table>
-      </div>
-    }
+            </tbody>
+          </table>
+        </div>
+      }
 
-    @if (!cargando && multas.length === 0) {
-      <div class="rounded-lg border border-dashed border-outline-variant bg-white p-xl text-center">
-        <span class="material-symbols-outlined text-[40px] text-outline">payments</span>
-        <p class="font-body-md text-body-md text-on-surface-variant mt-sm">No hay multas para mostrar</p>
-      </div>
-    }
+      @if (!cargando && multas.length === 0) {
+        <div class="rounded-lg border border-dashed border-outline-variant bg-white p-xl text-center">
+          <span class="material-symbols-outlined text-[40px] text-outline">payments</span>
+          <p class="font-body-md text-body-md text-on-surface-variant mt-sm">No hay multas para mostrar</p>
+        </div>
+      }
 
-    <!-- El lector no puede pagar ni anular desde la UI: solo consulta -->
-    @if (esLector && multas.length > 0) {
-      <div class="mt-md text-center text-sm text-on-surface-variant/70">
-        Para regularizar una multa pendiente, acercate a la biblioteca.
-      </div>
-    }
-
-    @if (multas.length > 0) {
-      <div class="flex justify-center items-center gap-md font-body-sm text-body-sm mt-lg">
-        <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
-          class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
-          <span class="material-symbols-outlined text-[18px]">chevron_left</span>
-        </button>
-        @for (pagina of paginasVisibles; track pagina) {
-          <button (click)="irAPagina(pagina)"
-            class="w-8 h-8 rounded font-label-sm text-label-sm cursor-pointer"
-            [class.bg-primary]="$index === currentPage"
-            [class.text-on-primary]="$index === currentPage"
-            [class.hover:bg-surface-container-low]="$index !== currentPage"
-            [class.text-on-surface-variant]="$index !== currentPage">
-            {{ $index + 1 }}
+      @if (multas.length > 0) {
+        <div class="flex justify-center items-center gap-md font-body-sm text-body-sm mt-lg">
+          <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
+            class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]">chevron_left</span>
           </button>
-        }
-        <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
-          class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
-          <span class="material-symbols-outlined text-[18px]">chevron_right</span>
-        </button>
-      </div>
+          @for (pagina of paginasVisibles; track pagina) {
+            <button (click)="irAPagina(pagina)"
+              class="w-8 h-8 rounded font-label-sm text-label-sm cursor-pointer"
+              [class.bg-primary]="$index === currentPage"
+              [class.text-on-primary]="$index === currentPage"
+              [class.hover:bg-surface-container-low]="$index !== currentPage"
+              [class.text-on-surface-variant]="$index !== currentPage">
+              {{ $index + 1 }}
+            </button>
+          }
+          <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
+            class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+          </button>
+        </div>
+      }
     }
 
     <!-- MODAL ANULAR: motivo obligatorio -->

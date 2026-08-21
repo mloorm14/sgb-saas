@@ -6,11 +6,11 @@
         {{ esLector ? 'Mis reservaciones' : 'Gestión de reservaciones' }}
       </h1>
       <p class="font-body-sm text-body-sm text-on-surface-variant">
-        {{ esLector ? 'Para reservar un libro nuevo, buscalo en el catálogo' : 'Creá reservas y consultá las de cualquier usuario' }}
+        {{ esLector ? 'Libros que apartaste para retirar en el mostrador' : 'Creá reservas y consultá las de cualquier usuario' }}
       </p>
     </div>
     @if (esLector) {
-      <a routerLink="/catalogo"
+      <a routerLink="/dashboard-lector/catalogo"
         class="inline-flex items-center gap-xs h-10 px-md rounded bg-primary text-on-primary font-label-md text-label-sm hover:bg-on-primary-fixed-variant self-start">
         <span class="material-symbols-outlined text-[18px]">search</span> Ir al catálogo
       </a>
@@ -28,11 +28,15 @@
     }
 
     @if (!cargando && reservaciones.length === 0) {
-      <div class="rounded-lg border border-dashed border-outline-variant bg-white p-xl text-center">
-        <span class="material-symbols-outlined text-[40px] text-outline">event_available</span>
-        <p class="font-body-md text-body-md text-on-surface-variant mt-sm">No tenés reservaciones todavía.</p>
-        <a routerLink="/catalogo" class="inline-flex items-center gap-xs text-primary font-label-md text-label-sm hover:underline mt-xs">
-          Buscar en el catálogo <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+      <div class="rounded-xl border border-dashed border-outline-variant bg-white p-xl flex flex-col items-center text-center">
+        <div class="w-14 h-14 rounded-full bg-primary-fixed flex items-center justify-center mb-sm">
+          <span class="material-symbols-outlined text-[26px] text-primary">event_available</span>
+        </div>
+        <p class="font-label-md text-[15px] text-on-surface mb-1">No tenés reservaciones activas</p>
+        <p class="font-body-sm text-[13px] text-on-surface-variant max-w-xs mb-md">Cuando encuentres un libro sin stock disponible, podés reservarlo desde su ficha para que te lo guarden.</p>
+        <a routerLink="/dashboard-lector/catalogo"
+          class="inline-flex items-center gap-xs h-10 px-md rounded-lg bg-primary text-on-primary font-label-md text-[13px] hover:opacity-90 transition-opacity">
+          <span class="material-symbols-outlined text-[18px]">search</span> Explorar el catálogo
         </a>
       </div>
     }
@@ -40,15 +44,18 @@
     @if (!cargando && reservaciones.length > 0) {
       @if (pendientesDeRetiro.length > 0) {
         <h2 class="font-headline-md text-headline-md text-on-background mb-sm">Pendientes de retiro</h2>
-        <div class="grid gap-sm mb-xl">
+        <div class="space-y-sm mb-xl">
           @for (r of pendientesDeRetiro; track r.id) {
-            <div class="rounded-lg border border-outline-variant bg-white p-md flex items-center justify-between">
-              <div>
-                <p class="font-label-md text-label-sm text-on-surface">{{ tituloLibro(r.libroId) }}</p>
-                <p class="font-body-sm text-[12px] text-on-surface-variant mt-1">Reservado el {{ r.fechaReserva | date:'dd/MM' }} · Retirar antes del <strong class="text-warning">{{ r.fechaLimiteRetiro | date:'dd/MM/yyyy' }}</strong></p>
+            <div class="rounded-xl border border-outline-variant bg-white p-md flex items-center gap-md">
+              <div class="w-12 h-16 rounded bg-surface-container-low overflow-hidden shrink-0 flex items-center justify-center">
+                <span class="material-symbols-outlined text-outline-variant text-[22px]">menu_book</span>
               </div>
-              <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]" [class]="claseEstadoReservacion(r.estadoReservacionId)">
-                <span class="material-symbols-outlined text-[14px]">event_available</span> {{ estadosReservacion[r.estadoReservacionId] }}
+              <div class="flex-1 min-w-0">
+                <p class="font-label-md text-[14px] text-on-surface">{{ tituloLibro(r.libroId) }}</p>
+                <p class="font-body-sm text-[13px] text-on-surface-variant">Reservado el {{ r.fechaReserva | date:'dd MMM' }} · Retirar antes del <strong class="text-warning">{{ r.fechaLimiteRetiro | date:'dd MMM yyyy' }}</strong></p>
+              </div>
+              <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full shrink-0 font-label-sm text-[11px]" [class]="claseEstadoReservacion(r.estadoReservacionId)">
+                <span class="material-symbols-outlined text-[14px]">schedule</span> {{ estadosReservacion[r.estadoReservacionId] }}
               </span>
             </div>
           }
@@ -57,29 +64,21 @@
 
       @if (historial.length > 0) {
         <h2 class="font-headline-md text-headline-md text-on-background mb-sm">Historial</h2>
-        <div class="rounded-lg border border-outline-variant bg-white overflow-hidden mb-lg">
-          <table class="w-full text-left">
-            <thead class="bg-surface-container-low">
-              <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
-                <th class="px-md py-sm">Libro</th>
-                <th class="px-md py-sm">Fecha reserva</th>
-                <th class="px-md py-sm">Estado</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-              @for (r of historial; track r.id) {
-                <tr>
-                  <td class="px-md py-sm">{{ tituloLibro(r.libroId) }}</td>
-                  <td class="px-md py-sm text-on-surface-variant">{{ r.fechaReserva | date:'dd MMM yyyy' }}</td>
-                  <td class="px-md py-sm">
-                    <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]" [class]="claseEstadoReservacion(r.estadoReservacionId)">
-                      {{ estadosReservacion[r.estadoReservacionId] }}
-                    </span>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+        <div class="space-y-sm mb-lg">
+          @for (r of historial; track r.id) {
+            <div class="rounded-xl border border-outline-variant bg-white p-md flex items-center gap-md opacity-70">
+              <div class="w-12 h-16 rounded bg-surface-container-low overflow-hidden shrink-0 flex items-center justify-center">
+                <span class="material-symbols-outlined text-outline-variant text-[22px]">menu_book</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-label-md text-[14px] text-on-surface">{{ tituloLibro(r.libroId) }}</p>
+                <p class="font-body-sm text-[13px] text-on-surface-variant">Reservado el {{ r.fechaReserva | date:'dd MMM yyyy' }}</p>
+              </div>
+              <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full shrink-0 font-label-sm text-[11px]" [class]="claseEstadoReservacion(r.estadoReservacionId)">
+                {{ estadosReservacion[r.estadoReservacionId] }}
+              </span>
+            </div>
+          }
         </div>
       }
     }

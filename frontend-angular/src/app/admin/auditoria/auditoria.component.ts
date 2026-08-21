@@ -1,8 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs';
 import { AuditoriaService } from '../../core/services/auditoria.service';
+import { UsuarioAdminService } from '../../core/services/usuario-admin.service';
 import { EventoAuditoria } from '../../core/models/evento-auditoria.model';
+import { UsuarioAdmin } from '../../core/models/usuario-admin.model';
 
 // Valores posibles de tablaAfectada (bitacora_auditoria). Hoy solo
 // "usuarios" se escribe de verdad (AuthService y UsuarioAdminService);
@@ -16,7 +19,7 @@ const MODULOS = ['usuarios', 'prestamos', 'libros', 'multas', 'sugerencias_adqui
   imports: [CommonModule, FormsModule],
   templateUrl: './auditoria.component.html'
 })
-export class AuditoriaComponent implements OnInit {
+export class AuditoriaComponent implements OnInit, OnDestroy {
   modulos = MODULOS;
 
   filtroUsuarioId: string = '';
@@ -31,10 +34,74 @@ export class AuditoriaComponent implements OnInit {
   cargando: boolean = false;
   errorMsg: string = '';
 
-  constructor(private auditoriaService: AuditoriaService) {}
+  // Autocomplete de usuarios
+  busquedaUsuario: string = '';
+  usuarioSeleccionado: UsuarioAdmin | null = null;
+  resultadosBusqueda: UsuarioAdmin[] = [];
+  mostrandoDropdown: boolean = false;
+  buscandoUsuarios: boolean = false;
+  private busquedaSubject = new Subject<string>();
+  private destroy$ = new Subject<void>();
+
+  constructor(
+    private auditoriaService: AuditoriaService,
+    private usuarioAdminService: UsuarioAdminService
+  ) {}
 
   ngOnInit(): void {
     this.cargarPagina();
+
+    // Suscripción al autocomplete de usuarios
+    this.busquedaSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      switchMap(texto => {
+        if (!texto.trim()) {
+          this.resultadosBusqueda = [];
+          this.buscandoUsuarios = false;
+          return [];
+        }
+        this.buscandoUsuarios = true;
+        return this.usuarioAdminService.listar(texto, 0, 5);
+      }),
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (page) => {
+        this.resultadosBusqueda = page.content ?? [];
+        this.buscandoUsuarios = false;
+      },
+      error: () => {
+        this.resultadosBusqueda = [];
+        this.buscandoUsuarios = false;
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  onBusquedaUsuario(texto: string): void {
+    this.busquedaSubject.next(texto);
+  }
+
+  seleccionarUsuario(usuario: UsuarioAdmin): void {
+    this.usuarioSeleccionado = usuario;
+    this.filtroUsuarioId = String(usuario.id);
+    this.mostrandoDropdown = false;
+    this.busquedaUsuario = '';
+    this.resultadosBusqueda = [];
+  }
+
+  limpiarSeleccion(): void {
+    this.usuarioSeleccionado = null;
+    this.filtroUsuarioId = '';
+    this.busquedaUsuario = '';
+  }
+
+  cerrarDropdown(): void {
+    setTimeout(() => { this.mostrandoDropdown = false; }, 200);
   }
 
   get paginasVisibles(): number[] {

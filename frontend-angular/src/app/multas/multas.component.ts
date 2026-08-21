@@ -115,6 +115,43 @@ export class MultasComponent implements OnInit {
     }
   }
 
+  // Total de multas pendientes (monto sumado)
+  get totalPendiente(): number {
+    return this.multas
+      .filter(m => m.estadoMultaId === 1)
+      .reduce((suma, m) => suma + m.monto, 0);
+  }
+
+  // Cantidad total de multas (todas las páginas, para la vista LECTOR)
+  // Nota: solo refleja la página actual; un endpoint dedicado sería más preciso.
+  get totalHistoricas(): number {
+    return this.multas.length;
+  }
+
+  // Días transcurridos desde la generación de la multa (proxy para "días de atraso")
+  diasAtraso(multa: Multa): number {
+    if (!multa.fechaGenerada) return 0;
+    const hoy = new Date();
+    const generado = new Date(multa.fechaGenerada);
+    const diffMs = hoy.getTime() - generado.getTime();
+    return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+  }
+
+  // Texto de motivo de la multa: usa observaciones si existe, fallback genérico
+  motivoMulta(multa: Multa): string {
+    return multa.observaciones?.trim() || 'Multa por préstamo atrasado';
+  }
+
+  // Icono del badge según estado (patrón mockup 29)
+  iconoEstadoMulta(estadoId: number): string {
+    switch (estadoId) {
+      case 1: return 'payments';
+      case 2: return 'check_circle';
+      case 3: return 'cancel';
+      default: return 'help';
+    }
+  }
+
   // Formato corto de fecha ISO (OffsetDateTime), igual que en otros componentes
   formatearFecha(iso: string): string {
     if (!iso) return '—';
