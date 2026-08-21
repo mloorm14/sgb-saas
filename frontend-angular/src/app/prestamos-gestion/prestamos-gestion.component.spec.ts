@@ -30,7 +30,7 @@ describe('PrestamosGestionComponent', () => {
 
   beforeEach(async () => {
     prestamoService = jasmine.createSpyObj('PrestamoService', [
-      'buscarUsuarioPorCedula', 'reservaActiva', 'historial', 'crear'
+      'buscarUsuarioPorCedula', 'reservaActiva', 'historial', 'crear', 'devolver'
     ]);
     libroService = jasmine.createSpyObj('LibroService', ['sugerencias', 'obtener']);
     router = jasmine.createSpyObj('Router', ['navigate']);
@@ -158,5 +158,45 @@ describe('PrestamosGestionComponent', () => {
     };
 
     expect(component.puedeRegistrarDirecto).toBeFalse();
+  });
+
+  it('registra una devolución exitosa sin multa y refresca el historial', () => {
+    window.confirm = jasmine.createSpy('confirm').and.returnValue(true);
+    prestamoService.devolver.and.returnValue(of({ prestamoId: 1, huboMulta: false, montoMulta: 0 }));
+    prestamoService.reservaActiva.and.returnValue(throwError(() => ({ status: 404 })));
+    prestamoService.historial.and.returnValue(of([]));
+
+    component.usuario = usuarioActivo();
+    component.registrarDevolucion(1);
+
+    expect(prestamoService.devolver).toHaveBeenCalledWith(1);
+    expect(component.exitoMsg).toContain('devuelto correctamente');
+    expect(component.avisoDevolucion).toBe('');
+    expect(component.devolviendoPrestamoId).toBeNull();
+  });
+
+  it('muestra aviso de multa cuando la devolución genera multa por atraso', () => {
+    window.confirm = jasmine.createSpy('confirm').and.returnValue(true);
+    prestamoService.devolver.and.returnValue(of({ prestamoId: 2, huboMulta: true, montoMulta: 5.50 }));
+    prestamoService.reservaActiva.and.returnValue(throwError(() => ({ status: 404 })));
+    prestamoService.historial.and.returnValue(of([]));
+
+    component.usuario = usuarioActivo();
+    component.registrarDevolucion(2);
+
+    expect(component.avisoDevolucion).toContain('Devuelto tarde');
+    expect(component.avisoDevolucion).toContain('$5.50');
+    expect(component.exitoMsg).toBe('');
+  });
+
+  it('muestra error cuando la devolución falla', () => {
+    window.confirm = jasmine.createSpy('confirm').and.returnValue(true);
+    prestamoService.devolver.and.returnValue(throwError(() => ({ status: 500, error: { detail: 'Préstamo no encontrado' } })));
+
+    component.usuario = usuarioActivo();
+    component.registrarDevolucion(999);
+
+    expect(component.errorMsgAccion).toBe('Préstamo no encontrado');
+    expect(component.devolviendoPrestamoId).toBeNull();
   });
 });

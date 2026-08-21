@@ -1,0 +1,54 @@
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg flex items-center justify-center min-h-[calc(100vh-64px)]">
+  <div class="w-full max-w-sm">
+
+    <div class="text-center mb-lg">
+      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Mi credencial</h1>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">Mostrala en el mostrador para préstamos rápidos</p>
+    </div>
+
+    @if (cargando) {
+      <div class="rounded-xl border border-outline-variant bg-white p-lg flex flex-col items-center gap-sm">
+        <span class="material-symbols-outlined animate-spin text-[32px] text-primary">progress_activity</span>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando credencial…</p>
+      </div>
+    }
+
+    @if (error) {
+      <div class="rounded-xl border border-error/30 bg-error-container p-lg flex flex-col items-center gap-sm">
+        <span class="material-symbols-outlined text-[32px] text-error">error</span>
+        <p class="font-body-sm text-body-sm text-error text-center">{{ error }}</p>
+      </div>
+    }
+
+    @if (objectUrl) {
+      <div class="rounded-2xl overflow-hidden shadow-xl" style="background: linear-gradient(135deg, #003694 0%, #1e4db7 60%, #2c57c1 100%);">
+        <div class="p-lg pb-md flex items-center justify-between">
+          <div class="flex items-center gap-xs text-white">
+            <span class="material-symbols-outlined text-[24px]" style="font-variation-settings:'FILL' 1;">menu_book</span>
+            <span class="font-headline-md text-[18px] font-bold">SGB UTEQ</span>
+          </div>
+          <span class="font-label-sm text-[10px] text-white/70 tracking-widest uppercase">Carné digital</span>
+        </div>
+
+        <div class="bg-white mx-md rounded-xl p-lg flex flex-col items-center mb-md">
+          <div class="w-40 h-40 rounded-lg bg-surface-container-low flex items-center justify-center overflow-hidden mb-sm">
+            <img [src]="objectUrl" alt="Credencial QR" class="w-full h-full object-contain" />
+          </div>
+          <p class="font-headline-md text-[17px] text-on-background font-semibold">{{ correoUsuario }}</p>
+          <p class="font-label-sm text-[12px] text-on-surface-variant">LECTOR</p>
+        </div>
+
+        <div class="px-lg pb-lg pt-xs flex items-center justify-between">
+          <p class="font-label-sm text-[11px] text-white/60">Válida mientras la cuenta esté activa</p>
+          <span class="material-symbols-outlined text-white/60 text-[18px]">verified</span>
+        </div>
+      </div>
+
+      <a [href]="objectUrl" download="credencial-sgb.png"
+        class="w-full mt-lg h-11 rounded-lg border border-outline-variant bg-white text-on-surface font-label-md text-label-md flex items-center justify-center gap-sm hover:bg-surface-container-low transition-colors">
+        <span class="material-symbols-outlined text-[20px]">download</span> Descargar credencial
+      </a>
+    }
+
+  </div>
+</main>

@@ -25,7 +25,7 @@
     @if (sugerencias.length > 0) {
       <div class="absolute mt-xs w-full bg-white rounded shadow-lg border border-outline-variant overflow-hidden z-10">
         @for (sug of sugerencias; track sug.id) {
-          <a [routerLink]="['/catalogo', sug.id]" (click)="textoBusqueda = ''; sugerencias = []"
+          <a [routerLink]="['/dashboard-lector/catalogo', sug.id]" (click)="textoBusqueda = ''; sugerencias = []"
             class="w-full block text-left px-md py-sm hover:bg-surface-container-low flex items-center justify-between border-b border-outline-variant">
             <span class="font-body-sm text-body-sm text-on-surface">{{ sug.titulo }}</span>
             @if (sug.disponible) {
@@ -68,7 +68,7 @@
   <!-- Grid de tarjetas -->
   <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-md">
     @for (libro of libros; track libro.id) {
-      <a [routerLink]="['/catalogo', libro.id]"
+      <a [routerLink]="['/dashboard-lector/catalogo', libro.id]"
         class="group rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow flex flex-col">
         <div class="relative aspect-[3/4] bg-surface-container-low overflow-hidden">
           <app-portada-libro [libroId]="libro.id" [tienePortada]="libro.tienePortada" />

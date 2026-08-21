@@ -148,4 +148,43 @@ describe('DashboardGerenteComponent', () => {
     expect(component.cargandoAuditoria).toBeFalse();
     expect(component.eventosAuditoria.length).toBe(0);
   });
+
+  it('ADMIN no dispara reportes de libros/morosidad (endpoints excluyen su rol)', () => {
+    // Re-mock de AuthService: solo GERENTE es true, ADMIN es false.
+    // ADMIN aun asi ve resumen financiero y auditoría.
+    const adminAuth = { hasRole: (...roles: string[]) => false };
+    TestBed.resetTestingModule();
+    reporteService = jasmine.createSpyObj('ReporteService', ['librosMasPrestados', 'morosidad']);
+    multaService = jasmine.createSpyObj('MultaService', ['resumenFinanciero']);
+    auditoriaService = jasmine.createSpyObj('AuditoriaService', ['listar']);
+    reporteService.librosMasPrestados.and.returnValue(of(seisLibros));
+    reporteService.morosidad.and.returnValue(of(dosMorosos));
+    multaService.resumenFinanciero.and.returnValue(of(resumenFinanciero));
+    auditoriaService.listar.and.returnValue(of(paginaAuditoria));
+
+    TestBed.configureTestingModule({
+      imports: [DashboardGerenteComponent],
+      providers: [
+        { provide: ReporteService, useValue: reporteService },
+        { provide: AuthService, useValue: adminAuth },
+        { provide: MultaService, useValue: multaService },
+        { provide: AuditoriaService, useValue: auditoriaService },
+        { provide: ActivatedRoute, useValue: { snapshot: {} } }
+      ]
+    });
+
+    fixture = TestBed.createComponent(DashboardGerenteComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    // No se disparan los endpoints que ADMIN no tiene:
+    expect(reporteService.librosMasPrestados).not.toHaveBeenCalled();
+    expect(reporteService.morosidad).not.toHaveBeenCalled();
+    // ...pero sí los que admiten ADMIN:
+    expect(multaService.resumenFinanciero).toHaveBeenCalled();
+    expect(auditoriaService.listar).toHaveBeenCalled();
+    // El titulo se adapta al rol:
+    expect(component.tituloBienvenida).toBe('Bienvenida, Administración');
+    expect(component.esGerente).toBeFalse();
+  });
 });

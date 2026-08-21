@@ -79,3 +79,12 @@
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
+
+// El navegador (Edge/Chrome) agrega un ícono nativo de "revelar contraseña"
+// dentro de los inputs type=password que se superpone con el botón custom de
+// Material Symbols (visibility/visibility_off). Como el botón custom ya
+// controla la visibilidad, se esconde el nativo para evitar el duplicado visual.
+input[type="password"]::-webkit-password-reveal,
+input[type="password"]::-ms-reveal {
+  display: none !important;
+}
