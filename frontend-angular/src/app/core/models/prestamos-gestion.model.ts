@@ -45,3 +45,12 @@ export interface HistorialPrestamo {
   multaPendiente: boolean;
   montoMultaPendiente: number;
 }
+
+// UsuarioSugerenciaDTO: resultado ligero para el autocompletado predictivo
+// de usuarios por correo (GET /api/v1/prestamos/gestion/sugerencias-usuarios).
+export interface UsuarioSugerencia {
+  id: number;
+  nombreCompleto: string;
+  correo: string;
+  estadoCuenta: string;
+}
