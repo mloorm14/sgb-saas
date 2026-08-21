@@ -1,7 +1,8 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { AuditoriaComponent } from './auditoria.component';
 import { AuditoriaService } from '../../core/services/auditoria.service';
+import { UsuarioAdminService } from '../../core/services/usuario-admin.service';
 
 describe('AuditoriaComponent', () => {
   let component: AuditoriaComponent;
@@ -21,11 +22,13 @@ describe('AuditoriaComponent', () => {
   beforeEach(async () => {
     auditoriaService = jasmine.createSpyObj('AuditoriaService', ['listar']);
     auditoriaService.listar.and.returnValue(of(pagina as any));
+    const usuarioAdminServiceSpy = jasmine.createSpyObj('UsuarioAdminService', ['listar']);
 
     await TestBed.configureTestingModule({
       imports: [AuditoriaComponent],
       providers: [
-        { provide: AuditoriaService, useValue: auditoriaService }
+        { provide: AuditoriaService, useValue: auditoriaService },
+        { provide: UsuarioAdminService, useValue: usuarioAdminServiceSpy }
       ]
     }).compileComponents();
 
@@ -48,7 +51,7 @@ describe('AuditoriaComponent', () => {
 
   it('aplica filtros y vuelve a la primera página', () => {
     component.currentPage = 2;
-    component.filtroUsuarioId = '14';
+    component.seleccionarUsuario({ id: 14, nombre: 'Ana', apellido: 'Paz', correo: 'ana@uteq.edu.ec', roles: ['LECTOR'], estado: 'ACTIVO', multasPendientes: false });
     component.filtroModulo = 'usuarios';
     component.filtroDesde = '2026-08-01';
     component.filtroHasta = '2026-08-16';
@@ -64,6 +67,17 @@ describe('AuditoriaComponent', () => {
       page: 0,
       size: 20
     });
+  });
+
+  it('limpia el chip de usuario y vuelve a buscar sin filtro de usuario', () => {
+    component.seleccionarUsuario({ id: 14, nombre: 'Ana', apellido: 'Paz', correo: 'ana@uteq.edu.ec', roles: ['LECTOR'], estado: 'ACTIVO', multasPendientes: false });
+    expect(component.usuarioSeleccionado).toBeTruthy();
+    expect(component.filtroUsuarioId).toBe('14');
+
+    component.limpiarSeleccion();
+
+    expect(component.usuarioSeleccionado).toBeNull();
+    expect(component.filtroUsuarioId).toBe('');
   });
 
   it('ignora un ID de usuario inválido en los filtros', () => {
