@@ -24,6 +24,7 @@ import { ConfiguracionSistemaComponent } from './configuracion-sistema/configura
 import { UsuariosComponent } from './admin/usuarios/usuarios.component';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { AuditoriaComponent } from './admin/auditoria/auditoria.component';
+import { DashboardGerenteAdminComponent } from './dashboard-gerente-admin/dashboard-gerente-admin.component';
 
 // Los roleGuard de abajo reflejan los @PreAuthorize reales de cada
 // controller en backend-springboot (verificado en el codigo, no asumido):
@@ -79,6 +80,29 @@ export const routes: Routes = [
       { path: 'reportes', component: ReportesComponent },
     ]
   },
+  // Panel GERENTE/ADMIN (layout con sidebar, mismo patron que Cajas):
+  // rutas hijas anidadas bajo /dashboard-admin. Los enlaces del sidebar se
+  // filtran por rol segun los @PreAuthorize reales (ver componente); aca
+  // los roleGuard de refuerzo bloquean por URL lo que el rol no puede:
+  // configuracion es solo ADMIN y reportes no admite ADMIN.
+  {
+    path: 'dashboard-admin',
+    component: DashboardGerenteAdminComponent,
+    canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])],
+    children: [
+      { path: '', redirectTo: 'libros', pathMatch: 'full' },
+      { path: 'libros', component: LibrosComponent },
+      { path: 'sugerencias/gestion', component: GestionSugerenciasComponent },
+      { path: 'admin/usuarios', component: UsuariosComponent },
+      { path: 'auditoria', component: AuditoriaComponent },
+      { path: 'reportes', component: ReportesComponent, canActivate: [roleGuard(['GERENTE'])] },
+      { path: 'admin/configuracion', component: ConfiguracionSistemaComponent, canActivate: [roleGuard(['ADMIN'])] },
+    ]
+  },
+  // TODO(defensa): las rutas planas de abajo siguen vivas para no romper
+  // enlaces existentes; una vez integrado /dashboard-admin conviene
+  // redirigirlas (redirectTo) hacia su equivalente anidada y borrar los
+  // duplicados. No se tocan en este cambio.
   // Rama B (frontend/estudiante-catalogo-social): las 5 rutas del
   // consumidor son 100% LECTOR — verificado en FavoritoController.java y
   // SugerenciaAdquisicionController.java (los endpoints de favoritos y de
