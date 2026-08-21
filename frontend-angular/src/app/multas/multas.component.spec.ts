@@ -1,9 +1,21 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
 import { MultasComponent } from './multas.component';
 import { MultaService } from '../core/services/multa.service';
 import { AuthService } from '../core/services/auth.service';
 import { Multa } from '../core/models/multa.model';
+
+// Query params simulados (mutable por prueba): llega "usuarioId" cuando se
+// navega desde Préstamos -> Gestionar Multas.
+let parametrosConsulta: Record<string, string> = {};
+const activatedRouteMock = {
+  snapshot: {
+    queryParamMap: {
+      get: (clave: string) => parametrosConsulta[clave] ?? null
+    }
+  }
+};
 import { Page } from '../core/models/pagina.model';
 
 describe('MultasComponent', () => {
@@ -33,12 +45,14 @@ describe('MultasComponent', () => {
 
     authService.getUserId.and.returnValue(3);
     authService.hasRole.and.returnValue(false); // lector por defecto
+    parametrosConsulta = {};
 
     await TestBed.configureTestingModule({
       imports: [MultasComponent],
       providers: [
         { provide: MultaService, useValue: multaService },
-        { provide: AuthService, useValue: authService }
+        { provide: AuthService, useValue: authService },
+        { provide: ActivatedRoute, useValue: activatedRouteMock }
       ]
     }).compileComponents();
 
@@ -104,5 +118,16 @@ describe('MultasComponent', () => {
     expect(component.formatearFecha('2026-08-12T10:00:00')).toBe('12 ago 2026');
     expect(component.formatearFecha('')).toBe('—');
     expect(component.formatearFecha(null as any)).toBe('—');
+  });
+
+  it('prefiltra por el usuarioId del query param cuando llega desde Préstamos', () => {
+    authService.hasRole.and.returnValue(true); // BIBLIOTECARIO/GERENTE
+    parametrosConsulta = { usuarioId: '7' };
+    multaService.listarPorUsuario.and.returnValue(of(mockPage));
+
+    fixture.detectChanges();
+
+    expect(component.usuarioIdBusqueda).toBe(7);
+    expect(multaService.listarPorUsuario).toHaveBeenCalledWith(7, jasmine.anything());
   });
 });
