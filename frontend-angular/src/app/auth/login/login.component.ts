@@ -15,6 +15,7 @@ export class LoginComponent implements OnInit {
   errorMsg: string = '';
   exitoMsg: string = '';
   cargando: boolean = false;
+  mostrarPassword: boolean = false;
   correoPendienteVerificar: string = '';
 
   constructor(
@@ -34,6 +35,10 @@ export class LoginComponent implements OnInit {
     if (this.route.snapshot.queryParamMap.get('verificado') === '1') {
       this.exitoMsg = 'Cuenta verificada correctamente. Ya podés iniciar sesión.';
     }
+  }
+
+  togglePassword() {
+    this.mostrarPassword = !this.mostrarPassword;
   }
 
   // Redirección post-login hacia los paneles con sidebar:
