@@ -14,10 +14,11 @@ import {
   UsuarioPrestamos,
   UsuarioSugerencia
 } from '../core/models/prestamos-gestion.model';
+import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
 
 @Component({
   selector: 'app-prestamos-gestion',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PortadaLibroComponent],
   templateUrl: './prestamos-gestion.component.html'
 })
 export class PrestamosGestionComponent {
@@ -58,6 +59,11 @@ export class PrestamosGestionComponent {
 
   exitoMsg: string = '';
   errorMsgAccion: string = '';
+
+  // ── Popup portada del libro ─────────────────────────────
+  portadaModalVisible: boolean = false;
+  portadaModalUrl: string | null = null;
+  portadaModalCargando: boolean = false;
 
   constructor(
     private prestamoService: PrestamoService,
@@ -511,6 +517,32 @@ export class PrestamosGestionComponent {
       return `Vencido por ${this.diasDeAtraso(item)} día(s)`;
     }
     return `Prestado hasta ${this.formatearFecha(item.fechaDevolucionEstimada)}`;
+  }
+
+  // ── Popup portada del libro ─────────────────────────────
+  abrirPortada(libroId: number, tienePortada: boolean): void {
+    if (!tienePortada) return;
+    this.portadaModalVisible = true;
+    this.portadaModalCargando = true;
+    this.portadaModalUrl = null;
+    this.libroService.obtenerPortada(libroId).subscribe({
+      next: (blob) => {
+        this.portadaModalUrl = URL.createObjectURL(blob);
+        this.portadaModalCargando = false;
+      },
+      error: () => {
+        this.portadaModalCargando = false;
+      }
+    });
+  }
+
+  cerrarPortada(): void {
+    if (this.portadaModalUrl) {
+      URL.revokeObjectURL(this.portadaModalUrl);
+    }
+    this.portadaModalVisible = false;
+    this.portadaModalUrl = null;
+    this.portadaModalCargando = false;
   }
 }
 

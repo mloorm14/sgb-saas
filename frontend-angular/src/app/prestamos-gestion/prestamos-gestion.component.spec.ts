@@ -118,7 +118,13 @@ describe('PrestamosGestionComponent', () => {
       isbn: '9780132350884',
       fechaReserva: '2026-08-20T10:00:00Z',
       fechaLimiteRetiro: '2026-08-21T10:00:00Z',
-      diasPrestamoSugerido: 15
+      diasPrestamoSugerido: 15,
+      anioPublicacion: 2026,
+      stockDisponible: 3,
+      stockTotal: 5,
+      ubicacionFisica: 'Estante A1',
+      categorias: ['Ficción'],
+      tienePortada: false
     };
     component.diasReserva = 15;
 
