@@ -22,6 +22,7 @@ export class AppComponent {
   mostrarMenuUsuario = false;
   enRutaBibliotecario = false;
   enRutaAdmin = false;
+  enRutaLector = false;
 
   constructor(
     private authService: AuthService,
@@ -33,6 +34,7 @@ export class AppComponent {
       const url = (event as NavigationEnd).urlAfterRedirects || (event as NavigationEnd).url;
       this.enRutaBibliotecario = url.startsWith('/dashboard-bibliotecario');
       this.enRutaAdmin = url.startsWith('/dashboard-admin');
+      this.enRutaLector = url.startsWith('/dashboard-lector');
     });
   }
 
@@ -49,6 +51,8 @@ export class AppComponent {
   // NO se lista: el LECTOR no debe ver enlaces a rutas inexistentes, ni siquiera con
   // opacity -- se agregan cuando la rama de cuenta se integre.
   enlacesLector: EnlaceNav[] = [
+    // Entrada al panel con sidebar del LECTOR (mismo patron que Cajas).
+    { ruta: '/dashboard-lector', etiqueta: 'Panel', icono: 'dashboard' },
     { ruta: '/prestamos', etiqueta: 'Mis Préstamos', icono: 'menu_book' },
     { ruta: '/reservaciones', etiqueta: 'Reservaciones', icono: 'event_available' },
     { ruta: '/multas', etiqueta: 'Multas', icono: 'payments' },

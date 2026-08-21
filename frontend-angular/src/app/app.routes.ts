@@ -25,6 +25,7 @@ import { UsuariosComponent } from './admin/usuarios/usuarios.component';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { AuditoriaComponent } from './admin/auditoria/auditoria.component';
 import { DashboardGerenteAdminComponent } from './dashboard-gerente-admin/dashboard-gerente-admin.component';
+import { DashboardLectorComponent } from './dashboard-lector/dashboard-lector.component';
 
 // Los roleGuard de abajo reflejan los @PreAuthorize reales de cada
 // controller en backend-springboot (verificado en el codigo, no asumido):
@@ -103,6 +104,25 @@ export const routes: Routes = [
   // enlaces existentes; una vez integrado /dashboard-admin conviene
   // redirigirlas (redirectTo) hacia su equivalente anidada y borrar los
   // duplicados. No se tocan en este cambio.
+  // Panel LECTOR (mismo patron de sidebar): agrupa las rutas de consumidor
+  // ya existentes (catalogo, prestamos, reservaciones, multas, favoritos,
+  // sugerencias, notificaciones) bajo /dashboard-lector.
+  {
+    path: 'dashboard-lector',
+    component: DashboardLectorComponent,
+    canActivate: [authGuard, roleGuard(['LECTOR'])],
+    children: [
+      { path: '', redirectTo: 'catalogo', pathMatch: 'full' },
+      { path: 'catalogo', component: CatalogoComponent },
+      { path: 'catalogo/:id', component: LibroDetalleComponent },
+      { path: 'prestamos', component: PrestamosLectorComponent },
+      { path: 'reservaciones', component: ReservacionesComponent },
+      { path: 'multas', component: MultasComponent },
+      { path: 'favoritos', component: FavoritosComponent },
+      { path: 'sugerencias', component: MisSugerenciasComponent },
+      { path: 'notificaciones', component: NotificacionesComponent },
+    ]
+  },
   // Rama B (frontend/estudiante-catalogo-social): las 5 rutas del
   // consumidor son 100% LECTOR — verificado en FavoritoController.java y
   // SugerenciaAdquisicionController.java (los endpoints de favoritos y de
