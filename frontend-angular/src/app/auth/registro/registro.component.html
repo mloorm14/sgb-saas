@@ -82,8 +82,11 @@
             <label class="font-label-sm text-label-sm text-on-surface" for="pass">Contraseña</label>
             <div class="rounded border border-outline-variant bg-surface flex items-center px-sm">
               <span class="material-symbols-outlined text-outline text-[20px] mr-xs">lock</span>
-              <input formControlName="password" id="pass" type="password" placeholder="Mínimo 8 caracteres"
+              <input formControlName="password" id="pass" [type]="mostrarPassword ? 'text' : 'password'" placeholder="Mínimo 8 caracteres"
                 class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+              <button type="button" (click)="togglePassword()" class="focus:outline-none ml-xs flex items-center">
+                <span class="material-symbols-outlined text-outline hover:text-on-surface transition-colors text-[20px]">{{ mostrarPassword ? 'visibility_off' : 'visibility' }}</span>
+              </button>
             </div>
             <div class="mt-xs">
               <div class="w-full h-1 bg-surface-variant rounded overflow-hidden">
@@ -97,8 +100,11 @@
             <label class="font-label-sm text-label-sm text-on-surface" for="pass2">Confirmar contraseña</label>
             <div class="rounded border border-outline-variant bg-surface flex items-center px-sm">
               <span class="material-symbols-outlined text-outline text-[20px] mr-xs">lock</span>
-              <input formControlName="confirmarPassword" id="pass2" type="password" placeholder="Repite tu contraseña"
+              <input formControlName="confirmarPassword" id="pass2" [type]="mostrarPassword2 ? 'text' : 'password'" placeholder="Repite tu contraseña"
                 class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+              <button type="button" (click)="togglePassword2()" class="focus:outline-none ml-xs flex items-center">
+                <span class="material-symbols-outlined text-outline hover:text-on-surface transition-colors text-[20px]">{{ mostrarPassword2 ? 'visibility_off' : 'visibility' }}</span>
+              </button>
             </div>
             @if (formRegistro.hasError('passwordsDistintas') && formRegistro.get('confirmarPassword')?.touched) {
               <p class="font-label-sm text-[11px] text-error">Las contraseñas no coinciden</p>
