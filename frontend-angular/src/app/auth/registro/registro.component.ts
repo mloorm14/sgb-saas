@@ -25,8 +25,6 @@ export class RegistroComponent {
   errorMsg: string = '';
   errorMsgVerificar: string = '';
   cargando: boolean = false;
-  mostrarPassword: boolean = false;
-  mostrarPassword2: boolean = false;
   correoRegistrado: string = '';
 
   constructor(
@@ -62,9 +60,6 @@ export class RegistroComponent {
     if (puntos < 100) return { porcentaje: puntos, etiqueta: 'Buena', color: '#003694' };
     return { porcentaje: 100, etiqueta: 'Fuerte', color: '#006b5f' };
   }
-
-  togglePassword() { this.mostrarPassword = !this.mostrarPassword; }
-  togglePassword2() { this.mostrarPassword2 = !this.mostrarPassword2; }
 
   submitRegistro() {
     if (this.formRegistro.invalid) return;
