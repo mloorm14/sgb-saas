@@ -1,110 +1,270 @@
-<div style="padding:2rem;max-width:1100px;margin:0 auto">
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
 
-  <h2 style="color:#005c2f;margin:0 0 1.5rem 0">Gestión de préstamos</h2>
+  <!-- ─── ENCABEZADO (mismo formato que Libros) ─── -->
+  <div class="mb-lg">
+    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Préstamos</h1>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Atención en ventanilla — BIBLIOTECARIO y GERENTE</p>
+  </div>
 
-  <!-- FORMULARIO CREAR -->
-  <div style="background:#f9f9f9;padding:1.5rem;border-radius:8px;margin-bottom:2rem">
-    <h3 style="margin-top:0;font-size:16px">Registrar nuevo préstamo</h3>
-    @if (errorMsgCrear) {
-      <div style="color:red;margin-bottom:1rem">{{ errorMsgCrear }}</div>
+  <!-- ─── BUSCAR USUARIO POR CÉDULA ─── -->
+  <div class="mb-md max-w-xl">
+    <div class="relative">
+      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[22px] pointer-events-none">search</span>
+      <input [(ngModel)]="cedulaBusqueda"
+        (ngModelChange)="onInputCedula()"
+        (keyup.enter)="buscarUsuario()"
+        type="text" inputmode="numeric" maxlength="10"
+        placeholder="Ingresa la cédula del usuario"
+        class="w-full h-11 pl-11 pr-28 rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" />
+      <button (click)="buscarUsuario()" [disabled]="!esCedulaValida || buscando"
+        class="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center gap-xs hover:bg-on-primary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+        Buscar
+      </button>
+    </div>
+    @if (!esCedulaValida && cedulaBusqueda.length > 0) {
+      <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">La cédula tiene 10 dígitos (solo números)</p>
+    }
+  </div>
+
+  @if (buscando) {
+    <p class="font-body-sm text-body-sm text-on-surface-variant mb-md flex items-center gap-xs">
+      <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+      Buscando usuario...
+    </p>
+  }
+
+  @if (errorCedula) {
+    <div class="mb-md flex items-center gap-sm rounded-lg border border-error/30 bg-error-container px-md py-sm max-w-xl">
+      <span class="material-symbols-outlined text-error text-[20px]">error</span>
+      <p class="font-body-sm text-body-sm text-error">{{ errorCedula }}</p>
+      <button (click)="limpiarBusqueda()" class="ml-auto font-label-sm text-label-sm text-error hover:underline cursor-pointer">Limpiar</button>
+    </div>
+  }
+
+  <!-- ─── ESTADO VACÍO (fondo gris más oscuro que la pantalla) ─── -->
+  @if (!usuario && !buscando && !errorCedula) {
+    <div class="rounded-xl bg-surface-container-high border border-outline-variant/60 py-16 flex flex-col items-center justify-center gap-sm">
+      <span class="material-symbols-outlined text-[64px] text-outline-variant select-none">person_search</span>
+      <p class="font-body-md text-body-md text-on-surface-variant">Ingresa una cédula para comenzar</p>
+    </div>
+  }
+
+  <!-- ─── TARJETA DE IDENTIFICACIÓN DEL USUARIO ─── -->
+  @if (usuario) {
+    <div class="bg-white rounded-xl border border-outline-variant shadow-sm p-md mb-md flex items-center gap-md flex-wrap">
+      <span class="w-14 h-14 rounded-full bg-primary text-on-primary flex items-center justify-center font-headline-md text-[18px] shrink-0">{{ iniciales(usuario.nombreCompleto) }}</span>
+      <div class="min-w-0">
+        <p class="font-body-lg text-body-lg font-semibold text-on-surface truncate">{{ usuario.nombreCompleto }}</p>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Cédula: {{ usuario.cedula || '—' }} · {{ usuario.correo }}</p>
+      </div>
+      <div class="sm:ml-auto flex items-center gap-md flex-wrap">
+        <div class="text-right">
+          <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Tipo de usuario</p>
+          <p class="font-body-sm text-body-sm text-on-surface">{{ tiposUsuarioTexto(usuario.tiposUsuario) }}</p>
+        </div>
+        <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[12px]" [class]="claseEstadoCuenta(usuario.estadoCuenta)">
+          <span class="material-symbols-outlined text-[14px]">{{ iconoEstadoCuenta(usuario.estadoCuenta) }}</span>
+          {{ etiquetaEstadoCuenta(usuario.estadoCuenta) }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Mensajes de las acciones -->
+    @if (exitoMsg) {
+      <div class="mb-md flex items-center gap-sm rounded-lg border border-success/40 bg-success/10 px-md py-sm">
+        <span class="material-symbols-outlined text-success text-[20px]">check_circle</span>
+        <p class="font-body-sm text-body-sm text-success">{{ exitoMsg }}</p>
+      </div>
+    }
+    @if (errorMsgAccion) {
+      <div class="mb-md flex items-center gap-sm rounded-lg border border-error/30 bg-error-container px-md py-sm">
+        <span class="material-symbols-outlined text-error text-[20px]">error</span>
+        <p class="font-body-sm text-body-sm text-error">{{ errorMsgAccion }}</p>
+      </div>
     }
 
-    <form [formGroup]="formCrear" (ngSubmit)="crearPrestamo()" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
-      <div>
-        <label style="display:block;font-size:13px;margin-bottom:4px">Usuario ID</label>
-        <input formControlName="usuarioId" type="number"
-          style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
-        </div>
-        <div>
-          <label style="display:block;font-size:13px;margin-bottom:4px">Libro ID</label>
-          <input formControlName="libroId" type="number"
-            style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
-          </div>
-          <div>
-            <label style="display:block;font-size:13px;margin-bottom:4px">Días de préstamo</label>
-            <input formControlName="diasPrestamo" type="number"
-              style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
-            </div>
-            <button type="submit" [disabled]="formCrear.invalid"
-              style="padding:8px 16px;background:#005c2f;color:white;border:none;border-radius:4px;cursor:pointer">
-              Crear préstamo
-            </button>
-          </form>
-        </div>
-
-        <!-- BUSQUEDA POR USUARIO -->
-        <div style="display:flex;gap:12px;align-items:flex-end;margin-bottom:1.5rem">
-          <div>
-            <label style="display:block;font-size:13px;margin-bottom:4px">Ver préstamos del usuario ID</label>
-            <input [(ngModel)]="usuarioIdBusqueda" [ngModelOptions]="{standalone: true}" type="number"
-              style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
-            </div>
-            <button (click)="buscarPrestamos()"
-              style="padding:8px 16px;background:#2980b9;color:white;border:none;border-radius:4px;cursor:pointer">
-              Buscar
+    <!-- ═══ CASO C: USUARIO BLOQUEADO ═══ -->
+    @if (estaBloqueado) {
+      <div class="bg-white rounded-xl border border-error/30 shadow-sm p-md mb-md">
+        <div class="flex items-start gap-sm">
+          <span class="w-10 h-10 rounded-full bg-error-container flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-error text-[24px]">warning</span>
+          </span>
+          <div class="min-w-0">
+            <h3 class="font-body-lg text-body-lg font-semibold text-error mb-xs">Usuario Bloqueado</h3>
+            <p class="font-body-sm text-body-sm text-on-surface mb-md">{{ motivoBloqueo }}</p>
+            <button (click)="gestionarMultas()"
+              class="h-9 px-md rounded bg-error text-on-error font-label-sm text-label-sm flex items-center gap-xs hover:opacity-90 cursor-pointer">
+              <span class="material-symbols-outlined text-[18px]">payments</span>
+              Gestionar Multas
             </button>
           </div>
-
-          @if (errorMsg) {
-            <div style="color:red;margin-bottom:1rem">{{ errorMsg }}</div>
-          }
-          @if (cargando) {
-            <div style="text-align:center;padding:2rem">Cargando préstamos...</div>
-          }
-
-          @if (!cargando && prestamos.length > 0) {
-            <table style="width:100%;border-collapse:collapse;font-size:14px">
-              <thead>
-                <tr style="background:#005c2f;color:white">
-                  <th style="padding:10px;text-align:left">ID</th>
-                  <th style="padding:10px;text-align:left">Usuario</th>
-                  <th style="padding:10px;text-align:left">Libro</th>
-                  <th style="padding:10px;text-align:left">Devolución estimada</th>
-                  <th style="padding:10px;text-align:left">Devolución real</th>
-                  <th style="padding:10px;text-align:left">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (prestamo of prestamos; track prestamo; let i = $index) {
-                  <tr
-                    [style.background]="i % 2 === 0 ? '#f9f9f9' : 'white'">
-                    <td style="padding:10px">{{ prestamo.id }}</td>
-                    <td style="padding:10px">{{ prestamo.usuarioId }}</td>
-                    <td style="padding:10px">{{ prestamo.libroId }}</td>
-                    <td style="padding:10px">{{ prestamo.fechaDevolucionEstimada | date:'short' }}</td>
-                    <td style="padding:10px">{{ prestamo.fechaDevolucionReal ? (prestamo.fechaDevolucionReal | date:'short') : '—' }}</td>
-                    <td style="padding:10px">
-                      @if (!prestamo.fechaDevolucionReal) {
-                        <button (click)="registrarDevolucion(prestamo.id)"
-                          style="padding:4px 10px;background:#2980b9;color:white;border:none;border-radius:4px;cursor:pointer">
-                          Registrar devolución
-                        </button>
-                      }
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          }
-
-          @if (!cargando && usuarioIdBusqueda && prestamos.length === 0) {
-            <div style="text-align:center;padding:2rem;color:#888">
-              Ese usuario no tiene préstamos registrados
-            </div>
-          }
-
-          @if (prestamos.length > 0) {
-            <div style="display:flex;justify-content:center;align-items:center;gap:16px;margin-top:1rem">
-              <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
-                style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
-                ← Anterior
-              </button>
-              <span style="font-size:14px">Página {{ currentPage + 1 }} de {{ totalPages }}</span>
-              <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
-                style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
-                Siguiente →
-              </button>
-            </div>
-          }
-
         </div>
+      </div>
+    }
+
+    <!-- ═══ CASO A: RESERVA ENCONTRADA ═══ -->
+    @if (!estaBloqueado && cargandoReserva) {
+      <div class="bg-white rounded-xl border border-outline-variant shadow-sm p-md mb-md">
+        <p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-xs">
+          <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+          Consultando reservas vigentes...
+        </p>
+      </div>
+    }
+
+    @if (!estaBloqueado && reserva) {
+      <div class="bg-white rounded-xl border border-primary/25 shadow-sm p-md mb-md">
+        <div class="flex items-center gap-sm mb-md">
+          <span class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-primary text-[22px]">bookmark_added</span>
+          </span>
+          <h3 class="font-body-lg text-body-lg font-semibold text-on-surface">Reserva Encontrada</h3>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-md mb-md">
+          <div class="flex flex-col gap-xs">
+            <p class="font-body-md text-body-md font-semibold text-on-surface">{{ reserva.titulo }}</p>
+            <p class="font-body-sm text-body-sm text-on-surface-variant">{{ reserva.autores.length > 0 ? reserva.autores.join(', ') : 'Autor desconocido' }}</p>
+            <p class="font-body-sm text-body-sm text-on-surface-variant">ISBN: <span class="font-mono">{{ reserva.isbn }}</span></p>
+            <p class="font-body-sm text-body-sm text-on-surface-variant">Reservada el {{ formatearFechaHora(reserva.fechaReserva) }}</p>
+            <p class="font-body-sm text-body-sm text-on-surface-variant">Límite de retiro: {{ formatearFechaHora(reserva.fechaLimiteRetiro) }}</p>
+          </div>
+          <div class="rounded-lg bg-surface-container-low p-sm self-start w-full md:max-w-56">
+            <label for="dias-reserva" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Días de préstamo</label>
+            <input id="dias-reserva" [(ngModel)]="diasReserva" type="number" min="1" max="90"
+              class="w-full h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" />
+            <p class="font-body-sm text-body-sm text-on-surface mt-sm">
+              Devolución estimada:
+              <span class="font-semibold text-on-surface">{{ fechaDevolucionEstimada(diasReserva) }}</span>
+            </p>
+          </div>
+        </div>
+
+        <button (click)="confirmarEntrega()"
+          [disabled]="!diasReserva || diasReserva < 1 || confirmandoEntrega"
+          class="h-10 px-lg rounded bg-secondary text-on-secondary font-label-md text-label-sm flex items-center gap-xs hover:bg-on-secondary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+          <span class="material-symbols-outlined text-[18px]">task_alt</span>
+          {{ confirmandoEntrega ? 'Confirmando...' : 'Confirmar Entrega' }}
+        </button>
+      </div>
+    }
+
+    <!-- ═══ CASO B: PRÉSTAMO DIRECTO ═══ -->
+    @if (!estaBloqueado && !cargandoReserva && !reserva) {
+      <div class="bg-white rounded-xl border border-outline-variant shadow-sm p-md mb-md">
+        <div class="flex items-center gap-sm mb-md">
+          <span class="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-primary text-[22px]">menu_book</span>
+          </span>
+          <div>
+            <h3 class="font-body-lg text-body-lg font-semibold text-on-surface">Registrar Préstamo Directo</h3>
+            <p class="font-label-sm text-label-sm text-on-surface-variant">El usuario no tiene reservas vigentes; buscá el libro manualmente</p>
+          </div>
+        </div>
+
+        <!-- Búsqueda de libro con sugerencias -->
+        <div class="relative max-w-xl mb-md">
+          <label for="buscar-libro" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Buscar libro (título o ISBN)</label>
+          <input id="buscar-libro" [(ngModel)]="textoLibro"
+            (ngModelChange)="buscarSugerencias()"
+            (blur)="mostrarSugerencias = false"
+            type="text" autocomplete="off"
+            placeholder="Ej: Clean Code o 9780132350884"
+            class="w-full h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" />
+          @if (buscandoSugerencias) {
+            <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Buscando coincidencias...</p>
+          }
+          @if (mostrarSugerencias && sugerenciasLibro.length > 0) {
+            <ul class="absolute z-10 left-0 right-0 mt-1 bg-white border border-outline-variant rounded-lg shadow-md max-h-60 overflow-auto">
+              @for (sugerencia of sugerenciasLibro; track sugerencia.id) {
+                <li>
+                  <button type="button" (mousedown)="$event.preventDefault()" (click)="seleccionarLibro(sugerencia)"
+                    class="w-full text-left px-md py-sm hover:bg-surface-container-low flex items-center justify-between gap-sm cursor-pointer">
+                    <span class="font-body-sm text-body-sm text-on-surface truncate">{{ sugerencia.titulo }}</span>
+                    @if (sugerencia.disponible) {
+                      <span class="shrink-0 inline-flex items-center gap-xxs px-xs rounded-full bg-success/15 text-success font-label-sm text-[11px]">
+                        <span class="material-symbols-outlined text-[12px]">check</span> Disponible
+                      </span>
+                    } @else {
+                      <span class="shrink-0 inline-flex items-center gap-xxs px-xs rounded-full bg-error-container text-error font-label-sm text-[11px]">
+                        <span class="material-symbols-outlined text-[12px]">close</span> Sin ejemplares
+                      </span>
+                    }
+                  </button>
+                </li>
+              }
+            </ul>
+          } @else if (mostrarSugerencias && textoLibro.trim().length >= 2) {
+            <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Sin coincidencias para "{{ textoLibro }}"</p>
+          }
+        </div>
+
+        <!-- Detalle del libro seleccionado -->
+        @if (libroSeleccionado) {
+          <div class="rounded-lg border border-outline-variant bg-surface-container-low p-sm mb-md max-w-xl">
+            <p class="font-body-md text-body-md font-semibold text-on-surface">{{ libroSeleccionado.titulo }}</p>
+            <p class="font-body-sm text-body-sm text-on-surface-variant">
+              {{ libroSeleccionado.autores.length > 0 ? libroSeleccionado.autores.join(', ') : 'Autor desconocido' }}
+              · ISBN: <span class="font-mono">{{ libroSeleccionado.isbn }}</span>
+            </p>
+            <p class="font-body-sm text-body-sm mt-xs" [class.text-success]="libroSeleccionado.stockDisponible > 0" [class.text-error]="libroSeleccionado.stockDisponible <= 0">
+              Ejemplares disponibles: {{ libroSeleccionado.stockDisponible }}
+            </p>
+          </div>
+        }
+
+        @if (advertenciaStock) {
+          <div class="mb-md flex items-center gap-sm rounded-lg border border-warning/50 bg-tertiary-fixed/40 px-md py-sm max-w-xl">
+            <span class="material-symbols-outlined text-tertiary text-[20px]">warning</span>
+            <p class="font-body-sm text-body-sm text-tertiary">{{ advertenciaStock }}</p>
+          </div>
+        }
+
+        <div class="flex flex-wrap items-end gap-md">
+          <div class="w-40">
+            <label for="dias-directo" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Días de préstamo</label>
+            <input id="dias-directo" [(ngModel)]="diasDirecto" type="number" min="1" max="90"
+              class="w-full h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" />
+          </div>
+          <p class="font-body-sm text-body-sm text-on-surface pb-2.5">
+            Devolución estimada: <span class="font-semibold">{{ fechaDevolucionEstimada(diasDirecto) }}</span>
+          </p>
+          <button (click)="registrarPrestamoDirecto()" [disabled]="!puedeRegistrarDirecto"
+            class="h-10 px-lg rounded bg-secondary text-on-secondary font-label-md text-label-sm flex items-center gap-xs hover:bg-on-secondary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ml-auto">
+            <span class="material-symbols-outlined text-[18px]">how_to_reg</span>
+            {{ registrandoDirecto ? 'Registrando...' : 'Registrar Préstamo' }}
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- ═══ HISTORIAL RECIENTE (siempre visible tras encontrar al usuario) ═══ -->
+    <div class="bg-white rounded-xl border border-outline-variant shadow-sm p-md">
+      <h3 class="font-body-lg text-body-lg font-semibold text-on-surface mb-md">Historial Reciente</h3>
+
+      @if (cargandoHistorial) {
+        <p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-xs">
+          <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+          Cargando historial...
+        </p>
+      } @else if (historial.length === 0) {
+        <p class="font-body-sm text-body-sm text-on-surface-variant py-md text-center">Este usuario no tiene préstamos registrados</p>
+      } @else {
+        <ol class="relative ml-3 border-l-2 border-outline-variant/50 flex flex-col gap-md pt-xs">
+          @for (item of historial; track item.prestamoId) {
+            <li class="relative pl-md pb-xs">
+              <span class="absolute -left-[13px] top-0 w-6 h-6 rounded-full flex items-center justify-center" [class]="claseIconoHistorial(item)">
+                <span class="material-symbols-outlined text-[14px]">{{ iconoHistorial(item) }}</span>
+              </span>
+              <p class="font-body-sm text-body-sm font-medium text-on-surface">{{ item.libroTitulo }}</p>
+              <p class="font-label-sm text-label-sm text-on-surface-variant">{{ textoSecundarioHistorial(item) }}</p>
+              <p class="font-label-sm text-label-sm text-on-surface-variant/70">Préstamo #{{ item.prestamoId }} · {{ formatearFecha(item.fechaPrestamo) }}</p>
+            </li>
+          }
+        </ol>
+      }
+    </div>
+  }
+
+</main>
