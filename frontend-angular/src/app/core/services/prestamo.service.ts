@@ -17,7 +17,8 @@ import {
 import {
   HistorialPrestamo,
   ReservaActiva,
-  UsuarioPrestamos
+  UsuarioPrestamos,
+  UsuarioSugerencia
 } from '../models/prestamos-gestion.model';
 
 export interface PrestamoListarParams {
@@ -78,6 +79,16 @@ export class PrestamoService {
   // con ningún usuario -> el componente muestra el mensaje de error.
   buscarUsuarioPorCorreo(correo: string): Observable<UsuarioPrestamos> {
     return this.http.get<UsuarioPrestamos>(`${this.apiUrl}/gestion/buscar-usuario`, {
+      params: new HttpParams().set('correo', correo)
+    }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  // sugerenciasUsuarios: autocompletado predictivo por correo parcial.
+  // Retorna hasta 3 resultados para el dropdown del buscador.
+  sugerenciasUsuarios(correo: string): Observable<UsuarioSugerencia[]> {
+    return this.http.get<UsuarioSugerencia[]>(`${this.apiUrl}/gestion/sugerencias-usuarios`, {
       params: new HttpParams().set('correo', correo)
     }).pipe(
       catchError(err => this.manejarError(err))
