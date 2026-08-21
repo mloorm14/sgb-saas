@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
 import { PrestamoService } from '../core/services/prestamo.service';
 import { LibroService } from '../core/services/libro.service';
 import { Libro, LibroSugerencia } from '../core/models/libro.model';
-import { PrestamoRequest } from '../core/models/prestamo.model';
+import { PrestamoRequest, DevolucionResponse } from '../core/models/prestamo.model';
 import {
   HistorialPrestamo,
   ReservaActiva,
@@ -59,6 +59,10 @@ export class PrestamosGestionComponent {
   // Mensajes de las acciones (confirmar entrega / registrar directo)
   exitoMsg: string = '';
   errorMsgAccion: string = '';
+
+  // ── Devolución de préstamo ─────────────────────────────
+  devolviendoPrestamoId: number | null = null;
+  avisoDevolucion: string = '';
 
   constructor(
     private prestamoService: PrestamoService,
@@ -300,6 +304,30 @@ export class PrestamosGestionComponent {
     const dentroDelPanel = this.router.url.includes('/dashboard-bibliotecario');
     const ruta = dentroDelPanel ? ['/dashboard-bibliotecario', 'multas'] : ['/multas'];
     this.router.navigate(ruta, { queryParams: { usuarioId: this.usuario.id } });
+  }
+
+  // ── Devolución de préstamo activo ──────────────────────
+  registrarDevolucion(prestamoId: number): void {
+    if (!confirm('¿Confirmás la devolución de este préstamo?')) return;
+    this.devolviendoPrestamoId = prestamoId;
+    this.exitoMsg = '';
+    this.errorMsgAccion = '';
+    this.avisoDevolucion = '';
+    this.prestamoService.devolver(prestamoId).subscribe({
+      next: (resp: DevolucionResponse) => {
+        this.devolviendoPrestamoId = null;
+        if (resp.huboMulta) {
+          this.avisoDevolucion = `Devuelto tarde — Multa pendiente ($${resp.montoMulta.toFixed(2)})`;
+        } else {
+          this.exitoMsg = 'Préstamo devuelto correctamente.';
+        }
+        this.refrescarTrasAccion();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.devolviendoPrestamoId = null;
+        this.errorMsgAccion = detalleDeError(err, 'No se pudo registrar la devolución.');
+      }
+    });
   }
 
   // ── Presentación ────────────────────────────────────────
