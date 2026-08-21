@@ -12,6 +12,7 @@ export interface Reservacion {
 export interface ReservacionRequest {
   usuarioId: number;
   libroId: number;
+  fechaRetiro?: string;
 }
 
 // Body de PATCH /api/v1/reservaciones/{id}/estado (CambioEstadoReservacionRequestDTO).
