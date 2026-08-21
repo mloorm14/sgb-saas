@@ -120,7 +120,7 @@
           </div>
         }
 
-        <!-- ═══ CASO C: USUARIO BLOQUEADO ═══ -->
+        <!-- ═══ USUARIO BLOQUEADO ═══ -->
         @if (estaBloqueado) {
           <div class="bg-red-50 border border-red-200 rounded-2xl p-6 flex items-start gap-4">
             <div class="p-3 bg-red-100 rounded-full text-red-600 shrink-0">
@@ -137,7 +137,7 @@
           </div>
         }
 
-        <!-- ═══ CASO A: NUEVO PRÉSTAMO (Reserva) ═══ -->
+        <!-- ═══ RESERVA ACTIVA ═══ -->
         @if (!estaBloqueado && cargandoReserva) {
           <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-6">
             <p class="text-on-surface-variant flex items-center gap-2">
@@ -155,7 +155,6 @@
             </h3>
 
             <div class="flex gap-5 p-4 bg-surface-container-low rounded-xl border border-outline-variant/30 mb-5">
-              <!-- Portada clickable -->
               <button type="button" (click)="abrirPortada(reserva.libroId, reserva.tienePortada)"
                 class="w-24 h-32 sm:w-28 sm:h-36 shrink-0 rounded-lg overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-low flex items-center justify-center">
                 @if (reserva.tienePortada) {
@@ -165,7 +164,6 @@
                 }
               </button>
 
-              <!-- Info del libro -->
               <div class="flex-1 min-w-0">
                 <h4 class="font-bold text-on-surface text-lg mb-1">{{ reserva.titulo }}</h4>
                 <p class="text-sm text-on-surface-variant mb-1">ISBN • {{ reserva.isbn }}</p>
@@ -186,7 +184,6 @@
                 </div>
               </div>
 
-              <!-- Fecha reserva -->
               <div class="shrink-0 text-right">
                 <p class="text-xs text-on-surface-variant flex items-center gap-1 justify-end">
                   <span class="material-symbols-outlined text-[14px]">schedule</span>
@@ -212,110 +209,14 @@
           </div>
         }
 
-        <!-- ═══ CASO B: PRÉSTAMO DIRECTO ═══ -->
+        <!-- ═══ SIN RESERVA ═══ -->
         @if (!estaBloqueado && !cargandoReserva && !reserva) {
           <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-6">
             <h3 class="font-headline-sm text-on-surface mb-4 flex items-center gap-2">
-              <span class="material-symbols-outlined text-success">menu_book</span>
-              Registrar Préstamo Directo
+              <span class="material-symbols-outlined text-on-surface-variant">bookmark_border</span>
+              Sin Reserva Activa
             </h3>
-
-            <div class="flex flex-wrap items-end gap-5 mb-5">
-              <div class="flex-1 min-w-[280px] relative">
-                <label class="block text-sm font-medium text-on-surface mb-2">Buscar Libro (Título o ISBN)</label>
-                <div class="relative">
-                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span class="material-symbols-outlined text-outline text-xl">search</span>
-                  </div>
-                  <input [(ngModel)]="textoLibro"
-                    (ngModelChange)="buscarSugerenciasLibro()"
-                    (blur)="mostrarSugerenciasLibro = false"
-                    type="text" autocomplete="off"
-                    placeholder="Ej. Clean Code..."
-                    class="block w-full pl-10 pr-3 py-2.5 border border-outline-variant rounded-xl focus:ring-success focus:border-success transition-shadow" />
-                </div>
-                @if (buscandoSugerenciasLibro) {
-                  <p class="text-xs text-on-surface-variant mt-1">Buscando coincidencias...</p>
-                }
-                @if (mostrarSugerenciasLibro && sugerenciasLibro.length > 0) {
-                  <ul class="absolute z-10 left-0 right-0 mt-1 bg-white border border-outline-variant rounded-xl shadow-lg max-h-60 overflow-auto">
-                    @for (sugerencia of sugerenciasLibro; track sugerencia.id) {
-                      <li>
-                        <button type="button" (mousedown)="$event.preventDefault()" (click)="seleccionarLibro(sugerencia)"
-                          class="w-full text-left px-4 py-3 hover:bg-surface-container-low flex items-center justify-between gap-2 transition-colors">
-                          <span class="text-sm text-on-surface truncate">{{ sugerencia.titulo }}</span>
-                          @if (sugerencia.disponible) {
-                            <span class="shrink-0 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
-                              <span class="material-symbols-outlined text-[12px]">check</span> Disponible
-                            </span>
-                          } @else {
-                            <span class="shrink-0 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-medium">
-                              <span class="material-symbols-outlined text-[12px]">close</span> Sin stock
-                            </span>
-                          }
-                        </button>
-                      </li>
-                    }
-                  </ul>
-                } @else if (mostrarSugerenciasLibro && textoLibro.trim().length >= 2 && !buscandoSugerenciasLibro) {
-                  <p class="text-xs text-on-surface-variant mt-1">Sin coincidencias para "{{ textoLibro }}"</p>
-                }
-              </div>
-
-              <div class="w-24">
-                <label class="block text-sm font-medium text-on-surface mb-2">Días</label>
-                <input [(ngModel)]="diasDirecto" type="number" min="1" max="90"
-                  class="block w-full px-3 py-2.5 border border-outline-variant rounded-xl focus:ring-success focus:border-success transition-shadow" />
-              </div>
-
-              <div class="flex flex-col items-end gap-1">
-                <p class="text-xs text-on-surface-variant">Devolución: <span class="font-semibold text-on-surface">{{ fechaDevolucionEstimada(diasDirecto) }}</span></p>
-                <button (click)="registrarPrestamoDirecto()" [disabled]="!puedeRegistrarDirecto"
-                  class="bg-success hover:bg-success/80 text-white font-medium py-2.5 px-5 rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2 h-[42px] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
-                  <span class="material-symbols-outlined text-sm">add_circle</span>
-                  {{ registrandoDirecto ? 'Registrando...' : 'Registrar Préstamo' }}
-                </button>
-              </div>
-            </div>
-
-            @if (libroSeleccionado) {
-              <div class="flex gap-4 p-4 bg-surface-container-low rounded-xl border border-outline-variant/30">
-                <button type="button" (click)="abrirPortada(libroSeleccionado.id, libroSeleccionado.tienePortada)"
-                  class="w-20 h-28 shrink-0 rounded-lg overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-success bg-surface-container flex items-center justify-center">
-                  @if (libroSeleccionado.tienePortada) {
-                    <app-portada-libro [libroId]="libroSeleccionado.id" [tienePortada]="libroSeleccionado.tienePortada" />
-                  } @else {
-                    <span class="material-symbols-outlined text-[40px] text-outline-variant">menu_book</span>
-                  }
-                </button>
-                <div class="min-w-0">
-                  <p class="font-bold text-on-surface">{{ libroSeleccionado.titulo }}</p>
-                  <p class="text-sm text-on-surface-variant">ISBN • {{ libroSeleccionado.isbn }}</p>
-                  <p class="text-sm text-on-surface-variant">{{ libroSeleccionado.autores.length > 0 ? libroSeleccionado.autores.join(', ') : 'Autor desconocido' }}</p>
-                  @if (libroSeleccionado.categorias.length > 0) {
-                    <div class="flex flex-wrap gap-1.5 mt-1">
-                      @for (cat of libroSeleccionado.categorias; track cat) {
-                        <span class="px-2 py-0.5 bg-surface-container border border-outline-variant/50 rounded text-xs font-medium text-on-surface-variant">{{ cat }}</span>
-                      }
-                    </div>
-                  }
-                  <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-on-surface-variant mt-1">
-                    <span>Año • {{ libroSeleccionado.anioPublicacion }}</span>
-                    <span>Stock • {{ libroSeleccionado.stockDisponible }} disponibles</span>
-                    @if (libroSeleccionado.ubicacionFisica) {
-                      <span>Lugar • {{ libroSeleccionado.ubicacionFisica }}</span>
-                    }
-                  </div>
-                </div>
-              </div>
-            }
-
-            @if (advertenciaStock) {
-              <div class="mt-4 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3">
-                <span class="material-symbols-outlined text-amber-600 text-xl">warning</span>
-                <p class="text-amber-700 text-sm">{{ advertenciaStock }}</p>
-              </div>
-            }
+            <p class="text-on-surface-variant text-sm text-center py-4">Este usuario no tiene ninguna reserva pendiente de retiro.</p>
           </div>
         }
 

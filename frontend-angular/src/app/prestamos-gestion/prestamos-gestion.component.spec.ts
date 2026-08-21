@@ -6,7 +6,6 @@ import { PrestamoService } from '../core/services/prestamo.service';
 import { LibroService } from '../core/services/libro.service';
 import { UsuarioPrestamos } from '../core/models/prestamos-gestion.model';
 
-// Usuario activo sin multas (Casos A/B)
 function usuarioActivo(): UsuarioPrestamos {
   return {
     id: 7,
@@ -30,9 +29,9 @@ describe('PrestamosGestionComponent', () => {
 
   beforeEach(async () => {
     prestamoService = jasmine.createSpyObj('PrestamoService', [
-      'buscarUsuarioPorCorreo', 'reservaActiva', 'historial', 'crear'
+      'buscarUsuarioPorCorreo', 'reservaActiva', 'historial', 'crear', 'sugerenciasUsuarios'
     ]);
-    libroService = jasmine.createSpyObj('LibroService', ['sugerencias', 'obtener']);
+    libroService = jasmine.createSpyObj('LibroService', ['sugerencias', 'obtener', 'obtenerPortada']);
     router = jasmine.createSpyObj('Router', ['navigate']);
 
     await TestBed.configureTestingModule({
@@ -58,9 +57,7 @@ describe('PrestamosGestionComponent', () => {
 
     expect(prestamoService.buscarUsuarioPorCorreo).toHaveBeenCalledWith('ana.perez@uteq.edu.ec');
     expect(component.usuario?.id).toBe(7);
-    // Días de préstamo prellenados con el valor de configuración del sistema
     expect(component.diasReserva).toBe(15);
-    expect(component.diasDirecto).toBe(15);
     expect(component.errorBusqueda).toBe('');
     expect(prestamoService.historial).toHaveBeenCalledWith(7);
   });
@@ -105,7 +102,6 @@ describe('PrestamosGestionComponent', () => {
 
   it('confirma la entrega de una reserva creando el préstamo con reservacionId', () => {
     prestamoService.crear.and.returnValue(of({ id: 99 } as any));
-    // Tras crear, la pantalla refresca reserva (ya retirada -> 404) e historial
     prestamoService.reservaActiva.and.returnValue(throwError(() => ({ status: 404 })));
     prestamoService.historial.and.returnValue(of([]));
 
@@ -136,33 +132,5 @@ describe('PrestamosGestionComponent', () => {
       diasPrestamo: 15,
       reservacionId: 77
     });
-  });
-
-  it('bloquea el registro directo cuando el libro no tiene ejemplares disponibles', () => {
-    component.libroSeleccionado = {
-      id: 3,
-      titulo: 'Clean Code',
-      isbn: '9780132350884',
-      resumen: '',
-      portadaUrl: '',
-      tienePortada: false,
-      portadaNombre: '',
-      portadaTipo: '',
-      anioPublicacion: 2008,
-      editorialId: 1,
-      editorial: '',
-      idiomaId: 1,
-      idioma: '',
-      estadoId: 1,
-      estado: 'ACTIVO',
-      stockTotal: 2,
-      stockDisponible: 0,
-      ubicacionFisica: '',
-      fechaRegistro: '',
-      categorias: [],
-      autores: []
-    };
-
-    expect(component.puedeRegistrarDirecto).toBeFalse();
   });
 });

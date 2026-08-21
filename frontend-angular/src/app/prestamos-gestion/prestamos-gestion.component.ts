@@ -6,7 +6,6 @@ import { Router } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { PrestamoService } from '../core/services/prestamo.service';
 import { LibroService } from '../core/services/libro.service';
-import { Libro, LibroSugerencia } from '../core/models/libro.model';
 import { PrestamoRequest } from '../core/models/prestamo.model';
 import {
   HistorialPrestamo,
@@ -37,21 +36,11 @@ export class PrestamosGestionComponent {
   private busquedaCorreo$ = new Subject<string>();
   private destroy$ = new Subject<void>();
 
-  // ── Caso A: reserva activa ──────────────────────────────
+  // ── Reserva activa ──────────────────────────────────────
   reserva: ReservaActiva | null = null;
   cargandoReserva: boolean = false;
   diasReserva: number | null = null;
   confirmandoEntrega: boolean = false;
-
-  // ── Caso B: préstamo directo ────────────────────────────
-  textoLibro: string = '';
-  sugerenciasLibro: LibroSugerencia[] = [];
-  mostrarSugerenciasLibro: boolean = false;
-  buscandoSugerenciasLibro: boolean = false;
-  libroSeleccionado: Libro | null = null;
-  advertenciaStock: string = '';
-  diasDirecto: number | null = null;
-  registrandoDirecto: boolean = false;
 
   // ── Historial reciente ──────────────────────────────────
   historial: HistorialPrestamo[] = [];
@@ -191,10 +180,6 @@ export class PrestamosGestionComponent {
   }
 
   // ── Búsqueda de usuario ────────────────────────────────
-  get esCorreoValido(): boolean {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.correoBusqueda);
-  }
-
   get estaBloqueado(): boolean {
     if (!this.usuario) return false;
     return this.usuario.estadoCuenta !== 'ACTIVO'
@@ -231,7 +216,6 @@ export class PrestamosGestionComponent {
         this.usuario = usuario;
         this.buscando = false;
         this.diasReserva = usuario.diasPrestamoSugerido;
-        this.diasDirecto = usuario.diasPrestamoSugerido;
         this.cargarHistorial(usuario.id);
         if (this.estaBloqueado) return;
         this.consultarReservaActiva(usuario.id);
@@ -260,7 +244,6 @@ export class PrestamosGestionComponent {
     this.cargandoReserva = false;
     this.historial = [];
     this.cargandoHistorial = false;
-    this.limpiarFormularioLibro();
     this.exitoMsg = '';
     this.errorMsgAccion = '';
   }
@@ -303,7 +286,7 @@ export class PrestamosGestionComponent {
     this.cargarHistorial(this.usuario.id);
   }
 
-  // ── Caso A: confirmar entrega ────────────────────────────
+  // ── Confirmar entrega de reserva ────────────────────────
   confirmarEntrega(): void {
     if (!this.usuario || !this.reserva || !this.diasReserva || this.diasReserva < 1) return;
     this.confirmandoEntrega = true;
@@ -328,84 +311,6 @@ export class PrestamosGestionComponent {
     });
   }
 
-  // ── Caso B: préstamo directo ─────────────────────────────
-  buscarSugerenciasLibro(): void {
-    const texto = this.textoLibro.trim();
-    this.advertenciaStock = '';
-    if (texto.length < 2) {
-      this.sugerenciasLibro = [];
-      this.mostrarSugerenciasLibro = false;
-      return;
-    }
-    this.buscandoSugerenciasLibro = true;
-    this.libroService.sugerencias(texto).subscribe({
-      next: (lista) => {
-        this.sugerenciasLibro = lista;
-        this.mostrarSugerenciasLibro = true;
-        this.buscandoSugerenciasLibro = false;
-      },
-      error: () => {
-        this.buscandoSugerenciasLibro = false;
-      }
-    });
-  }
-
-  seleccionarLibro(sugerencia: LibroSugerencia): void {
-    this.mostrarSugerenciasLibro = false;
-    this.libroSeleccionado = null;
-    this.advertenciaStock = '';
-    this.libroService.obtener(sugerencia.id).subscribe({
-      next: (libro) => {
-        this.libroSeleccionado = libro;
-        if (libro.stockDisponible <= 0) {
-          this.advertenciaStock = 'Este libro no tiene ejemplares disponibles.';
-        }
-      },
-      error: () => {
-        this.advertenciaStock = 'No se pudo cargar el detalle del libro seleccionado.';
-      }
-    });
-  }
-
-  limpiarFormularioLibro(): void {
-    this.textoLibro = '';
-    this.sugerenciasLibro = [];
-    this.mostrarSugerenciasLibro = false;
-    this.libroSeleccionado = null;
-    this.advertenciaStock = '';
-  }
-
-  get puedeRegistrarDirecto(): boolean {
-    return !!this.libroSeleccionado
-      && !!this.diasDirecto && this.diasDirecto >= 1
-      && (this.libroSeleccionado?.stockDisponible ?? 0) > 0
-      && !this.registrandoDirecto;
-  }
-
-  registrarPrestamoDirecto(): void {
-    if (!this.usuario || !this.puedeRegistrarDirecto) return;
-    this.registrandoDirecto = true;
-    this.exitoMsg = '';
-    this.errorMsgAccion = '';
-    const request: PrestamoRequest = {
-      usuarioId: this.usuario.id,
-      libroId: this.libroSeleccionado!.id,
-      diasPrestamo: this.diasDirecto!
-    };
-    this.prestamoService.crear(request).subscribe({
-      next: () => {
-        this.registrandoDirecto = false;
-        this.exitoMsg = `Préstamo registrado: "${this.libroSeleccionado!.titulo}" prestado por ${this.diasDirecto} día(s).`;
-        this.limpiarFormularioLibro();
-        this.refrescarTrasAccion();
-      },
-      error: (err: HttpErrorResponse) => {
-        this.registrandoDirecto = false;
-        this.errorMsgAccion = detalleDeError(err, 'No se pudo registrar el préstamo.');
-      }
-    });
-  }
-
   // ── Caso C ──────────────────────────────────────────────
   gestionarMultas(): void {
     if (!this.usuario) return;
@@ -420,10 +325,6 @@ export class PrestamosGestionComponent {
     if (partes.length === 0) return '??';
     if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
     return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
-  }
-
-  tiposUsuarioTexto(tipos: string[]): string {
-    return tipos.length > 0 ? tipos.join(', ') : '—';
   }
 
   claseEstadoCuenta(estado: string): string {
@@ -495,12 +396,6 @@ export class PrestamosGestionComponent {
     if (item.multaPendiente || this.estaVencido(item)) return 'warning';
     if (item.fechaDevolucionReal) return 'check_circle';
     return 'menu_book';
-  }
-
-  claseIconoHistorial(item: HistorialPrestamo): string {
-    if (item.multaPendiente || this.estaVencido(item)) return 'text-error bg-error-container';
-    if (item.fechaDevolucionReal) return 'text-success bg-success/10';
-    return 'text-primary bg-primary-fixed';
   }
 
   textoSecundarioHistorial(item: HistorialPrestamo): string {
