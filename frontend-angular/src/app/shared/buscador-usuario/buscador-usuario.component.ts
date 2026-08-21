@@ -33,7 +33,7 @@ export class BuscadorUsuarioComponent implements OnDestroy {
 
   constructor(private prestamoService: PrestamoService) {
     this.busqueda$.pipe(
-      debounceTime(300),
+      debounceTime(1300),
       distinctUntilChanged(),
       takeUntil(this.destroy$)
     ).subscribe(texto => this.buscarSugerencias(texto));
