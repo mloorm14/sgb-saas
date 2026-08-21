@@ -14,6 +14,11 @@ import {
   ReporteMorosidad,
   ReporteUsoPorPeriodo
 } from '../models/prestamo.model';
+import {
+  HistorialPrestamo,
+  ReservaActiva,
+  UsuarioPrestamos
+} from '../models/prestamos-gestion.model';
 
 export interface PrestamoListarParams {
   page?: number;
@@ -64,6 +69,36 @@ export class PrestamoService {
 
   activosPorUsuario(usuarioId: number): Observable<PrestamoActivo[]> {
     return this.http.get<PrestamoActivo[]>(`${this.apiUrl}/usuario/${usuarioId}/activos`).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  // ── Ventanilla del bibliotecario (/gestion/*) ────────────
+  // buscarUsuarioPorCedula: 404 (ProblemDetail) si la cédula no coincide
+  // con ningún usuario -> el componente muestra el mensaje de error.
+  buscarUsuarioPorCedula(cedula: string): Observable<UsuarioPrestamos> {
+    return this.http.get<UsuarioPrestamos>(`${this.apiUrl}/gestion/buscar-usuario`, {
+      params: new HttpParams().set('cedula', cedula)
+    }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  // reservaActiva: 404 cuando el usuario NO tiene reserva vigente; ese caso
+  // NO es un error de pantalla (cae al préstamo directo), por eso se expone
+  // tal cual y lo interpreta el componente.
+  reservaActiva(usuarioId: number): Observable<ReservaActiva> {
+    return this.http.get<ReservaActiva>(`${this.apiUrl}/gestion/reserva-activa`, {
+      params: new HttpParams().set('usuarioId', usuarioId)
+    }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  historial(usuarioId: number): Observable<HistorialPrestamo[]> {
+    return this.http.get<HistorialPrestamo[]>(`${this.apiUrl}/gestion/historial`, {
+      params: new HttpParams().set('usuarioId', usuarioId)
+    }).pipe(
       catchError(err => this.manejarError(err))
     );
   }

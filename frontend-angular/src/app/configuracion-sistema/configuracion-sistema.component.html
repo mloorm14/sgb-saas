@@ -1,62 +1,102 @@
-<div style="padding:2rem;max-width:900px;margin:0 auto">
+<main class="max-w-3xl mx-auto px-md md:px-lg py-lg">
 
-  <h2 style="color:#005c2f;margin:0 0 1.5rem 0">Configuración del sistema</h2>
-
-  <div *ngIf="!esAdmin" style="color:#c0392b;padding:2rem;text-align:center">
-    No tenés permisos para ver esta sección.
+  <div class="mb-xl">
+    <div class="flex items-center gap-sm mb-xs">
+      <div class="w-10 h-10 rounded-lg bg-primary-fixed flex items-center justify-center">
+        <span class="material-symbols-outlined text-[22px] text-primary">tune</span>
+      </div>
+      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background">Configuración del sistema</h1>
+    </div>
+    <p class="font-body-sm text-body-sm text-on-surface-variant sm:ml-[52px]">Parámetros globales que afectan el comportamiento de toda la biblioteca</p>
   </div>
 
-  <ng-container *ngIf="esAdmin">
-    <div *ngIf="errorMsg" style="color:red;margin-bottom:1rem">{{ errorMsg }}</div>
-    <div *ngIf="cargando" style="text-align:center;padding:2rem">Cargando configuración...</div>
-
-    <table *ngIf="!cargando && configuraciones.length > 0" style="width:100%;border-collapse:collapse;font-size:14px">
-      <thead>
-        <tr style="background:#005c2f;color:white">
-          <th style="padding:10px;text-align:left">Clave</th>
-          <th style="padding:10px;text-align:left">Valor</th>
-          <th style="padding:10px;text-align:left">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let config of configuraciones; let i = index"
-          [style.background]="i % 2 === 0 ? '#f9f9f9' : 'white'">
-          <td style="padding:10px">{{ config.clave }}</td>
-          <td style="padding:10px">
-            <span *ngIf="claveEditando !== config.clave">{{ config.valor }}</span>
-            <ng-container *ngIf="claveEditando === config.clave">
-              <input [(ngModel)]="valorEditando" [ngModelOptions]="{standalone: true}" type="text"
-                [maxlength]="valorMaxLength"
-                style="padding:6px;border:1px solid #ccc;border-radius:4px;width:100%;box-sizing:border-box"/>
-              <div style="font-size:12px;color:#888;margin-top:2px">{{ valorEditando.length }}/{{ valorMaxLength }}</div>
-            </ng-container>
-          </td>
-          <td style="padding:10px;display:flex;gap:8px">
-            <ng-container *ngIf="claveEditando !== config.clave">
-              <button (click)="iniciarEdicion(config)"
-                style="padding:4px 10px;background:#005c2f;color:white;border:none;border-radius:4px;cursor:pointer">
-                Editar
-              </button>
-            </ng-container>
-            <ng-container *ngIf="claveEditando === config.clave">
-              <button [disabled]="!valorEditando.trim() || valorEditando.length > valorMaxLength"
-                (click)="guardarValor()"
-                style="padding:4px 10px;background:#005c2f;color:white;border:none;border-radius:4px;cursor:pointer">
-                Guardar
-              </button>
-              <button (click)="cancelarEdicion()"
-                style="padding:4px 10px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
-                Cancelar
-              </button>
-            </ng-container>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div *ngIf="!cargando && configuraciones.length === 0" style="text-align:center;padding:2rem;color:#888">
-      No hay parámetros de configuración
+  @if (!esAdmin) {
+    <div class="rounded border border-error/40 bg-error-container/40 px-md py-sm mb-md flex items-center gap-sm">
+      <span class="material-symbols-outlined text-[18px] text-error">block</span>
+      <p class="font-body-sm text-body-sm text-on-error-container">No tenés permisos para ver esta sección.</p>
     </div>
-  </ng-container>
+  }
 
-</div>
+  @if (esAdmin) {
+    @if (errorMsg) {
+      <div class="rounded border border-error/40 bg-error-container/40 px-md py-sm mb-md flex items-center gap-sm">
+        <span class="material-symbols-outlined text-[18px] text-error">error</span>
+        <p class="font-body-sm text-body-sm text-on-error-container">{{ errorMsg }}</p>
+      </div>
+    }
+
+    @if (cargando) {
+      <div class="text-center py-xl font-body-sm text-body-sm text-on-surface-variant">Cargando configuración...</div>
+    }
+
+    @if (!cargando && grupos.length > 0) {
+      @for (grupo of grupos; track grupo.nombre) {
+        <div class="mb-lg">
+          <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm px-xs">{{ grupo.nombre }}</p>
+          <div class="rounded-lg border border-outline-variant bg-white overflow-hidden divide-y divide-outline-variant">
+            @for (config of grupo.parametros; track config.clave) {
+              <div class="flex flex-wrap items-center gap-md p-md transition-colors"
+                [class.bg-primary-fixed/20]="claveEditando === config.clave"
+                [class.hover:bg-surface-container-low/60]="claveEditando !== config.clave">
+                <div class="w-10 h-10 rounded-lg bg-secondary-container/30 flex items-center justify-center shrink-0">
+                  <span class="material-symbols-outlined text-[20px] text-secondary">{{ config.meta.icono }}</span>
+                </div>
+                <div class="flex-1 min-w-[180px]">
+                  <p class="font-label-sm text-[14px] text-on-surface">{{ config.meta.titulo }}</p>
+                  @if (config.meta.descripcion) {
+                    <p class="font-body-sm text-[13px] text-on-surface-variant">{{ config.meta.descripcion }}</p>
+                  }
+                </div>
+
+                @if (claveEditando !== config.clave) {
+                  <div class="flex items-center gap-sm shrink-0 ml-auto">
+                    <span class="font-headline-md text-[20px] text-on-background font-semibold break-all max-w-[160px] text-right">
+                      @if (config.meta.sufijo === '$') { $ }{{ config.valor }}
+                    </span>
+                    @if (config.meta.sufijo && config.meta.sufijo !== '$') {
+                      <span class="font-label-sm text-[12px] text-on-surface-variant">{{ config.meta.sufijo }}</span>
+                    }
+                    <button type="button" (click)="iniciarEdicion(config)" aria-label="Editar"
+                      class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant hover:text-primary transition-colors cursor-pointer">
+                      <span class="material-symbols-outlined text-[18px]">edit</span>
+                    </button>
+                  </div>
+                } @else {
+                  <div class="flex items-center gap-xs shrink-0 ml-auto">
+                    <input [(ngModel)]="valorEditando" [ngModelOptions]="{standalone: true}" type="text"
+                      [maxlength]="valorMaxLength" aria-label="Nuevo valor"
+                      class="w-32 md:w-44 h-9 px-sm rounded border border-primary bg-white font-body-sm text-body-sm text-on-surface" />
+                    <button type="button" [disabled]="!valorEditando.trim() || valorEditando.length > valorMaxLength"
+                      (click)="guardarValor()" aria-label="Guardar"
+                      class="w-9 h-9 rounded-full flex items-center justify-center bg-primary text-on-primary hover:bg-on-primary-fixed-variant transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                      <span class="material-symbols-outlined text-[18px]">check</span>
+                    </button>
+                    <button type="button" (click)="cancelarEdicion()" aria-label="Cancelar"
+                      class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer">
+                      <span class="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                  </div>
+                }
+              </div>
+              @if (claveEditando === config.clave) {
+                <div class="px-md pb-sm pt-0 text-right">
+                  <span class="font-label-sm text-[12px] text-on-surface-variant">{{ valorEditando.length }}/{{ valorMaxLength }}</span>
+                </div>
+              }
+            }
+          </div>
+        </div>
+      }
+
+      <div class="rounded-lg bg-surface-container-low border border-outline-variant p-sm flex items-start gap-xs">
+        <span class="material-symbols-outlined text-[16px] text-on-surface-variant mt-0.5">info</span>
+        <p class="font-label-sm text-[12px] text-on-surface-variant">Los cambios se aplican de inmediato a todo el sistema. Solo ADMIN puede modificar estos valores.</p>
+      </div>
+    }
+
+    @if (!cargando && errorMsg === '' && grupos.length === 0) {
+      <div class="text-center py-xl font-body-sm text-body-sm text-on-surface-variant">No hay parámetros de configuración</div>
+    }
+  }
+
+</main>

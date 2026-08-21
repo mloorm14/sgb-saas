@@ -26,4 +26,12 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     // autocompletado).
     Page<Usuario> findByNombreContainingIgnoreCaseOrCorreoContainingIgnoreCase(
             String nombre, String correo, Pageable pageable);
+
+    // Módulo de préstamos (ventanilla del bibliotecario): búsqueda del
+    // lector por su cédula (columna identificacion_usuario). La cédula no
+    // es UNIQUE en schema.sql (puede haber usuarios sin identificación),
+    // pero en la práctica el padrón real la mantiene única; se toma la
+    // primera coincidencia para no fallar si quedara algún duplicado
+    // histórico.
+    Optional<Usuario> findFirstByIdentificacionUsuarioOrderByIdAsc(String identificacionUsuario);
 }
