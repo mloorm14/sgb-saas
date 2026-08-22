@@ -78,7 +78,7 @@ spring:
       max-request-size: 5MB
 
 server:
-  port: 8080
+  port: ${PORT:8080}
   # REQ-NF-012 / ADR-015 (Módulo 10.1): el backend nunca termina TLS él
   # mismo -- eso queda del lado del proxy (frontend-angular/nginx.conf en
   # dev, o el balanceador en producción). 'framework' activa el
