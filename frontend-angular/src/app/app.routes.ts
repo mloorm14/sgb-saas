@@ -24,6 +24,9 @@ import { ConfiguracionSistemaComponent } from './configuracion-sistema/configura
 import { UsuariosComponent } from './admin/usuarios/usuarios.component';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { AuditoriaComponent } from './admin/auditoria/auditoria.component';
+import { DashboardGerenteAdminComponent } from './dashboard-gerente-admin/dashboard-gerente-admin.component';
+import { DashboardLectorComponent } from './dashboard-lector/dashboard-lector.component';
+import { MiCredencialComponent } from './mi-credencial/mi-credencial.component';
 import { DevolucionesComponent } from './devoluciones/devoluciones.component';
 
 // Los roleGuard de abajo reflejan los @PreAuthorize reales de cada
@@ -81,7 +84,43 @@ export const routes: Routes = [
       { path: 'reportes', component: ReportesComponent },
     ]
   },
-  // Rama B (frontend/estudiante-catalogo-social): las 5 rutas del
+  // Panel ADMIN/GERENTE (sidebar con rutas anidadas):
+  {
+    path: 'dashboard-admin',
+    component: DashboardGerenteAdminComponent,
+    canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])],
+    children: [
+      { path: '', component: DashboardGerenteComponent },
+      { path: 'libros', component: LibrosComponent },
+      { path: 'prestamos/gestion', component: PrestamosGestionComponent },
+      { path: 'reservaciones', component: ReservacionesComponent },
+      { path: 'multas', component: MultasComponent },
+      { path: 'sugerencias/gestion', component: GestionSugerenciasComponent },
+      { path: 'admin/usuarios', component: UsuariosComponent },
+      { path: 'auditoria', component: AuditoriaComponent },
+      { path: 'reportes', component: ReportesComponent, canActivate: [roleGuard(['GERENTE'])] },
+      { path: 'admin/configuracion', component: ConfiguracionSistemaComponent, canActivate: [roleGuard(['ADMIN'])] },
+    ]
+  },
+  // Panel LECTOR (sidebar con rutas anidadas):
+  {
+    path: 'dashboard-lector',
+    component: DashboardLectorComponent,
+    canActivate: [authGuard, roleGuard(['LECTOR'])],
+    children: [
+      { path: '', redirectTo: 'catalogo', pathMatch: 'full' },
+      { path: 'catalogo', component: CatalogoComponent },
+      { path: 'catalogo/:id', component: LibroDetalleComponent },
+      { path: 'prestamos', component: PrestamosLectorComponent },
+      { path: 'reservaciones', component: ReservacionesComponent },
+      { path: 'multas', component: MultasComponent },
+      { path: 'favoritos', component: FavoritosComponent },
+      { path: 'sugerencias', component: MisSugerenciasComponent },
+      { path: 'sugerencias/nueva', component: SugerenciasFormComponent },
+      { path: 'notificaciones', component: NotificacionesComponent },
+      { path: 'mi-credencial', component: MiCredencialComponent },
+    ]
+  },
   // consumidor son 100% LECTOR — verificado en FavoritoController.java y
   // SugerenciaAdquisicionController.java (los endpoints de favoritos y de
   // sugerencias/adquisicion son @PreAuthorize hasRole('LECTOR'); las
