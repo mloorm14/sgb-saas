@@ -374,6 +374,10 @@ export class LibrosComponent implements OnInit, OnDestroy {
     return this.categorias.find(c => c.id === id)?.nombre ?? `#${id}`;
   }
 
+  formatarEstado(nombre: string): string {
+    return nombre.replace(/_/g, ' ');
+  }
+
   // ── Navegación con teclado (autocomplete) ──
 
   onKeydownAutor(event: KeyboardEvent): void {
