@@ -5,8 +5,6 @@ import { environment } from '../../../environments/environment';
 import { Categoria } from '../models/categoria.model';
 import { ProblemDetail } from '../models/problem-detail.model';
 
-// Contrato de CategoriaController (/api/v1/categorias): array plano, sin
-// paginación. Verificado en backend-springboot.
 @Injectable({
   providedIn: 'root'
 })
@@ -22,8 +20,18 @@ export class CategoriaService {
     );
   }
 
-  // RFC 7807: el backend responde ProblemDetail. El error se re-lanza
-  // intacto (status + error.detail siguen disponibles en el componente).
+  buscar(texto: string): Observable<Categoria[]> {
+    return this.http.get<Categoria[]>(`${this.apiUrl}/buscar`, { params: { q: texto } }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  crear(nombre: string): Observable<Categoria> {
+    return this.http.post<Categoria>(this.apiUrl, { nombre }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
   private manejarError(err: unknown): Observable<never> {
     const problem = (err as { error?: ProblemDetail })?.error;
     if (problem?.status) {
