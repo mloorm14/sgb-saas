@@ -6,6 +6,7 @@ import com.uteq.backend.dto.DevolucionHistorialDTO;
 import com.uteq.backend.dto.DevolucionRequestDTO;
 import com.uteq.backend.dto.TipoDanoDTO;
 import com.uteq.backend.entity.BitacoraAuditoria;
+import com.uteq.backend.entity.EstadoMulta;
 import com.uteq.backend.entity.EvidenciaDano;
 import com.uteq.backend.entity.Libro;
 import com.uteq.backend.entity.Multa;
@@ -159,6 +160,7 @@ public class DevolucionService {
 
             if (montoMultaDano.compareTo(BigDecimal.ZERO) > 0) {
                 Integer estadoPendienteId = estadoMultaRepo.findByNombre(ESTADO_MULTA_PENDIENTE)
+                        .map(EstadoMulta::getId)
                         .orElseThrow(() -> new IllegalStateException(
                                 "Catalogo estados_multa sin fila '" + ESTADO_MULTA_PENDIENTE + "'"));
 
