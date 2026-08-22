@@ -134,7 +134,17 @@
           <!-- Info del libro -->
           <div class="flex-1 min-w-0">
             <h3 class="font-bold text-on-surface text-lg mb-xs">{{ prestamoSeleccionado.libroTitulo }}</h3>
-            <p class="font-body-sm text-body-sm text-on-surface-variant mb-xs">ISBN: {{ prestamoSeleccionado.libroIsbn || 'N/D' }}</p>
+            <p class="font-body-sm text-body-sm text-on-surface-variant mb-xs">
+              {{ prestamoSeleccionado.autores?.length > 0 ? prestamoSeleccionado.autores.join(', ') : 'Autor desconocido' }}
+            </p>
+            <p class="font-body-sm text-[12px] text-on-surface-variant mb-xs">ISBN: {{ prestamoSeleccionado.libroIsbn || 'N/D' }}</p>
+            @if (prestamoSeleccionado.categorias?.length > 0) {
+              <div class="flex flex-wrap gap-1.5 mt-xs">
+                @for (cat of prestamoSeleccionado.categorias; track cat) {
+                  <span class="px-2 py-0.5 bg-surface-container border border-outline-variant/50 rounded text-xs font-medium text-on-surface-variant">{{ cat }}</span>
+                }
+              </div>
+            }
           </div>
         </div>
 
