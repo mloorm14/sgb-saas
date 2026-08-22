@@ -207,6 +207,12 @@ public class PrestamosGestionService {
                 .collect(Collectors.toMap(Libro::getId, Libro::getTitulo));
         Map<Long, String> isbnPorLibro = libros.stream()
                 .collect(Collectors.toMap(Libro::getId, l -> l.getIsbn() != null ? l.getIsbn() : ""));
+        Map<Long, List<String>> autoresPorLibro = libros.stream()
+                .collect(Collectors.toMap(Libro::getId,
+                        l -> l.getAutores().stream().map(a -> a.getNombre()).toList()));
+        Map<Long, List<String>> categoriasPorLibro = libros.stream()
+                .collect(Collectors.toMap(Libro::getId,
+                        l -> l.getCategorias().stream().map(c -> c.getNombre()).toList()));
 
         Map<Integer, String> nombresPorEstado = estadoPrestamoRepo.findAllById(
                         prestamos.stream().map(Prestamo::getEstadoPrestamoId).distinct().toList())
@@ -220,7 +226,7 @@ public class PrestamosGestionService {
         }
 
         return prestamos.stream()
-                .map(p -> toHistorialDTO(p, titulosPorLibro, isbnPorLibro, nombresPorEstado, pendientesPorPrestamo))
+                .map(p -> toHistorialDTO(p, titulosPorLibro, isbnPorLibro, autoresPorLibro, categoriasPorLibro, nombresPorEstado, pendientesPorPrestamo))
                 .toList();
     }
 
@@ -228,6 +234,8 @@ public class PrestamosGestionService {
             Prestamo p,
             Map<Long, String> titulosPorLibro,
             Map<Long, String> isbnPorLibro,
+            Map<Long, List<String>> autoresPorLibro,
+            Map<Long, List<String>> categoriasPorLibro,
             Map<Integer, String> nombresPorEstado,
             Map<Long, BigDecimal> pendientesPorPrestamo) {
         BigDecimal montoPendiente = pendientesPorPrestamo.get(p.getId());
@@ -236,6 +244,8 @@ public class PrestamosGestionService {
                 p.getLibroId(),
                 titulosPorLibro.getOrDefault(p.getLibroId(), "Libro #" + p.getLibroId()),
                 isbnPorLibro.getOrDefault(p.getLibroId(), ""),
+                autoresPorLibro.getOrDefault(p.getLibroId(), List.of()),
+                categoriasPorLibro.getOrDefault(p.getLibroId(), List.of()),
                 p.getFechaPrestamo(),
                 p.getFechaDevolucionEstimada(),
                 p.getFechaDevolucionReal(),
