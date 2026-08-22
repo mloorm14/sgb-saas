@@ -80,6 +80,42 @@ public class LibroService {
                 .map(this::toDTO);
     }
 
+    @Transactional(readOnly = true)
+    public Page<LibroResponseDTO> listarConFiltros(String q, Integer estadoLibroId, Integer categoriaId, Long autorId, Pageable pageable) {
+        Integer estadoId = resolverEstadoId(estadoLibroId);
+
+        if (q != null && !q.isBlank()) {
+            if (categoriaId != null) {
+                return libroRepo.buscarPorTextoOIsbnYCategoria(q, categoriaId, estadoId, pageable).map(this::toDTO);
+            }
+            if (autorId != null) {
+                return libroRepo.buscarPorTextoOIsbnYAutor(q, autorId, estadoId, pageable).map(this::toDTO);
+            }
+            return libroRepo.buscarPorTextoOIsbn(q, estadoId, pageable).map(this::toDTO);
+        }
+
+        if (categoriaId != null && autorId != null) {
+            return libroRepo.findByCategorias_IdAndAutores_IdAndEstadoId(categoriaId, autorId, estadoId, pageable).map(this::toDTO);
+        }
+        if (categoriaId != null) {
+            return libroRepo.findByCategorias_IdAndEstadoId(categoriaId, estadoId, pageable).map(this::toDTO);
+        }
+        if (autorId != null) {
+            return libroRepo.findByAutores_IdAndEstadoId(autorId, estadoId, pageable).map(this::toDTO);
+        }
+        return libroRepo.findByEstadoId(estadoId, pageable).map(this::toDTO);
+    }
+
+    private Integer resolverEstadoId(Integer estadoLibroId) {
+        if (estadoLibroId != null) {
+            return estadoLibroId;
+        }
+        return estadoRepo.findByNombre(ESTADO_ACTIVO)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Catálogo estados_libro sin fila '" + ESTADO_ACTIVO + "'"))
+                .getId();
+    }
+
     // Módulo 9.1: filtros de catálogo por categoría/autor
     // (LibroController ?categoriaId=/?autorId=). No lleva @Cacheable a
     // propósito: el cache "libros" ya cachea el listado sin filtro
