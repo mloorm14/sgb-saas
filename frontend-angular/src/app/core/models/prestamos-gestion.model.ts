@@ -46,6 +46,8 @@ export interface HistorialPrestamo {
   libroId: number;
   libroTitulo: string;
   libroIsbn: string;
+  autores: string[];
+  categorias: string[];
   fechaPrestamo: string;
   fechaDevolucionEstimada: string;
   fechaDevolucionReal: string | null;
