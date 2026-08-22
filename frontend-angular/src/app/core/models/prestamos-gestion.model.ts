@@ -43,7 +43,9 @@ export interface ReservaActiva {
 // el texto secundario se derivan de estadoNombre + multaPendiente.
 export interface HistorialPrestamo {
   prestamoId: number;
+  libroId: number;
   libroTitulo: string;
+  libroIsbn: string;
   fechaPrestamo: string;
   fechaDevolucionEstimada: string;
   fechaDevolucionReal: string | null;

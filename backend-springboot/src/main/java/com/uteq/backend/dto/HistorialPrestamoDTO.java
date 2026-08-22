@@ -14,7 +14,9 @@ import java.time.OffsetDateTime;
  */
 public record HistorialPrestamoDTO(
         Long prestamoId,
+        Long libroId,
         String libroTitulo,
+        String libroIsbn,
         OffsetDateTime fechaPrestamo,
         OffsetDateTime fechaDevolucionEstimada,
         OffsetDateTime fechaDevolucionReal,

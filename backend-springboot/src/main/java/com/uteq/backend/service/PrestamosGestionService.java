@@ -201,10 +201,12 @@ public class PrestamosGestionService {
             prestamos = prestamos.subList(0, LIMITE_HISTORIAL);
         }
 
-        Map<Long, String> titulosPorLibro = libroRepo.findAllById(
-                        prestamos.stream().map(Prestamo::getLibroId).distinct().toList())
-                .stream()
+        List<Libro> libros = libroRepo.findAllById(
+                        prestamos.stream().map(Prestamo::getLibroId).distinct().toList());
+        Map<Long, String> titulosPorLibro = libros.stream()
                 .collect(Collectors.toMap(Libro::getId, Libro::getTitulo));
+        Map<Long, String> isbnPorLibro = libros.stream()
+                .collect(Collectors.toMap(Libro::getId, l -> l.getIsbn() != null ? l.getIsbn() : ""));
 
         Map<Integer, String> nombresPorEstado = estadoPrestamoRepo.findAllById(
                         prestamos.stream().map(Prestamo::getEstadoPrestamoId).distinct().toList())
@@ -218,19 +220,22 @@ public class PrestamosGestionService {
         }
 
         return prestamos.stream()
-                .map(p -> toHistorialDTO(p, titulosPorLibro, nombresPorEstado, pendientesPorPrestamo))
+                .map(p -> toHistorialDTO(p, titulosPorLibro, isbnPorLibro, nombresPorEstado, pendientesPorPrestamo))
                 .toList();
     }
 
     private HistorialPrestamoDTO toHistorialDTO(
             Prestamo p,
             Map<Long, String> titulosPorLibro,
+            Map<Long, String> isbnPorLibro,
             Map<Integer, String> nombresPorEstado,
             Map<Long, BigDecimal> pendientesPorPrestamo) {
         BigDecimal montoPendiente = pendientesPorPrestamo.get(p.getId());
         return new HistorialPrestamoDTO(
                 p.getId(),
+                p.getLibroId(),
                 titulosPorLibro.getOrDefault(p.getLibroId(), "Libro #" + p.getLibroId()),
+                isbnPorLibro.getOrDefault(p.getLibroId(), ""),
                 p.getFechaPrestamo(),
                 p.getFechaDevolucionEstimada(),
                 p.getFechaDevolucionReal(),

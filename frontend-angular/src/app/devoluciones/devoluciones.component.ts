@@ -1,10 +1,11 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { Subject, takeUntil } from 'rxjs';
 import { PrestamoService } from '../core/services/prestamo.service';
 import { DevolucionService } from '../core/services/devolucion.service';
-import { UsuarioSugerencia, HistorialPrestamo } from '../core/models/prestamos-gestion.model';
+import { LibroService } from '../core/services/libro.service';
+import { HistorialPrestamo } from '../core/models/prestamos-gestion.model';
 import {
   TipoDano,
   DanoItem,
@@ -12,39 +13,29 @@ import {
   DevolucionCompletaResponse,
   DevolucionHistorial
 } from '../core/models/devoluciones.model';
+import { BuscadorUsuarioComponent } from '../shared/buscador-usuario/buscador-usuario.component';
+import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
 
 @Component({
   selector: 'app-devoluciones',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BuscadorUsuarioComponent, PortadaLibroComponent],
   templateUrl: './devoluciones.component.html'
 })
 export class DevolucionesComponent implements OnInit, OnDestroy {
 
-  // ── Busqueda por correo (autocompletado) ─────────────
-  correoBusqueda: string = '';
-  mostrarSugerencias: boolean = false;
-  sugerencias: UsuarioSugerencia[] = [];
-  buscandoSugerencias: boolean = false;
-  placeholderCorreo: string = 'Correo del usuario';
-  indiceActivo: number = -1;
-  private busqueda$ = new Subject<string>();
-  private destroy$ = new Subject<void>();
-
-  // ── Prestamos activos del usuario ────────────────────
-  usuarioIdSeleccionado: number | null = null;
+  // ── Préstamos activos del usuario ────────────────────
   prestamosActivos: HistorialPrestamo[] = [];
   cargandoPrestamos: boolean = false;
   prestamoSeleccionado: HistorialPrestamo | null = null;
 
-  // ── Tipos de dano (catalogo) ────────────────────────
+  // ── Catálogo de tipos de daño ────────────────────────
   tiposDano: TipoDano[] = [];
   cargandoTipos: boolean = false;
 
-  // ── Formulario de devolucion ─────────────────────────
+  // ── Formulario de devolución ─────────────────────────
   estadoDevolucion: string = 'BUEN_ESTADO';
   descripcionDano: string = '';
   danosSeleccionados: DanoItem[] = [];
-  mostrarFormDano: boolean = false;
 
   // ── Historial de devoluciones recientes ──────────────
   historial: DevolucionHistorial[] = [];
@@ -55,19 +46,21 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
   exitoMsg: string = '';
   errorMsg: string = '';
 
-  // ── Resultado de la devolucion ──────────────────────
+  // ── Resultado de la devolución ──────────────────────
   resultadoDevolucion: DevolucionCompletaResponse | null = null;
+
+  // ── Modal portada ────────────────────────────────────
+  portadaModalVisible: boolean = false;
+  portadaModalUrl: string | null = null;
+  portadaModalCargando: boolean = false;
+
+  private destroy$ = new Subject<void>();
 
   constructor(
     private prestamoService: PrestamoService,
-    private devolucionService: DevolucionService
-  ) {
-    this.busqueda$.pipe(
-      debounceTime(1300),
-      distinctUntilChanged(),
-      takeUntil(this.destroy$)
-    ).subscribe(texto => this.buscarSugerencias(texto));
-  }
+    private devolucionService: DevolucionService,
+    private libroService: LibroService
+  ) {}
 
   ngOnInit(): void {
     this.cargarTiposDano();
@@ -77,125 +70,44 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-    this.busqueda$.complete();
   }
 
-  // ── Autocompletado de correo ──────────────────────────
-  onInputCorreo(): void {
-    this.correoBusqueda = this.correoBusqueda.replace(/\s/g, '');
-    this.indiceActivo = -1;
-    const texto = this.correoBusqueda.trim();
-    if (texto.length < 2) {
-      this.sugerencias = [];
-      this.mostrarSugerencias = false;
-      this.placeholderCorreo = 'Correo del usuario';
-      return;
-    }
-    this.busqueda$.next(texto);
+  // ── Eventos del BuscadorUsuarioComponent ──────────────
+  onCorreoSeleccionado(correo: string): void {
+    this.buscarPrestamosPorCorreo(correo);
   }
 
-  private buscarSugerencias(texto: string): void {
-    if (texto.length < 2) {
-      this.sugerencias = [];
-      this.mostrarSugerencias = false;
-      return;
-    }
-    this.buscandoSugerencias = true;
-    this.prestamoService.sugerenciasUsuarios(texto).subscribe({
-      next: (lista) => {
-        this.sugerencias = lista;
-        this.mostrarSugerencias = lista.length > 0;
-        this.buscandoSugerencias = false;
-        if (lista.length > 0) {
-          this.placeholderCorreo = lista[0].correo;
-        } else {
-          this.placeholderCorreo = 'Correo del usuario';
-        }
-      },
-      error: () => {
-        this.sugerencias = [];
-        this.mostrarSugerencias = false;
-        this.buscandoSugerencias = false;
-      }
-    });
+  onBuscarAhora(correo: string): void {
+    this.buscarPrestamosPorCorreo(correo);
   }
 
-  onKeydownCorreo(event: KeyboardEvent): void {
-    if (!this.mostrarSugerencias || this.sugerencias.length === 0) {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        this.buscarPrestamos();
-      }
-      return;
-    }
-    switch (event.key) {
-      case 'ArrowDown':
-        event.preventDefault();
-        this.indiceActivo = Math.min(this.indiceActivo + 1, this.sugerencias.length - 1);
-        this.placeholderCorreo = this.sugerencias[this.indiceActivo].correo;
-        break;
-      case 'ArrowUp':
-        event.preventDefault();
-        this.indiceActivo = Math.max(this.indiceActivo - 1, -1);
-        this.placeholderCorreo = this.indiceActivo >= 0
-          ? this.sugerencias[this.indiceActivo].correo
-          : 'Correo del usuario';
-        break;
-      case 'Tab':
-        event.preventDefault();
-        if (this.indiceActivo >= 0 && this.indiceActivo < this.sugerencias.length) {
-          this.seleccionarSugerencia(this.sugerencias[this.indiceActivo]);
-        } else if (this.sugerencias.length > 0) {
-          this.seleccionarSugerencia(this.sugerencias[0]);
-        }
-        break;
-      case 'Enter':
-        event.preventDefault();
-        if (this.indiceActivo >= 0 && this.indiceActivo < this.sugerencias.length) {
-          this.seleccionarSugerencia(this.sugerencias[this.indiceActivo]);
-        } else {
-          this.buscarPrestamos();
-        }
-        break;
-      case 'Escape':
-        this.mostrarSugerencias = false;
-        this.indiceActivo = -1;
-        break;
-    }
-  }
-
-  seleccionarSugerencia(sugerencia: UsuarioSugerencia): void {
-    this.correoBusqueda = sugerencia.correo;
-    this.usuarioIdSeleccionado = sugerencia.id;
-    this.sugerencias = [];
-    this.mostrarSugerencias = false;
-    this.placeholderCorreo = sugerencia.correo;
-    this.buscarPrestamos();
-  }
-
-  // ── Buscar prestamos activos del usuario ────────────
-  buscarPrestamos(): void {
-    const usuarioId = this.usuarioIdSeleccionado;
-    if (!usuarioId) return;
-
+  private buscarPrestamosPorCorreo(correo: string): void {
     this.limpiarResultado();
     this.prestamoSeleccionado = null;
     this.cargandoPrestamos = true;
     this.prestamosActivos = [];
 
-    this.prestamoService.historial(usuarioId).subscribe({
-      next: (historial) => {
-        this.prestamosActivos = historial.filter(p =>
-          !p.fechaDevolucionReal && p.estadoNombre === 'ACTIVO'
-        );
-        this.cargandoPrestamos = false;
-        if (this.prestamosActivos.length === 0) {
-          this.errorMsg = 'No se encontraron prestamos activos para este usuario.';
-        }
+    this.prestamoService.buscarUsuarioPorCorreo(correo).subscribe({
+      next: (usuario) => {
+        this.prestamoService.historial(usuario.id).subscribe({
+          next: (historial) => {
+            this.prestamosActivos = historial.filter(p =>
+              !p.fechaDevolucionReal && p.estadoNombre === 'ACTIVO'
+            );
+            this.cargandoPrestamos = false;
+            if (this.prestamosActivos.length === 0) {
+              this.errorMsg = 'No se encontraron préstamos activos para este usuario.';
+            }
+          },
+          error: () => {
+            this.cargandoPrestamos = false;
+            this.errorMsg = 'Error al buscar préstamos.';
+          }
+        });
       },
       error: () => {
         this.cargandoPrestamos = false;
-        this.errorMsg = 'Error al buscar prestamos.';
+        this.errorMsg = 'No se encontró usuario con ese correo.';
       }
     });
   }
@@ -206,10 +118,9 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
     this.estadoDevolucion = 'BUEN_ESTADO';
     this.descripcionDano = '';
     this.danosSeleccionados = [];
-    this.mostrarFormDano = false;
   }
 
-  // ── Catalogo de tipos de dano ──────────────────────
+  // ── Catálogo de tipos de daño ──────────────────────
   private cargarTiposDano(): void {
     this.cargandoTipos = true;
     this.devolucionService.listarTiposDano().subscribe({
@@ -217,9 +128,7 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
         this.tiposDano = tipos;
         this.cargandoTipos = false;
       },
-      error: () => {
-        this.cargandoTipos = false;
-      }
+      error: () => { this.cargandoTipos = false; }
     });
   }
 
@@ -231,22 +140,19 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
         this.historial = historial;
         this.cargandoHistorial = false;
       },
-      error: () => {
-        this.cargandoHistorial = false;
-      }
+      error: () => { this.cargandoHistorial = false; }
     });
   }
 
-  // ── Cambio de estado de devolucion ──────────────────
+  // ── Cambio de estado de devolución ──────────────────
   onCambioEstado(): void {
-    this.mostrarFormDano = this.estadoDevolucion === 'CON_DANO';
     if (this.estadoDevolucion !== 'CON_DANO') {
       this.danosSeleccionados = [];
       this.descripcionDano = '';
     }
   }
 
-  // ── Gestion de danos ────────────────────────────────
+  // ── Gestión de daños ────────────────────────────────
   toggleDano(tipoDano: TipoDano, event: Event): void {
     const checked = (event.target as HTMLInputElement).checked;
     if (checked) {
@@ -274,20 +180,28 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
     });
   }
 
-  eliminarDanoCustom(index: number): void {
+  eliminarDano(index: number): void {
     this.danosSeleccionados.splice(index, 1);
   }
 
-  // ── Calcular totales ────────────────────────────────
+  // ── Cálculos ────────────────────────────────────────
   get totalDano(): number {
     return this.danosSeleccionados.reduce((sum, d) => sum + d.precioCobrado, 0);
   }
 
-  get montoTotalMulta(): number {
-    return this.totalDano;
+  get diasRetraso(): number {
+    if (!this.prestamoSeleccionado) return 0;
+    const vencimiento = new Date(this.prestamoSeleccionado.fechaDevolucionEstimada);
+    const hoy = new Date();
+    const diffMs = hoy.getTime() - vencimiento.getTime();
+    return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
   }
 
-  // ── Enviar devolucion ────────────────────────────────
+  get estaVencido(): boolean {
+    return this.diasRetraso > 0;
+  }
+
+  // ── Enviar devolución ────────────────────────────────
   registrarDevolucion(): void {
     if (!this.prestamoSeleccionado) return;
 
@@ -309,15 +223,14 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
       next: (resultado) => {
         this.procesando = false;
         this.resultadoDevolucion = resultado;
-        this.exitoMsg = 'Devolucion registrada correctamente.';
+        this.exitoMsg = 'Devolución registrada correctamente.';
         this.prestamoSeleccionado = null;
-        this.correoBusqueda = '';
         this.prestamosActivos = [];
         this.cargarHistorial();
       },
       error: (err) => {
         this.procesando = false;
-        this.errorMsg = err.message || 'Error al registrar la devolucion.';
+        this.errorMsg = err.message || 'Error al registrar la devolución.';
       }
     });
   }
@@ -329,37 +242,45 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
     this.resultadoDevolucion = null;
   }
 
-  claseEstadoDevolucion(estado: string): string {
-    switch (estado) {
-      case 'BUEN_ESTADO': return 'text-success';
-      case 'CON_DANO': return 'text-warning';
-      case 'PERDIDO': return 'text-error';
-      default: return '';
-    }
-  }
-
   etiquetaEstadoDevolucion(estado: string): string {
     switch (estado) {
       case 'BUEN_ESTADO': return 'Buen estado';
-      case 'CON_DANO': return 'Con dano';
+      case 'CON_DANO': return 'Con daño';
       case 'PERDIDO': return 'Perdido';
       default: return estado;
     }
   }
 
-  fechaRelativa(fechaStr: string): string {
-    if (!fechaStr) return '-';
-    const fecha = new Date(fechaStr);
-    const ahora = new Date();
-    const diffMs = ahora.getTime() - fecha.getTime();
-    const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    if (diffDias === 0) return 'Hoy';
-    if (diffDias === 1) return 'Ayer';
-    return `Hace ${diffDias} dias`;
+  claseEstadoHistorial(estado: string): string {
+    switch (estado) {
+      case 'BUEN_ESTADO': return 'text-success';
+      case 'CON_DANO': return 'text-warning';
+      case 'PERDIDO': return 'text-error';
+      default: return 'text-on-surface-variant';
+    }
   }
 
-  private obtainInicial(nombre: string): string {
-    if (!nombre) return '?';
-    return nombre.charAt(0).toUpperCase();
+  // ── Modal portada ────────────────────────────────────
+  abrirPortada(libroId: number): void {
+    this.portadaModalVisible = true;
+    this.portadaModalCargando = true;
+    this.portadaModalUrl = null;
+    this.libroService.obtenerPortada(libroId).subscribe({
+      next: (blob) => {
+        this.portadaModalUrl = URL.createObjectURL(blob);
+        this.portadaModalCargando = false;
+      },
+      error: () => {
+        this.portadaModalCargando = false;
+      }
+    });
+  }
+
+  cerrarPortada(): void {
+    if (this.portadaModalUrl) {
+      URL.revokeObjectURL(this.portadaModalUrl);
+    }
+    this.portadaModalUrl = null;
+    this.portadaModalVisible = false;
   }
 }
