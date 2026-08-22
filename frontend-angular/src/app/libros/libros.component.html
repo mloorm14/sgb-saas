@@ -261,20 +261,26 @@
           placeholder="Buscar por título o ISBN..."
           class="w-full h-10 pl-[36px] pr-sm rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm focus:outline-none focus:border-primary" />
       </div>
-      <select (change)="filtrarPorCategoria()" [(ngModel)]="categoriaFiltro"
-        class="h-10 px-sm rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer appearance-none">
-        <option value="">Todas las categorías</option>
-        @for (categoria of categorias; track categoria.id) {
-          <option [value]="categoria.id">{{ categoria.nombre }}</option>
-        }
-      </select>
-      <select (change)="filtrarPorEstado()" [(ngModel)]="estadoLibroFiltro"
-        class="h-10 px-sm rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer appearance-none">
-        <option [ngValue]="null">Todos los estados</option>
-        @for (estado of estados; track estado.id) {
-          <option [ngValue]="estado.id">{{ formatarEstado(estado.nombre) }}</option>
-        }
-      </select>
+      <div class="relative">
+        <select (change)="filtrarPorCategoria()" [(ngModel)]="categoriaFiltro"
+          class="h-10 w-full px-sm rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer" style="appearance:none;-webkit-appearance:none;">
+          <option value="">Todas las categorías</option>
+          @for (categoria of categorias; track categoria.id) {
+            <option [value]="categoria.id">{{ categoria.nombre }}</option>
+          }
+        </select>
+        <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[16px] text-on-surface-variant pointer-events-none">expand_more</span>
+      </div>
+      <div class="relative">
+        <select (change)="filtrarPorEstado()" [(ngModel)]="estadoLibroFiltro"
+          class="h-10 w-full px-sm rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer" style="appearance:none;-webkit-appearance:none;">
+          <option [ngValue]="null">Todos los estados</option>
+          @for (estado of estados; track estado.id) {
+            <option [ngValue]="estado.id">{{ formatarEstado(estado.nombre) }}</option>
+          }
+        </select>
+        <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[16px] text-on-surface-variant pointer-events-none">expand_more</span>
+      </div>
     </div>
 
     @if (cargando && libros.length === 0) {
