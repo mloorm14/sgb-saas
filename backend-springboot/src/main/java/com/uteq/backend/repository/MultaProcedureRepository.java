@@ -65,6 +65,17 @@ public interface MultaProcedureRepository extends Repository<Multa, Long> {
     );
 
     /**
+     * sp_pago_parcial_multa: acumula un pago parcial en monto_pagado.
+     * 4 OUT: o_multa_id, o_estado ('PAGADA'|'PENDIENTE'),
+     * o_saldo_restante, o_usuario_desbloqueado.
+     */
+    @Query(value = "SELECT * FROM sp_pago_parcial_multa(:p_multa_id, :p_monto_pagado)", nativeQuery = true)
+    Map<String, Object> spPagoParcialMulta(
+            @Param("p_multa_id") Long multaId,
+            @Param("p_monto_pagado") java.math.BigDecimal montoPagado
+    );
+
+    /**
      * fn_reporte_resumen_financiero_multas: función SQL pura, RETURNS TABLE
      * pero siempre exactamente 1 fila (agregación sin GROUP BY, COALESCE
      * cubre el caso sin datos) -- por eso el tipo de retorno es la

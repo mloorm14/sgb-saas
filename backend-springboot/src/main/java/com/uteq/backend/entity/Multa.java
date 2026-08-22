@@ -69,6 +69,9 @@ public class Multa {
     @Column(name = "monto", nullable = false, precision = 8, scale = 2)
     private BigDecimal monto;
 
+    @Column(name = "monto_pagado", nullable = false, precision = 8, scale = 2)
+    private BigDecimal montoPagado;
+
     @Column(name = "estado_multa_id", nullable = false)
     private Integer estadoMultaId;
 
