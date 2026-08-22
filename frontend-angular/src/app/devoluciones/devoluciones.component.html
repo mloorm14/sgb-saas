@@ -1,363 +1,422 @@
-<main class="h-full overflow-y-auto bg-surface">
-  <div class="w-full px-6 md:px-10 py-10">
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
 
-    <!-- Encabezado -->
-    <div class="mb-8">
-      <h1 class="text-primary font-headline-md text-3xl mb-2 font-bold tracking-tight">Devoluciones</h1>
-      <p class="text-on-surface-variant text-body-lg">Registra devoluciones con control de danos y multas.</p>
+  <!-- Encabezado -->
+  <div class="mb-lg">
+    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">
+      Devolución de Libros
+    </h1>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">
+      Registra la devolución de ejemplares y documenta daños o pérdidas.
+    </p>
+  </div>
+
+  <!-- ─── Buscar Préstamo Activo ─── -->
+  <div class="rounded-xl border border-outline-variant bg-white p-lg mb-lg">
+    <label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">
+      Buscar Préstamo Activo
+    </label>
+    <app-buscador-usuario
+      (correoSeleccionado)="onCorreoSeleccionado($event)"
+      (buscarAhora)="onBuscarAhora($event)" />
+  </div>
+
+  <!-- ─── Loading ─── -->
+  @if (cargandoPrestamos) {
+    <div class="text-center py-xl">
+      <span class="material-symbols-outlined text-4xl text-primary animate-spin block mb-sm">progress_activity</span>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">Buscando préstamos activos...</p>
     </div>
+  }
 
-    <!-- ─── Busqueda por Correo ─── -->
-    <div class="relative mb-8 max-w-4xl">
-      <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-        <span class="material-symbols-outlined text-primary text-3xl">search</span>
-      </div>
-      <input [(ngModel)]="correoBusqueda"
-        (ngModelChange)="onInputCorreo()"
-        (keydown)="onKeydownCorreo($event)"
-        (blur)="mostrarSugerencias = false"
-        autocomplete="off"
-        class="block w-full pl-14 pr-28 py-5 bg-surface-container-lowest border border-outline-variant/50 rounded-2xl text-body-lg text-on-surface placeholder-on-surface-variant focus:ring-primary focus:border-primary shadow-sm transition-all"
-        [placeholder]="placeholderCorreo"
-        type="text" />
-      <button (click)="buscarPrestamos()" [disabled]="correoBusqueda.trim().length < 2 || cargandoPrestamos"
-        class="absolute inset-y-2 right-2 flex items-center gap-1.5 px-5 py-2 bg-primary hover:bg-on-primary-fixed-variant text-white font-semibold rounded-xl transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
-        <span class="material-symbols-outlined text-[18px]">{{ cargandoPrestamos ? 'progress_activity' : 'search' }}</span>
-        {{ cargandoPrestamos ? 'Buscando...' : 'Buscar' }}
-      </button>
+  <!-- ─── Error ─── -->
+  @if (errorMsg) {
+    <div class="mb-lg flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl p-md">
+      <span class="material-symbols-outlined text-red-500 text-2xl">error</span>
+      <p class="text-red-700 font-medium flex-1 font-body-sm text-body-sm">{{ errorMsg }}</p>
+      <button (click)="errorMsg = ''" class="text-red-600 hover:text-red-800 font-semibold text-sm cursor-pointer">Limpiar</button>
     </div>
+  }
 
-    <!-- Dropdown sugerencias -->
-    @if (mostrarSugerencias && sugerencias.length > 0) {
-      <div class="mt-1 mb-8 relative z-20 max-w-4xl">
-        <ul class="bg-surface-container-lowest border border-outline-variant/50 rounded-2xl shadow-lg overflow-hidden">
-          @for (sugerencia of sugerencias; track sugerencia.id; let i = $index) {
-            <li>
-              <button type="button"
-                (mousedown)="$event.preventDefault()"
-                (click)="seleccionarSugerencia(sugerencia)"
-                class="w-full text-left px-6 py-4 hover:bg-surface-container-low flex items-center gap-4 transition-colors"
-                [class.bg-surface-container-low]="i === indiceActivo">
-                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                  {{ sugerencia.nombreCompleto.charAt(0) }}
-                </div>
-                <div>
-                  <p class="font-semibold text-on-surface">{{ sugerencia.nombreCompleto }}</p>
-                  <p class="text-sm text-on-surface-variant">{{ sugerencia.correo }}</p>
-                </div>
-              </button>
-            </li>
-          }
-        </ul>
+  <!-- ─── Éxito ─── -->
+  @if (exitoMsg) {
+    <div class="mb-lg flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-md">
+      <span class="material-symbols-outlined text-green-600 text-2xl">check_circle</span>
+      <p class="text-green-700 font-medium flex-1 font-body-sm text-body-sm">{{ exitoMsg }}</p>
+    </div>
+  }
+
+  <!-- ═══ Lista de préstamos activos (sin selección) ═══ -->
+  @if (!cargandoPrestamos && prestamosActivos.length > 0 && !prestamoSeleccionado) {
+    <div class="rounded-xl border border-outline-variant bg-white p-lg mb-lg">
+      <h2 class="font-headline-md text-headline-md text-on-background mb-md flex items-center gap-sm">
+        <span class="material-symbols-outlined text-[22px] text-primary">receipt_long</span>
+        Préstamos Activos ({{ prestamosActivos.length }})
+      </h2>
+      <div class="space-y-sm">
+        @for (prestamo of prestamosActivos; track prestamo.prestamoId) {
+          <button (click)="seleccionarPrestamo(prestamo)"
+            class="w-full text-left rounded-lg border border-outline-variant p-md hover:border-primary hover:shadow-sm transition-all cursor-pointer flex items-center justify-between">
+            <div>
+              <p class="font-label-md text-label-sm text-on-surface font-semibold">{{ prestamo.libroTitulo }}</p>
+              <p class="font-body-sm text-[12px] text-on-surface-variant mt-xs">
+                Préstamo: {{ prestamo.fechaPrestamo | date:'dd/MM/yyyy' }} —
+                Vence: {{ prestamo.fechaDevolucionEstimada | date:'dd/MM/yyyy' }}
+              </p>
+            </div>
+            <span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+          </button>
+        }
       </div>
-    }
+    </div>
+  }
 
-    <!-- ─── Loading de prestamos ─── -->
-    @if (cargandoPrestamos) {
-      <div class="text-center py-10">
-        <span class="material-symbols-outlined text-4xl text-primary animate-spin block mb-3">progress_activity</span>
-        <p class="text-on-surface-variant">Buscando prestamos activos...</p>
-      </div>
-    }
+  <!-- ═══ Sin préstamos ═══ -->
+  @if (!cargandoPrestamos && prestamosActivos.length === 0 && !errorMsg && !exitoMsg) {
+    <div class="rounded-xl border border-dashed border-outline-variant bg-white p-xl text-center">
+      <span class="material-symbols-outlined text-[40px] text-outline-variant block mb-sm">assignment_return</span>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">
+        Busca un usuario por correo para ver sus préstamos activos.
+      </p>
+    </div>
+  }
 
-    <!-- ─── Sin prestamos activos ─── -->
-    @if (!cargandoPrestamos && prestamosActivos.length === 0 && !errorMsg && !exitoMsg) {
-      <div class="text-center py-20">
-        <span class="material-symbols-outlined text-6xl text-outline-variant mb-4 block">assignment_return</span>
-        <h3 class="text-xl font-medium text-on-surface-variant mb-2">Buscar usuario para devolver</h3>
-        <p class="text-outline max-w-md mx-auto">Escribe el correo del usuario para ver sus prestamos activos.</p>
-      </div>
-    }
-
-    <!-- ─── Error ─── -->
-    @if (errorMsg) {
-      <div class="mb-8 flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl p-5 shadow-sm">
-        <span class="material-symbols-outlined text-red-500 text-3xl">error</span>
-        <div class="flex-1">
-          <p class="text-red-700 font-medium">{{ errorMsg }}</p>
-        </div>
-        <button (click)="errorMsg = ''" class="text-red-600 hover:text-red-800 font-semibold text-sm cursor-pointer">Limpiar</button>
-      </div>
-    }
-
-    <!-- ═══ CONTENIDO PRINCIPAL: Dos columnas ═══ -->
-    @if (prestamosActivos.length > 0 && !prestamoSeleccionado) {
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        <!-- Columna izquierda: Lista de prestamos activos -->
+  <!-- ═══ Resultado de devolución exitosa ═══ -->
+  @if (resultadoDevolucion) {
+    <div class="rounded-xl border border-green-200 bg-green-50 p-lg mb-lg">
+      <div class="flex items-center gap-3 mb-md">
+        <span class="material-symbols-outlined text-green-600 text-3xl">check_circle</span>
         <div>
-          <h2 class="text-lg font-semibold text-on-surface mb-4 flex items-center gap-2">
-            <span class="material-symbols-outlined text-primary">receipt_long</span>
-            Prestamos Activos ({{ prestamosActivos.length }})
-          </h2>
-          <div class="space-y-3">
-            @for (prestamo of prestamosActivos; track prestamo.prestamoId) {
-              <button (click)="seleccionarPrestamo(prestamo)"
-                class="w-full text-left bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-4 hover:border-primary hover:shadow-md transition-all cursor-pointer">
-                <div class="flex items-center justify-between mb-2">
-                  <h3 class="font-semibold text-on-surface">{{ prestamo.libroTitulo }}</h3>
-                  <span class="material-symbols-outlined text-outline-variant">chevron_right</span>
-                </div>
-                <div class="text-sm text-on-surface-variant space-y-1">
-                  <p>Prestamo: {{ fechaRelativa(prestamo.fechaPrestamo) }}</p>
-                  <p>Devolucion estimada: {{ prestamo.fechaDevolucionEstimada | date:'dd/MM/yyyy' }}</p>
-                </div>
-              </button>
-            }
+          <p class="font-semibold text-green-700 font-body-md text-body-md">Devolución registrada</p>
+          <p class="font-body-sm text-[12px] text-green-600">Préstamo #{{ resultadoDevolucion.prestamoId }}</p>
+        </div>
+      </div>
+      @if (resultadoDevolucion.huboMultaAtraso) {
+        <p class="font-body-sm text-body-sm text-green-600 mb-xs">Multa por atraso: ${{ resultadoDevolucion.montoMultaAtraso }}</p>
+      }
+      @if (resultadoDevolucion.huboMultaDano) {
+        <p class="font-body-sm text-body-sm text-green-600 mb-xs">Multa por daño: ${{ resultadoDevolucion.montoMultaDano }}</p>
+      }
+      <p class="font-semibold text-green-700 mt-sm">Total: ${{ resultadoDevolucion.montoTotal }}</p>
+      @if (resultadoDevolucion.danosRegistrados.length > 0) {
+        <div class="mt-sm space-y-xs">
+          @for (dano of resultadoDevolucion.danosRegistrados; track $index) {
+            <p class="font-body-sm text-[12px] text-green-600">• {{ dano.tipoDanoNombre }}: ${{ dano.precioCobrado }}</p>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ═══ Formulario de devolución (préstamo seleccionado) ═══ -->
+  @if (prestamoSeleccionado) {
+    <div class="space-y-lg">
+
+      <!-- ─── Detalles del Ejemplar ─── -->
+      <div class="rounded-xl border border-outline-variant bg-white p-lg">
+        <h2 class="font-headline-md text-headline-md text-on-background mb-md flex items-center gap-sm">
+          <span class="material-symbols-outlined text-[22px] text-primary">menu_book</span>
+          Detalles del Ejemplar
+          @if (estaVencido) {
+            <span class="ml-auto inline-flex items-center gap-xs px-sm py-xs rounded-full bg-red-50 border border-red-200 text-red-700 font-label-sm text-[11px] font-semibold">
+              <span class="material-symbols-outlined text-[14px]">warning</span>
+              Vencido ({{ diasRetraso }} día{{ diasRetraso > 1 ? 's' : '' }})
+            </span>
+          }
+        </h2>
+
+        <div class="flex gap-md">
+          <!-- Portada del libro -->
+          <button type="button" (click)="abrirPortada(prestamoSeleccionado.libroId)"
+            class="w-24 h-32 sm:w-28 sm:h-36 shrink-0 rounded-lg overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-low flex items-center justify-center">
+            <app-portada-libro [libroId]="prestamoSeleccionado.libroId" />
+          </button>
+
+          <!-- Info del libro -->
+          <div class="flex-1 min-w-0">
+            <h3 class="font-bold text-on-surface text-lg mb-xs">{{ prestamoSeleccionado.libroTitulo }}</h3>
+            <p class="font-body-sm text-body-sm text-on-surface-variant mb-xs">ISBN: {{ prestamoSeleccionado.libroIsbn || 'N/D' }}</p>
           </div>
         </div>
 
-        <!-- Columna derecha: Formulario de devolucion -->
-        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-6">
-          <div class="text-center py-12">
-            <span class="material-symbols-outlined text-6xl text-outline-variant mb-4 block">touch_app</span>
-            <h3 class="text-xl font-medium text-on-surface-variant mb-2">Selecciona un prestamo</h3>
-            <p class="text-outline max-w-xs mx-auto">Elige un prestamo de la lista para registrar su devolucion.</p>
+        <!-- Prestatario y fechas -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-md mt-md">
+          <div class="rounded-lg border border-outline-variant/50 p-md">
+            <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">Préstamo #</p>
+            <p class="font-semibold text-on-surface">{{ prestamoSeleccionado.prestamoId }}</p>
+          </div>
+          <div class="rounded-lg border border-outline-variant/50 p-md">
+            <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">Fechas</p>
+            <p class="font-body-sm text-body-sm text-on-surface">Préstamo: {{ prestamoSeleccionado.fechaPrestamo | date:'dd/MM/yyyy' }}</p>
+            <p class="font-body-sm text-body-sm"
+              [class]="estaVencido ? 'text-red-600 font-semibold' : 'text-on-surface'">
+              Vence: {{ prestamoSeleccionado.fechaDevolucionEstimada | date:'dd/MM/yyyy' }}
+            </p>
           </div>
         </div>
       </div>
-    }
 
-    <!-- ═══ Formulario de devolucion seleccionada ═══ -->
-    @if (prestamoSeleccionado) {
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- ─── Estado de Devolución ─── -->
+      <div class="rounded-xl border border-outline-variant bg-white p-lg">
+        <h2 class="font-headline-md text-headline-md text-on-background mb-md flex items-center gap-sm">
+          <span class="material-symbols-outlined text-[22px] text-primary">rate_review</span>
+          Estado de Devolución
+        </h2>
 
-        <!-- Columna 1: Info del prestamo -->
-        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-6">
-          <div class="flex items-center gap-3 mb-4">
-            <span class="material-symbols-outlined text-primary text-3xl">menu_book</span>
-            <h2 class="text-lg font-semibold text-on-surface">Prestamo #{{ prestamoSeleccionado.prestamoId }}</h2>
-          </div>
-          <div class="space-y-3 text-sm">
-            <div>
-              <p class="text-on-surface-variant">Libro</p>
-              <p class="font-medium text-on-surface">{{ prestamoSeleccionado.libroTitulo }}</p>
-            </div>
-            <div>
-              <p class="text-on-surface-variant">Fecha prestamo</p>
-              <p class="font-medium text-on-surface">{{ prestamoSeleccionado.fechaPrestamo | date:'dd/MM/yyyy HH:mm' }}</p>
-            </div>
-            <div>
-              <p class="text-on-surface-variant">Devolucion estimada</p>
-              <p class="font-medium text-on-surface">{{ prestamoSeleccionado.fechaDevolucionEstimada | date:'dd/MM/yyyy' }}</p>
-            </div>
-            @if (prestamoSeleccionado.montoMultaPendiente > 0) {
-              <div class="bg-red-50 rounded-xl p-3 border border-red-200">
-                <p class="text-red-700 font-semibold">Multa atraso: ${{ prestamoSeleccionado.montoMultaPendiente }}</p>
-              </div>
-            }
-          </div>
-          <button (click)="prestamoSeleccionado = null"
-            class="mt-6 w-full text-center text-primary hover:text-on-primary-fixed-variant font-semibold py-2 rounded-xl hover:bg-primary/5 transition-colors cursor-pointer">
-            Cancelar
+        <div class="grid grid-cols-3 gap-md mb-lg">
+          <!-- Buen estado -->
+          <button type="button" (click)="estadoDevolucion = 'BUEN_ESTADO'; onCambioEstado()"
+            class="flex flex-col items-center gap-sm p-lg rounded-xl border-2 transition-all cursor-pointer"
+            [class.border-green-500]="estadoDevolucion === 'BUEN_ESTADO'"
+            [class.bg-green-50]="estadoDevolucion === 'BUEN_ESTADO'"
+            [class.border-outline-variant]="estadoDevolucion !== 'BUEN_ESTADO'"
+            [class.hover:border-green-300]="estadoDevolucion !== 'BUEN_ESTADO'">
+            <span class="material-symbols-outlined text-[28px]"
+              [class]="estadoDevolucion === 'BUEN_ESTADO' ? 'text-green-600' : 'text-outline-variant'">check_circle</span>
+            <span class="font-label-md text-label-sm"
+              [class]="estadoDevolucion === 'BUEN_ESTADO' ? 'text-green-700 font-semibold' : 'text-on-surface-variant'">
+              Buen estado
+            </span>
+          </button>
+
+          <!-- Con daño -->
+          <button type="button" (click)="estadoDevolucion = 'CON_DANO'; onCambioEstado()"
+            class="flex flex-col items-center gap-sm p-lg rounded-xl border-2 transition-all cursor-pointer"
+            [class.border-orange-500]="estadoDevolucion === 'CON_DANO'"
+            [class.bg-orange-50]="estadoDevolucion === 'CON_DANO'"
+            [class.border-outline-variant]="estadoDevolucion !== 'CON_DANO'"
+            [class.hover:border-orange-300]="estadoDevolucion !== 'CON_DANO'">
+            <span class="material-symbols-outlined text-[28px]"
+              [class]="estadoDevolucion === 'CON_DANO' ? 'text-orange-600' : 'text-outline-variant'">handyman</span>
+            <span class="font-label-md text-label-sm"
+              [class]="estadoDevolucion === 'CON_DANO' ? 'text-orange-700 font-semibold' : 'text-on-surface-variant'">
+              Con daño
+            </span>
+          </button>
+
+          <!-- Perdido / No devuelto -->
+          <button type="button" (click)="estadoDevolucion = 'PERDIDO'; onCambioEstado()"
+            class="flex flex-col items-center gap-sm p-lg rounded-xl border-2 transition-all cursor-pointer"
+            [class.border-red-500]="estadoDevolucion === 'PERDIDO'"
+            [class.bg-red-50]="estadoDevolucion === 'PERDIDO'"
+            [class.border-outline-variant]="estadoDevolucion !== 'PERDIDO'"
+            [class.hover:border-red-300]="estadoDevolucion !== 'PERDIDO'">
+            <span class="material-symbols-outlined text-[28px]"
+              [class]="estadoDevolucion === 'PERDIDO' ? 'text-red-600' : 'text-outline-variant'">help</span>
+            <span class="font-label-md text-label-sm"
+              [class]="estadoDevolucion === 'PERDIDO' ? 'text-red-700 font-semibold' : 'text-on-surface-variant'">
+              Perdido / No devuelto
+            </span>
           </button>
         </div>
 
-        <!-- Columna 2: Estado de devolucion y danos -->
-        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-6">
-          <h2 class="text-lg font-semibold text-on-surface mb-4 flex items-center gap-2">
-            <span class="material-symbols-outlined text-primary">rate_review</span>
-            Estado de la devolucion
-          </h2>
+        <!-- ═══ Registro de Daños (solo si CON_DANO) ═══ -->
+        @if (estadoDevolucion === 'CON_DANO') {
+          <div class="rounded-xl border border-orange-200 bg-orange-50/30 p-lg">
+            <h3 class="font-headline-sm text-headline-sm text-on-background mb-sm flex items-center gap-sm">
+              <span class="material-symbols-outlined text-[20px] text-orange-600">broken_image</span>
+              Registro de Daños
+            </h3>
+            <p class="font-body-sm text-[12px] text-on-surface-variant mb-md">
+              Documente la condición del ejemplar al momento de la recepción.
+            </p>
 
-          <!-- Opciones de estado -->
-          <div class="space-y-3 mb-6">
-            <label class="flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all"
-              [class.border-success]="estadoDevolucion === 'BUEN_ESTADO'"
-              [class.bg-success/5]="estadoDevolucion === 'BUEN_ESTADO'"
-              [class.border-outline-variant]="estadoDevolucion !== 'BUEN_ESTADO'">
-              <input type="radio" name="estadoDevolucion" value="BUEN_ESTADO"
-                [(ngModel)]="estadoDevolucion" (change)="onCambioEstado()"
-                class="w-5 h-5 text-success focus:ring-success" />
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-lg">
+              <!-- Columna izquierda: Tipos de daño -->
               <div>
-                <p class="font-semibold text-on-surface">Buen estado</p>
-                <p class="text-sm text-on-surface-variant">Libro sin danos visibles</p>
-              </div>
-            </label>
-
-            <label class="flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all"
-              [class.border-warning]="estadoDevolucion === 'CON_DANO'"
-              [class.bg-warning/5]="estadoDevolucion === 'CON_DANO'"
-              [class.border-outline-variant]="estadoDevolucion !== 'CON_DANO'">
-              <input type="radio" name="estadoDevolucion" value="CON_DANO"
-                [(ngModel)]="estadoDevolucion" (change)="onCambioEstado()"
-                class="w-5 h-5 text-warning focus:ring-warning" />
-              <div>
-                <p class="font-semibold text-on-surface">Con dano</p>
-                <p class="text-sm text-on-surface-variant">Libro con danos que requieren cobro</p>
-              </div>
-            </label>
-
-            <label class="flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all"
-              [class.border-error]="estadoDevolucion === 'PERDIDO'"
-              [class.bg-error/5]="estadoDevolucion === 'PERDIDO'"
-              [class.border-outline-variant]="estadoDevolucion !== 'PERDIDO'">
-              <input type="radio" name="estadoDevolucion" value="PERDIDO"
-                [(ngModel)]="estadoDevolucion" (change)="onCambioEstado()"
-                class="w-5 h-5 text-error focus:ring-error" />
-              <div>
-                <p class="font-semibold text-on-surface">Perdido</p>
-                <p class="text-sm text-on-surface-variant">Libro no devuelto (multa por valor del libro)</p>
-              </div>
-            </label>
-          </div>
-
-          <!-- Formulario de danos -->
-          @if (mostrarFormDano) {
-            <div class="border-t border-outline-variant/50 pt-4">
-              <h3 class="font-semibold text-on-surface mb-3">Tipos de dano</h3>
-              <div class="space-y-2 mb-4">
-                @for (tipo of tiposDano; track tipo.id) {
-                  <label class="flex items-center justify-between p-3 rounded-xl border border-outline-variant/50 hover:bg-surface-container-low transition-colors cursor-pointer">
-                    <div class="flex items-center gap-3">
-                      <input type="checkbox"
-                        [checked]="isDanoSeleccionado(tipo.id)"
-                        (change)="toggleDano(tipo, $event)"
-                        class="w-5 h-5 rounded text-primary focus:ring-primary" />
-                      <span class="text-on-surface">{{ tipo.nombre }}</span>
-                    </div>
-                    <span class="text-on-surface-variant font-medium">${{ tipo.precio }}</span>
-                  </label>
-                }
-              </div>
-
-              <button (click)="agregarDanoCustom()"
-                class="w-full flex items-center justify-center gap-2 py-2 text-primary hover:bg-primary/5 rounded-xl transition-colors text-sm font-semibold cursor-pointer">
-                <span class="material-symbols-outlined text-[18px]">add_circle</span>
-                Agregar otro dano
-              </button>
-
-              <!-- Danos custom agregados -->
-              @for (dano of danosSeleccionados; track $index; let i = $index) {
-                @if (dano.tipoDanoId === null) {
-                  <div class="mt-3 flex gap-2">
-                    <input [(ngModel)]="dano.nombreCustom"
-                      placeholder="Nombre del dano"
-                      class="flex-1 px-3 py-2 rounded-xl border border-outline-variant/50 text-sm focus:ring-primary focus:border-primary" />
-                    <input type="number" [(ngModel)]="dano.precioCobrado"
-                      min="0" step="0.01"
-                      class="w-24 px-3 py-2 rounded-xl border border-outline-variant/50 text-sm focus:ring-primary focus:border-primary" />
-                    <button (click)="eliminarDanoCustom(i)"
-                      class="text-error hover:bg-error/10 rounded-xl px-2 transition-colors cursor-pointer">
-                      <span class="material-symbols-outlined text-[20px]">delete</span>
-                    </button>
-                  </div>
-                }
-              }
-
-              <!-- Descripcion opcional -->
-              <div class="mt-4">
-                <textarea [(ngModel)]="descripcionDano"
-                  placeholder="Descripcion adicional del dano (opcional)"
-                  rows="2"
-                  class="w-full px-4 py-3 rounded-xl border border-outline-variant/50 text-sm focus:ring-primary focus:border-primary resize-none"></textarea>
-              </div>
-            </div>
-          }
-
-          <!-- Perdido: aviso de multa automatica -->
-          @if (estadoDevolucion === 'PERDIDO') {
-            <div class="bg-red-50 border border-red-200 rounded-xl p-4 mt-4">
-              <div class="flex items-center gap-2 mb-2">
-                <span class="material-symbols-outlined text-red-500">warning</span>
-                <p class="font-semibold text-red-700">Libro perdido</p>
-              </div>
-              <p class="text-red-600 text-sm">Se generara una multa automatica de <strong>$15.00</strong> por el valor del libro.</p>
-            </div>
-          }
-        </div>
-
-        <!-- Columna 3: Resumen y accion -->
-        <div class="space-y-4">
-          <!-- Resumen de multa -->
-          @if (estadoDevolucion === 'CON_DANO' || estadoDevolucion === 'PERDIDO') {
-            <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-6">
-              <h2 class="text-lg font-semibold text-on-surface mb-4 flex items-center gap-2">
-                <span class="material-symbols-outlined text-warning">payments</span>
-                Resumen de multa
-              </h2>
-              @if (prestamoSeleccionado.montoMultaPendiente > 0) {
-                <div class="flex justify-between text-sm mb-2">
-                  <span class="text-on-surface-variant">Multa por atraso</span>
-                  <span class="font-medium">${{ prestamoSeleccionado.montoMultaPendiente }}</span>
-                </div>
-              }
-              @if (estadoDevolucion === 'CON_DANO' && totalDano > 0) {
-                <div class="flex justify-between text-sm mb-2">
-                  <span class="text-on-surface-variant">Multa por dano</span>
-                  <span class="font-medium">${{ totalDano }}</span>
-                </div>
-              }
-              @if (estadoDevolucion === 'PERDIDO') {
-                <div class="flex justify-between text-sm mb-2">
-                  <span class="text-on-surface-variant">Valor del libro</span>
-                  <span class="font-medium">$15.00</span>
-                </div>
-              }
-              <div class="border-t border-outline-variant/50 mt-3 pt-3 flex justify-between">
-                <span class="font-semibold text-on-surface">Total</span>
-                <span class="text-xl font-bold text-on-surface">${{ montoTotalMulta + (prestamoSeleccionado.montoMultaPendiente || 0) }}</span>
-              </div>
-            </div>
-          }
-
-          <!-- Boton de registrar -->
-          <button (click)="registrarDevolucion()"
-            [disabled]="procesando"
-            class="w-full bg-primary hover:bg-on-primary-fixed-variant text-white font-bold py-4 px-6 rounded-2xl shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2">
-            <span class="material-symbols-outlined text-[20px]">{{ procesando ? 'progress_activity' : 'check_circle' }}</span>
-            {{ procesando ? 'Procesando...' : 'Registrar devolucion' }}
-          </button>
-
-          <!-- Resultado exitoso -->
-          @if (resultadoDevolucion) {
-            <div class="bg-green-50 border border-green-200 rounded-2xl p-6">
-              <div class="flex items-center gap-3 mb-4">
-                <span class="material-symbols-outlined text-green-500 text-3xl">check_circle</span>
-                <div>
-                  <p class="font-semibold text-green-700">Devolucion registrada</p>
-                  <p class="text-sm text-green-600">Prestamo #{{ resultadoDevolucion.prestamoId }}</p>
-                </div>
-              </div>
-              @if (resultadoDevolucion.huboMultaAtraso) {
-                <p class="text-sm text-green-600 mb-1">Multa atraso: ${{ resultadoDevolucion.montoMultaAtraso }}</p>
-              }
-              @if (resultadoDevolucion.huboMultaDano) {
-                <p class="text-sm text-green-600 mb-1">Multa dano: ${{ resultadoDevolucion.montoMultaDano }}</p>
-              }
-              <p class="font-bold text-green-700 mt-2">Total: ${{ resultadoDevolucion.montoTotal }}</p>
-              @if (resultadoDevolucion.danosRegistrados.length > 0) {
-                <div class="mt-3 space-y-1">
-                  @for (dano of resultadoDevolucion.danosRegistrados; track $index) {
-                    <p class="text-sm text-green-600">- {{ dano.tipoDanoNombre }}: ${{ dano.precioCobrado }}</p>
+                <label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">Tipos de daño</label>
+                <div class="space-y-0 divide-y divide-outline-variant/50">
+                  @for (tipo of tiposDano; track tipo.id) {
+                    <label class="flex items-center justify-between py-sm cursor-pointer hover:bg-orange-50/50 px-xs rounded transition-colors">
+                      <div class="flex items-center gap-sm">
+                        <input type="checkbox"
+                          [checked]="isDanoSeleccionado(tipo.id)"
+                          (change)="toggleDano(tipo, $event)"
+                          class="w-4 h-4 rounded text-orange-600 focus:ring-orange-500" />
+                        <span class="font-body-sm text-body-sm text-on-surface">{{ tipo.nombre }}</span>
+                      </div>
+                      <span class="font-body-sm text-body-sm text-on-surface-variant">${{ tipo.precio }}</span>
+                    </label>
                   }
                 </div>
-              }
-            </div>
-          }
 
-          <!-- Historial reciente -->
-          @if (historial.length > 0) {
-            <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-6">
-              <h3 class="text-sm font-semibold text-on-surface-variant mb-3">Ultimas devoluciones</h3>
-              <div class="space-y-2">
-                @for (dev of historial.slice(0, 5); track dev.prestamoId) {
-                  <div class="flex items-center justify-between text-xs p-2 rounded-lg bg-surface-container-low">
-                    <div>
-                      <p class="font-medium text-on-surface">{{ dev.libroTitulo }}</p>
-                      <p class="text-on-surface-variant">{{ dev.usuarioNombre }}</p>
+                <!-- Daños custom -->
+                @for (dano of danosSeleccionados; track $index; let i = $index) {
+                  @if (dano.tipoDanoId === null) {
+                    <div class="flex items-center gap-sm mt-sm py-sm border-b border-outline-variant/50">
+                      <input [(ngModel)]="dano.nombreCustom"
+                        placeholder="Nombre del daño"
+                        class="flex-1 px-sm py-xs rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" />
+                      <input type="number" [(ngModel)]="dano.precioCobrado"
+                        min="0" step="0.01"
+                        class="w-20 px-sm py-xs rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface text-right focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" />
+                      <button type="button" (click)="eliminarDano(i)"
+                        class="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                        title="Eliminar daño">
+                        <span class="material-symbols-outlined text-[18px]">delete</span>
+                      </button>
                     </div>
-                    <span class="font-semibold" [class]="claseEstadoDevolucion(dev.estadoDevolucion)">
-                      {{ etiquetaEstadoDevolucion(dev.estadoDevolucion) }}
-                    </span>
+                  }
+                }
+
+                <button type="button" (click)="agregarDanoCustom()"
+                  class="mt-sm flex items-center gap-xs text-orange-600 hover:text-orange-700 font-label-sm text-label-sm font-semibold cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px]">add_circle</span>
+                  Agregar otro daño
+                </button>
+
+                <!-- Total sugerido -->
+                @if (totalDano > 0) {
+                  <div class="mt-md flex justify-between items-center pt-sm border-t border-outline-variant/50">
+                    <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Total sugerido</span>
+                    <span class="font-semibold text-orange-700 text-lg">${{ totalDano.toFixed(2) }}</span>
                   </div>
                 }
               </div>
-            </div>
-          }
-        </div>
-      </div>
-    }
 
-  </div>
+              <!-- Columna derecha: Descripción -->
+              <div>
+                <label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">Descripción detallada</label>
+                <textarea [(ngModel)]="descripcionDano"
+                  placeholder="Describa el estado del libro"
+                  rows="6"
+                  class="w-full px-md py-sm rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 resize-none"></textarea>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ═══ Aviso: Libro perdido ═══ -->
+        @if (estadoDevolucion === 'PERDIDO') {
+          <div class="rounded-xl border border-red-200 bg-red-50 p-md mt-md">
+            <div class="flex items-center gap-sm mb-xs">
+              <span class="material-symbols-outlined text-red-500 text-[20px]">warning</span>
+              <p class="font-semibold text-red-700 font-body-sm text-body-sm">Libro perdido</p>
+            </div>
+            <p class="font-body-sm text-[12px] text-red-600">
+              Se generará una multa automática de <strong>$15.00</strong> por el valor del libro.
+            </p>
+          </div>
+        }
+      </div>
+
+      <!-- ─── Resumen de Multa + Acción ─── -->
+      <div class="rounded-xl border border-outline-variant bg-white p-lg">
+        @if (estadoDevolucion === 'CON_DANO' || estadoDevolucion === 'PERDIDO' || estaVencido) {
+          <h2 class="font-headline-md text-headline-md text-on-background mb-md flex items-center gap-sm">
+            <span class="material-symbols-outlined text-[22px] text-amber-600">payments</span>
+            Resumen de Multa
+          </h2>
+
+          <div class="space-y-0 divide-y divide-outline-variant/50 mb-md">
+            @if (estaVencido) {
+              <div class="flex justify-between items-center py-sm">
+                <span class="font-body-sm text-body-sm text-on-surface">
+                  Días de retraso ({{ diasRetraso }} x $2.00)
+                </span>
+                <span class="font-semibold text-on-surface">${{ (diasRetraso * 2).toFixed(2) }}</span>
+              </div>
+            }
+            @if (estadoDevolucion === 'CON_DANO' && totalDano > 0) {
+              @for (dano of danosSeleccionados; track $index) {
+                <div class="flex justify-between items-center py-sm">
+                  <span class="font-body-sm text-body-sm text-on-surface">
+                    Penalidad por daño
+                    @if (dano.tipoDanoId !== null) {
+                      ({{ tiposDano.find(t => t.id === dano.tipoDanoId)?.nombre ?? 'Daño' }})
+                    } @else {
+                      ({{ dano.nombreCustom || 'Personalizado' }})
+                    }
+                  </span>
+                  <span class="font-semibold text-on-surface">${{ dano.precioCobrado.toFixed(2) }}</span>
+                </div>
+              }
+            }
+            @if (estadoDevolucion === 'PERDIDO') {
+              <div class="flex justify-between items-center py-sm">
+                <span class="font-body-sm text-body-sm text-on-surface">Valor del libro</span>
+                <span class="font-semibold text-on-surface">$15.00</span>
+              </div>
+            }
+          </div>
+
+          <div class="flex justify-between items-center pt-sm border-t border-outline-variant">
+            <span class="font-semibold text-on-surface text-lg">Total</span>
+            <span class="font-bold text-on-surface text-xl">
+              ${{ ((estaVencido ? diasRetraso * 2 : 0) + (estadoDevolucion === 'PERDIDO' ? 15 : totalDano)).toFixed(2) }}
+            </span>
+          </div>
+        }
+
+        <!-- Botón cancelar -->
+        <button type="button" (click)="prestamoSeleccionado = null"
+          class="mt-md text-primary hover:text-on-primary-fixed-variant font-label-md text-label-sm font-semibold cursor-pointer">
+          ← Cancelar
+        </button>
+
+        <!-- Botón registrar -->
+        <button (click)="registrarDevolucion()"
+          [disabled]="procesando"
+          class="mt-md w-full h-12 rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:bg-on-primary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-sm shadow-sm">
+          @if (procesando) {
+            <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+            Procesando...
+          } @else {
+            <span class="material-symbols-outlined text-[18px]">check_circle</span>
+            Registrar devolución
+          }
+        </button>
+      </div>
+
+      <!-- ─── Historial de devoluciones recientes ─── -->
+      @if (historial.length > 0) {
+        <div class="rounded-xl border border-outline-variant bg-white p-lg">
+          <h2 class="font-headline-sm text-headline-sm text-on-background mb-md flex items-center gap-sm">
+            <span class="material-symbols-outlined text-[18px] text-primary">history</span>
+            Últimas devoluciones
+          </h2>
+          <div class="space-y-sm">
+            @for (dev of historial.slice(0, 5); track dev.prestamoId) {
+              <div class="flex items-center justify-between py-sm border-b border-outline-variant/50 last:border-0">
+                <div class="min-w-0">
+                  <p class="font-body-sm text-[13px] text-on-surface truncate">{{ dev.libroTitulo }}</p>
+                  <p class="font-body-sm text-[11px] text-on-surface-variant">{{ dev.usuarioNombre }}</p>
+                </div>
+                <span class="shrink-0 font-label-sm text-[11px] font-semibold" [class]="claseEstadoHistorial(dev.estadoDevolucion)">
+                  {{ etiquetaEstadoDevolucion(dev.estadoDevolucion) }}
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+    </div>
+  }
+
 </main>
+
+<!-- ═══ Modal portada del libro ═══ -->
+@if (portadaModalVisible) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
+    (click)="cerrarPortada()">
+    <div class="absolute inset-0 bg-black/60"></div>
+    <div class="relative z-10 max-w-lg w-full bg-white rounded-xl shadow-xl overflow-hidden"
+      (click)="$event.stopPropagation()">
+      <div class="relative bg-surface-container-low flex items-center justify-center"
+        style="min-height: 300px; max-height: 70vh;">
+        @if (portadaModalCargando) {
+          <span class="material-symbols-outlined text-[48px] text-outline-variant animate-pulse">image</span>
+        } @else if (portadaModalUrl) {
+          <img [src]="portadaModalUrl" alt="Portada del libro"
+            class="max-w-full max-h-[70vh] object-contain" />
+        } @else {
+          <span class="material-symbols-outlined text-[64px] text-outline-variant">menu_book</span>
+        }
+      </div>
+      <button type="button" (click)="cerrarPortada()"
+        class="absolute top-sm right-sm w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 cursor-pointer">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+  </div>
+}
