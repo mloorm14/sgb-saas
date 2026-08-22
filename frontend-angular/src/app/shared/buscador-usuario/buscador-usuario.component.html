@@ -35,7 +35,8 @@
             (click)="seleccionar(sugerencia)"
             class="w-full text-left px-md py-sm hover:bg-surface-container-low flex items-center justify-between gap-sm cursor-pointer"
             [class.bg-surface-container-low]="i === indiceActivo">
-            <div class="min-w-0">
+            <span class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-sm shrink-0">{{ getIniciales(sugerencia.nombreCompleto) }}</span>
+            <div class="min-w-0 flex-1">
               <p class="font-body-sm text-body-sm text-on-surface truncate">{{ sugerencia.nombreCompleto }}</p>
               <p class="font-label-sm text-label-sm text-on-surface-variant truncate">{{ sugerencia.correo }}</p>
             </div>

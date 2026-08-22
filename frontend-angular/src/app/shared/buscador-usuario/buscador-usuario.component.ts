@@ -191,4 +191,8 @@ export class BuscadorUsuarioComponent implements OnDestroy {
       default: return estado;
     }
   }
+
+  getIniciales(nombre: string): string {
+    return nombre.split(' ').map(p => p.charAt(0)).join('').substring(0, 2).toUpperCase();
+  }
 }
