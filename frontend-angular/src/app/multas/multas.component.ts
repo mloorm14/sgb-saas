@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { MultaService } from '../core/services/multa.service';
 import { PrestamoService } from '../core/services/prestamo.service';
-import { MultaDetalle, PagoMultaResponse } from '../core/models/multa.model';
+import { AuthService } from '../core/services/auth.service';
+import { MultaDetalle, PagoMultaResponse, MultaAccionResponse } from '../core/models/multa.model';
 import { UsuarioPrestamos, UsuarioSugerencia } from '../core/models/prestamos-gestion.model';
 import { BuscadorUsuarioComponent } from '../shared/buscador-usuario/buscador-usuario.component';
 
@@ -40,11 +41,18 @@ export class MultasComponent implements OnInit {
   // ── Confirmación ──────────────────────────────────────
   confirmacionVisible: boolean = false;
 
+  // ── Modal anulación ───────────────────────────────────
+  modalAnulacionVisible: boolean = false;
+  multaAnulacionActual: MultaDetalle | null = null;
+  motivoAnulacion: string = '';
+  confirmacionAnulacionVisible: boolean = false;
+
   private destroy$ = new Subject<void>();
 
   constructor(
     private multaService: MultaService,
-    private prestamoService: PrestamoService
+    private prestamoService: PrestamoService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {}
@@ -259,6 +267,57 @@ export class MultasComponent implements OnInit {
       case 'BLOQUEADA': return 'Bloqueada';
       default: return estado;
     }
+  }
+
+  // ── Anulación ────────────────────────────────────────
+  puedeAnular(): boolean {
+    return this.authService.hasRole('GERENTE', 'ADMIN');
+  }
+
+  abrirModalAnulacion(multa: MultaDetalle): void {
+    this.multaAnulacionActual = multa;
+    this.motivoAnulacion = '';
+    this.modalAnulacionVisible = true;
+  }
+
+  cerrarModalAnulacion(): void {
+    this.modalAnulacionVisible = false;
+    this.multaAnulacionActual = null;
+    this.motivoAnulacion = '';
+  }
+
+  abrirConfirmacionAnulacion(): void {
+    if (!this.motivoAnulacion.trim()) return;
+    this.confirmacionAnulacionVisible = true;
+  }
+
+  cerrarConfirmacionAnulacion(): void {
+    this.confirmacionAnulacionVisible = false;
+  }
+
+  confirmarAnulacion(): void {
+    if (!this.multaAnulacionActual || !this.motivoAnulacion.trim()) return;
+    this.confirmacionAnulacionVisible = false;
+    this.cargando = true;
+
+    this.multaService.anular(this.multaAnulacionActual.id, this.motivoAnulacion.trim()).subscribe({
+      next: (respuesta: MultaAccionResponse) => {
+        this.cargando = false;
+        this.modalAnulacionVisible = false;
+        this.multaAnulacionActual = null;
+        this.motivoAnulacion = '';
+        this.exitoMsg = 'Multa anulada correctamente.';
+        if (this.usuarioSeleccionado) {
+          this.cargarMultas(this.usuarioSeleccionado.id);
+        }
+        setTimeout(() => { this.exitoMsg = ''; }, 5000);
+      },
+      error: () => {
+        this.cargando = false;
+        this.errorMsg = 'Error al anular la multa.';
+        setTimeout(() => { this.errorMsg = ''; }, 5000);
+      }
+    });
   }
 
   limpiarEstado(): void {
