@@ -262,14 +262,14 @@
           class="w-full h-10 pl-[36px] pr-sm rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm focus:outline-none focus:border-primary" />
       </div>
       <select (change)="filtrarPorCategoria()" [(ngModel)]="categoriaFiltro"
-        class="h-10 px-sm rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer">
+        class="h-10 px-sm pr-8 rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer">
         <option value="">Categorías</option>
         @for (categoria of categorias; track categoria.id) {
           <option [value]="categoria.id">{{ categoria.nombre }}</option>
         }
       </select>
       <select (change)="filtrarPorEstado()" [(ngModel)]="estadoLibroFiltro"
-        class="h-10 px-sm rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer">
+        class="h-10 px-sm pr-8 rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer">
         <option [ngValue]="null">Estados</option>
         @for (estado of estados; track estado.id) {
           <option [ngValue]="estado.id">{{ formatarEstado(estado.nombre) }}</option>
