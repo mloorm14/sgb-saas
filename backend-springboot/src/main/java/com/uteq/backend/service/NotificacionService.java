@@ -164,7 +164,8 @@ public class NotificacionService {
         Usuario usuario = usuarioRepo.findById(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
 
-        boolean enviado = emailService.enviarCorreo(usuario.getCorreo(), asunto, "<p>" + mensaje + "</p>");
+        String cuerpoHtml = mensaje.startsWith("<") ? mensaje : "<p>" + mensaje + "</p>";
+        boolean enviado = emailService.enviarCorreo(usuario.getCorreo(), asunto, cuerpoHtml);
 
         Notificacion notificacion = new Notificacion();
         notificacion.setUsuarioId(usuarioId);

@@ -73,12 +73,8 @@ public class MultaController {
                     "o_saldo_restante", BigDecimal.ZERO);
         }
 
-        String estado = (String) resultado.get("o_estado");
-        if ("PAGADA".equals(estado) || montoPagado == null) {
-            Long usuarioId = multaService.resolverUsuarioIdDeMulta(id);
-            BigDecimal montoTotal = montoPagado != null ? montoPagado : BigDecimal.ZERO;
-            notificacionService.notificarComprobantePago(usuarioId, id, montoTotal);
-        }
+        Long usuarioId = multaService.resolverUsuarioIdDeMulta(id);
+        notificacionService.notificarComprobantePago(usuarioId, id, montoPagado);
 
         return ResponseEntity.ok(resultado);
     }
