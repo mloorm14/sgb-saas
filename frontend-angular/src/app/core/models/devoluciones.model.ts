@@ -29,6 +29,7 @@ export interface DanoDetalleResponse {
 
 export interface DevolucionCompletaResponse {
   prestamoId: number;
+  registroDanoId: number | null;
   huboMultaAtraso: boolean;
   montoMultaAtraso: number | null;
   huboMultaDano: boolean;
