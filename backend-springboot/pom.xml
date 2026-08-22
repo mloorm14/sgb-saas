@@ -155,6 +155,14 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- H2 en memoria: reemplaza PostgreSQL en tests para que todos los
+		     JpaRepository se creen automaticamente sin necesidad de mockear
+		     cada repositorio en BackendApplicationTests. -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
 		<!-- @WithMockUser / SecurityMockMvcRequestPostProcessors: necesario
 		     para testear @PreAuthorize a nivel de controller sin tener que
 		     generar un JWT real (ver LibroControllerSecurityTest). Version
