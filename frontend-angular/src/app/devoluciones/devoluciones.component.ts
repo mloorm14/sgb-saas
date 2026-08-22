@@ -11,7 +11,8 @@ import {
   DanoItem,
   DevolucionRequest,
   DevolucionCompletaResponse,
-  DevolucionHistorial
+  DevolucionHistorial,
+  EvidenciaDanoResponse
 } from '../core/models/devoluciones.model';
 import { BuscadorUsuarioComponent } from '../shared/buscador-usuario/buscador-usuario.component';
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
@@ -53,6 +54,14 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
   portadaModalVisible: boolean = false;
   portadaModalUrl: string | null = null;
   portadaModalCargando: boolean = false;
+
+  // ── Evidencia fotográfica ────────────────────────────
+  evidencias: EvidenciaDanoResponse[] = [];
+  evidenciaPreviewUrl: string | null = null;
+  evidenciaPreviewVisible: boolean = false;
+  evidenciaPreviewNombre: string = '';
+  maxTamanoEvidenciaMb: number = 2;
+  tiposEvidenciaPermitidos: string = 'image/jpeg,image/png,image/webp,image/avif';
 
   private destroy$ = new Subject<void>();
 
@@ -282,5 +291,74 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
     }
     this.portadaModalUrl = null;
     this.portadaModalVisible = false;
+  }
+
+  // ── Evidencia fotográfica ────────────────────────────
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const archivo = input.files[0];
+    const maxBytes = this.maxTamanoEvidenciaMb * 1024 * 1024;
+
+    if (archivo.size > maxBytes) {
+      this.errorMsg = `La imagen excede el tamaño máximo de ${this.maxTamanoEvidenciaMb} MB.`;
+      input.value = '';
+      return;
+    }
+
+    if (!this.prestamoSeleccionado) return;
+
+    this.devolucionService.subirEvidencia(this.prestamoSeleccionado.prestamoId, archivo).subscribe({
+      next: (evidencia) => {
+        this.evidencias.push(evidencia);
+        input.value = '';
+      },
+      error: (err) => {
+        this.errorMsg = err.message || 'Error al subir evidencia.';
+        input.value = '';
+      }
+    });
+  }
+
+  abrirPreviewEvidencia(evidencia: EvidenciaDanoResponse): void {
+    this.evidenciaPreviewVisible = true;
+    this.evidenciaPreviewNombre = evidencia.archivoNombre;
+    this.evidenciaPreviewUrl = null;
+    this.devolucionService.obtenerEvidenciaArchivo(evidencia.id).subscribe({
+      next: (blob) => {
+        this.evidenciaPreviewUrl = URL.createObjectURL(blob);
+      },
+      error: () => {
+        this.evidenciaPreviewVisible = false;
+      }
+    });
+  }
+
+  cerrarPreviewEvidencia(): void {
+    if (this.evidenciaPreviewUrl) {
+      URL.revokeObjectURL(this.evidenciaPreviewUrl);
+    }
+    this.evidenciaPreviewUrl = null;
+    this.evidenciaPreviewVisible = false;
+  }
+
+  eliminarEvidencia(evidencia: EvidenciaDanoResponse): void {
+    this.evidencias = this.evidencias.filter(e => e.id !== evidencia.id);
+  }
+
+  private evidenciaUrlCache = new Map<number, string>();
+
+  obtenerUrlEvidencia(evidencia: EvidenciaDanoResponse): string {
+    if (this.evidenciaUrlCache.has(evidencia.id)) {
+      return this.evidenciaUrlCache.get(evidencia.id)!;
+    }
+    this.devolucionService.obtenerEvidenciaArchivo(evidencia.id).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        this.evidenciaUrlCache.set(evidencia.id, url);
+      }
+    });
+    return '';
   }
 }
