@@ -309,22 +309,22 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
 
-    const archivo = input.files[0];
     const maxBytes = this.maxTamanoEvidenciaMb * 1024 * 1024;
 
-    if (archivo.size > maxBytes) {
-      this.errorMsg = `La imagen excede el tamaño máximo de ${this.maxTamanoEvidenciaMb} MB.`;
-      input.value = '';
-      return;
+    for (let i = 0; i < input.files.length; i++) {
+      const archivo = input.files[i];
+      if (archivo.size > maxBytes) {
+        this.errorMsg = `"${archivo.name}" excede el tamaño máximo de ${this.maxTamanoEvidenciaMb} MB.`;
+        continue;
+      }
+      this.evidenciaIdCounter++;
+      const evidencia: EvidenciaLocal = {
+        id: this.evidenciaIdCounter,
+        archivo,
+        previewUrl: URL.createObjectURL(archivo)
+      };
+      this.evidencias.push(evidencia);
     }
-
-    this.evidenciaIdCounter++;
-    const evidencia: EvidenciaLocal = {
-      id: this.evidenciaIdCounter,
-      archivo,
-      previewUrl: URL.createObjectURL(archivo)
-    };
-    this.evidencias.push(evidencia);
     input.value = '';
   }
 
