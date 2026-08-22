@@ -2,20 +2,22 @@
   <!-- Encabezado -->
   <div class="mb-lg">
     <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">
-      {{ usuarioSeleccionado ? 'Gestión de Multas' : 'Gestión de Multas' }}
+      {{ esLector ? 'Mis Multas' : 'Gestión de Multas' }}
     </h1>
     <p class="font-body-sm text-body-sm text-on-surface-variant">
-      {{ usuarioSeleccionado ? 'Gestiona pagos y anulaciones de multas.' : 'Busca un usuario para gestionar sus multas.' }}
+      {{ esLector ? 'Consultá tus multas y su estado.' : 'Busca un usuario para gestionar sus multas.' }}
     </p>
   </div>
 
-  <!-- Buscador -->
-  <div class="mb-lg">
-    <app-buscador-usuario
-      (correoSeleccionado)="onCorreoSeleccionado($event)"
-      (buscarAhora)="onBuscarAhora($event)">
-    </app-buscador-usuario>
-  </div>
+  <!-- Buscador (solo para no-lector) -->
+  @if (!esLector) {
+    <div class="mb-lg">
+      <app-buscador-usuario
+        (correoSeleccionado)="onCorreoSeleccionado($event)"
+        (buscarAhora)="onBuscarAhora($event)">
+      </app-buscador-usuario>
+    </div>
+  }
 
   <!-- Mensajes -->
   @if (errorMsg) {
@@ -31,11 +33,20 @@
     </div>
   }
 
-  <!-- Estado vacío: sin usuario -->
-  @if (!usuarioSeleccionado && !cargando) {
+  <!-- Estado vacío: sin usuario (solo no-lector) -->
+  @if (!usuarioSeleccionado && !cargando && !esLector) {
     <div class="rounded-xl border border-dashed border-outline-variant bg-surface-container-low p-xl text-center">
       <span class="material-symbols-outlined text-[64px] text-on-surface-variant/40 block mb-sm">person_search</span>
       <p class="font-body-md text-body-md text-on-surface-variant">Busca una persona por su correo electrónico</p>
+    </div>
+  }
+
+  <!-- Estado vacío: lector sin multas -->
+  @if (esLector && !cargando && usuarioSeleccionado && multas.length === 0) {
+    <div class="rounded-xl border border-dashed border-outline-variant bg-surface-container-low p-xl text-center">
+      <span class="material-symbols-outlined text-[64px] text-on-surface-variant/40 block mb-sm">check_circle</span>
+      <p class="font-body-md text-body-md text-on-surface-variant">No tienes multas registradas</p>
+      <p class="font-body-sm text-body-sm text-on-surface-variant/70 mt-xs">Estás al día con tus devoluciones.</p>
     </div>
   }
 
@@ -148,7 +159,7 @@
               } @else {
                 <p class="font-bold text-lg text-red-600">${{ multa.saldo.toFixed(2) }}</p>
               }
-              @if (multa.estadoMultaId === 1) {
+              @if (multa.estadoMultaId === 1 && !esLector) {
                 <div class="flex flex-col gap-xs mt-sm ml-auto">
                   <button (click)="abrirModalPago(multa)"
                     class="h-9 px-md rounded-lg bg-primary text-on-primary font-label-sm text-label-sm hover:bg-on-primary-fixed-variant cursor-pointer flex items-center gap-xs">

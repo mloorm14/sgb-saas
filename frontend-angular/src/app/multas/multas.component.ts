@@ -18,6 +18,7 @@ export class MultasComponent implements OnInit {
 
   // ── Usuario seleccionado ──────────────────────────────
   usuarioSeleccionado: UsuarioPrestamos | null = null;
+  esLector: boolean = false;
 
   // ── Multas ────────────────────────────────────────────
   multas: MultaDetalle[] = [];
@@ -27,7 +28,7 @@ export class MultasComponent implements OnInit {
 
   // ── Paginación ────────────────────────────────────────
   currentPage: number = 0;
-  pageSize: number = 10;
+  pageSize: number = 5;
   totalPages: number = 0;
 
   // ── Filtros ───────────────────────────────────────────
@@ -55,7 +56,25 @@ export class MultasComponent implements OnInit {
     private authService: AuthService
   ) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    if (this.authService.hasRole('LECTOR')) {
+      this.esLector = true;
+      const userId = this.authService.getUserId();
+      if (userId) {
+        this.cargando = true;
+        this.prestamoService.buscarUsuarioPorCorreo(this.authService.getCorreo()!).subscribe({
+          next: (usuario) => {
+            this.usuarioSeleccionado = usuario;
+            this.cargarMultas(userId);
+          },
+          error: () => {
+            this.cargando = false;
+            this.errorMsg = 'No se pudieron cargar tus multas.';
+          }
+        });
+      }
+    }
+  }
 
   ngOnDestroy(): void {
     this.destroy$.next();
