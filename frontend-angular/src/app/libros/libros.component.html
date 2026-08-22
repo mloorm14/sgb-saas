@@ -148,6 +148,14 @@
                         </li>
                       }
                     </ul>
+                  } @else if (mostrarSugerenciasAutor && textoAutor.trim().length >= 1) {
+                    <ul class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10">
+                      <li (mousedown)="agregarAutor($event)"
+                        class="px-sm py-xs cursor-pointer font-body-sm text-body-sm text-primary hover:bg-primary-container flex items-center gap-xs">
+                        <span class="material-symbols-outlined text-[16px]">add</span>
+                        Crear "{{ textoAutor.trim() }}"
+                      </li>
+                    </ul>
                   }
                 </div>
               </div>
@@ -183,6 +191,14 @@
                           {{ sugerencia.nombre }}
                         </li>
                       }
+                    </ul>
+                  } @else if (mostrarSugerenciasCategoria && textoCategoria.trim().length >= 1) {
+                    <ul class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10">
+                      <li (mousedown)="agregarCategoria($event)"
+                        class="px-sm py-xs cursor-pointer font-body-sm text-body-sm text-primary hover:bg-primary-container flex items-center gap-xs">
+                        <span class="material-symbols-outlined text-[16px]">add</span>
+                        Crear "{{ textoCategoria.trim() }}"
+                      </li>
                     </ul>
                   }
                 </div>
