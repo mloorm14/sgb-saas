@@ -24,6 +24,7 @@ import { ConfiguracionSistemaComponent } from './configuracion-sistema/configura
 import { UsuariosComponent } from './admin/usuarios/usuarios.component';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { AuditoriaComponent } from './admin/auditoria/auditoria.component';
+import { DevolucionesComponent } from './devoluciones/devoluciones.component';
 
 // Los roleGuard de abajo reflejan los @PreAuthorize reales de cada
 // controller en backend-springboot (verificado en el codigo, no asumido):
@@ -75,6 +76,7 @@ export const routes: Routes = [
       { path: 'libros', component: LibrosComponent },
       { path: 'prestamos/gestion', component: PrestamosGestionComponent },
       { path: 'reservaciones', component: ReservacionesComponent },
+      { path: 'devoluciones', component: DevolucionesComponent },
       { path: 'multas', component: MultasComponent },
       { path: 'reportes', component: ReportesComponent },
     ]

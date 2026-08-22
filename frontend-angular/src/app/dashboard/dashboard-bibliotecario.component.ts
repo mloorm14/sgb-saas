@@ -25,6 +25,7 @@ export class DashboardBibliotecarioComponent {
         { ruta: '/dashboard-bibliotecario/libros', etiqueta: 'Libros', icono: 'inventory_2' },
         { ruta: '/dashboard-bibliotecario/prestamos/gestion', etiqueta: 'Préstamos', icono: 'assignment_return' },
         { ruta: '/dashboard-bibliotecario/reservaciones', etiqueta: 'Reservaciones', icono: 'event_available' },
+        { ruta: '/dashboard-bibliotecario/devoluciones', etiqueta: 'Devoluciones', icono: 'assignment_return' },
         { ruta: '/dashboard-bibliotecario/multas', etiqueta: 'Multas', icono: 'payments' },
       ] as EnlaceSidebar[]
     },
