@@ -16,7 +16,7 @@
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-md">
       @for (favorito of favoritos; track favorito.libroId) {
         <div class="rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow">
-          <a [routerLink]="['/catalogo', favorito.libroId]" class="block relative aspect-[3/4] bg-surface-container-low overflow-hidden">
+          <a [routerLink]="['/dashboard-lector/catalogo', favorito.libroId]" class="block relative aspect-[3/4] bg-surface-container-low overflow-hidden">
             <app-portada-libro [libroId]="favorito.libroId" />
           </a>
           <div class="p-sm">
@@ -36,7 +36,7 @@
     <div class="mt-xl flex flex-col items-center justify-center text-center py-3xl text-on-surface-variant">
       <span class="material-symbols-outlined text-[48px] mb-sm text-outline-variant">star_border</span>
       <p class="font-body-md text-body-md">Todavía no tenés favoritos</p>
-      <a routerLink="/catalogo" class="mt-sm text-primary font-label-md text-label-sm hover:underline">Explorar el catálogo</a>
+      <a routerLink="/dashboard-lector/catalogo" class="mt-sm text-primary font-label-md text-label-sm hover:underline">Explorar el catálogo</a>
     </div>
   }
 </main>

@@ -10,6 +10,7 @@ import { ReservacionesComponent } from './reservaciones/reservaciones.component'
 import { MultasComponent } from './multas/multas.component';
 import { ReportesComponent } from './reportes/reportes.component';
 import { DashboardGerenteComponent } from './dashboard-gerente/dashboard-gerente.component';
+import { DashboardBibliotecarioComponent } from './dashboard/dashboard-bibliotecario.component';
 import { NoAutorizadoComponent } from './shared/no-autorizado/no-autorizado.component';
 import { CatalogoComponent } from './catalogo/catalogo.component';
 import { LibroDetalleComponent } from './catalogo/libro-detalle/libro-detalle.component';
@@ -23,6 +24,9 @@ import { ConfiguracionSistemaComponent } from './configuracion-sistema/configura
 import { UsuariosComponent } from './admin/usuarios/usuarios.component';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { AuditoriaComponent } from './admin/auditoria/auditoria.component';
+import { DashboardGerenteAdminComponent } from './dashboard-gerente-admin/dashboard-gerente-admin.component';
+import { DashboardLectorComponent } from './dashboard-lector/dashboard-lector.component';
+import { MiCredencialComponent } from './mi-credencial/mi-credencial.component';
 
 // Los roleGuard de abajo reflejan los @PreAuthorize reales de cada
 // controller en backend-springboot (verificado en el codigo, no asumido):
@@ -63,6 +67,68 @@ export const routes: Routes = [
   // el mismo PrestamoController de reportes, por eso queda SOLO GERENTE
   // (el BIBLIOTECARIO tiene /reportes, no esta pantalla).
   { path: 'dashboard-gerente', component: DashboardGerenteComponent, canActivate: [authGuard, roleGuard(['GERENTE'])] },
+  // Dashboard del BIBLIOTECARIO (layout con sidebar): rutas hijas anidadas
+  // bajo /dashboard-bibliotecario para mantener el sidebar visible al navegar.
+  {
+    path: 'dashboard-bibliotecario',
+    component: DashboardBibliotecarioComponent,
+    canActivate: [authGuard, roleGuard(['BIBLIOTECARIO'])],
+    children: [
+      { path: '', redirectTo: 'libros', pathMatch: 'full' },
+      { path: 'libros', component: LibrosComponent },
+      { path: 'prestamos/gestion', component: PrestamosGestionComponent },
+      { path: 'reservaciones', component: ReservacionesComponent },
+      { path: 'multas', component: MultasComponent },
+      { path: 'reportes', component: ReportesComponent },
+    ]
+  },
+  // Panel GERENTE/ADMIN (layout con sidebar, mismo patron que Cajas):
+  // rutas hijas anidadas bajo /dashboard-admin. Los enlaces del sidebar se
+  // filtran por rol segun los @PreAuthorize reales (ver componente); aca
+  // los roleGuard de refuerzo bloquean por URL lo que el rol no puede:
+  // configuracion es solo ADMIN y reportes no admite ADMIN.
+  {
+    path: 'dashboard-admin',
+    component: DashboardGerenteAdminComponent,
+    canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])],
+    children: [
+      { path: '', component: DashboardGerenteComponent },
+      { path: 'libros', component: LibrosComponent },
+      { path: 'prestamos/gestion', component: PrestamosGestionComponent },
+      { path: 'reservaciones', component: ReservacionesComponent },
+      { path: 'multas', component: MultasComponent },
+      { path: 'sugerencias/gestion', component: GestionSugerenciasComponent },
+      { path: 'admin/usuarios', component: UsuariosComponent },
+      { path: 'auditoria', component: AuditoriaComponent },
+      { path: 'reportes', component: ReportesComponent, canActivate: [roleGuard(['GERENTE'])] },
+      { path: 'admin/configuracion', component: ConfiguracionSistemaComponent, canActivate: [roleGuard(['ADMIN'])] },
+    ]
+  },
+  // TODO(defensa): las rutas planas de abajo siguen vivas para no romper
+  // enlaces existentes; una vez integrado /dashboard-admin conviene
+  // redirigirlas (redirectTo) hacia su equivalente anidada y borrar los
+  // duplicados. No se tocan en este cambio.
+  // Panel LECTOR (mismo patron de sidebar): agrupa las rutas de consumidor
+  // ya existentes (catalogo, prestamos, reservaciones, multas, favoritos,
+  // sugerencias, notificaciones) bajo /dashboard-lector.
+  {
+    path: 'dashboard-lector',
+    component: DashboardLectorComponent,
+    canActivate: [authGuard, roleGuard(['LECTOR'])],
+    children: [
+      { path: '', redirectTo: 'catalogo', pathMatch: 'full' },
+      { path: 'catalogo', component: CatalogoComponent },
+      { path: 'catalogo/:id', component: LibroDetalleComponent },
+      { path: 'prestamos', component: PrestamosLectorComponent },
+      { path: 'reservaciones', component: ReservacionesComponent },
+      { path: 'multas', component: MultasComponent },
+      { path: 'favoritos', component: FavoritosComponent },
+      { path: 'sugerencias', component: MisSugerenciasComponent },
+      { path: 'sugerencias/nueva', component: SugerenciasFormComponent },
+      { path: 'notificaciones', component: NotificacionesComponent },
+      { path: 'mi-credencial', component: MiCredencialComponent },
+    ]
+  },
   // Rama B (frontend/estudiante-catalogo-social): las 5 rutas del
   // consumidor son 100% LECTOR — verificado en FavoritoController.java y
   // SugerenciaAdquisicionController.java (los endpoints de favoritos y de

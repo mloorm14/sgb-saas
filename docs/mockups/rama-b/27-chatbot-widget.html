@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SGB · Asistente virtual</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          "secondary-container": "#76f4e0","surface": "#f8f9ff","surface-container-highest": "#d5e3fc",
+          "on-error": "#ffffff","error-container": "#ffdad6","surface-container": "#e6eeff",
+          "on-secondary-fixed": "#00201c","on-secondary-container": "#006f63","surface-bright": "#f8f9ff",
+          "tertiary": "#503a00","surface-variant": "#d5e3fc","outline-variant": "#c4c6d5",
+          "inverse-primary": "#b4c5ff","primary-container": "#1e4db7","on-tertiary-fixed-variant": "#5b4300",
+          "on-primary-fixed-variant": "#003ea8","inverse-on-surface": "#eaf1ff","surface-dim": "#ccdbf3",
+          "error": "#ba1a1a","on-tertiary-fixed": "#261a00","primary-fixed-dim": "#b4c5ff",
+          "on-tertiary": "#ffffff","on-surface-variant": "#434653","secondary-fixed": "#79f7e3",
+          "background": "#f8f9ff","on-background": "#0d1c2e","tertiary-fixed": "#ffdf9e",
+          "on-surface": "#0d1c2e","primary-fixed": "#dbe1ff","surface-container-lowest": "#ffffff",
+          "on-tertiary-container": "#fec004","surface-container-high": "#dce9ff","surface-container-low": "#eff4ff",
+          "tertiary-container": "#6c5000","surface-tint": "#2c57c1","primary": "#003694",
+          "on-secondary": "#ffffff","on-primary-fixed": "#00174b","outline": "#747684",
+          "on-secondary-fixed-variant": "#005047","secondary": "#006b5f","tertiary-fixed-dim": "#fabd00",
+          "secondary-fixed-dim": "#59dbc7","on-primary-container": "#b8c8ff","on-error-container": "#93000a",
+          "on-primary": "#ffffff","inverse-surface": "#233144",
+          "success": "#1d9e75","warning": "#fec004"
+        },
+        borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" },
+        spacing: { gutter: "24px", xl: "40px", lg: "24px", md: "16px", "container-max": "1280px", sm: "8px", xs: "4px", "margin-mobile": "16px", base: "4px" },
+        fontFamily: {
+          "headline-lg": ["Plus Jakarta Sans"], "body-md": ["Inter"], "label-md": ["Inter"],
+          "headline-lg-mobile": ["Plus Jakarta Sans"], "headline-xl": ["Plus Jakarta Sans"],
+          "label-sm": ["Inter"], "body-lg": ["Inter"], "body-sm": ["Inter"], "headline-md": ["Plus Jakarta Sans"]
+        },
+        fontSize: {
+          "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+          "label-md": ["14px", { lineHeight: "20px", letterSpacing: "0.05em", fontWeight: "600" }],
+          "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+          "headline-xl": ["40px", { lineHeight: "48px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "label-sm": ["12px", { lineHeight: "16px", fontWeight: "500" }],
+          "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+          "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+          "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Inter', sans-serif; background:#f8f9ff; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align:middle; }
+  .glass-panel { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
+</style>
+</head>
+<body class="bg-surface min-h-screen p-lg flex items-end justify-end">
+<main class="w-full max-w-sm">
+
+  <div class="rounded-2xl bg-white shadow-2xl border border-outline-variant overflow-hidden flex flex-col" style="height: 560px;">
+
+    <!-- Header -->
+    <div class="px-md py-sm flex items-center justify-between shrink-0" style="background: linear-gradient(135deg, #003694, #2c57c1);">
+      <div class="flex items-center gap-sm">
+        <div class="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center">
+          <span class="material-symbols-outlined text-white text-[20px]">smart_toy</span>
+        </div>
+        <div>
+          <p class="font-label-md text-[14px] text-white font-semibold">Asistente SGB</p>
+          <p class="font-label-sm text-[11px] text-white/70 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span> En línea
+          </p>
+        </div>
+      </div>
+      <span class="material-symbols-outlined text-white/80 text-[20px] cursor-pointer">close</span>
+    </div>
+
+    <!-- Aviso de sesion temporal -->
+    <div class="px-md py-xs bg-surface-container-low border-b border-outline-variant shrink-0">
+      <p class="font-label-sm text-[11px] text-on-surface-variant flex items-center gap-xs">
+        <span class="material-symbols-outlined text-[13px]">info</span> Esta conversación es temporal, se pierde al recargar
+      </p>
+    </div>
+
+    <!-- Mensajes -->
+    <div class="flex-1 overflow-y-auto p-md space-y-sm bg-surface">
+      <div class="flex gap-xs items-end">
+        <div class="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[14px] text-primary">smart_toy</span>
+        </div>
+        <div class="bg-white border border-outline-variant rounded-2xl rounded-bl-sm px-md py-sm max-w-[80%]">
+          <p class="font-body-sm text-body-sm text-on-surface">¡Hola! Soy el asistente de la biblioteca UTEQ. ¿En qué puedo ayudarte hoy?</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end">
+        <div class="bg-primary text-on-primary rounded-2xl rounded-br-sm px-md py-sm max-w-[80%]">
+          <p class="font-body-sm text-body-sm">¿Tienen libros de estructuras de datos disponibles?</p>
+        </div>
+      </div>
+
+      <div class="flex gap-xs items-end">
+        <div class="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[14px] text-primary">smart_toy</span>
+        </div>
+        <div class="bg-white border border-outline-variant rounded-2xl rounded-bl-sm px-md py-sm max-w-[80%]">
+          <p class="font-body-sm text-body-sm text-on-surface">Sí, tenemos "Estructuras de Datos y Algoritmos" con 3 ejemplares disponibles. ¿Querés que te muestre el detalle o lo reservo directamente?</p>
+        </div>
+      </div>
+
+      <!-- Estado de carga -->
+      <div class="flex gap-xs items-end">
+        <div class="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-[14px] text-primary">smart_toy</span>
+        </div>
+        <div class="bg-white border border-outline-variant rounded-2xl rounded-bl-sm px-md py-sm flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-outline-variant animate-bounce" style="animation-delay:0ms"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-outline-variant animate-bounce" style="animation-delay:150ms"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-outline-variant animate-bounce" style="animation-delay:300ms"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="p-sm border-t border-outline-variant flex items-center gap-xs shrink-0 bg-white">
+      <input type="text" placeholder="Escribí tu mensaje..."
+        class="flex-1 h-10 px-sm rounded-full bg-surface-container-low border-none text-body-sm text-on-surface focus:ring-2 focus:ring-primary/20" />
+      <button class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0 hover:bg-on-primary-fixed-variant transition-colors">
+        <span class="material-symbols-outlined text-[18px]">send</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Burbuja flotante que abre el widget (estado colapsado) -->
+  <div class="fixed bottom-lg right-lg">
+    <button class="w-14 h-14 rounded-full text-white shadow-lg flex items-center justify-center hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #003694, #2c57c1);">
+      <span class="material-symbols-outlined text-[26px]">chat</span>
+    </button>
+  </div>
+
+</main>
+</body>
+</html>

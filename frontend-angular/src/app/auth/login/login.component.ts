@@ -41,23 +41,19 @@ export class LoginComponent implements OnInit {
     this.mostrarPassword = !this.mostrarPassword;
   }
 
-  // Hallazgo lambda: la redireccion post-login ya no es un /libros fijo,
-  // depende del rol real (misma tabla que roleGuard en app.routes.ts).
-  // Rama B: LECTOR -> /catalogo (la pantalla inicial del consumidor).
-  // GERENTE -> /dashboard-gerente (rama fix/sincronizar-despliegue-y-dashboard-gerente);
-  // BIBLIOTECARIO -> /prestamos/gestion (fallback hasta que exista su dashboard).
-  // TODO(frontend/gerente-panel-administrativo): ADMIN -> /admin cuando
-  // exista la rama F; hoy /libros (el backend excluye a ADMIN de la
-  // operacion diaria en prestamos/reservaciones/multas).
+  // Redirección post-login hacia los paneles con sidebar:
+  // - ADMIN/GERENTE → /dashboard-admin (panel con sidebar).
+  // - LECTOR → /dashboard-lector (panel consumidor con sidebar).
+  // - BIBLIOTECARIO → /dashboard-bibliotecario (panel Cajas con sidebar).
   private redirigirSegunRol(): void {
-    if (this.authService.hasRole('GERENTE')) {
-      this.router.navigate(['/dashboard-gerente']);
+    if (this.authService.hasRole('ADMIN') || this.authService.hasRole('GERENTE')) {
+      this.router.navigate(['/dashboard-admin']);
     } else if (this.authService.hasRole('LECTOR')) {
-      this.router.navigate(['/catalogo']);
+      this.router.navigate(['/dashboard-lector']);
     } else if (this.authService.hasRole('BIBLIOTECARIO')) {
-      this.router.navigate(['/prestamos/gestion']);
+      this.router.navigate(['/dashboard-bibliotecario']);
     } else {
-      this.router.navigate(['/libros']);
+      this.router.navigate(['/login']);
     }
   }
 

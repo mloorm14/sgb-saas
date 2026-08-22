@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { MultaService } from '../core/services/multa.service';
 import { Multa } from '../core/models/multa.model';
@@ -37,7 +38,8 @@ export class MultasComponent implements OnInit {
 
   constructor(
     private multaService: MultaService,
-    private authService: AuthService
+    private authService: AuthService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -47,6 +49,14 @@ export class MultasComponent implements OnInit {
 
     if (this.esLector) {
       this.usuarioIdBusqueda = this.authService.getUserId();
+      this.cargarPagina();
+      return;
+    }
+
+    // Llegada desde Préstamos ("Gestionar Multas"): prefiltra por el usuario.
+    const usuarioIdParam = Number(this.route.snapshot.queryParamMap.get('usuarioId'));
+    if (Number.isInteger(usuarioIdParam) && usuarioIdParam > 0) {
+      this.usuarioIdBusqueda = usuarioIdParam;
       this.cargarPagina();
     }
   }
@@ -102,6 +112,43 @@ export class MultasComponent implements OnInit {
       case 2: return 'bg-secondary-container text-on-secondary-container'; // Pagada
       case 3: return 'bg-surface-container-low text-on-surface-variant';   // Anulada
       default: return 'bg-surface-container-low text-on-surface-variant';
+    }
+  }
+
+  // Total de multas pendientes (monto sumado)
+  get totalPendiente(): number {
+    return this.multas
+      .filter(m => m.estadoMultaId === 1)
+      .reduce((suma, m) => suma + m.monto, 0);
+  }
+
+  // Cantidad total de multas (todas las páginas, para la vista LECTOR)
+  // Nota: solo refleja la página actual; un endpoint dedicado sería más preciso.
+  get totalHistoricas(): number {
+    return this.multas.length;
+  }
+
+  // Días transcurridos desde la generación de la multa (proxy para "días de atraso")
+  diasAtraso(multa: Multa): number {
+    if (!multa.fechaGenerada) return 0;
+    const hoy = new Date();
+    const generado = new Date(multa.fechaGenerada);
+    const diffMs = hoy.getTime() - generado.getTime();
+    return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+  }
+
+  // Texto de motivo de la multa: usa observaciones si existe, fallback genérico
+  motivoMulta(multa: Multa): string {
+    return multa.observaciones?.trim() || 'Multa por préstamo atrasado';
+  }
+
+  // Icono del badge según estado (patrón mockup 29)
+  iconoEstadoMulta(estadoId: number): string {
+    switch (estadoId) {
+      case 1: return 'payments';
+      case 2: return 'check_circle';
+      case 3: return 'cancel';
+      default: return 'help';
     }
   }
 

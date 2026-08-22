@@ -1,7 +1,8 @@
 <main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
   <div class="mb-lg">
     <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Auditoría</h1>
-    <p class="font-body-sm text-body-sm text-on-surface-variant">GET /api/v1/auditoria — GERENTE y ADMIN. Bitácora de INSERT/UPDATE/DELETE/LOGIN_OK/LOGIN_FAIL/LOGOUT</p>
+    <!-- Ref. técnica: GET /api/v1/auditoria — GERENTE y ADMIN. Bitácora de INSERT/UPDATE/DELETE/LOGIN_OK/LOGIN_FAIL/LOGOUT -->
+<p class="font-body-sm text-body-sm text-on-surface-variant">Historial de acciones realizadas en el sistema.</p>
   </div>
 
   @if (errorMsg) {
@@ -12,9 +13,42 @@
   <div class="rounded-lg border border-outline-variant bg-white glass-panel p-md mb-md">
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-sm items-end">
       <div>
-        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Usuario (ID)</label>
-        <input type="number" min="1" [(ngModel)]="filtroUsuarioId" placeholder="ej: 14"
-          class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Usuario</label>
+        @if (usuarioSeleccionado) {
+          <div class="h-10 px-sm rounded border border-outline-variant bg-white flex items-center gap-sm">
+            <span class="font-body-sm text-body-sm truncate flex-1">{{ usuarioSeleccionado.nombre }} {{ usuarioSeleccionado.apellido }}</span>
+            <button (click)="limpiarSeleccion()" class="text-on-surface-variant hover:text-error cursor-pointer">
+              <span class="material-symbols-outlined text-[16px]">close</span>
+            </button>
+          </div>
+        } @else {
+          <div class="relative">
+            <input type="text" [(ngModel)]="busquedaUsuario" placeholder="Buscar por nombre o correo..."
+              (input)="onBusquedaUsuario(busquedaUsuario)"
+              (focus)="mostrandoDropdown = true"
+              (blur)="cerrarDropdown()"
+              class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+            @if (mostrandoDropdown && resultadosBusqueda.length > 0) {
+              <div class="absolute z-10 mt-1 w-full bg-white border border-outline-variant rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                @for (u of resultadosBusqueda; track u.id) {
+                  <button (mousedown)="seleccionarUsuario(u)"
+                    class="w-full text-left px-sm py-sm hover:bg-surface-container-low flex items-center gap-sm cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px] text-on-surface-variant">person</span>
+                    <div>
+                      <p class="font-body-sm text-body-sm text-on-surface">{{ u.nombre }} {{ u.apellido }}</p>
+                      <p class="font-body-sm text-[12px] text-on-surface-variant">{{ u.correo }}</p>
+                    </div>
+                  </button>
+                }
+              </div>
+            }
+            @if (mostrandoDropdown && busquedaUsuario.trim() && resultadosBusqueda.length === 0 && !buscandoUsuarios) {
+              <div class="absolute z-10 mt-1 w-full bg-white border border-outline-variant rounded-lg shadow-lg p-sm text-center font-body-sm text-[13px] text-on-surface-variant">
+                Sin resultados
+              </div>
+            }
+          </div>
+        }
       </div>
       <div>
         <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Módulo</label>

@@ -1,9 +1,21 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
 import { MultasComponent } from './multas.component';
 import { MultaService } from '../core/services/multa.service';
 import { AuthService } from '../core/services/auth.service';
 import { Multa } from '../core/models/multa.model';
+
+// Query params simulados (mutable por prueba): llega "usuarioId" cuando se
+// navega desde Préstamos -> Gestionar Multas.
+let parametrosConsulta: Record<string, string> = {};
+const activatedRouteMock = {
+  snapshot: {
+    queryParamMap: {
+      get: (clave: string) => parametrosConsulta[clave] ?? null
+    }
+  }
+};
 import { Page } from '../core/models/pagina.model';
 
 describe('MultasComponent', () => {
@@ -33,12 +45,14 @@ describe('MultasComponent', () => {
 
     authService.getUserId.and.returnValue(3);
     authService.hasRole.and.returnValue(false); // lector por defecto
+    parametrosConsulta = {};
 
     await TestBed.configureTestingModule({
       imports: [MultasComponent],
       providers: [
         { provide: MultaService, useValue: multaService },
-        { provide: AuthService, useValue: authService }
+        { provide: AuthService, useValue: authService },
+        { provide: ActivatedRoute, useValue: activatedRouteMock }
       ]
     }).compileComponents();
 
@@ -104,5 +118,58 @@ describe('MultasComponent', () => {
     expect(component.formatearFecha('2026-08-12T10:00:00')).toBe('12 ago 2026');
     expect(component.formatearFecha('')).toBe('—');
     expect(component.formatearFecha(null as any)).toBe('—');
+  });
+
+  it('prefiltra por el usuarioId del query param cuando llega desde Préstamos', () => {
+    authService.hasRole.and.returnValue(true); // BIBLIOTECARIO/GERENTE
+    parametrosConsulta = { usuarioId: '7' };
+    multaService.listarPorUsuario.and.returnValue(of(mockPage));
+
+    fixture.detectChanges();
+
+    expect(component.usuarioIdBusqueda).toBe(7);
+    expect(multaService.listarPorUsuario).toHaveBeenCalledWith(7, jasmine.anything());
+  });
+
+  it('calcula totalPendiente sumando solo multas con estado PENDIENTE', () => {
+    multaService.listarPorUsuario.and.returnValue(of({
+      content: [
+        { id: 1, prestamoId: 1, monto: 5, estadoMultaId: 1, fechaGenerada: '2026-08-12T10:00:00', fechaPagada: '', observaciones: '' },
+        { id: 2, prestamoId: 2, monto: 10, estadoMultaId: 2, fechaGenerada: '2026-08-10T14:30:00', fechaPagada: '2026-08-11T09:00:00', observaciones: '' },
+        { id: 3, prestamoId: 3, monto: 3, estadoMultaId: 1, fechaGenerada: '2026-08-09T10:00:00', fechaPagada: '', observaciones: '' }
+      ],
+      totalPages: 1, totalElements: 3, size: 10, number: 0, numberOfElements: 3, empty: false
+    }));
+
+    fixture.detectChanges();
+
+    expect(component.totalPendiente).toBe(8);
+    expect(component.totalHistoricas).toBe(3);
+  });
+
+  it('motivoMulta devuelve observaciones si existe, fallback genérico si no', () => {
+    const multaConObs: Multa = { id: 1, prestamoId: 1, monto: 5, estadoMultaId: 1, fechaGenerada: '', fechaPagada: '', observaciones: 'Pago en efectivo' };
+    const multaSinObs: Multa = { id: 2, prestamoId: 2, monto: 5, estadoMultaId: 1, fechaGenerada: '', fechaPagada: '', observaciones: '' };
+
+    expect(component.motivoMulta(multaConObs)).toBe('Pago en efectivo');
+    expect(component.motivoMulta(multaSinObs)).toBe('Multa por préstamo atrasado');
+  });
+
+  it('diasAtraso calcula días transcurridos desde fechaGenerada', () => {
+    const hoy = new Date();
+    const hace3 = new Date(hoy);
+    hace3.setDate(hace3.getDate() - 3);
+    const iso = hace3.toISOString();
+
+    const multa: Multa = { id: 1, prestamoId: 1, monto: 5, estadoMultaId: 1, fechaGenerada: iso, fechaPagada: '', observaciones: '' };
+
+    expect(component.diasAtraso(multa)).toBe(3);
+  });
+
+  it('iconoEstadoMulta devuelve el ícono correcto por estado', () => {
+    expect(component.iconoEstadoMulta(1)).toBe('payments');
+    expect(component.iconoEstadoMulta(2)).toBe('check_circle');
+    expect(component.iconoEstadoMulta(3)).toBe('cancel');
+    expect(component.iconoEstadoMulta(99)).toBe('help');
   });
 });
