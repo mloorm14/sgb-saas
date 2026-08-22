@@ -126,35 +126,33 @@
 
             <!-- Dropdown sugerencias -->
             @if (mostrarSugerenciasCorreo && sugerenciasCorreo.length > 0) {
-              <ul class="relative z-20 mt-1 bg-white border border-outline-variant rounded-lg shadow-lg max-h-60 overflow-auto">
-                @for (sugerencia of sugerenciasCorreo; track sugerencia.id; let i = $index) {
-                  <li>
-                    <button type="button"
-                      (mousedown)="$event.preventDefault()"
-                      (click)="seleccionarSugerenciaCorreo(sugerencia)"
-                      class="w-full text-left px-md py-sm hover:bg-surface-container-low flex items-center justify-between gap-sm cursor-pointer"
-                      [class.bg-surface-container-low]="i === indiceActivoCorreo">
-                      <div class="min-w-0">
-                        <p class="font-body-sm text-body-sm text-on-surface truncate">{{ sugerencia.nombreCompleto }}</p>
-                        <p class="font-label-sm text-label-sm text-on-surface-variant truncate">{{ sugerencia.correo }}</p>
-                      </div>
-                      <span class="shrink-0 font-label-sm text-[11px]"
-                        [ngClass]="{
-                          'text-green-600': sugerencia.estadoCuenta === 'ACTIVO',
-                          'text-red-600': sugerencia.estadoCuenta === 'BLOQUEADO_POR_MULTA',
-                          'text-amber-600': sugerencia.estadoCuenta === 'PENDIENTE_VERIFICACION'
-                        }">
-                        @switch (sugerencia.estadoCuenta) {
-                          @case ('ACTIVO') { Activo }
-                          @case ('BLOQUEADO_POR_MULTA') { Suspendido }
-                          @case ('PENDIENTE_VERIFICACION') { Pendiente }
-                          @default { {{ sugerencia.estadoCuenta }} }
-                        }
-                      </span>
-                    </button>
-                  </li>
-                }
-              </ul>
+              <div class="mt-1 mb-8 relative z-20 max-w-4xl">
+                <ul class="bg-surface-container-lowest border border-outline-variant/50 rounded-2xl shadow-lg overflow-hidden">
+                  @for (sugerencia of sugerenciasCorreo; track sugerencia.id; let i = $index) {
+                    <li>
+                      <button type="button"
+                        (mousedown)="$event.preventDefault()"
+                        (click)="seleccionarSugerenciaCorreo(sugerencia)"
+                        class="w-full text-left px-6 py-4 hover:bg-surface-container-low flex items-center justify-between gap-3 transition-colors"
+                        [class.bg-surface-container-low]="i === indiceActivoCorreo">
+                        <div class="flex items-center gap-4">
+                          <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm border-2 border-white shadow-sm">
+                            {{ iniciales(sugerencia.nombreCompleto) }}
+                          </div>
+                          <div>
+                            <p class="font-semibold text-on-surface">{{ sugerencia.nombreCompleto }}</p>
+                            <p class="text-sm text-on-surface-variant">{{ sugerencia.correo }}</p>
+                          </div>
+                        </div>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                          [class]="claseEstadoCuenta(sugerencia.estadoCuenta)">
+                          {{ etiquetaEstadoCuenta(sugerencia.estadoCuenta) }}
+                        </span>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              </div>
             } @else if (mostrarSugerenciasCorreo && correoBusqueda.trim().length >= 2 && !buscandoSugerenciasCorreo) {
               <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Sin coincidencias</p>
             }
@@ -172,29 +170,17 @@
 
           <!-- Tarjeta del usuario -->
           @if (usuario) {
-            <div class="rounded-lg bg-surface-container-low p-md mb-lg flex items-center justify-between">
-              <div class="flex items-center gap-sm">
-                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm border-2 border-white shadow-sm">
+            <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-5 mb-lg flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-lg border-2 border-white shadow-sm">
                   {{ iniciales(usuario.nombreCompleto) }}
                 </div>
-                <div>
-                  <p class="font-label-md text-label-sm text-on-surface">{{ usuario.nombreCompleto }}</p>
-                  <p class="font-body-sm text-[12px] text-on-surface-variant">{{ usuario.correo }}</p>
-                </div>
+                <h2 class="font-headline-md text-on-surface text-xl font-bold">{{ usuario.nombreCompleto }}</h2>
               </div>
               <div class="flex items-center gap-sm">
-                <span class="font-label-sm text-[11px]"
-                  [ngClass]="{
-                    'text-green-600': usuario.estadoCuenta === 'ACTIVO',
-                    'text-red-600': usuario.estadoCuenta === 'BLOQUEADO_POR_MULTA',
-                    'text-amber-600': usuario.estadoCuenta === 'PENDIENTE_VERIFICACION'
-                  }">
-                  @switch (usuario.estadoCuenta) {
-                    @case ('ACTIVO') { Activo }
-                    @case ('BLOQUEADO_POR_MULTA') { Suspendido }
-                    @case ('PENDIENTE_VERIFICACION') { Pendiente }
-                    @default { {{ usuario.estadoCuenta }} }
-                  }
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold"
+                  [class]="claseEstadoCuenta(usuario.estadoCuenta)">
+                  {{ etiquetaEstadoCuenta(usuario.estadoCuenta) }}
                 </span>
                 <span class="text-on-surface-variant font-body-sm text-[12px]">{{ usuario.cantidadReservasActivas }}/{{ usuario.limiteReservas }} Reservas activas</span>
               </div>

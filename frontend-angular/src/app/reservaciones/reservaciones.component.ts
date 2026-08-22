@@ -442,6 +442,16 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
     }
   }
 
+  etiquetaEstadoCuenta(estado: string): string {
+    switch (estado) {
+      case 'ACTIVO': return 'Activo';
+      case 'BLOQUEADO_POR_MULTA': return 'Suspendido';
+      case 'PENDIENTE_VERIFICACION': return 'Pendiente de verificación';
+      case 'INACTIVO': return 'Inactivo';
+      default: return estado;
+    }
+  }
+
   claseEstadoReservacionHistorial(estadoId: number): string {
     switch (estadoId) {
       case 1: return 'bg-blue-100 text-blue-700';

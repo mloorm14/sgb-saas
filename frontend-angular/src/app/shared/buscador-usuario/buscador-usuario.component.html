@@ -27,20 +27,25 @@
   }
 
   @if (mostrarSugerencias && sugerencias.length > 0) {
-    <ul class="absolute z-20 left-0 right-0 mt-1 bg-white border border-outline-variant rounded-lg shadow-lg max-h-60 overflow-auto">
+    <ul class="absolute z-20 left-0 right-0 mt-1 bg-surface-container-lowest border border-outline-variant/50 rounded-2xl shadow-lg overflow-hidden max-h-60 overflow-auto">
       @for (sugerencia of sugerencias; track sugerencia.id; let i = $index) {
         <li>
           <button type="button"
             (mousedown)="$event.preventDefault()"
             (click)="seleccionar(sugerencia)"
-            class="w-full text-left px-md py-sm hover:bg-surface-container-low flex items-center justify-between gap-sm cursor-pointer"
+            class="w-full text-left px-6 py-4 hover:bg-surface-container-low flex items-center justify-between gap-3 transition-colors"
             [class.bg-surface-container-low]="i === indiceActivo">
-            <span class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-sm shrink-0">{{ getIniciales(sugerencia.nombreCompleto) }}</span>
-            <div class="min-w-0 flex-1">
-              <p class="font-body-sm text-body-sm text-on-surface truncate">{{ sugerencia.nombreCompleto }}</p>
-              <p class="font-label-sm text-label-sm text-on-surface-variant truncate">{{ sugerencia.correo }}</p>
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm border-2 border-white shadow-sm">
+                {{ getIniciales(sugerencia.nombreCompleto) }}
+              </div>
+              <div>
+                <p class="font-semibold text-on-surface">{{ sugerencia.nombreCompleto }}</p>
+                <p class="text-sm text-on-surface-variant">{{ sugerencia.correo }}</p>
+              </div>
             </div>
-            <span class="shrink-0 font-label-sm text-[11px]" [class]="claseEstado(sugerencia.estadoCuenta)">
+            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold"
+              [class]="claseEstado(sugerencia.estadoCuenta)">
               {{ etiquetaEstado(sugerencia.estadoCuenta) }}
             </span>
           </button>

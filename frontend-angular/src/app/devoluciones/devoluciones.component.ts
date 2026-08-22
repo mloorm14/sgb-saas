@@ -280,6 +280,30 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
     }
   }
 
+  iniciales(nombre: string): string {
+    if (!nombre) return '??';
+    return nombre.split(' ').map(p => p.charAt(0)).join('').substring(0, 2).toUpperCase();
+  }
+
+  claseEstadoCuenta(estado: string): string {
+    switch (estado) {
+      case 'ACTIVO': return 'bg-success text-white';
+      case 'BLOQUEADO_POR_MULTA': return 'bg-error text-on-error';
+      case 'PENDIENTE_VERIFICACION': return 'bg-warning text-tertiary';
+      default: return 'bg-surface-container-highest text-on-surface-variant';
+    }
+  }
+
+  etiquetaEstadoCuenta(estado: string): string {
+    switch (estado) {
+      case 'ACTIVO': return 'Activo';
+      case 'BLOQUEADO_POR_MULTA': return 'Suspendido';
+      case 'PENDIENTE_VERIFICACION': return 'Pendiente de verificación';
+      case 'INACTIVO': return 'Inactivo';
+      default: return estado;
+    }
+  }
+
   // ── Modal portada ────────────────────────────────────
   abrirPortada(libroId: number): void {
     this.portadaModalVisible = true;

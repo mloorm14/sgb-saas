@@ -175,10 +175,10 @@ export class BuscadorUsuarioComponent implements OnDestroy {
 
   claseEstado(estado: string): string {
     switch (estado) {
-      case 'ACTIVO': return 'text-success';
-      case 'BLOQUEADO_POR_MULTA': return 'text-error';
-      case 'PENDIENTE_VERIFICACION': return 'text-tertiary';
-      default: return 'text-on-surface-variant';
+      case 'ACTIVO': return 'bg-success text-white';
+      case 'BLOQUEADO_POR_MULTA': return 'bg-error text-on-error';
+      case 'PENDIENTE_VERIFICACION': return 'bg-warning text-tertiary';
+      default: return 'bg-surface-container-highest text-on-surface-variant';
     }
   }
 
@@ -186,7 +186,7 @@ export class BuscadorUsuarioComponent implements OnDestroy {
     switch (estado) {
       case 'ACTIVO': return 'Activo';
       case 'BLOQUEADO_POR_MULTA': return 'Suspendido';
-      case 'PENDIENTE_VERIFICACION': return 'Pendiente';
+      case 'PENDIENTE_VERIFICACION': return 'Pendiente de verificación';
       case 'INACTIVO': return 'Inactivo';
       default: return estado;
     }
