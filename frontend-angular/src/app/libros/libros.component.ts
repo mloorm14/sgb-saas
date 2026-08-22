@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { LibroService } from '../core/services/libro.service';
@@ -14,13 +14,14 @@ import { Editorial } from '../core/models/editorial.model';
 import { Idioma } from '../core/models/idioma.model';
 import { EstadoLibro } from '../core/models/estado-libro.model';
 import { Libro, LibroRequest } from '../core/models/libro.model';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 
 @Component({
     selector: 'app-libros',
     imports: [ReactiveFormsModule, FormsModule, PortadaLibroComponent],
     templateUrl: './libros.component.html'
 })
-export class LibrosComponent implements OnInit {
+export class LibrosComponent implements OnInit, OnDestroy {
   libros: Libro[] = [];
   totalPages: number = 0;
   currentPage: number = 0;
@@ -48,6 +49,17 @@ export class LibrosComponent implements OnInit {
 
   textoAutor: string = '';
   textoCategoria: string = '';
+
+  sugerenciasAutor: Autor[] = [];
+  sugerenciasCategoria: Categoria[] = [];
+  mostrarSugerenciasAutor: boolean = false;
+  mostrarSugerenciasCategoria: boolean = false;
+  indiceAutor: number = -1;
+  indiceCategoria: number = -1;
+
+  private autorBusqueda$ = new Subject<string>();
+  private categoriaBusqueda$ = new Subject<string>();
+  private destroy$ = new Subject<void>();
 
   get paginasVisibles(): number[] {
     return Array.from({ length: this.totalPages }, (_, i) => i);
@@ -81,6 +93,35 @@ export class LibrosComponent implements OnInit {
   ngOnInit(): void {
     this.cargarLibros();
     this.cargarCatalogo();
+
+    this.autorBusqueda$.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(texto => {
+      if (!texto.trim()) { this.sugerenciasAutor = []; return; }
+      this.autorService.buscar(texto).subscribe({
+        next: (result) => { this.sugerenciasAutor = result; this.indiceAutor = -1; },
+        error: () => { this.sugerenciasAutor = []; }
+      });
+    });
+
+    this.categoriaBusqueda$.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(texto => {
+      if (!texto.trim()) { this.sugerenciasCategoria = []; return; }
+      this.categoriaService.buscar(texto).subscribe({
+        next: (result) => { this.sugerenciasCategoria = result; this.indiceCategoria = -1; },
+        error: () => { this.sugerenciasCategoria = []; }
+      });
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private cargarCatalogo(): void {
@@ -152,6 +193,8 @@ export class LibrosComponent implements OnInit {
     this.limpiarPortada();
     this.textoAutor = '';
     this.textoCategoria = '';
+    this.sugerenciasAutor = [];
+    this.sugerenciasCategoria = [];
     this.mostrarFormulario = true;
   }
 
@@ -161,6 +204,8 @@ export class LibrosComponent implements OnInit {
     this.limpiarPortada();
     this.textoAutor = '';
     this.textoCategoria = '';
+    this.sugerenciasAutor = [];
+    this.sugerenciasCategoria = [];
     this.form.patchValue({
       isbn: libro.isbn,
       titulo: libro.titulo,
@@ -191,26 +236,55 @@ export class LibrosComponent implements OnInit {
     this.limpiarPortada();
     this.textoAutor = '';
     this.textoCategoria = '';
+    this.sugerenciasAutor = [];
+    this.sugerenciasCategoria = [];
   }
 
-  // ── Tag input: Autores ──
+  // ── Autocomplete: Autores ──
 
-  nombreAutor(id: number): string {
-    return this.autores.find(a => a.id === id)?.nombre ?? `#${id}`;
+  onBusquedaAutor(texto: string): void {
+    this.textoAutor = texto;
+    this.autorBusqueda$.next(texto);
+    this.mostrarSugerenciasAutor = texto.trim().length >= 1;
+  }
+
+  seleccionarAutor(autor: Autor): void {
+    const ids = this.form.get('autorIds')?.value as number[];
+    if (!ids.includes(autor.id)) {
+      this.form.patchValue({ autorIds: [...ids, autor.id] });
+      if (!this.autores.find(a => a.id === autor.id)) {
+        this.autores = [...this.autores, autor];
+      }
+    }
+    this.textoAutor = '';
+    this.sugerenciasAutor = [];
+    this.mostrarSugerenciasAutor = false;
   }
 
   agregarAutor(event: Event): void {
     event.preventDefault();
     const texto = this.textoAutor.trim();
     if (!texto) return;
-    const autor = this.autores.find(a => a.nombre.toLowerCase() === texto.toLowerCase());
-    if (autor) {
-      const ids = this.form.get('autorIds')?.value as number[];
-      if (!ids.includes(autor.id)) {
-        this.form.patchValue({ autorIds: [...ids, autor.id] });
-      }
+
+    const existente = this.autores.find(a => a.nombre.toLowerCase() === texto.toLowerCase());
+    if (existente) {
+      this.seleccionarAutor(existente);
+      return;
     }
-    this.textoAutor = '';
+
+    this.autorService.crear(texto).subscribe({
+      next: (nuevo) => {
+        this.autores = [...this.autores, nuevo];
+        this.textoAutor = '';
+        this.sugerenciasAutor = [];
+        this.mostrarSugerenciasAutor = false;
+        const ids = this.form.get('autorIds')?.value as number[];
+        if (!ids.includes(nuevo.id)) {
+          this.form.patchValue({ autorIds: [...ids, nuevo.id] });
+        }
+      },
+      error: () => { this.errorMsg = 'No se pudo crear el autor'; }
+    });
   }
 
   quitarAutor(id: number): void {
@@ -218,29 +292,127 @@ export class LibrosComponent implements OnInit {
     this.form.patchValue({ autorIds: ids });
   }
 
-  // ── Tag input: Categorías ──
+  nombreAutor(id: number): string {
+    return this.autores.find(a => a.id === id)?.nombre ?? `#${id}`;
+  }
 
-  nombreCategoria(id: number): string {
-    return this.categorias.find(c => c.id === id)?.nombre ?? `#${id}`;
+  // ── Autocomplete: Categorías ──
+
+  onBusquedaCategoria(texto: string): void {
+    this.textoCategoria = texto;
+    this.categoriaBusqueda$.next(texto);
+    this.mostrarSugerenciasCategoria = texto.trim().length >= 1;
+  }
+
+  seleccionarCategoria(cat: Categoria): void {
+    const ids = this.form.get('categoriaIds')?.value as number[];
+    if (!ids.includes(cat.id)) {
+      this.form.patchValue({ categoriaIds: [...ids, cat.id] });
+      if (!this.categorias.find(c => c.id === cat.id)) {
+        this.categorias = [...this.categorias, cat];
+      }
+    }
+    this.textoCategoria = '';
+    this.sugerenciasCategoria = [];
+    this.mostrarSugerenciasCategoria = false;
   }
 
   agregarCategoria(event: Event): void {
     event.preventDefault();
     const texto = this.textoCategoria.trim();
     if (!texto) return;
-    const cat = this.categorias.find(c => c.nombre.toLowerCase() === texto.toLowerCase());
-    if (cat) {
-      const ids = this.form.get('categoriaIds')?.value as number[];
-      if (!ids.includes(cat.id)) {
-        this.form.patchValue({ categoriaIds: [...ids, cat.id] });
-      }
+
+    const existente = this.categorias.find(c => c.nombre.toLowerCase() === texto.toLowerCase());
+    if (existente) {
+      this.seleccionarCategoria(existente);
+      return;
     }
-    this.textoCategoria = '';
+
+    this.categoriaService.crear(texto).subscribe({
+      next: (nueva) => {
+        this.categorias = [...this.categorias, nueva];
+        this.textoCategoria = '';
+        this.sugerenciasCategoria = [];
+        this.mostrarSugerenciasCategoria = false;
+        const ids = this.form.get('categoriaIds')?.value as number[];
+        if (!ids.includes(nueva.id)) {
+          this.form.patchValue({ categoriaIds: [...ids, nueva.id] });
+        }
+      },
+      error: () => { this.errorMsg = 'No se pudo crear la categoría'; }
+    });
   }
 
   quitarCategoria(id: number): void {
     const ids = (this.form.get('categoriaIds')?.value as number[]).filter(i => i !== id);
     this.form.patchValue({ categoriaIds: ids });
+  }
+
+  nombreCategoria(id: number): string {
+    return this.categorias.find(c => c.id === id)?.nombre ?? `#${id}`;
+  }
+
+  // ── Navegación con teclado (autocomplete) ──
+
+  onKeydownAutor(event: KeyboardEvent): void {
+    const sugerencias = this.sugerenciasAutor;
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        this.indiceAutor = Math.min(this.indiceAutor + 1, sugerencias.length - 1);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.indiceAutor = Math.max(this.indiceAutor - 1, -1);
+        break;
+      case 'Enter':
+        event.preventDefault();
+        if (this.indiceAutor >= 0 && this.indiceAutor < sugerencias.length) {
+          this.seleccionarAutor(sugerencias[this.indiceAutor]);
+        } else {
+          this.agregarAutor(event);
+        }
+        break;
+      case 'Escape':
+        this.mostrarSugerenciasAutor = false;
+        break;
+    }
+  }
+
+  onKeydownCategoria(event: KeyboardEvent): void {
+    const sugerencias = this.sugerenciasCategoria;
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        this.indiceCategoria = Math.min(this.indiceCategoria + 1, sugerencias.length - 1);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.indiceCategoria = Math.max(this.indiceCategoria - 1, -1);
+        break;
+      case 'Enter':
+        event.preventDefault();
+        if (this.indiceCategoria >= 0 && this.indiceCategoria < sugerencias.length) {
+          this.seleccionarCategoria(sugerencias[this.indiceCategoria]);
+        } else {
+          this.agregarCategoria(event);
+        }
+        break;
+      case 'Escape':
+        this.mostrarSugerenciasCategoria = false;
+        break;
+    }
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('[data-autocomplete-autores]')) {
+      this.mostrarSugerenciasAutor = false;
+    }
+    if (!target.closest('[data-autocomplete-categorias]')) {
+      this.mostrarSugerenciasCategoria = false;
+    }
   }
 
   // ── Portada: cleanup ──
@@ -263,9 +435,6 @@ export class LibrosComponent implements OnInit {
     return !!tipo && LibrosComponent.TIPOS_PORTADA_PERMITIDOS.includes(tipo);
   }
 
-  // Detecta el MIME real por magic bytes cuando el navegador no lo asignó
-  // (type '' o application/octet-stream): el backend exige un Content-Type
-  // de la whitelist y el multipart envía octet-stream cuando no hay tipo.
   private async sniffMimePortada(archivo: Blob): Promise<string | null> {
     if (this.esTipoPortadaPermitido(archivo.type)) {
       return archivo.type;
@@ -279,7 +448,6 @@ export class LibrosComponent implements OnInit {
       if (buf.length >= 12 && ascii(0, 4) === 'RIFF' && ascii(8, 12) === 'WEBP') return 'image/webp';
       if (buf.length >= 12 && ascii(4, 8) === 'ftyp' && (ascii(8, 12) === 'avif' || ascii(8, 12) === 'avis')) return 'image/avif';
     } catch {
-      // archivo ilegible: se rechaza en el llamador
     }
     return null;
   }
@@ -320,12 +488,6 @@ export class LibrosComponent implements OnInit {
 
     accion.subscribe({
       next: (libro) => {
-        // La subida de la portada va ANTES de cerrar el formulario:
-        // cerrarFormulario() → limpiarAutocompletar() limpia
-        // portadaPreviewBlob, y sin blob la portada nunca se sube.
-        // La recarga de la lista va después de terminar la subida:
-        // si se recarga antes, el libro nuevo llega con
-        // tienePortada=false y el placeholder ya no se actualiza.
         this.guardarPortadaPendiente(libro.id);
         this.cerrarFormulario();
       },
@@ -343,8 +505,6 @@ export class LibrosComponent implements OnInit {
       this.cargarLibros();
       return;
     }
-    // El tipo ya fue resuelto por sniff al entrar el blob al preview
-    // (onArchivoPortadaSeleccionado / autocompletar); el ?? es solo defensivo.
     const tipo = this.portadaPreviewTipo ?? 'image/jpeg';
     const ext = tipo.split('/')[1] ?? 'jpg';
     const archivo = new File([blob], `portada.${ext}`, { type: tipo });
