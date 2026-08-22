@@ -348,10 +348,16 @@
       <!-- ─── Resumen de Multa + Acción ─── -->
       <div class="rounded-xl border border-outline-variant bg-white p-lg">
         @if (estadoDevolucion === 'CON_DANO' || estadoDevolucion === 'PERDIDO' || estaVencido) {
-          <h2 class="font-headline-md text-headline-md text-on-background mb-md flex items-center gap-sm">
-            <span class="material-symbols-outlined text-[22px] text-amber-600">payments</span>
-            Resumen de Multa
-          </h2>
+          <div class="flex items-center justify-between mb-md">
+            <h2 class="font-headline-md text-headline-md text-on-background flex items-center gap-sm">
+              <span class="material-symbols-outlined text-[22px] text-amber-600">payments</span>
+              Resumen de Multa
+            </h2>
+            <button type="button" (click)="prestamoSeleccionado = null"
+              class="px-sm py-xs rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 cursor-pointer">
+              Cancelar
+            </button>
+          </div>
 
           <div class="space-y-0 divide-y divide-outline-variant/50 mb-md">
             @if (estaVencido) {
@@ -392,12 +398,6 @@
             </span>
           </div>
         }
-
-        <!-- Botón cancelar -->
-        <button type="button" (click)="prestamoSeleccionado = null"
-          class="mt-md text-primary hover:text-on-primary-fixed-variant font-label-md text-label-sm font-semibold cursor-pointer">
-          ← Cancelar
-        </button>
 
         <!-- Botón registrar -->
         <button (click)="registrarDevolucion()"
