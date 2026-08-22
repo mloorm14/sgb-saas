@@ -7,6 +7,7 @@ import {
   DevolucionCompletaResponse,
   DevolucionHistorial,
   DevolucionRequest,
+  EvidenciaDanoResponse,
   TipoDano
 } from '../models/devoluciones.model';
 
@@ -35,6 +36,26 @@ export class DevolucionService {
     return this.http.get<TipoDano[]>(
       `${this.apiUrl}/tipos-dano`
     ).pipe(catchError(err => this.manejarError(err)));
+  }
+
+  subirEvidencia(registroDanoId: number, archivo: File): Observable<EvidenciaDanoResponse> {
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+    return this.http.post<EvidenciaDanoResponse>(
+      `${this.apiUrl}/evidencia/${registroDanoId}`, formData
+    ).pipe(catchError(err => this.manejarError(err)));
+  }
+
+  listarEvidencias(registroDanoId: number): Observable<EvidenciaDanoResponse[]> {
+    return this.http.get<EvidenciaDanoResponse[]>(
+      `${this.apiUrl}/evidencia/${registroDanoId}`
+    ).pipe(catchError(err => this.manejarError(err)));
+  }
+
+  obtenerEvidenciaArchivo(id: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/evidencia/${id}/archivo`, {
+      responseType: 'blob'
+    }).pipe(catchError(err => this.manejarError(err)));
   }
 
   private manejarError(err: any): Observable<never> {
