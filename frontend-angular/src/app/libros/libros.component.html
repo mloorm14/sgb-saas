@@ -114,10 +114,10 @@
               class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm resize-y"></textarea>
           </div>
 
-          <!-- Fila: Autores + Categorías (tag input) -->
+          <!-- Fila: Autores + Categorías (autocomplete) -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-md mb-md">
             <!-- Autores -->
-            <div>
+            <div data-autocomplete-autores>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Autores</label>
               <div class="rounded-lg border border-outline-variant bg-white p-sm min-h-[80px]">
                 <div class="flex flex-wrap gap-xs mb-xs">
@@ -131,20 +131,29 @@
                     </span>
                   }
                 </div>
-                <div class="flex gap-xs">
-                  <input type="text" [(ngModel)]="textoAutor" [ngModelOptions]="{standalone: true}"
-                    placeholder="Agregar autor..."
-                    (keydown.enter)="agregarAutor($event)"
-                    class="flex-1 h-8 px-sm rounded font-body-sm text-body-sm outline-none" />
-                  <button type="button" (click)="agregarAutor($event)"
-                    class="w-8 h-8 rounded bg-primary text-on-primary flex items-center justify-center cursor-pointer">
-                    <span class="material-symbols-outlined text-[16px]">add</span>
-                  </button>
+                <div class="relative">
+                  <input type="text" [ngModel]="textoAutor" [ngModelOptions]="{standalone: true}"
+                    (ngModelChange)="onBusquedaAutor($event)"
+                    (keydown)="onKeydownAutor($event)"
+                    (focus)="textoAutor.trim().length >= 1 && (mostrarSugerenciasAutor = true)"
+                    placeholder="Buscar autor..."
+                    class="w-full h-8 px-sm rounded font-body-sm text-body-sm outline-none" />
+                  @if (mostrarSugerenciasAutor && sugerenciasAutor.length > 0) {
+                    <ul class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                      @for (sugerencia of sugerenciasAutor; track sugerencia.id; let i = $index) {
+                        <li (mousedown)="seleccionarAutor(sugerencia)"
+                          class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low"
+                          [class.bg-primary-container]="i === indiceAutor">
+                          {{ sugerencia.nombre }}
+                        </li>
+                      }
+                    </ul>
+                  }
                 </div>
               </div>
             </div>
             <!-- Categorías -->
-            <div>
+            <div data-autocomplete-categorias>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Categorías</label>
               <div class="rounded-lg border border-outline-variant bg-white p-sm min-h-[80px]">
                 <div class="flex flex-wrap gap-xs mb-xs">
@@ -158,15 +167,24 @@
                     </span>
                   }
                 </div>
-                <div class="flex gap-xs">
-                  <input type="text" [(ngModel)]="textoCategoria" [ngModelOptions]="{standalone: true}"
-                    placeholder="Agregar categoría..."
-                    (keydown.enter)="agregarCategoria($event)"
-                    class="flex-1 h-8 px-sm rounded font-body-sm text-body-sm outline-none" />
-                  <button type="button" (click)="agregarCategoria($event)"
-                    class="w-8 h-8 rounded bg-primary text-on-primary flex items-center justify-center cursor-pointer">
-                    <span class="material-symbols-outlined text-[16px]">add</span>
-                  </button>
+                <div class="relative">
+                  <input type="text" [ngModel]="textoCategoria" [ngModelOptions]="{standalone: true}"
+                    (ngModelChange)="onBusquedaCategoria($event)"
+                    (keydown)="onKeydownCategoria($event)"
+                    (focus)="textoCategoria.trim().length >= 1 && (mostrarSugerenciasCategoria = true)"
+                    placeholder="Buscar categoría..."
+                    class="w-full h-8 px-sm rounded font-body-sm text-body-sm outline-none" />
+                  @if (mostrarSugerenciasCategoria && sugerenciasCategoria.length > 0) {
+                    <ul class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                      @for (sugerencia of sugerenciasCategoria; track sugerencia.id; let i = $index) {
+                        <li (mousedown)="seleccionarCategoria(sugerencia)"
+                          class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low"
+                          [class.bg-primary-container]="i === indiceCategoria">
+                          {{ sugerencia.nombre }}
+                        </li>
+                      }
+                    </ul>
+                  }
                 </div>
               </div>
             </div>
