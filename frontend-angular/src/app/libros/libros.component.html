@@ -5,7 +5,7 @@
     <div class="mb-lg flex items-center justify-between flex-wrap gap-sm">
       <div>
         <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Inventario de libros</h1>
-        <p class="font-body-sm text-body-sm text-on-surface-variant">Gestión de inventario — BIBLIOTECARIO y GERENTE</p>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Gestión y control de inventario</p>
       </div>
       <button (click)="abrirFormularioCrear()"
         class="h-10 px-md rounded bg-primary text-on-primary font-label-md text-label-sm flex items-center gap-xs hover:bg-on-primary-fixed-variant cursor-pointer">
@@ -208,7 +208,7 @@
                 class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white">
                 <option [ngValue]="null" disabled>Seleccioná un estado</option>
                 @for (item of estados; track item.id) {
-                  <option [ngValue]="item.id">{{ item.nombre }}</option>
+                  <option [ngValue]="item.id">{{ formatarEstado(item.nombre) }}</option>
                 }
               </select>
             </div>
@@ -256,7 +256,7 @@
         class="h-10 px-sm rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer">
         <option [ngValue]="null">Todos los estados</option>
         @for (estado of estados; track estado.id) {
-          <option [ngValue]="estado.id">{{ estado.nombre }}</option>
+          <option [ngValue]="estado.id">{{ formatarEstado(estado.nombre) }}</option>
         }
       </select>
     </div>
