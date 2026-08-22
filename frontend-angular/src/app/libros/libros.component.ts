@@ -50,6 +50,9 @@ export class LibrosComponent implements OnInit, OnDestroy {
   textoAutor: string = '';
   textoCategoria: string = '';
 
+  textoBusqueda: string = '';
+  estadoLibroFiltro: number | null = null;
+
   sugerenciasAutor: Autor[] = [];
   sugerenciasCategoria: Categoria[] = [];
   mostrarSugerenciasAutor: boolean = false;
@@ -57,6 +60,7 @@ export class LibrosComponent implements OnInit, OnDestroy {
   indiceAutor: number = -1;
   indiceCategoria: number = -1;
 
+  private busqueda$ = new Subject<string>();
   private autorBusqueda$ = new Subject<string>();
   private categoriaBusqueda$ = new Subject<string>();
   private destroy$ = new Subject<void>();
@@ -93,6 +97,12 @@ export class LibrosComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.cargarLibros();
     this.cargarCatalogo();
+
+    this.busqueda$.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(() => { this.currentPage = 0; this.cargarLibros(); });
 
     this.autorBusqueda$.pipe(
       debounceTime(300),
@@ -153,7 +163,9 @@ export class LibrosComponent implements OnInit, OnDestroy {
       page: this.currentPage,
       size: this.pageSize,
       sort: 'id,asc',
-      ...(this.categoriaFiltro ? { categoriaId: Number(this.categoriaFiltro) } : {})
+      q: this.textoBusqueda.trim() || undefined,
+      estadoLibroId: this.estadoLibroFiltro ?? undefined,
+      categoriaId: this.categoriaFiltro ? Number(this.categoriaFiltro) : undefined
     }).subscribe({
       next: (data) => {
         this.libros = data.content;
@@ -168,6 +180,16 @@ export class LibrosComponent implements OnInit, OnDestroy {
   }
 
   filtrarPorCategoria(): void {
+    this.currentPage = 0;
+    this.cargarLibros();
+  }
+
+  onBusquedaTexto(texto: string): void {
+    this.textoBusqueda = texto;
+    this.busqueda$.next(texto);
+  }
+
+  filtrarPorEstado(): void {
     this.currentPage = 0;
     this.cargarLibros();
   }
