@@ -151,8 +151,9 @@
         <!-- Prestatario y fechas -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-md mt-md">
           <div class="rounded-lg border border-outline-variant/50 p-md">
-            <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">Préstamo #</p>
-            <p class="font-semibold text-on-surface">{{ prestamoSeleccionado.prestamoId }}</p>
+            <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">Prestatario</p>
+            <p class="font-semibold text-on-surface">{{ prestamoSeleccionado.usuarioNombre }}</p>
+            <p class="font-body-sm text-body-sm text-on-surface-variant">{{ prestamoSeleccionado.usuarioCorreo }}</p>
           </div>
           <div class="rounded-lg border border-outline-variant/50 p-md">
             <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">Fechas</p>
