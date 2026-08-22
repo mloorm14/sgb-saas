@@ -225,8 +225,14 @@ public class PrestamosGestionService {
             pendientesPorPrestamo.put(fila.getPrestamoId(), fila.getTotalPendiente());
         }
 
+        Usuario usuario = usuarioRepo.findById(usuarioId).orElse(null);
+        String usuarioNombre = usuario != null
+                ? (usuario.getNombre() + " " + usuario.getApellido()).trim()
+                : "";
+        String usuarioCorreo = usuario != null ? usuario.getCorreo() : "";
+
         return prestamos.stream()
-                .map(p -> toHistorialDTO(p, titulosPorLibro, isbnPorLibro, autoresPorLibro, categoriasPorLibro, nombresPorEstado, pendientesPorPrestamo))
+                .map(p -> toHistorialDTO(p, titulosPorLibro, isbnPorLibro, autoresPorLibro, categoriasPorLibro, nombresPorEstado, pendientesPorPrestamo, usuarioNombre, usuarioCorreo))
                 .toList();
     }
 
@@ -237,7 +243,9 @@ public class PrestamosGestionService {
             Map<Long, List<String>> autoresPorLibro,
             Map<Long, List<String>> categoriasPorLibro,
             Map<Integer, String> nombresPorEstado,
-            Map<Long, BigDecimal> pendientesPorPrestamo) {
+            Map<Long, BigDecimal> pendientesPorPrestamo,
+            String usuarioNombre,
+            String usuarioCorreo) {
         BigDecimal montoPendiente = pendientesPorPrestamo.get(p.getId());
         return new HistorialPrestamoDTO(
                 p.getId(),
@@ -251,7 +259,9 @@ public class PrestamosGestionService {
                 p.getFechaDevolucionReal(),
                 nombresPorEstado.getOrDefault(p.getEstadoPrestamoId(), ""),
                 montoPendiente != null,
-                montoPendiente != null ? montoPendiente : BigDecimal.ZERO);
+                montoPendiente != null ? montoPendiente : BigDecimal.ZERO,
+                usuarioNombre,
+                usuarioCorreo);
     }
 
     // Días de préstamo prellenados según la configuración del sistema

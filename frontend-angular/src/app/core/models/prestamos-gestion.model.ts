@@ -54,6 +54,8 @@ export interface HistorialPrestamo {
   estadoNombre: string;
   multaPendiente: boolean;
   montoMultaPendiente: number;
+  usuarioNombre: string;
+  usuarioCorreo: string;
 }
 
 // UsuarioSugerenciaDTO: resultado ligero para el autocompletado predictivo

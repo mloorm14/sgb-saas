@@ -25,5 +25,7 @@ public record HistorialPrestamoDTO(
         OffsetDateTime fechaDevolucionReal,
         String estadoNombre,
         boolean multaPendiente,
-        BigDecimal montoMultaPendiente
+        BigDecimal montoMultaPendiente,
+        String usuarioNombre,
+        String usuarioCorreo
 ) {}
