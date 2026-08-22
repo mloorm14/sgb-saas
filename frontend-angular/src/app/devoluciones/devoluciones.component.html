@@ -293,6 +293,10 @@
 
                 <!-- Evidencia Fotográfica -->
                 <label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-md mb-sm">Evidencia Fotográfica</label>
+                <p class="font-body-sm text-[11px] text-amber-600 mb-sm">
+                  <span class="material-symbols-outlined text-[14px] align-middle">warning</span>
+                  Las imágenes que excedan los {{ maxTamanoEvidenciaMb }}MB no serán aceptadas.
+                </p>
                 <label class="block border-2 border-dashed border-outline-variant rounded-lg p-lg text-center cursor-pointer hover:border-primary/50 hover:bg-surface-container-low transition-colors">
                   <input type="file"
                     accept="image/jpeg,image/png,image/webp,image/avif"
@@ -308,7 +312,7 @@
                 @if (evidencias.length > 0) {
                   <div class="flex flex-wrap gap-sm mt-sm">
                     @for (ev of evidencias; track ev.id) {
-                      <div class="relative group w-20 h-20 rounded-lg overflow-hidden border border-outline-variant/50 cursor-pointer"
+                      <div class="relative w-20 h-20 rounded-lg overflow-hidden border border-outline-variant/50 cursor-pointer shrink-0"
                         (click)="abrirPreviewEvidencia(ev)">
                         @if (ev.archivoTipo.startsWith('image/')) {
                           <img [src]="obtenerUrlEvidencia(ev)" alt="Evidencia"
@@ -319,7 +323,7 @@
                           </div>
                         }
                         <button type="button" (click)="eliminarEvidencia(ev); $event.stopPropagation()"
-                          class="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                          class="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center cursor-pointer hover:bg-red-700 transition-colors">
                           <span class="material-symbols-outlined text-[12px]">close</span>
                         </button>
                       </div>
