@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { catchError, Observable, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Page } from '../models/pagina.model';
-import { Multa, MultaAccionResponse, ResumenFinancieroMultas } from '../models/multa.model';
+import { Multa, MultaDetalle, MultaAccionResponse, PagoMultaRequest, PagoMultaResponse, ResumenFinancieroMultas } from '../models/multa.model';
 import { ProblemDetail } from '../models/problem-detail.model';
 
 export interface MultaListarParams {
@@ -35,6 +35,25 @@ export class MultaService {
   // POST /v1/multas/{id}/pago (sin body): solo BIBLIOTECARIO/GERENTE.
   pagar(id: number): Observable<MultaAccionResponse> {
     return this.http.post<MultaAccionResponse>(`${this.apiUrl}/${id}/pago`, {}).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  // POST /v1/multas/{id}/pago con body {montoPagado}: pago parcial.
+  pagoParcial(id: number, montoPagado: number): Observable<PagoMultaResponse> {
+    return this.http.post<PagoMultaResponse>(`${this.apiUrl}/${id}/pago`, { montoPagado }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  // GET /v1/multas/usuario/{id}/detalle: listado enriquecido con info del libro.
+  listarDetallePorUsuario(usuarioId: number, params: MultaListarParams = {}): Observable<Page<MultaDetalle>> {
+    let httpParams = new HttpParams();
+    if (params.page !== undefined) httpParams = httpParams.set('page', params.page);
+    if (params.size !== undefined) httpParams = httpParams.set('size', params.size);
+    if (params.sort) httpParams = httpParams.set('sort', params.sort);
+
+    return this.http.get<Page<MultaDetalle>>(`${this.apiUrl}/usuario/${usuarioId}/detalle`, { params: httpParams }).pipe(
       catchError(err => this.manejarError(err))
     );
   }
