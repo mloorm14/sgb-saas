@@ -27,6 +27,13 @@ public interface MultaRepository extends JpaRepository<Multa, Long> {
     @Query("SELECT m FROM Multa m JOIN Prestamo p ON p.id = m.prestamoId WHERE p.usuarioId = :usuarioId")
     Page<Multa> findByUsuarioId(@Param("usuarioId") Long usuarioId, Pageable pageable);
 
+    // Saldo total pendiente (monto - monto_pagado) por usuario:
+    // alimenta la tarjeta "Total Pendiente" del módulo de gestión de multas.
+    @Query("SELECT COALESCE(SUM(m.monto - m.montoPagado), 0) FROM Multa m JOIN Prestamo p ON p.id = m.prestamoId "
+            + "WHERE p.usuarioId = :usuarioId AND m.estadoMultaId = :estadoMultaId")
+    BigDecimal sumSaldoByUsuarioIdAndEstadoMultaId(@Param("usuarioId") Long usuarioId,
+                                                   @Param("estadoMultaId") Integer estadoMultaId);
+
     // ── Módulo de préstamos (ventanilla) ─────────────────────
     // Las 3 consultas siguientes comparten el mismo join ad hoc de arriba.
     // estadoMultaId SIEMPRE llega resuelto por nombre desde
