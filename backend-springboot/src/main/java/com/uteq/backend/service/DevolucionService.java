@@ -4,6 +4,8 @@ import com.uteq.backend.dto.DanoDetalleResponseDTO;
 import com.uteq.backend.dto.DevolucionCompletaResponseDTO;
 import com.uteq.backend.dto.DevolucionHistorialDTO;
 import com.uteq.backend.dto.DevolucionRequestDTO;
+import com.uteq.backend.dto.EvidenciaDanoArchivoDTO;
+import com.uteq.backend.dto.EvidenciaDanoResponseDTO;
 import com.uteq.backend.dto.TipoDanoDTO;
 import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.EstadoMulta;
@@ -31,12 +33,15 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,6 +52,9 @@ public class DevolucionService {
     private static final String TABLA_REGISTRO_DANOS = "registro_danos";
     private static final String TABLA_PRESTAMOS = "prestamos";
     private static final int LIMITE_HISTORIAL = 10;
+    private static final String CLAVE_MAX_TAMANO_EVIDENCIA_MB = "max_tamano_evidencia_mb";
+    private static final Set<String> TIPOS_EVIDENCIA_PERMITIDOS = Set.of(
+            "image/jpeg", "image/png", "image/webp", "image/avif");
 
     private final PrestamoRepository prestamoRepo;
     private final PrestamoProcedureRepository prestamoProcRepo;
@@ -60,6 +68,7 @@ public class DevolucionService {
     private final RegistroDanoDetalleRepository registroDanoDetalleRepo;
     private final EvidenciaDanoRepository evidenciaDanoRepo;
     private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
+    private final ConfiguracionSistemaService configuracionSistemaService;
 
     public DevolucionService(PrestamoRepository prestamoRepo,
                              PrestamoProcedureRepository prestamoProcRepo,
@@ -72,7 +81,8 @@ public class DevolucionService {
                              RegistroDanoRepository registroDanoRepo,
                              RegistroDanoDetalleRepository registroDanoDetalleRepo,
                              EvidenciaDanoRepository evidenciaDanoRepo,
-                             BitacoraAuditoriaRepository bitacoraAuditoriaRepo) {
+                             BitacoraAuditoriaRepository bitacoraAuditoriaRepo,
+                             ConfiguracionSistemaService configuracionSistemaService) {
         this.prestamoRepo = prestamoRepo;
         this.prestamoProcRepo = prestamoProcRepo;
         this.usuarioRepo = usuarioRepo;
@@ -85,6 +95,7 @@ public class DevolucionService {
         this.registroDanoDetalleRepo = registroDanoDetalleRepo;
         this.evidenciaDanoRepo = evidenciaDanoRepo;
         this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
+        this.configuracionSistemaService = configuracionSistemaService;
     }
 
     @Transactional
@@ -291,5 +302,75 @@ public class DevolucionService {
                 .fechaHora(OffsetDateTime.now())
                 .build();
         bitacoraAuditoriaRepo.save(evento);
+    }
+
+    // ── Evidencia fotográfica ──────────────────────────────
+
+    @Transactional
+    public EvidenciaDanoResponseDTO subirEvidencia(Long registroDanoId, MultipartFile archivo, Long bibliotecarioId) {
+        RegistroDano registro = registroDanoRepo.findById(registroDanoId)
+                .orElseThrow(() -> new EntityNotFoundException("Registro de daño no encontrado: " + registroDanoId));
+
+        if (archivo == null || archivo.isEmpty()) {
+            throw new IllegalArgumentException("Debe adjuntar un archivo de imagen");
+        }
+
+        String contentType = archivo.getContentType();
+        if (contentType == null || !TIPOS_EVIDENCIA_PERMITIDOS.contains(contentType)) {
+            throw new IllegalArgumentException(
+                    "Tipo de imagen no permitido: " + contentType
+                            + ". Solo se admiten JPG, JPEG, PNG, WebP y AVIF.");
+        }
+
+        int maxTamanoMb = configuracionSistemaService.obtenerValorEntero(CLAVE_MAX_TAMANO_EVIDENCIA_MB);
+        long maxTamanoBytes = maxTamanoMb * 1024L * 1024L;
+        if (archivo.getSize() > maxTamanoBytes) {
+            throw new IllegalArgumentException(
+                    "La imagen excede el tamaño máximo permitido de " + maxTamanoMb + " MB");
+        }
+
+        EvidenciaDano evidencia = new EvidenciaDano();
+        evidencia.setRegistroDanoId(registroDanoId);
+        evidencia.setArchivoNombre(archivo.getOriginalFilename());
+        evidencia.setArchivoTipo(contentType);
+        try {
+            evidencia.setArchivoBytes(archivo.getBytes());
+        } catch (IOException e) {
+            throw new IllegalStateException("Error al leer el archivo: " + e.getMessage());
+        }
+        evidencia.setSubidoEn(OffsetDateTime.now());
+        evidencia = evidenciaDanoRepo.save(evidencia);
+
+        return new EvidenciaDanoResponseDTO(
+                evidencia.getId(),
+                evidencia.getRegistroDanoId(),
+                evidencia.getArchivoNombre(),
+                evidencia.getArchivoTipo(),
+                evidencia.getSubidoEn());
+    }
+
+    @Transactional(readOnly = true)
+    public List<EvidenciaDanoResponseDTO> listarEvidencias(Long registroDanoId) {
+        return evidenciaDanoRepo.findByRegistroDanoId(registroDanoId).stream()
+                .map(e -> new EvidenciaDanoResponseDTO(
+                        e.getId(), e.getRegistroDanoId(),
+                        e.getArchivoNombre(), e.getArchivoTipo(), e.getSubidoEn()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public EvidenciaDanoResponseDTO obtenerArchivoEvidencia(Long id) {
+        EvidenciaDano evidencia = evidenciaDanoRepo.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Evidencia no encontrada: " + id));
+        return new EvidenciaDanoResponseDTO(
+                evidencia.getId(), evidencia.getRegistroDanoId(),
+                evidencia.getArchivoNombre(), evidencia.getArchivoTipo(), evidencia.getSubidoEn());
+    }
+
+    @Transactional(readOnly = true)
+    public EvidenciaDanoArchivoDTO obtenerArchivoBinario(Long id) {
+        EvidenciaDano evidencia = evidenciaDanoRepo.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Evidencia no encontrada: " + id));
+        return new EvidenciaDanoArchivoDTO(evidencia.getArchivoTipo(), evidencia.getArchivoBytes());
     }
 }
