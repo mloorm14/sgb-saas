@@ -1,12 +1,10 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { catchError, Observable, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Autor } from '../models/autor.model';
 import { ProblemDetail } from '../models/problem-detail.model';
 
-// Contrato de AutorController (/api/v1/autores): array plano, sin
-// paginación. Verificado en backend-springboot.
 @Injectable({
   providedIn: 'root'
 })
@@ -22,8 +20,18 @@ export class AutorService {
     );
   }
 
-  // RFC 7807: el backend responde ProblemDetail. El error se re-lanza
-  // intacto (status + error.detail siguen disponibles en el componente).
+  buscar(texto: string): Observable<Autor[]> {
+    return this.http.get<Autor[]>(`${this.apiUrl}/buscar`, { params: { q: texto } }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  crear(nombre: string): Observable<Autor> {
+    return this.http.post<Autor>(this.apiUrl, { nombre }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
   private manejarError(err: unknown): Observable<never> {
     const problem = (err as { error?: ProblemDetail })?.error;
     if (problem?.status) {

@@ -1,285 +1,293 @@
 <main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
 
-  <!-- ─── ENCABEZADO (mismo formato que Libros) ─── -->
-  <div class="mb-lg">
-    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Préstamos</h1>
-    <p class="font-body-sm text-body-sm text-on-surface-variant">Atención en ventanilla — BIBLIOTECARIO y GERENTE</p>
-  </div>
+    <!-- Encabezado -->
+    <div class="mb-lg">
+      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Gestión de Préstamos</h1>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">Administra préstamos, devoluciones y reservas de forma rápida.</p>
+    </div>
 
-  <!-- ─── BUSCAR USUARIO POR CÉDULA ─── -->
-  <div class="mb-md max-w-xl">
-    <div class="relative">
-      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[22px] pointer-events-none">search</span>
-      <input [(ngModel)]="cedulaBusqueda"
-        (ngModelChange)="onInputCedula()"
-        (keyup.enter)="buscarUsuario()"
-        type="text" inputmode="numeric" maxlength="10"
-        placeholder="Ingresa la cédula del usuario"
-        class="w-full h-11 pl-11 pr-28 rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" />
-      <button (click)="buscarUsuario()" [disabled]="!esCedulaValida || buscando"
-        class="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center gap-xs hover:bg-on-primary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
-        Buscar
+    <!-- ─── Búsqueda Principal ─── -->
+    <div class="relative mb-10 rounded-2xl max-w-4xl">
+      <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+        <span class="material-symbols-outlined text-primary text-3xl">search</span>
+      </div>
+      <input [(ngModel)]="correoBusqueda"
+        (ngModelChange)="onInputCorreo()"
+        (keydown)="onKeydownCorreo($event)"
+        (focus)="onFocusCorreo()"
+        (blur)="onBlurCorreo()"
+        autocomplete="off"
+        class="block w-full pl-14 pr-28 py-5 bg-surface-container-lowest border border-outline-variant/50 rounded-2xl text-body-lg text-on-surface placeholder-on-surface-variant focus:ring-primary focus:border-primary shadow-sm transition-all"
+        placeholder="Ingresa el correo del usuario"
+        type="text" />
+      <button (click)="buscarUsuario()" [disabled]="correoBusqueda.trim().length < 2 || buscando"
+        class="absolute inset-y-2 right-2 flex items-center gap-1.5 px-5 py-2 bg-primary hover:bg-on-primary-fixed-variant text-white font-semibold rounded-xl transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">{{ buscando ? 'progress_activity' : 'search' }}</span>
+        {{ buscando ? 'Buscando...' : 'Buscar' }}
       </button>
     </div>
-    @if (!esCedulaValida && cedulaBusqueda.length > 0) {
-      <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">La cédula tiene 10 dígitos (solo números)</p>
-    }
-  </div>
 
-  @if (buscando) {
-    <p class="font-body-sm text-body-sm text-on-surface-variant mb-md flex items-center gap-xs">
-      <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
-      Buscando usuario...
-    </p>
-  }
-
-  @if (errorCedula) {
-    <div class="mb-md flex items-center gap-sm rounded-lg border border-error/30 bg-error-container px-md py-sm max-w-xl">
-      <span class="material-symbols-outlined text-error text-[20px]">error</span>
-      <p class="font-body-sm text-body-sm text-error">{{ errorCedula }}</p>
-      <button (click)="limpiarBusqueda()" class="ml-auto font-label-sm text-label-sm text-error hover:underline cursor-pointer">Limpiar</button>
-    </div>
-  }
-
-  <!-- ─── ESTADO VACÍO (fondo gris más oscuro que la pantalla) ─── -->
-  @if (!usuario && !buscando && !errorCedula) {
-    <div class="rounded-xl bg-surface-container-high border border-outline-variant/60 py-16 flex flex-col items-center justify-center gap-sm">
-      <span class="material-symbols-outlined text-[64px] text-outline-variant select-none">person_search</span>
-      <p class="font-body-md text-body-md text-on-surface-variant">Ingresa una cédula para comenzar</p>
-    </div>
-  }
-
-  <!-- ─── TARJETA DE IDENTIFICACIÓN DEL USUARIO ─── -->
-  @if (usuario) {
-    <div class="bg-white rounded-xl border border-outline-variant shadow-sm p-md mb-md flex items-center gap-md flex-wrap">
-      <span class="w-14 h-14 rounded-full bg-primary text-on-primary flex items-center justify-center font-headline-md text-[18px] shrink-0">{{ iniciales(usuario.nombreCompleto) }}</span>
-      <div class="min-w-0">
-        <p class="font-body-lg text-body-lg font-semibold text-on-surface truncate">{{ usuario.nombreCompleto }}</p>
-        <p class="font-body-sm text-body-sm text-on-surface-variant">Cédula: {{ usuario.cedula || '—' }} · {{ usuario.correo }}</p>
-      </div>
-      <div class="sm:ml-auto flex items-center gap-md flex-wrap">
-        <div class="text-right">
-          <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Tipo de usuario</p>
-          <p class="font-body-sm text-body-sm text-on-surface">{{ tiposUsuarioTexto(usuario.tiposUsuario) }}</p>
-        </div>
-        <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[12px]" [class]="claseEstadoCuenta(usuario.estadoCuenta)">
-          <span class="material-symbols-outlined text-[14px]">{{ iconoEstadoCuenta(usuario.estadoCuenta) }}</span>
-          {{ etiquetaEstadoCuenta(usuario.estadoCuenta) }}
-        </span>
-      </div>
-    </div>
-
-    <!-- Mensajes de las acciones -->
-    @if (exitoMsg) {
-      <div class="mb-md flex items-center gap-sm rounded-lg border border-success/40 bg-success/10 px-md py-sm">
-        <span class="material-symbols-outlined text-success text-[20px]">check_circle</span>
-        <p class="font-body-sm text-body-sm text-success">{{ exitoMsg }}</p>
-      </div>
-    }
-    @if (errorMsgAccion) {
-      <div class="mb-md flex items-center gap-sm rounded-lg border border-error/30 bg-error-container px-md py-sm">
-        <span class="material-symbols-outlined text-error text-[20px]">error</span>
-        <p class="font-body-sm text-body-sm text-error">{{ errorMsgAccion }}</p>
-      </div>
-    }
-
-    <!-- ═══ CASO C: USUARIO BLOQUEADO ═══ -->
-    @if (estaBloqueado) {
-      <div class="bg-white rounded-xl border border-error/30 shadow-sm p-md mb-md">
-        <div class="flex items-start gap-sm">
-          <span class="w-10 h-10 rounded-full bg-error-container flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-error text-[24px]">warning</span>
-          </span>
-          <div class="min-w-0">
-            <h3 class="font-body-lg text-body-lg font-semibold text-error mb-xs">Usuario Bloqueado</h3>
-            <p class="font-body-sm text-body-sm text-on-surface mb-md">{{ motivoBloqueo }}</p>
-            <button (click)="gestionarMultas()"
-              class="h-9 px-md rounded bg-error text-on-error font-label-sm text-label-sm flex items-center gap-xs hover:opacity-90 cursor-pointer">
-              <span class="material-symbols-outlined text-[18px]">payments</span>
-              Gestionar Multas
-            </button>
-          </div>
-        </div>
-      </div>
-    }
-
-    <!-- ═══ CASO A: RESERVA ENCONTRADA ═══ -->
-    @if (!estaBloqueado && cargandoReserva) {
-      <div class="bg-white rounded-xl border border-outline-variant shadow-sm p-md mb-md">
-        <p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-xs">
-          <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
-          Consultando reservas vigentes...
-        </p>
-      </div>
-    }
-
-    @if (!estaBloqueado && reserva) {
-      <div class="bg-white rounded-xl border border-primary/25 shadow-sm p-md mb-md">
-        <div class="flex items-center gap-sm mb-md">
-          <span class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-primary text-[22px]">bookmark_added</span>
-          </span>
-          <h3 class="font-body-lg text-body-lg font-semibold text-on-surface">Reserva Encontrada</h3>
-        </div>
-
-        <div class="grid md:grid-cols-2 gap-md mb-md">
-          <div class="flex flex-col gap-xs">
-            <p class="font-body-md text-body-md font-semibold text-on-surface">{{ reserva.titulo }}</p>
-            <p class="font-body-sm text-body-sm text-on-surface-variant">{{ reserva.autores.length > 0 ? reserva.autores.join(', ') : 'Autor desconocido' }}</p>
-            <p class="font-body-sm text-body-sm text-on-surface-variant">ISBN: <span class="font-mono">{{ reserva.isbn }}</span></p>
-            <p class="font-body-sm text-body-sm text-on-surface-variant">Reservada el {{ formatearFechaHora(reserva.fechaReserva) }}</p>
-            <p class="font-body-sm text-body-sm text-on-surface-variant">Límite de retiro: {{ formatearFechaHora(reserva.fechaLimiteRetiro) }}</p>
-          </div>
-          <div class="rounded-lg bg-surface-container-low p-sm self-start w-full md:max-w-56">
-            <label for="dias-reserva" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Días de préstamo</label>
-            <input id="dias-reserva" [(ngModel)]="diasReserva" type="number" min="1" max="90"
-              class="w-full h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" />
-            <p class="font-body-sm text-body-sm text-on-surface mt-sm">
-              Devolución estimada:
-              <span class="font-semibold text-on-surface">{{ fechaDevolucionEstimada(diasReserva) }}</span>
-            </p>
-          </div>
-        </div>
-
-        <button (click)="confirmarEntrega()"
-          [disabled]="!diasReserva || diasReserva < 1 || confirmandoEntrega"
-          class="h-10 px-lg rounded bg-secondary text-on-secondary font-label-md text-label-sm flex items-center gap-xs hover:bg-on-secondary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
-          <span class="material-symbols-outlined text-[18px]">task_alt</span>
-          {{ confirmandoEntrega ? 'Confirmando...' : 'Confirmar Entrega' }}
-        </button>
-      </div>
-    }
-
-    <!-- ═══ CASO B: PRÉSTAMO DIRECTO ═══ -->
-    @if (!estaBloqueado && !cargandoReserva && !reserva) {
-      <div class="bg-white rounded-xl border border-outline-variant shadow-sm p-md mb-md">
-        <div class="flex items-center gap-sm mb-md">
-          <span class="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-primary text-[22px]">menu_book</span>
-          </span>
-          <div>
-            <h3 class="font-body-lg text-body-lg font-semibold text-on-surface">Registrar Préstamo Directo</h3>
-            <p class="font-label-sm text-label-sm text-on-surface-variant">El usuario no tiene reservas vigentes; buscá el libro manualmente</p>
-          </div>
-        </div>
-
-        <!-- Búsqueda de libro con sugerencias -->
-        <div class="relative max-w-xl mb-md">
-          <label for="buscar-libro" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Buscar libro (título o ISBN)</label>
-          <input id="buscar-libro" [(ngModel)]="textoLibro"
-            (ngModelChange)="buscarSugerencias()"
-            (blur)="mostrarSugerencias = false"
-            type="text" autocomplete="off"
-            placeholder="Ej: Clean Code o 9780132350884"
-            class="w-full h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" />
-          @if (buscandoSugerencias) {
-            <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Buscando coincidencias...</p>
-          }
-          @if (mostrarSugerencias && sugerenciasLibro.length > 0) {
-            <ul class="absolute z-10 left-0 right-0 mt-1 bg-white border border-outline-variant rounded-lg shadow-md max-h-60 overflow-auto">
-              @for (sugerencia of sugerenciasLibro; track sugerencia.id) {
-                <li>
-                  <button type="button" (mousedown)="$event.preventDefault()" (click)="seleccionarLibro(sugerencia)"
-                    class="w-full text-left px-md py-sm hover:bg-surface-container-low flex items-center justify-between gap-sm cursor-pointer">
-                    <span class="font-body-sm text-body-sm text-on-surface truncate">{{ sugerencia.titulo }}</span>
-                    @if (sugerencia.disponible) {
-                      <span class="shrink-0 inline-flex items-center gap-xxs px-xs rounded-full bg-success/15 text-success font-label-sm text-[11px]">
-                        <span class="material-symbols-outlined text-[12px]">check</span> Disponible
-                      </span>
-                    } @else {
-                      <span class="shrink-0 inline-flex items-center gap-xxs px-xs rounded-full bg-error-container text-error font-label-sm text-[11px]">
-                        <span class="material-symbols-outlined text-[12px]">close</span> Sin ejemplares
-                      </span>
-                    }
-                  </button>
-                </li>
-              }
-            </ul>
-          } @else if (mostrarSugerencias && textoLibro.trim().length >= 2) {
-            <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Sin coincidencias para "{{ textoLibro }}"</p>
-          }
-        </div>
-
-        <!-- Detalle del libro seleccionado -->
-        @if (libroSeleccionado) {
-          <div class="rounded-lg border border-outline-variant bg-surface-container-low p-sm mb-md max-w-xl">
-            <p class="font-body-md text-body-md font-semibold text-on-surface">{{ libroSeleccionado.titulo }}</p>
-            <p class="font-body-sm text-body-sm text-on-surface-variant">
-              {{ libroSeleccionado.autores.length > 0 ? libroSeleccionado.autores.join(', ') : 'Autor desconocido' }}
-              · ISBN: <span class="font-mono">{{ libroSeleccionado.isbn }}</span>
-            </p>
-            <p class="font-body-sm text-body-sm mt-xs" [class.text-success]="libroSeleccionado.stockDisponible > 0" [class.text-error]="libroSeleccionado.stockDisponible <= 0">
-              Ejemplares disponibles: {{ libroSeleccionado.stockDisponible }}
-            </p>
-          </div>
-        }
-
-        @if (advertenciaStock) {
-          <div class="mb-md flex items-center gap-sm rounded-lg border border-warning/50 bg-tertiary-fixed/40 px-md py-sm max-w-xl">
-            <span class="material-symbols-outlined text-tertiary text-[20px]">warning</span>
-            <p class="font-body-sm text-body-sm text-tertiary">{{ advertenciaStock }}</p>
-          </div>
-        }
-
-        <div class="flex flex-wrap items-end gap-md">
-          <div class="w-40">
-            <label for="dias-directo" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Días de préstamo</label>
-            <input id="dias-directo" [(ngModel)]="diasDirecto" type="number" min="1" max="90"
-              class="w-full h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" />
-          </div>
-          <p class="font-body-sm text-body-sm text-on-surface pb-2.5">
-            Devolución estimada: <span class="font-semibold">{{ fechaDevolucionEstimada(diasDirecto) }}</span>
-          </p>
-          <button (click)="registrarPrestamoDirecto()" [disabled]="!puedeRegistrarDirecto"
-            class="h-10 px-lg rounded bg-secondary text-on-secondary font-label-md text-label-sm flex items-center gap-xs hover:bg-on-secondary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ml-auto">
-            <span class="material-symbols-outlined text-[18px]">how_to_reg</span>
-            {{ registrandoDirecto ? 'Registrando...' : 'Registrar Préstamo' }}
-          </button>
-        </div>
-      </div>
-    }
-
-    <!-- ═══ HISTORIAL RECIENTE (siempre visible tras encontrar al usuario) ═══ -->
-    <div class="bg-white rounded-xl border border-outline-variant shadow-sm p-md">
-      <h3 class="font-body-lg text-body-lg font-semibold text-on-surface mb-md">Historial Reciente</h3>
-
-      @if (avisoDevolucion) {
-        <div class="mb-md flex items-center gap-sm rounded-lg border border-warning/50 bg-tertiary-fixed/40 px-md py-sm">
-          <span class="material-symbols-outlined text-tertiary text-[20px]">warning</span>
-          <p class="font-body-sm text-body-sm text-tertiary">{{ avisoDevolucion }}</p>
-        </div>
-      }
-
-      @if (cargandoHistorial) {
-        <p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-xs">
-          <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
-          Cargando historial...
-        </p>
-      } @else if (historial.length === 0) {
-        <p class="font-body-sm text-body-sm text-on-surface-variant py-md text-center">Este usuario no tiene préstamos registrados</p>
-      } @else {
-        <ol class="relative ml-3 border-l-2 border-outline-variant/50 flex flex-col gap-md pt-xs">
-          @for (item of historial; track item.prestamoId) {
-            <li class="relative pl-md pb-xs">
-              <span class="absolute -left-[13px] top-0 w-6 h-6 rounded-full flex items-center justify-center" [class]="claseIconoHistorial(item)">
-                <span class="material-symbols-outlined text-[14px]">{{ iconoHistorial(item) }}</span>
-              </span>
-              <p class="font-body-sm text-body-sm font-medium text-on-surface">{{ item.libroTitulo }}</p>
-              <p class="font-label-sm text-label-sm text-on-surface-variant">{{ textoSecundarioHistorial(item) }}</p>
-              <p class="font-label-sm text-label-sm text-on-surface-variant/70">Préstamo #{{ item.prestamoId }} · {{ formatearFecha(item.fechaPrestamo) }}</p>
-              @if (!item.fechaDevolucionReal) {
-                <button (click)="registrarDevolucion(item.prestamoId)"
-                  [disabled]="devolviendoPrestamoId === item.prestamoId"
-                  class="mt-xs h-8 px-sm rounded border border-outline-variant bg-white text-on-surface font-label-sm text-label-sm flex items-center gap-xs hover:bg-surface-container-low disabled:opacity-50 cursor-pointer">
-                  <span class="material-symbols-outlined text-[16px]">assignment_return</span>
-                  {{ devolviendoPrestamoId === item.prestamoId ? 'Devolviendo...' : 'Registrar devolución' }}
-                </button>
-              }
+    <!-- Dropdown sugerencias de correo -->
+    @if (mostrarSugerenciasCorreo && sugerenciasCorreo.length > 0) {
+      <div class="mt-1 mb-8 relative z-20 max-w-4xl">
+        <ul class="bg-surface-container-lowest border border-outline-variant/50 rounded-2xl shadow-lg overflow-hidden">
+          @for (sugerencia of sugerenciasCorreo; track sugerencia.id; let i = $index) {
+            <li>
+              <button type="button"
+                (mousedown)="$event.preventDefault()"
+                (click)="seleccionarSugerenciaCorreo(sugerencia)"
+                class="w-full text-left px-6 py-4 hover:bg-surface-container-low flex items-center justify-between gap-3 transition-colors"
+                [class.bg-surface-container-low]="i === indiceActivoCorreo">
+                <div class="flex items-center gap-4">
+                  <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                    {{ iniciales(sugerencia.nombreCompleto) }}
+                  </div>
+                  <div>
+                    <p class="font-semibold text-on-surface">{{ sugerencia.nombreCompleto }}</p>
+                    <p class="text-sm text-on-surface-variant">{{ sugerencia.correo }}</p>
+                  </div>
+                </div>
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                  [class]="claseEstadoCuenta(sugerencia.estadoCuenta)">
+                  {{ etiquetaEstadoCuenta(sugerencia.estadoCuenta) }}
+                </span>
+              </button>
             </li>
           }
-        </ol>
-      }
+        </ul>
+      </div>
+    }
+
+    <!-- ─── Estado Vacío ─── -->
+    @if (!usuario && !buscando && !errorBusqueda) {
+      <div class="text-center py-20">
+        <span class="material-symbols-outlined text-6xl text-outline-variant mb-4 block">person_search</span>
+        <h3 class="text-xl font-medium text-on-surface-variant mb-2">Ingresa un correo para comenzar</h3>
+        <p class="text-outline max-w-md mx-auto">Escribe al menos 2 caracteres para ver sugerencias de usuarios.</p>
+      </div>
+    }
+
+    <!-- ─── Error de búsqueda ─── -->
+    @if (errorBusqueda) {
+      <div class="mb-8 flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl p-5 shadow-sm">
+        <span class="material-symbols-outlined text-red-500 text-3xl">error</span>
+        <div class="flex-1">
+          <p class="text-red-700 font-medium">{{ errorBusqueda }}</p>
     </div>
-  }
+  </div>
+}
+
+    <!-- ─── Loading ─── -->
+    @if (buscando) {
+      <div class="text-center py-10">
+        <span class="material-symbols-outlined text-4xl text-primary animate-spin block mb-3">progress_activity</span>
+        <p class="text-on-surface-variant">Buscando usuario...</p>
+      </div>
+    }
+
+    <!-- ═══ CONTENIDO DINÁMICO ═══ -->
+    @if (usuario) {
+      <div class="space-y-6">
+
+        <!-- Perfil del Usuario -->
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-5 flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-lg border-2 border-white shadow-sm">
+              {{ iniciales(usuario.nombreCompleto) }}
+            </div>
+            <h2 class="font-headline-md text-on-surface text-xl font-bold">{{ usuario.nombreCompleto }}</h2>
+          </div>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold"
+            [class]="claseEstadoCuenta(usuario.estadoCuenta)">
+            <span class="material-symbols-outlined text-sm">{{ iconoEstadoCuenta(usuario.estadoCuenta) }}</span>
+            {{ etiquetaEstadoCuenta(usuario.estadoCuenta) }}
+          </span>
+        </div>
+
+        <!-- Mensajes de acciones -->
+        @if (exitoMsg) {
+          <div class="flex items-center gap-3 bg-green-50 border border-green-200 rounded-2xl p-5 shadow-sm">
+            <span class="material-symbols-outlined text-green-600 text-3xl">check_circle</span>
+            <p class="text-green-700 font-medium flex-1">{{ exitoMsg }}</p>
+          </div>
+        }
+        @if (errorMsgAccion) {
+          <div class="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl p-5 shadow-sm">
+            <span class="material-symbols-outlined text-red-500 text-3xl">error</span>
+            <p class="text-red-700 font-medium flex-1">{{ errorMsgAccion }}</p>
+          </div>
+        }
+
+        <!-- ═══ USUARIO BLOQUEADO ═══ -->
+        @if (estaBloqueado) {
+          <div class="bg-red-50 border border-red-200 rounded-2xl p-6 flex items-start gap-4">
+            <div class="p-3 bg-red-100 rounded-full text-red-600 shrink-0">
+              <span class="material-symbols-outlined text-3xl">error</span>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-xl font-bold text-red-800 mb-2">Usuario Bloqueado</h3>
+              <p class="text-red-700 mb-4">{{ motivoBloqueo }}</p>
+              <button (click)="gestionarMultas()"
+                class="bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 px-6 rounded-lg transition-colors shadow-sm cursor-pointer">
+                Gestionar Multas
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- ═══ RESERVA ACTIVA ═══ -->
+        @if (!estaBloqueado && cargandoReserva) {
+          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-6">
+            <p class="text-on-surface-variant flex items-center gap-2">
+              <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+              Consultando reservas vigentes...
+            </p>
+          </div>
+        }
+
+        @if (!estaBloqueado && reserva) {
+          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-6">
+            <h3 class="font-headline-sm text-on-surface mb-4 flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary">bookmark_added</span>
+              Nuevo Préstamo
+            </h3>
+
+            <div class="flex gap-5 p-4 bg-surface-container-low rounded-xl border border-outline-variant/30 mb-5">
+              <button type="button" (click)="abrirPortada(reserva.libroId, reserva.tienePortada)"
+                class="w-24 h-32 sm:w-28 sm:h-36 shrink-0 rounded-lg overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-low flex items-center justify-center">
+                @if (reserva.tienePortada) {
+                  <app-portada-libro [libroId]="reserva.libroId" [tienePortada]="reserva.tienePortada" />
+                } @else {
+                  <span class="material-symbols-outlined text-[48px] text-outline-variant">menu_book</span>
+                }
+              </button>
+
+              <div class="flex-1 min-w-0">
+                <h4 class="font-bold text-on-surface text-lg mb-1">{{ reserva.titulo }}</h4>
+                <p class="text-sm text-on-surface-variant mb-1">ISBN • {{ reserva.isbn }}</p>
+                <p class="text-sm text-on-surface-variant mb-2">{{ reserva.autores.length > 0 ? reserva.autores.join(', ') : 'Autor desconocido' }}</p>
+                @if (reserva.categorias.length > 0) {
+                  <div class="flex flex-wrap gap-1.5 mb-2">
+                    @for (cat of reserva.categorias; track cat) {
+                      <span class="px-2 py-0.5 bg-surface-container border border-outline-variant/50 rounded text-xs font-medium text-on-surface-variant">{{ cat }}</span>
+                    }
+                  </div>
+                }
+                <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-on-surface-variant">
+                  <span>Año • {{ reserva.anioPublicacion }}</span>
+                  <span>Stock • {{ reserva.stockDisponible }} disponibles</span>
+                  @if (reserva.ubicacionFisica) {
+                    <span>Lugar • {{ reserva.ubicacionFisica }}</span>
+                  }
+                </div>
+              </div>
+
+              <div class="shrink-0 text-right">
+                <p class="text-xs text-on-surface-variant flex items-center gap-1 justify-end">
+                  <span class="material-symbols-outlined text-[14px]">schedule</span>
+                  Reservado: {{ formatearFechaHora(reserva.fechaReserva) }}
+                </p>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-end gap-5">
+              <div class="w-36">
+                <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Días de Préstamo</label>
+                <input [(ngModel)]="diasReserva" type="number" min="1" max="90"
+                  class="w-full border border-outline-variant/50 rounded-lg px-3 py-2 text-body-md bg-white focus:ring-primary focus:border-primary" />
+              </div>
+              <p class="text-sm font-medium text-on-surface-variant pb-2.5">Devolución: <span class="font-semibold text-on-surface">{{ fechaDevolucionEstimada(diasReserva) }}</span></p>
+              <button (click)="confirmarEntrega()"
+                [disabled]="!diasReserva || diasReserva < 1 || confirmandoEntrega"
+                class="bg-primary hover:bg-on-primary-fixed-variant text-white font-medium py-3 px-6 rounded-xl transition-colors shadow-sm text-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ml-auto">
+                <span class="material-symbols-outlined">how_to_reg</span>
+                {{ confirmandoEntrega ? 'Confirmando...' : 'Confirmar Entrega' }}
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- ═══ SIN RESERVA ═══ -->
+        @if (!estaBloqueado && !cargandoReserva && !reserva) {
+          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-6">
+            <h3 class="font-headline-sm text-on-surface mb-4 flex items-center gap-2">
+              <span class="material-symbols-outlined text-on-surface-variant">bookmark_border</span>
+              Sin Reserva Activa
+            </h3>
+            <p class="text-on-surface-variant text-sm text-center py-4">Este usuario no tiene ninguna reserva pendiente de retiro.</p>
+          </div>
+        }
+
+        <!-- ═══ HISTORIAL RECIENTE ═══ -->
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-6">
+          <h3 class="font-headline-sm text-on-surface mb-6 flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">history</span>
+            Historial Reciente
+          </h3>
+
+          @if (cargandoHistorial) {
+            <p class="text-on-surface-variant flex items-center gap-2">
+              <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+              Cargando historial...
+            </p>
+          } @else if (historial.length === 0) {
+            <p class="text-on-surface-variant text-sm text-center py-4">Este usuario no tiene préstamos registrados</p>
+          } @else {
+            <div class="pl-2">
+              @for (item of historial; track item.prestamoId) {
+                <div class="relative flex gap-6 pb-6">
+                  <div class="w-10 h-10 rounded-full flex items-center justify-center z-10 shrink-0 border-2 border-white shadow-sm"
+                    [ngClass]="{
+                      'bg-green-100': !item.multaPendiente && item.fechaDevolucionReal,
+                      'bg-red-100': item.multaPendiente || estaVencido(item),
+                      'bg-blue-100': !item.fechaDevolucionReal && !item.multaPendiente && !estaVencido(item)
+                    }">
+                    <span class="material-symbols-outlined text-[20px]"
+                      [ngClass]="{
+                        'text-green-600': !item.multaPendiente && item.fechaDevolucionReal,
+                        'text-red-600': item.multaPendiente || estaVencido(item),
+                        'text-blue-600': !item.fechaDevolucionReal && !item.multaPendiente && !estaVencido(item)
+                      }">
+                      {{ iconoHistorial(item) }}
+                    </span>
+                  </div>
+                  <div class="pt-2">
+                    <h4 class="font-semibold text-on-surface text-lg">{{ item.libroTitulo }}</h4>
+                    <p class="text-sm text-on-surface-variant mt-1">{{ textoSecundarioHistorial(item) }}</p>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+      </div>
+    }
 
 </main>
+
+<!-- ═══ MODAL PORTADA DEL LIBRO ═══ -->
+@if (portadaModalVisible) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
+    (click)="cerrarPortada()">
+    <div class="absolute inset-0 bg-black/60"></div>
+    <div class="relative z-10 max-w-lg w-full bg-white rounded-xl shadow-xl overflow-hidden"
+      (click)="$event.stopPropagation()">
+      <div class="relative bg-surface-container-low flex items-center justify-center"
+        style="min-height: 300px; max-height: 70vh;">
+        @if (portadaModalCargando) {
+          <span class="material-symbols-outlined text-[48px] text-outline-variant animate-pulse">image</span>
+        } @else if (portadaModalUrl) {
+          <img [src]="portadaModalUrl" alt="Portada del libro"
+            class="max-w-full max-h-[70vh] object-contain" />
+        } @else {
+          <span class="material-symbols-outlined text-[64px] text-outline-variant">menu_book</span>
+        }
+      </div>
+      <button type="button" (click)="cerrarPortada()"
+        class="absolute top-sm right-sm w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 cursor-pointer">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+  </div>
+}

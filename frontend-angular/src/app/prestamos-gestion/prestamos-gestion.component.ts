@@ -3,83 +3,183 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { PrestamoService } from '../core/services/prestamo.service';
 import { LibroService } from '../core/services/libro.service';
-import { Libro, LibroSugerencia } from '../core/models/libro.model';
-import { PrestamoRequest, DevolucionResponse } from '../core/models/prestamo.model';
+import { PrestamoRequest } from '../core/models/prestamo.model';
 import {
   HistorialPrestamo,
   ReservaActiva,
-  UsuarioPrestamos
+  UsuarioPrestamos,
+  UsuarioSugerencia
 } from '../core/models/prestamos-gestion.model';
+import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
 
-// Ventanilla de préstamos del BIBLIOTECARIO (módulo "Préstamos" del
-// sidebar). Flujo según la especificación del módulo:
-// 1. Estado vacío hasta ingresar una cédula válida y buscar.
-// 2. Tarjeta de identificación del usuario encontrado.
-// 3. Caso A: reserva vigente -> "Confirmar Entrega" (convierte la reserva
-//    en préstamo vía reservacionId).
-// 4. Caso B: sin reserva -> préstamo directo con buscador de libros.
-// 5. Caso C: usuario bloqueado (estado != ACTIVO o multas pendientes) ->
-//    alerta con el motivo exacto y acceso a Multas filtrado por el usuario.
-// 6. Historial reciente como línea de tiempo (siempre visible tras buscar).
 @Component({
   selector: 'app-prestamos-gestion',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PortadaLibroComponent],
   templateUrl: './prestamos-gestion.component.html'
 })
 export class PrestamosGestionComponent {
 
-  // ── Búsqueda por cédula ─────────────────────────────────
-  cedulaBusqueda: string = '';
+  // ── Búsqueda por correo (con autocompletado) ─────────────
+  correoBusqueda: string = '';
   buscando: boolean = false;
-  errorCedula: string = '';
+  errorBusqueda: string = '';
   usuario: UsuarioPrestamos | null = null;
 
-  // ── Caso A: reserva activa ──────────────────────────────
+  sugerenciasCorreo: UsuarioSugerencia[] = [];
+  mostrarSugerenciasCorreo: boolean = false;
+  buscandoSugerenciasCorreo: boolean = false;
+  placeholderCorreo: string = 'Ingresa el correo del usuario';
+  indiceActivoCorreo: number = -1;
+  private busquedaCorreo$ = new Subject<string>();
+  private destroy$ = new Subject<void>();
+
+  // ── Reserva activa ──────────────────────────────────────
   reserva: ReservaActiva | null = null;
   cargandoReserva: boolean = false;
   diasReserva: number | null = null;
   confirmandoEntrega: boolean = false;
 
-  // ── Caso B: préstamo directo ────────────────────────────
-  textoLibro: string = '';
-  sugerenciasLibro: LibroSugerencia[] = [];
-  mostrarSugerencias: boolean = false;
-  buscandoSugerencias: boolean = false;
-  libroSeleccionado: Libro | null = null;
-  advertenciaStock: string = '';
-  diasDirecto: number | null = null;
-  registrandoDirecto: boolean = false;
-
   // ── Historial reciente ──────────────────────────────────
   historial: HistorialPrestamo[] = [];
   cargandoHistorial: boolean = false;
 
-  // Mensajes de las acciones (confirmar entrega / registrar directo)
   exitoMsg: string = '';
   errorMsgAccion: string = '';
 
-  // ── Devolución de préstamo ─────────────────────────────
-  devolviendoPrestamoId: number | null = null;
-  avisoDevolucion: string = '';
+  // ── Popup portada del libro ─────────────────────────────
+  portadaModalVisible: boolean = false;
+  portadaModalUrl: string | null = null;
+  portadaModalCargando: boolean = false;
 
   constructor(
     private prestamoService: PrestamoService,
     private libroService: LibroService,
     private router: Router
-  ) {}
-
-  // Solo números, formato de cédula: exactamente 10 dígitos.
-  onInputCedula(): void {
-    this.cedulaBusqueda = this.cedulaBusqueda.replace(/\D/g, '').slice(0, 10);
+  ) {
+    this.busquedaCorreo$.pipe(
+      debounceTime(1300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(texto => this.buscarSugerenciasCorreo(texto));
   }
 
-  get esCedulaValida(): boolean {
-    return /^[0-9]{10}$/.test(this.cedulaBusqueda);
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    this.busquedaCorreo$.complete();
   }
 
-  // Caso C: suspendido/bloqueado O con multas pendientes de pago.
+  // ── Autocompletado de correo ──────────────────────────────
+  onInputCorreo(): void {
+    this.correoBusqueda = this.correoBusqueda.replace(/\s/g, '');
+    this.indiceActivoCorreo = -1;
+    const texto = this.correoBusqueda.trim();
+    if (texto.length < 2) {
+      this.sugerenciasCorreo = [];
+      this.mostrarSugerenciasCorreo = false;
+      this.placeholderCorreo = 'Ingresa el correo del usuario';
+      return;
+    }
+    this.busquedaCorreo$.next(texto);
+  }
+
+  private buscarSugerenciasCorreo(texto: string): void {
+    if (texto.length < 2) {
+      this.sugerenciasCorreo = [];
+      this.mostrarSugerenciasCorreo = false;
+      return;
+    }
+    this.buscandoSugerenciasCorreo = true;
+    this.prestamoService.sugerenciasUsuarios(texto).subscribe({
+      next: (lista) => {
+        this.sugerenciasCorreo = lista;
+        this.mostrarSugerenciasCorreo = lista.length > 0;
+        this.buscandoSugerenciasCorreo = false;
+        if (lista.length > 0) {
+          this.placeholderCorreo = lista[0].correo;
+        } else {
+          this.placeholderCorreo = 'Ingresa el correo del usuario';
+        }
+      },
+      error: () => {
+        this.sugerenciasCorreo = [];
+        this.mostrarSugerenciasCorreo = false;
+        this.buscandoSugerenciasCorreo = false;
+      }
+    });
+  }
+
+  onKeydownCorreo(event: KeyboardEvent): void {
+    if (!this.mostrarSugerenciasCorreo || this.sugerenciasCorreo.length === 0) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        this.buscarUsuario();
+      }
+      return;
+    }
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        this.indiceActivoCorreo = Math.min(this.indiceActivoCorreo + 1, this.sugerenciasCorreo.length - 1);
+        this.placeholderCorreo = this.sugerenciasCorreo[this.indiceActivoCorreo].correo;
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.indiceActivoCorreo = Math.max(this.indiceActivoCorreo - 1, -1);
+        if (this.indiceActivoCorreo >= 0) {
+          this.placeholderCorreo = this.sugerenciasCorreo[this.indiceActivoCorreo].correo;
+        } else {
+          this.placeholderCorreo = 'Ingresa el correo del usuario';
+        }
+        break;
+      case 'Tab':
+        event.preventDefault();
+        if (this.indiceActivoCorreo >= 0) {
+          this.seleccionarSugerenciaCorreo(this.sugerenciasCorreo[this.indiceActivoCorreo]);
+        } else if (this.sugerenciasCorreo.length > 0) {
+          this.seleccionarSugerenciaCorreo(this.sugerenciasCorreo[0]);
+        }
+        break;
+      case 'Enter':
+        event.preventDefault();
+        if (this.indiceActivoCorreo >= 0) {
+          this.seleccionarSugerenciaCorreo(this.sugerenciasCorreo[this.indiceActivoCorreo]);
+        } else {
+          this.buscarUsuario();
+        }
+        break;
+      case 'Escape':
+        this.mostrarSugerenciasCorreo = false;
+        this.indiceActivoCorreo = -1;
+        break;
+    }
+  }
+
+  onFocusCorreo(): void {
+    if (this.sugerenciasCorreo.length > 0 && this.correoBusqueda.trim().length >= 2) {
+      this.mostrarSugerenciasCorreo = true;
+    }
+  }
+
+  onBlurCorreo(): void {
+    setTimeout(() => {
+      this.mostrarSugerenciasCorreo = false;
+      this.indiceActivoCorreo = -1;
+    }, 200);
+  }
+
+  seleccionarSugerenciaCorreo(sugerencia: UsuarioSugerencia): void {
+    this.correoBusqueda = sugerencia.correo;
+    this.sugerenciasCorreo = [];
+    this.mostrarSugerenciasCorreo = false;
+    this.placeholderCorreo = sugerencia.correo;
+    this.buscarUsuario();
+  }
+
+  // ── Búsqueda de usuario ────────────────────────────────
   get estaBloqueado(): boolean {
     if (!this.usuario) return false;
     return this.usuario.estadoCuenta !== 'ACTIVO'
@@ -103,39 +203,38 @@ export class PrestamosGestionComponent {
   }
 
   buscarUsuario(): void {
-    if (!this.esCedulaValida) {
-      this.errorCedula = 'Ingresa una cédula válida de 10 dígitos';
+    if (this.correoBusqueda.trim().length < 2) {
+      this.errorBusqueda = 'Ingresa un correo electrónico válido';
       return;
     }
     this.buscando = true;
-    this.errorCedula = '';
+    this.errorBusqueda = '';
+    this.mostrarSugerenciasCorreo = false;
     this.limpiarResultado();
-    this.prestamoService.buscarUsuarioPorCedula(this.cedulaBusqueda).subscribe({
+    this.prestamoService.buscarUsuarioPorCorreo(this.correoBusqueda).subscribe({
       next: (usuario) => {
         this.usuario = usuario;
         this.buscando = false;
-        // Días de préstamo prellenados según la configuración del sistema.
         this.diasReserva = usuario.diasPrestamoSugerido;
-        this.diasDirecto = usuario.diasPrestamoSugerido;
         this.cargarHistorial(usuario.id);
-        // Caso C: no tiene sentido consultar reserva ni ofrecer formularios.
         if (this.estaBloqueado) return;
         this.consultarReservaActiva(usuario.id);
       },
       error: (err: HttpErrorResponse) => {
         this.buscando = false;
         if (err.status === 404) {
-          this.errorCedula = 'No se encontró ningún usuario con esta cédula';
+          this.errorBusqueda = 'No se encontró ningún usuario con este correo';
         } else {
-          this.errorCedula = 'Error al buscar el usuario. Intenta nuevamente.';
+          this.errorBusqueda = 'Error al buscar el usuario. Intenta nuevamente.';
         }
       }
     });
   }
 
   limpiarBusqueda(): void {
-    this.cedulaBusqueda = '';
-    this.errorCedula = '';
+    this.correoBusqueda = '';
+    this.errorBusqueda = '';
+    this.placeholderCorreo = 'Ingresa el correo del usuario';
     this.limpiarResultado();
   }
 
@@ -145,7 +244,6 @@ export class PrestamosGestionComponent {
     this.cargandoReserva = false;
     this.historial = [];
     this.cargandoHistorial = false;
-    this.limpiarFormularioLibro();
     this.exitoMsg = '';
     this.errorMsgAccion = '';
   }
@@ -161,7 +259,6 @@ export class PrestamosGestionComponent {
       },
       error: (err: HttpErrorResponse) => {
         this.cargandoReserva = false;
-        // 404 = sin reserva vigente -> Caso B (préstamo directo). No es error.
         if (err.status !== 404) {
           this.errorMsgAccion = 'Error al consultar la reserva del usuario.';
         }
@@ -183,15 +280,13 @@ export class PrestamosGestionComponent {
     });
   }
 
-  // Reconsulta reserva e historial tras crear un préstamo (la reserva pasa
-  // a RETIRADA y el historial gana una entrada).
   private refrescarTrasAccion(): void {
     if (!this.usuario) return;
     this.consultarReservaActiva(this.usuario.id);
     this.cargarHistorial(this.usuario.id);
   }
 
-  // ── Caso A: confirmar entrega de la reserva ─────────────
+  // ── Confirmar entrega de reserva ────────────────────────
   confirmarEntrega(): void {
     if (!this.usuario || !this.reserva || !this.diasReserva || this.diasReserva < 1) return;
     this.confirmandoEntrega = true;
@@ -216,89 +311,7 @@ export class PrestamosGestionComponent {
     });
   }
 
-  // ── Caso B: préstamo directo ────────────────────────────
-  buscarSugerencias(): void {
-    const texto = this.textoLibro.trim();
-    this.advertenciaStock = '';
-    if (texto.length < 2) {
-      this.sugerenciasLibro = [];
-      this.mostrarSugerencias = false;
-      return;
-    }
-    this.buscandoSugerencias = true;
-    this.libroService.sugerencias(texto).subscribe({
-      next: (lista) => {
-        this.sugerenciasLibro = lista;
-        this.mostrarSugerencias = true;
-        this.buscandoSugerencias = false;
-      },
-      error: () => {
-        this.buscandoSugerencias = false;
-      }
-    });
-  }
-
-  seleccionarLibro(sugerencia: LibroSugerencia): void {
-    this.mostrarSugerencias = false;
-    this.libroSeleccionado = null;
-    this.advertenciaStock = '';
-    this.libroService.obtener(sugerencia.id).subscribe({
-      next: (libro) => {
-        this.libroSeleccionado = libro;
-        // Validación de ejemplares disponibles: sin stock se bloquea el botón.
-        if (libro.stockDisponible <= 0) {
-          this.advertenciaStock = 'Este libro no tiene ejemplares disponibles.';
-        }
-      },
-      error: () => {
-        this.advertenciaStock = 'No se pudo cargar el detalle del libro seleccionado.';
-      }
-    });
-  }
-
-  limpiarFormularioLibro(): void {
-    this.textoLibro = '';
-    this.sugerenciasLibro = [];
-    this.mostrarSugerencias = false;
-    this.libroSeleccionado = null;
-    this.advertenciaStock = '';
-  }
-
-  get puedeRegistrarDirecto(): boolean {
-    return !!this.libroSeleccionado
-      && !!this.diasDirecto && this.diasDirecto >= 1
-      && (this.libroSeleccionado?.stockDisponible ?? 0) > 0
-      && !this.registrandoDirecto;
-  }
-
-  registrarPrestamoDirecto(): void {
-    if (!this.usuario || !this.puedeRegistrarDirecto) return;
-    this.registrandoDirecto = true;
-    this.exitoMsg = '';
-    this.errorMsgAccion = '';
-    const request: PrestamoRequest = {
-      usuarioId: this.usuario.id,
-      libroId: this.libroSeleccionado!.id,
-      diasPrestamo: this.diasDirecto!
-    };
-    this.prestamoService.crear(request).subscribe({
-      next: () => {
-        this.registrandoDirecto = false;
-        this.exitoMsg = `Préstamo registrado: "${this.libroSeleccionado!.titulo}" prestado por ${this.diasDirecto} día(s).`;
-        this.limpiarFormularioLibro();
-        this.refrescarTrasAccion();
-      },
-      error: (err: HttpErrorResponse) => {
-        this.registrandoDirecto = false;
-        this.errorMsgAccion = detalleDeError(err, 'No se pudo registrar el préstamo.');
-      }
-    });
-  }
-
-  // ── Caso C: gestionar multas en el módulo existente ─────
-  // Lleva al módulo de Multas ya existente, filtrado por este usuario. Si
-  // la pantalla corre dentro del panel del bibliotecario se navega a la
-  // ruta hija (mantiene el sidebar); si no, a la ruta suelta /multas.
+  // ── Caso C ──────────────────────────────────────────────
   gestionarMultas(): void {
     if (!this.usuario) return;
     const dentroDelPanel = this.router.url.includes('/dashboard-bibliotecario');
@@ -306,32 +319,7 @@ export class PrestamosGestionComponent {
     this.router.navigate(ruta, { queryParams: { usuarioId: this.usuario.id } });
   }
 
-  // ── Devolución de préstamo activo ──────────────────────
-  registrarDevolucion(prestamoId: number): void {
-    if (!confirm('¿Confirmás la devolución de este préstamo?')) return;
-    this.devolviendoPrestamoId = prestamoId;
-    this.exitoMsg = '';
-    this.errorMsgAccion = '';
-    this.avisoDevolucion = '';
-    this.prestamoService.devolver(prestamoId).subscribe({
-      next: (resp: DevolucionResponse) => {
-        this.devolviendoPrestamoId = null;
-        if (resp.huboMulta) {
-          this.avisoDevolucion = `Devuelto tarde — Multa pendiente ($${resp.montoMulta.toFixed(2)})`;
-        } else {
-          this.exitoMsg = 'Préstamo devuelto correctamente.';
-        }
-        this.refrescarTrasAccion();
-      },
-      error: (err: HttpErrorResponse) => {
-        this.devolviendoPrestamoId = null;
-        this.errorMsgAccion = detalleDeError(err, 'No se pudo registrar la devolución.');
-      }
-    });
-  }
-
   // ── Presentación ────────────────────────────────────────
-
   iniciales(nombreCompleto: string): string {
     const partes = nombreCompleto.trim().split(/\s+/).filter(Boolean);
     if (partes.length === 0) return '??';
@@ -339,16 +327,12 @@ export class PrestamosGestionComponent {
     return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
   }
 
-  tiposUsuarioTexto(tipos: string[]): string {
-    return tipos.length > 0 ? tipos.join(', ') : '—';
-  }
-
   claseEstadoCuenta(estado: string): string {
     switch (estado) {
-      case 'ACTIVO': return 'bg-success text-white';                       // verde
-      case 'BLOQUEADO_POR_MULTA': return 'bg-error text-on-error';         // rojo
-      case 'PENDIENTE_VERIFICACION': return 'bg-warning text-tertiary';    // ámbar
-      default: return 'bg-surface-container-highest text-on-surface-variant'; // INACTIVO u otro
+      case 'ACTIVO': return 'bg-success text-white';
+      case 'BLOQUEADO_POR_MULTA': return 'bg-error text-on-error';
+      case 'PENDIENTE_VERIFICACION': return 'bg-warning text-tertiary';
+      default: return 'bg-surface-container-highest text-on-surface-variant';
     }
   }
 
@@ -371,7 +355,6 @@ export class PrestamosGestionComponent {
     }
   }
 
-  // Fecha de devolución estimada en tiempo real: hoy + días de préstamo.
   fechaDevolucionEstimada(dias: number | null): string {
     if (!dias || dias < 1) return '—';
     const fecha = new Date();
@@ -394,8 +377,6 @@ export class PrestamosGestionComponent {
     return `${this.formatearFecha(iso)} ${hh}:${mm}`;
   }
 
-  // Días de atraso de un préstamo: contra la devolución real si ya se
-  // devolvió, o contra hoy si sigue pendiente.
   diasDeAtraso(item: HistorialPrestamo): number {
     const fin = item.fechaDevolucionReal ? new Date(item.fechaDevolucionReal) : new Date();
     const esperada = new Date(item.fechaDevolucionEstimada);
@@ -417,12 +398,6 @@ export class PrestamosGestionComponent {
     return 'menu_book';
   }
 
-  claseIconoHistorial(item: HistorialPrestamo): string {
-    if (item.multaPendiente || this.estaVencido(item)) return 'text-error bg-error-container';
-    if (item.fechaDevolucionReal) return 'text-success bg-success/10';
-    return 'text-primary bg-primary-fixed';
-  }
-
   textoSecundarioHistorial(item: HistorialPrestamo): string {
     if (item.multaPendiente && item.fechaDevolucionReal) {
       return `Devuelto tarde (${this.formatearFecha(item.fechaDevolucionReal)}) — Multa pendiente ($${item.montoMultaPendiente.toFixed(2)})`;
@@ -438,10 +413,34 @@ export class PrestamosGestionComponent {
     }
     return `Prestado hasta ${this.formatearFecha(item.fechaDevolucionEstimada)}`;
   }
+
+  // ── Popup portada del libro ─────────────────────────────
+  abrirPortada(libroId: number, tienePortada: boolean): void {
+    if (!tienePortada) return;
+    this.portadaModalVisible = true;
+    this.portadaModalCargando = true;
+    this.portadaModalUrl = null;
+    this.libroService.obtenerPortada(libroId).subscribe({
+      next: (blob) => {
+        this.portadaModalUrl = URL.createObjectURL(blob);
+        this.portadaModalCargando = false;
+      },
+      error: () => {
+        this.portadaModalCargando = false;
+      }
+    });
+  }
+
+  cerrarPortada(): void {
+    if (this.portadaModalUrl) {
+      URL.revokeObjectURL(this.portadaModalUrl);
+    }
+    this.portadaModalVisible = false;
+    this.portadaModalUrl = null;
+    this.portadaModalCargando = false;
+  }
 }
 
-// Extrae el detalle legible de un ProblemDetail (RFC 7807) del backend;
-// cae al mensaje genérico si la respuesta no lo trae.
 function detalleDeError(err: HttpErrorResponse, fallback: string): string {
   const problem = err?.error as { detail?: string } | undefined;
   return problem?.detail ?? fallback;

@@ -78,7 +78,20 @@ public class ReservacionService {
         r.setLibroId(dto.libroId());
         r.setEstadoReservacionId(estadoInicial.getId());
         r.setFechaReserva(ahora);
-        r.setFechaLimiteRetiro(ahora.plusDays(DIAS_LIMITE_RETIRO));
+
+        // Si el frontend provee fechaRetiro, se valida que no sea anterior
+        // a ahora y se usa como base para fechaLimiteRetiro.
+        // Si no se provee, se mantiene la lógica original (now + 1 día).
+        if (dto.fechaRetiro() != null) {
+            if (dto.fechaRetiro().isBefore(ahora)) {
+                throw new IllegalArgumentException(
+                        "La fecha de retiro no puede ser anterior a la fecha actual.");
+            }
+            r.setFechaLimiteRetiro(dto.fechaRetiro().plusDays(DIAS_LIMITE_RETIRO));
+        } else {
+            r.setFechaLimiteRetiro(ahora.plusDays(DIAS_LIMITE_RETIRO));
+        }
+
         return r;
     }
 

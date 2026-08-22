@@ -43,4 +43,10 @@ public interface ReservacionRepository extends JpaRepository<Reservacion, Long> 
     // la tarjeta "Reserva Encontrada" convierte en préstamo.
     Optional<Reservacion> findFirstByUsuarioIdAndEstadoReservacionIdInOrderByFechaReservaDesc(
             Long usuarioId, List<Integer> estadosReservacionIds);
+
+    // Módulo de reservaciones (ventanilla): contar reservas activas del
+    // usuario para el badge "X/3 Reservas activas". "Vigente" = PENDIENTE
+    // o LISTA_PARA_RETIRO, mismo criterio que findFirst...YEstadoReservacionIdIn.
+    long countByUsuarioIdAndEstadoReservacionIdIn(
+            Long usuarioId, List<Integer> estadosReservacionIds);
 }

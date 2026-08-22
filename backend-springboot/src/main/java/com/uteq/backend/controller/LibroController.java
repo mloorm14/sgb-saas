@@ -37,22 +37,17 @@ public class LibroController {
     }
 
     // ── GET /api/v1/libros?page=0&size=10 ────────────────
-    // Módulo 9.1: ?categoriaId= y ?autorId= son mutuamente excluyentes por
-    // simplicidad (combinar ambos filtros a la vez no está en el alcance
-    // de esta rama); si llegan los dos, categoriaId gana.
+    // Filtros combinables: q (título/ISBN), estadoLibroId, categoriaId, autorId.
+    // Si no se envía estadoLibroId, default = ACTIVO.
     @GetMapping
     @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<Page<LibroResponseDTO>> listar(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) Integer estadoLibroId,
             @RequestParam(required = false) Integer categoriaId,
             @RequestParam(required = false) Long autorId,
             @PageableDefault(size = 10, sort = "titulo") Pageable pageable) {
-        if (categoriaId != null) {
-            return ResponseEntity.ok(libroService.listarPorCategoria(categoriaId, pageable));
-        }
-        if (autorId != null) {
-            return ResponseEntity.ok(libroService.listarPorAutor(autorId, pageable));
-        }
-        return ResponseEntity.ok(libroService.listar(pageable));
+        return ResponseEntity.ok(libroService.listarConFiltros(q, estadoLibroId, categoriaId, autorId, pageable));
     }
 
     // ── GET /api/v1/libros/sugerencias?texto= ─────────────

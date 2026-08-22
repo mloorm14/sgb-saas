@@ -36,6 +36,35 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
 
     Page<Libro> findByAutores_IdAndEstado_Nombre(Long autorId, String estadoNombre, Pageable pageable);
 
+    // Filtros de libros (título/ISBN + categoría + autor + estado)
+    Page<Libro> findByEstadoId(Integer estadoId, Pageable pageable);
+
+    Page<Libro> findByCategorias_IdAndEstadoId(Integer categoriaId, Integer estadoId, Pageable pageable);
+
+    Page<Libro> findByAutores_IdAndEstadoId(Long autorId, Integer estadoId, Pageable pageable);
+
+    Page<Libro> findByCategorias_IdAndAutores_IdAndEstadoId(Integer categoriaId, Long autorId, Integer estadoId, Pageable pageable);
+
+    // Búsqueda por título O ISBN con estado específico
+    @Query("SELECT l FROM Libro l WHERE l.estado.id = :estadoId "
+            + "AND (LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) "
+            + "OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', :q, '%')))")
+    Page<Libro> buscarPorTextoOIsbn(@Param("q") String q, @Param("estadoId") Integer estadoId, Pageable pageable);
+
+    // Búsqueda por título O ISBN + categoría
+    @Query("SELECT l FROM Libro l WHERE l.estado.id = :estadoId "
+            + "AND :categoriaId MEMBER OF l.categorias "
+            + "AND (LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) "
+            + "OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', :q, '%')))")
+    Page<Libro> buscarPorTextoOIsbnYCategoria(@Param("q") String q, @Param("categoriaId") Integer categoriaId, @Param("estadoId") Integer estadoId, Pageable pageable);
+
+    // Búsqueda por título O ISBN + autor
+    @Query("SELECT l FROM Libro l WHERE l.estado.id = :estadoId "
+            + "AND :autorId MEMBER OF l.autores "
+            + "AND (LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) "
+            + "OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', :q, '%')))")
+    Page<Libro> buscarPorTextoOIsbnYAutor(@Param("q") String q, @Param("autorId") Long autorId, @Param("estadoId") Integer estadoId, Pageable pageable);
+
     // Módulo 3 (búsqueda predictiva, RF-09/CU-08): similarity(...) es una
     // función de la extensión pg_trgm (ver
     // database/migrations/V6__busqueda_predictiva.sql), sin equivalente en

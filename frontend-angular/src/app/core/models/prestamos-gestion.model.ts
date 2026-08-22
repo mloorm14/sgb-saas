@@ -31,17 +31,38 @@ export interface ReservaActiva {
   fechaReserva: string;
   fechaLimiteRetiro: string;
   diasPrestamoSugerido: number;
+  anioPublicacion: number;
+  stockDisponible: number;
+  stockTotal: number;
+  ubicacionFisica: string | null;
+  categorias: string[];
+  tienePortada: boolean;
 }
 
 // HistorialPrestamoDTO: línea de tiempo del historial reciente. El ícono y
 // el texto secundario se derivan de estadoNombre + multaPendiente.
 export interface HistorialPrestamo {
   prestamoId: number;
+  libroId: number;
   libroTitulo: string;
+  libroIsbn: string;
+  autores: string[];
+  categorias: string[];
   fechaPrestamo: string;
   fechaDevolucionEstimada: string;
   fechaDevolucionReal: string | null;
   estadoNombre: string;
   multaPendiente: boolean;
   montoMultaPendiente: number;
+  usuarioNombre: string;
+  usuarioCorreo: string;
+}
+
+// UsuarioSugerenciaDTO: resultado ligero para el autocompletado predictivo
+// de usuarios por correo (GET /api/v1/prestamos/gestion/sugerencias-usuarios).
+export interface UsuarioSugerencia {
+  id: number;
+  nombreCompleto: string;
+  correo: string;
+  estadoCuenta: string;
 }
