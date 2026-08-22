@@ -28,7 +28,7 @@ public class EvidenciaDanoController {
     }
 
     @PostMapping(value = "/evidencia/{registroDanoId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<EvidenciaDanoResponseDTO> subirEvidencia(
             @PathVariable Long registroDanoId,
             @RequestParam("archivo") MultipartFile archivo,
@@ -38,14 +38,14 @@ public class EvidenciaDanoController {
     }
 
     @GetMapping("/evidencia/{registroDanoId}")
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<List<EvidenciaDanoResponseDTO>> listarEvidencias(
             @PathVariable Long registroDanoId) {
         return ResponseEntity.ok(devolucionService.listarEvidencias(registroDanoId));
     }
 
     @GetMapping("/evidencia/{id}/archivo")
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<byte[]> obtenerArchivo(@PathVariable Long id) {
         var evidencia = devolucionService.obtenerArchivoBinario(id);
         return ResponseEntity.ok()

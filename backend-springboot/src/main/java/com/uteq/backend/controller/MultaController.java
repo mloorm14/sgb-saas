@@ -35,7 +35,7 @@ public class MultaController {
     }
 
     @GetMapping("/usuario/{usuarioId}")
-    @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<Page<MultaResponseDTO>> listarPorUsuario(
             @PathVariable Long usuarioId,
             Authentication authentication,
@@ -45,7 +45,7 @@ public class MultaController {
     }
 
     @GetMapping("/usuario/{usuarioId}/detalle")
-    @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<Page<MultaDetalleResponseDTO>> listarDetallePorUsuario(
             @PathVariable Long usuarioId,
             Authentication authentication,
@@ -55,7 +55,7 @@ public class MultaController {
     }
 
     @PostMapping("/{id}/pago")
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<Map<String, Object>> pagar(
             @PathVariable Long id,
             @RequestBody(required = false) PagoMultaRequestDTO body) {

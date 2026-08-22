@@ -40,7 +40,7 @@ public class ReservacionesGestionController {
     // Busca el usuario por correo completo y retorna su tarjeta de
     // identificación + cantidad de reservas activas.
     @GetMapping("/buscar-usuario")
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<UsuarioReservacionesGestionDTO> buscarUsuario(
             @RequestParam
             @Pattern(regexp = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
@@ -52,7 +52,7 @@ public class ReservacionesGestionController {
     // ── GET /api/v1/reservaciones/gestion/historial-reservaciones?usuarioId= ──
     // Historial de reservaciones del usuario con título del libro resuelto.
     @GetMapping("/historial-reservaciones")
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<List<HistorialReservacionDTO>> historialReservaciones(
             @RequestParam Long usuarioId) {
         return ResponseEntity.ok(

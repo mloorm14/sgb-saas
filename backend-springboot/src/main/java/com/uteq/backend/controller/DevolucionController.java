@@ -31,7 +31,7 @@ public class DevolucionController {
     }
 
     @PostMapping("/prestamo/{prestamoId}")
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<DevolucionCompletaResponseDTO> registrarDevolucion(
             @PathVariable Long prestamoId,
             @Valid @RequestBody DevolucionRequestDTO dto,
@@ -42,7 +42,7 @@ public class DevolucionController {
     }
 
     @GetMapping("/historial")
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<List<DevolucionHistorialDTO>> historialDevoluciones(
             Authentication authentication) {
         Long bibliotecarioId = resolverIdPorCorreo(authentication.getName());
@@ -50,7 +50,7 @@ public class DevolucionController {
     }
 
     @GetMapping("/tipos-dano")
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<List<TipoDanoDTO>> listarTiposDano() {
         return ResponseEntity.ok(devolucionService.listarTiposDano());
     }
