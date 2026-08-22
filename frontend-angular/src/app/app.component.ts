@@ -2,6 +2,7 @@ import { Component, HostListener } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 import { filter } from 'rxjs/operators';
+import { ChatbotWidgetComponent } from './shared/chatbot-widget/chatbot-widget.component';
 
 interface EnlaceNav {
   ruta: string;
@@ -13,7 +14,7 @@ interface EnlaceNav {
 
 @Component({
     selector: 'app-root',
-    imports: [RouterOutlet, RouterLink, RouterLinkActive],
+    imports: [RouterOutlet, RouterLink, RouterLinkActive, ChatbotWidgetComponent],
     templateUrl: './app.component.html',
     styleUrl: './app.component.scss'
 })

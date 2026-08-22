@@ -67,3 +67,7 @@
 }
 
 <router-outlet />
+
+@if (esLector()) {
+  <app-chatbot-widget />
+}
