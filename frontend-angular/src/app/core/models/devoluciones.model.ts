@@ -50,3 +50,11 @@ export interface DevolucionHistorial {
   bibliotecarioNombre: string;
   fechaRegistro: string;
 }
+
+export interface EvidenciaDanoResponse {
+  id: number;
+  registroDanoId: number;
+  archivoNombre: string;
+  archivoTipo: string;
+  subidoEn: string;
+}
