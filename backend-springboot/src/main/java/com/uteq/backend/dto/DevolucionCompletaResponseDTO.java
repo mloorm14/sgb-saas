@@ -10,6 +10,7 @@ import java.util.List;
  */
 public record DevolucionCompletaResponseDTO(
         Long prestamoId,
+        Long registroDanoId,
         boolean huboMultaAtraso,
         BigDecimal montoMultaAtraso,
         boolean huboMultaDano,

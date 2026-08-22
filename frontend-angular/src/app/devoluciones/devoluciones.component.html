@@ -314,8 +314,8 @@
                     @for (ev of evidencias; track ev.id) {
                       <div class="relative w-20 h-20 rounded-lg overflow-hidden border border-outline-variant/50 cursor-pointer shrink-0"
                         (click)="abrirPreviewEvidencia(ev)">
-                        @if (ev.archivoTipo.startsWith('image/')) {
-                          <img [src]="obtenerUrlEvidencia(ev)" alt="Evidencia"
+                        @if (ev.archivo.type.startsWith('image/')) {
+                          <img [src]="ev.previewUrl" alt="Evidencia"
                             class="w-full h-full object-cover" />
                         } @else {
                           <div class="w-full h-full flex items-center justify-center bg-surface-container-low">

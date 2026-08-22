@@ -124,6 +124,7 @@ public class DevolucionService {
 
         BigDecimal montoMultaDano = BigDecimal.ZERO;
         List<DanoDetalleResponseDTO> danosRegistrados = new ArrayList<>();
+        Long registroDanoId = null;
 
         if (hayDanos || esPerdido) {
             RegistroDano registro = new RegistroDano();
@@ -133,6 +134,7 @@ public class DevolucionService {
             registro.setBibliotecarioId(bibliotecarioId);
             registro.setFechaRegistro(OffsetDateTime.now());
             registro = registroDanoRepo.save(registro);
+            registroDanoId = registro.getId();
 
             if (hayDanos) {
                 for (DevolucionRequestDTO.DanoItemDTO item : dto.danos()) {
@@ -213,6 +215,7 @@ public class DevolucionService {
 
         return new DevolucionCompletaResponseDTO(
                 prestamoId,
+                registroDanoId,
                 huboMultaAtraso != null && huboMultaAtraso,
                 montoMultaAtraso,
                 montoMultaDano.compareTo(BigDecimal.ZERO) > 0,

@@ -11,9 +11,14 @@ import {
   DanoItem,
   DevolucionRequest,
   DevolucionCompletaResponse,
-  DevolucionHistorial,
-  EvidenciaDanoResponse
+  DevolucionHistorial
 } from '../core/models/devoluciones.model';
+
+export interface EvidenciaLocal {
+  id: number;
+  archivo: File;
+  previewUrl: string;
+}
 import { BuscadorUsuarioComponent } from '../shared/buscador-usuario/buscador-usuario.component';
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
 
@@ -56,12 +61,13 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
   portadaModalCargando: boolean = false;
 
   // ── Evidencia fotográfica ────────────────────────────
-  evidencias: EvidenciaDanoResponse[] = [];
+  evidencias: EvidenciaLocal[] = [];
   evidenciaPreviewUrl: string | null = null;
   evidenciaPreviewVisible: boolean = false;
   evidenciaPreviewNombre: string = '';
   maxTamanoEvidenciaMb: number = 2;
   tiposEvidenciaPermitidos: string = 'image/jpeg,image/png,image/webp,image/avif';
+  private evidenciaIdCounter: number = 0;
 
   private destroy$ = new Subject<void>();
 
@@ -229,7 +235,12 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
     this.devolucionService.registrarDevolucion(
       this.prestamoSeleccionado.prestamoId, dto
     ).subscribe({
-      next: (resultado) => {
+      next: async (resultado) => {
+        if (resultado.registroDanoId && this.evidencias.length > 0) {
+          await this.subirEvidenciasAlServidor(resultado.registroDanoId);
+        }
+        this.evidencias.forEach(e => URL.revokeObjectURL(e.previewUrl));
+        this.evidencias = [];
         this.procesando = false;
         this.resultadoDevolucion = resultado;
         this.exitoMsg = 'Devolución registrada correctamente.';
@@ -307,58 +318,39 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.prestamoSeleccionado) return;
-
-    this.devolucionService.subirEvidencia(this.prestamoSeleccionado.prestamoId, archivo).subscribe({
-      next: (evidencia) => {
-        this.evidencias.push(evidencia);
-        input.value = '';
-      },
-      error: (err) => {
-        this.errorMsg = err.message || 'Error al subir evidencia.';
-        input.value = '';
-      }
-    });
+    this.evidenciaIdCounter++;
+    const evidencia: EvidenciaLocal = {
+      id: this.evidenciaIdCounter,
+      archivo,
+      previewUrl: URL.createObjectURL(archivo)
+    };
+    this.evidencias.push(evidencia);
+    input.value = '';
   }
 
-  abrirPreviewEvidencia(evidencia: EvidenciaDanoResponse): void {
+  abrirPreviewEvidencia(evidencia: EvidenciaLocal): void {
     this.evidenciaPreviewVisible = true;
-    this.evidenciaPreviewNombre = evidencia.archivoNombre;
-    this.evidenciaPreviewUrl = null;
-    this.devolucionService.obtenerEvidenciaArchivo(evidencia.id).subscribe({
-      next: (blob) => {
-        this.evidenciaPreviewUrl = URL.createObjectURL(blob);
-      },
-      error: () => {
-        this.evidenciaPreviewVisible = false;
-      }
-    });
+    this.evidenciaPreviewNombre = evidencia.archivo.name;
+    this.evidenciaPreviewUrl = evidencia.previewUrl;
   }
 
   cerrarPreviewEvidencia(): void {
-    if (this.evidenciaPreviewUrl) {
-      URL.revokeObjectURL(this.evidenciaPreviewUrl);
-    }
     this.evidenciaPreviewUrl = null;
     this.evidenciaPreviewVisible = false;
   }
 
-  eliminarEvidencia(evidencia: EvidenciaDanoResponse): void {
+  eliminarEvidencia(evidencia: EvidenciaLocal): void {
+    URL.revokeObjectURL(evidencia.previewUrl);
     this.evidencias = this.evidencias.filter(e => e.id !== evidencia.id);
   }
 
-  private evidenciaUrlCache = new Map<number, string>();
-
-  obtenerUrlEvidencia(evidencia: EvidenciaDanoResponse): string {
-    if (this.evidenciaUrlCache.has(evidencia.id)) {
-      return this.evidenciaUrlCache.get(evidencia.id)!;
-    }
-    this.devolucionService.obtenerEvidenciaArchivo(evidencia.id).subscribe({
-      next: (blob) => {
-        const url = URL.createObjectURL(blob);
-        this.evidenciaUrlCache.set(evidencia.id, url);
+  private async subirEvidenciasAlServidor(registroDanoId: number): Promise<void> {
+    for (const ev of this.evidencias) {
+      try {
+        await this.devolucionService.subirEvidencia(registroDanoId, ev.archivo).toPromise();
+      } catch (err) {
+        console.error('Error subiendo evidencia:', ev.archivo.name, err);
       }
-    });
-    return '';
+    }
   }
 }
