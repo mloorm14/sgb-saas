@@ -31,6 +31,7 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   // ── Prestamos activos del usuario ────────────────────
+  usuarioIdSeleccionado: number | null = null;
   prestamosActivos: HistorialPrestamo[] = [];
   cargandoPrestamos: boolean = false;
   prestamoSeleccionado: HistorialPrestamo | null = null;
@@ -165,6 +166,7 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
 
   seleccionarSugerencia(sugerencia: UsuarioSugerencia): void {
     this.correoBusqueda = sugerencia.correo;
+    this.usuarioIdSeleccionado = sugerencia.id;
     this.sugerencias = [];
     this.mostrarSugerencias = false;
     this.placeholderCorreo = sugerencia.correo;
@@ -173,15 +175,15 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
 
   // ── Buscar prestamos activos del usuario ────────────
   buscarPrestamos(): void {
-    const correo = this.correoBusqueda.trim();
-    if (!correo) return;
+    const usuarioId = this.usuarioIdSeleccionado;
+    if (!usuarioId) return;
 
     this.limpiarResultado();
     this.prestamoSeleccionado = null;
     this.cargandoPrestamos = true;
     this.prestamosActivos = [];
 
-    this.prestamoService.historial(0).subscribe({
+    this.prestamoService.historial(usuarioId).subscribe({
       next: (historial) => {
         this.prestamosActivos = historial.filter(p =>
           !p.fechaDevolucionReal && p.estadoNombre === 'ACTIVO'
