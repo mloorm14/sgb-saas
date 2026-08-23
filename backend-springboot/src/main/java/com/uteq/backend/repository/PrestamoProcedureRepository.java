@@ -4,8 +4,11 @@ import com.uteq.backend.entity.Prestamo;
 import com.uteq.backend.repository.projection.LibroMasPrestadoDetalladoProjection;
 import com.uteq.backend.repository.projection.LibroMasPrestadoProjection;
 import com.uteq.backend.repository.projection.PrestamoActivoProjection;
+import com.uteq.backend.repository.projection.ReporteCategoriasDemandadasProjection;
+import com.uteq.backend.repository.projection.ReporteInventarioProjection;
 import com.uteq.backend.repository.projection.ReporteMorosidadProjection;
 import com.uteq.backend.repository.projection.ReporteUsoPorPeriodoProjection;
+import com.uteq.backend.repository.projection.ReporteVencidosProjection;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -148,5 +151,28 @@ public interface PrestamoProcedureRepository extends Repository<Prestamo, Long> 
             @Param("p_desde") OffsetDateTime desde,
             @Param("p_hasta") OffsetDateTime hasta,
             @Param("p_categoria_id") Integer categoriaId
+    );
+
+    @Query(value = "SELECT * FROM fn_reporte_inventario(:p_categoria_id, :p_estado_stock, :p_busqueda)",
+            nativeQuery = true)
+    List<ReporteInventarioProjection> fnReporteInventario(
+            @Param("p_categoria_id") Integer categoriaId,
+            @Param("p_estado_stock") String estadoStock,
+            @Param("p_busqueda") String busqueda
+    );
+
+    @Query(value = "SELECT * FROM fn_reporte_prestamos_vencidos(:p_dias_atraso_min, :p_busqueda)",
+            nativeQuery = true)
+    List<ReporteVencidosProjection> fnReportePrestamosVencidos(
+            @Param("p_dias_atraso_min") Integer diasAtrasoMin,
+            @Param("p_busqueda") String busqueda
+    );
+
+    @Query(value = "SELECT * FROM fn_reporte_categorias_demandadas(:p_limite, :p_desde, :p_hasta)",
+            nativeQuery = true)
+    List<ReporteCategoriasDemandadasProjection> fnReporteCategoriasDemandadas(
+            @Param("p_limite") Integer limite,
+            @Param("p_desde") OffsetDateTime desde,
+            @Param("p_hasta") OffsetDateTime hasta
     );
 }

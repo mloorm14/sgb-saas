@@ -423,6 +423,50 @@ public class PrestamoService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<ReporteInventarioResponseDTO> reporteInventario(
+            Integer categoriaId, String estadoStock, String busqueda) {
+        return prestamoProcRepo.fnReporteInventario(categoriaId, estadoStock, busqueda).stream()
+                .map(p -> new ReporteInventarioResponseDTO(
+                        p.getLibroId(),
+                        p.getTitulo(),
+                        p.getIsbn(),
+                        p.getAutorNombre(),
+                        p.getCategoriaNombre(),
+                        p.getStockTotal(),
+                        p.getStockDisponible(),
+                        p.getEstadoDisponibilidad()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReporteVencidosResponseDTO> reportePrestamosVencidos(Integer diasAtrasoMin, String busqueda) {
+        return prestamoProcRepo.fnReportePrestamosVencidos(diasAtrasoMin, busqueda).stream()
+                .map(p -> new ReporteVencidosResponseDTO(
+                        p.getPrestamoId(),
+                        p.getUsuarioNombre(),
+                        p.getUsuarioCorreo(),
+                        p.getLibroTitulo(),
+                        p.getLibroIsbn(),
+                        p.getFechaDevolucionEstimada() != null ? p.getFechaDevolucionEstimada().atOffset(ZoneOffset.UTC) : null,
+                        p.getDiasAtraso(),
+                        p.getMontoMultaEstimada()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReporteCategoriasDemandadasResponseDTO> reporteCategoriasDemandadas(
+            Integer limite, OffsetDateTime desde, OffsetDateTime hasta) {
+        Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
+        return prestamoProcRepo.fnReporteCategoriasDemandadas(limiteEfectivo, desde, hasta).stream()
+                .map(p -> new ReporteCategoriasDemandadasResponseDTO(
+                        p.getCategoriaId(),
+                        p.getCategoriaNombre(),
+                        p.getTotalPrestamos(),
+                        p.getPorcentaje()))
+                .toList();
+    }
+
     private ReporteMorosidadResponseDTO toDTO(ReporteMorosidadProjection p) {
         return new ReporteMorosidadResponseDTO(
                 p.getUsuarioId(),

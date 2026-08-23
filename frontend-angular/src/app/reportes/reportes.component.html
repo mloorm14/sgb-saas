@@ -1,7 +1,7 @@
 <main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
   <div class="mb-lg">
     <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Reportes gerenciales</h1>
-    <p class="font-body-sm text-body-sm text-on-surface-variant">Estadísticas de morosidad y libros más prestados.</p>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Estadísticas de inventario, morosidad, préstamos y categorías.</p>
   </div>
 
   @if (errorMsg) {
@@ -12,12 +12,10 @@
     <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando reportes…</p>
   }
 
-  <!-- 1) Libros más prestados (detallado) -->
-  <section class="mb-lg">
-    <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
-      <h2 class="font-headline-sm text-headline-sm text-on-surface">Libros más prestados</h2>
-    </div>
-    <div class="flex flex-wrap gap-sm mb-sm items-end">
+  <!-- Filtros globales -->
+  <section class="mb-lg rounded-lg border border-outline-variant bg-white p-md">
+    <h3 class="font-label-md text-label-md text-on-surface mb-sm">Filtros globales</h3>
+    <div class="flex flex-wrap gap-sm items-end">
       <div>
         <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
         <input type="date" [(ngModel)]="fechaDesde"
@@ -45,6 +43,13 @@
         class="h-9 px-md rounded border border-outline-variant font-label-sm text-label-sm hover:bg-surface-container-low cursor-pointer">
         Limpiar
       </button>
+    </div>
+  </section>
+
+  <!-- 1) Libros más prestados (detallado) -->
+  <section class="mb-lg">
+    <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
+      <h2 class="font-headline-sm text-headline-sm text-on-surface">Libros más prestados</h2>
     </div>
     <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
       <table class="w-full text-left">
@@ -125,6 +130,198 @@
             @if (!cargando) {
               <tr>
                 <td colspan="5" class="px-md py-lg text-center text-on-surface-variant">Sin morosidad registrada</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 3) Inventario y disponibilidad -->
+  <section class="mb-lg">
+    <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
+      <h2 class="font-headline-sm text-headline-sm text-on-surface">Inventario y disponibilidad</h2>
+    </div>
+    <div class="flex flex-wrap gap-sm mb-sm items-end">
+      <div>
+        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Buscar</label>
+        <input type="text" [(ngModel)]="busquedaInventario" placeholder="Título, ISBN o autor"
+          class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white w-48" />
+      </div>
+      <div>
+        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Estado</label>
+        <select [(ngModel)]="estadoStock"
+          class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white cursor-pointer">
+          <option value="">Todos</option>
+          <option value="disponible">Disponibles</option>
+          <option value="baja">Baja disponibilidad</option>
+          <option value="agotado">Agotados</option>
+        </select>
+      </div>
+      <button (click)="filtrarInventario()"
+        class="h-9 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm cursor-pointer">
+        Filtrar
+      </button>
+    </div>
+    <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
+      <table class="w-full text-left">
+        <thead class="bg-surface-container-low">
+          <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+            <th class="px-md py-sm">Título</th>
+            <th class="px-md py-sm hidden md:table-cell">ISBN</th>
+            <th class="px-md py-sm hidden lg:table-cell">Autor</th>
+            <th class="px-md py-sm hidden lg:table-cell">Categoría</th>
+            <th class="px-md py-sm text-right">Stock</th>
+            <th class="px-md py-sm text-right">Disponible</th>
+            <th class="px-md py-sm">Estado</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+          @for (item of inventario; track item.libroId) {
+            <tr>
+              <td class="px-md py-sm font-medium">{{ item.titulo }}</td>
+              <td class="px-md py-sm text-on-surface-variant hidden md:table-cell">{{ item.isbn || '—' }}</td>
+              <td class="px-md py-sm hidden lg:table-cell">{{ item.autorNombre }}</td>
+              <td class="px-md py-sm hidden lg:table-cell">
+                <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-primary/10 text-primary">
+                  {{ item.categoriaNombre }}
+                </span>
+              </td>
+              <td class="px-md py-sm text-right">{{ item.stockTotal }}</td>
+              <td class="px-md py-sm text-right font-medium">{{ item.stockDisponible }}</td>
+              <td class="px-md py-sm">
+                @if (item.estadoDisponibilidad === 'Agotado') {
+                  <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-error/15 text-error">
+                    <span class="material-symbols-outlined text-[14px]">block</span> Agotado
+                  </span>
+                } @else if (item.estadoDisponibilidad === 'Baja disponibilidad') {
+                  <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-warning/25 text-on-tertiary-container">
+                    <span class="material-symbols-outlined text-[14px]">warning</span> Baja
+                  </span>
+                } @else {
+                  <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-success/15 text-success">
+                    <span class="material-symbols-outlined text-[14px]">check_circle</span> OK
+                  </span>
+                }
+              </td>
+            </tr>
+          } @empty {
+            @if (!cargando) {
+              <tr>
+                <td colspan="7" class="px-md py-lg text-center text-on-surface-variant">Sin resultados</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 4) Préstamos vencidos activos -->
+  <section class="mb-lg">
+    <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
+      <h2 class="font-headline-sm text-headline-sm text-on-surface">Préstamos vencidos activos</h2>
+    </div>
+    <div class="flex flex-wrap gap-sm mb-sm items-end">
+      <div>
+        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Buscar</label>
+        <input type="text" [(ngModel)]="busquedaVencidos" placeholder="Usuario o libro"
+          class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white w-48" />
+      </div>
+      <div>
+        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Días de atraso mín.</label>
+        <input type="number" [(ngModel)]="diasAtrasoMin" min="0" placeholder="0"
+          class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white w-24" />
+      </div>
+      <button (click)="filtrarVencidos()"
+        class="h-9 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm cursor-pointer">
+        Filtrar
+      </button>
+    </div>
+    <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
+      <table class="w-full text-left">
+        <thead class="bg-surface-container-low">
+          <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+            <th class="px-md py-sm">Usuario</th>
+            <th class="px-md py-sm hidden md:table-cell">Correo</th>
+            <th class="px-md py-sm">Libro</th>
+            <th class="px-md py-sm hidden md:table-cell">ISBN</th>
+            <th class="px-md py-sm">Vencimiento</th>
+            <th class="px-md py-sm text-right">Días</th>
+            <th class="px-md py-sm text-right">Multa est.</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+          @for (v of vencidos; track v.prestamoId) {
+            <tr>
+              <td class="px-md py-sm font-medium">{{ v.usuarioNombre }}</td>
+              <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ v.usuarioCorreo }}</td>
+              <td class="px-md py-sm">{{ v.libroTitulo }}</td>
+              <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ v.libroIsbn || '—' }}</td>
+              <td class="px-md py-sm text-on-surface-variant">{{ fechaCorta(v.fechaDevolucionEstimada) }}</td>
+              <td class="px-md py-sm text-right font-medium text-error">{{ v.diasAtraso }}</td>
+              <td class="px-md py-sm text-right font-medium text-error">$ {{ v.montoMultaEstimada.toFixed(2) }}</td>
+            </tr>
+          } @empty {
+            @if (!cargando) {
+              <tr>
+                <td colspan="7" class="px-md py-lg text-center text-on-surface-variant">Sin préstamos vencidos</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 5) Categorías más demandadas -->
+  <section class="mb-lg">
+    <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
+      <h2 class="font-headline-sm text-headline-sm text-on-surface">Categorías más demandadas</h2>
+    </div>
+    <div class="flex flex-wrap gap-sm mb-sm items-end">
+      <div>
+        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Top N</label>
+        <select [(ngModel)]="limiteCategorias" (ngModelChange)="filtrarCategorias()"
+          class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white cursor-pointer">
+          <option [value]="5">Top 5</option>
+          <option [value]="10">Top 10</option>
+          <option [value]="20">Top 20</option>
+        </select>
+      </div>
+    </div>
+    <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
+      <table class="w-full text-left">
+        <thead class="bg-surface-container-low">
+          <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+            <th class="px-md py-sm">#</th>
+            <th class="px-md py-sm">Categoría</th>
+            <th class="px-md py-sm text-right">Préstamos</th>
+            <th class="px-md py-sm text-right">% del total</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+          @for (cat of categorias; track cat.categoriaId; let i = $index) {
+            <tr>
+              <td class="px-md py-sm text-on-surface-variant">{{ i + 1 }}</td>
+              <td class="px-md py-sm font-medium">
+                <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-primary/10 text-primary">
+                  {{ cat.categoriaNombre }}
+                </span>
+              </td>
+              <td class="px-md py-sm text-right">
+                <span class="inline-flex items-center gap-xs font-label-sm text-label-sm text-primary">
+                  <span class="material-symbols-outlined text-[16px]">menu_book</span>
+                  {{ cat.totalPrestamos }}
+                </span>
+              </td>
+              <td class="px-md py-sm text-right font-medium text-on-surface">{{ cat.porcentaje }}%</td>
+            </tr>
+          } @empty {
+            @if (!cargando) {
+              <tr>
+                <td colspan="4" class="px-md py-lg text-center text-on-surface-variant">Sin datos de categorías</td>
               </tr>
             }
           }

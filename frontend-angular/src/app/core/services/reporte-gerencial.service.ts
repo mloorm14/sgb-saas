@@ -35,13 +35,34 @@ export interface ReporteMorosidad {
   diasAtrasoPromedio: number;
 }
 
-export interface ReporteUsoPorPeriodo {
-  periodo: string;
-  totalPrestamos: number;
-  totalDevoluciones: number;
+export interface ReporteInventario {
+  libroId: number;
+  titulo: string;
+  isbn: string;
+  autorNombre: string;
+  categoriaNombre: string;
+  stockTotal: number;
+  stockDisponible: number;
+  estadoDisponibilidad: string;
 }
 
-export type GranularidadUso = 'dia' | 'semana' | 'mes';
+export interface ReporteVencidos {
+  prestamoId: number;
+  usuarioNombre: string;
+  usuarioCorreo: string;
+  libroTitulo: string;
+  libroIsbn: string;
+  fechaDevolucionEstimada: string;
+  diasAtraso: number;
+  montoMultaEstimada: number;
+}
+
+export interface ReporteCategoriasDemandadas {
+  categoriaId: number;
+  categoriaNombre: string;
+  totalPrestamos: number;
+  porcentaje: number;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -78,10 +99,31 @@ export class ReporteService {
     );
   }
 
-  uso(granularidad: GranularidadUso): Observable<ReporteUsoPorPeriodo[]> {
-    return this.http.get<ReporteUsoPorPeriodo[]>(`${this.apiUrl}/uso`, {
-      params: { granularidad }
-    }).pipe(
+  inventario(categoriaId?: number, estadoStock?: string, busqueda?: string): Observable<ReporteInventario[]> {
+    const params: Record<string, string> = {};
+    if (categoriaId) params['categoriaId'] = categoriaId.toString();
+    if (estadoStock) params['estadoStock'] = estadoStock;
+    if (busqueda) params['busqueda'] = busqueda;
+    return this.http.get<ReporteInventario[]>(`${this.apiUrl}/inventario`, { params }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  vencidos(diasAtrasoMin?: number, busqueda?: string): Observable<ReporteVencidos[]> {
+    const params: Record<string, string> = {};
+    if (diasAtrasoMin) params['diasAtrasoMin'] = diasAtrasoMin.toString();
+    if (busqueda) params['busqueda'] = busqueda;
+    return this.http.get<ReporteVencidos[]>(`${this.apiUrl}/vencidos`, { params }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  categoriasDemandadas(desde?: string, hasta?: string, limite?: number): Observable<ReporteCategoriasDemandadas[]> {
+    const params: Record<string, string> = {};
+    if (desde) params['desde'] = desde;
+    if (hasta) params['hasta'] = hasta;
+    if (limite) params['limite'] = limite.toString();
+    return this.http.get<ReporteCategoriasDemandadas[]>(`${this.apiUrl}/categorias-demandadas`, { params }).pipe(
       catchError(err => this.manejarError(err))
     );
   }
