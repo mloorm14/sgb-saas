@@ -34,7 +34,7 @@ export class DevolucionService {
 
   listarTiposDano(): Observable<TipoDano[]> {
     return this.http.get<TipoDano[]>(
-      `${this.apiUrl}/tipos-dano`
+      `${environment.apiUrl}/v1/tipos-dano`
     ).pipe(catchError(err => this.manejarError(err)));
   }
 

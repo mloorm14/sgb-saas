@@ -3,7 +3,6 @@ package com.uteq.backend.controller;
 import com.uteq.backend.dto.DevolucionCompletaResponseDTO;
 import com.uteq.backend.dto.DevolucionHistorialDTO;
 import com.uteq.backend.dto.DevolucionRequestDTO;
-import com.uteq.backend.dto.TipoDanoDTO;
 import com.uteq.backend.entity.Usuario;
 import com.uteq.backend.repository.UsuarioRepository;
 import com.uteq.backend.service.DevolucionService;
@@ -47,12 +46,6 @@ public class DevolucionController {
             Authentication authentication) {
         Long bibliotecarioId = resolverIdPorCorreo(authentication.getName());
         return ResponseEntity.ok(devolucionService.historialDevoluciones(bibliotecarioId));
-    }
-
-    @GetMapping("/tipos-dano")
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
-    public ResponseEntity<List<TipoDanoDTO>> listarTiposDano() {
-        return ResponseEntity.ok(devolucionService.listarTiposDano());
     }
 
     private Long resolverIdPorCorreo(String correo) {
