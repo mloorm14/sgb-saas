@@ -219,13 +219,10 @@ GRANT SELECT, INSERT, UPDATE ON registro_dano_detalle TO rol_bibliotecario;
 -- Evidencia de daño: sube fotos como evidencia; no UPDATE/DELETE (integridad probatoria)
 GRANT SELECT, INSERT ON evidencia_dano TO rol_bibliotecario;
 
--- Sin acceso a sesiones_chat, mensajes_chat, base_conocimiento:
--- el chat es funcionalidad exclusiva del lector, el staff no lo usa.
-
 -- Sin acceso a favoritos (dato personal del lector, sin utilidad operativa)
--- ni a tablas de seguridad (roles, permisos, tokens_invalidos).
--- Sin acceso a sesiones_chat, mensajes_chat, base_conocimiento:
--- el chat es funcionalidad exclusiva del lector, el staff no lo usa.
+-- ni a tablas de seguridad (roles, permisos, tokens_invalidos), ni a
+-- sesiones_chat/mensajes_chat/base_conocimiento (el chat es funcionalidad
+-- exclusiva del lector, el staff no lo usa.
 
 -- DELETE deliberadamente excluido en libros/préstamos/multas: se usa borrado
 -- lógico (estado DADO_DE_BAJA / DEVUELTO / ANULADA) para preservar historial.
@@ -502,21 +499,12 @@ GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO rol_bibliotecario;
 -- Nota: favoritos usa PK compuesta (usuario_id, libro_id) sin columna SERIAL,
 -- por lo que no requiere GRANT sobre secuencia alguna.
 
--- Secuencias adicionales para roles con INSERT en nuevas tablas:
--- rol_lector: mensajes_chat usa BIGSERIAL
-GRANT USAGE, SELECT ON SEQUENCE mensajes_chat_id_seq TO rol_lector;
-
--- rol_bibliotecario: INSERT/UPDATE en registro_danos, registro_dano_detalle, evidencia_dano
-GRANT USAGE, SELECT ON SEQUENCE registro_danos_id_seq, registro_dano_detalle_id_seq TO rol_bibliotecario;
-GRANT USAGE, SELECT ON SEQUENCE evidencia_dano_id_seq TO rol_bibliotecario;
-
--- rol_admin: CRUD completo en catálogos nuevos
+-- rol_admin: CRUD completo en catálogos nuevos (tipos_dano, base_conocimiento,
+-- tipos_notificacion). Sin GRANT sobre mensajes_chat_id_seq/notificaciones_id_seq:
+-- rol_admin no tiene INSERT en esas tablas (mensajes_chat es exclusivo del
+-- lector; notificaciones las escribe el backend/scheduler, no el admin).
 GRANT USAGE, SELECT ON SEQUENCE tipos_dano_id_seq, base_conocimiento_id_seq, tipos_notificacion_id_seq TO rol_admin;
-GRANT USAGE, SELECT ON SEQUENCE mensajes_chat_id_seq, base_conocimiento_id_seq TO rol_admin;
-GRANT USAGE, SELECT ON SEQUENCE notificaciones_id_seq, tipos_notificacion_id_seq TO rol_admin;
 
--- Nota: favoritos usa PK compuesta (usuario_id, libro_id) sin columna SERIAL,
--- por lo que no requiere GRANT sobre secuencia alguna.
 -- Nota: sesiones_chat usa UUID con gen_random_uuid() default, no secuencia;
 -- por tanto no requiere GRANT sobre secuencia.
 
