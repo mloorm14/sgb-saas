@@ -55,8 +55,8 @@
         <select [(ngModel)]="filtroModulo"
           class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white cursor-pointer">
           <option value="">Todos</option>
-          @for (modulo of modulos; track modulo) {
-            <option [value]="modulo">{{ modulo }}</option>
+          @for (modulo of modulos; track modulo.valor) {
+            <option [value]="modulo.valor">{{ modulo.etiqueta }}</option>
           }
         </select>
       </div>
@@ -104,7 +104,7 @@
                 {{ evento.accion }}
               </span>
             </td>
-            <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ evento.modulo }}</td>
+            <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ moduloLabel(evento.modulo) }}</td>
             <td class="px-md py-sm hidden lg:table-cell text-on-surface-variant max-w-md truncate">{{ evento.detalle || '—' }}</td>
           </tr>
         } @empty {

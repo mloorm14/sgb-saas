@@ -98,4 +98,10 @@ describe('AuditoriaComponent', () => {
 
     expect(component.errorMsg).toBe('Error de base de datos');
   });
+
+  it('formatea las etiquetas de módulo legiblemente con moduloLabel', () => {
+    expect(component.moduloLabel('sugerencias_adquisicion')).toBe('Sugerencias de adquisición');
+    expect(component.moduloLabel('usuarios')).toBe('Usuarios');
+    expect(component.moduloLabel('otro_modulo')).toBe('otro modulo');
+  });
 });
