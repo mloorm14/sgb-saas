@@ -120,12 +120,12 @@
       } @else {
         <div class="rounded-lg border border-outline-variant bg-white overflow-hidden divide-y divide-outline-variant">
           @for (tipo of tiposDano; track tipo.id) {
-            <div class="flex flex-wrap items-center gap-md p-md transition-colors"
+            <div class="flex flex-wrap items-center gap-md p-6 transition-colors"
               [class.bg-primary-fixed/20]="editandoTipoDano?.id === tipo.id"
               [class.hover:bg-surface-container-low/60]="editandoTipoDano?.id !== tipo.id">
               @if (!editandoTipoDano || editandoTipoDano.id !== tipo.id) {
                 <div class="w-10 h-10 rounded-lg bg-secondary-container/30 flex items-center justify-center shrink-0">
-                  <span class="material-symbols-outlined text-[20px] text-secondary">report_problem</span>
+                  <span class="material-symbols-outlined text-[20px] text-on-surface">report_problem</span>
                 </div>
                 <div class="flex-1 min-w-[180px]">
                   <p class="font-label-sm text-[14px] text-on-surface">{{ tipo.nombre }}</p>
@@ -150,7 +150,7 @@
                 <div class="flex-1 flex items-center gap-sm min-w-[200px]">
                   <input [(ngModel)]="editandoTipoDano!.nombre" [ngModelOptions]="{standalone: true}" type="text"
                     placeholder="Nombre" class="flex-1 h-9 px-sm rounded border border-primary bg-white font-body-sm text-body-sm text-on-surface" />
-                  <div class="flex items-center gap-xs w-28">
+                  <div class="flex items-center gap-xs w-16">
                     <span class="text-on-surface-variant text-[14px]">$</span>
                     <input [(ngModel)]="editandoTipoDano!.precio" [ngModelOptions]="{standalone: true}" type="number" min="0" step="0.01"
                       placeholder="0.00" class="flex-1 h-9 px-sm rounded border border-primary bg-white font-body-sm text-body-sm text-on-surface" />
@@ -173,12 +173,12 @@
           <!-- Fila para agregar nuevo -->
           <div class="flex flex-wrap items-center gap-md p-md bg-surface-container-low/40">
             <div class="w-10 h-10 rounded-lg bg-tertiary-container/30 flex items-center justify-center shrink-0">
-              <span class="material-symbols-outlined text-[20px] text-on-tertiary-container">add_circle</span>
+              <span class="material-symbols-outlined text-[20px] text-on-surface">add_circle</span>
             </div>
             <div class="flex-1 flex items-center gap-sm min-w-[200px]">
               <input [(ngModel)]="nuevoTipoDanoNombre" type="text" placeholder="Nombre del nuevo tipo de daño"
                 class="flex-1 h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface" />
-              <div class="flex items-center gap-xs w-28">
+              <div class="flex items-center gap-xs w-16">
                 <span class="text-on-surface-variant text-[14px]">$</span>
                 <input [(ngModel)]="nuevoTipoDanoPrecio" type="number" min="0" step="0.01" placeholder="0.00"
                   class="flex-1 h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface" />
@@ -197,7 +197,7 @@
 
     <div class="mt-xl rounded-lg bg-surface-container-low border border-outline-variant p-sm flex items-start gap-xs">
       <span class="material-symbols-outlined text-[16px] text-on-surface-variant mt-0.5">info</span>
-      <p class="font-label-sm text-[12px] text-on-surface-variant">Los cambios de configuración se aplican de inmediato a todo el sistema. Los tipos de daño eliminados se desactivan (no se borran). Solo ADMIN puede modificar estos valores.</p>
+      <p class="font-label-sm text-[12px] text-on-surface-variant">Los cambios de configuración se aplican de inmediato a todo el sistema.</p>
     </div>
   }
 

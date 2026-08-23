@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { LibroService } from '../../core/services/libro.service';
@@ -22,7 +23,7 @@ import { PortadaLibroComponent } from '../../shared/portada-libro/portada-libro.
 // ReservacionResponseDTO).
 @Component({
   selector: 'app-libro-detalle',
-  imports: [CommonModule, RouterLink, PortadaLibroComponent],
+  imports: [CommonModule, FormsModule, RouterLink, PortadaLibroComponent],
   templateUrl: './libro-detalle.component.html'
 })
 export class LibroDetalleComponent implements OnInit {
@@ -30,6 +31,10 @@ export class LibroDetalleComponent implements OnInit {
   favoritosIds = new Set<number>();
   errorMsg: string = '';
   reservaCreada: Reservacion | null = null;
+
+  mostrarModalReserva = false;
+  fechaRetiro: string = '';
+  minFechaRetiro: string = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -41,6 +46,10 @@ export class LibroDetalleComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    const hoy = new Date();
+    this.minFechaRetiro = hoy.toISOString().split('T')[0];
+    this.fechaRetiro = this.minFechaRetiro;
+
     const id = Number(this.route.snapshot.paramMap.get('id'));
     if (!id) {
       this.errorMsg = 'Libro no encontrado';
@@ -75,20 +84,37 @@ export class LibroDetalleComponent implements OnInit {
     return this.libro !== null && this.reservacionesPendientes.esPendiente(this.libro.id);
   }
 
-  reservarLibro(): void {
+  abrirModalReserva(): void {
     if (!this.libro) return;
     const usuarioId = this.authService.getUserId();
     if (usuarioId === null) {
       this.errorMsg = 'Iniciá sesión para reservar';
       return;
     }
-    this.reservacionService.crear({ usuarioId, libroId: this.libro.id }).subscribe({
+    this.fechaRetiro = this.minFechaRetiro;
+    this.mostrarModalReserva = true;
+  }
+
+  cancelarReserva(): void {
+    this.mostrarModalReserva = false;
+  }
+
+  confirmarReserva(): void {
+    if (!this.libro) return;
+    this.mostrarModalReserva = false;
+    const usuarioId = this.authService.getUserId();
+    const fechaRetiroISO = this.fechaRetiro ? this.fechaRetiro + 'T00:00:00' : undefined;
+    this.reservacionService.crear({ usuarioId: usuarioId!, libroId: this.libro.id, fechaRetiro: fechaRetiroISO }).subscribe({
       next: (r) => {
         this.reservacionesPendientes.marcarReservada(this.libro!.id);
         this.reservaCreada = r;
       },
       error: () => (this.errorMsg = 'Error al reservar el libro')
     });
+  }
+
+  reservarLibro(): void {
+    this.abrirModalReserva();
   }
 
   alternarFavorito(): void {

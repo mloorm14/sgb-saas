@@ -26,6 +26,7 @@ public class TipoDanoController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<List<TipoDanoDTO>> listar() {
         return ResponseEntity.ok(tipoDanoService.listarTodos());
     }

@@ -27,13 +27,9 @@
           class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
       </div>
       <div>
-        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Top N</label>
-        <select [(ngModel)]="limiteTop" (ngModelChange)="cambiarLimite()"
-          class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white cursor-pointer">
-          <option [value]="5">Top 5</option>
-          <option [value]="10">Top 10</option>
-          <option [value]="20">Top 20</option>
-        </select>
+        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Los mejores</label>
+        <input type="number" min="1" max="100" [(ngModel)]="limiteTop" (ngModelChange)="cambiarLimite()"
+          class="h-9 w-20 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
       </div>
       <button (click)="aplicarFiltros()"
         class="h-9 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm cursor-pointer">
@@ -337,13 +333,9 @@
     </div>
     <div class="flex flex-wrap gap-sm mb-sm items-end">
       <div>
-        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Top N</label>
-        <select [(ngModel)]="limiteCategorias" (ngModelChange)="filtrarCategorias()"
-          class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white cursor-pointer">
-          <option [value]="5">Top 5</option>
-          <option [value]="10">Top 10</option>
-          <option [value]="20">Top 20</option>
-        </select>
+        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Los mejores</label>
+        <input type="number" min="1" max="100" [(ngModel)]="limiteCategorias" (ngModelChange)="filtrarCategorias()"
+          class="h-9 w-20 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
       </div>
     </div>
     <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
@@ -353,6 +345,7 @@
             <th class="px-md py-sm">#</th>
             <th class="px-md py-sm">Categoría</th>
             <th class="px-md py-sm text-right">Préstamos</th>
+            <th class="px-md py-sm text-right">Total prestados</th>
             <th class="px-md py-sm text-right">% del total</th>
           </tr>
         </thead>
@@ -371,12 +364,13 @@
                   {{ cat.totalPrestamos }}
                 </span>
               </td>
+              <td class="px-md py-sm text-right font-medium text-on-surface">{{ cat.totalPrestamos }}</td>
               <td class="px-md py-sm text-right font-medium text-on-surface">{{ cat.porcentaje }}%</td>
             </tr>
           } @empty {
             @if (!cargando) {
               <tr>
-                <td colspan="4" class="px-md py-lg text-center text-on-surface-variant">Sin datos de categorías</td>
+                <td colspan="5" class="px-md py-lg text-center text-on-surface-variant">Sin datos de categorías</td>
               </tr>
             }
           }

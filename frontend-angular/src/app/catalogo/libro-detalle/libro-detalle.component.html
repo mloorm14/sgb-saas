@@ -84,3 +84,25 @@
     <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando libro…</p>
   }
 </main>
+
+@if (mostrarModalReserva) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+      <h3 class="font-headline-sm text-headline-sm text-on-background mb-2">¿Cuándo vas a retirarlo?</h3>
+      <p class="font-body-sm text-body-sm text-on-surface-variant mb-4">Selecciona la fecha en que pretendes retirar el libro. Tendrás hasta 1 día después de esa fecha para recogerlo.</p>
+      <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Fecha de retiro</label>
+      <input type="date" [(ngModel)]="fechaRetiro" [min]="minFechaRetiro"
+        class="w-full h-10 px-sm rounded-lg border border-outline-variant font-body-sm text-body-sm bg-white mb-5" />
+      <div class="flex justify-end gap-sm">
+        <button (click)="cancelarReserva()"
+          class="h-9 px-md rounded-lg border border-outline-variant font-label-sm text-label-sm hover:bg-surface-container-low cursor-pointer">
+          Cancelar
+        </button>
+        <button (click)="confirmarReserva()"
+          class="h-9 px-md rounded-lg bg-primary text-on-primary font-label-sm text-label-sm hover:bg-on-primary-fixed-variant cursor-pointer">
+          Confirmar reserva
+        </button>
+      </div>
+    </div>
+  </div>
+}

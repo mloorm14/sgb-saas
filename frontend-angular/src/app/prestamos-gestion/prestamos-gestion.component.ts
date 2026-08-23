@@ -31,7 +31,7 @@ export class PrestamosGestionComponent {
   sugerenciasCorreo: UsuarioSugerencia[] = [];
   mostrarSugerenciasCorreo: boolean = false;
   buscandoSugerenciasCorreo: boolean = false;
-  placeholderCorreo: string = 'Ingresa el correo del usuario';
+  placeholderCorreo: string = 'Correo electrónico';
   indiceActivoCorreo: number = -1;
   private busquedaCorreo$ = new Subject<string>();
   private destroy$ = new Subject<void>();
