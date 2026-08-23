@@ -17,6 +17,26 @@
     <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
       <h2 class="font-headline-sm text-headline-sm text-on-surface">Libros más prestados</h2>
     </div>
+    <div class="flex flex-wrap gap-sm mb-sm items-end">
+      <div>
+        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
+        <input type="date" [(ngModel)]="fechaDesde"
+          class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+      </div>
+      <div>
+        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hasta</label>
+        <input type="date" [(ngModel)]="fechaHasta"
+          class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+      </div>
+      <button (click)="aplicarFiltros()"
+        class="h-9 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm cursor-pointer">
+        Buscar
+      </button>
+      <button (click)="limpiarFiltros()"
+        class="h-9 px-md rounded border border-outline-variant font-label-sm text-label-sm hover:bg-surface-container-low cursor-pointer">
+        Limpiar
+      </button>
+    </div>
     <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
       <table class="w-full text-left">
         <thead class="bg-surface-container-low">

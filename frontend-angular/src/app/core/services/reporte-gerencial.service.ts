@@ -42,8 +42,11 @@ export class ReporteService {
 
   constructor(private http: HttpClient) {}
 
-  librosMasPrestados(): Observable<LibroMasPrestado[]> {
-    return this.http.get<LibroMasPrestado[]>(`${this.apiUrl}/libros-mas-prestados`).pipe(
+  librosMasPrestados(desde?: string, hasta?: string): Observable<LibroMasPrestado[]> {
+    const params: Record<string, string> = {};
+    if (desde) params['desde'] = desde;
+    if (hasta) params['hasta'] = hasta;
+    return this.http.get<LibroMasPrestado[]>(`${this.apiUrl}/libros-mas-prestados`, { params }).pipe(
       catchError(err => this.manejarError(err))
     );
   }

@@ -15,6 +15,9 @@ export class ReportesComponent implements OnInit {
   uso: ReporteUsoPorPeriodo[] = [];
   granularidad: GranularidadUso = 'dia';
 
+  fechaDesde = '';
+  fechaHasta = '';
+
   cargando = false;
   errorMsg = '';
   descargandoPdf = false;
@@ -28,7 +31,9 @@ export class ReportesComponent implements OnInit {
   private cargarTodos(): void {
     this.cargando = true;
     this.errorMsg = '';
-    this.reporteService.librosMasPrestados().subscribe({
+    const desde = this.fechaDesde ? this.fechaDesde + 'T00:00:00Z' : undefined;
+    const hasta = this.fechaHasta ? this.fechaHasta + 'T23:59:59Z' : undefined;
+    this.reporteService.librosMasPrestados(desde, hasta).subscribe({
       next: (libros) => {
         this.libros = libros;
         this.cargarMorosidad();
@@ -55,6 +60,16 @@ export class ReportesComponent implements OnInit {
       },
       error: (err) => this.fallar(err)
     });
+  }
+
+  aplicarFiltros(): void {
+    this.cargarTodos();
+  }
+
+  limpiarFiltros(): void {
+    this.fechaDesde = '';
+    this.fechaHasta = '';
+    this.cargarTodos();
   }
 
   cambiarGranularidad(): void {
