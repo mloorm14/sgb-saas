@@ -68,6 +68,6 @@
 
 <router-outlet />
 
-@if (esLector()) {
+@if (esLector() && !enRutaLector) {
   <app-chatbot-widget />
 }
