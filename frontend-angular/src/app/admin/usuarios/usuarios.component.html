@@ -23,7 +23,7 @@
     <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
   }
 
-  <div class="rounded border border-outline-variant bg-white flex items-center px-sm mb-md glass-panel">
+  <div class="rounded border border-outline-variant bg-white flex items-center px-sm mb-md">
     <span class="material-symbols-outlined text-on-surface-variant text-[20px]">search</span>
     <input type="text" placeholder="Buscar por nombre o correo..." [(ngModel)]="filtro"
       (keyup.enter)="buscarUsuarios()"
