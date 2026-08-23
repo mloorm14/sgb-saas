@@ -103,20 +103,21 @@ CREATE INDEX idx_bitacora_fecha_hora ON bitacora_auditoria(fecha_hora DESC);
 --   resultados, mientras que el Seq Scan paralelo (2 workers) barre la
 --   tabla completa mas rapido gracias al paralelismo.
 --
---   HALLAZGO HONESTO (ver nota completa al final de
---   case1_bitacora_despues.txt): se verifico y se archivo como evidencia en
---   docs/mediciones/optimizacion/case1_bitacora_solo_fecha.txt
---   (usuario_id y tabla_afectada en NULL) -- el patron de uso mas comun en
---   la pantalla real de auditoria (un administrador que navega el log sin
---   filtrar, o filtra unicamente por fecha). idx_bitacora_fecha_hora sigue
+--   HALLAZGO HONESTO: se verifico el mismo indice con la consulta filtrada
+--   SOLO por rango de fecha (usuario_id y tabla_afectada en NULL) -- el
+--   patron de uso mas comun en la pantalla real de auditoria (un
+--   administrador que navega el log sin filtrar, o filtra unicamente por
+--   fecha). Evidencia archivada en
+--   docs/mediciones/optimizacion/case1_bitacora_solo_fecha.txt: el plan
+--   SI cambia a Index Scan puro, bajando el tiempo de ~57ms (Seq Scan) a
+--   ~4.9ms (Index Scan), una mejora de ~12x. idx_bitacora_fecha_hora sigue
 --   siendo la mejor eleccion de indice UNICO para este metodo: ayuda
---   dramatica en el patron de uso mas comun (solo filtro de fecha): Index Scan
---   ~4.9ms vs Seq Scan ~57ms (~12x mas rapido). idx_bitacora_fecha_hora siguemente en el caso comun y es neutral (no perjudica select, el
---   planner sigue prefiriendo Seq Scan cuando conviene) en el caso extremo
---   de filtro combinado ultra-selectivo. No se presenta como una "mejora
---   universal" porque, medido con los parametros exactos de este caso, no
---   lo fue -- ese es precisamente el punto de medir con EXPLAIN en vez de
---   asumir.
+--   dramaticamente en el caso comun (solo filtro de fecha) y es neutral
+--   (no perjudica el SELECT, el planner sigue prefiriendo Seq Scan cuando
+--   conviene) en el caso extremo de filtro combinado ultra-selectivo. No
+--   se presenta como una "mejora universal" porque, medido con los
+--   parametros exactos del caso base, no lo fue -- ese es precisamente el
+--   punto de medir con EXPLAIN en vez de asumir.
 --
 -- COSTO DE ESCRITURA: bitacora_auditoria es, por diseño, la tabla de mayor
 -- volumen de insercion del sistema -- CADA operacion de negocio (crear un
