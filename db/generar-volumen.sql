@@ -222,35 +222,57 @@ CROSS JOIN LATERAL (
             WHEN r.v < 0.98 THEN est_cat.inactivo
             ELSE est_cat.pendiente
         END AS estado_id
-    FROM (SELECT random() AS v) AS r
+    FROM (SELECT random() AS v WHERE s.n IS NOT NULL) AS r  -- correlacion trivial: sin esto, random() se hoistea igual para TODAS las filas (ver nota tecnica arriba)
 ) AS est;
 
 -- ============================================================================
 -- 2. LIBROS
 -- ============================================================================
--- NOTA TECNICA IMPORTANTE: para elegir un catalogo aleatorio por fila NO se
--- usa "(SELECT id FROM x ORDER BY random() LIMIT 1)" como subconsulta suelta
--- en el SELECT -- Postgres trata una subconsulta sin correlacion con la fila
--- externa como un InitPlan (se evalua UNA sola vez para toda la consulta,
--- sin importar que contenga random()), lo que le daria el MISMO editorial/
--- idioma/estado a los 20,000 libros. En su lugar se usa la misma tecnica de
--- limites min/max + aritmetica directa en la lista de SELECT (sin
--- subconsulta) que ya se usa en el resto del script para usuarios/libros/
--- reservaciones -- una expresion random() directa en el SELECT SI se
--- reevalua por fila. Asume ids densos (sin huecos) en estos catalogos
--- pequeños, ciertos porque V1/V2/V10 solo los INSERTan una vez y nunca se
--- borran filas de ahi.
+-- NOTA TECNICA IMPORTANTE (1/2): para elegir un catalogo aleatorio por fila
+-- NO se usa "(SELECT id FROM x ORDER BY random() LIMIT 1)" como subconsulta
+-- suelta en el SELECT -- Postgres trata una subconsulta sin correlacion con
+-- la fila externa como un InitPlan (se evalua UNA sola vez para toda la
+-- consulta, sin importar que contenga random()), lo que le daria el MISMO
+-- editorial/idioma/estado a los 20,000 libros.
+--
+-- NOTA TECNICA IMPORTANTE (2/2): tampoco se usan limites min(id)/max(id) +
+-- aritmetica (lo + floor(random()*(hi-lo+1))) -- probado en vivo contra un
+-- Postgres desechable que ese enfoque ASUME ids densos (sin huecos), y esa
+-- suposicion se rompe en la practica: las secuencias de Postgres NUNCA se
+-- revierten aunque la transaccion que llamo a nextval() haga ROLLBACK (por
+-- diseño, para evitar contencion). Un intento previo interrumpido, o
+-- simplemente correr este script dos veces contra la misma base, deja
+-- huecos permanentes en el rango de ids -- y min/max + aritmetica puede
+-- entonces "elegir" un id que nunca existio o que ya no existe, violando la
+-- FK correspondiente (confirmado con un error real: "Key (libro_id)=(2167)
+-- is not present in table libros" tras un primer intento de prueba
+-- revertido). En su lugar, cada conjunto grande de donde se elige un id al
+-- azar se materializa UNA vez con array_agg(id) (que por construccion solo
+-- contiene ids que realmente existen, sin huecos) y se indexa con
+-- arr[1 + floor(random()*array_length(arr,1))::int] -- una expresion
+-- directa en la lista de SELECT (no una subconsulta), asi que SI se
+-- reevalua por fila y nunca puede producir un id inexistente.
 --
 -- MISMA PRECAUCION PARA LOS CROSS JOIN LATERAL de mas abajo (est/gen/rnd/
--- fch/base/env/stk): un LATERAL que NO referencia ninguna columna de un
--- FROM previo puede, en teoria, ser tratado por el planificador igual que
--- una subconsulta suelta. Por eso cada LATERAL que no depende de otro
--- LATERAL ya correlacionado (est_cat, gen, base, etc.) lleva un
--- "WHERE <col_previa> IS NOT NULL" -- una condicion siempre verdadera cuyo
--- unico proposito es forzar una referencia real a la fila externa (de
--- generate_series o de la tabla que se esta recorriendo) y asi garantizar
--- reevaluacion fila por fila, sin depender de una optimizacion del
--- planificador que no se puede verificar sin ejecutar el script en vivo.
+-- fch/base/env/stk) -- Y CONFIRMADO EN VIVO CON UN BUG REAL durante las
+-- pruebas de este script: la correlacion de un LATERAL exterior (p.ej. que
+-- referencie est_cat.*) NO se "hereda" hacia una subconsulta anidada mas
+-- adentro que no tenga su PROPIA correlacion. Ejemplo real que se
+-- reprodujo: "CROSS JOIN LATERAL (SELECT CASE WHEN r.v < 0.70 THEN ...
+-- FROM (SELECT random() AS v) AS r)" -- aunque el LATERAL completo esta
+-- correlacionado con est_cat, la subconsulta interna "(SELECT random() AS
+-- v)" NO referencia nada por si sola, asi que Postgres la trata como su
+-- PROPIO InitPlan independiente (se evalua UNA vez, con el MISMO valor para
+-- todas las filas) -- esto hizo que los 500,000 prestamos generados en una
+-- prueba real terminaran TODOS con estado_prestamo_id = VENCIDO (la rama
+-- ELSE), y por eso multas termino en 0 filas. La correlacion tiene que
+-- estar DENTRO de CADA nivel de subconsulta que se quiera forzar a
+-- reevaluar, no solo en el nivel mas exterior. Por eso cada subconsulta
+-- anidada de este tipo (la que calcula "v", o "t.stock_total" en libros)
+-- lleva su PROPIO "WHERE <col_previa> IS NOT NULL" -- una condicion
+-- siempre verdadera cuyo unico proposito es forzar una referencia real a
+-- la fila externa (de generate_series o de la tabla que se esta
+-- recorriendo) en ESE nivel especifico.
 --
 -- stock_disponible depende de stock_total de la MISMA fila -> se resuelve en
 -- un solo LATERAL (que SI fuerza reevaluacion por fila porque hace un JOIN
@@ -265,22 +287,21 @@ SELECT
     'Libro sintetico ' || n,
     'Resumen sintetico generado para pruebas de volumen de ADB.',
     (1950 + floor(random()*76))::smallint,
-    b_edit.lo + floor(random()*(b_edit.hi - b_edit.lo + 1))::int,
-    b_idio.lo + floor(random()*(b_idio.hi - b_idio.lo + 1))::int,
-    b_elib.lo + floor(random()*(b_elib.hi - b_elib.lo + 1))::int,
+    b_edit.arr[1 + floor(random()*array_length(b_edit.arr,1))::int],
+    b_idio.arr[1 + floor(random()*array_length(b_idio.arr,1))::int],
+    b_elib.arr[1 + floor(random()*array_length(b_elib.arr,1))::int],
     stk.stock_total,
     stk.stock_disponible,
     'ESTANTE-' || (1+floor(random()*50))::int || '-' || (1+floor(random()*10))::int
 FROM generate_series(1, 20000) AS s(n)
-CROSS JOIN (SELECT min(id) AS lo, max(id) AS hi FROM editoriales)   AS b_edit
-CROSS JOIN (SELECT min(id) AS lo, max(id) AS hi FROM idiomas)       AS b_idio
-CROSS JOIN (SELECT min(id) AS lo, max(id) AS hi FROM estados_libro) AS b_elib
+CROSS JOIN (SELECT array_agg(id) AS arr FROM editoriales)   AS b_edit
+CROSS JOIN (SELECT array_agg(id) AS arr FROM idiomas)       AS b_idio
+CROSS JOIN (SELECT array_agg(id) AS arr FROM estados_libro) AS b_elib
 CROSS JOIN LATERAL (
     SELECT
         t.stock_total,
         floor(random() * (t.stock_total + 1))::smallint AS stock_disponible
-    FROM (SELECT (1 + floor(random()*9))::smallint AS stock_total) AS t
-    WHERE s.n IS NOT NULL  -- correlacion trivial (siempre verdadera) para forzar reevaluacion por fila; ver nota tecnica arriba
+    FROM (SELECT (1 + floor(random()*9))::smallint AS stock_total WHERE s.n IS NOT NULL) AS t  -- correlacion trivial DENTRO de la subconsulta anidada: ver nota tecnica arriba
 ) AS stk;
 
 -- ============================================================================
@@ -292,30 +313,30 @@ CROSS JOIN LATERAL (
 --    reciba un autor/categoria realmente distinto y no el mismo para todos.
 -- ============================================================================
 INSERT INTO libro_autores (libro_id, autor_id)
-SELECT l.id, b_aut.lo + floor(random()*(b_aut.hi - b_aut.lo + 1))::bigint
+SELECT l.id, b_aut.arr[1 + floor(random()*array_length(b_aut.arr,1))::int]
   FROM libros l
-  CROSS JOIN (SELECT min(id) AS lo, max(id) AS hi FROM autores) AS b_aut
+  CROSS JOIN (SELECT array_agg(id) AS arr FROM autores) AS b_aut
  WHERE l.isbn LIKE '979%'
 ON CONFLICT DO NOTHING;
 
 INSERT INTO libro_autores (libro_id, autor_id)
-SELECT l.id, b_aut.lo + floor(random()*(b_aut.hi - b_aut.lo + 1))::bigint
+SELECT l.id, b_aut.arr[1 + floor(random()*array_length(b_aut.arr,1))::int]
   FROM libros l
-  CROSS JOIN (SELECT min(id) AS lo, max(id) AS hi FROM autores) AS b_aut
+  CROSS JOIN (SELECT array_agg(id) AS arr FROM autores) AS b_aut
  WHERE l.isbn LIKE '979%' AND random() < 0.40
 ON CONFLICT DO NOTHING;
 
 INSERT INTO libro_categorias (libro_id, categoria_id)
-SELECT l.id, b_cat.lo + floor(random()*(b_cat.hi - b_cat.lo + 1))::int
+SELECT l.id, b_cat.arr[1 + floor(random()*array_length(b_cat.arr,1))::int]
   FROM libros l
-  CROSS JOIN (SELECT min(id) AS lo, max(id) AS hi FROM categorias) AS b_cat
+  CROSS JOIN (SELECT array_agg(id) AS arr FROM categorias) AS b_cat
  WHERE l.isbn LIKE '979%'
 ON CONFLICT DO NOTHING;
 
 INSERT INTO libro_categorias (libro_id, categoria_id)
-SELECT l.id, b_cat.lo + floor(random()*(b_cat.hi - b_cat.lo + 1))::int
+SELECT l.id, b_cat.arr[1 + floor(random()*array_length(b_cat.arr,1))::int]
   FROM libros l
-  CROSS JOIN (SELECT min(id) AS lo, max(id) AS hi FROM categorias) AS b_cat
+  CROSS JOIN (SELECT array_agg(id) AS arr FROM categorias) AS b_cat
  WHERE l.isbn LIKE '979%' AND random() < 0.50
 ON CONFLICT DO NOTHING;
 
@@ -325,14 +346,14 @@ ON CONFLICT DO NOTHING;
 -- ============================================================================
 INSERT INTO reservaciones (usuario_id, libro_id, estado_reservacion_id, fecha_reserva, fecha_limite_retiro)
 SELECT
-    b_lector.lo + floor(random()*(b_lector.hi - b_lector.lo + 1))::bigint,
-    b_libro.lo  + floor(random()*(b_libro.hi  - b_libro.lo  + 1))::bigint,
+    b_lector.arr[1 + floor(random()*array_length(b_lector.arr,1))::int],
+    b_libro.arr[1  + floor(random()*array_length(b_libro.arr,1))::int],
     est.estado_id,
     fch.fecha_reserva,
     fch.fecha_reserva + ((1 + floor(random()*3))::int || ' days')::interval
 FROM generate_series(1, 150000) AS s(n)
-CROSS JOIN (SELECT min(id) AS lo, max(id) AS hi FROM usuarios WHERE correo LIKE 'lector_volumen_%@synthetic.local') AS b_lector
-CROSS JOIN (SELECT min(id) AS lo, max(id) AS hi FROM libros) AS b_libro
+CROSS JOIN (SELECT array_agg(id) AS arr FROM usuarios WHERE correo LIKE 'lector_volumen_%@synthetic.local') AS b_lector
+CROSS JOIN (SELECT array_agg(id) AS arr FROM libros) AS b_libro
 CROSS JOIN (
     SELECT
         (SELECT id FROM estados_reservacion WHERE nombre = 'PENDIENTE')          AS pendiente,
@@ -350,7 +371,7 @@ CROSS JOIN LATERAL (
             WHEN r.v < 0.85 THEN est_cat.expirada
             ELSE est_cat.cancelada
         END AS estado_id
-    FROM (SELECT random() AS v) AS r
+    FROM (SELECT random() AS v WHERE s.n IS NOT NULL) AS r  -- correlacion trivial: sin esto, random() se hoistea igual para TODAS las filas (ver nota tecnica arriba)
 ) AS est
 CROSS JOIN LATERAL (
     SELECT now() - (random() * interval '1826 days') AS fecha_reserva
@@ -370,11 +391,11 @@ INSERT INTO prestamos (
     renovaciones_realizadas, estado_prestamo_id
 )
 SELECT
-    b_lector.lo + floor(random()*(b_lector.hi - b_lector.lo + 1))::bigint,
-    b_libro.lo  + floor(random()*(b_libro.hi  - b_libro.lo  + 1))::bigint,
-    b_biblio.lo + floor(random()*(b_biblio.hi - b_biblio.lo + 1))::bigint,
+    b_lector.arr[1 + floor(random()*array_length(b_lector.arr,1))::int],
+    b_libro.arr[1  + floor(random()*array_length(b_libro.arr,1))::int],
+    b_biblio.arr[1 + floor(random()*array_length(b_biblio.arr,1))::int],
     CASE WHEN random() < 0.10
-         THEN b_reserva.lo + floor(random()*(b_reserva.hi - b_reserva.lo + 1))::bigint
+         THEN b_reserva.arr[1 + floor(random()*array_length(b_reserva.arr,1))::int]
          ELSE NULL END,
     fch.fecha_prestamo,
     fch.fecha_devolucion_estimada,
@@ -389,10 +410,10 @@ SELECT
     CASE WHEN gen.estado_id = est_cat.renovado THEN (1 + floor(random()*2))::smallint ELSE 0 END,
     gen.estado_id
 FROM generate_series(1, 500000) AS s(n)
-CROSS JOIN (SELECT min(id) AS lo, max(id) AS hi FROM usuarios WHERE correo LIKE 'lector_volumen_%@synthetic.local') AS b_lector
-CROSS JOIN (SELECT min(id) AS lo, max(id) AS hi FROM libros) AS b_libro
-CROSS JOIN (SELECT min(id) AS lo, max(id) AS hi FROM usuarios WHERE correo LIKE 'bibliotecario_volumen_%@synthetic.local') AS b_biblio
-CROSS JOIN (SELECT min(id) AS lo, max(id) AS hi FROM reservaciones) AS b_reserva
+CROSS JOIN (SELECT array_agg(id) AS arr FROM usuarios WHERE correo LIKE 'lector_volumen_%@synthetic.local') AS b_lector
+CROSS JOIN (SELECT array_agg(id) AS arr FROM libros) AS b_libro
+CROSS JOIN (SELECT array_agg(id) AS arr FROM usuarios WHERE correo LIKE 'bibliotecario_volumen_%@synthetic.local') AS b_biblio
+CROSS JOIN (SELECT array_agg(id) AS arr FROM reservaciones) AS b_reserva
 CROSS JOIN (
     SELECT
         (SELECT id FROM estados_prestamo WHERE nombre = 'DEVUELTO')  AS devuelto,
@@ -409,7 +430,7 @@ CROSS JOIN LATERAL (
             ELSE est_cat.vencido
         END AS estado_id,
         random() AS r_tardio
-    FROM (SELECT random() AS v) AS r
+    FROM (SELECT random() AS v WHERE s.n IS NOT NULL) AS r  -- correlacion trivial: sin esto, random() se hoistea igual para TODAS las filas (ver nota tecnica arriba)
 ) AS gen
 CROSS JOIN LATERAL (
     SELECT
@@ -459,7 +480,7 @@ CROSS JOIN LATERAL (
             WHEN r.v < 0.85 THEN est_cat.pendiente
             ELSE est_cat.anulada
         END AS estado_id
-    FROM (SELECT random() AS v) AS r
+    FROM (SELECT random() AS v WHERE p.id IS NOT NULL) AS r  -- correlacion trivial: sin esto, random() se hoistea igual para TODAS las filas (ver nota tecnica arriba)
 ) AS est
 WHERE p.fecha_devolucion_real IS NOT NULL
   AND p.fecha_devolucion_real > p.fecha_devolucion_estimada;
@@ -505,11 +526,11 @@ WHERE r.estado_reservacion_id = (SELECT id FROM estados_reservacion WHERE nombre
 -- ============================================================================
 INSERT INTO favoritos (usuario_id, libro_id)
 SELECT
-    b_lector.lo + floor(random()*(b_lector.hi - b_lector.lo + 1))::bigint,
-    b_libro.lo  + floor(random()*(b_libro.hi  - b_libro.lo  + 1))::bigint
+    b_lector.arr[1 + floor(random()*array_length(b_lector.arr,1))::int],
+    b_libro.arr[1  + floor(random()*array_length(b_libro.arr,1))::int]
 FROM generate_series(1, 200000) AS s(n)
-CROSS JOIN (SELECT min(id) AS lo, max(id) AS hi FROM usuarios WHERE correo LIKE 'lector_volumen_%@synthetic.local') AS b_lector
-CROSS JOIN (SELECT min(id) AS lo, max(id) AS hi FROM libros) AS b_libro
+CROSS JOIN (SELECT array_agg(id) AS arr FROM usuarios WHERE correo LIKE 'lector_volumen_%@synthetic.local') AS b_lector
+CROSS JOIN (SELECT array_agg(id) AS arr FROM libros) AS b_libro
 ON CONFLICT DO NOTHING;
 
 -- ============================================================================
@@ -519,17 +540,17 @@ ON CONFLICT DO NOTHING;
 -- ============================================================================
 INSERT INTO sugerencias_adquisicion (usuario_id, titulo, autor, justificacion, estado, revisado_por)
 SELECT
-    b_lector.lo + floor(random()*(b_lector.hi - b_lector.lo + 1))::bigint,
+    b_lector.arr[1 + floor(random()*array_length(b_lector.arr,1))::int],
     'Sugerencia sintetica de adquisicion ' || n,
     'Autor Sugerido ' || n,
     'Justificacion sintetica generada para pruebas de volumen de ADB.',
     est.estado_nombre,
     CASE WHEN est.estado_nombre = 'PENDIENTE' THEN NULL
-         ELSE b_staff.lo + floor(random()*(b_staff.hi - b_staff.lo + 1))::bigint END
+         ELSE b_staff.arr[1 + floor(random()*array_length(b_staff.arr,1))::int] END
 FROM generate_series(1, 5000) AS s(n)
-CROSS JOIN (SELECT min(id) AS lo, max(id) AS hi FROM usuarios WHERE correo LIKE 'lector_volumen_%@synthetic.local') AS b_lector
+CROSS JOIN (SELECT array_agg(id) AS arr FROM usuarios WHERE correo LIKE 'lector_volumen_%@synthetic.local') AS b_lector
 CROSS JOIN (
-    SELECT min(id) AS lo, max(id) AS hi FROM usuarios
+    SELECT array_agg(id) AS arr FROM usuarios
      WHERE correo LIKE 'bibliotecario_volumen_%@synthetic.local'
         OR correo LIKE 'gerente_volumen_%@synthetic.local'
         OR correo LIKE 'admin_volumen_%@synthetic.local'
@@ -541,8 +562,7 @@ CROSS JOIN LATERAL (
             WHEN r.v < 0.85 THEN 'APROBADA'
             ELSE 'RECHAZADA'
         END AS estado_nombre
-    FROM (SELECT random() AS v) AS r
-    WHERE s.n IS NOT NULL  -- correlacion trivial para forzar reevaluacion por fila
+    FROM (SELECT random() AS v WHERE s.n IS NOT NULL) AS r  -- correlacion trivial: sin esto, random() se hoistea igual para TODAS las filas (ver nota tecnica arriba)
 ) AS est;
 
 -- ============================================================================
@@ -552,7 +572,7 @@ CROSS JOIN LATERAL (
 INSERT INTO bitacora_auditoria (usuario_id, tipo_operacion, tabla_afectada, registro_id, detalles, ip_origen, fecha_hora)
 SELECT
     CASE WHEN rnd.r_anon < 0.05 THEN NULL
-         ELSE b_usuario.lo + floor(random()*(b_usuario.hi - b_usuario.lo + 1))::bigint END,
+         ELSE b_usuario.arr[1 + floor(random()*array_length(b_usuario.arr,1))::int] END,
     tipo.tipo_operacion,
     tabla.tabla_afectada,
     floor(random()*1000000)::bigint,
@@ -563,7 +583,7 @@ SELECT
     END,
     rnd.fecha_hora
 FROM generate_series(1, 1500000) AS s(n)
-CROSS JOIN (SELECT min(id) AS lo, max(id) AS hi FROM usuarios) AS b_usuario
+CROSS JOIN (SELECT array_agg(id) AS arr FROM usuarios) AS b_usuario
 CROSS JOIN LATERAL (
     SELECT random() AS r_tipo, random() AS r_anon,
            now() - (random() * interval '1826 days') AS fecha_hora
