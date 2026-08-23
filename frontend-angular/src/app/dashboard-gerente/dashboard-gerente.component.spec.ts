@@ -150,9 +150,9 @@ describe('DashboardGerenteComponent', () => {
   });
 
   it('ADMIN no dispara reportes de libros/morosidad (endpoints excluyen su rol)', () => {
-    // Re-mock de AuthService: solo GERENTE es true, ADMIN es false.
+    // Re-mock de AuthService: solo ADMIN es true, GERENTE es false.
     // ADMIN aun asi ve resumen financiero y auditoría.
-    const adminAuth = { hasRole: (...roles: string[]) => false };
+    const adminAuth = { hasRole: (...roles: string[]) => roles.includes('ADMIN') };
     TestBed.resetTestingModule();
     reporteService = jasmine.createSpyObj('ReporteService', ['librosMasPrestados', 'morosidad']);
     multaService = jasmine.createSpyObj('MultaService', ['resumenFinanciero']);
