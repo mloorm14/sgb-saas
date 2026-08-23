@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReporteService, LibroMasPrestadoDetallado, ReporteMorosidad, ReporteInventario, ReporteVencidos, ReporteCategoriasDemandadas } from '../core/services/reporte-gerencial.service';
+import { Observable } from 'rxjs';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -149,7 +150,7 @@ export class ReportesComponent implements OnInit {
     this.descargandoPdf = clave;
     this.errorMsg = '';
     blob$.subscribe({
-      next: (blob) => {
+      next: (blob: Blob) => {
         const url = URL.createObjectURL(blob);
         const enlace = document.createElement('a');
         enlace.href = url;
@@ -158,7 +159,7 @@ export class ReportesComponent implements OnInit {
         URL.revokeObjectURL(url);
         this.descargandoPdf = null;
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.descargandoPdf = null;
         this.errorMsg = (err as { error?: { detail?: string } })?.error?.detail || 'Error al generar el PDF';
       }
