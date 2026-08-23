@@ -16,14 +16,14 @@
         <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Usuario</label>
         @if (usuarioSeleccionado) {
           <div class="h-10 px-sm rounded border border-outline-variant bg-white flex items-center gap-sm">
-            <span class="font-body-sm text-body-sm truncate flex-1">{{ usuarioSeleccionado.nombre }} {{ usuarioSeleccionado.apellido }}</span>
+            <span class="font-body-sm text-body-sm truncate flex-1">{{ usuarioSeleccionado.correo }}</span>
             <button (click)="limpiarSeleccion()" class="text-on-surface-variant hover:text-error cursor-pointer">
               <span class="material-symbols-outlined text-[16px]">close</span>
             </button>
           </div>
         } @else {
           <div class="relative">
-            <input type="text" [(ngModel)]="busquedaUsuario" placeholder="Buscar por nombre o correo..."
+            <input type="text" [(ngModel)]="busquedaUsuario" placeholder="Buscar por correo..."
               (input)="onBusquedaUsuario(busquedaUsuario)"
               (focus)="mostrandoDropdown = true"
               (blur)="cerrarDropdown()"
@@ -35,8 +35,8 @@
                     class="w-full text-left px-sm py-sm hover:bg-surface-container-low flex items-center gap-sm cursor-pointer">
                     <span class="material-symbols-outlined text-[18px] text-on-surface-variant">person</span>
                     <div>
-                      <p class="font-body-sm text-body-sm text-on-surface">{{ u.nombre }} {{ u.apellido }}</p>
-                      <p class="font-body-sm text-[12px] text-on-surface-variant">{{ u.correo }}</p>
+                      <p class="font-body-sm text-body-sm text-on-surface">{{ u.correo }}</p>
+                      <p class="font-body-sm text-[12px] text-on-surface-variant">{{ u.nombre }} {{ u.apellido }}</p>
                     </div>
                   </button>
                 }
