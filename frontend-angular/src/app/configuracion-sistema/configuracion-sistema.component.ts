@@ -79,6 +79,14 @@ const METADATOS: Record<string, MetaParametro> = {
     icono: 'mail_lock',
     grupo: 'Registro',
     tipo: 'texto'
+  },
+  max_tamano_evidencia_mb: {
+    titulo: 'Tamaño máximo de evidencia',
+    descripcion: 'Límite para los archivos de evidencia de daño subidos por el bibliotecario',
+    icono: 'attach_file',
+    grupo: 'Archivos',
+    sufijo: 'MB',
+    tipo: 'numero'
   }
 };
 

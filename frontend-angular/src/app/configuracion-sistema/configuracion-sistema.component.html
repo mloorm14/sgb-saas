@@ -96,17 +96,17 @@
     <!-- Sección: Tipos de daño -->
     <div class="mt-xl">
       <div class="flex items-center gap-sm mb-md">
-        <div class="w-10 h-10 rounded-lg bg-tertiary-container flex items-center justify-center">
-          <span class="material-symbols-outlined text-[22px] text-on-tertiary-container">category</span>
+        <div class="w-10 h-10 rounded-lg bg-primary-fixed flex items-center justify-center">
+          <span class="material-symbols-outlined text-[22px] text-primary">category</span>
         </div>
         <div>
-          <h2 class="font-title-lg text-title-lg text-on-background">Tipos de daño</h2>
-          <p class="font-body-sm text-[13px] text-on-surface-variant">Gestiona los tipos de daño y su precio de cobro</p>
+          <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background">Tipos de daño</h2>
+          <p class="font-body-sm text-body-sm text-on-surface-variant sm:ml-[52px]">Gestiona los tipos de daño y su precio de cobro por día</p>
         </div>
       </div>
 
       @if (errorMsgTiposDano) {
-        <div class="rounded border border-error/40 bg-error-container/40 px-md py-sm mb-sm flex items-center gap-sm">
+        <div class="rounded border border-error/40 bg-error-container/40 px-md py-sm mb-md flex items-center gap-sm">
           <span class="material-symbols-outlined text-[18px] text-error">error</span>
           <p class="font-body-sm text-body-sm text-on-error-container">{{ errorMsgTiposDano }}</p>
           <button type="button" (click)="errorMsgTiposDano = ''" class="ml-auto cursor-pointer">
@@ -116,18 +116,24 @@
       }
 
       @if (cargandoTiposDano) {
-        <div class="text-center py-lg font-body-sm text-body-sm text-on-surface-variant">Cargando tipos de daño...</div>
+        <div class="text-center py-xl font-body-sm text-body-sm text-on-surface-variant">Cargando tipos de daño...</div>
       } @else {
         <div class="rounded-lg border border-outline-variant bg-white overflow-hidden divide-y divide-outline-variant">
           @for (tipo of tiposDano; track tipo.id) {
-            <div class="flex flex-wrap items-center gap-md p-md transition-colors hover:bg-surface-container-low/60"
-              [class.bg-primary-fixed/20]="editandoTipoDano?.id === tipo.id">
+            <div class="flex flex-wrap items-center gap-md p-md transition-colors"
+              [class.bg-primary-fixed/20]="editandoTipoDano?.id === tipo.id"
+              [class.hover:bg-surface-container-low/60]="editandoTipoDano?.id !== tipo.id">
               @if (!editandoTipoDano || editandoTipoDano.id !== tipo.id) {
-                <div class="flex-1 min-w-[160px]">
-                  <p class="font-label-sm text-[14px] text-on-surface">{{ tipo.nombre }}</p>
+                <div class="w-10 h-10 rounded-lg bg-secondary-container/30 flex items-center justify-center shrink-0">
+                  <span class="material-symbols-outlined text-[20px] text-secondary">report_problem</span>
                 </div>
-                <div class="flex items-center gap-sm shrink-0">
-                  <span class="font-headline-md text-[18px] text-on-background font-semibold">${{ tipo.precio.toFixed(2) }}</span>
+                <div class="flex-1 min-w-[180px]">
+                  <p class="font-label-sm text-[14px] text-on-surface">{{ tipo.nombre }}</p>
+                  <p class="font-body-sm text-[13px] text-on-surface-variant">Cobro por día de atraso</p>
+                </div>
+                <div class="flex items-center gap-sm shrink-0 ml-auto">
+                  <span class="font-headline-md text-[20px] text-on-background font-semibold">${{ tipo.precio.toFixed(2) }}</span>
+                  <span class="font-label-sm text-[12px] text-on-surface-variant">/día</span>
                   <button type="button" (click)="iniciarEdicionTipoDano(tipo)" aria-label="Editar"
                     class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant hover:text-primary transition-colors cursor-pointer">
                     <span class="material-symbols-outlined text-[18px]">edit</span>
@@ -138,12 +144,15 @@
                   </button>
                 </div>
               } @else {
+                <div class="w-10 h-10 rounded-lg bg-primary-fixed/30 flex items-center justify-center shrink-0">
+                  <span class="material-symbols-outlined text-[20px] text-primary">edit</span>
+                </div>
                 <div class="flex-1 flex items-center gap-sm min-w-[200px]">
-                  <input [(ngModel)]="editandoTipoDano.nombre" [ngModelOptions]="{standalone: true}" type="text"
+                  <input [(ngModel)]="editandoTipoDano!.nombre" [ngModelOptions]="{standalone: true}" type="text"
                     placeholder="Nombre" class="flex-1 h-9 px-sm rounded border border-primary bg-white font-body-sm text-body-sm text-on-surface" />
                   <div class="flex items-center gap-xs w-28">
                     <span class="text-on-surface-variant text-[14px]">$</span>
-                    <input [(ngModel)]="editandoTipoDano.precio" [ngModelOptions]="{standalone: true}" type="number" min="0" step="0.01"
+                    <input [(ngModel)]="editandoTipoDano!.precio" [ngModelOptions]="{standalone: true}" type="number" min="0" step="0.01"
                       placeholder="0.00" class="flex-1 h-9 px-sm rounded border border-primary bg-white font-body-sm text-body-sm text-on-surface" />
                   </div>
                 </div>
@@ -163,8 +172,11 @@
 
           <!-- Fila para agregar nuevo -->
           <div class="flex flex-wrap items-center gap-md p-md bg-surface-container-low/40">
+            <div class="w-10 h-10 rounded-lg bg-tertiary-container/30 flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined text-[20px] text-on-tertiary-container">add_circle</span>
+            </div>
             <div class="flex-1 flex items-center gap-sm min-w-[200px]">
-              <input [(ngModel)]="nuevoTipoDanoNombre" type="text" placeholder="Nuevo tipo de daño..."
+              <input [(ngModel)]="nuevoTipoDanoNombre" type="text" placeholder="Nombre del nuevo tipo de daño"
                 class="flex-1 h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface" />
               <div class="flex items-center gap-xs w-28">
                 <span class="text-on-surface-variant text-[14px]">$</span>
