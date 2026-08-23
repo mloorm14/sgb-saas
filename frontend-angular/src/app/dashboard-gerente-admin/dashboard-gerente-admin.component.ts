@@ -85,8 +85,6 @@ export class DashboardGerenteAdminComponent {
 
   cerrarSesion(): void {
     this.mostrarMenuUsuario = false;
-    if (confirm('¿Seguro que querés cerrar sesión?')) {
-      this.authService.logout();
-    }
+    this.authService.logout();
   }
 }
