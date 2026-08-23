@@ -1,12 +1,12 @@
 package com.uteq.backend.controller;
 
+import com.uteq.backend.chatbot.ChatbotOrchestrator;
 import com.uteq.backend.config.SecurityConfig;
 import com.uteq.backend.dto.MensajeChatRequestDTO;
 import com.uteq.backend.dto.MensajeChatResponseDTO;
 import com.uteq.backend.security.JwtAuthFilter;
 import com.uteq.backend.security.JwtService;
 import com.uteq.backend.security.UserDetailsServiceImpl;
-import com.uteq.backend.service.ChatbotService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,7 +65,7 @@ class ChatbotControllerSecurityTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @MockitoBean
-    private ChatbotService chatbotService;
+    private ChatbotOrchestrator chatbotOrchestrator;
 
     @MockitoBean
     private JwtService jwtService;
@@ -79,7 +79,7 @@ class ChatbotControllerSecurityTest {
     @Test
     @WithMockUser(roles = "LECTOR")
     void enviarMensaje_conRolLector_retorna200() throws Exception {
-        when(chatbotService.enviarMensaje(any(), any())).thenReturn(new MensajeChatResponseDTO(
+        when(chatbotOrchestrator.enviarMensaje(any(), any())).thenReturn(new MensajeChatResponseDTO(
                 UUID.randomUUID(), "Respuesta", OffsetDateTime.now()));
 
         mockMvc.perform(post("/api/v1/chatbot/mensajes")
@@ -119,7 +119,7 @@ class ChatbotControllerSecurityTest {
     @Test
     @WithMockUser(roles = "LECTOR")
     void historial_conRolLector_retorna200() throws Exception {
-        when(chatbotService.obtenerHistorial(any(), any())).thenReturn(java.util.List.of());
+        when(chatbotOrchestrator.obtenerHistorial(any(), any())).thenReturn(java.util.List.of());
 
         mockMvc.perform(get("/api/v1/chatbot/sesiones/{id}/historial", UUID.randomUUID()))
                 .andExpect(status().isOk());
