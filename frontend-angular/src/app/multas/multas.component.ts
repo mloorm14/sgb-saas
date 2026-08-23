@@ -60,18 +60,20 @@ export class MultasComponent implements OnInit {
     if (this.authService.hasRole('LECTOR')) {
       this.esLector = true;
       const userId = this.authService.getUserId();
+      const correo = this.authService.getCorreo();
       if (userId) {
-        this.cargando = true;
-        this.prestamoService.buscarUsuarioPorCorreo(this.authService.getCorreo()!).subscribe({
-          next: (usuario) => {
-            this.usuarioSeleccionado = usuario;
-            this.cargarMultas(userId);
-          },
-          error: () => {
-            this.cargando = false;
-            this.errorMsg = 'No se pudieron cargar tus multas.';
-          }
-        });
+        this.usuarioSeleccionado = {
+          id: userId,
+          nombreCompleto: correo ?? 'Lector',
+          correo: correo ?? '',
+          cedula: null,
+          tiposUsuario: ['LECTOR'],
+          estadoCuenta: 'ACTIVO',
+          montoMultasPendientes: 0,
+          cantidadMultasPendientes: 0,
+          diasPrestamoSugerido: 7
+        };
+        this.cargarMultas(userId);
       }
     }
   }
