@@ -6,6 +6,10 @@
 -- Base: schema_completo_24_tablas.sql (mismo repositorio de Aplicaciones Web,
 --       usado aquí solo para trabajar administración de BD; sin entregables
 --       de código/despliegue en esta materia)
+-- NOTA: el schema real tiene más de 24 tablas (se añadieron 9 en V6/V9/V14:
+-- tipos_notificacion, notificaciones, sesiones_chat, mensajes_chat,
+-- base_conocimiento, tipos_dano, registro_danos, registro_dano_detalle,
+-- evidencia_dano); el nombre del archivo base es histórico.
 -- ============================================================================
 -- IMPORTANTE: no confundir con `roles` / `permisos` (tablas 6 y 7 del schema),
 -- que son RBAC de la APLICACIÓN (lógica de negocio, gestionada por el backend
@@ -158,8 +162,24 @@ GRANT SELECT ON multas TO rol_lector;
 -- Sugerencias de adquisición: puede crear y ver las suyas (RLS)
 GRANT SELECT, INSERT ON sugerencias_adquisicion TO rol_lector;
 
+-- Notificaciones: solo lectura de sus propias notificaciones (RLS en sec. 7)
+GRANT SELECT ON notificaciones TO rol_lector;
+
+-- Sesiones de chat: puede crear y leer sus propias sesiones (RLS)
+GRANT SELECT, INSERT ON sesiones_chat TO rol_lector;
+
+-- Mensajes de chat: puede leer/enviar mensajes en sus sesiones (RLS via subquery)
+GRANT SELECT, INSERT ON mensajes_chat TO rol_lector;
+
+-- Base de conocimiento: solo lectura (grounding del chatbot)
+GRANT SELECT ON base_conocimiento TO rol_lector;
+
+-- tipos_dano, registro_danos, registro_dano_detalle, evidencia_dano: SIN ACCESO para rol_lector
+-- (es dato operativo de bibliotecario/gerente; el lector ve solo la multa resultante)
+
 GRANT USAGE, SELECT ON SEQUENCE reservaciones_id_seq TO rol_lector;
 GRANT USAGE, SELECT ON SEQUENCE sugerencias_adquisicion_id_seq TO rol_lector;
+GRANT USAGE, SELECT ON SEQUENCE mensajes_chat_id_seq TO rol_lector;
 
 -- ---------- 5.3 rol_bibliotecario (operación diaria de mostrador) ----------
 GRANT rol_catalogo TO rol_bibliotecario;
@@ -184,14 +204,37 @@ GRANT SELECT (id, nombre, apellido, correo, estado_id) ON usuarios TO rol_biblio
 -- Revisa y responde sugerencias de adquisición de los lectores:
 GRANT SELECT, UPDATE ON sugerencias_adquisicion TO rol_bibliotecario;
 
+-- Notificaciones: puede ver historial al atender lector en mostrador
+GRANT SELECT ON notificaciones TO rol_bibliotecario;
+
+-- Tipos de daño: catálogo de referencia al registrar daños en devolución
+GRANT SELECT ON tipos_dano TO rol_bibliotecario;
+
+-- Registro de daños: crea y gestiona registros durante devoluciones
+GRANT SELECT, INSERT, UPDATE ON registro_danos TO rol_bibliotecario;
+
+-- Detalle de daños: filas hijas creadas junto con registro_danos
+GRANT SELECT, INSERT, UPDATE ON registro_dano_detalle TO rol_bibliotecario;
+
+-- Evidencia de daño: sube fotos como evidencia; no UPDATE/DELETE (integridad probatoria)
+GRANT SELECT, INSERT ON evidencia_dano TO rol_bibliotecario;
+
+-- Sin acceso a sesiones_chat, mensajes_chat, base_conocimiento:
+-- el chat es funcionalidad exclusiva del lector, el staff no lo usa.
+
 -- Sin acceso a favoritos (dato personal del lector, sin utilidad operativa)
 -- ni a tablas de seguridad (roles, permisos, tokens_invalidos).
+-- Sin acceso a sesiones_chat, mensajes_chat, base_conocimiento:
+-- el chat es funcionalidad exclusiva del lector, el staff no lo usa.
 
 -- DELETE deliberadamente excluido en libros/préstamos/multas: se usa borrado
 -- lógico (estado DADO_DE_BAJA / DEVUELTO / ANULADA) para preservar historial.
 
 GRANT USAGE, SELECT ON SEQUENCE libros_id_seq, prestamos_id_seq, multas_id_seq TO rol_bibliotecario;
 GRANT USAGE, SELECT ON SEQUENCE editoriales_id_seq, autores_id_seq TO rol_bibliotecario;
+GRANT USAGE, SELECT ON SEQUENCE tipos_dano_id_seq TO rol_bibliotecario;
+GRANT USAGE, SELECT ON SEQUENCE registro_danos_id_seq, registro_dano_detalle_id_seq TO rol_bibliotecario;
+GRANT USAGE, SELECT ON SEQUENCE evidencia_dano_id_seq TO rol_bibliotecario;
 
 -- ---------- 5.4 rol_gerente (supervisión, cuentas de personal, reportes) ----------
 -- FIX: WITH INHERIT TRUE explícito — ver nota de jerarquía de roles arriba.
@@ -209,12 +252,18 @@ REVOKE UPDATE (password_hash) ON usuarios FROM rol_gerente;  -- solo vía backen
 -- sobre la tabla esté correcto.
 GRANT USAGE, SELECT ON SEQUENCE usuarios_id_seq TO rol_gerente;
 
+-- Tipos de daño: el gerente gestiona el catálogo de precios (USAGE para INSERT/UPDATE/DELETE)
+GRANT USAGE, SELECT ON SEQUENCE tipos_dano_id_seq TO rol_gerente;
+
 -- Gestión de asignación de roles de aplicación al personal:
 GRANT SELECT, INSERT, DELETE ON usuario_roles TO rol_gerente;
 GRANT SELECT ON roles, permisos, rol_permisos TO rol_gerente;
 
 -- Catálogos maestros de estado (solo el gerente puede dar de baja definitiva):
 GRANT SELECT, INSERT, UPDATE, DELETE ON estados_libro, estados_usuario TO rol_gerente;
+
+-- Tipos de daño: el gerente/admin gestiona el catálogo de precios (el bibliotecario solo lee)
+GRANT INSERT, UPDATE, DELETE ON tipos_dano TO rol_gerente;
 
 -- Reportes: lectura total de auditoría (RLS no aplica; ve todo el negocio)
 GRANT SELECT ON bitacora_auditoria TO rol_gerente;
@@ -224,6 +273,9 @@ GRANT SELECT ON bitacora_auditoria TO rol_gerente;
 -- catálogos base de la plataforma, sin privilegios de sistema sobre PostgreSQL.
 GRANT SELECT, INSERT, UPDATE ON configuracion_sistema TO rol_admin;
 GRANT SELECT, INSERT, UPDATE, DELETE ON idiomas, categorias TO rol_admin;
+GRANT SELECT, INSERT, UPDATE, DELETE ON tipos_dano TO rol_admin;
+GRANT SELECT, INSERT, UPDATE, DELETE ON base_conocimiento TO rol_admin;
+GRANT SELECT, INSERT, UPDATE, DELETE ON tipos_notificacion TO rol_admin;
 GRANT SELECT ON roles, permisos, rol_permisos TO rol_admin;
 GRANT SELECT ON bitacora_auditoria TO rol_admin;
 GRANT SELECT ON tokens_invalidos, verificaciones_correo TO rol_admin;  -- soporte técnico
@@ -364,6 +416,15 @@ ALTER TABLE multas FORCE ROW LEVEL SECURITY;
 ALTER TABLE sugerencias_adquisicion ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sugerencias_adquisicion FORCE ROW LEVEL SECURITY;
 
+ALTER TABLE notificaciones ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notificaciones FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE sesiones_chat ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sesiones_chat FORCE ROW LEVEL SECURITY;
+
+ALTER TABLE mensajes_chat ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mensajes_chat FORCE ROW LEVEL SECURITY;
+
 -- El backend, tras validar el JWT, setea el id del lector autenticado
 -- (ver bloque de advertencia arriba: SIEMPRE SET LOCAL, nunca SET):
 --   SET LOCAL app.current_user_id = '42';
@@ -394,7 +455,26 @@ CREATE POLICY sugerencias_propias ON sugerencias_adquisicion
     FOR ALL TO rol_lector
     USING (usuario_id = current_setting('app.current_user_id', true)::BIGINT);
 
--- El bibliotecario y el gerente ven TODAS las filas necesarias para operar
+CREATE POLICY notificaciones_propias ON notificaciones
+    FOR SELECT TO rol_lector
+    USING (usuario_id = current_setting('app.current_user_id', true)::BIGINT);
+
+CREATE POLICY sesiones_chat_propias ON sesiones_chat
+    FOR ALL TO rol_lector
+    USING (usuario_id = current_setting('app.current_user_id', true)::BIGINT);
+
+CREATE POLICY mensajes_chat_propios ON mensajes_chat
+    FOR ALL TO rol_lector
+    USING (sesion_id IN (
+        SELECT id FROM sesiones_chat
+        WHERE usuario_id = current_setting('app.current_user_id', true)::BIGINT
+    ));
+
+-- El bibliotecario y el gerente ven TODAS las notificaciones para asistir al lector
+-- (NO se añaden políticas de staff para sesiones_chat/mensajes_chat: el staff no tiene grants en esas tablas)
+CREATE POLICY notificaciones_staff ON notificaciones
+    FOR ALL TO rol_bibliotecario, rol_gerente
+    USING (true);
 -- (sin RLS sobre favoritos: no forman parte de su función operativa):
 CREATE POLICY reservaciones_staff ON reservaciones
     FOR ALL TO rol_bibliotecario, rol_gerente
@@ -421,6 +501,24 @@ CREATE POLICY sugerencias_staff ON sugerencias_adquisicion
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO rol_bibliotecario;
 -- Nota: favoritos usa PK compuesta (usuario_id, libro_id) sin columna SERIAL,
 -- por lo que no requiere GRANT sobre secuencia alguna.
+
+-- Secuencias adicionales para roles con INSERT en nuevas tablas:
+-- rol_lector: mensajes_chat usa BIGSERIAL
+GRANT USAGE, SELECT ON SEQUENCE mensajes_chat_id_seq TO rol_lector;
+
+-- rol_bibliotecario: INSERT/UPDATE en registro_danos, registro_dano_detalle, evidencia_dano
+GRANT USAGE, SELECT ON SEQUENCE registro_danos_id_seq, registro_dano_detalle_id_seq TO rol_bibliotecario;
+GRANT USAGE, SELECT ON SEQUENCE evidencia_dano_id_seq TO rol_bibliotecario;
+
+-- rol_admin: CRUD completo en catálogos nuevos
+GRANT USAGE, SELECT ON SEQUENCE tipos_dano_id_seq, base_conocimiento_id_seq, tipos_notificacion_id_seq TO rol_admin;
+GRANT USAGE, SELECT ON SEQUENCE mensajes_chat_id_seq, base_conocimiento_id_seq TO rol_admin;
+GRANT USAGE, SELECT ON SEQUENCE notificaciones_id_seq, tipos_notificacion_id_seq TO rol_admin;
+
+-- Nota: favoritos usa PK compuesta (usuario_id, libro_id) sin columna SERIAL,
+-- por lo que no requiere GRANT sobre secuencia alguna.
+-- Nota: sesiones_chat usa UUID con gen_random_uuid() default, no secuencia;
+-- por tanto no requiere GRANT sobre secuencia.
 
 
 -- ============================================================================
