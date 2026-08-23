@@ -149,11 +149,11 @@
                 </div>
                 <div class="flex-1 flex items-center gap-sm min-w-[200px]">
                   <input [(ngModel)]="editandoTipoDano!.nombre" [ngModelOptions]="{standalone: true}" type="text"
-                    placeholder="Nombre" class="flex-1 h-9 px-sm rounded border border-primary bg-white font-body-sm text-body-sm text-on-surface" />
-                  <div class="flex items-center gap-xs w-16">
-                    <span class="text-on-surface-variant text-[14px]">$</span>
+                    placeholder="Nombre" class="flex-1 min-w-0 h-9 px-sm rounded border border-primary bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary" />
+                  <div class="flex items-center gap-xs w-28 shrink-0">
+                    <span class="text-on-surface-variant text-[14px] font-medium shrink-0">$</span>
                     <input [(ngModel)]="editandoTipoDano!.precio" [ngModelOptions]="{standalone: true}" type="number" min="0" step="0.01"
-                      placeholder="0.00" class="flex-1 h-9 px-sm rounded border border-primary bg-white font-body-sm text-body-sm text-on-surface" />
+                      placeholder="0.00" class="w-full min-w-0 h-9 px-sm rounded border border-primary bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary" />
                   </div>
                 </div>
                 <div class="flex items-center gap-xs shrink-0">
@@ -177,16 +177,16 @@
             </div>
             <div class="flex-1 flex items-center gap-sm min-w-[200px]">
               <input [(ngModel)]="nuevoTipoDanoNombre" type="text" placeholder="Nombre del nuevo tipo de daño"
-                class="flex-1 h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface" />
-              <div class="flex items-center gap-xs w-16">
-                <span class="text-on-surface-variant text-[14px]">$</span>
+                class="flex-1 min-w-0 h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" />
+              <div class="flex items-center gap-xs w-28 shrink-0">
+                <span class="text-on-surface-variant text-[14px] font-medium shrink-0">$</span>
                 <input [(ngModel)]="nuevoTipoDanoPrecio" type="number" min="0" step="0.01" placeholder="0.00"
-                  class="flex-1 h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface" />
+                  class="w-full min-w-0 h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" />
               </div>
             </div>
             <button type="button" (click)="agregarTipoDano()"
               [disabled]="!nuevoTipoDanoNombre.trim() || nuevoTipoDanoPrecio == null || nuevoTipoDanoPrecio < 0"
-              class="h-9 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center gap-xs hover:bg-on-primary-fixed-variant transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+              class="h-9 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center gap-xs hover:bg-on-primary-fixed-variant transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0">
               <span class="material-symbols-outlined text-[18px]">add</span>
               Agregar
             </button>
