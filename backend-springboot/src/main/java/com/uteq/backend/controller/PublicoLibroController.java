@@ -43,22 +43,17 @@ public class PublicoLibroController {
 
     private final LibroService libroService;
 
-    // ── GET /api/publico/libros?categoriaId=&autorId=&page= ──────────
-    // Espejo exacto de LibroController.listar(): categoriaId/autorId son
-    // mutuamente excluyentes (si llegan los dos, categoriaId gana), paginado
+    // ── GET /api/publico/libros?q=&categoriaId=&autorId=&page= ──────
+    // Espejo de LibroController.listar(): q busca por título/ISBN,
+    // categoriaId/autorId filtran (mutuamente excluyentes), paginado
     // por defecto size=10 sort=titulo.
     @GetMapping
     public Page<LibroResponseDTO> listar(
+            @RequestParam(required = false) String q,
             @RequestParam(required = false) Integer categoriaId,
             @RequestParam(required = false) Long autorId,
             @PageableDefault(size = 10, sort = "titulo") Pageable pageable) {
-        if (categoriaId != null) {
-            return libroService.listarPorCategoria(categoriaId, pageable);
-        }
-        if (autorId != null) {
-            return libroService.listarPorAutor(autorId, pageable);
-        }
-        return libroService.listar(pageable);
+        return libroService.listarConFiltros(q, null, categoriaId, autorId, pageable);
     }
 
     // ── GET /api/publico/libros/sugerencias?texto= ───────────────────
