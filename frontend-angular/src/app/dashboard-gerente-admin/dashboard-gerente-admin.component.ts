@@ -32,6 +32,12 @@ export class DashboardGerenteAdminComponent {
   //   no tiene endpoints ahi, por eso no se le muestra el enlace.
   secciones: SeccionSidebar[] = [
     {
+      titulo: 'INICIO',
+      enlaces: [
+        { ruta: '/dashboard-admin', etiqueta: 'Inicio', icono: 'home', roles: ['GERENTE', 'ADMIN'] },
+      ]
+    },
+    {
        titulo: 'GESTIÓN',
       enlaces: [
         { ruta: '/dashboard-admin/libros', etiqueta: 'Libros', icono: 'inventory_2', roles: ['GERENTE', 'ADMIN'] },
