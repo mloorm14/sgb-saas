@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet, Router, NavigationEnd } fro
 import { AuthService } from './core/services/auth.service';
 import { filter } from 'rxjs/operators';
 import { ChatbotWidgetComponent } from './shared/chatbot-widget/chatbot-widget.component';
+import { LoaderComponent } from './shared/loader/loader.component';
 
 interface EnlaceNav {
   ruta: string;
@@ -14,7 +15,7 @@ interface EnlaceNav {
 
 @Component({
     selector: 'app-root',
-    imports: [RouterOutlet, RouterLink, RouterLinkActive, ChatbotWidgetComponent],
+    imports: [RouterOutlet, RouterLink, RouterLinkActive, ChatbotWidgetComponent, LoaderComponent],
     templateUrl: './app.component.html',
     styleUrl: './app.component.scss'
 })
