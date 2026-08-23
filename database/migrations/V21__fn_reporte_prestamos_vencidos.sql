@@ -34,7 +34,7 @@ AS $$
         ROUND(
             EXTRACT(DAY FROM NOW() - p.fecha_devolucion_estimada)::NUMERIC
             * COALESCE(
-                (SELECT cs.valor_numerico FROM configuracion_sistema cs WHERE cs.clave = 'multa_por_dia_atraso'),
+                (SELECT cs.valor::NUMERIC FROM configuracion_sistema cs WHERE cs.clave = 'multa_por_dia_atraso'),
                 0.50
             ), 2
         ) AS monto_multa_estimada

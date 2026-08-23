@@ -30,7 +30,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +41,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -62,6 +65,7 @@ class PrestamoServiceTest {
     // ── Test 1: creación exitosa (usuarioId directo) ───────
     @Test
     void crear_conDatosValidos_invocaProcedimientoYRetornaDTO() {
+        permitirCrearPrestamo();
         Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
         given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec"))
                 .willReturn(Optional.of(usuarioConId(5L)));
@@ -257,6 +261,7 @@ class PrestamoServiceTest {
     // ── Test 12: creación con credencial QR válida ──────────
     @Test
     void crear_conCredencialQrValida_resuelveUsuarioCorrecto() {
+        permitirCrearPrestamo();
         Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
         UUID token = UUID.randomUUID();
         given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec"))
@@ -311,6 +316,7 @@ class PrestamoServiceTest {
     // quede pendiente tras la entrega.
     @Test
     void crear_conReservacionVigente_vinculaPrestamoYMarcaRetirada() {
+        permitirCrearPrestamo();
         Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
         Reservacion reserva = reservacionVigente(77L, 1L, 2L, 1); // PENDIENTE
         Prestamo prestamoCreado = prestamoConId(99L);
@@ -340,6 +346,7 @@ class PrestamoServiceTest {
     // ── Test 15c: la reservación pertenece a otro usuario ────
     @Test
     void crear_conReservacionDeOtroUsuario_lanzaExcepcion() {
+        permitirCrearPrestamo();
         Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
         given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec"))
                 .willReturn(Optional.of(usuarioConId(5L)));
@@ -354,6 +361,7 @@ class PrestamoServiceTest {
     // ── Test 15d: libro distinto al de la reservación ────────
     @Test
     void crear_conLibroDistintoAlDeLaReservacion_lanzaExcepcion() {
+        permitirCrearPrestamo();
         Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
         given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec"))
                 .willReturn(Optional.of(usuarioConId(5L)));
@@ -368,6 +376,7 @@ class PrestamoServiceTest {
     // ── Test 15e: la reservación ya no está vigente ──────────
     @Test
     void crear_conReservacionYaRetirada_lanzaExcepcion() {
+        permitirCrearPrestamo();
         Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
         given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec"))
                 .willReturn(Optional.of(usuarioConId(5L)));
@@ -421,7 +430,7 @@ class PrestamoServiceTest {
     @Test
     void reporteUsoPorPeriodo_conGranularidadValida_invocaRepositorioConValorNormalizado() {
         ReporteUsoPorPeriodoProjection fila = mock(ReporteUsoPorPeriodoProjection.class);
-        given(fila.getPeriodo()).willReturn(OffsetDateTime.now());
+        given(fila.getPeriodo()).willReturn(Instant.now());
         given(fila.getTotalPrestamos()).willReturn(4L);
         given(fila.getTotalDevoluciones()).willReturn(2L);
         given(prestamoProcRepo.fnReporteUsoPorPeriodo("semana", null, null))
@@ -506,7 +515,11 @@ class PrestamoServiceTest {
         reserva.setLibroId(libroId);
         reserva.setEstadoReservacionId(estadoId);
         reserva.setFechaReserva(OffsetDateTime.now());
-        reserva.setFechaLimiteRetiro(OffsetDateTime.now().plusDays(1));
         return reserva;
+    }
+
+    private void permitirCrearPrestamo() {
+        lenient().when(configuracionSistemaService.obtenerValorEntero("max_prestamos_usuario")).thenReturn(5);
+        lenient().when(prestamoProcRepo.fnListarPrestamosActivosPorUsuario(any())).thenReturn(List.of());
     }
 }
