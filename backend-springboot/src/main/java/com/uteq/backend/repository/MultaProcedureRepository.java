@@ -1,6 +1,7 @@
 package com.uteq.backend.repository;
 
 import com.uteq.backend.entity.Multa;
+import com.uteq.backend.repository.projection.PagoRecienteProjection;
 import com.uteq.backend.repository.projection.ResumenFinancieroMultasProjection;
 import org.springframework.data.jpa.repository.Query;
 // import org.springframework.data.jpa.repository.query.Procedure; -- ya no se
@@ -87,5 +88,10 @@ public interface MultaProcedureRepository extends Repository<Multa, Long> {
     ResumenFinancieroMultasProjection fnReporteResumenFinanciero(
             @Param("p_desde") OffsetDateTime desde,
             @Param("p_hasta") OffsetDateTime hasta
+    );
+
+    @Query(value = "SELECT * FROM fn_pagos_recientes(:p_limit)", nativeQuery = true)
+    java.util.List<PagoRecienteProjection> fnPagosRecientes(
+            @Param("p_limit") Integer limit
     );
 }

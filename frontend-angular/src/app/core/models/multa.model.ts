@@ -52,4 +52,15 @@ export interface MultaAccionResponse {
 export interface ResumenFinancieroMultas {
   totalRecaudado: number;
   totalPendiente: number;
+  totalGeneradoHoy: number;
+  pagosRecientes: PagoReciente[];
+}
+
+export interface PagoReciente {
+  multaId: number;
+  montoPagado: number;
+  fechaPagada: string;
+  usuarioCorreo: string;
+  usuarioNombre: string;
+  libroTitulo: string;
 }

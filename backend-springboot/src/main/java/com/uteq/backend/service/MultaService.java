@@ -99,8 +99,30 @@ public class MultaService {
 
     @Transactional(readOnly = true)
     public ResumenFinancieroMultasResponseDTO reporteResumenFinanciero(OffsetDateTime desde, OffsetDateTime hasta) {
-        ResumenFinancieroMultasProjection p = multaProcRepo.fnReporteResumenFinanciero(desde, hasta);
-        return new ResumenFinancieroMultasResponseDTO(p.getTotalRecaudado(), p.getTotalPendiente());
+        ResumenFinancieroMultasProjection resumen = multaProcRepo.fnReporteResumenFinanciero(desde, hasta);
+
+        // Total generado hoy: SUM(monto) de multas generadas hoy
+        java.time.OffsetDateTime inicioHoy = java.time.OffsetDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
+        java.time.OffsetDateTime finHoy = inicioHoy.plusDays(1);
+        ResumenFinancieroMultasProjection hoy = multaProcRepo.fnReporteResumenFinanciero(inicioHoy, finHoy);
+        BigDecimal totalGeneradoHoy = hoy.getTotalRecaudado().add(hoy.getTotalPendiente());
+
+        // Pagos recientes: últimos 5
+        var pagosRecientes = multaProcRepo.fnPagosRecientes(5).stream()
+                .map(p -> new com.uteq.backend.dto.PagoRecienteDTO(
+                        p.getMultaId(),
+                        p.getMontoPagado(),
+                        p.getFechaPagada().atOffset(java.time.ZoneOffset.UTC),
+                        p.getUsuarioCorreo(),
+                        p.getUsuarioNombre(),
+                        p.getLibroTitulo()))
+                .toList();
+
+        return new ResumenFinancieroMultasResponseDTO(
+                resumen.getTotalRecaudado(),
+                resumen.getTotalPendiente(),
+                totalGeneradoHoy,
+                pagosRecientes);
     }
 
     private String resolverRolAnulacion(Authentication authentication) {
