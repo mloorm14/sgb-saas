@@ -42,7 +42,9 @@
           <th class="px-md py-sm">Rol</th>
           <th class="px-md py-sm">Estado</th>
           <th class="px-md py-sm hidden md:table-cell">Multas pend.</th>
-          <th class="px-md py-sm">Acciones</th>
+          @if (puedeGestionar) {
+            <th class="px-md py-sm">Acciones</th>
+          }
         </tr>
       </thead>
       <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
@@ -91,8 +93,8 @@
                 <span class="text-on-surface-variant text-[12px]">—</span>
               }
             </td>
-            <td class="px-md py-sm">
-              @if (puedeGestionar) {
+            @if (puedeGestionar) {
+              <td class="px-md py-sm">
                 @if (esBloqueable(usuario)) {
                   <button (click)="abrirModalEstado(usuario, 'INACTIVO')"
                     class="h-8 px-sm rounded border border-error text-error font-label-sm text-label-sm hover:bg-error-container/40 flex items-center gap-xs cursor-pointer">
@@ -109,15 +111,13 @@
                     <span class="material-symbols-outlined text-[16px]">info</span> Bloqueo automático
                   </button>
                 }
-              } @else {
-                <span class="text-on-surface-variant">—</span>
-              }
-            </td>
+              </td>
+            }
           </tr>
         } @empty {
           @if (!cargando) {
             <tr>
-              <td colspan="6" class="px-md py-lg text-center text-on-surface-variant">No hay usuarios para mostrar</td>
+              <td [attr.colspan]="puedeGestionar ? 6 : 5" class="px-md py-lg text-center text-on-surface-variant">No hay usuarios para mostrar</td>
             </tr>
           }
         }

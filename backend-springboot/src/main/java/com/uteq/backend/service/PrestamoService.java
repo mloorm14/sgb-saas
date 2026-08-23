@@ -33,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 
@@ -390,8 +391,8 @@ public class PrestamoService {
                 p.getPrestamoId(),
                 p.getLibroTitulo(),
                 p.getLibroIsbn(),
-                p.getFechaPrestamo(),
-                p.getFechaDevolucionEstimada(),
+                p.getFechaPrestamo() != null ? p.getFechaPrestamo().atOffset(ZoneOffset.UTC) : null,
+                p.getFechaDevolucionEstimada() != null ? p.getFechaDevolucionEstimada().atOffset(ZoneOffset.UTC) : null,
                 p.getDiasRestantes(),
                 p.getEstadoNombre());
     }
@@ -417,7 +418,7 @@ public class PrestamoService {
 
     private ReporteUsoPorPeriodoResponseDTO toDTO(ReporteUsoPorPeriodoProjection p) {
         return new ReporteUsoPorPeriodoResponseDTO(
-                p.getPeriodo(),
+                p.getPeriodo() != null ? p.getPeriodo().atOffset(ZoneOffset.UTC) : null,
                 p.getTotalPrestamos(),
                 p.getTotalDevoluciones());
     }

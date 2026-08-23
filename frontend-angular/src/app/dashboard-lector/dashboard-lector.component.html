@@ -36,7 +36,9 @@
         <span class="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-sm text-label-sm shrink-0">{{ inicialesUsuario }}</span>
         <div class="flex-1 text-left min-w-0">
           <p class="font-body-sm text-body-sm text-on-surface truncate">{{ correoUsuario }}</p>
-          <p class="font-label-sm text-label-sm text-on-surface-variant">{{ nombreRol }}</p>
+          @if (nombreRol) {
+            <p class="font-label-sm text-label-sm text-on-surface-variant">{{ nombreRol }}</p>
+          }
         </div>
         <span class="material-symbols-outlined text-[18px] text-on-surface-variant"
           [class.rotate-180]="mostrarMenuUsuario"
