@@ -78,6 +78,12 @@ public class GeminiClient {
         this.restClient = RestClient.builder()
                 .requestFactory(requestFactory)
                 .build();
+
+        if (apiKey == null || apiKey.isBlank()) {
+            log.warn("GEMINI_API_KEY no está configurada — las llamadas a Gemini fallarán");
+        } else {
+            log.info("GeminiClient inicializado: modelo={}, url={}", modelo, urlBase);
+        }
     }
 
     public String generarRespuesta(String promptSistema, List<MensajeChat> historial, String mensajeNuevo) {
@@ -98,9 +104,12 @@ public class GeminiClient {
                     continue;
                 }
                 return MENSAJE_SATURADO;
-            } catch (HttpClientErrorException | HttpServerErrorException ex) {
-                log.error("Gemini respondió {} en el intento {}", ex.getStatusCode(), intento + 1);
-                return MENSAJE_FALLBACK_GENERICO;
+        } catch (HttpClientErrorException ex) {
+            log.error("Gemini respondió {} en el intento {}: body={}", ex.getStatusCode(), intento + 1, ex.getResponseBodyAsString());
+            return MENSAJE_FALLBACK_GENERICO;
+        } catch (HttpServerErrorException ex) {
+            log.error("Gemini respondió error de servidor {} en el intento {}: body={}", ex.getStatusCode(), intento + 1, ex.getResponseBodyAsString());
+            return MENSAJE_FALLBACK_GENERICO;
             }
         }
         return MENSAJE_SATURADO;
@@ -149,6 +158,7 @@ public class GeminiClient {
                 .retrieve()
                 .body(String.class);
 
+        log.debug("Respuesta cruda de Gemini: {}", respuestaJson);
         return extraerTexto(respuestaJson);
     }
 
