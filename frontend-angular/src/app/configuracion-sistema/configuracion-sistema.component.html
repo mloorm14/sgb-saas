@@ -122,7 +122,7 @@
           @for (tipo of tiposDano; track tipo.id) {
             <div class="flex flex-wrap items-center gap-md p-md transition-colors hover:bg-surface-container-low/60"
               [class.bg-primary-fixed/20]="editandoTipoDano?.id === tipo.id">
-              @if (editandoTipoDano?.id !== tipo.id) {
+              @if (!editandoTipoDano || editandoTipoDano.id !== tipo.id) {
                 <div class="flex-1 min-w-[160px]">
                   <p class="font-label-sm text-[14px] text-on-surface">{{ tipo.nombre }}</p>
                 </div>
