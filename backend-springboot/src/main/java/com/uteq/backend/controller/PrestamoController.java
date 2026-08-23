@@ -143,9 +143,6 @@ public class PrestamoController {
     }
 
     // ── GET /api/v1/prestamos/reportes/morosidad/pdf ──────
-    // Exportación a PDF del mismo reporte de arriba (ReportePdfService),
-    // transmitida directo en el cuerpo de la respuesta -- nunca se guarda
-    // en disco del servidor (ver Javadoc de ReportePdfService).
     @GetMapping(value = "/reportes/morosidad/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
     public ResponseEntity<byte[]> reporteMorosidadPdf(
@@ -154,6 +151,74 @@ public class PrestamoController {
         byte[] pdf = reportePdfService.generarReporteMorosidad(reporte);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte-morosidad.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
+
+    // ── GET /api/v1/prestamos/reportes/libros-mas-prestados/pdf ──
+    @GetMapping(value = "/reportes/libros-mas-prestados/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    public ResponseEntity<byte[]> reporteLibrosMasPrestadosPdf(
+            @RequestParam(required = false) Integer limite,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta,
+            @RequestParam(required = false) Integer categoriaId) {
+        List<LibroMasPrestadoDetalladoResponseDTO> reporte =
+                prestamoService.reporteLibrosMasPrestadosDetallado(limite, desde, hasta, categoriaId);
+        byte[] pdf = reportePdfService.generarReporteLibrosMasPrestados(reporte);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte-libros-prestados.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
+
+    // ── GET /api/v1/prestamos/reportes/inventario/pdf ─────
+    @GetMapping(value = "/reportes/inventario/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    public ResponseEntity<byte[]> reporteInventarioPdf(
+            @RequestParam(required = false) Integer categoriaId,
+            @RequestParam(required = false) String estadoStock,
+            @RequestParam(required = false) String busqueda) {
+        List<ReporteInventarioResponseDTO> reporte =
+                prestamoService.reporteInventario(categoriaId, estadoStock, busqueda);
+        byte[] pdf = reportePdfService.generarReporteInventario(reporte);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte-inventario.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
+
+    // ── GET /api/v1/prestamos/reportes/vencidos/pdf ───────
+    @GetMapping(value = "/reportes/vencidos/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    public ResponseEntity<byte[]> reporteVencidosPdf(
+            @RequestParam(required = false) Integer diasAtrasoMin,
+            @RequestParam(required = false) String busqueda) {
+        List<ReporteVencidosResponseDTO> reporte =
+                prestamoService.reportePrestamosVencidos(diasAtrasoMin, busqueda);
+        byte[] pdf = reportePdfService.generarReporteVencidos(reporte);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte-vencidos.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
+
+    // ── GET /api/v1/prestamos/reportes/categorias-demandadas/pdf ──
+    @GetMapping(value = "/reportes/categorias-demandadas/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    public ResponseEntity<byte[]> reporteCategoriasDemandadasPdf(
+            @RequestParam(required = false) Integer limite,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta) {
+        List<ReporteCategoriasDemandadasResponseDTO> reporte =
+                prestamoService.reporteCategoriasDemandadas(limite, desde, hasta);
+        byte[] pdf = reportePdfService.generarReporteCategoriasDemandadas(reporte);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte-categorias.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdf);
     }

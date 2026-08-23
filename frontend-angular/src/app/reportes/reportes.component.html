@@ -50,6 +50,18 @@
   <section class="mb-lg">
     <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
       <h2 class="font-headline-sm text-headline-sm text-on-surface">Libros más prestados</h2>
+      <div class="flex items-center gap-xs">
+        <button (click)="descargarLibrosPdf()" [disabled]="descargandoPdf === 'libros-pdf'"
+          class="h-8 px-sm rounded bg-error/10 text-error font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer hover:bg-error/20 transition-colors">
+          <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+          {{ descargandoPdf === 'libros-pdf' ? 'Generando…' : 'PDF' }}
+        </button>
+        <button (click)="excelLibros()"
+          class="h-8 px-sm rounded bg-success/10 text-success font-label-sm text-label-sm flex items-center gap-xs cursor-pointer hover:bg-success/20 transition-colors">
+          <span class="material-symbols-outlined text-[16px]">table_chart</span>
+          Excel
+        </button>
+      </div>
     </div>
     <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
       <table class="w-full text-left">
@@ -100,11 +112,18 @@
   <section class="mb-lg">
     <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
       <h2 class="font-headline-sm text-headline-sm text-on-surface">Morosidad</h2>
-      <button (click)="descargarMorosidadPdf()" [disabled]="descargandoPdf"
-        class="h-9 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer">
-        <span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
-        {{ descargandoPdf ? 'Generando…' : 'Generar PDF' }}
-      </button>
+      <div class="flex items-center gap-xs">
+        <button (click)="descargarMorosidadPdf()" [disabled]="descargandoPdf === 'morosidad-pdf'"
+          class="h-8 px-sm rounded bg-error/10 text-error font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer hover:bg-error/20 transition-colors">
+          <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+          {{ descargandoPdf === 'morosidad-pdf' ? 'Generando…' : 'PDF' }}
+        </button>
+        <button (click)="excelMorosidad()"
+          class="h-8 px-sm rounded bg-success/10 text-success font-label-sm text-label-sm flex items-center gap-xs cursor-pointer hover:bg-success/20 transition-colors">
+          <span class="material-symbols-outlined text-[16px]">table_chart</span>
+          Excel
+        </button>
+      </div>
     </div>
     <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
       <table class="w-full text-left">
@@ -142,6 +161,18 @@
   <section class="mb-lg">
     <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
       <h2 class="font-headline-sm text-headline-sm text-on-surface">Inventario y disponibilidad</h2>
+      <div class="flex items-center gap-xs">
+        <button (click)="descargarInventarioPdf()" [disabled]="descargandoPdf === 'inventario-pdf'"
+          class="h-8 px-sm rounded bg-error/10 text-error font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer hover:bg-error/20 transition-colors">
+          <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+          {{ descargandoPdf === 'inventario-pdf' ? 'Generando…' : 'PDF' }}
+        </button>
+        <button (click)="excelInventario()"
+          class="h-8 px-sm rounded bg-success/10 text-success font-label-sm text-label-sm flex items-center gap-xs cursor-pointer hover:bg-success/20 transition-colors">
+          <span class="material-symbols-outlined text-[16px]">table_chart</span>
+          Excel
+        </button>
+      </div>
     </div>
     <div class="flex flex-wrap gap-sm mb-sm items-end">
       <div>
@@ -222,6 +253,18 @@
   <section class="mb-lg">
     <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
       <h2 class="font-headline-sm text-headline-sm text-on-surface">Préstamos vencidos activos</h2>
+      <div class="flex items-center gap-xs">
+        <button (click)="descargarVencidosPdf()" [disabled]="descargandoPdf === 'vencidos-pdf'"
+          class="h-8 px-sm rounded bg-error/10 text-error font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer hover:bg-error/20 transition-colors">
+          <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+          {{ descargandoPdf === 'vencidos-pdf' ? 'Generando…' : 'PDF' }}
+        </button>
+        <button (click)="excelVencidos()"
+          class="h-8 px-sm rounded bg-success/10 text-success font-label-sm text-label-sm flex items-center gap-xs cursor-pointer hover:bg-success/20 transition-colors">
+          <span class="material-symbols-outlined text-[16px]">table_chart</span>
+          Excel
+        </button>
+      </div>
     </div>
     <div class="flex flex-wrap gap-sm mb-sm items-end">
       <div>
@@ -279,6 +322,18 @@
   <section class="mb-lg">
     <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
       <h2 class="font-headline-sm text-headline-sm text-on-surface">Categorías más demandadas</h2>
+      <div class="flex items-center gap-xs">
+        <button (click)="descargarCategoriasPdf()" [disabled]="descargandoPdf === 'categorias-pdf'"
+          class="h-8 px-sm rounded bg-error/10 text-error font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer hover:bg-error/20 transition-colors">
+          <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+          {{ descargandoPdf === 'categorias-pdf' ? 'Generando…' : 'PDF' }}
+        </button>
+        <button (click)="excelCategorias()"
+          class="h-8 px-sm rounded bg-success/10 text-success font-label-sm text-label-sm flex items-center gap-xs cursor-pointer hover:bg-success/20 transition-colors">
+          <span class="material-symbols-outlined text-[16px]">table_chart</span>
+          Excel
+        </button>
+      </div>
     </div>
     <div class="flex flex-wrap gap-sm mb-sm items-end">
       <div>

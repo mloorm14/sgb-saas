@@ -4,10 +4,6 @@ import { catchError, Observable, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ProblemDetail } from '../models/problem-detail.model';
 
-// Contrato de PrestamoController (/api/v1/prestamos/reportes), verificado
-// en backend-springboot: BIBLIOTECARIO/GERENTE (ADMIN no tiene acceso).
-// Solo morosidad tiene PDF; libros-mas-prestados y uso no.
-
 export interface LibroMasPrestado {
   libroId: number;
   titulo: string;
@@ -128,9 +124,47 @@ export class ReporteService {
     );
   }
 
-  // Blob para descargar con <a download> (no se abre en pestaña).
+  // ── PDF endpoints ──────────────────────────────────────
   morosidadPdf(): Observable<Blob> {
     return this.http.get(`${this.apiUrl}/morosidad/pdf`, { responseType: 'blob' }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  librosMasPrestadosPdf(desde?: string, hasta?: string, limite?: number): Observable<Blob> {
+    const params: Record<string, string> = {};
+    if (desde) params['desde'] = desde;
+    if (hasta) params['hasta'] = hasta;
+    if (limite) params['limite'] = limite.toString();
+    return this.http.get(`${this.apiUrl}/libros-mas-prestados/pdf`, { params, responseType: 'blob' }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  inventarioPdf(estadoStock?: string, busqueda?: string): Observable<Blob> {
+    const params: Record<string, string> = {};
+    if (estadoStock) params['estadoStock'] = estadoStock;
+    if (busqueda) params['busqueda'] = busqueda;
+    return this.http.get(`${this.apiUrl}/inventario/pdf`, { params, responseType: 'blob' }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  vencidosPdf(diasAtrasoMin?: number, busqueda?: string): Observable<Blob> {
+    const params: Record<string, string> = {};
+    if (diasAtrasoMin) params['diasAtrasoMin'] = diasAtrasoMin.toString();
+    if (busqueda) params['busqueda'] = busqueda;
+    return this.http.get(`${this.apiUrl}/vencidos/pdf`, { params, responseType: 'blob' }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  categoriasDemandadasPdf(desde?: string, hasta?: string, limite?: number): Observable<Blob> {
+    const params: Record<string, string> = {};
+    if (desde) params['desde'] = desde;
+    if (hasta) params['hasta'] = hasta;
+    if (limite) params['limite'] = limite.toString();
+    return this.http.get(`${this.apiUrl}/categorias-demandadas/pdf`, { params, responseType: 'blob' }).pipe(
       catchError(err => this.manejarError(err))
     );
   }

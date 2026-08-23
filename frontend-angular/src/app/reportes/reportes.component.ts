@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReporteService, LibroMasPrestadoDetallado, ReporteMorosidad, ReporteInventario, ReporteVencidos, ReporteCategoriasDemandadas } from '../core/services/reporte-gerencial.service';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-reportes',
@@ -28,7 +29,7 @@ export class ReportesComponent implements OnInit {
 
   cargando = false;
   errorMsg = '';
-  descargandoPdf = false;
+  descargandoPdf: string | null = null;
 
   constructor(private reporteService: ReporteService) {}
 
@@ -92,9 +93,7 @@ export class ReportesComponent implements OnInit {
     });
   }
 
-  aplicarFiltros(): void {
-    this.cargarTodos();
-  }
+  aplicarFiltros(): void { this.cargarTodos(); }
 
   limpiarFiltros(): void {
     this.fechaDesde = '';
@@ -108,18 +107,13 @@ export class ReportesComponent implements OnInit {
     this.cargarTodos();
   }
 
-  cambiarLimite(): void {
-    this.cargarTodos();
-  }
+  cambiarLimite(): void { this.cargarTodos(); }
 
   filtrarInventario(): void {
     this.cargando = true;
     this.errorMsg = '';
     this.reporteService.inventario(undefined, this.estadoStock || undefined, this.busquedaInventario || undefined).subscribe({
-      next: (inventario) => {
-        this.inventario = inventario;
-        this.cargando = false;
-      },
+      next: (inventario) => { this.inventario = inventario; this.cargando = false; },
       error: (err) => this.fallar(err)
     });
   }
@@ -128,10 +122,7 @@ export class ReportesComponent implements OnInit {
     this.cargando = true;
     this.errorMsg = '';
     this.reporteService.vencidos(this.diasAtrasoMin || undefined, this.busquedaVencidos || undefined).subscribe({
-      next: (vencidos) => {
-        this.vencidos = vencidos;
-        this.cargando = false;
-      },
+      next: (vencidos) => { this.vencidos = vencidos; this.cargando = false; },
       error: (err) => this.fallar(err)
     });
   }
@@ -142,10 +133,7 @@ export class ReportesComponent implements OnInit {
     const desde = this.fechaDesde ? this.fechaDesde + 'T00:00:00Z' : undefined;
     const hasta = this.fechaHasta ? this.fechaHasta + 'T23:59:59Z' : undefined;
     this.reporteService.categoriasDemandadas(desde, hasta, this.limiteCategorias).subscribe({
-      next: (categorias) => {
-        this.categorias = categorias;
-        this.cargando = false;
-      },
+      next: (categorias) => { this.categorias = categorias; this.cargando = false; },
       error: (err) => this.fallar(err)
     });
   }
@@ -156,25 +144,110 @@ export class ReportesComponent implements OnInit {
       || 'Error al cargar los reportes';
   }
 
-  descargarMorosidadPdf(): void {
-    this.descargandoPdf = true;
+  // ── PDF downloads ──────────────────────────────────────
+  private descargarPdf(blob$: Observable<Blob>, nombre: string, clave: string): void {
+    this.descargandoPdf = clave;
     this.errorMsg = '';
-    this.reporteService.morosidadPdf().subscribe({
+    blob$.subscribe({
       next: (blob) => {
         const url = URL.createObjectURL(blob);
         const enlace = document.createElement('a');
         enlace.href = url;
-        enlace.download = 'reporte-morosidad.pdf';
+        enlace.download = nombre;
         enlace.click();
         URL.revokeObjectURL(url);
-        this.descargandoPdf = false;
+        this.descargandoPdf = null;
       },
       error: (err) => {
-        this.descargandoPdf = false;
-        this.errorMsg = (err as { error?: { detail?: string } })?.error?.detail
-          || 'Error al generar el PDF de morosidad';
+        this.descargandoPdf = null;
+        this.errorMsg = (err as { error?: { detail?: string } })?.error?.detail || 'Error al generar el PDF';
       }
     });
+  }
+
+  descargarLibrosPdf(): void {
+    const desde = this.fechaDesde ? this.fechaDesde + 'T00:00:00Z' : undefined;
+    const hasta = this.fechaHasta ? this.fechaHasta + 'T23:59:59Z' : undefined;
+    this.descargarPdf(
+      this.reporteService.librosMasPrestadosPdf(desde, hasta, this.limiteTop),
+      'reporte-libros-prestados.pdf', 'libros-pdf'
+    );
+  }
+
+  descargarMorosidadPdf(): void {
+    this.descargarPdf(this.reporteService.morosidadPdf(), 'reporte-morosidad.pdf', 'morosidad-pdf');
+  }
+
+  descargarInventarioPdf(): void {
+    this.descargarPdf(
+      this.reporteService.inventarioPdf(this.estadoStock || undefined, this.busquedaInventario || undefined),
+      'reporte-inventario.pdf', 'inventario-pdf'
+    );
+  }
+
+  descargarVencidosPdf(): void {
+    this.descargarPdf(
+      this.reporteService.vencidosPdf(this.diasAtrasoMin || undefined, this.busquedaVencidos || undefined),
+      'reporte-vencidos.pdf', 'vencidos-pdf'
+    );
+  }
+
+  descargarCategoriasPdf(): void {
+    const desde = this.fechaDesde ? this.fechaDesde + 'T00:00:00Z' : undefined;
+    const hasta = this.fechaHasta ? this.fechaHasta + 'T23:59:59Z' : undefined;
+    this.descargarPdf(
+      this.reporteService.categoriasDemandadasPdf(desde, hasta, this.limiteCategorias),
+      'reporte-categorias.pdf', 'categorias-pdf'
+    );
+  }
+
+  // ── Excel downloads ────────────────────────────────────
+  private generarExcel(headers: string[], rows: (string | number)[][], nombre: string, sheetName: string): void {
+    const wb = XLSX.utils.book_new();
+    const wsData = [headers, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Estilos de ancho de columna
+    ws['!cols'] = headers.map((_, i) => {
+      const maxLen = Math.max(
+        headers[i].length,
+        ...rows.map(r => String(r[i] ?? '').length)
+      );
+      return { wch: Math.min(maxLen + 4, 40) };
+    });
+
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    XLSX.writeFile(wb, nombre, { bookType: 'xlsx' });
+  }
+
+  excelLibros(): void {
+    const headers = ['#', 'Título', 'ISBN', 'Autor', 'Categoría', 'Préstamos', '% del total'];
+    const rows = this.libros.map((l, i) => [i + 1, l.titulo, l.isbn || '—', l.autorNombre || '—', l.categoriaNombre || '—', l.totalPrestamos, l.porcentaje + '%']);
+    this.generarExcel(headers, rows, 'reporte-libros-prestados.xlsx', 'Libros más prestados');
+  }
+
+  excelMorosidad(): void {
+    const headers = ['Usuario', 'Correo', 'Deuda', 'Multas pendientes', 'Días atraso (prom.)'];
+    const rows = this.morosos.map(m => [m.nombre + ' ' + m.apellido, m.correo, m.montoTotalAdeudado, m.cantidadMultasPendientes, m.diasAtrasoPromedio]);
+    this.generarExcel(headers, rows, 'reporte-morosidad.xlsx', 'Morosidad');
+  }
+
+  excelInventario(): void {
+    const headers = ['Título', 'ISBN', 'Autor', 'Categoría', 'Stock', 'Disponible', 'Estado'];
+    const rows = this.inventario.map(i => [i.titulo, i.isbn || '—', i.autorNombre || '—', i.categoriaNombre || '—', i.stockTotal, i.stockDisponible, i.estadoDisponibilidad]);
+    this.generarExcel(headers, rows, 'reporte-inventario.xlsx', 'Inventario');
+  }
+
+  excelVencidos(): void {
+    const headers = ['Usuario', 'Correo', 'Libro', 'ISBN', 'Vencimiento', 'Días atraso', 'Multa estimada'];
+    const rows = this.vencidos.map(v => [v.usuarioNombre, v.usuarioCorreo, v.libroTitulo, v.libroIsbn || '—', this.fechaCorta(v.fechaDevolucionEstimada), v.diasAtraso, v.montoMultaEstimada]);
+    this.generarExcel(headers, rows, 'reporte-vencidos.xlsx', 'Préstamos vencidos');
+  }
+
+  excelCategorias(): void {
+    const headers = ['#', 'Categoría', 'Préstamos', '% del total'];
+    const rows = this.categorias.map((c, i) => [i + 1, c.categoriaNombre, c.totalPrestamos, c.porcentaje + '%']);
+    this.generarExcel(headers, rows, 'reporte-categorias.xlsx', 'Categorías demandadas');
   }
 
   fechaCorta(iso: string): string {
