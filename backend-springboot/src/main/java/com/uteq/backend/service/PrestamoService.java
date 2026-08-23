@@ -1,6 +1,7 @@
 package com.uteq.backend.service;
 
 import com.uteq.backend.dto.DevolucionResponseDTO;
+import com.uteq.backend.dto.LibroMasPrestadoDetalladoResponseDTO;
 import com.uteq.backend.dto.LibroMasPrestadoResponseDTO;
 import com.uteq.backend.dto.PrestamoActivoResponseDTO;
 import com.uteq.backend.dto.PrestamoRequestDTO;
@@ -18,6 +19,7 @@ import com.uteq.backend.repository.PrestamoProcedureRepository;
 import com.uteq.backend.repository.PrestamoRepository;
 import com.uteq.backend.repository.ReservacionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.repository.projection.LibroMasPrestadoDetalladoProjection;
 import com.uteq.backend.repository.projection.LibroMasPrestadoProjection;
 import com.uteq.backend.repository.projection.PrestamoActivoProjection;
 import com.uteq.backend.repository.projection.ReporteMorosidadProjection;
@@ -403,6 +405,22 @@ public class PrestamoService {
                 p.getTitulo(),
                 p.getIsbn(),
                 p.getTotalPrestamos());
+    }
+
+    @Transactional(readOnly = true)
+    public List<LibroMasPrestadoDetalladoResponseDTO> reporteLibrosMasPrestadosDetallado(
+            Integer limite, OffsetDateTime desde, OffsetDateTime hasta, Integer categoriaId) {
+        Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
+        return prestamoProcRepo.fnReporteLibrosMasPrestadosDetallado(limiteEfectivo, desde, hasta, categoriaId).stream()
+                .map(p -> new LibroMasPrestadoDetalladoResponseDTO(
+                        p.getLibroId(),
+                        p.getTitulo(),
+                        p.getIsbn(),
+                        p.getAutorNombre(),
+                        p.getCategoriaNombre(),
+                        p.getTotalPrestamos(),
+                        p.getPorcentaje()))
+                .toList();
     }
 
     private ReporteMorosidadResponseDTO toDTO(ReporteMorosidadProjection p) {

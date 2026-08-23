@@ -1,6 +1,7 @@
 package com.uteq.backend.repository;
 
 import com.uteq.backend.entity.Prestamo;
+import com.uteq.backend.repository.projection.LibroMasPrestadoDetalladoProjection;
 import com.uteq.backend.repository.projection.LibroMasPrestadoProjection;
 import com.uteq.backend.repository.projection.PrestamoActivoProjection;
 import com.uteq.backend.repository.projection.ReporteMorosidadProjection;
@@ -134,5 +135,18 @@ public interface PrestamoProcedureRepository extends Repository<Prestamo, Long> 
             @Param("p_granularidad") String granularidad,
             @Param("p_desde") OffsetDateTime desde,
             @Param("p_hasta") OffsetDateTime hasta
+    );
+
+    /**
+     * fn_reporte_libros_mas_prestados_detallado: versión extendida con
+     * autor, categoría y porcentaje del total.
+     */
+    @Query(value = "SELECT * FROM fn_reporte_libros_mas_prestados_detallado(:p_limite, :p_desde, :p_hasta, :p_categoria_id)",
+            nativeQuery = true)
+    List<LibroMasPrestadoDetalladoProjection> fnReporteLibrosMasPrestadosDetallado(
+            @Param("p_limite") Integer limite,
+            @Param("p_desde") OffsetDateTime desde,
+            @Param("p_hasta") OffsetDateTime hasta,
+            @Param("p_categoria_id") Integer categoriaId
     );
 }

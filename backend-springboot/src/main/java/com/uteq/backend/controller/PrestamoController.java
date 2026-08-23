@@ -1,6 +1,7 @@
 package com.uteq.backend.controller;
 
 import com.uteq.backend.dto.DevolucionResponseDTO;
+import com.uteq.backend.dto.LibroMasPrestadoDetalladoResponseDTO;
 import com.uteq.backend.dto.LibroMasPrestadoResponseDTO;
 import com.uteq.backend.dto.PrestamoActivoResponseDTO;
 import com.uteq.backend.dto.PrestamoRequestDTO;
@@ -97,6 +98,20 @@ public class PrestamoController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta) {
         return ResponseEntity.ok(
                 prestamoService.reporteLibrosMasPrestados(limite, desde, hasta));
+    }
+
+    // ── GET /api/v1/prestamos/reportes/libros-mas-prestados-detallado ──
+    @GetMapping("/reportes/libros-mas-prestados-detallado")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    public ResponseEntity<List<LibroMasPrestadoDetalladoResponseDTO>> reporteLibrosMasPrestadosDetallado(
+            @RequestParam(required = false) Integer limite,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta,
+            @RequestParam(required = false) Integer categoriaId) {
+        return ResponseEntity.ok(
+                prestamoService.reporteLibrosMasPrestadosDetallado(limite, desde, hasta, categoriaId));
     }
 
     // ── GET /api/v1/prestamos/reportes/morosidad ──────────

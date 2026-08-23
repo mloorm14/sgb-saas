@@ -15,6 +15,16 @@ export interface LibroMasPrestado {
   totalPrestamos: number;
 }
 
+export interface LibroMasPrestadoDetallado {
+  libroId: number;
+  titulo: string;
+  isbn: string;
+  autorNombre: string;
+  categoriaNombre: string;
+  totalPrestamos: number;
+  porcentaje: number;
+}
+
 export interface ReporteMorosidad {
   usuarioId: number;
   nombre: string;
@@ -47,6 +57,17 @@ export class ReporteService {
     if (desde) params['desde'] = desde;
     if (hasta) params['hasta'] = hasta;
     return this.http.get<LibroMasPrestado[]>(`${this.apiUrl}/libros-mas-prestados`, { params }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  librosMasPrestadosDetallado(desde?: string, hasta?: string, limite?: number, categoriaId?: number): Observable<LibroMasPrestadoDetallado[]> {
+    const params: Record<string, string> = {};
+    if (desde) params['desde'] = desde;
+    if (hasta) params['hasta'] = hasta;
+    if (limite) params['limite'] = limite.toString();
+    if (categoriaId) params['categoriaId'] = categoriaId.toString();
+    return this.http.get<LibroMasPrestadoDetallado[]>(`${this.apiUrl}/libros-mas-prestados-detallado`, { params }).pipe(
       catchError(err => this.manejarError(err))
     );
   }

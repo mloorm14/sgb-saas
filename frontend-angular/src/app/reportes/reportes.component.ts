@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ReporteService, GranularidadUso, LibroMasPrestado, ReporteMorosidad, ReporteUsoPorPeriodo } from '../core/services/reporte-gerencial.service';
+import { ReporteService, LibroMasPrestadoDetallado, ReporteMorosidad } from '../core/services/reporte-gerencial.service';
 
 @Component({
   selector: 'app-reportes',
@@ -10,13 +10,12 @@ import { ReporteService, GranularidadUso, LibroMasPrestado, ReporteMorosidad, Re
   templateUrl: './reportes.component.html'
 })
 export class ReportesComponent implements OnInit {
-  libros: LibroMasPrestado[] = [];
+  libros: LibroMasPrestadoDetallado[] = [];
   morosos: ReporteMorosidad[] = [];
-  uso: ReporteUsoPorPeriodo[] = [];
-  granularidad: GranularidadUso = 'dia';
 
   fechaDesde = '';
   fechaHasta = '';
+  limiteTop = 10;
 
   cargando = false;
   errorMsg = '';
@@ -33,7 +32,7 @@ export class ReportesComponent implements OnInit {
     this.errorMsg = '';
     const desde = this.fechaDesde ? this.fechaDesde + 'T00:00:00Z' : undefined;
     const hasta = this.fechaHasta ? this.fechaHasta + 'T23:59:59Z' : undefined;
-    this.reporteService.librosMasPrestados(desde, hasta).subscribe({
+    this.reporteService.librosMasPrestadosDetallado(desde, hasta, this.limiteTop).subscribe({
       next: (libros) => {
         this.libros = libros;
         this.cargarMorosidad();
@@ -46,16 +45,6 @@ export class ReportesComponent implements OnInit {
     this.reporteService.morosidad().subscribe({
       next: (morosos) => {
         this.morosos = morosos;
-        this.cargarUso();
-      },
-      error: (err) => this.fallar(err)
-    });
-  }
-
-  private cargarUso(): void {
-    this.reporteService.uso(this.granularidad).subscribe({
-      next: (uso) => {
-        this.uso = uso;
         this.cargando = false;
       },
       error: (err) => this.fallar(err)
@@ -69,19 +58,12 @@ export class ReportesComponent implements OnInit {
   limpiarFiltros(): void {
     this.fechaDesde = '';
     this.fechaHasta = '';
+    this.limiteTop = 10;
     this.cargarTodos();
   }
 
-  cambiarGranularidad(): void {
-    this.cargando = true;
-    this.errorMsg = '';
-    this.reporteService.uso(this.granularidad).subscribe({
-      next: (uso) => {
-        this.uso = uso;
-        this.cargando = false;
-      },
-      error: (err) => this.fallar(err)
-    });
+  cambiarLimite(): void {
+    this.cargarTodos();
   }
 
   private fallar(err: unknown): void {
@@ -90,7 +72,6 @@ export class ReportesComponent implements OnInit {
       || 'Error al cargar los reportes';
   }
 
-  // Solo morosidad expone PDF (PrestamoController). Blob -> <a download>.
   descargarMorosidadPdf(): void {
     this.descargandoPdf = true;
     this.errorMsg = '';
@@ -110,10 +91,5 @@ export class ReportesComponent implements OnInit {
           || 'Error al generar el PDF de morosidad';
       }
     });
-  }
-
-  formatoPeriodo(iso: string): string {
-    const fecha = new Date(iso);
-    return fecha.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 }

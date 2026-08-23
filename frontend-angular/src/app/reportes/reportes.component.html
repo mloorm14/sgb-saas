@@ -1,7 +1,7 @@
 <main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
   <div class="mb-lg">
     <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Reportes gerenciales</h1>
-    <p class="font-body-sm text-body-sm text-on-surface-variant">Estadísticas de uso, morosidad y libros más prestados.</p>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Estadísticas de morosidad y libros más prestados.</p>
   </div>
 
   @if (errorMsg) {
@@ -12,7 +12,7 @@
     <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando reportes…</p>
   }
 
-  <!-- 1) Libros más prestados -->
+  <!-- 1) Libros más prestados (detallado) -->
   <section class="mb-lg">
     <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
       <h2 class="font-headline-sm text-headline-sm text-on-surface">Libros más prestados</h2>
@@ -27,6 +27,15 @@
         <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hasta</label>
         <input type="date" [(ngModel)]="fechaHasta"
           class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+      </div>
+      <div>
+        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Top N</label>
+        <select [(ngModel)]="limiteTop" (ngModelChange)="cambiarLimite()"
+          class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white cursor-pointer">
+          <option [value]="5">Top 5</option>
+          <option [value]="10">Top 10</option>
+          <option [value]="20">Top 20</option>
+        </select>
       </div>
       <button (click)="aplicarFiltros()"
         class="h-9 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm cursor-pointer">
@@ -43,8 +52,11 @@
           <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
             <th class="px-md py-sm">#</th>
             <th class="px-md py-sm">Título</th>
-            <th class="px-md py-sm">ISBN</th>
+            <th class="px-md py-sm hidden md:table-cell">ISBN</th>
+            <th class="px-md py-sm hidden lg:table-cell">Autor</th>
+            <th class="px-md py-sm hidden lg:table-cell">Categoría</th>
             <th class="px-md py-sm text-right">Préstamos</th>
+            <th class="px-md py-sm text-right">% del total</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
@@ -52,18 +64,25 @@
             <tr>
               <td class="px-md py-sm text-on-surface-variant">{{ i + 1 }}</td>
               <td class="px-md py-sm font-medium">{{ libro.titulo }}</td>
-              <td class="px-md py-sm text-on-surface-variant">{{ libro.isbn || '—' }}</td>
+              <td class="px-md py-sm text-on-surface-variant hidden md:table-cell">{{ libro.isbn || '—' }}</td>
+              <td class="px-md py-sm hidden lg:table-cell">{{ libro.autorNombre }}</td>
+              <td class="px-md py-sm hidden lg:table-cell">
+                <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-primary/10 text-primary">
+                  {{ libro.categoriaNombre }}
+                </span>
+              </td>
               <td class="px-md py-sm text-right">
                 <span class="inline-flex items-center gap-xs font-label-sm text-label-sm text-primary">
                   <span class="material-symbols-outlined text-[16px]">menu_book</span>
                   {{ libro.totalPrestamos }}
                 </span>
               </td>
+              <td class="px-md py-sm text-right font-medium text-on-surface">{{ libro.porcentaje }}%</td>
             </tr>
           } @empty {
             @if (!cargando) {
               <tr>
-                <td colspan="4" class="px-md py-lg text-center text-on-surface-variant">Sin préstamos registrados</td>
+                <td colspan="7" class="px-md py-lg text-center text-on-surface-variant">Sin préstamos registrados</td>
               </tr>
             }
           }
@@ -106,48 +125,6 @@
             @if (!cargando) {
               <tr>
                 <td colspan="5" class="px-md py-lg text-center text-on-surface-variant">Sin morosidad registrada</td>
-              </tr>
-            }
-          }
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- 3) Uso de la biblioteca -->
-  <section>
-    <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
-      <h2 class="font-headline-sm text-headline-sm text-on-surface">Uso de la biblioteca</h2>
-      <div class="flex gap-xs items-center">
-        <label class="font-label-sm text-label-sm text-on-surface-variant">Granularidad</label>
-        <select [(ngModel)]="granularidad" (ngModelChange)="cambiarGranularidad()"
-          class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white cursor-pointer">
-          <option value="dia">Día</option>
-          <option value="semana">Semana</option>
-          <option value="mes">Mes</option>
-        </select>
-      </div>
-    </div>
-    <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
-      <table class="w-full text-left">
-        <thead class="bg-surface-container-low">
-          <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
-            <th class="px-md py-sm">Periodo</th>
-            <th class="px-md py-sm text-right">Préstamos</th>
-            <th class="px-md py-sm text-right">Devoluciones</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-          @for (r of uso; track $index) {
-            <tr>
-              <td class="px-md py-sm text-on-surface-variant">{{ formatoPeriodo(r.periodo) }}</td>
-              <td class="px-md py-sm text-right">{{ r.totalPrestamos }}</td>
-              <td class="px-md py-sm text-right">{{ r.totalDevoluciones }}</td>
-            </tr>
-          } @empty {
-            @if (!cargando) {
-              <tr>
-                <td colspan="3" class="px-md py-lg text-center text-on-surface-variant">Sin actividad para esta granularidad</td>
               </tr>
             }
           }
