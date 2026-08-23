@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReporteService, LibroMasPrestadoDetallado, ReporteMorosidad, ReporteInventario, ReporteVencidos, ReporteCategoriasDemandadas } from '../core/services/reporte-gerencial.service';
 import { Observable } from 'rxjs';
-import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-reportes',
@@ -203,7 +202,8 @@ export class ReportesComponent implements OnInit {
   }
 
   // ── Excel downloads ────────────────────────────────────
-  private generarExcel(headers: string[], rows: (string | number)[][], nombre: string, sheetName: string): void {
+  private async generarExcel(headers: string[], rows: (string | number)[][], nombre: string, sheetName: string): Promise<void> {
+    const XLSX = await import('xlsx');
     const wb = XLSX.utils.book_new();
     const wsData = [headers, ...rows];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
