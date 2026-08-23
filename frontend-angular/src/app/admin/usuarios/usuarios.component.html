@@ -23,15 +23,10 @@
     <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
   }
 
-  <div class="rounded-xl bg-white flex items-center px-md py-xs mb-md shadow-sm">
-    <span class="material-symbols-outlined text-on-surface-variant text-[22px] mr-sm">search</span>
-    <input type="text" placeholder="Buscar por nombre o correo..." [(ngModel)]="filtro"
-      (keyup.enter)="buscarUsuarios()"
-      class="flex-1 h-10 bg-transparent outline-none font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant/60" />
-    <button (click)="buscarUsuarios()"
-      class="h-9 px-lg rounded-lg bg-[#5B6ABF] text-white font-label-sm text-label-sm cursor-pointer hover:bg-[#4A59AE] transition-colors ml-sm">
-      Buscar
-    </button>
+  <div class="mb-lg">
+    <app-buscador-usuario
+      (buscarAhora)="onBuscarAhora($event)">
+    </app-buscador-usuario>
   </div>
 
   @if (cargando && usuarios.length === 0) {
