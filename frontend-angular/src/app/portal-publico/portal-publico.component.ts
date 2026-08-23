@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { LibroPublicoService } from '../core/services/libro-publico.service';
 import { Libro, LibroSugerencia } from '../core/models/libro.model';
+import { Categoria } from '../core/models/categoria.model';
 
 // Portal público de catálogo (Rama C, mockup 12). Es la raíz de la app y NO
 // pide sesión: navega sin authGuard y usa LibroPublicoService (/api/publico).
@@ -46,6 +47,9 @@ export class PortalPublicoComponent implements OnInit, OnDestroy {
   buscandoSugerencias: boolean = false;
   private busqueda$ = new Subject<string>();
 
+  categorias: Categoria[] = [];
+  categoriaSeleccionada: number | null = null;
+
   // El icono menu_book del nav se rellena con font-variation-settings
   // 'FILL' 1; se devuelve como propiedad para no meter comillas internas
   // en el binding de estilo del template (igual que en catalogo.component).
@@ -55,6 +59,7 @@ export class PortalPublicoComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.cargarPagina();
+    this.cargarCategorias();
     this.busqueda$.pipe(
       debounceTime(300),
       distinctUntilChanged()
@@ -96,12 +101,33 @@ export class PortalPublicoComponent implements OnInit, OnDestroy {
     return libro.autores && libro.autores.length ? libro.autores.join(', ') : '—';
   }
 
+  buscarPorNombre(): void {
+    this.currentPage = 0;
+    this.sugerencias = [];
+    this.cargarPagina();
+  }
+
+  onCategoriaChange(categoriaId: number | null): void {
+    this.categoriaSeleccionada = categoriaId;
+    this.currentPage = 0;
+    this.cargarPagina();
+  }
+
+  private cargarCategorias(): void {
+    this.libroPublicoService.categorias().subscribe({
+      next: (cats) => this.categorias = cats,
+      error: () => this.categorias = []
+    });
+  }
+
   cargarPagina(): void {
     this.cargando = true;
     this.libroPublicoService.listar({
       page: this.currentPage,
       size: this.pageSize,
-      sort: 'titulo,asc'
+      sort: 'titulo,asc',
+      q: this.textoBusqueda.trim() || undefined,
+      categoriaId: this.categoriaSeleccionada ?? undefined
     }).subscribe({
       next: (data) => {
         this.libros = data.content;
