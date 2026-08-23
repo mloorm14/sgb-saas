@@ -23,13 +23,13 @@
     <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
   }
 
-  <div class="rounded border border-outline-variant bg-white flex items-center px-sm mb-md">
-    <span class="material-symbols-outlined text-on-surface-variant text-[20px]">search</span>
+  <div class="rounded-xl border border-outline-variant bg-white flex items-center px-md py-xs mb-md">
+    <span class="material-symbols-outlined text-on-surface-variant text-[22px] mr-sm">search</span>
     <input type="text" placeholder="Buscar por nombre o correo..." [(ngModel)]="filtro"
       (keyup.enter)="buscarUsuarios()"
-      class="flex-1 h-11 px-sm bg-transparent outline-none font-body-sm text-body-sm" />
+      class="flex-1 h-10 bg-transparent outline-none font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant/60" />
     <button (click)="buscarUsuarios()"
-      class="h-9 px-md rounded bg-primary/80 text-on-primary font-label-sm text-label-sm flex items-center gap-xs cursor-pointer hover:bg-primary transition-colors">
+      class="h-9 px-lg rounded-lg bg-[#5B6ABF] text-white font-label-sm text-label-sm cursor-pointer hover:bg-[#4A59AE] transition-colors ml-sm">
       Buscar
     </button>
   </div>
