@@ -131,9 +131,44 @@ public class GeminiClient {
         List<Map<String, Object>> contents = new ArrayList<>();
 
         for (MensajeChat mensaje : historial) {
-            contents.add(Map.of(
-                    "role", geminiRol(mensaje.getRol()),
-                    "parts", List.of(Map.of("text", mensaje.getContenido()))));
+            String rol = geminiRol(mensaje.getRol());
+            String contenido = mensaje.getContenido();
+
+            if (contenido != null && contenido.startsWith("[FunctionCall:") && contenido.endsWith("]")) {
+                // Parsear: [FunctionCall:nombre:{...}]
+                String payload = contenido.substring("[FunctionCall:".length(), contenido.length() - 1);
+                int sep = payload.indexOf(':');
+                String name = payload.substring(0, sep);
+                String argsJson = payload.substring(sep + 1);
+                try {
+                    JsonNode argsNode = objectMapper.readTree(argsJson);
+                    contents.add(Map.of(
+                            "role", "model",
+                            "parts", List.of(Map.of("functionCall", Map.of("name", name, "args", argsNode)))));
+                } catch (Exception ex) {
+                    log.warn("No se pudo parsear FunctionCall: {}", contenido);
+                    contents.add(Map.of("role", rol, "parts", List.of(Map.of("text", contenido))));
+                }
+            } else if (contenido != null && contenido.startsWith("[FunctionResponse:") && contenido.endsWith("]")) {
+                // Parsear: [FunctionResponse:nombre:{...}]
+                String payload = contenido.substring("[FunctionResponse:".length(), contenido.length() - 1);
+                int sep = payload.indexOf(':');
+                String name = payload.substring(0, sep);
+                String resultJson = payload.substring(sep + 1);
+                try {
+                    JsonNode resultNode = objectMapper.readTree(resultJson);
+                    contents.add(Map.of(
+                            "role", "user",
+                            "parts", List.of(Map.of("functionResponse", Map.of("name", name, "response", resultNode)))));
+                } catch (Exception ex) {
+                    log.warn("No se pudo parsear FunctionResponse: {}", contenido);
+                    contents.add(Map.of("role", rol, "parts", List.of(Map.of("text", contenido))));
+                }
+            } else {
+                contents.add(Map.of(
+                        "role", rol,
+                        "parts", List.of(Map.of("text", contenido != null ? contenido : ""))));
+            }
         }
 
         if (historial.isEmpty()
