@@ -1,0 +1,255 @@
+-- ============================================================================
+-- SGB-SaaS — db/optimizacion-consultas.sql
+--
+-- PROPOSITO: evidencia del requisito de "optimizacion de consultas" de la
+-- materia de Administracion de Bases de Datos (ADB). Documenta 3 casos
+-- REALES tomados directamente de los repositorios JPA del backend
+-- (backend-springboot/src/main/java/com/uteq/backend/repository/), medidos
+-- con EXPLAIN (ANALYZE, BUFFERS) antes y despues de crear el indice
+-- correspondiente, contra la base local de Postgres 16 poblada por
+-- db/generar-volumen.sql (2,822,634 filas totales: 1,500,145 en
+-- bitacora_auditoria, 500,000 en prestamos -- ver ese archivo para el
+-- razonamiento completo de las proporciones).
+--
+-- ESTE ARCHIVO NO ES UNA MIGRACION FLYWAY, igual que generar-volumen.sql:
+-- no sigue la convencion V<n>__ de database/migrations/ y no se ejecuta
+-- automaticamente en ningun `make up` ni docker-entrypoint-initdb.d. Es un
+-- script manual, standalone, pensado para correrse UNA vez a mano contra la
+-- base local de pruebas de volumen de ADB, y para dejar registro reproducible
+-- de los 3 CREATE INDEX aqui documentados.
+--
+-- SALIDA CRUDA DE CADA MEDICION: docs/mediciones/optimizacion/
+--   case1_bitacora_antes.txt   / case1_bitacora_despues.txt
+--   case2_prestamos_antes.txt  / case2_prestamos_despues.txt
+--   case3_scheduler_antes.txt  / case3_scheduler_despues.txt
+-- (salida real de `EXPLAIN (ANALYZE, BUFFERS)` via psql, sin editar, salvo
+-- una nota aclaratoria a mano agregada al final de case1_bitacora_despues.txt
+-- -- ver CASO 1 mas abajo, marcada explicitamente como nota y no como
+-- parte de la salida de psql).
+--
+-- ESTADO: los 3 indices de este archivo SI se aplicaron y quedan activos en
+-- la base LOCAL de pruebas (Docker, contenedor sgb_postgres, volumen
+-- sgb-saas_pgdata) usada para esta medicion. Este script NO incluye
+-- DROP INDEX a proposito: la evidencia de "antes/despues" solo tiene valor
+-- si el "despues" queda verificable corriendo el mismo EXPLAIN de nuevo.
+--
+-- IMPORTANTE -- esto NO aplica automaticamente a produccion: la base real
+-- del proyecto corre en Neon (Postgres administrado, ver
+-- docs/adr/ para la decision de proveedor). Aplicar estos 3 indices ahi es
+-- una decision APARTE, pendiente de aprobacion del equipo, por las razones
+-- de costo de escritura explicadas en cada caso abajo (radical honestidad:
+-- un indice nunca es gratis, ver tambien el tono de db/roles-privilegios.sql
+-- sobre no vender decisiones de infraestructura como ganancias sin costo).
+-- Si se aprueba, se ejecutaria manualmente contra Neon con el mismo texto de
+-- CREATE INDEX de aqui (idealmente con CREATE INDEX CONCURRENTLY para no
+-- bloquear escrituras en una tabla con trafico real, algo que en esta base
+-- local de pruebas de un solo usuario no hizo falta).
+-- ============================================================================
+
+
+-- ============================================================================
+-- CASO 1 — BitacoraAuditoriaRepository.buscarConFiltros
+-- ============================================================================
+-- Metodo real (ver backend-springboot/.../BitacoraAuditoriaRepository.java):
+-- query NATIVA con 4 filtros opcionales e independientes vía el patron
+-- "(CAST(:param AS tipo) IS NULL OR columna = :param)", paginada, ordenada
+-- por fecha_hora (el @PageableDefault del controller ordena por esa
+-- columna). Traducido a SQL plano para la medicion:
+--
+--   SELECT * FROM bitacora_auditoria
+--   WHERE (usuario_id = 39468 OR 39468 IS NULL)
+--     AND (tabla_afectada = 'usuarios' OR 'usuarios' IS NULL)
+--     AND (fecha_hora >= '2025-02-01' OR '2025-02-01' IS NULL)
+--     AND (fecha_hora <= '2026-08-23' OR '2026-08-23' IS NULL)
+--   ORDER BY fecha_hora DESC
+--   LIMIT 20;
+--
+-- Parametros elegidos: usuario_id=39468 es un usuario real con actividad
+-- (verificado con SELECT id FROM usuarios ORDER BY random() LIMIT 1 y
+-- ajustado a uno con filas en bitacora). Rango de fecha 2025-02-01 a
+-- 2026-08-23 cubre ~466,164 de 1,500,145 filas (~31%) -- ni trivialmente
+-- selectivo ni un scan sin filtrar, el "caso medio realista" pedido.
+--
+-- ANTES (docs/mediciones/optimizacion/case1_bitacora_antes.txt):
+--   Parallel Seq Scan (2 workers) + Sort. Execution Time: 57.104 ms.
+--   Buffers: shared hit=10680 read=18682 (~29,362 páginas tocadas, la
+--   mayoria del árbol de la tabla completa).
+--
+-- INDICE CREADO:
+--   Sirve a BitacoraAuditoriaRepository.buscarConFiltros: fecha_hora es la
+--   columna de ORDER BY y SIEMPRE tiene un filtro de rango en el uso real
+--   (pantalla de auditoria: "ver actividad reciente" o "ver actividad entre
+--   fechas X e Y"), mientras que usuario_id y tabla_afectada son opcionales
+--   y, por el patron "(CAST(:param) IS NULL OR columna = :param)", un
+--   indice simple sobre cualquiera de esas dos columnas NO se usa cuando el
+--   parametro es NULL (Postgres no puede saber en tiempo de plan si el
+--   OR hara el indice inutil para esa ejecucion especifica sin un indice
+--   parcial por cada combinacion). fecha_hora es la unica columna que
+--   participa en TODAS las ejecuciones reales de este metodo (como filtro
+--   de rango o como orden), asi que es el indice de mayor valor con una
+--   sola columna para esta forma de query.
+CREATE INDEX idx_bitacora_fecha_hora ON bitacora_auditoria(fecha_hora DESC);
+
+-- DESPUES (docs/mediciones/optimizacion/case1_bitacora_despues.txt):
+--   Sigue siendo Parallel Seq Scan + Sort para ESTOS parametros exactos.
+--   Execution Time: 59.786 ms (dentro del ruido de medicion respecto a
+--   antes, no una mejora real para este caso puntual). Postgres SI evaluo
+--   el Index Scan (cost=42860 con indice vs cost=34793 sin el, ambos Seq
+--   Scan) y lo descarto correctamente: el filtro combinado
+--   usuario_id=39468 AND tabla_afectada='usuarios' es tan selectivo (solo
+--   3 de 1,500,145 filas cumplen TODO el WHERE) que un Index Scan sobre
+--   fecha_hora igual tendria que recorrer casi toda la ventana de fecha
+--   (~466,000 filas candidatas) en orden para confirmar que no hay 20
+--   resultados, mientras que el Seq Scan paralelo (2 workers) barre la
+--   tabla completa mas rapido gracias al paralelismo.
+--
+--   HALLAZGO HONESTO (ver nota completa al final de
+--   case1_bitacora_despues.txt): se verifico y se archivo como evidencia en
+--   docs/mediciones/optimizacion/case1_bitacora_solo_fecha.txt
+--   (usuario_id y tabla_afectada en NULL) -- el patron de uso mas comun en
+--   la pantalla real de auditoria (un administrador que navega el log sin
+--   filtrar, o filtra unicamente por fecha). idx_bitacora_fecha_hora sigue
+--   siendo la mejor eleccion de indice UNICO para este metodo: ayuda
+--   dramatica en el patron de uso mas comun (solo filtro de fecha): Index Scan
+--   ~4.9ms vs Seq Scan ~57ms (~12x mas rapido). idx_bitacora_fecha_hora siguemente en el caso comun y es neutral (no perjudica select, el
+--   planner sigue prefiriendo Seq Scan cuando conviene) en el caso extremo
+--   de filtro combinado ultra-selectivo. No se presenta como una "mejora
+--   universal" porque, medido con los parametros exactos de este caso, no
+--   lo fue -- ese es precisamente el punto de medir con EXPLAIN en vez de
+--   asumir.
+--
+-- COSTO DE ESCRITURA: bitacora_auditoria es, por diseño, la tabla de mayor
+-- volumen de insercion del sistema -- CADA operacion de negocio (crear un
+-- prestamo, registrar una devolucion, pagar/anular una multa, login/logout)
+-- deja una fila aqui (ver db/generar-volumen.sql, seccion de diseño). Un
+-- indice sobre fecha_hora es relativamente barato de mantener porque
+-- fecha_hora es siempre creciente (NOW() en el INSERT), asi que las nuevas
+-- entradas van al final del B-tree sin reorganizar paginas existentes --
+-- pero sigue siendo escritura extra en cada INSERT (una entrada de indice
+-- mas por fila, mas WAL) sobre la tabla con MAS trafico de escritura de
+-- todo el sistema. No es gratis: se acepta porque el 100% de las lecturas
+-- de este metodo dependen de fecha_hora (orden o filtro), a diferencia de
+-- usuario_id/tabla_afectada que son opcionales.
+
+
+-- ============================================================================
+-- CASO 2 — PrestamoRepository.findByUsuarioId
+-- ============================================================================
+-- Metodo real (Spring Data derivado, sin @Query explicito):
+--   Page<Prestamo> findByUsuarioId(Long usuarioId, Pageable pageable);
+-- Traducido a SQL plano para la medicion (mismo usuario_id=39468 del Caso 1,
+-- elegido ademas por tener volumen real de prestamos: verificado con
+-- SELECT usuario_id, COUNT(*) FROM prestamos GROUP BY usuario_id ORDER BY
+-- COUNT(*) DESC LIMIT 5 -- usuario_id=39468 tiene 27 prestamos, el mas alto
+-- de la base):
+--
+--   SELECT * FROM prestamos WHERE usuario_id = 39468 ORDER BY id LIMIT 20;
+--
+-- ANTES (docs/mediciones/optimizacion/case2_prestamos_antes.txt):
+--   Parallel Seq Scan (2 workers) + Sort. Execution Time: 20.605 ms.
+--   Buffers: shared hit=234 read=5915.
+--
+-- INDICE CREADO:
+--   Sirve directamente a PrestamoRepository.findByUsuarioId (y tambien
+--   beneficia a findByUsuarioIdOrderByIdDesc y
+--   findActivosByUsuarioId(usuarioId), que filtran por la misma columna):
+--   usuario_id es el UNICO predicado de igualdad de esta query derivada, y
+--   con 500,000 filas repartidas entre ~50,000 usuarios (~10 prestamos por
+--   usuario en promedio) es un candidato de libro de texto para un indice
+--   B-tree simple sobre la columna de filtro.
+CREATE INDEX idx_prestamos_usuario_id ON prestamos(usuario_id);
+
+-- DESPUES (docs/mediciones/optimizacion/case2_prestamos_despues.txt):
+--   Bitmap Index Scan sobre idx_prestamos_usuario_id + Bitmap Heap Scan +
+--   Sort. Execution Time: 0.587 ms (~35x mas rapido que antes).
+--   Buffers: shared hit=8 read=28 (~36 paginas vs ~6,149 antes -- el
+--   cambio de plan es la diferencia entre tocar la tabla completa y tocar
+--   solo las paginas donde realmente viven los prestamos de ese usuario).
+--
+-- COSTO DE ESCRITURA: prestamos recibe un INSERT por cada prestamo nuevo y
+-- un UPDATE por cada devolucion/renovacion -- trafico de escritura alto en
+-- produccion (es, junto con bitacora_auditoria, de las tablas
+-- transaccionales nucleares del sistema segun db/generar-volumen.sql). A
+-- diferencia del indice de fecha_hora del Caso 1, usuario_id NO es
+-- monotono creciente por fila insertada, asi que las inserciones de
+-- distintos usuarios se intercalan en el B-tree y generan mas paginas
+-- tocadas/divididas que un indice sobre una columna siempre creciente. Se
+-- acepta el costo porque findByUsuarioId (y sus variantes) es de los
+-- endpoints de lectura mas usados del modulo de prestamos (historial del
+-- lector, "mis prestamos"), con trafico de lectura frecuente frente a un
+-- trafico de escritura que, aunque alto, es ordenes de magnitud menor que
+-- el de bitacora_auditoria.
+
+
+-- ============================================================================
+-- CASO 3 — PrestamoRepository.findByEstadoPrestamoIdInAndFechaDevolucionEstimadaBetween
+-- ============================================================================
+-- Metodo real, usado por NotificacionVencimientoScheduler (tarea programada
+-- que corre periodicamente para avisar prestamos por vencer -- ver
+-- comentario en PrestamoRepository.java linea 28-33):
+--   List<Prestamo> findByEstadoPrestamoIdInAndFechaDevolucionEstimadaBetween(
+--       List<Integer> estadoPrestamoIds, OffsetDateTime desde, OffsetDateTime hasta);
+--
+-- estado_prestamo_id verificado contra el catalogo real (SELECT * FROM
+-- estados_prestamo): id=1 ACTIVO, id=2 RENOVADO -- exactamente los estados
+-- "vigentes" que el scheduler necesita vigilar (id=3 DEVUELTO e id=4
+-- VENCIDO quedan fuera, correcto: un prestamo ya vencido no necesita
+-- notificacion de "esta por vencer"). Traducido a SQL plano:
+--
+--   SELECT * FROM prestamos
+--   WHERE estado_prestamo_id IN (1, 2)
+--     AND fecha_devolucion_estimada BETWEEN NOW() AND NOW() + INTERVAL '3 days';
+--
+-- ANTES (docs/mediciones/optimizacion/case3_scheduler_antes.txt):
+--   Parallel Seq Scan (2 workers). Execution Time: 22.173 ms, 186 filas.
+--   Buffers: shared hit=345 read=5730.
+--
+-- INDICE CREADO:
+--   Sirve a NotificacionVencimientoScheduler: el WHERE combina una
+--   igualdad/IN sobre estado_prestamo_id (baja cardinalidad, 4 valores
+--   posibles) con un rango sobre fecha_devolucion_estimada. Un indice
+--   COMPUESTO (estado_prestamo_id, fecha_devolucion_estimada) -- en ese
+--   orden -- deja que Postgres primero descarte por estado (filtra a los
+--   prestamos ACTIVO/RENOVADO) y dentro de ese subconjunto ya mucho mas
+--   chico busque el rango de fecha directamente en el indice, sin tocar la
+--   tabla para las filas descartadas. El orden de columnas importa: poner
+--   fecha_devolucion_estimada primero desperdiciaria la selectividad baja
+--   de estado_prestamo_id (el rango de fecha por si solo cruza los 4
+--   estados sin distinguirlos).
+CREATE INDEX idx_prestamos_estado_fecha_devolucion ON prestamos(estado_prestamo_id, fecha_devolucion_estimada);
+
+-- DESPUES (docs/mediciones/optimizacion/case3_scheduler_despues.txt):
+--   Index Scan puro (sin heap recheck adicional, sin Seq Scan de
+--   respaldo) usando idx_prestamos_estado_fecha_devolucion. Execution
+--   Time: 1.403 ms (~16x mas rapido que antes), mismas 186 filas.
+--   Buffers: shared hit=22 read=173 (~195 paginas vs ~6,075 antes).
+--
+-- COSTO DE ESCRITURA: mismo trafico de escritura de prestamos descrito en
+-- el Caso 2 (INSERT por prestamo nuevo, UPDATE por devolucion/renovacion),
+-- pero aqui el costo es MAYOR que un indice de una sola columna: cada
+-- UPDATE que cambia estado_prestamo_id (p.ej. ACTIVO -> DEVUELTO al
+-- registrar una devolucion) obliga a reubicar la entrada en AMBAS
+-- columnas del indice compuesto, no solo actualizar un puntero. Se acepta
+-- el costo porque este scheduler corre sobre TODA la tabla de forma
+-- periodica (no es una consulta ocasional) -- sin este indice, cada
+-- ejecucion periodica escala con el tamaño total de prestamos (Seq Scan),
+-- un costo que crece indefinidamente con la base de usuarios; con el
+-- indice, escala con la cantidad de prestamos vigentes en la ventana de
+-- vencimiento, que se mantiene acotada.
+
+
+-- ============================================================================
+-- RESUMEN — antes / despues (ver tabla completa en el reporte de la sesion)
+-- ============================================================================
+--   Caso                    | Antes (plan / tiempo)          | Despues (plan / tiempo)
+--   -------------------------+--------------------------------+-------------------------------
+--   1. bitacora (4 filtros) | Parallel Seq Scan / 57.104 ms  | Parallel Seq Scan / 59.786 ms*
+--   2. prestamos usuario_id | Parallel Seq Scan / 20.605 ms  | Bitmap Index Scan / 0.587 ms
+--   3. prestamos scheduler  | Parallel Seq Scan / 22.173 ms  | Index Scan / 1.403 ms
+--
+--   * Caso 1: sin cambio de plan para ESTOS parametros exactos (filtro
+--     combinado demasiado selectivo, ver nota completa arriba); el mismo
+--     indice SI resuelve a Index Scan (~4.9ms) para el patron de uso mas
+--     comun del metodo (solo filtro de fecha). No es una mejora falsa
+--     reportada como exito -- es la medicion real, documentada tal cual.
+-- ============================================================================
