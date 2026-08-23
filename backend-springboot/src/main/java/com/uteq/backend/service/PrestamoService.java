@@ -7,8 +7,11 @@ import com.uteq.backend.dto.PrestamoActivoResponseDTO;
 import com.uteq.backend.dto.PrestamoRequestDTO;
 import com.uteq.backend.dto.PrestamoResponseDTO;
 import com.uteq.backend.dto.RenovacionResponseDTO;
+import com.uteq.backend.dto.ReporteCategoriasDemandadasResponseDTO;
+import com.uteq.backend.dto.ReporteInventarioResponseDTO;
 import com.uteq.backend.dto.ReporteMorosidadResponseDTO;
 import com.uteq.backend.dto.ReporteUsoPorPeriodoResponseDTO;
+import com.uteq.backend.dto.ReporteVencidosResponseDTO;
 import com.uteq.backend.entity.EstadoPrestamo;
 import com.uteq.backend.entity.Prestamo;
 import com.uteq.backend.entity.Reservacion;
@@ -22,8 +25,11 @@ import com.uteq.backend.repository.UsuarioRepository;
 import com.uteq.backend.repository.projection.LibroMasPrestadoDetalladoProjection;
 import com.uteq.backend.repository.projection.LibroMasPrestadoProjection;
 import com.uteq.backend.repository.projection.PrestamoActivoProjection;
+import com.uteq.backend.repository.projection.ReporteCategoriasDemandadasProjection;
+import com.uteq.backend.repository.projection.ReporteInventarioProjection;
 import com.uteq.backend.repository.projection.ReporteMorosidadProjection;
 import com.uteq.backend.repository.projection.ReporteUsoPorPeriodoProjection;
+import com.uteq.backend.repository.projection.ReporteVencidosProjection;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -92,6 +98,9 @@ public class PrestamoService {
     public PrestamoResponseDTO crear(PrestamoRequestDTO dto, Authentication authentication) {
         Long usuarioId = resolverUsuarioId(dto);
         Long bibliotecarioId = resolverIdPorCorreo(authentication.getName());
+
+        validarLimitePrestamos(usuarioId);
+
         // Ventanilla: si el préstamo nace de una reserva, se valida ANTES de
         // tocar stock (falla rápido, sin efectos secundarios) y se vincula
         // DESPUÉS del SP -- sp_crear_prestamo no conoce reservaciones (no
@@ -483,5 +492,14 @@ public class PrestamoService {
                 p.getPeriodo() != null ? p.getPeriodo().atOffset(ZoneOffset.UTC) : null,
                 p.getTotalPrestamos(),
                 p.getTotalDevoluciones());
+    }
+
+    private void validarLimitePrestamos(Long usuarioId) {
+        int maxPrestamos = configuracionSistemaService.obtenerValorEntero("max_prestamos_usuario");
+        List<PrestamoActivoProjection> activos = prestamoProcRepo.fnListarPrestamosActivosPorUsuario(usuarioId);
+        if (activos.size() >= maxPrestamos) {
+            throw new LimitePrestamosExcedidoException(
+                    "El usuario ya tiene " + activos.size() + " préstamos activos. El máximo permitido es " + maxPrestamos + ".");
+        }
     }
 }

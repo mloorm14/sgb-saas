@@ -2,7 +2,9 @@ package com.uteq.backend.exception;
 
 import com.uteq.backend.service.ChatbotRateLimitExcedidoException;
 import com.uteq.backend.service.CodigoVerificacionInvalidoException;
+import com.uteq.backend.service.CorreoDominioNoPermitidoException;
 import com.uteq.backend.service.CorreoYaRegistradoException;
+import com.uteq.backend.service.LimitePrestamosExcedidoException;
 import com.uteq.backend.service.LimiteRenovacionesExcedidoException;
 import com.uteq.backend.service.LoginRateLimitExcedidoException;
 import com.uteq.backend.service.MaterialReservadoException;
@@ -47,6 +49,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CorreoYaRegistradoException.class)
     public ProblemDetail handleCorreoYaRegistrado(CorreoYaRegistradoException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(CorreoDominioNoPermitidoException.class)
+    public ProblemDetail handleCorreoDominioNoPermitido(CorreoDominioNoPermitidoException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    @ExceptionHandler(LimitePrestamosExcedidoException.class)
+    public ProblemDetail handleLimitePrestamosExcedido(LimitePrestamosExcedidoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 

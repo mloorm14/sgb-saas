@@ -38,6 +38,24 @@ export class DevolucionService {
     ).pipe(catchError(err => this.manejarError(err)));
   }
 
+  crearTipoDano(nombre: string, precio: number): Observable<TipoDano> {
+    return this.http.post<TipoDano>(
+      `${environment.apiUrl}/v1/tipos-dano`, { nombre, precio }
+    ).pipe(catchError(err => this.manejarError(err)));
+  }
+
+  actualizarTipoDano(id: number, nombre: string, precio: number): Observable<TipoDano> {
+    return this.http.put<TipoDano>(
+      `${environment.apiUrl}/v1/tipos-dano/${id}`, { nombre, precio }
+    ).pipe(catchError(err => this.manejarError(err)));
+  }
+
+  eliminarTipoDano(id: number): Observable<void> {
+    return this.http.delete<void>(
+      `${environment.apiUrl}/v1/tipos-dano/${id}`
+    ).pipe(catchError(err => this.manejarError(err)));
+  }
+
   subirEvidencia(registroDanoId: number, archivo: File): Observable<EvidenciaDanoResponse> {
     const formData = new FormData();
     formData.append('archivo', archivo);

@@ -4,10 +4,10 @@ import com.uteq.backend.entity.EstadoPrestamo;
 import com.uteq.backend.entity.Prestamo;
 import com.uteq.backend.repository.EstadoPrestamoRepository;
 import com.uteq.backend.repository.PrestamoRepository;
+import com.uteq.backend.service.ConfiguracionSistemaService;
 import com.uteq.backend.service.NotificacionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -32,24 +32,23 @@ public class NotificacionVencimientoScheduler {
     private final PrestamoRepository prestamoRepo;
     private final EstadoPrestamoRepository estadoPrestamoRepo;
     private final NotificacionService notificacionService;
-
-    @Value("${notificaciones.minutos-anticipacion-vencimiento}")
-    private int minutosAnticipacion;
+    private final ConfiguracionSistemaService configuracionSistemaService;
 
     public NotificacionVencimientoScheduler(PrestamoRepository prestamoRepo,
                                              EstadoPrestamoRepository estadoPrestamoRepo,
-                                             NotificacionService notificacionService) {
+                                             NotificacionService notificacionService,
+                                             ConfiguracionSistemaService configuracionSistemaService) {
         this.prestamoRepo = prestamoRepo;
         this.estadoPrestamoRepo = estadoPrestamoRepo;
         this.notificacionService = notificacionService;
+        this.configuracionSistemaService = configuracionSistemaService;
     }
 
-    // Cada minuto -- la ventana de anticipación típica (15 min, ver
-    // application.yml) exige una granularidad fina; correrlo cada 15
-    // minutos como ReservacionScheduler dejaría préstamos sin alertar si
-    // caen justo entre dos corridas.
     @Scheduled(fixedRate = 60 * 1000)
     public void notificarProximosAVencer() {
+        int diasAnticipacion = configuracionSistemaService.obtenerValorEntero("dias_anticipacion_vencimiento");
+        int minutosAnticipacion = diasAnticipacion * 24 * 60;
+
         List<Integer> estadoIds = ESTADOS_PRESTAMO_VIGENTE.stream()
                 .map(this::idDelEstado)
                 .toList();
@@ -64,7 +63,7 @@ public class NotificacionVencimientoScheduler {
             notificacionService.generarAlertaVencimiento(prestamo);
         }
 
-        log.info("Job de notificación de vencimiento: {} préstamos evaluados", proximosAVencer.size());
+        log.info("Job de notificación de vencimiento: {} préstamos evaluados (ventana: {} días)", proximosAVencer.size(), diasAnticipacion);
     }
 
     private Integer idDelEstado(String nombre) {

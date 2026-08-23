@@ -57,11 +57,14 @@ public class AuthService {
     private final LoginRateLimiter loginRateLimiter;
     private final BitacoraAuditoriaRepository bitacoraAuditoriaRepository;
     private final VerificacionCorreoService verificacionCorreoService;
+    private final ConfiguracionSistemaService configuracionSistemaService;
 
     public UsuarioResponseDTO registrar(RegistroRequestDTO dto) {
         usuarioRepository.findByCorreo(dto.correo()).ifPresent(usuario -> {
             throw new CorreoYaRegistradoException("El correo ya está registrado: " + dto.correo());
         });
+
+        validarDominioCorreo(dto.correo());
 
         Rol rolLector = rolRepository.findByNombre(ROL_POR_DEFECTO)
                 .orElseThrow(() -> new IllegalStateException("Catalogo roles sin fila '" + ROL_POR_DEFECTO + "'"));
@@ -91,6 +94,21 @@ public class AuthService {
         verificacionCorreoService.generarYEnviarCodigo(guardado);
 
         return mapToUsuarioResponseDTO(guardado);
+    }
+
+    private void validarDominioCorreo(String correo) {
+        try {
+            String dominiosPermitidos = configuracionSistemaService.obtenerValor("correo_dominios_permitidos");
+            if (dominiosPermitidos == null || dominiosPermitidos.isBlank()) return;
+            String dominio = correo.substring(correo.lastIndexOf('@') + 1).toLowerCase();
+            for (String permitido : dominiosPermitidos.split(",")) {
+                if (dominio.equals(permitido.trim().toLowerCase())) return;
+            }
+            throw new CorreoDominioNoPermitidoException(
+                    "Solo se permiten registros con dominio: " + dominiosPermitidos);
+        } catch (jakarta.persistence.EntityNotFoundException e) {
+            // Si la clave no existe en configuracion_sistema, no restringe
+        }
     }
 
     // ── POST /api/auth/verificar-correo ───────────────────────
