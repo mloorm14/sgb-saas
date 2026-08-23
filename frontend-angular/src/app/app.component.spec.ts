@@ -48,6 +48,7 @@ describe('AppComponent', () => {
   });
 
   it('muestra los enlaces del LECTOR y cierra sesion via dropdown', () => {
+    spyOn(window, 'confirm').and.returnValue(true);
     authService.isLoggedIn.and.returnValue(true);
     authService.hasRole.and.callFake((...roles: string[]) => roles.includes('LECTOR'));
     authService.getCorreo.and.returnValue('lector@uteq.edu.ec');
@@ -86,7 +87,7 @@ describe('AppComponent', () => {
     expect(compiled.textContent).toContain('Reportes');
   });
 
-  it('GERENTE ve el panel completo (reportes, sugerencias, usuarios, auditoria)', () => {
+  it('GERENTE ve reportes, sugerencias y auditoría pero NO usuarios', () => {
     authService.isLoggedIn.and.returnValue(true);
     authService.hasRole.and.callFake((...roles: string[]) => roles.includes('GERENTE'));
 
@@ -96,7 +97,7 @@ describe('AppComponent', () => {
 
     expect(compiled.textContent).toContain('Reportes');
     expect(compiled.textContent).toContain('Sugerencias');
-    expect(compiled.textContent).toContain('Usuarios');
+    expect(compiled.textContent).not.toContain('Usuarios');
     expect(compiled.textContent).toContain('Auditoría');
     expect(compiled.textContent).not.toContain('Mis Préstamos');
   });

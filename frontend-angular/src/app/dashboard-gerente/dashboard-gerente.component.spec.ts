@@ -26,7 +26,9 @@ describe('DashboardGerenteComponent', () => {
 
   const resumenFinanciero: ResumenFinancieroMultas = {
     totalRecaudado: 125.5,
-    totalPendiente: 40
+    totalPendiente: 40,
+    totalGeneradoHoy: 10,
+    pagosRecientes: []
   };
 
   const dosMorosos: ReporteMorosidad[] = [
