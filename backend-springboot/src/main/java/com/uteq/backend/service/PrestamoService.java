@@ -289,7 +289,7 @@ public class PrestamoService {
     @Transactional(readOnly = true)
     public List<PrestamoActivoResponseDTO> listarActivosPorUsuario(Long usuarioId, Authentication authentication) {
         validarAccesoUsuario(usuarioId, authentication);
-        return prestamoProcRepo.fnListarPrestamosActivosPorUsuario(usuarioId).stream()
+        return prestamoRepo.findActivosByUsuarioId(usuarioId).stream()
                 .map(this::toDTO)
                 .toList();
     }
