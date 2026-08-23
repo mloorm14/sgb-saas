@@ -63,4 +63,12 @@ public interface MultaRepository extends JpaRepository<Multa, Long> {
             + "GROUP BY m.prestamoId")
     List<MultaPendientePorPrestamoProjection> findPendientesAgrupadasPorPrestamo(
             @Param("usuarioId") Long usuarioId, @Param("estadoMultaId") Integer estadoMultaId);
+
+    // Usuarios con al menos una multa pendiente (batch): evita N+1 en
+    // UsuarioAdminService.toListadoDTO() al consultar una sola vez para
+    // todos los usuarios de la página.
+    @Query("SELECT DISTINCT p.usuarioId FROM Multa m JOIN Prestamo p ON p.id = m.prestamoId "
+            + "WHERE p.usuarioId IN :usuarioIds AND m.estadoMultaId = :estadoMultaId")
+    List<Long> findUsuarioIdsConMultasPendientes(@Param("usuarioIds") List<Long> usuarioIds,
+                                                  @Param("estadoMultaId") Integer estadoMultaId);
 }

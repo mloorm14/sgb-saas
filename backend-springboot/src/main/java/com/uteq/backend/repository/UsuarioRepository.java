@@ -31,4 +31,13 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     // autocompletado).
     Page<Usuario> findByNombreContainingIgnoreCaseOrCorreoContainingIgnoreCase(
             String nombre, String correo, Pageable pageable);
+
+    // Auto-eliminación de cuentas no verificados: borra usuarios cuyo
+    // correo no fue verificado dentro de las últimas 24 horas. Invocado
+    // periódicamente por UsuarioScheduler.
+    @org.springframework.data.jpa.repository.Query(
+            value = "DELETE FROM usuarios WHERE correo_verificado = false AND fecha_registro < :cutoff",
+            nativeQuery = true)
+    @org.springframework.data.jpa.repository.Modifying
+    int deleteNoVerificadosBefore(@org.springframework.data.repository.query.Param("cutoff") java.time.Instant cutoff);
 }
