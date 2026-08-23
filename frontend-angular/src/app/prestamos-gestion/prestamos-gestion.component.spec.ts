@@ -34,6 +34,11 @@ describe('PrestamosGestionComponent', () => {
     libroService = jasmine.createSpyObj('LibroService', ['sugerencias', 'obtener', 'obtenerPortada']);
     router = jasmine.createSpyObj('Router', ['navigate']);
 
+    prestamoService.buscarUsuarioPorCorreo.and.returnValue(of(usuarioActivo()));
+    prestamoService.reservaActiva.and.returnValue(throwError(() => ({ status: 404 })));
+    prestamoService.historial.and.returnValue(of([]));
+    prestamoService.sugerenciasUsuarios.and.returnValue(of([]));
+
     await TestBed.configureTestingModule({
       imports: [PrestamosGestionComponent],
       providers: [
@@ -48,10 +53,6 @@ describe('PrestamosGestionComponent', () => {
   });
 
   it('busca al usuario por correo y carga reserva e historial', () => {
-    prestamoService.buscarUsuarioPorCorreo.and.returnValue(of(usuarioActivo()));
-    prestamoService.reservaActiva.and.returnValue(throwError(() => ({ status: 404 })));
-    prestamoService.historial.and.returnValue(of([]));
-
     component.correoBusqueda = 'ana.perez@uteq.edu.ec';
     component.buscarUsuario();
 
@@ -74,8 +75,8 @@ describe('PrestamosGestionComponent', () => {
     expect(component.usuario).toBeNull();
   });
 
-  it('rechaza un correo con formato inválido sin llamar al backend', () => {
-    component.correoBusqueda = 'correo-sin-arroba';
+  it('rechaza un correo con menos de 2 caracteres sin llamar al backend', () => {
+    component.correoBusqueda = 'a';
     component.buscarUsuario();
 
     expect(component.errorBusqueda).toBe('Ingresa un correo electrónico válido');
@@ -90,7 +91,6 @@ describe('PrestamosGestionComponent', () => {
       cantidadMultasPendientes: 1
     };
     prestamoService.buscarUsuarioPorCorreo.and.returnValue(of(bloqueado));
-    prestamoService.historial.and.returnValue(of([]));
 
     component.correoBusqueda = 'ana.perez@uteq.edu.ec';
     component.buscarUsuario();
@@ -102,8 +102,6 @@ describe('PrestamosGestionComponent', () => {
 
   it('confirma la entrega de una reserva creando el préstamo con reservacionId', () => {
     prestamoService.crear.and.returnValue(of({ id: 99 } as any));
-    prestamoService.reservaActiva.and.returnValue(throwError(() => ({ status: 404 })));
-    prestamoService.historial.and.returnValue(of([]));
 
     component.usuario = usuarioActivo();
     component.reserva = {

@@ -7,11 +7,18 @@ import { UsuarioAdminService } from '../../core/services/usuario-admin.service';
 import { EventoAuditoria } from '../../core/models/evento-auditoria.model';
 import { UsuarioAdmin } from '../../core/models/usuario-admin.model';
 
-// Valores posibles de tablaAfectada (bitacora_auditoria). Hoy solo
-// "usuarios" se escribe de verdad (AuthService y UsuarioAdminService);
-// el resto son valores que el filtro ?modulo= del backend acepta
-// (String libre) y que el mockup 21 lista para la operación diaria.
-const MODULOS = ['usuarios', 'prestamos', 'libros', 'multas', 'sugerencias_adquisicion'];
+export interface ModuloOpcion {
+  valor: string;
+  etiqueta: string;
+}
+
+const MODULOS: ModuloOpcion[] = [
+  { valor: 'usuarios', etiqueta: 'Usuarios' },
+  { valor: 'prestamos', etiqueta: 'Préstamos' },
+  { valor: 'libros', etiqueta: 'Libros' },
+  { valor: 'multas', etiqueta: 'Multas' },
+  { valor: 'sugerencias_adquisicion', etiqueta: 'Sugerencias de adquisición' }
+];
 
 @Component({
   selector: 'app-auditoria',
@@ -53,7 +60,7 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
 
     // Suscripción al autocomplete de usuarios
     this.busquedaSubject.pipe(
-      debounceTime(300),
+      debounceTime(1300),
       distinctUntilChanged(),
       switchMap(texto => {
         if (!texto.trim()) {
@@ -173,6 +180,12 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
   // vista lo muestra como "—", no como texto vacío ni como error.
   usuarioLabel(evento: EventoAuditoria): string {
     return evento.usuario ?? '—';
+  }
+
+  moduloLabel(modulo: string): string {
+    const encontrado = this.modulos.find(m => m.valor === modulo);
+    if (encontrado) return encontrado.etiqueta;
+    return modulo ? modulo.replace(/_/g, ' ') : '—';
   }
 
   formatoFecha(iso: string): string {

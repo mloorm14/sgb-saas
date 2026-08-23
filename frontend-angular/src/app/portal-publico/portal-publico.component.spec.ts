@@ -19,9 +19,10 @@ describe('PortalPublicoComponent', () => {
   });
 
   beforeEach(async () => {
-    libroPublicoService = jasmine.createSpyObj('LibroPublicoService', ['listar', 'sugerencias', 'portadaUrl']);
+    libroPublicoService = jasmine.createSpyObj('LibroPublicoService', ['listar', 'sugerencias', 'portadaUrl', 'categorias']);
     libroPublicoService.listar.and.returnValue(of({ content: [libro(1, 'Clean Code', false)], totalPages: 1 } as any));
     libroPublicoService.sugerencias.and.returnValue(of([]));
+    libroPublicoService.categorias.and.returnValue(of([]));
 
     await TestBed.configureTestingModule({
       imports: [PortalPublicoComponent],
@@ -40,7 +41,9 @@ describe('PortalPublicoComponent', () => {
     expect(libroPublicoService.listar).toHaveBeenCalledWith({
       page: 0,
       size: 10,
-      sort: 'titulo,asc'
+      sort: 'titulo,asc',
+      q: undefined,
+      categoriaId: undefined
     });
     expect(component.libros.length).toBe(1);
     expect(component.totalPages).toBe(1);

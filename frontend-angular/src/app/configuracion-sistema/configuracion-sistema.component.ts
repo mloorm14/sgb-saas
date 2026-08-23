@@ -185,6 +185,15 @@ export class ConfiguracionSistemaComponent implements OnInit {
     this.valorEditando = '';
   }
 
+  get puedeGuardarValor(): boolean {
+    const valor = this.valorEditando.trim();
+    return !!valor && valor.length <= this.valorMaxLength;
+  }
+
+  get puedeAgregarTipoDano(): boolean {
+    return !!this.nuevoTipoDanoNombre.trim() && this.nuevoTipoDanoPrecio !== null && this.nuevoTipoDanoPrecio >= 0;
+  }
+
   guardarValor(): void {
     if (!this.claveEditando) return;
     const valor = this.valorEditando.trim();

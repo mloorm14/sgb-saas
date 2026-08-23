@@ -174,14 +174,14 @@ public class ChatbotOrchestrator {
 
             // Agregar al historial: el functionCall y el functionResponse
             MensajeChat msgFuncCall = new MensajeChat();
-            msgFuncCall.setRol(ROL_USUARIO);
-            msgFuncCall.setContenido("[FunctionCall: " + respuesta.functionName() + "(" + respuesta.functionArgs() + ")]");
+            msgFuncCall.setRol(ROL_ASISTENTE);
+            msgFuncCall.setContenido("[FunctionCall:" + respuesta.functionName() + ":" + respuesta.functionArgs() + "]");
             msgFuncCall.setCreadoEn(OffsetDateTime.now());
             historialTrabajo.add(msgFuncCall);
 
             MensajeChat msgFuncResponse = new MensajeChat();
-            msgFuncResponse.setRol(ROL_ASISTENTE);
-            msgFuncResponse.setContenido("[FunctionResponse: " + resultado.toString() + "]");
+            msgFuncResponse.setRol(ROL_USUARIO);
+            msgFuncResponse.setContenido("[FunctionResponse:" + respuesta.functionName() + ":" + resultado.toString() + "]");
             msgFuncResponse.setCreadoEn(OffsetDateTime.now());
             historialTrabajo.add(msgFuncResponse);
 
