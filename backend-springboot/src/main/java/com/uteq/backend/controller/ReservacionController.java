@@ -41,7 +41,7 @@ public class ReservacionController {
     // Dashboard del bibliotecario: reservaciones que vencen hoy, sin
     // paginar (volumen bajo por diseño -- es "las de hoy", no el histórico).
     @GetMapping("/hoy")
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<List<ReservacionHoyResponseDTO>> reservacionesDeHoy() {
         return ResponseEntity.ok(reservacionService.buscarReservacionesDeHoy());
     }
@@ -52,7 +52,7 @@ public class ReservacionController {
     // manual que faltaba del RF-10: hasta ahora el LECTOR podía crear y el
     // sistema expirar, pero nadie podía marcar "listo para retirar".
     @PatchMapping("/{id}/estado")
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<ReservacionResponseDTO> cambiarEstado(
             @PathVariable Long id,
             @Valid @RequestBody CambioEstadoReservacionRequestDTO dto,

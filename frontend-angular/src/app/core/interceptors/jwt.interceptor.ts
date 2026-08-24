@@ -38,8 +38,8 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
               enviar(solicitud.clone({ setHeaders: { 'X-Retry': 'true' } }))
             ),
             catchError((refreshError) => {
-              authService.logout();
-              router.navigate(['/']);
+              authService.logout('/login');
+              router.navigate(['/login']);
               return throwError(() => refreshError);
             })
           );
