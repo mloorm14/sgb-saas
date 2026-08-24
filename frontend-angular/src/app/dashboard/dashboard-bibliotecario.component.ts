@@ -38,14 +38,11 @@ export class DashboardBibliotecarioComponent {
         { ruta: '/dashboard-bibliotecario/reservaciones', etiqueta: 'Reservaciones', icono: 'event_available' },
         { ruta: '/dashboard-bibliotecario/devoluciones', etiqueta: 'Devoluciones', icono: 'assignment_return' },
         { ruta: '/dashboard-bibliotecario/multas', etiqueta: 'Multas', icono: 'payments' },
-        { ruta: '/dashboard-bibliotecario/reportes', etiqueta: 'Reportes Gerenciales', icono: 'bar_chart' },
       ]
     },
     {
       titulo: 'SISTEMA',
-      enlaces: [
-        { ruta: '/dashboard-bibliotecario/reportes', etiqueta: 'Reportes', icono: 'bar_chart' },
-      ]
+      enlaces: []
     }
   ];
 

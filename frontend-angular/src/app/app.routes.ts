@@ -10,6 +10,7 @@ import { ReservacionesComponent } from './reservaciones/reservaciones.component'
 import { MultasComponent } from './multas/multas.component';
 import { ReportesComponent } from './reportes/reportes.component';
 import { DashboardGerenteComponent } from './dashboard-gerente/dashboard-gerente.component';
+import { DashboardGerenteAdminHomeComponent } from './dashboard-gerente-admin/dashboard-gerente-admin-home.component';
 import { DashboardBibliotecarioComponent } from './dashboard/dashboard-bibliotecario.component';
 import { DashboardBibliotecarioHomeComponent } from './dashboard/dashboard-bibliotecario-home.component';
 import { NoAutorizadoComponent } from './shared/no-autorizado/no-autorizado.component';
@@ -64,7 +65,7 @@ export const routes: Routes = [
   { path: 'admin/configuracion', component: ConfiguracionSistemaComponent, canActivate: [authGuard, roleGuard(['ADMIN'])] },
   // Reportes gerenciales: BIBLIOTECARIO/GERENTE (PrestamoController; el
   // ADMIN no tiene acceso).
-  { path: 'reportes', component: ReportesComponent, canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE'])] },
+  { path: 'reportes', component: ReportesComponent, canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])] },
   // Dashboard del GERENTE (mockup 24): top 5 de libros más prestados vía
   // el mismo PrestamoController de reportes, por eso queda SOLO GERENTE
   // (el BIBLIOTECARIO tiene /reportes, no esta pantalla).
@@ -82,7 +83,6 @@ export const routes: Routes = [
       { path: 'reservaciones', component: ReservacionesComponent },
       { path: 'devoluciones', component: DevolucionesComponent },
       { path: 'multas', component: MultasComponent },
-      { path: 'reportes', component: ReportesComponent },
     ]
   },
   // Panel ADMIN/GERENTE (sidebar con rutas anidadas):
@@ -91,7 +91,7 @@ export const routes: Routes = [
     component: DashboardGerenteAdminComponent,
     canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])],
     children: [
-      { path: '', component: DashboardGerenteComponent },
+      { path: '', component: DashboardGerenteAdminHomeComponent },
       { path: 'libros', component: LibrosComponent },
       { path: 'prestamos/gestion', component: PrestamosGestionComponent },
       { path: 'reservaciones', component: ReservacionesComponent },
@@ -99,7 +99,7 @@ export const routes: Routes = [
       { path: 'sugerencias/gestion', component: GestionSugerenciasComponent },
       { path: 'admin/usuarios', component: UsuariosComponent },
       { path: 'auditoria', component: AuditoriaComponent },
-      { path: 'reportes', component: ReportesComponent, canActivate: [roleGuard(['GERENTE'])] },
+      { path: 'reportes', component: ReportesComponent, canActivate: [roleGuard(['GERENTE', 'ADMIN'])] },
       { path: 'admin/configuracion', component: ConfiguracionSistemaComponent, canActivate: [roleGuard(['ADMIN'])] },
     ]
   },

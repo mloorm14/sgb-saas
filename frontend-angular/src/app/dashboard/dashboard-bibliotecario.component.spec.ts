@@ -44,7 +44,7 @@ describe('DashboardBibliotecarioComponent', () => {
     expect(compiled.textContent).toContain('Reservaciones');
     expect(compiled.textContent).toContain('Devoluciones');
     expect(compiled.textContent).toContain('Multas');
-    expect(compiled.textContent).toContain('Reportes Gerenciales');
+    expect(compiled.textContent).not.toContain('Reportes');
     expect(compiled.textContent).not.toContain('SISTEMA');
   });
 
