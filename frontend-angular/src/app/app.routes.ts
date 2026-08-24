@@ -11,6 +11,7 @@ import { MultasComponent } from './multas/multas.component';
 import { ReportesComponent } from './reportes/reportes.component';
 import { DashboardGerenteComponent } from './dashboard-gerente/dashboard-gerente.component';
 import { DashboardBibliotecarioComponent } from './dashboard/dashboard-bibliotecario.component';
+import { DashboardBibliotecarioHomeComponent } from './dashboard/dashboard-bibliotecario-home.component';
 import { NoAutorizadoComponent } from './shared/no-autorizado/no-autorizado.component';
 import { CatalogoComponent } from './catalogo/catalogo.component';
 import { LibroDetalleComponent } from './catalogo/libro-detalle/libro-detalle.component';
@@ -75,7 +76,7 @@ export const routes: Routes = [
     component: DashboardBibliotecarioComponent,
     canActivate: [authGuard, roleGuard(['BIBLIOTECARIO'])],
     children: [
-      { path: '', redirectTo: 'libros', pathMatch: 'full' },
+      { path: '', component: DashboardBibliotecarioHomeComponent },
       { path: 'libros', component: LibrosComponent },
       { path: 'prestamos/gestion', component: PrestamosGestionComponent },
       { path: 'reservaciones', component: ReservacionesComponent },
