@@ -97,9 +97,56 @@ public class LibroIsbnLookupService {
 
             return new LibroIsbnLookupDTO(titulo, autor, resumen, anio, portada);
         } catch (EntityNotFoundException ex) {
-            // Google no encontró el ISBN: no inventar con IA (evita alucinaciones como Valencia vs programar).
-            // Se propaga 404 y el frontend muestra "completa manualmente".
+            // Google no encontró (o 429): fallback a Open Library (gratis, sin key, mejor para fondo español).
+            LibroIsbnLookupDTO ol = buscarEnOpenLibrary(isbn);
+            if (ol != null) {
+                // Si Open Library trae titulo pero sin resumen, complementar solo resumen con IA
+                if ((ol.resumen() == null || ol.resumen().isBlank()) && geminiClient != null) {
+                    String iaResumen = generarResumenViaIA(ol.titulo(), ol.autor(), isbn);
+                    if (iaResumen != null && !iaResumen.isBlank()) {
+                        return new LibroIsbnLookupDTO(ol.titulo(), ol.autor(), iaResumen, ol.anioPublicacion(), ol.portadaDisponible());
+                    }
+                }
+                return ol;
+            }
             throw ex;
+        }
+    }
+
+    private LibroIsbnLookupDTO buscarEnOpenLibrary(String isbn) {
+        try {
+            String limpio = isbn.replace("-", "").replace(" ", "");
+            String url = "https://openlibrary.org/api/books?bibkeys=ISBN:" + limpio + "&format=json&jscmd=data";
+            String json = restClient.get().uri(url).retrieve().body(String.class);
+            if (json == null || json.isBlank() || json.trim().equals("{}")) return null;
+            JsonNode root = objectMapper.readTree(json);
+            JsonNode data = root.path("ISBN:" + limpio);
+            if (data.isMissingNode() || data.isEmpty()) return null;
+            String titulo = data.path("title").asText(null);
+            String resumen = null;
+            JsonNode desc = data.path("description");
+            if (desc.isTextual()) resumen = desc.asText(null);
+            else if (desc.isObject()) resumen = desc.path("value").asText(null);
+            if (resumen == null) {
+                JsonNode excerpts = data.path("excerpts");
+                if (excerpts.isArray() && excerpts.size() > 0) resumen = excerpts.get(0).path("text").asText(null);
+            }
+            String autor = null;
+            JsonNode authors = data.path("authors");
+            if (authors.isArray() && authors.size() > 0) autor = authors.get(0).path("name").asText(null);
+            Integer anio = null;
+            String publishDate = data.path("publish_date").asText(null);
+            if (publishDate != null) {
+                Matcher m = ANIO_PATTERN.matcher(publishDate);
+                if (m.find()) anio = Integer.parseInt(m.group(1));
+            }
+            boolean portada = data.has("cover") && !data.path("cover").path("medium").isMissingNode();
+            if (titulo == null && resumen == null && anio == null) return null;
+            log.info("Open Library fallback OK para ISBN {} -> {}", isbn, titulo);
+            return new LibroIsbnLookupDTO(titulo, autor, resumen, anio, portada);
+        } catch (Exception e) {
+            log.debug("Open Library fallback falló para ISBN {}", isbn, e);
+            return null;
         }
     }
 
