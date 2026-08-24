@@ -1,6 +1,7 @@
 package com.uteq.backend.controller;
 
 import com.uteq.backend.dto.CambioEstadoReservacionRequestDTO;
+import com.uteq.backend.dto.ReservacionHoyResponseDTO;
 import com.uteq.backend.dto.ReservacionRequestDTO;
 import com.uteq.backend.dto.ReservacionResponseDTO;
 import com.uteq.backend.service.ReservacionService;
@@ -13,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/reservaciones")
@@ -32,6 +35,15 @@ public class ReservacionController {
             Authentication authentication) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(reservacionService.crear(dto, authentication));
+    }
+
+    // ── GET /api/v1/reservaciones/hoy ──────────────────────
+    // Dashboard del bibliotecario: reservaciones que vencen hoy, sin
+    // paginar (volumen bajo por diseño -- es "las de hoy", no el histórico).
+    @GetMapping("/hoy")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    public ResponseEntity<List<ReservacionHoyResponseDTO>> reservacionesDeHoy() {
+        return ResponseEntity.ok(reservacionService.buscarReservacionesDeHoy());
     }
 
     // ── PATCH /api/v1/reservaciones/{id}/estado ────────────

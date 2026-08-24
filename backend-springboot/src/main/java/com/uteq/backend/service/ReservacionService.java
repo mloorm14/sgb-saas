@@ -1,6 +1,7 @@
 package com.uteq.backend.service;
 
 import com.uteq.backend.dto.CambioEstadoReservacionRequestDTO;
+import com.uteq.backend.dto.ReservacionHoyResponseDTO;
 import com.uteq.backend.dto.ReservacionRequestDTO;
 import com.uteq.backend.dto.ReservacionResponseDTO;
 import com.uteq.backend.entity.BitacoraAuditoria;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 @Service
 public class ReservacionService {
@@ -152,6 +154,19 @@ public class ReservacionService {
             Long usuarioId, Authentication authentication, Pageable pageable) {
         validarAccesoUsuario(usuarioId, authentication);
         return reservacionRepo.findByUsuarioId(usuarioId, pageable).map(this::toDTO);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReservacionHoyResponseDTO> buscarReservacionesDeHoy() {
+        return reservacionRepo.buscarReservacionesDeHoy().stream()
+                .map(p -> new ReservacionHoyResponseDTO(
+                        p.getReservacionId(),
+                        p.getUsuarioNombre(),
+                        p.getUsuarioCorreo(),
+                        p.getLibroTitulo(),
+                        p.getEstadoNombre(),
+                        p.getFechaLimiteRetiro()))
+                .toList();
     }
 
     // ── "Propio vs cualquiera", mismo patrón que PrestamoService. ──

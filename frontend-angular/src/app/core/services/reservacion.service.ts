@@ -4,7 +4,7 @@ import { catchError, Observable, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Page } from '../models/pagina.model';
 import { ProblemDetail } from '../models/problem-detail.model';
-import { CambioEstadoReservacionRequest, Reservacion, ReservacionRequest } from '../models/reservacion.model';
+import { CambioEstadoReservacionRequest, Reservacion, ReservacionHoy, ReservacionRequest } from '../models/reservacion.model';
 import { HistorialReservacion, UsuarioReservaciones } from '../models/reservaciones-gestion.model';
 
 export interface ReservacionListarParams {
@@ -74,6 +74,14 @@ export class ReservacionService {
     return this.http.get<HistorialReservacion[]>(`${this.apiUrl}/gestion/historial-reservaciones`, {
       params: new HttpParams().set('usuarioId', usuarioId)
     }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  // Dashboard del bibliotecario: reservaciones que vencen hoy
+  // (PENDIENTE o LISTA_PARA_RETIRO con fecha_limite_retiro = hoy).
+  reservacionesDeHoy(): Observable<ReservacionHoy[]> {
+    return this.http.get<ReservacionHoy[]>(`${this.apiUrl}/hoy`).pipe(
       catchError(err => this.manejarError(err))
     );
   }

@@ -20,3 +20,12 @@ export interface ReservacionRequest {
 export interface CambioEstadoReservacionRequest {
   nuevoEstado: 'LISTA_PARA_RETIRO' | 'CANCELADA';
 }
+
+export interface ReservacionHoy {
+  reservacionId: number;
+  usuarioNombre: string;
+  usuarioCorreo: string;
+  libroTitulo: string;
+  estadoNombre: string;
+  fechaLimiteRetiro: string;
+}
