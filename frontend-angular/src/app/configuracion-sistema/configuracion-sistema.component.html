@@ -13,7 +13,7 @@
   @if (!esAdmin) {
     <div class="rounded border border-error/40 bg-error-container/40 px-md py-sm mb-md flex items-center gap-sm">
       <span class="material-symbols-outlined text-[18px] text-error">block</span>
-      <p class="font-body-sm text-body-sm text-on-error-container">No tenés permisos para ver esta sección.</p>
+      <p class="font-body-sm text-body-sm text-on-error-container">No tienes permisos para ver esta sección.</p>
     </div>
   }
 
@@ -95,15 +95,13 @@
 
     <!-- Sección: Tipos de daño -->
     <div class="mt-xl">
-      <div class="flex items-center gap-sm mb-md">
-        <div class="w-10 h-10 rounded-lg bg-primary-fixed flex items-center justify-center">
+      <div class="flex items-center gap-sm mb-xs">
+        <div class="w-10 h-10 rounded-lg bg-primary-fixed flex items-center justify-center shrink-0">
           <span class="material-symbols-outlined text-[22px] text-primary">category</span>
         </div>
-        <div>
-          <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background">Tipos de daño</h2>
-          <p class="font-body-sm text-body-sm text-on-surface-variant sm:ml-[22px]">Gestiona los tipos de daño y su precio de cobro por día</p>
-        </div>
+        <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background">Tipos de daño</h2>
       </div>
+      <p class="font-body-sm text-body-sm text-on-surface-variant sm:ml-[52px]">Gestiona los tipos de daño y su precio de cobro por día</p>
 
       @if (errorMsgTiposDano) {
         <div class="rounded border border-error/40 bg-error-container/40 px-md py-sm mb-md flex items-center gap-sm">

@@ -54,7 +54,7 @@ describe('DashboardBibliotecarioHomeComponent', () => {
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('No hay reservaciones que venzan hoy.');
+    expect(compiled.textContent).toContain('No hay reservaciones para hoy');
   });
 
   it('marcarListaParaRetiro cambia estado y refresca la lista', () => {

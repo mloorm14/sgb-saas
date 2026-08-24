@@ -16,9 +16,11 @@
         <span class="material-symbols-outlined text-[22px] text-primary">event_available</span>
         Reservaciones de hoy
       </h2>
-      <span class="font-label-sm text-[11px] text-on-surface-variant px-sm py-1 rounded-full bg-surface-container-low">
-        {{ reservacionesHoy.length }} pendiente{{ reservacionesHoy.length === 1 ? '' : 's' }}
-      </span>
+      @if (!cargandoReservacionesHoy && !errorReservacionesHoy) {
+        <span class="font-label-sm text-[11px] text-on-surface-variant px-sm py-1 rounded-full bg-surface-container-low">
+          {{ reservacionesHoy.length }} pendiente{{ reservacionesHoy.length === 1 ? '' : 's' }}
+        </span>
+      }
     </div>
 
     @if (cargandoReservacionesHoy) {
@@ -30,7 +32,7 @@
     } @else if (errorReservacionesHoy) {
       <p class="font-body-sm text-body-sm text-on-surface-variant text-center py-md">{{ errorReservacionesHoy }}</p>
     } @else if (reservacionesHoy.length === 0) {
-      <p class="font-body-sm text-body-sm text-on-surface-variant text-center py-md">No hay reservaciones que venzan hoy.</p>
+      <p class="font-body-sm text-body-sm text-on-surface-variant text-center py-md">No hay reservaciones para hoy</p>
     } @else {
       <div class="space-y-sm">
         @for (r of reservacionesHoy; track r.reservacionId) {
