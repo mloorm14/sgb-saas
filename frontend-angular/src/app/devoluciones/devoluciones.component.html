@@ -11,10 +11,7 @@
   </div>
 
   <!-- ─── Buscar Préstamo Activo ─── -->
-  <div class="rounded-xl border border-outline-variant bg-white p-lg mb-lg">
-    <label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">
-      Buscar Préstamo Activo
-    </label>
+  <div class="mb-lg">
     <app-buscador-usuario
       (correoSeleccionado)="onCorreoSeleccionado($event)"
       (buscarAhora)="onBuscarAhora($event)" />
@@ -30,18 +27,17 @@
 
   <!-- ─── Error ─── -->
   @if (errorMsg) {
-    <div class="mb-lg flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl p-md">
-      <span class="material-symbols-outlined text-red-500 text-2xl">error</span>
-      <p class="text-red-700 font-medium flex-1 font-body-sm text-body-sm">{{ errorMsg }}</p>
-      <button (click)="errorMsg = ''" class="text-red-600 hover:text-red-800 font-semibold text-sm cursor-pointer">Limpiar</button>
+    <div class="rounded-lg bg-red-50 border border-red-200 p-md mb-md flex items-center gap-sm">
+      <span class="material-symbols-outlined text-red-500 text-[20px]">error</span>
+      <p class="font-body-sm text-body-sm text-red-700">{{ errorMsg }}</p>
     </div>
   }
 
   <!-- ─── Éxito ─── -->
   @if (exitoMsg) {
-    <div class="mb-lg flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-md">
-      <span class="material-symbols-outlined text-green-600 text-2xl">check_circle</span>
-      <p class="text-green-700 font-medium flex-1 font-body-sm text-body-sm">{{ exitoMsg }}</p>
+    <div class="rounded-lg bg-green-50 border border-green-200 p-md mb-md flex items-center gap-sm">
+      <span class="material-symbols-outlined text-green-500 text-[20px]">check_circle</span>
+      <p class="font-body-sm text-body-sm text-green-700">{{ exitoMsg }}</p>
     </div>
   }
 
@@ -72,9 +68,9 @@
 
   <!-- ═══ Sin préstamos ═══ -->
   @if (!cargandoPrestamos && prestamosActivos.length === 0 && !errorMsg && !exitoMsg) {
-    <div class="rounded-xl border border-dashed border-outline-variant bg-white p-xl text-center">
-      <span class="material-symbols-outlined text-[40px] text-outline-variant block mb-sm">assignment_return</span>
-      <p class="font-body-sm text-body-sm text-on-surface-variant">
+    <div class="rounded-xl border border-dashed border-outline-variant bg-surface-container-low p-xl text-center">
+      <span class="material-symbols-outlined text-[64px] text-on-surface-variant/40 block mb-sm">assignment_return</span>
+      <p class="font-body-md text-body-md text-on-surface-variant">
         Busca un usuario por correo para ver sus préstamos activos.
       </p>
     </div>

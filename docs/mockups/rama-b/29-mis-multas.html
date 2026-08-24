@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SGB · Mis multas</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          "secondary-container": "#76f4e0","surface": "#f8f9ff","surface-container-highest": "#d5e3fc",
+          "on-error": "#ffffff","error-container": "#ffdad6","surface-container": "#e6eeff",
+          "on-secondary-fixed": "#00201c","on-secondary-container": "#006f63","surface-bright": "#f8f9ff",
+          "tertiary": "#503a00","surface-variant": "#d5e3fc","outline-variant": "#c4c6d5",
+          "inverse-primary": "#b4c5ff","primary-container": "#1e4db7","on-tertiary-fixed-variant": "#5b4300",
+          "on-primary-fixed-variant": "#003ea8","inverse-on-surface": "#eaf1ff","surface-dim": "#ccdbf3",
+          "error": "#ba1a1a","on-tertiary-fixed": "#261a00","primary-fixed-dim": "#b4c5ff",
+          "on-tertiary": "#ffffff","on-surface-variant": "#434653","secondary-fixed": "#79f7e3",
+          "background": "#f8f9ff","on-background": "#0d1c2e","tertiary-fixed": "#ffdf9e",
+          "on-surface": "#0d1c2e","primary-fixed": "#dbe1ff","surface-container-lowest": "#ffffff",
+          "on-tertiary-container": "#fec004","surface-container-high": "#dce9ff","surface-container-low": "#eff4ff",
+          "tertiary-container": "#6c5000","surface-tint": "#2c57c1","primary": "#003694",
+          "on-secondary": "#ffffff","on-primary-fixed": "#00174b","outline": "#747684",
+          "on-secondary-fixed-variant": "#005047","secondary": "#006b5f","tertiary-fixed-dim": "#fabd00",
+          "secondary-fixed-dim": "#59dbc7","on-primary-container": "#b8c8ff","on-error-container": "#93000a",
+          "on-primary": "#ffffff","inverse-surface": "#233144",
+          "success": "#1d9e75","warning": "#fec004"
+        },
+        borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" },
+        spacing: { gutter: "24px", xl: "40px", lg: "24px", md: "16px", "container-max": "1280px", sm: "8px", xs: "4px", "margin-mobile": "16px", base: "4px" },
+        fontFamily: {
+          "headline-lg": ["Plus Jakarta Sans"], "body-md": ["Inter"], "label-md": ["Inter"],
+          "headline-lg-mobile": ["Plus Jakarta Sans"], "headline-xl": ["Plus Jakarta Sans"],
+          "label-sm": ["Inter"], "body-lg": ["Inter"], "body-sm": ["Inter"], "headline-md": ["Plus Jakarta Sans"]
+        },
+        fontSize: {
+          "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+          "label-md": ["14px", { lineHeight: "20px", letterSpacing: "0.05em", fontWeight: "600" }],
+          "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+          "headline-xl": ["40px", { lineHeight: "48px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "label-sm": ["12px", { lineHeight: "16px", fontWeight: "500" }],
+          "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+          "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+          "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Inter', sans-serif; background:#f8f9ff; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align:middle; }
+  .glass-panel { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
+</style>
+</head>
+<body class="bg-surface min-h-screen p-lg">
+<main class="max-w-3xl mx-auto">
+
+  <div class="mb-lg">
+    <h1 class="font-headline-lg text-headline-lg text-on-background mb-xs">Mis multas</h1>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Consultá tus multas y su estado</p>
+  </div>
+
+  <!-- Resumen -->
+  <div class="grid grid-cols-2 gap-md mb-lg">
+    <div class="rounded-xl border border-outline-variant bg-white p-md">
+      <p class="font-label-sm text-[12px] text-on-surface-variant mb-1">Total pendiente</p>
+      <p class="font-headline-lg text-[26px] text-error font-bold">$1.50</p>
+    </div>
+    <div class="rounded-xl border border-outline-variant bg-white p-md">
+      <p class="font-label-sm text-[12px] text-on-surface-variant mb-1">Multas históricas</p>
+      <p class="font-headline-lg text-[26px] text-on-background font-bold">3</p>
+    </div>
+  </div>
+
+  <div class="space-y-sm mb-xl">
+    <div class="rounded-xl border border-outline-variant bg-white p-md flex items-center gap-md">
+      <div class="w-10 h-10 rounded-lg bg-error-container/40 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-[20px] text-error">payments</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-label-md text-[14px] text-on-surface">Redes de Computadoras</p>
+        <p class="font-body-sm text-[13px] text-on-surface-variant">3 días de atraso · Generada el 14 ago 2026</p>
+      </div>
+      <div class="text-right shrink-0">
+        <p class="font-headline-md text-[18px] text-error font-semibold">$1.50</p>
+        <span class="font-label-sm text-[11px] text-error">Pendiente</span>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-outline-variant bg-white p-md flex items-center gap-md opacity-70">
+      <div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-[20px] text-secondary">check_circle</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-label-md text-[14px] text-on-surface">Clean Code</p>
+        <p class="font-body-sm text-[13px] text-on-surface-variant">2 días de atraso · Pagada el 02 jul 2026</p>
+      </div>
+      <div class="text-right shrink-0">
+        <p class="font-headline-md text-[18px] text-on-surface-variant font-semibold">$1.00</p>
+        <span class="font-label-sm text-[11px] text-secondary">Pagada</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado vacio bien diseñado, para cuando de verdad no hay multas -->
+  <div class="rounded-xl border border-dashed border-outline-variant bg-white p-xl flex flex-col items-center text-center">
+    <div class="w-14 h-14 rounded-full bg-secondary-container/30 flex items-center justify-center mb-sm">
+      <span class="material-symbols-outlined text-[26px] text-secondary">celebration</span>
+    </div>
+    <p class="font-label-md text-[15px] text-on-surface mb-1">No tenés multas pendientes</p>
+    <p class="font-body-sm text-[13px] text-on-surface-variant max-w-xs">Devolvé tus préstamos a tiempo y esta pantalla se mantiene así de vacía.</p>
+  </div>
+
+</main>
+</body>
+</html>

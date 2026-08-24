@@ -16,7 +16,7 @@
         <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Usuario</label>
         @if (usuarioSeleccionado) {
           <div class="h-10 px-sm rounded border border-outline-variant bg-white flex items-center gap-sm">
-            <span class="font-body-sm text-body-sm truncate flex-1">{{ usuarioSeleccionado.correo }}</span>
+            <span class="font-body-sm text-body-sm truncate flex-1">{{ usuarioSeleccionado.nombre }} {{ usuarioSeleccionado.apellido }}</span>
             <button (click)="limpiarSeleccion()" class="text-on-surface-variant hover:text-error cursor-pointer">
               <span class="material-symbols-outlined text-[16px]">close</span>
             </button>

@@ -195,6 +195,56 @@ admin real y con rol limitado (LECTOR, sin permisos administrativos)**:
 Este usuario es el que el tribunal puede usar para entrar sin
 registrarse. No modifica ni comparte la cuenta `admin@sgb-saas.local`.
 
+⚠️ **Nota de corrección (2026-08-23, verificación pre-defensa):** una
+auditoría en vivo contra producción, horas antes de la defensa, encontró que
+la cuenta `u@uteq.edu.ec` tenía asignados **dos roles a la vez** (`LECTOR` y
+`GERENTE`). Causa: `V12__fix_usuario_demo.sql` solo *agrega* el rol `LECTOR`
+(`ON CONFLICT DO NOTHING`) pero nunca elimina otros roles que ya existieran
+en esa fila, así que un `GERENTE` preexistente en esa cuenta no se limpiaba
+solo. El login devolvía `GERENTE`, contradiciendo lo documentado arriba.
+
+Se corrigió con un script SQL aplicado directamente contra la base de
+producción (Neon, branch `production`) que deja esa cuenta con
+**únicamente** el rol `LECTOR`, tal como pretendían V11/V12. **Esta
+corrección no está reflejada como una migración Flyway versionada en
+`database/migrations/`** — es un parche puntual sobre producción para no
+bloquear la defensa; una base reprovisionada desde cero (`make up` /
+clonación limpia) no reproduce este estado hasta que se agregue una
+migración `V__` equivalente al repositorio.
+
+Además, no existían credenciales demo públicas para el rol `BIBLIOTECARIO`
+ni para un `LECTOR` alternativo separado de `u@uteq.edu.ec`. Se crearon dos
+cuentas nuevas para cubrir esos roles, independientes de cualquier cuenta
+real de un integrante del equipo:
+
+| Campo | Valor |
+|-------|-------|
+| **Rol** | `LECTOR` |
+| **Usuario / Email** | `lector.demo@sgb-saas.local` |
+| **Contraseña** | `Lector123!` |
+
+| Campo | Valor |
+|-------|-------|
+| **Rol** | `BIBLIOTECARIO` |
+| **Usuario / Email** | `bibliotecario.demo@sgb-saas.local` |
+| **Contraseña** | `Bibliotecario123!` |
+
+| Campo | Valor |
+|-------|-------|
+| **Rol** | `GERENTE` |
+| **Usuario / Email** | `gerente.demo@sgb-saas.local` |
+| **Contraseña** | `Gerente123!` |
+
+> ⚠️ Mismo criterio que el resto de esta sección: credenciales **solo**
+> para evaluación académica / entorno demo.
+
+Para los 4 roles del sistema, el tribunal puede entrar con:
+
+- **ADMIN** — `admin@sgb-saas.local`
+- **GERENTE** — `gerente.demo@sgb-saas.local`
+- **BIBLIOTECARIO** — `bibliotecario.demo@sgb-saas.local`
+- **LECTOR** — `lector.demo@sgb-saas.local` o `u@uteq.edu.ec` (LECTOR).
+
 ## 📦 Imágenes Docker publicadas (v1.0.0)
 
 Las imágenes se publican en GitHub Container Registry (GHCR) por el
