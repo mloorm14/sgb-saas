@@ -19,7 +19,7 @@ export class NoAutorizadoComponent {
   // ADMIN -> /libros. Sin sesion, a /login.
   volverAlHome(): void {
     if (!this.authService.isLoggedIn()) {
-      this.router.navigate(['/login']);
+      this.router.navigate(['/']);
       return;
     }
     if (this.authService.hasRole('LECTOR')) {

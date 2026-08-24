@@ -8,32 +8,32 @@
   <main class="w-full max-w-2xl mx-auto flex flex-col md:flex-row gap-xl">
 
     <!-- Columna izquierda: branding -->
-    <div class="hidden md:flex flex-col justify-center w-1/3 text-on-background">
-      <div class="flex items-center gap-sm mb-md">
-        <div class="w-12 h-12 rounded bg-primary flex items-center justify-center text-on-primary">
-          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+      <a routerLink="/" class="hidden md:flex flex-col justify-center w-1/3 text-on-background">
+        <div class="flex items-center gap-sm mb-md">
+          <div class="w-12 h-12 rounded bg-primary flex items-center justify-center text-on-primary">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+          </div>
+          <div>
+            <h1 class="font-headline-lg text-headline-lg text-primary">SGB</h1>
+            <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Sistema de Gestión Bibliotecaria</p>
+          </div>
         </div>
-        <div>
-          <h1 class="font-headline-lg text-headline-lg text-primary">SGB</h1>
-          <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Sistema de Gestión Bibliotecaria</p>
-        </div>
-      </div>
-      <p class="font-body-md text-body-md text-on-surface-variant">
-        Accede a miles de recursos académicos y gestiona tu historial de lectura en un entorno seguro y profesional.
-      </p>
-    </div>
+        <p class="font-body-md text-body-md text-on-surface-variant">
+          Accede a miles de recursos académicos y gestiona tu historial de lectura en un entorno seguro y profesional.
+        </p>
+      </a>
 
     <!-- Columna derecha: tarjeta -->
     <div class="w-full md:w-2/3 rounded-xl shadow-lg p-xl relative overflow-hidden"
          style="background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3);">
       <div class="absolute top-0 left-0 w-full h-2 bg-primary"></div>
 
-      <div class="md:hidden flex items-center gap-sm mb-lg">
+      <a routerLink="/" class="md:hidden flex items-center gap-sm mb-lg">
         <div class="w-10 h-10 rounded bg-primary flex items-center justify-center text-on-primary">
           <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">menu_book</span>
         </div>
         <h1 class="font-headline-md text-headline-md text-primary">SGB</h1>
-      </div>
+      </a>
 
       <!-- ===== PASO 1: REGISTRO ===== -->
       @if (paso === 'registro') {
@@ -131,6 +131,13 @@
           <p class="text-center font-body-sm text-body-sm text-on-surface-variant mt-sm">
             ¿Ya tienes cuenta? <a routerLink="/login" class="text-primary font-medium hover:underline">Iniciar sesión</a>
           </p>
+
+          <div class="flex justify-center pt-md">
+            <a routerLink="/" class="inline-flex items-center gap-xs font-label-md text-label-sm text-on-surface-variant hover:text-primary transition-colors">
+              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+              Volver al catálogo
+            </a>
+          </div>
         </form>
       }
 

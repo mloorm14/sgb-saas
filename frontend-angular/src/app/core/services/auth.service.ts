@@ -63,7 +63,7 @@ export class AuthService {
 
   private clearSession(): void {
     this.accessToken = null;
-    this.router.navigate(['/login']);
+    this.router.navigate(['/']);
   }
 
   getAccessToken(): string | null {
