@@ -89,8 +89,14 @@ public class SecurityConfig {
                         // vez de relajar por defecto.
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
                                 "default-src 'self'; "
+                                        + "script-src 'self'; "
+                                        + "script-src-attr 'unsafe-inline'; "
+                                        + "style-src 'self' 'unsafe-inline'; "
+                                        + "img-src 'self' data: blob:; "
+                                        + "connect-src 'self' https://sgb-backend-b058.onrender.com; "
                                         + "frame-ancestors 'none'; "
                                         + "base-uri 'self'; "
+                                        + "form-action 'none'; "
                                         + "object-src 'none'"
                         ))
                 )
