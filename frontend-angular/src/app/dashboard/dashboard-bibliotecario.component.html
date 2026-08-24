@@ -15,7 +15,9 @@
     <nav class="flex-1 overflow-y-auto py-md">
       @for (seccion of seccionesVisibles; track seccion.titulo) {
         <div class="mb-sm">
-          <p class="px-lg font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">{{ seccion.titulo }}</p>
+          @if (seccion.titulo) {
+            <p class="px-lg font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">{{ seccion.titulo }}</p>
+          }
           @for (enlace of seccion.enlaces; track enlace.ruta) {
             <a [routerLink]="enlace.ruta"
                routerLinkActive="bg-primary-fixed text-primary"

@@ -25,6 +25,12 @@ export class DashboardBibliotecarioComponent {
 
   private secciones: SeccionSidebar[] = [
     {
+      titulo: '',
+      enlaces: [
+        { ruta: '/dashboard-bibliotecario', etiqueta: 'Inicio', icono: 'home' },
+      ]
+    },
+    {
       titulo: 'GESTIÓN',
       enlaces: [
         { ruta: '/dashboard-bibliotecario/libros', etiqueta: 'Libros', icono: 'inventory_2' },
