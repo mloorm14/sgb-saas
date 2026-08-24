@@ -48,13 +48,16 @@ public class LibroIsbnLookupService {
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
     private final String urlBase;
+    private final String openLibraryUrlBase;
     private final GeminiClient geminiClient;
 
     public LibroIsbnLookupService(
             @Value("${app.google-books.url-base}") String urlBase,
             @Value("${app.google-books.timeout-ms}") long timeoutMs,
+            @Value("${app.open-library.url-base:https://openlibrary.org}") String openLibraryUrlBase,
             @Autowired(required = false) GeminiClient geminiClient) {
         this.urlBase = urlBase;
+        this.openLibraryUrlBase = openLibraryUrlBase;
         this.objectMapper = new ObjectMapper();
         this.geminiClient = geminiClient;
 
@@ -116,7 +119,7 @@ public class LibroIsbnLookupService {
     private LibroIsbnLookupDTO buscarEnOpenLibrary(String isbn) {
         try {
             String limpio = isbn.replace("-", "").replace(" ", "");
-            String url = "https://openlibrary.org/api/books?bibkeys=ISBN:" + limpio + "&format=json&jscmd=data";
+            String url = openLibraryUrlBase + "/api/books?bibkeys=ISBN:" + limpio + "&format=json&jscmd=data";
             String json = restClient.get().uri(url).retrieve().body(String.class);
             if (json == null || json.isBlank() || json.trim().equals("{}")) return null;
             JsonNode root = objectMapper.readTree(json);
