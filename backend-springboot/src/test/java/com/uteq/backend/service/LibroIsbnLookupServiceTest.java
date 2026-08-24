@@ -44,7 +44,7 @@ class LibroIsbnLookupServiceTest {
         });
         server.start();
 
-        service = new LibroIsbnLookupService(urlBase, 8000);
+        service = new LibroIsbnLookupService(urlBase, 8000L, null);
     }
 
     @AfterEach
