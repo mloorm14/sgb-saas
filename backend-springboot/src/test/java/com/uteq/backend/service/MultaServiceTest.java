@@ -3,8 +3,10 @@ package com.uteq.backend.service;
 import com.uteq.backend.dto.MultaAccionResponseDTO;
 import com.uteq.backend.dto.ResumenFinancieroMultasResponseDTO;
 import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.LibroRepository;
 import com.uteq.backend.repository.MultaProcedureRepository;
 import com.uteq.backend.repository.MultaRepository;
+import com.uteq.backend.repository.PrestamoRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import com.uteq.backend.repository.projection.ResumenFinancieroMultasProjection;
 import org.junit.jupiter.api.Test;
@@ -25,6 +27,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -36,6 +40,8 @@ class MultaServiceTest {
     @Mock MultaRepository multaRepo;
     @Mock MultaProcedureRepository multaProcRepo;
     @Mock UsuarioRepository usuarioRepo;
+    @Mock LibroRepository libroRepo;
+    @Mock PrestamoRepository prestamoRepo;
 
     @InjectMocks MultaService multaService;
 
@@ -129,6 +135,14 @@ class MultaServiceTest {
         ResumenFinancieroMultasProjection fila = mock(ResumenFinancieroMultasProjection.class);
         given(fila.getTotalRecaudado()).willReturn(new BigDecimal("125.00"));
         given(fila.getTotalPendiente()).willReturn(new BigDecimal("40.50"));
+
+        ResumenFinancieroMultasProjection hoy = mock(ResumenFinancieroMultasProjection.class);
+        given(hoy.getTotalRecaudado()).willReturn(new BigDecimal("10.00"));
+        given(hoy.getTotalPendiente()).willReturn(new BigDecimal("5.00"));
+        lenient().when(multaProcRepo.fnReporteResumenFinanciero(any(OffsetDateTime.class), any(OffsetDateTime.class)))
+                .thenReturn(hoy);
+        lenient().when(multaProcRepo.fnPagosRecientes(anyInt())).thenReturn(List.of());
+
         OffsetDateTime desde = OffsetDateTime.parse("2026-08-01T00:00:00Z");
         OffsetDateTime hasta = OffsetDateTime.parse("2026-08-31T23:59:59Z");
         given(multaProcRepo.fnReporteResumenFinanciero(desde, hasta)).willReturn(fila);
@@ -140,17 +154,19 @@ class MultaServiceTest {
     }
 
     // ── Test 8: resumen financiero sin rango de fechas envía null tal cual ──
-    // (el filtro es opcional -- ver fn_reporte_resumen_financiero_multas.sql,
-    // p_desde/p_hasta DEFAULT NULL -- el service no aplica ningún default
-    // propio, a diferencia de reporteMorosidad/reporteLibrosMasPrestados que
-    // sí normalizan `limite` porque ahí un NULL produce "LIMIT NULL" sin
-    // querer; acá NULL es exactamente el comportamiento "sin filtro" deseado).
     @Test
     void reporteResumenFinanciero_sinRangoDeFechas_envianullAlRepositorio() {
         ResumenFinancieroMultasProjection fila = mock(ResumenFinancieroMultasProjection.class);
         given(fila.getTotalRecaudado()).willReturn(BigDecimal.ZERO);
         given(fila.getTotalPendiente()).willReturn(BigDecimal.ZERO);
         given(multaProcRepo.fnReporteResumenFinanciero(null, null)).willReturn(fila);
+
+        ResumenFinancieroMultasProjection hoy = mock(ResumenFinancieroMultasProjection.class);
+        given(hoy.getTotalRecaudado()).willReturn(BigDecimal.ZERO);
+        given(hoy.getTotalPendiente()).willReturn(BigDecimal.ZERO);
+        lenient().when(multaProcRepo.fnReporteResumenFinanciero(any(OffsetDateTime.class), any(OffsetDateTime.class)))
+                .thenReturn(hoy);
+        lenient().when(multaProcRepo.fnPagosRecientes(anyInt())).thenReturn(List.of());
 
         multaService.reporteResumenFinanciero(null, null);
 

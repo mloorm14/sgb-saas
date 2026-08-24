@@ -28,18 +28,24 @@ describe('ConfiguracionSistemaComponent', () => {
     httpMock.verify();
   });
 
-  it('un ADMIN carga el listado de configuración', async () => {
+  it('un ADMIN carga el listado de configuración y tipos de daño', async () => {
     await configurar('ADMIN');
     fixture.detectChanges();
 
-    const req = httpMock.expectOne('http://localhost:8080/api/v1/configuracion');
-    req.flush([
+    const reqConfig = httpMock.expectOne('http://localhost:8080/api/v1/configuracion');
+    reqConfig.flush([
       { clave: 'monto_multa_diaria', valor: '0.50' },
       { clave: 'dias_prestamo_default', valor: '15' }
     ]);
 
+    const reqDanos = httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano');
+    reqDanos.flush([
+      { id: 1, nombre: 'Páginas rotas', precio: 5.0 }
+    ]);
+
     expect(component.esAdmin).toBeTrue();
     expect(component.configuraciones.length).toBe(2);
+    expect(component.tiposDano.length).toBe(1);
     expect(component.errorMsg).toBe('');
   });
 
@@ -48,6 +54,7 @@ describe('ConfiguracionSistemaComponent', () => {
     fixture.detectChanges();
 
     httpMock.expectNone('http://localhost:8080/api/v1/configuracion');
+    httpMock.expectNone('http://localhost:8080/api/v1/tipos-dano');
     expect(component.esAdmin).toBeFalse();
 
     fixture.detectChanges();
@@ -58,8 +65,11 @@ describe('ConfiguracionSistemaComponent', () => {
     await configurar('ADMIN');
     fixture.detectChanges();
 
-    const req = httpMock.expectOne('http://localhost:8080/api/v1/configuracion');
-    req.flush('error', { status: 500, statusText: 'Server Error' });
+    const reqConfig = httpMock.expectOne('http://localhost:8080/api/v1/configuracion');
+    reqConfig.flush('error', { status: 500, statusText: 'Server Error' });
+
+    const reqDanos = httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano');
+    reqDanos.flush([]);
 
     expect(component.errorMsg).toBe('Error al cargar la configuración del sistema');
     expect(component.cargando).toBeFalse();
@@ -71,6 +81,7 @@ describe('ConfiguracionSistemaComponent', () => {
 
     httpMock.expectOne('http://localhost:8080/api/v1/configuracion')
       .flush([{ clave: 'monto_multa_diaria', valor: '0.50' }]);
+    httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
 
     component.iniciarEdicion(component.configuraciones[0]);
     component.valorEditando = '0.75';
@@ -94,6 +105,7 @@ describe('ConfiguracionSistemaComponent', () => {
 
     httpMock.expectOne('http://localhost:8080/api/v1/configuracion')
       .flush([{ clave: 'monto_multa_diaria', valor: '0.50' }]);
+    httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
 
     component.iniciarEdicion(component.configuraciones[0]);
     component.valorEditando = 'x'.repeat(201);
@@ -109,6 +121,7 @@ describe('ConfiguracionSistemaComponent', () => {
 
     httpMock.expectOne('http://localhost:8080/api/v1/configuracion')
       .flush([{ clave: 'monto_multa_diaria', valor: '0.50' }]);
+    httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
 
     component.iniciarEdicion(component.configuraciones[0]);
     component.valorEditando = '1.00';

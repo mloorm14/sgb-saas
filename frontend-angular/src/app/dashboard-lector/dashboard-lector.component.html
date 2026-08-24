@@ -30,13 +30,15 @@
     </nav>
 
     <!-- Usuario -->
-    <div class="border-t border-outline-variant px-lg py-md" data-menu-usuario-sidebar>
+    <div class="relative border-t border-outline-variant px-lg py-md" data-menu-usuario-sidebar>
       <button (click)="mostrarMenuUsuario = !mostrarMenuUsuario"
         class="w-full flex items-center gap-sm cursor-pointer">
         <span class="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-sm text-label-sm shrink-0">{{ inicialesUsuario }}</span>
         <div class="flex-1 text-left min-w-0">
           <p class="font-body-sm text-body-sm text-on-surface truncate">{{ correoUsuario }}</p>
-          <p class="font-label-sm text-label-sm text-on-surface-variant">{{ nombreRol }}</p>
+          @if (nombreRol) {
+            <p class="font-label-sm text-label-sm text-on-surface-variant">{{ nombreRol }}</p>
+          }
         </div>
         <span class="material-symbols-outlined text-[18px] text-on-surface-variant"
           [class.rotate-180]="mostrarMenuUsuario"
@@ -44,7 +46,7 @@
       </button>
 
       @if (mostrarMenuUsuario) {
-        <div class="mt-xs bg-surface-container-low rounded-lg border border-outline-variant overflow-hidden">
+        <div class="absolute bottom-full left-2 right-2 mb-xs bg-white rounded-xl border border-outline-variant shadow-lg overflow-hidden z-30">
           <button (click)="cerrarSesion()"
             class="w-full flex items-center gap-sm px-md py-sm text-left font-body-sm text-body-sm text-error hover:bg-error-container/40 transition-colors cursor-pointer">
             <span class="material-symbols-outlined text-[18px]">logout</span>

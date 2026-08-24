@@ -24,8 +24,6 @@ import org.springframework.web.context.WebApplicationContext;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -85,7 +83,7 @@ class PublicoLibroControllerTest {
 
     @Test
     void listar_sinToken_responde200() throws Exception {
-        when(libroService.listar(org.mockito.ArgumentMatchers.any()))
+        when(libroService.listarConFiltros(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new PageImpl<>(List.of(libroRespuesta())));
 
         mockMvc.perform(get("/api/publico/libros"))
@@ -95,24 +93,24 @@ class PublicoLibroControllerTest {
 
     @Test
     void listar_conFiltroCategoria_sinToken_responde200YDelega() throws Exception {
-        when(libroService.listarPorCategoria(anyInt(), org.mockito.ArgumentMatchers.any()))
+        when(libroService.listarConFiltros(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(5), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new PageImpl<>(List.of(libroRespuesta())));
 
         mockMvc.perform(get("/api/publico/libros").param("categoriaId", "5"))
                 .andExpect(status().isOk());
 
-        verify(libroService).listarPorCategoria(org.mockito.ArgumentMatchers.eq(5), org.mockito.ArgumentMatchers.any());
+        verify(libroService).listarConFiltros(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(5), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
     void listar_conFiltroAutor_sinToken_responde200YDelega() throws Exception {
-        when(libroService.listarPorAutor(anyLong(), org.mockito.ArgumentMatchers.any()))
+        when(libroService.listarConFiltros(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(3L), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new PageImpl<>(List.of(libroRespuesta())));
 
         mockMvc.perform(get("/api/publico/libros").param("autorId", "3"))
                 .andExpect(status().isOk());
 
-        verify(libroService).listarPorAutor(org.mockito.ArgumentMatchers.eq(3L), org.mockito.ArgumentMatchers.any());
+        verify(libroService).listarConFiltros(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(3L), org.mockito.ArgumentMatchers.any());
     }
 
     @Test

@@ -10,6 +10,8 @@ export interface LibroListarParams {
   page?: number;
   size?: number;
   sort?: string;
+  q?: string;
+  estadoLibroId?: number;
   categoriaId?: number;
   autorId?: number;
 }
@@ -28,6 +30,8 @@ export class LibroService {
     if (params.page !== undefined) httpParams = httpParams.set('page', params.page);
     if (params.size !== undefined) httpParams = httpParams.set('size', params.size);
     if (params.sort) httpParams = httpParams.set('sort', params.sort);
+    if (params.q) httpParams = httpParams.set('q', params.q);
+    if (params.estadoLibroId !== undefined) httpParams = httpParams.set('estadoLibroId', params.estadoLibroId);
     if (params.categoriaId !== undefined) httpParams = httpParams.set('categoriaId', params.categoriaId);
     if (params.autorId !== undefined) httpParams = httpParams.set('autorId', params.autorId);
 

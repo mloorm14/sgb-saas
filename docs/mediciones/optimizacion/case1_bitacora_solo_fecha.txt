@@ -1,0 +1,9 @@
+Limit  (cost=0.43..6.08 rows=20 width=127) (actual time=0.378..3.740 rows=20 loops=1)
+  Buffers: shared hit=23
+  ->  Index Scan using idx_bitacora_fecha_hora on bitacora_auditoria  (cost=0.43..131888.73 rows=467010 width=127) (actual time=0.376..3.734 rows=20 loops=1)
+        Index Cond: ((fecha_hora >= '2025-02-01 00:00:00+00'::timestamp with time zone) AND (fecha_hora <= '2026-08-23 00:00:00+00'::timestamp with time zone))
+        Buffers: shared hit=23
+ Planning:
+   Buffers: shared hit=125
+ Planning Time: 11.221 ms
+ Execution Time: 4.905 ms

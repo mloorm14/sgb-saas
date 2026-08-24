@@ -81,6 +81,9 @@ class AuthServiceTest {
     @Mock
     private VerificacionCorreoService verificacionCorreoService;
 
+    @Mock
+    private ConfiguracionSistemaService configuracionSistemaService;
+
     @InjectMocks
     private AuthService authService;
 

@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ConfiguracionSistemaService, ParametroConfiguracion } from '../core/services/configuracion-sistema.service';
+import { DevolucionService } from '../core/services/devolucion.service';
 import { AuthService } from '../core/services/auth.service';
+import { TipoDano } from '../core/models/devoluciones.model';
 
 const VALOR_MAX_LENGTH = 200;
 
@@ -11,50 +13,84 @@ interface MetaParametro {
   icono: string;
   grupo: string;
   sufijo?: string;
+  tipo?: 'texto' | 'numero' | 'lista';
 }
 
-// Metadatos de presentacion por clave conocida (mockup 25-configuracion-
-// sistema-v2: tarjetas agrupadas por categoria). Las claves que no esten
-// aca caen en el grupo "Otros" mostrando la clave cruda.
 const METADATOS: Record<string, MetaParametro> = {
   dias_prestamo_default: {
     titulo: 'Días de préstamo por defecto',
     descripcion: 'Cuánto tiempo dura un préstamo antes de vencer',
     icono: 'calendar_month',
     grupo: 'Préstamos y reservas',
-    sufijo: 'días'
+    sufijo: 'días',
+    tipo: 'numero'
   },
   max_renovaciones_default: {
     titulo: 'Máximo de renovaciones',
     descripcion: 'Veces que un lector puede renovar el mismo préstamo',
     icono: 'autorenew',
     grupo: 'Préstamos y reservas',
-    sufijo: 'veces'
+    sufijo: 'veces',
+    tipo: 'numero'
+  },
+  max_prestamos_usuario: {
+    titulo: 'Máximo de préstamos simultáneos',
+    descripcion: 'Cantidad máxima de libros que un lector puede tener prestados al mismo tiempo',
+    icono: 'menu_book',
+    grupo: 'Préstamos y reservas',
+    sufijo: 'libros',
+    tipo: 'numero'
   },
   minutos_reserva: {
     titulo: 'Minutos para retirar una reserva',
     descripcion: 'Tiempo antes de que una reserva caduque automáticamente',
     icono: 'event_busy',
     grupo: 'Préstamos y reservas',
-    sufijo: 'min'
+    sufijo: 'min',
+    tipo: 'numero'
+  },
+  dias_anticipacion_vencimiento: {
+    titulo: 'Días de anticipación para recordatorio',
+    descripcion: 'Días antes del vencimiento para enviar notificación de recordatorio',
+    icono: 'notifications_active',
+    grupo: 'Notificaciones',
+    sufijo: 'días',
+    tipo: 'numero'
   },
   monto_multa_diaria: {
     titulo: 'Monto de multa por día de atraso',
     descripcion: 'Se cobra por cada día de retraso en la devolución',
     icono: 'payments',
     grupo: 'Multas',
-    sufijo: '$'
+    sufijo: '$',
+    tipo: 'numero'
   },
   max_tamano_portada_mb: {
     titulo: 'Tamaño máximo de portada',
     descripcion: 'Límite para las imágenes de portada subidas por el bibliotecario',
     icono: 'image',
     grupo: 'Archivos',
-    sufijo: 'MB'
+    sufijo: 'MB',
+    tipo: 'numero'
+  },
+  correo_dominios_permitidos: {
+    titulo: 'Dominios de correo permitidos',
+    descripcion: 'Dominios separados por coma. Si está vacío, se aceptan todos.',
+    icono: 'mail_lock',
+    grupo: 'Registro',
+    tipo: 'texto'
+  },
+  max_tamano_evidencia_mb: {
+    titulo: 'Tamaño máximo de evidencia',
+    descripcion: 'Límite para los archivos de evidencia de daño subidos por el bibliotecario',
+    icono: 'attach_file',
+    grupo: 'Archivos',
+    sufijo: 'MB',
+    tipo: 'numero'
   }
 };
 
-const ORDEN_GRUPOS = ['Préstamos y reservas', 'Multas', 'Archivos', 'Otros'];
+const ORDEN_GRUPOS = ['Préstamos y reservas', 'Notificaciones', 'Multas', 'Registro', 'Archivos', 'Otros'];
 
 interface GrupoParametros {
   nombre: string;
@@ -69,10 +105,6 @@ interface GrupoParametros {
 })
 export class ConfiguracionSistemaComponent implements OnInit {
   valorMaxLength = VALOR_MAX_LENGTH;
-
-  // El route guard (roleGuard('ADMIN')) ya bloquea la navegación directa
-  // por URL, pero este chequeo queda igual acá como defensa en profundidad
-  // por si el componente se instancia por otra vía (o el guard cambia).
   esAdmin: boolean = false;
 
   configuraciones: ParametroConfiguracion[] = [];
@@ -83,8 +115,16 @@ export class ConfiguracionSistemaComponent implements OnInit {
   claveEditando: string | null = null;
   valorEditando: string = '';
 
+  tiposDano: TipoDano[] = [];
+  cargandoTiposDano = false;
+  editandoTipoDano: TipoDano | null = null;
+  nuevoTipoDanoNombre = '';
+  nuevoTipoDanoPrecio: number | null = null;
+  errorMsgTiposDano = '';
+
   constructor(
     private configuracionService: ConfiguracionSistemaService,
+    private devolucionService: DevolucionService,
     private authService: AuthService
   ) {}
 
@@ -92,6 +132,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
     this.esAdmin = this.authService.hasRole('ADMIN');
     if (this.esAdmin) {
       this.cargarConfiguraciones();
+      this.cargarTiposDano();
     }
   }
 
@@ -144,6 +185,15 @@ export class ConfiguracionSistemaComponent implements OnInit {
     this.valorEditando = '';
   }
 
+  get puedeGuardarValor(): boolean {
+    const valor = this.valorEditando.trim();
+    return !!valor && valor.length <= this.valorMaxLength;
+  }
+
+  get puedeAgregarTipoDano(): boolean {
+    return !!this.nuevoTipoDanoNombre.trim() && this.nuevoTipoDanoPrecio !== null && this.nuevoTipoDanoPrecio >= 0;
+  }
+
   guardarValor(): void {
     if (!this.claveEditando) return;
     const valor = this.valorEditando.trim();
@@ -159,6 +209,51 @@ export class ConfiguracionSistemaComponent implements OnInit {
           ? 'No tenés permisos para modificar la configuración del sistema'
           : 'Error al actualizar el valor de configuración';
       }
+    });
+  }
+
+  private cargarTiposDano(): void {
+    this.cargandoTiposDano = true;
+    this.devolucionService.listarTiposDano().subscribe({
+      next: (data) => { this.tiposDano = data; this.cargandoTiposDano = false; },
+      error: () => { this.errorMsgTiposDano = 'Error al cargar tipos de daño'; this.cargandoTiposDano = false; }
+    });
+  }
+
+  iniciarEdicionTipoDano(tipo: TipoDano): void {
+    this.editandoTipoDano = { ...tipo };
+  }
+
+  cancelarEdicionTipoDano(): void {
+    this.editandoTipoDano = null;
+  }
+
+  guardarTipoDano(): void {
+    if (!this.editandoTipoDano) return;
+    const { id, nombre, precio } = this.editandoTipoDano;
+    if (!nombre?.trim() || precio == null || precio < 0) return;
+    this.devolucionService.actualizarTipoDano(id, nombre.trim(), precio).subscribe({
+      next: () => { this.cancelarEdicionTipoDano(); this.cargarTiposDano(); },
+      error: (err) => { this.errorMsgTiposDano = err.message; }
+    });
+  }
+
+  agregarTipoDano(): void {
+    if (!this.nuevoTipoDanoNombre.trim() || this.nuevoTipoDanoPrecio == null || this.nuevoTipoDanoPrecio < 0) return;
+    this.devolucionService.crearTipoDano(this.nuevoTipoDanoNombre.trim(), this.nuevoTipoDanoPrecio).subscribe({
+      next: () => {
+        this.nuevoTipoDanoNombre = '';
+        this.nuevoTipoDanoPrecio = null;
+        this.cargarTiposDano();
+      },
+      error: (err) => { this.errorMsgTiposDano = err.message; }
+    });
+  }
+
+  eliminarTipoDano(tipo: TipoDano): void {
+    this.devolucionService.eliminarTipoDano(tipo.id).subscribe({
+      next: () => this.cargarTiposDano(),
+      error: (err) => { this.errorMsgTiposDano = err.message; }
     });
   }
 }

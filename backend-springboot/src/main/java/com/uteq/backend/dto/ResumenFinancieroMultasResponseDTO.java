@@ -1,11 +1,11 @@
 package com.uteq.backend.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 
-// DTO de respuesta HTTP para fn_reporte_resumen_financiero_multas -- mismo
-// criterio que ReporteMorosidadResponseDTO: envuelve la proyección en vez
-// de exponerla directamente en la respuesta.
 public record ResumenFinancieroMultasResponseDTO(
         BigDecimal totalRecaudado,
-        BigDecimal totalPendiente
+        BigDecimal totalPendiente,
+        BigDecimal totalGeneradoHoy,
+        List<PagoRecienteDTO> pagosRecientes
 ) {}

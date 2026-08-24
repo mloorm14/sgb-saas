@@ -1,25 +1,23 @@
-<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
+﻿<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
 
   <div class="mb-lg flex flex-col md:flex-row md:items-end md:justify-between gap-sm">
     <div>
       <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">
-        {{ esLector ? 'Mis reservaciones' : 'Gestión de reservaciones' }}
+        {{ esLector ? 'Mis reservaciones' : 'Gestion de Reservaciones' }}
       </h1>
       <p class="font-body-sm text-body-sm text-on-surface-variant">
-        {{ esLector ? 'Para reservar un libro nuevo, buscalo en el catálogo' : 'Creá reservas y consultá las de cualquier usuario' }}
+        {{ esLector ? 'Para reservar un libro nuevo, buscalo en el catalogo' : 'Crea reservas y consulta las de cualquier usuario' }}
       </p>
     </div>
     @if (esLector) {
-      <a routerLink="/dashboard-lector/catalogo"
+      <a routerLink="/catalogo"
         class="inline-flex items-center gap-xs h-10 px-md rounded bg-primary text-on-primary font-label-md text-label-sm hover:bg-on-primary-fixed-variant self-start">
-        <span class="material-symbols-outlined text-[18px]">search</span> Ir al catálogo
+        <span class="material-symbols-outlined text-[18px]">search</span> Ir al catalogo
       </a>
     }
   </div>
 
   @if (esLector) {
-    <!-- Vista LECTOR (mockup 18): la creacion vive en el catalogo/detalle,
-         aca solo Pendientes de retiro + Historial -->
     @if (errorMsg) {
       <div class="rounded-lg bg-error-container text-on-error-container font-body-sm text-body-sm p-sm mb-lg">{{ errorMsg }}</div>
     }
@@ -30,9 +28,9 @@
     @if (!cargando && reservaciones.length === 0) {
       <div class="rounded-lg border border-dashed border-outline-variant bg-white p-xl text-center">
         <span class="material-symbols-outlined text-[40px] text-outline">event_available</span>
-        <p class="font-body-md text-body-md text-on-surface-variant mt-sm">No tenés reservaciones todavía.</p>
-        <a routerLink="/dashboard-lector/catalogo" class="inline-flex items-center gap-xs text-primary font-label-md text-label-sm hover:underline mt-xs">
-          Buscar en el catálogo <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+        <p class="font-body-md text-body-md text-on-surface-variant mt-sm">No tenes reservaciones todavia.</p>
+        <a routerLink="/catalogo" class="inline-flex items-center gap-xs text-primary font-label-md text-label-sm hover:underline mt-xs">
+          Buscar en el catalogo <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
         </a>
       </div>
     }
@@ -45,7 +43,7 @@
             <div class="rounded-lg border border-outline-variant bg-white p-md flex items-center justify-between">
               <div>
                 <p class="font-label-md text-label-sm text-on-surface">{{ tituloLibro(r.libroId) }}</p>
-                <p class="font-body-sm text-[12px] text-on-surface-variant mt-1">Reservado el {{ r.fechaReserva | date:'dd/MM' }} · Retirar antes del <strong class="text-warning">{{ r.fechaLimiteRetiro | date:'dd/MM/yyyy' }}</strong></p>
+                <p class="font-body-sm text-[12px] text-on-surface-variant mt-1">Reservado el {{ r.fechaReserva | date:'dd/MM' }} - Retirar antes del <strong class="text-warning">{{ r.fechaLimiteRetiro | date:'dd/MM/yyyy' }}</strong></p>
               </div>
               <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]" [class]="claseEstadoReservacion(r.estadoReservacionId)">
                 <span class="material-symbols-outlined text-[14px]">event_available</span> {{ estadosReservacion[r.estadoReservacionId] }}
@@ -55,7 +53,7 @@
         </div>
       }
 
-      @if (historial.length > 0) {
+      @if (historialLector.length > 0) {
         <h2 class="font-headline-md text-headline-md text-on-background mb-sm">Historial</h2>
         <div class="rounded-lg border border-outline-variant bg-white overflow-hidden mb-lg">
           <table class="w-full text-left">
@@ -67,7 +65,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-              @for (r of historial; track r.id) {
+              @for (r of historialLector; track r.id) {
                 <tr>
                   <td class="px-md py-sm">{{ tituloLibro(r.libroId) }}</td>
                   <td class="px-md py-sm text-on-surface-variant">{{ r.fechaReserva | date:'dd MMM yyyy' }}</td>
@@ -84,115 +82,267 @@
       }
     }
   } @else {
-    <!-- Modo GESTION (BIBLIOTECARIO/GERENTE): sin cambios, formulario
-         usuarioId/libroId manual + busqueda + tabla paginada -->
-    <div class="rounded-xl glass-panel p-lg mb-xl">
-      <h2 class="font-headline-md text-headline-md text-on-background mb-sm">Nueva reservación</h2>
-      @if (errorMsgCrear) {
-        <div class="rounded-lg bg-error-container text-on-error-container font-body-sm text-body-sm p-sm mb-md">{{ errorMsgCrear }}</div>
-      }
+    <!-- BIBLIOTECARIO/GERENTE: layout dos columnas -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
 
-      <form [formGroup]="formCrear" (ngSubmit)="crearReservacion()" class="flex flex-col md:flex-row items-start md:items-end gap-md">
-        <div>
-          <label class="block font-label-sm text-label-sm text-on-surface-variant mb-xs">Usuario ID</label>
-          <input formControlName="usuarioId" type="number"
-            class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:ring-0 focus:border-primary" />
-        </div>
-        <div>
-          <label class="block font-label-sm text-label-sm text-on-surface-variant mb-xs">Libro ID</label>
-          <input formControlName="libroId" type="number"
-            class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:ring-0 focus:border-primary" />
-        </div>
-        <button type="submit" [disabled]="formCrear.invalid"
-          class="h-10 px-md rounded bg-primary text-on-primary font-label-md text-label-sm hover:bg-on-primary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed">
-          Reservar
-        </button>
-      </form>
-    </div>
+      <!-- ═══ Columna izquierda: Nueva reservacion ═══ -->
+      <div class="lg:col-span-2">
+        <div class="rounded-xl border border-outline-variant bg-white p-lg">
+          <h2 class="font-headline-md text-headline-md text-on-background mb-lg flex items-center gap-sm">
+            <span class="material-symbols-outlined text-[22px] text-primary">add_circle</span>
+            Nueva reservacion
+          </h2>
 
-    <div class="flex flex-col md:flex-row items-start md:items-end gap-md mb-lg">
-      <div>
-        <label class="block font-label-sm text-label-sm text-on-surface-variant mb-xs">Ver reservaciones del usuario ID</label>
-        <input [(ngModel)]="usuarioIdBusqueda" [ngModelOptions]="{standalone: true}" type="number"
-          class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:ring-0 focus:border-primary" />
-      </div>
-      <button (click)="buscarReservaciones()"
-        class="h-10 px-md rounded border border-outline-variant text-on-surface font-label-md text-label-sm hover:bg-surface-container-low">
-        Buscar
-      </button>
-    </div>
+          <!-- Mensajes -->
+          @if (exitoMsg) {
+            <div class="rounded-lg bg-green-50 border border-green-200 text-green-700 font-body-sm text-body-sm p-sm mb-md flex items-center gap-sm">
+              <span class="material-symbols-outlined text-[18px]">check_circle</span>
+              {{ exitoMsg }}
+            </div>
+          }
+          @if (errorMsgAccion) {
+            <div class="rounded-lg bg-red-50 border border-red-200 text-red-700 font-body-sm text-body-sm p-sm mb-md flex items-center gap-sm">
+              <span class="material-symbols-outlined text-[18px]">error</span>
+              {{ errorMsgAccion }}
+            </div>
+          }
 
-    @if (errorMsg) {
-      <div class="rounded-lg bg-error-container text-on-error-container font-body-sm text-body-sm p-sm mb-lg">{{ errorMsg }}</div>
-    }
-    @if (cargando) {
-      <div class="text-center py-md font-body-sm text-body-sm text-on-surface-variant">Cargando reservaciones...</div>
-    }
+          <!-- Busqueda de correo -->
+          <div class="mb-lg">
+            <label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">Correo del usuario</label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] pointer-events-none">search</span>
+              <input
+                type="text"
+                [(ngModel)]="correoBusqueda"
+                (ngModelChange)="onInputCorreo()"
+                (keydown)="onKeydownCorreo($event)"
+                (focus)="onFocusCorreo()"
+                (blur)="onBlurCorreo()"
+                autocomplete="off"
+                [placeholder]="placeholderCorreo"
+                class="w-full h-11 pl-10 pr-4 rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" />
+            </div>
 
-    @if (!cargando && reservaciones.length > 0) {
-      <div class="rounded-lg border border-outline-variant bg-white overflow-hidden mb-lg">
-        <table class="w-full text-left">
-          <thead class="bg-surface-container-low">
-            <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
-              <th class="px-md py-sm">Libro</th>
-              <th class="px-md py-sm">Usuario</th>
-              <th class="px-md py-sm hidden sm:table-cell">Reservado</th>
-              <th class="px-md py-sm hidden sm:table-cell">Límite de retiro</th>
-              <th class="px-md py-sm">Estado</th>
-              <th class="px-md py-sm">Acciones</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-            @for (r of reservaciones; track r.id) {
-              <tr>
-                <td class="px-md py-sm">{{ tituloLibro(r.libroId) }}</td>
-                <td class="px-md py-sm text-on-surface-variant">{{ r.usuarioId }}</td>
-                <td class="px-md py-sm hidden sm:table-cell text-on-surface-variant">{{ r.fechaReserva | date:'dd MMM yyyy' }}</td>
-                <td class="px-md py-sm hidden sm:table-cell text-on-surface-variant">{{ r.fechaLimiteRetiro | date:'dd MMM yyyy' }}</td>
-                <td class="px-md py-sm">
-                  <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]" [class]="claseEstadoReservacion(r.estadoReservacionId)">
-                    {{ estadosReservacion[r.estadoReservacionId] }}
-                  </span>
-                </td>
-                <td class="px-md py-sm">
-                  @if (r.estadoReservacionId === 1) {
-                    <div class="flex items-center gap-xs">
-                      <button (click)="cambiarEstadoReservacion(r, 'LISTA_PARA_RETIRO')" [disabled]="accionandoId !== null"
-                        class="inline-flex items-center gap-xs h-8 px-sm rounded bg-primary text-on-primary font-label-md text-label-sm hover:bg-on-primary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span class="material-symbols-outlined text-[16px]">check</span> Aceptar
+            <!-- Dropdown sugerencias -->
+            @if (mostrarSugerenciasCorreo && sugerenciasCorreo.length > 0) {
+              <div class="mt-1 mb-8 relative z-20 max-w-4xl">
+                <ul class="bg-surface-container-lowest border border-outline-variant/50 rounded-2xl shadow-lg overflow-hidden">
+                  @for (sugerencia of sugerenciasCorreo; track sugerencia.id; let i = $index) {
+                    <li>
+                      <button type="button"
+                        (mousedown)="$event.preventDefault()"
+                        (click)="seleccionarSugerenciaCorreo(sugerencia)"
+                        class="w-full text-left px-6 py-4 hover:bg-surface-container-low flex items-center justify-between gap-3 transition-colors"
+                        [class.bg-surface-container-low]="i === indiceActivoCorreo">
+                        <div class="flex items-center gap-4">
+                          <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm border-2 border-white shadow-sm">
+                            {{ iniciales(sugerencia.nombreCompleto) }}
+                          </div>
+                          <div>
+                            <p class="font-semibold text-on-surface">{{ sugerencia.nombreCompleto }}</p>
+                            <p class="text-sm text-on-surface-variant">{{ sugerencia.correo }}</p>
+                          </div>
+                        </div>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                          [class]="claseEstadoCuenta(sugerencia.estadoCuenta)">
+                          {{ etiquetaEstadoCuenta(sugerencia.estadoCuenta) }}
+                        </span>
                       </button>
-                      <button (click)="cambiarEstadoReservacion(r, 'CANCELADA')" [disabled]="accionandoId !== null"
-                        class="inline-flex items-center gap-xs h-8 px-sm rounded border border-error text-error font-label-md text-label-sm hover:bg-error-container disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span class="material-symbols-outlined text-[16px]">close</span> Rechazar
-                      </button>
-                    </div>
-                  } @else {
-                    <span class="text-[12px] text-on-surface-variant">—</span>
+                    </li>
                   }
-                </td>
-              </tr>
+                </ul>
+              </div>
+            } @else if (mostrarSugerenciasCorreo && correoBusqueda.trim().length >= 2 && !buscandoSugerenciasCorreo) {
+              <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Sin coincidencias</p>
             }
-          </tbody>
-        </table>
-      </div>
-    }
-    @if (!cargando && reservaciones.length === 0) {
-      <div class="text-center py-lg font-body-sm text-body-sm text-on-surface-variant mb-lg">No hay reservaciones registradas</div>
-    }
 
-    @if (reservaciones.length > 0) {
-      <div class="flex justify-center items-center gap-md font-body-sm text-body-sm">
-        <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
-          class="px-sm h-8 rounded border border-outline-variant text-on-surface hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed">
-          ← Anterior
-        </button>
-        <span class="text-on-surface-variant">Página {{ currentPage + 1 }} de {{ totalPages }}</span>
-        <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
-          class="px-sm h-8 rounded border border-outline-variant text-on-surface hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed">
-          Siguiente →
-        </button>
+            @if (errorBusqueda) {
+              <div class="mt-sm rounded-lg bg-red-50 border border-red-200 text-red-700 font-body-sm text-body-sm p-sm flex items-center justify-between">
+                <span class="flex items-center gap-sm">
+                  <span class="material-symbols-outlined text-[16px]">error</span>
+                  {{ errorBusqueda }}
+                </span>
+                <button (click)="limpiarBusqueda()" class="text-red-600 hover:text-red-800 font-semibold text-sm cursor-pointer">Limpiar</button>
+              </div>
+            }
+          </div>
+
+          <!-- Tarjeta del usuario -->
+          @if (usuario) {
+            <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-5 mb-lg flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-lg border-2 border-white shadow-sm">
+                  {{ iniciales(usuario.nombreCompleto) }}
+                </div>
+                <h2 class="font-headline-md text-on-surface text-xl font-bold">{{ usuario.nombreCompleto }}</h2>
+              </div>
+              <div class="flex items-center gap-sm">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold"
+                  [class]="claseEstadoCuenta(usuario.estadoCuenta)">
+                  {{ etiquetaEstadoCuenta(usuario.estadoCuenta) }}
+                </span>
+                <span class="text-on-surface-variant font-body-sm text-[12px]">{{ usuario.cantidadReservasActivas }}/{{ usuario.limiteReservas }} Reservas activas</span>
+              </div>
+            </div>
+          }
+
+          <!-- Busqueda de libro -->
+          <div class="mb-lg">
+            <label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">Buscar libro</label>
+            <app-buscador-libro (libroSeleccionado)="onLibroSeleccionado($event)" />
+          </div>
+
+          <!-- Preview del libro seleccionado -->
+          @if (libroCompleto) {
+            <div class="flex gap-md p-md bg-surface-container-low rounded-lg border border-outline-variant/30 mb-lg">
+              <button type="button" (click)="abrirPortada(libroCompleto.id, libroCompleto.tienePortada)"
+                class="w-24 h-32 shrink-0 rounded-lg overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container flex items-center justify-center">
+                @if (libroCompleto.tienePortada) {
+                  <app-portada-libro [libroId]="libroCompleto.id" [tienePortada]="libroCompleto.tienePortada" />
+                } @else {
+                  <span class="material-symbols-outlined text-[40px] text-outline-variant">menu_book</span>
+                }
+              </button>
+              <div class="flex-1 min-w-0">
+                <h4 class="font-bold text-on-surface text-base mb-1">{{ libroCompleto.titulo }}</h4>
+                <p class="text-sm text-on-surface-variant mb-1">ISBN: {{ libroCompleto.isbn }}</p>
+                <p class="text-sm text-on-surface-variant mb-1">{{ libroCompleto.autores.length > 0 ? libroCompleto.autores.join(', ') : 'Autor desconocido' }}</p>
+                @if (libroCompleto.categorias.length > 0) {
+                  <div class="flex flex-wrap gap-1 mb-1">
+                    @for (cat of libroCompleto.categorias; track cat) {
+                      <span class="px-1.5 py-0.5 bg-surface-container border border-outline-variant/50 rounded text-[11px] font-medium text-on-surface-variant">{{ cat }}</span>
+                    }
+                  </div>
+                }
+                <div class="flex flex-wrap gap-x-3 text-sm text-on-surface-variant">
+                  <span>Ano: {{ libroCompleto.anioPublicacion }}</span>
+                  <span>Stock: {{ libroCompleto.stockDisponible }} disponibles</span>
+                </div>
+              </div>
+            </div>
+          } @else if (cargandoLibro) {
+            <div class="p-md bg-surface-container-low rounded-lg border border-outline-variant/30 mb-lg flex items-center gap-sm text-on-surface-variant font-body-sm text-body-sm">
+              <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+              Cargando datos del libro...
+            </div>
+          }
+
+          <!-- Fecha de retiro -->
+          <div class="mb-lg">
+            <label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">Fecha de retiro</label>
+            <div class="relative max-w-xs">
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] pointer-events-none">calendar_today</span>
+              <input
+                type="date"
+                [(ngModel)]="fechaRetiro"
+                [min]="minFechaRetiro"
+                class="w-full h-11 pl-10 pr-4 rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" />
+            </div>
+          </div>
+
+          <!-- Boton reservar -->
+          <button (click)="crearReservacion()"
+            [disabled]="!puedeReservar"
+            class="h-11 px-lg rounded-lg bg-primary text-on-primary font-label-md text-label-sm hover:bg-on-primary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-sm">
+            @if (creandoReservacion) {
+              <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+              Reservando...
+            } @else {
+              <span class="material-symbols-outlined text-[18px]">bookmark_add</span>
+              Reservar
+            }
+          </button>
+
+          <p class="mt-sm font-body-sm text-[12px] text-on-surface-variant flex items-center gap-xs">
+            <span class="material-symbols-outlined text-[14px]">info</span>
+            La reserva se cancelara automaticamente si no se retira en el dia pedido.
+          </p>
+        </div>
       </div>
-    }
+
+      <!-- ═══ Columna derecha: Historial del usuario ═══ -->
+      <div class="lg:col-span-1">
+        <div class="rounded-xl border border-outline-variant bg-white p-lg h-full">
+          <h2 class="font-headline-md text-headline-md text-on-background mb-lg flex items-center gap-sm">
+            <span class="material-symbols-outlined text-[22px] text-primary">history</span>
+            Historial del usuario
+          </h2>
+
+          @if (!usuario) {
+            <p class="text-center py-10 font-body-sm text-body-sm text-on-surface-variant">
+              Busca un usuario para ver su historial
+            </p>
+          } @else if (cargandoHistorial) {
+            <div class="text-center py-10">
+              <span class="material-symbols-outlined text-3xl text-primary animate-spin block mb-2">progress_activity</span>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando historial...</p>
+            </div>
+          } @else if (historial.length === 0) {
+            <div class="text-center py-10">
+              <span class="material-symbols-outlined text-[40px] text-outline-variant block mb-2">event_available</span>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">Este usuario no tiene reservaciones</p>
+            </div>
+          } @else {
+            <div class="space-y-md">
+              @for (r of historial; track r.reservacionId) {
+                <div class="rounded-lg border border-outline-variant/50 p-md">
+                  <div class="flex items-start justify-between mb-sm">
+                    <h4 class="font-label-md text-label-sm text-on-surface">{{ r.libroTitulo }}</h4>
+                    <span class="shrink-0 inline-flex items-center px-sm py-xs rounded-full font-label-sm text-[11px]"
+                      [class]="claseEstadoReservacionHistorial(r.estadoId)">
+                      {{ textoEstadoReservacion(r.estadoId) }}
+                    </span>
+                  </div>
+                  <div class="flex justify-between text-[12px] text-on-surface-variant">
+                    <div>
+                      <p class="uppercase tracking-wider font-semibold mb-0.5">Creada</p>
+                      <p>{{ formatearFecha(r.fechaReserva) }}</p>
+                    </div>
+                    <div class="text-right">
+                      @if (r.estadoId === 4) {
+                        <p class="uppercase tracking-wider font-semibold mb-0.5">Retiro esperado</p>
+                        <p class="text-red-600 line-through">{{ formatearFecha(r.fechaLimiteRetiro) }}</p>
+                      } @else {
+                        <p class="uppercase tracking-wider font-semibold mb-0.5">Retiro</p>
+                        <p>{{ formatearFecha(r.fechaLimiteRetiro) }}</p>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+    </div>
   }
 
 </main>
+
+<!-- Modal portada del libro -->
+@if (portadaModalVisible) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
+    (click)="cerrarPortada()">
+    <div class="absolute inset-0 bg-black/60"></div>
+    <div class="relative z-10 max-w-lg w-full bg-white rounded-xl shadow-xl overflow-hidden"
+      (click)="$event.stopPropagation()">
+      <div class="relative bg-surface-container-low flex items-center justify-center"
+        style="min-height: 300px; max-height: 70vh;">
+        @if (portadaModalCargando) {
+          <span class="material-symbols-outlined text-[48px] text-outline-variant animate-pulse">image</span>
+        } @else if (portadaModalUrl) {
+          <img [src]="portadaModalUrl" alt="Portada del libro"
+            class="max-w-full max-h-[70vh] object-contain" />
+        } @else {
+          <span class="material-symbols-outlined text-[64px] text-outline-variant">menu_book</span>
+        }
+      </div>
+      <button type="button" (click)="cerrarPortada()"
+        class="absolute top-sm right-sm w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 cursor-pointer">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+  </div>
+}

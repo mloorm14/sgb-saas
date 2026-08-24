@@ -10,6 +10,35 @@ export interface Multa {
   observaciones: string;
 }
 
+export interface MultaDetalle {
+  id: number;
+  prestamoId: number;
+  libroTitulo: string;
+  libroIsbn: string;
+  observaciones: string;
+  monto: number;
+  montoPagado: number;
+  saldo: number;
+  estadoMultaId: number;
+  estadoNombre: string;
+  fechaGenerada: string;
+  fechaPagada: string;
+  fechaPrestamoInicio: string;
+  fechaPrestamoFin: string;
+  diasAtraso: number;
+}
+
+export interface PagoMultaRequest {
+  montoPagado: number;
+}
+
+export interface PagoMultaResponse {
+  o_multa_id: number;
+  o_estado: string;
+  o_saldo_restante: number;
+  o_usuario_desbloqueado: boolean;
+}
+
 export interface AnulacionMultaRequest {
   motivo: string;
 }
@@ -23,4 +52,15 @@ export interface MultaAccionResponse {
 export interface ResumenFinancieroMultas {
   totalRecaudado: number;
   totalPendiente: number;
+  totalGeneradoHoy: number;
+  pagosRecientes: PagoReciente[];
+}
+
+export interface PagoReciente {
+  multaId: number;
+  montoPagado: number;
+  fechaPagada: string;
+  usuarioCorreo: string;
+  usuarioNombre: string;
+  libroTitulo: string;
 }

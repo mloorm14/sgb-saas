@@ -27,6 +27,7 @@ import { AuditoriaComponent } from './admin/auditoria/auditoria.component';
 import { DashboardGerenteAdminComponent } from './dashboard-gerente-admin/dashboard-gerente-admin.component';
 import { DashboardLectorComponent } from './dashboard-lector/dashboard-lector.component';
 import { MiCredencialComponent } from './mi-credencial/mi-credencial.component';
+import { DevolucionesComponent } from './devoluciones/devoluciones.component';
 
 // Los roleGuard de abajo reflejan los @PreAuthorize reales de cada
 // controller en backend-springboot (verificado en el codigo, no asumido):
@@ -78,15 +79,12 @@ export const routes: Routes = [
       { path: 'libros', component: LibrosComponent },
       { path: 'prestamos/gestion', component: PrestamosGestionComponent },
       { path: 'reservaciones', component: ReservacionesComponent },
+      { path: 'devoluciones', component: DevolucionesComponent },
       { path: 'multas', component: MultasComponent },
       { path: 'reportes', component: ReportesComponent },
     ]
   },
-  // Panel GERENTE/ADMIN (layout con sidebar, mismo patron que Cajas):
-  // rutas hijas anidadas bajo /dashboard-admin. Los enlaces del sidebar se
-  // filtran por rol segun los @PreAuthorize reales (ver componente); aca
-  // los roleGuard de refuerzo bloquean por URL lo que el rol no puede:
-  // configuracion es solo ADMIN y reportes no admite ADMIN.
+  // Panel ADMIN/GERENTE (sidebar con rutas anidadas):
   {
     path: 'dashboard-admin',
     component: DashboardGerenteAdminComponent,
@@ -104,13 +102,7 @@ export const routes: Routes = [
       { path: 'admin/configuracion', component: ConfiguracionSistemaComponent, canActivate: [roleGuard(['ADMIN'])] },
     ]
   },
-  // TODO(defensa): las rutas planas de abajo siguen vivas para no romper
-  // enlaces existentes; una vez integrado /dashboard-admin conviene
-  // redirigirlas (redirectTo) hacia su equivalente anidada y borrar los
-  // duplicados. No se tocan en este cambio.
-  // Panel LECTOR (mismo patron de sidebar): agrupa las rutas de consumidor
-  // ya existentes (catalogo, prestamos, reservaciones, multas, favoritos,
-  // sugerencias, notificaciones) bajo /dashboard-lector.
+  // Panel LECTOR (sidebar con rutas anidadas):
   {
     path: 'dashboard-lector',
     component: DashboardLectorComponent,
@@ -129,7 +121,6 @@ export const routes: Routes = [
       { path: 'mi-credencial', component: MiCredencialComponent },
     ]
   },
-  // Rama B (frontend/estudiante-catalogo-social): las 5 rutas del
   // consumidor son 100% LECTOR — verificado en FavoritoController.java y
   // SugerenciaAdquisicionController.java (los endpoints de favoritos y de
   // sugerencias/adquisicion son @PreAuthorize hasRole('LECTOR'); las

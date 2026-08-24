@@ -32,6 +32,12 @@ export class DashboardGerenteAdminComponent {
   //   no tiene endpoints ahi, por eso no se le muestra el enlace.
   secciones: SeccionSidebar[] = [
     {
+      titulo: 'INICIO',
+      enlaces: [
+        { ruta: '/dashboard-admin', etiqueta: 'Inicio', icono: 'home', roles: ['GERENTE', 'ADMIN'] },
+      ]
+    },
+    {
        titulo: 'GESTIÓN',
       enlaces: [
         { ruta: '/dashboard-admin/libros', etiqueta: 'Libros', icono: 'inventory_2', roles: ['GERENTE', 'ADMIN'] },
@@ -39,7 +45,7 @@ export class DashboardGerenteAdminComponent {
         { ruta: '/dashboard-admin/reservaciones', etiqueta: 'Reservaciones', icono: 'event_available', roles: ['GERENTE', 'ADMIN'] },
         { ruta: '/dashboard-admin/multas', etiqueta: 'Multas', icono: 'payments', roles: ['GERENTE', 'ADMIN'] },
         { ruta: '/dashboard-admin/sugerencias/gestion', etiqueta: 'Sugerencias', icono: 'lightbulb', roles: ['GERENTE', 'ADMIN'] },
-        { ruta: '/dashboard-admin/admin/usuarios', etiqueta: 'Usuarios', icono: 'manage_accounts', roles: ['GERENTE', 'ADMIN'] },
+        { ruta: '/dashboard-admin/admin/usuarios', etiqueta: 'Usuarios', icono: 'manage_accounts', roles: ['ADMIN'] },
       ]
     },
     {
@@ -85,8 +91,6 @@ export class DashboardGerenteAdminComponent {
 
   cerrarSesion(): void {
     this.mostrarMenuUsuario = false;
-    if (confirm('¿Seguro que querés cerrar sesión?')) {
-      this.authService.logout();
-    }
+    this.authService.logout();
   }
 }

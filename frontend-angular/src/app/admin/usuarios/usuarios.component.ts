@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { UsuarioAdminService } from '../../core/services/usuario-admin.service';
 import { UsuarioAdmin } from '../../core/models/usuario-admin.model';
+import { BuscadorUsuarioComponent } from '../../shared/buscador-usuario/buscador-usuario.component';
 
 // Catálogo real de roles y estados_usuario (db/seed.sql). El backend no
 // valida estos valores contra un enum en el DTO (el catálogo vive en las
@@ -22,7 +23,7 @@ const ESTADO_LABEL: Record<string, string> = {
 @Component({
   selector: 'app-usuarios',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BuscadorUsuarioComponent],
   templateUrl: './usuarios.component.html'
 })
 export class UsuariosComponent implements OnInit {
@@ -70,6 +71,11 @@ export class UsuariosComponent implements OnInit {
   buscarUsuarios(): void {
     this.currentPage = 0;
     this.cargarPagina();
+  }
+
+  onBuscarAhora(texto: string): void {
+    this.filtro = texto;
+    this.buscarUsuarios();
   }
 
   // Se llama desde el template (paginacion numerada) -> no private.

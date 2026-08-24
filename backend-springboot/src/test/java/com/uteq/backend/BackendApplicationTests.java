@@ -1,147 +1,34 @@
 package com.uteq.backend;
 
-import com.uteq.backend.repository.AutorRepository;
-import com.uteq.backend.repository.BaseConocimientoRepository;
-import com.uteq.backend.repository.BitacoraAuditoriaRepository;
-import com.uteq.backend.repository.CategoriaRepository;
-import com.uteq.backend.repository.ConfiguracionSistemaRepository;
-import com.uteq.backend.repository.EditorialRepository;
-import com.uteq.backend.repository.EstadoLibroRepository;
-import com.uteq.backend.repository.EstadoPrestamoRepository;
-import com.uteq.backend.repository.EstadoReservacionRepository;
-import com.uteq.backend.repository.EstadoUsuarioRepository;
-import com.uteq.backend.repository.FavoritoRepository;
-import com.uteq.backend.repository.IdiomaRepository;
-import com.uteq.backend.repository.LibroRepository;
-import com.uteq.backend.repository.MensajeChatRepository;
-import com.uteq.backend.repository.MultaProcedureRepository;
-import com.uteq.backend.repository.MultaRepository;
-import com.uteq.backend.repository.NotificacionRepository;
-import com.uteq.backend.repository.PrestamoProcedureRepository;
-import com.uteq.backend.repository.PrestamoRepository;
-import com.uteq.backend.repository.ReservacionProcedureRepository;
-import com.uteq.backend.repository.ReservacionRepository;
-import com.uteq.backend.repository.RolRepository;
-import com.uteq.backend.repository.SesionChatRepository;
-import com.uteq.backend.repository.SugerenciaAdquisicionRepository;
-import com.uteq.backend.repository.TipoNotificacionRepository;
-import com.uteq.backend.repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+/**
+ * Verifica que el contexto de Spring carga correctamente.
+ *
+ * Usa perfil "test" con H2 en memoria (application-test.yml) para que
+ * DataJpaRepositoriesAutoConfiguration cree todos los JpaRepository
+ * automáticamente, eliminando la necesidad de agregar un @MockitoBean
+ * por cada repositorio nuevo.
+ *
+ * Redis se excluye porque no hay servidor Redis en el entorno de test;
+ * solo se mockea RedisConnectionFactory.
+ */
 @SpringBootTest(properties = {
         "spring.autoconfigure.exclude=" +
-                "org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration," +
-                "org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration," +
-                "org.springframework.boot.data.jpa.autoconfigure.DataJpaRepositoriesAutoConfiguration," +
-                "org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration," +
                 "org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration," +
-                "org.springframework.boot.data.redis.autoconfigure.DataRedisReactiveAutoConfiguration"
+                "org.springframework.boot.data.redis.autoconfigure.DataRedisRepositoriesAutoConfiguration," +
+                "org.springframework.boot.data.redis.autoconfigure.DataRedisReactiveAutoConfiguration," +
+                "org.springframework.boot.data.redis.autoconfigure.health.DataRedisReactiveHealthContributorAutoConfiguration"
 })
+@ActiveProfiles("test")
 class BackendApplicationTests {
 
     @MockitoBean
     private RedisConnectionFactory redisConnectionFactory;
-
-    @MockitoBean
-    private UsuarioRepository usuarioRepository;
-
-    @MockitoBean
-    private LibroRepository libroRepository;
-
-    @MockitoBean
-    private EditorialRepository editorialRepository;
-
-    @MockitoBean
-    private IdiomaRepository idiomaRepository;
-
-    @MockitoBean
-    private EstadoLibroRepository estadoLibroRepository;
-
-    @MockitoBean
-    private RolRepository rolRepository;
-
-    @MockitoBean
-    private EstadoUsuarioRepository estadoUsuarioRepository;
-
-    // ── Repositories del módulo Préstamos/Reservaciones/Multas ──
-    // (agregados junto con feature/prestamos-backend; sin estos mocks el
-    // contexto no carga porque DataJpaRepositoriesAutoConfiguration está
-    // excluido arriba y no hay bean real para ningún JpaRepository/Repository).
-    @MockitoBean
-    private PrestamoRepository prestamoRepository;
-
-    @MockitoBean
-    private PrestamoProcedureRepository prestamoProcedureRepository;
-
-    @MockitoBean
-    private EstadoPrestamoRepository estadoPrestamoRepository;
-
-    @MockitoBean
-    private ReservacionRepository reservacionRepository;
-
-    @MockitoBean
-    private ReservacionProcedureRepository reservacionProcedureRepository;
-
-    @MockitoBean
-    private EstadoReservacionRepository estadoReservacionRepository;
-
-    @MockitoBean
-    private MultaRepository multaRepository;
-
-    @MockitoBean
-    private MultaProcedureRepository multaProcedureRepository;
-
-    // OWASP A09 (Bloque C.2): AuthService.registrarAuditoria() ahora
-    // depende de este repositorio -- mismo motivo que el resto de mocks de
-    // esta clase, DataJpaRepositoriesAutoConfiguration sigue excluido.
-    @MockitoBean
-    private BitacoraAuditoriaRepository bitacoraAuditoriaRepository;
-
-    @MockitoBean
-    private ConfiguracionSistemaRepository configuracionSistemaRepository;
-
-    // Módulo 2 (notificaciones): NotificacionService depende de estos dos
-    // -- mismo motivo que el resto de mocks de esta clase
-    // (DataJpaRepositoriesAutoConfiguration sigue excluido arriba, así que
-    // cualquier JpaRepository nuevo sin @MockitoBean rompe contextLoads()
-    // con "No qualifying bean of type ...").
-    @MockitoBean
-    private NotificacionRepository notificacionRepository;
-
-    @MockitoBean
-    private TipoNotificacionRepository tipoNotificacionRepository;
-
-    // Módulo H (chatbot): ChatbotService depende de estos 3 repositorios --
-    // mismo motivo que el resto de mocks de esta clase
-    // (DataJpaRepositoriesAutoConfiguration sigue excluido arriba, así que
-    // cualquier JpaRepository nuevo sin @MockitoBean rompe contextLoads()
-    // con "No qualifying bean of type ...").
-    @MockitoBean
-    private SesionChatRepository sesionChatRepository;
-
-    @MockitoBean
-    private MensajeChatRepository mensajeChatRepository;
-
-    @MockitoBean
-    private BaseConocimientoRepository baseConocimientoRepository;
-
-    // Módulo 3 (catálogo avanzado): favoritos, autores/categorías expuestos
-    // y sugerencias de adquisición -- mismo motivo que el resto de mocks de
-    // esta clase (DataJpaRepositoriesAutoConfiguration sigue excluido arriba).
-    @MockitoBean
-    private AutorRepository autorRepository;
-
-    @MockitoBean
-    private CategoriaRepository categoriaRepository;
-
-    @MockitoBean
-    private FavoritoRepository favoritoRepository;
-
-    @MockitoBean
-    private SugerenciaAdquisicionRepository sugerenciaAdquisicionRepository;
 
     @Test
     void contextLoads() {

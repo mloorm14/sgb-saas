@@ -67,14 +67,11 @@ export class DashboardLectorComponent {
     if (this.authService.hasRole('ADMIN')) return 'Administrador';
     if (this.authService.hasRole('GERENTE')) return 'Gerente';
     if (this.authService.hasRole('BIBLIOTECARIO')) return 'Bibliotecario';
-    if (this.authService.hasRole('LECTOR')) return 'Lector';
     return '';
   }
 
   cerrarSesion(): void {
     this.mostrarMenuUsuario = false;
-    if (confirm('¿Seguro que querés cerrar sesión?')) {
-      this.authService.logout();
-    }
+    this.authService.logout();
   }
 }

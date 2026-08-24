@@ -23,14 +23,28 @@
     <p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl mx-auto">Buscá entre todos los libros disponibles. Para reservar, guardar favoritos o usar el asistente, creá una cuenta gratis.</p>
   </div>
 
-  <!-- Buscador predictivo (LibroPublicoService.sugerencias, minimo 2 caracteres) -->
-  <div class="max-w-xl mx-auto mb-xl">
-    <div class="rounded border border-outline-variant bg-white flex items-center px-sm glass-panel">
-      <span class="material-symbols-outlined text-outline text-[20px] mr-xs">search</span>
-      <input type="text" placeholder="Buscar por título, autor o categoría..."
-        [(ngModel)]="textoBusqueda"
-        (ngModelChange)="onBusquedaChange()"
-        class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-md text-body-md text-on-surface placeholder-outline" />
+  <!-- Buscador predictivo + filtro por categoría -->
+  <div class="max-w-3xl mx-auto mb-xl">
+    <div class="flex gap-sm items-stretch">
+      <div class="flex-1 rounded border border-outline-variant bg-white flex items-center px-sm glass-panel">
+        <span class="material-symbols-outlined text-outline text-[20px] mr-xs">search</span>
+        <input type="text" placeholder="Buscar por título..."
+          [(ngModel)]="textoBusqueda"
+          (ngModelChange)="onBusquedaChange()"
+          (keyup.enter)="buscarPorNombre()"
+          class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-md text-body-md text-on-surface placeholder-outline" />
+      </div>
+      <select (change)="onCategoriaChange($any($event.target).value ? +$any($event.target).value : null)"
+        class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface cursor-pointer">
+        <option [value]="''">Todas las categorías</option>
+        @for (cat of categorias; track cat.id) {
+          <option [value]="cat.id">{{ cat.nombre }}</option>
+        }
+      </select>
+      <button (click)="buscarPorNombre()"
+        class="h-10 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center gap-xs cursor-pointer shrink-0">
+        <span class="material-symbols-outlined text-[18px]">search</span> Buscar
+      </button>
     </div>
     @if (sugerencias.length > 0) {
       <div class="relative">
@@ -81,7 +95,9 @@
           class="rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow">
           <div class="aspect-[3/4] bg-surface-container-low overflow-hidden">
             @if (libro.tienePortada) {
-              <img [src]="portadaUrl(libro.id)" [alt]="'Portada de ' + libro.titulo" class="w-full h-full object-cover" />
+              <img [src]="portadaUrl(libro.id)" [alt]="'Portada de ' + libro.titulo"
+                (error)="libro.tienePortada = false"
+                class="w-full h-full object-cover" />
             } @else {
               <div class="w-full h-full flex items-center justify-center">
                 <span class="material-symbols-outlined text-outline-variant text-[48px]">menu_book</span>

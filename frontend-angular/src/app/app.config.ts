@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { routes } from './app.routes';
 import { jwtInterceptor } from './core/interceptors/jwt.interceptor';
+import { loaderInterceptor } from './core/interceptors/loader.interceptor';
 import { AuthService } from './core/services/auth.service';
 
 function inicializarSesion(authService: AuthService): () => Promise<boolean> {
@@ -17,7 +18,7 @@ function inicializarSesion(authService: AuthService): () => Promise<boolean> {
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
-    provideHttpClient(withInterceptors([jwtInterceptor])),
+    provideHttpClient(withInterceptors([jwtInterceptor, loaderInterceptor])),
     {
       provide: APP_INITIALIZER,
       useFactory: inicializarSesion,

@@ -31,19 +31,20 @@ describe('DashboardBibliotecarioComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('debería mostrar las secciones GESTIÓN y SISTEMA', () => {
+  it('debería mostrar la sección GESTIÓN y ocultar SISTEMA para el rol bibliotecario', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('GESTIÓN');
-    expect(compiled.textContent).toContain('SISTEMA');
+    expect(compiled.textContent).not.toContain('SISTEMA');
   });
 
-  it('debería mostrar los enlaces de navegación del sidebar', () => {
+  it('debería mostrar los enlaces de navegación del sidebar para bibliotecario', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('Libros');
     expect(compiled.textContent).toContain('Préstamos');
     expect(compiled.textContent).toContain('Reservaciones');
+    expect(compiled.textContent).toContain('Devoluciones');
     expect(compiled.textContent).toContain('Multas');
-    expect(compiled.textContent).toContain('Reportes');
+    expect(compiled.textContent).not.toContain('Reportes');
   });
 
   it('debería mostrar el correo del usuario', () => {

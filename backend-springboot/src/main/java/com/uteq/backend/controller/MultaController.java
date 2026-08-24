@@ -2,9 +2,12 @@ package com.uteq.backend.controller;
 
 import com.uteq.backend.dto.AnulacionMultaRequestDTO;
 import com.uteq.backend.dto.MultaAccionResponseDTO;
+import com.uteq.backend.dto.MultaDetalleResponseDTO;
 import com.uteq.backend.dto.MultaResponseDTO;
+import com.uteq.backend.dto.PagoMultaRequestDTO;
 import com.uteq.backend.dto.ResumenFinancieroMultasResponseDTO;
 import com.uteq.backend.service.MultaService;
+import com.uteq.backend.service.NotificacionService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,21 +18,24 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/multas")
 public class MultaController {
 
     private final MultaService multaService;
+    private final NotificacionService notificacionService;
 
-    public MultaController(MultaService multaService) {
+    public MultaController(MultaService multaService, NotificacionService notificacionService) {
         this.multaService = multaService;
+        this.notificacionService = notificacionService;
     }
 
-    // ── GET /api/v1/multas/usuario/{usuarioId} ────────────
     @GetMapping("/usuario/{usuarioId}")
-    @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<Page<MultaResponseDTO>> listarPorUsuario(
             @PathVariable Long usuarioId,
             Authentication authentication,
@@ -38,14 +44,41 @@ public class MultaController {
                 multaService.listarPorUsuario(usuarioId, authentication, pageable));
     }
 
-    // ── POST /api/v1/multas/{id}/pago ─────────────────────
-    @PostMapping("/{id}/pago")
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
-    public ResponseEntity<MultaAccionResponseDTO> pagar(@PathVariable Long id) {
-        return ResponseEntity.ok(multaService.pagar(id));
+    @GetMapping("/usuario/{usuarioId}/detalle")
+    @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')")
+    public ResponseEntity<Page<MultaDetalleResponseDTO>> listarDetallePorUsuario(
+            @PathVariable Long usuarioId,
+            Authentication authentication,
+            @PageableDefault(size = 10, sort = "estadoMultaId") Pageable pageable) {
+        return ResponseEntity.ok(
+                multaService.listarDetallePorUsuario(usuarioId, authentication, pageable));
     }
 
-    // ── POST /api/v1/multas/{id}/anulacion ────────────────
+    @PostMapping("/{id}/pago")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    public ResponseEntity<Map<String, Object>> pagar(
+            @PathVariable Long id,
+            @RequestBody(required = false) PagoMultaRequestDTO body) {
+        BigDecimal montoPagado = body != null ? body.montoPagado() : null;
+
+        Map<String, Object> resultado;
+        if (montoPagado != null) {
+            resultado = multaService.pagoParcial(id, montoPagado);
+        } else {
+            var accion = multaService.pagar(id);
+            resultado = Map.of(
+                    "o_multa_id", accion.multaId(),
+                    "o_usuario_desbloqueado", accion.usuarioDesbloqueado(),
+                    "o_estado", "PAGADA",
+                    "o_saldo_restante", BigDecimal.ZERO);
+        }
+
+        Long usuarioId = multaService.resolverUsuarioIdDeMulta(id);
+        notificacionService.notificarComprobantePago(usuarioId, id, montoPagado);
+
+        return ResponseEntity.ok(resultado);
+    }
+
     @PostMapping("/{id}/anulacion")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<MultaAccionResponseDTO> anular(
@@ -55,19 +88,6 @@ public class MultaController {
         return ResponseEntity.ok(multaService.anular(id, dto.motivo(), authentication));
     }
 
-    // ── GET /api/v1/multas/reportes/resumen-financiero?desde=&hasta= ──
-    // GERENTE/ADMIN (no BIBLIOTECARIO): datos financieros agregados de toda
-    // la biblioteca, mismo criterio de sensibilidad que anular() arriba y
-    // que AuditoriaController. A diferencia de PrestamoController.reportes/*
-    // (BIBLIOTECARIO/GERENTE, no ADMIN -- decisión previa y deliberada, ver
-    // comentario en PrestamoController.reporteMorosidad), este reporte SÍ
-    // incluye ADMIN a propósito, pedido explícito del dashboard
-    // GERENTE/ADMIN de Cajas. No se amplió el roleGuard de
-    // /dashboard-gerente en el frontend a ADMIN todavía porque esa pantalla
-    // también depende de /reportes/libros-mas-prestados y
-    // /reportes/morosidad, que siguen sin incluir ADMIN -- ampliar el guard
-    // ahora dejaría 2 de 4 widgets rotos (403) para un usuario ADMIN real;
-    // queda como seguimiento si se decide ampliar esos 2 endpoints también.
     @GetMapping("/reportes/resumen-financiero")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<ResumenFinancieroMultasResponseDTO> reporteResumenFinanciero(

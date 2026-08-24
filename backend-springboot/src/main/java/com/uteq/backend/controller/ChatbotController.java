@@ -1,9 +1,9 @@
 package com.uteq.backend.controller;
 
+import com.uteq.backend.chatbot.ChatbotOrchestrator;
 import com.uteq.backend.dto.MensajeChatHistorialDTO;
 import com.uteq.backend.dto.MensajeChatRequestDTO;
 import com.uteq.backend.dto.MensajeChatResponseDTO;
-import com.uteq.backend.service.ChatbotService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -24,30 +24,28 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Asistente virtual (Módulo H, chatbot con Gemini). Restringido SOLO a
- * LECTOR a propósito: es el actor descrito para el chatbot en el roadmap
- * (un lector preguntando por horarios, multas, disponibilidad y reservas);
- * BIBLIOTECARIO/GERENTE/ADMIN no lo usan en esta fase y no tienen por qué
- * gastar cuota de la API ni aparecer en este endpoint.
+ * Asistente virtual (Módulo H, chatbot con Gemini + function calling).
+ * Restringido SOLO a LECTOR. Usa {@link ChatbotOrchestrator} que gestiona
+ * el loop de function calling (Gemini → tool → resultado → Gemini → respuesta final).
  */
 @RestController
 @RequestMapping("/api/v1/chatbot")
 @Validated
-@Tag(name = "Chatbot", description = "Asistente virtual con Gemini (Módulo H), solo LECTOR")
+@Tag(name = "Chatbot", description = "Asistente virtual con Gemini + function calling (Módulo H), solo LECTOR")
 public class ChatbotController {
 
-    private final ChatbotService chatbotService;
+    private final ChatbotOrchestrator chatbotOrchestrator;
 
-    public ChatbotController(ChatbotService chatbotService) {
-        this.chatbotService = chatbotService;
+    public ChatbotController(ChatbotOrchestrator chatbotOrchestrator) {
+        this.chatbotOrchestrator = chatbotOrchestrator;
     }
 
     // ── POST /api/v1/chatbot/mensajes ──────────────────────
     @PostMapping("/mensajes")
     @PreAuthorize("hasRole('LECTOR')")
     @Operation(summary = "Enviar mensaje al asistente",
-            description = "Persiste el mensaje del LECTOR, lo envía a Gemini con grounding real "
-                    + "(base de conocimiento + disponibilidad de libros) y devuelve la respuesta del asistente. "
+            description = "Persiste el mensaje del LECTOR, lo envía a Gemini con function calling "
+                    + "(herramientas reales que consultan la BD) y devuelve la respuesta del asistente. "
                     + "Si sesionId es null se crea una sesión nueva; si viene poblado debe ser del propio usuario.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Respuesta del asistente"),
@@ -58,7 +56,7 @@ public class ChatbotController {
     })
     public ResponseEntity<MensajeChatResponseDTO> enviarMensaje(
             @Valid @RequestBody MensajeChatRequestDTO dto, Authentication authentication) {
-        return ResponseEntity.ok(chatbotService.enviarMensaje(dto, authentication));
+        return ResponseEntity.ok(chatbotOrchestrator.enviarMensaje(dto, authentication));
     }
 
     // ── GET /api/v1/chatbot/sesiones/{id}/historial ────────
@@ -74,6 +72,6 @@ public class ChatbotController {
     })
     public ResponseEntity<List<MensajeChatHistorialDTO>> historial(
             @PathVariable UUID id, Authentication authentication) {
-        return ResponseEntity.ok(chatbotService.obtenerHistorial(id, authentication));
+        return ResponseEntity.ok(chatbotOrchestrator.obtenerHistorial(id, authentication));
     }
 }

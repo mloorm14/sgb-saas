@@ -2,6 +2,8 @@ import { Component, HostListener } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 import { filter } from 'rxjs/operators';
+import { ChatbotWidgetComponent } from './shared/chatbot-widget/chatbot-widget.component';
+import { LoaderComponent } from './shared/loader/loader.component';
 
 interface EnlaceNav {
   ruta: string;
@@ -13,7 +15,7 @@ interface EnlaceNav {
 
 @Component({
     selector: 'app-root',
-    imports: [RouterOutlet, RouterLink, RouterLinkActive],
+    imports: [RouterOutlet, RouterLink, RouterLinkActive, ChatbotWidgetComponent, LoaderComponent],
     templateUrl: './app.component.html',
     styleUrl: './app.component.scss'
 })
@@ -88,7 +90,7 @@ export class AppComponent {
     { ruta: '/multas', etiqueta: 'Multas', icono: 'payments', roles: ['BIBLIOTECARIO', 'GERENTE'] },
     { ruta: '/reportes', etiqueta: 'Reportes', icono: 'bar_chart', roles: ['BIBLIOTECARIO', 'GERENTE'] },
     { ruta: '/sugerencias/gestion', etiqueta: 'Sugerencias', icono: 'lightbulb', roles: ['GERENTE', 'ADMIN'] },
-    { ruta: '/admin/usuarios', etiqueta: 'Usuarios', icono: 'manage_accounts', roles: ['GERENTE', 'ADMIN'] },
+    { ruta: '/admin/usuarios', etiqueta: 'Usuarios', icono: 'manage_accounts', roles: ['ADMIN'] },
     { ruta: '/auditoria', etiqueta: 'Auditoría', icono: 'receipt_long', roles: ['GERENTE', 'ADMIN'] },
     { ruta: '/admin/configuracion', etiqueta: 'Configuración', icono: 'settings', roles: ['ADMIN'] },
     { ruta: '/dashboard-gerente', etiqueta: 'Dashboard', icono: 'dashboard', roles: ['GERENTE'] }

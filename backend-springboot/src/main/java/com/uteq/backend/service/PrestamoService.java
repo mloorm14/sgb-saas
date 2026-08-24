@@ -1,13 +1,17 @@
 package com.uteq.backend.service;
 
 import com.uteq.backend.dto.DevolucionResponseDTO;
+import com.uteq.backend.dto.LibroMasPrestadoDetalladoResponseDTO;
 import com.uteq.backend.dto.LibroMasPrestadoResponseDTO;
 import com.uteq.backend.dto.PrestamoActivoResponseDTO;
 import com.uteq.backend.dto.PrestamoRequestDTO;
 import com.uteq.backend.dto.PrestamoResponseDTO;
 import com.uteq.backend.dto.RenovacionResponseDTO;
+import com.uteq.backend.dto.ReporteCategoriasDemandadasResponseDTO;
+import com.uteq.backend.dto.ReporteInventarioResponseDTO;
 import com.uteq.backend.dto.ReporteMorosidadResponseDTO;
 import com.uteq.backend.dto.ReporteUsoPorPeriodoResponseDTO;
+import com.uteq.backend.dto.ReporteVencidosResponseDTO;
 import com.uteq.backend.entity.EstadoPrestamo;
 import com.uteq.backend.entity.Prestamo;
 import com.uteq.backend.entity.Reservacion;
@@ -18,10 +22,14 @@ import com.uteq.backend.repository.PrestamoProcedureRepository;
 import com.uteq.backend.repository.PrestamoRepository;
 import com.uteq.backend.repository.ReservacionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.repository.projection.LibroMasPrestadoDetalladoProjection;
 import com.uteq.backend.repository.projection.LibroMasPrestadoProjection;
 import com.uteq.backend.repository.projection.PrestamoActivoProjection;
+import com.uteq.backend.repository.projection.ReporteCategoriasDemandadasProjection;
+import com.uteq.backend.repository.projection.ReporteInventarioProjection;
 import com.uteq.backend.repository.projection.ReporteMorosidadProjection;
 import com.uteq.backend.repository.projection.ReporteUsoPorPeriodoProjection;
+import com.uteq.backend.repository.projection.ReporteVencidosProjection;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 
@@ -89,6 +98,9 @@ public class PrestamoService {
     public PrestamoResponseDTO crear(PrestamoRequestDTO dto, Authentication authentication) {
         Long usuarioId = resolverUsuarioId(dto);
         Long bibliotecarioId = resolverIdPorCorreo(authentication.getName());
+
+        validarLimitePrestamos(usuarioId);
+
         // Ventanilla: si el préstamo nace de una reserva, se valida ANTES de
         // tocar stock (falla rápido, sin efectos secundarios) y se vincula
         // DESPUÉS del SP -- sp_crear_prestamo no conoce reservaciones (no
@@ -289,7 +301,7 @@ public class PrestamoService {
     @Transactional(readOnly = true)
     public List<PrestamoActivoResponseDTO> listarActivosPorUsuario(Long usuarioId, Authentication authentication) {
         validarAccesoUsuario(usuarioId, authentication);
-        return prestamoProcRepo.fnListarPrestamosActivosPorUsuario(usuarioId).stream()
+        return prestamoRepo.findActivosByUsuarioId(usuarioId).stream()
                 .map(this::toDTO)
                 .toList();
     }
@@ -390,8 +402,8 @@ public class PrestamoService {
                 p.getPrestamoId(),
                 p.getLibroTitulo(),
                 p.getLibroIsbn(),
-                p.getFechaPrestamo(),
-                p.getFechaDevolucionEstimada(),
+                p.getFechaPrestamo() != null ? p.getFechaPrestamo().atOffset(ZoneOffset.UTC) : null,
+                p.getFechaDevolucionEstimada() != null ? p.getFechaDevolucionEstimada().atOffset(ZoneOffset.UTC) : null,
                 p.getDiasRestantes(),
                 p.getEstadoNombre());
     }
@@ -402,6 +414,66 @@ public class PrestamoService {
                 p.getTitulo(),
                 p.getIsbn(),
                 p.getTotalPrestamos());
+    }
+
+    @Transactional(readOnly = true)
+    public List<LibroMasPrestadoDetalladoResponseDTO> reporteLibrosMasPrestadosDetallado(
+            Integer limite, OffsetDateTime desde, OffsetDateTime hasta, Integer categoriaId) {
+        Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
+        return prestamoProcRepo.fnReporteLibrosMasPrestadosDetallado(limiteEfectivo, desde, hasta, categoriaId).stream()
+                .map(p -> new LibroMasPrestadoDetalladoResponseDTO(
+                        p.getLibroId(),
+                        p.getTitulo(),
+                        p.getIsbn(),
+                        p.getAutorNombre(),
+                        p.getCategoriaNombre(),
+                        p.getTotalPrestamos(),
+                        p.getPorcentaje()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReporteInventarioResponseDTO> reporteInventario(
+            Integer categoriaId, String estadoStock, String busqueda) {
+        return prestamoProcRepo.fnReporteInventario(categoriaId, estadoStock, busqueda).stream()
+                .map(p -> new ReporteInventarioResponseDTO(
+                        p.getLibroId(),
+                        p.getTitulo(),
+                        p.getIsbn(),
+                        p.getAutorNombre(),
+                        p.getCategoriaNombre(),
+                        p.getStockTotal(),
+                        p.getStockDisponible(),
+                        p.getEstadoDisponibilidad()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReporteVencidosResponseDTO> reportePrestamosVencidos(Integer diasAtrasoMin, String busqueda) {
+        return prestamoProcRepo.fnReportePrestamosVencidos(diasAtrasoMin, busqueda).stream()
+                .map(p -> new ReporteVencidosResponseDTO(
+                        p.getPrestamoId(),
+                        p.getUsuarioNombre(),
+                        p.getUsuarioCorreo(),
+                        p.getLibroTitulo(),
+                        p.getLibroIsbn(),
+                        p.getFechaDevolucionEstimada() != null ? p.getFechaDevolucionEstimada().atOffset(ZoneOffset.UTC) : null,
+                        p.getDiasAtraso(),
+                        p.getMontoMultaEstimada()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReporteCategoriasDemandadasResponseDTO> reporteCategoriasDemandadas(
+            Integer limite, OffsetDateTime desde, OffsetDateTime hasta) {
+        Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
+        return prestamoProcRepo.fnReporteCategoriasDemandadas(limiteEfectivo, desde, hasta).stream()
+                .map(p -> new ReporteCategoriasDemandadasResponseDTO(
+                        p.getCategoriaId(),
+                        p.getCategoriaNombre(),
+                        p.getTotalPrestamos(),
+                        p.getPorcentaje()))
+                .toList();
     }
 
     private ReporteMorosidadResponseDTO toDTO(ReporteMorosidadProjection p) {
@@ -417,8 +489,17 @@ public class PrestamoService {
 
     private ReporteUsoPorPeriodoResponseDTO toDTO(ReporteUsoPorPeriodoProjection p) {
         return new ReporteUsoPorPeriodoResponseDTO(
-                p.getPeriodo(),
+                p.getPeriodo() != null ? p.getPeriodo().atOffset(ZoneOffset.UTC) : null,
                 p.getTotalPrestamos(),
                 p.getTotalDevoluciones());
+    }
+
+    private void validarLimitePrestamos(Long usuarioId) {
+        int maxPrestamos = configuracionSistemaService.obtenerValorEntero("max_prestamos_usuario");
+        List<PrestamoActivoProjection> activos = prestamoProcRepo.fnListarPrestamosActivosPorUsuario(usuarioId);
+        if (activos.size() >= maxPrestamos) {
+            throw new LimitePrestamosExcedidoException(
+                    "El usuario ya tiene " + activos.size() + " préstamos activos. El máximo permitido es " + maxPrestamos + ".");
+        }
     }
 }

@@ -120,3 +120,30 @@ recuperación real del RUNBOOK §4, que solo se ejecuta ante un incidente).
 - [RUNBOOK.md](RUNBOOK.md) §4 — recuperación ante incidente usando este mecanismo.
 - [DEPLOYMENT.md](DEPLOYMENT.md) — arquitectura y límites del plan.
 - Documentación oficial Neon (verificada agosto 2026): `neon.com/docs/introduction/plans` (ventana de historial, snapshots), `neon.com/docs/guides/branch-restore`.
+
+## 5. Evidencia de ejecución real (2026-08-23)
+
+Esta sección documenta una prueba **real ejecutada** de Point-in-Time Recovery (PITR) el 2026-08-23, distinta del procedimiento genérico de §3 que permanece tal cual.
+
+**Branch creada:** `backup-recovery-demo-adb`, ID `br-round-silence-axnx22gg`, parent `production`, restaurada al punto en el tiempo **2026-08-23 15:20 America/Guayaquil (GMT-05:00)**, creada **2026-08-23 15:22:41 -05:00** por **Marlon Taylor**.
+
+**Diferencia metodológica con §3.2:** el procedimiento de §3.2 describe un enfoque de "registro marcador" (insertar un dato, restaurar a un punto anterior y verificar su ausencia). En esta ejecución real se usó una variante válida y honesta: se compararon conteos de filas entre la rama `production` y la rama restaurada **en el mismo punto en el tiempo**, confirmando integridad y consistencia del dato restaurado (no ausencia de un cambio posterior). Esto valida que el PITR reconstruye correctamente el estado histórico completo.
+
+**Resultados de verificación (idénticos entre producción y branch restaurada):**
+- `usuarios`: 6 filas
+- `libros`: 6 filas
+- `prestamos`: 1 fila
+
+**Evidencia visual:**
+
+![Creación del branch con timestamp de restauración](../mediciones/backup-recovery/pitr-01-create-branch-config.png)
+
+![Vista general del branch creado en Neon](../mediciones/backup-recovery/pitr-02-branch-overview.png)
+
+![Conteo de filas en tabla usuarios (6)](../mediciones/backup-recovery/pitr-03-count-usuarios.png)
+
+![Conteo de filas en tabla libros (6)](../mediciones/backup-recovery/pitr-04-count-libros.png)
+
+![Conteo de filas en tabla prestamos (1)](../mediciones/backup-recovery/pitr-05-count-prestamos.png)
+
+**Nota sobre limpieza:** a diferencia del paso 5 de §3.2 que sugiere borrar la branch de prueba, esta branch se mantuvo **deliberadamente viva** como evidencia tangible para el tribunal, no se eliminó.

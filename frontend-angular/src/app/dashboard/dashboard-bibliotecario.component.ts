@@ -9,6 +9,11 @@ interface EnlaceSidebar {
   icono: string;
 }
 
+interface SeccionSidebar {
+  titulo: string;
+  enlaces: EnlaceSidebar[];
+}
+
 @Component({
   selector: 'app-dashboard-bibliotecario',
   standalone: true,
@@ -18,25 +23,33 @@ interface EnlaceSidebar {
 export class DashboardBibliotecarioComponent {
   mostrarMenuUsuario = false;
 
-  secciones = [
+  private secciones: SeccionSidebar[] = [
     {
       titulo: 'GESTIÓN',
       enlaces: [
         { ruta: '/dashboard-bibliotecario/libros', etiqueta: 'Libros', icono: 'inventory_2' },
         { ruta: '/dashboard-bibliotecario/prestamos/gestion', etiqueta: 'Préstamos', icono: 'assignment_return' },
         { ruta: '/dashboard-bibliotecario/reservaciones', etiqueta: 'Reservaciones', icono: 'event_available' },
+        { ruta: '/dashboard-bibliotecario/devoluciones', etiqueta: 'Devoluciones', icono: 'assignment_return' },
         { ruta: '/dashboard-bibliotecario/multas', etiqueta: 'Multas', icono: 'payments' },
-      ] as EnlaceSidebar[]
+      ]
     },
     {
       titulo: 'SISTEMA',
       enlaces: [
         { ruta: '/dashboard-bibliotecario/reportes', etiqueta: 'Reportes', icono: 'bar_chart' },
-      ] as EnlaceSidebar[]
+      ]
     }
   ];
 
   constructor(private authService: AuthService) {}
+
+  get seccionesVisibles(): SeccionSidebar[] {
+    if (this.authService.hasRole('BIBLIOTECARIO')) {
+      return this.secciones.filter(s => s.titulo !== 'SISTEMA');
+    }
+    return this.secciones;
+  }
 
   @HostListener('document:click', ['$event'])
   cerrarMenuFuera(event: Event): void {

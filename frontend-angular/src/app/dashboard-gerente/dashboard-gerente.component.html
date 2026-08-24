@@ -71,7 +71,7 @@
       } @else if (errorFinanciero) {
         <p class="font-body-sm text-body-sm text-error">{{ errorFinanciero }}</p>
       } @else if (resumenFinanciero) {
-        <div class="space-y-sm">
+        <div class="space-y-sm mb-md">
           <div class="flex items-center justify-between">
             <span class="font-body-sm text-body-sm text-on-surface-variant">Recaudado</span>
             <span class="font-label-md text-label-md text-secondary">{{ resumenFinanciero.totalRecaudado | currency }}</span>
@@ -80,7 +80,31 @@
             <span class="font-body-sm text-body-sm text-on-surface-variant">Pendiente de cobro</span>
             <span class="font-label-md text-label-md text-error">{{ resumenFinanciero.totalPendiente | currency }}</span>
           </div>
+          <div class="flex items-center justify-between border-t border-outline-variant pt-sm">
+            <span class="font-body-sm text-body-sm text-on-surface font-medium">Generado hoy</span>
+            <span class="font-label-md text-label-md text-primary">{{ resumenFinanciero.totalGeneradoHoy | currency }}</span>
+          </div>
         </div>
+
+        @if (resumenFinanciero.pagosRecientes.length > 0) {
+          <div class="border-t border-outline-variant pt-md">
+            <h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">Pagos recientes</h3>
+            <div class="space-y-sm">
+              @for (pago of resumenFinanciero.pagosRecientes; track pago.multaId) {
+                <div class="flex items-center justify-between gap-sm">
+                  <div class="min-w-0">
+                    <p class="font-body-sm text-body-sm text-on-surface truncate">{{ pago.usuarioNombre }}</p>
+                    <p class="font-label-sm text-[11px] text-on-surface-variant truncate">{{ pago.libroTitulo }}</p>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <p class="font-label-sm text-label-sm text-secondary">+{{ pago.montoPagado | currency }}</p>
+                    <p class="font-label-sm text-[11px] text-on-surface-variant">{{ pago.fechaPagada | date:'short' }}</p>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
       }
     </div>
 

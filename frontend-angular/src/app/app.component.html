@@ -66,4 +66,10 @@
   </header>
 }
 
+<app-loader />
+
 <router-outlet />
+
+@if (esLector() && !enRutaLector) {
+  <app-chatbot-widget />
+}

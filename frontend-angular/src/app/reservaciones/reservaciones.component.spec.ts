@@ -4,19 +4,28 @@ import { ActivatedRoute } from '@angular/router';
 import { ReservacionesComponent } from './reservaciones.component';
 import { AuthService } from '../core/services/auth.service';
 import { ReservacionService } from '../core/services/reservacion.service';
+import { PrestamoService } from '../core/services/prestamo.service';
 import { LibroService } from '../core/services/libro.service';
 
 describe('ReservacionesComponent', () => {
   let component: ReservacionesComponent;
   let fixture: ComponentFixture<ReservacionesComponent>;
   let reservacionService: jasmine.SpyObj<ReservacionService>;
+  let prestamoService: jasmine.SpyObj<PrestamoService>;
   let libroService: jasmine.SpyObj<LibroService>;
   let roles: string[];
 
   beforeEach(async () => {
     roles = ['LECTOR'];
-    reservacionService = jasmine.createSpyObj('ReservacionService', ['listarPorUsuario', 'crear', 'cambiarEstado']);
-    libroService = jasmine.createSpyObj('LibroService', ['obtener', 'sugerencias']);
+    reservacionService = jasmine.createSpyObj('ReservacionService', [
+      'listarPorUsuario', 'crear', 'cambiarEstado', 'buscarUsuarioPorCorreo', 'historialReservaciones'
+    ]);
+    prestamoService = jasmine.createSpyObj('PrestamoService', ['sugerenciasUsuarios']);
+    libroService = jasmine.createSpyObj('LibroService', ['obtener', 'sugerencias', 'obtenerPortada']);
+
+    reservacionService.buscarUsuarioPorCorreo.and.returnValue(of({} as any));
+    reservacionService.historialReservaciones.and.returnValue(of([]));
+    prestamoService.sugerenciasUsuarios.and.returnValue(of([]));
     libroService.sugerencias.and.returnValue(of([]));
     libroService.obtener.and.returnValue(of({} as any));
 
@@ -24,6 +33,7 @@ describe('ReservacionesComponent', () => {
       imports: [ReservacionesComponent],
       providers: [
         { provide: ReservacionService, useValue: reservacionService },
+        { provide: PrestamoService, useValue: prestamoService },
         { provide: LibroService, useValue: libroService },
         { provide: ActivatedRoute, useValue: { snapshot: {} } },
         {
@@ -66,12 +76,12 @@ describe('ReservacionesComponent', () => {
     fixture.detectChanges();
 
     expect(component.pendientesDeRetiro.length).toBe(1);
-    expect(component.historial.length).toBe(1);
+    expect(component.historialLector.length).toBe(1);
     expect(component.pendientesDeRetiro[0].estadoReservacionId).toBe(1);
-    expect(component.historial[0].estadoReservacionId).toBe(3);
+    expect(component.historialLector[0].estadoReservacionId).toBe(3);
   });
 
-  it('el modo gestión crea con el formulario manual de usuarioId/libroId', () => {
+  it('el modo gestión crea la reservación con usuario y libro seleccionado', () => {
     roles = ['BIBLIOTECARIO'];
 
     fixture.detectChanges();
@@ -79,7 +89,21 @@ describe('ReservacionesComponent', () => {
     expect(component.esLector).toBeFalse();
     expect(reservacionService.listarPorUsuario).not.toHaveBeenCalled();
 
-    component.formCrear.patchValue({ usuarioId: 1, libroId: 9 });
+    component.usuario = {
+      id: 1,
+      nombreCompleto: 'Juan Perez',
+      correo: 'juan@uteq.edu.ec',
+      estadoCuenta: 'ACTIVO',
+      cantidadReservasActivas: 0,
+      limiteReservas: 3
+    };
+    component.libroSeleccionado = {
+      id: 9,
+      titulo: 'Clean Code',
+      disponible: true
+    };
+    component.fechaRetiro = '2026-08-25';
+
     reservacionService.crear.and.returnValue(of({
       id: 9, usuarioId: 1, libroId: 9, estadoReservacionId: 1,
       fechaReserva: '', fechaLimiteRetiro: ''
@@ -87,7 +111,10 @@ describe('ReservacionesComponent', () => {
 
     component.crearReservacion();
 
-    expect(reservacionService.crear).toHaveBeenCalledWith({ usuarioId: 1, libroId: 9 });
+    expect(reservacionService.crear).toHaveBeenCalledWith(jasmine.objectContaining({
+      usuarioId: 1,
+      libroId: 9
+    }));
   });
 
   it('resuelve el título del libro con LibroService.obtener y lo cachea por id', () => {
@@ -114,6 +141,7 @@ describe('ReservacionesComponent', () => {
     reservacionService.cambiarEstado.and.returnValue(of({ id: 7 } as any));
     reservacionService.listarPorUsuario.and.returnValue(of({ content: [], totalPages: 1 } as any));
 
+    component.usuarioIdBusqueda = 2;
     component.cambiarEstadoReservacion(
       { id: 7, libroId: 9, estadoReservacionId: 1 } as any, 'LISTA_PARA_RETIRO');
 
