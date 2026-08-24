@@ -128,6 +128,21 @@ export class LibrosComponent implements OnInit, OnDestroy {
         error: () => { this.sugerenciasCategoria = []; }
       });
     });
+
+    // Auto-lookup ISBN: 13 dígitos sin guiones + 2s debounce, sin romper botón manual
+    this.form.get('isbn')!.valueChanges.pipe(
+      debounceTime(2000),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe((val: string) => {
+      const raw = (val ?? '').trim();
+      const limpio = raw.replace(/-/g, '').replace(/\s/g, '');
+      if (limpio.length !== 13) return;
+      if (!/^[0-9]{13}$/.test(limpio)) return;
+      if (!/^[0-9\-]{10,17}$/.test(raw)) return;
+      if (!this.mostrarFormulario) return;
+      this.ejecutarLookupIsbn(raw, true);
+    });
   }
 
   ngOnDestroy(): void {
@@ -507,14 +522,21 @@ export class LibrosComponent implements OnInit, OnDestroy {
 
   buscarPorIsbn(): void {
     const isbn = (this.form.get('isbn')?.value as string ?? '').trim();
+    this.ejecutarLookupIsbn(isbn, false);
+  }
+
+  private ejecutarLookupIsbn(isbn: string, esAuto: boolean): void {
     if (!isbn) {
-      this.lookupError = 'Ingresa un ISBN para buscar';
+      if (!esAuto) this.lookupError = 'Ingresa un ISBN para buscar';
       return;
     }
     if (!/^[0-9\-]{10,17}$/.test(isbn)) {
-      this.lookupError = 'ISBN inválido (10-13 dígitos, guiones permitidos)';
+      if (!esAuto) this.lookupError = 'ISBN inválido (10-13 dígitos, guiones permitidos)';
       return;
     }
+    const limpio = isbn.replace(/-/g, '').trim();
+    if (esAuto && limpio.length !== 13) return;
+    if (this.lookupCargando) return;
     this.lookupCargando = true;
     this.lookupError = '';
     this.libroService.buscarPorIsbn(isbn).subscribe({
@@ -523,7 +545,7 @@ export class LibrosComponent implements OnInit, OnDestroy {
         if (dto.titulo) patch['titulo'] = dto.titulo;
         if (dto.resumen) patch['resumen'] = dto.resumen;
         if (dto.anioPublicacion != null) patch['anioPublicacion'] = dto.anioPublicacion;
-        if (Object.keys(patch).length) this.form.patchValue(patch);
+        if (Object.keys(patch).length) this.form.patchValue(patch, { emitEvent: false });
         if (!dto.titulo && !dto.resumen && dto.anioPublicacion == null) {
           this.lookupError = 'No se encontraron datos para ese ISBN, completa manualmente';
         }

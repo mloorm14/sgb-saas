@@ -101,7 +101,7 @@ class ReservacionServiceTest {
 
         assertThatThrownBy(() -> reservacionService.crear(
                 new ReservacionRequestDTO(2L, 3L, null), auth))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(EstadoReservacionInicialNoConfiguradoException.class)
                 .hasMessageContaining("PENDIENTE");
     }
 
