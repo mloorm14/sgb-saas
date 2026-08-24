@@ -8,6 +8,10 @@ import { AuthService } from './core/services/auth.service';
 
 function inicializarSesion(authService: AuthService): () => Promise<boolean> {
   return () => new Promise((resolve) => {
+    if (!authService.isLoggedIn()) {
+      resolve(true);
+      return;
+    }
     authService.refresh().subscribe({
       next: () => resolve(true),
       error: () => resolve(true)
