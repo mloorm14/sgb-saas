@@ -2,16 +2,19 @@ package com.uteq.backend.service;
 
 import com.uteq.backend.dto.LibroIsbnLookupDTO;
 import com.uteq.backend.dto.PortadaImagenDTO;
+import com.uteq.backend.integration.GeminiClient;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,12 +48,15 @@ public class LibroIsbnLookupService {
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
     private final String urlBase;
+    private final GeminiClient geminiClient;
 
     public LibroIsbnLookupService(
             @Value("${app.google-books.url-base}") String urlBase,
-            @Value("${app.google-books.timeout-ms}") long timeoutMs) {
+            @Value("${app.google-books.timeout-ms}") long timeoutMs,
+            @Autowired(required = false) GeminiClient geminiClient) {
         this.urlBase = urlBase;
         this.objectMapper = new ObjectMapper();
+        this.geminiClient = geminiClient;
 
         // Timeout de conexión/lectura configurable (app.google-books.timeout-ms),
         // mismo criterio de configuración externa que app.gemini.
@@ -67,22 +73,76 @@ public class LibroIsbnLookupService {
     }
 
     public LibroIsbnLookupDTO buscarPorIsbn(String isbn) {
-        JsonNode volume = buscarPrimerVolume(isbn);
-        JsonNode volumeInfo = volume.path("volumeInfo");
+        try {
+            JsonNode volume = buscarPrimerVolume(isbn);
+            JsonNode volumeInfo = volume.path("volumeInfo");
 
-        String autor = null;
-        JsonNode authors = volumeInfo.path("authors");
-        if (authors.isArray() && authors.size() > 0) {
-            autor = authors.get(0).asText(null);
+            String autor = null;
+            JsonNode authors = volumeInfo.path("authors");
+            if (authors.isArray() && authors.size() > 0) {
+                autor = authors.get(0).asText(null);
+            }
+
+            String titulo = volumeInfo.path("title").asText(null);
+            String resumen = volumeInfo.path("description").asText(null);
+            Integer anio = anioDesde(volumeInfo.path("publishedDate").asText(null));
+            boolean portada = !volumeInfo.path("imageLinks").path("thumbnail").isMissingNode();
+
+            // Solo titulo/resumen/anio son requeridos por el frontend; si Google trae alguno vacío,
+            // se intenta complementar con IA (traducción/generación de resumen en español neutro).
+            if ((resumen == null || resumen.isBlank()) && geminiClient != null) {
+                String iaResumen = generarResumenViaIA(titulo, autor, isbn);
+                if (iaResumen != null && !iaResumen.isBlank()) resumen = iaResumen;
+            }
+
+            return new LibroIsbnLookupDTO(titulo, autor, resumen, anio, portada);
+        } catch (EntityNotFoundException ex) {
+            // Fallback IA: Google no encontró el ISBN (común en libros en español).
+            // Se pide a Gemini que aporte solo titulo/resumen/anio; resto queda manual.
+            if (geminiClient != null) {
+                LibroIsbnLookupDTO ia = buscarViaGemini(isbn);
+                if (ia != null) return ia;
+            }
+            throw ex;
         }
+    }
 
-        return new LibroIsbnLookupDTO(
-                volumeInfo.path("title").asText(null),
-                autor,
-                volumeInfo.path("description").asText(null),
-                anioDesde(volumeInfo.path("publishedDate").asText(null)),
-                !volumeInfo.path("imageLinks").path("thumbnail").isMissingNode()
-        );
+    private String generarResumenViaIA(String titulo, String autor, String isbn) {
+        try {
+            String promptSistema = "Eres bibliotecario. Genera un resumen breve (max 500 caracteres, español neutro) para el libro."
+                    + " Si no lo conoces, responde vacio. Responde SOLO con el texto del resumen, sin JSON ni comillas extra.";
+            String mensaje = "ISBN: " + isbn + (titulo != null ? ", Titulo: " + titulo : "") + (autor != null ? ", Autor: " + autor : "");
+            String resp = geminiClient.generarRespuesta(promptSistema, List.of(), mensaje);
+            if (resp == null || resp.isBlank() || resp.contains("No se pudo")) return null;
+            return resp.trim();
+        } catch (Exception e) {
+            log.warn("Fallback IA resumen falló para ISBN {}", isbn, e);
+            return null;
+        }
+    }
+
+    private LibroIsbnLookupDTO buscarViaGemini(String isbn) {
+        try {
+            String promptSistema = "Eres bibliotecario. Dado un ISBN, si conoces el libro responde SOLO JSON valido sin markdown: {\"titulo\": string|null, \"resumen\": string|null, \"anioPublicacion\": integer|null}. Resumen max 500 caracteres en español neutro. Si no lo conoces responde {}. No inventes datos inciertos: usa null.";
+            String resp = geminiClient.generarRespuesta(promptSistema, List.of(), "ISBN: " + isbn);
+            if (resp == null || resp.isBlank()) return null;
+            // Extraer JSON entre { } por si viene con texto extra
+            int start = resp.indexOf('{');
+            int end = resp.lastIndexOf('}');
+            if (start < 0 || end < 0) return null;
+            String json = resp.substring(start, end + 1);
+            JsonNode node = objectMapper.readTree(json);
+            if (node.isEmpty() || node.size() == 0) return null;
+            String titulo = node.path("titulo").isNull() ? null : node.path("titulo").asText(null);
+            String resumen = node.path("resumen").isNull() ? null : node.path("resumen").asText(null);
+            Integer anio = node.path("anioPublicacion").isNull() || node.path("anioPublicacion").asText().isBlank() ? null : node.path("anioPublicacion").asInt();
+            if ((titulo == null || titulo.isBlank()) && (resumen == null || resumen.isBlank()) && anio == null) return null;
+            log.info("Fallback IA exitoso para ISBN {} -> titulo={}", isbn, titulo);
+            return new LibroIsbnLookupDTO(titulo, null, resumen, anio, false);
+        } catch (Exception e) {
+            log.warn("Fallback IA buscarViaGemini falló para ISBN {}", isbn, e);
+            return null;
+        }
     }
 
     public PortadaImagenDTO obtenerPortada(String isbn) {

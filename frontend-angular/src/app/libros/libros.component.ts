@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
-
+import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { LibroService } from '../core/services/libro.service';
 import { CategoriaService } from '../core/services/categoria.service';
@@ -18,7 +18,7 @@ import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 
 @Component({
     selector: 'app-libros',
-    imports: [ReactiveFormsModule, FormsModule, PortadaLibroComponent],
+    imports: [CommonModule, ReactiveFormsModule, FormsModule, PortadaLibroComponent],
     templateUrl: './libros.component.html'
 })
 export class LibrosComponent implements OnInit, OnDestroy {
@@ -33,6 +33,7 @@ export class LibrosComponent implements OnInit, OnDestroy {
   libroSeleccionadoId: number | null = null;
   form: FormGroup;
   lookupError: string = '';
+  lookupCargando = false;
   portadaPreviewUrl: string | null = null;
   portadaPreviewBlob: Blob | null = null;
   portadaPreviewTipo: string | null = null;
@@ -500,6 +501,44 @@ export class LibrosComponent implements OnInit, OnDestroy {
     this.portadaPreviewTipo = tipo;
     this.portadaPreviewUrl = URL.createObjectURL(archivo);
     this.lookupError = '';
+  }
+
+  // ── ISBN lookup (solo titulo, resumen, anio) con fallback IA en backend ──
+
+  buscarPorIsbn(): void {
+    const isbn = (this.form.get('isbn')?.value as string ?? '').trim();
+    if (!isbn) {
+      this.lookupError = 'Ingresa un ISBN para buscar';
+      return;
+    }
+    if (!/^[0-9\-]{10,17}$/.test(isbn)) {
+      this.lookupError = 'ISBN inválido (10-13 dígitos, guiones permitidos)';
+      return;
+    }
+    this.lookupCargando = true;
+    this.lookupError = '';
+    this.libroService.buscarPorIsbn(isbn).subscribe({
+      next: (dto) => {
+        const patch: Record<string, unknown> = {};
+        if (dto.titulo) patch['titulo'] = dto.titulo;
+        if (dto.resumen) patch['resumen'] = dto.resumen;
+        if (dto.anioPublicacion != null) patch['anioPublicacion'] = dto.anioPublicacion;
+        if (Object.keys(patch).length) this.form.patchValue(patch);
+        if (!dto.titulo && !dto.resumen && dto.anioPublicacion == null) {
+          this.lookupError = 'No se encontraron datos para ese ISBN, completa manualmente';
+        }
+        this.lookupCargando = false;
+      },
+      error: (err) => {
+        const detail = err?.error?.detail ?? err?.error?.title ?? '';
+        if (err?.status === 404) {
+          this.lookupError = detail || 'No se encontró información para el ISBN, completa manualmente';
+        } else {
+          this.lookupError = detail || 'No se pudo consultar el ISBN, intenta de nuevo';
+        }
+        this.lookupCargando = false;
+      }
+    });
   }
 
   // ── Guardar ──

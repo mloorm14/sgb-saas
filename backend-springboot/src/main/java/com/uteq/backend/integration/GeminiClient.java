@@ -62,10 +62,10 @@ public class GeminiClient {
                 .build();
 
         if (apiKey == null || apiKey.isBlank()) {
-            throw new IllegalStateException(
-                    "GEMINI_API_KEY no configurada. Defínala en variables de entorno (Render) o .env local.");
+            log.warn("GEMINI_API_KEY no configurada — Gemini deshabilitado (lookup ISBN usará solo Google Books).");
+        } else {
+            log.info("GeminiClient inicializado: modelo={}, url={}", modelo, urlBase);
         }
-        log.info("GeminiClient inicializado: modelo={}, url={}", modelo, urlBase);
     }
 
     // ── API legacy (sin tools, backward-compatible) ───────────────────────
@@ -96,6 +96,10 @@ public class GeminiClient {
             String mensajeNuevo,
             List<Map<String, Object>> tools) {
 
+        if (apiKey == null || apiKey.isBlank()) {
+            log.debug("Gemini deshabilitado (sin API key), devolviendo fallback");
+            return GeminiResponse.texto(MENSAJE_FALLBACK_GENERICO);
+        }
         for (int intento = 0; intento < 2; intento++) {
             try {
                 return llamarGemini(promptSistema, historial, mensajeNuevo, tools);
