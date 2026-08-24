@@ -170,8 +170,33 @@
                     @for (cat of reserva.categorias; track cat) {
                       <span class="px-2 py-0.5 bg-surface-container border border-outline-variant/50 rounded text-xs font-medium text-on-surface-variant">{{ cat }}</span>
                     }
-                  </div>
-                }
+  </div>
+}
+
+@if (showSinPermisosModal) {
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-md" (click)="cerrarSinPermisosModal()">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-lg relative" (click)="$event.stopPropagation()">
+      <button type="button" (click)="cerrarSinPermisosModal()"
+        class="absolute top-sm right-sm w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center hover:bg-surface-container-highest cursor-pointer">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+      <div class="flex flex-col items-center text-center pt-sm">
+        <div class="w-16 h-16 rounded-full bg-error-container flex items-center justify-center text-error mb-md">
+          <span class="material-symbols-outlined text-4xl">gpp_bad</span>
+        </div>
+        <h2 class="font-headline-md text-headline-md text-on-background mb-sm">No tenés permiso</h2>
+        <p class="font-body-sm text-body-sm text-on-surface-variant mb-lg">
+          Tu rol de Administrador no tiene acceso a la gestión de multas.
+          Contactá a un bibliotecario o gerente para realizar esta acción.
+        </p>
+        <button type="button" (click)="cerrarSinPermisosModal()"
+          class="h-10 px-lg rounded-lg bg-primary text-on-primary font-label-sm text-label-sm hover:opacity-90 transition-opacity">
+          Entendido
+        </button>
+      </div>
+    </div>
+  </div>
+}
                 <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-on-surface-variant">
                   <span>Año • {{ reserva.anioPublicacion }}</span>
                   <span>Stock • {{ reserva.stockDisponible }} disponibles</span>
