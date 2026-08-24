@@ -79,8 +79,10 @@ class ReservacionControllerSecurityTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void reservacionesDeHoy_conRolAdmin_seRechaza() throws Exception {
+    void reservacionesDeHoy_conRolAdmin_sePermite() throws Exception {
+        when(reservacionService.buscarReservacionesDeHoy()).thenReturn(List.of());
+
         mockMvc.perform(get("/api/v1/reservaciones/hoy"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 }

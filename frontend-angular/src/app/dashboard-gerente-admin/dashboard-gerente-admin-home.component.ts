@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ReporteService, LibroMasPrestado, ReporteMorosidad } from '../core/services/reporte-gerencial.service';
 import { ReservacionService } from '../core/services/reservacion.service';
 import { AuthService } from '../core/services/auth.service';
@@ -9,7 +9,7 @@ import { ReservacionHoy } from '../core/models/reservacion.model';
 @Component({
   selector: 'app-dashboard-gerente-admin-home',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './dashboard-gerente-admin-home.component.html',
   styles: [`
     .kpi-card { background: linear-gradient(135deg, rgba(0,54,148,0.04), rgba(0,54,148,0)); }
