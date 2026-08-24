@@ -97,12 +97,8 @@ public class LibroIsbnLookupService {
 
             return new LibroIsbnLookupDTO(titulo, autor, resumen, anio, portada);
         } catch (EntityNotFoundException ex) {
-            // Fallback IA: Google no encontró el ISBN (común en libros en español).
-            // Se pide a Gemini que aporte solo titulo/resumen/anio; resto queda manual.
-            if (geminiClient != null) {
-                LibroIsbnLookupDTO ia = buscarViaGemini(isbn);
-                if (ia != null) return ia;
-            }
+            // Google no encontró el ISBN: no inventar con IA (evita alucinaciones como Valencia vs programar).
+            // Se propaga 404 y el frontend muestra "completa manualmente".
             throw ex;
         }
     }
@@ -117,30 +113,6 @@ public class LibroIsbnLookupService {
             return resp.trim();
         } catch (Exception e) {
             log.warn("Fallback IA resumen falló para ISBN {}", isbn, e);
-            return null;
-        }
-    }
-
-    private LibroIsbnLookupDTO buscarViaGemini(String isbn) {
-        try {
-            String promptSistema = "Eres bibliotecario. Dado un ISBN, si conoces el libro responde SOLO JSON valido sin markdown: {\"titulo\": string|null, \"resumen\": string|null, \"anioPublicacion\": integer|null}. Resumen max 500 caracteres en español neutro. Si no lo conoces responde {}. No inventes datos inciertos: usa null.";
-            String resp = geminiClient.generarRespuesta(promptSistema, List.of(), "ISBN: " + isbn);
-            if (resp == null || resp.isBlank()) return null;
-            // Extraer JSON entre { } por si viene con texto extra
-            int start = resp.indexOf('{');
-            int end = resp.lastIndexOf('}');
-            if (start < 0 || end < 0) return null;
-            String json = resp.substring(start, end + 1);
-            JsonNode node = objectMapper.readTree(json);
-            if (node.isEmpty() || node.size() == 0) return null;
-            String titulo = node.path("titulo").isNull() ? null : node.path("titulo").asText(null);
-            String resumen = node.path("resumen").isNull() ? null : node.path("resumen").asText(null);
-            Integer anio = node.path("anioPublicacion").isNull() || node.path("anioPublicacion").asText().isBlank() ? null : node.path("anioPublicacion").asInt();
-            if ((titulo == null || titulo.isBlank()) && (resumen == null || resumen.isBlank()) && anio == null) return null;
-            log.info("Fallback IA exitoso para ISBN {} -> titulo={}", isbn, titulo);
-            return new LibroIsbnLookupDTO(titulo, null, resumen, anio, false);
-        } catch (Exception e) {
-            log.warn("Fallback IA buscarViaGemini falló para ISBN {}", isbn, e);
             return null;
         }
     }
