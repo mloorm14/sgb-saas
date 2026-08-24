@@ -40,9 +40,9 @@ public class LibroIsbnLookupService {
     private static final Logger log = LoggerFactory.getLogger(LibroIsbnLookupService.class);
 
     private static final String NO_ENCONTRADO =
-            "No se encontró información para el ISBN ";
+            "No se pudo encontrar información de ese libro";
     private static final String ERROR_GOOGLE =
-            "No se pudo consultar Google Books para el ISBN ";
+            "No se pudo encontrar información de ese libro";
     private static final Pattern ANIO_PATTERN = Pattern.compile("^(\\d{4})");
 
     private final RestClient restClient;
@@ -121,7 +121,7 @@ public class LibroIsbnLookupService {
         JsonNode volume = buscarPrimerVolume(isbn);
         String thumbnail = volume.path("volumeInfo").path("imageLinks").path("thumbnail").asText(null);
         if (thumbnail == null) {
-            throw new EntityNotFoundException(NO_ENCONTRADO + isbn);
+            throw new EntityNotFoundException(NO_ENCONTRADO);
         }
         byte[] bytes = restClient.get()
                 .uri(thumbnail)
@@ -134,12 +134,26 @@ public class LibroIsbnLookupService {
     // Google Books espera solo dígitos, así que se limpian acá.
     private JsonNode buscarPrimerVolume(String isbn) {
         String url = urlBase + "/volumes?q=isbn:" + isbn.replace("-", "");
-        String json;
+        String json = null;
         try {
             json = restClient.get().uri(url).retrieve().body(String.class);
         } catch (Exception ex) {
-            log.error("Google Books no respondió para el ISBN {}", isbn, ex);
-            throw new EntityNotFoundException(ERROR_GOOGLE + isbn);
+            // 429 Too Many Requests de Google (cuota sin API key) es temporal: reintento una vez
+            if (ex.getMessage() != null && ex.getMessage().contains("429")) {
+                try { Thread.sleep(1200); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                try {
+                    json = restClient.get().uri(url).retrieve().body(String.class);
+                } catch (Exception ex2) {
+                    log.error("Google Books no respondió (reintento) para el ISBN {}", isbn, ex2);
+                    throw new EntityNotFoundException(ERROR_GOOGLE);
+                }
+            } else {
+                log.error("Google Books no respondió para el ISBN {}", isbn, ex);
+                throw new EntityNotFoundException(ERROR_GOOGLE);
+            }
+        }
+        if (json == null) {
+            throw new EntityNotFoundException(ERROR_GOOGLE);
         }
 
         JsonNode root;
@@ -147,12 +161,12 @@ public class LibroIsbnLookupService {
             root = objectMapper.readTree(json);
         } catch (Exception ex) {
             log.error("No se pudo parsear la respuesta de Google Books para el ISBN {}", isbn, ex);
-            throw new EntityNotFoundException(ERROR_GOOGLE + isbn);
+            throw new EntityNotFoundException(ERROR_GOOGLE);
         }
 
         JsonNode items = root.path("items");
         if (root.path("totalItems").asInt(0) == 0 || !items.isArray() || items.isEmpty()) {
-            throw new EntityNotFoundException(NO_ENCONTRADO + isbn);
+            throw new EntityNotFoundException(NO_ENCONTRADO);
         }
         return items.get(0);
     }
