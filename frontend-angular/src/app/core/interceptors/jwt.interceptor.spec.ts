@@ -92,7 +92,7 @@ describe('jwtInterceptor', () => {
     expect((errorPropagado as { status: number }).status).toBe(403);
   });
 
-  it('hace logout y redirige a / si el refresh mismo falla', () => {
+  it('hace logout y redirige a /login si el refresh mismo falla', () => {
     authService.refresh.and.returnValue(throwError(() => ({ status: 401 })));
     const { next } = nextQueFallaPrimero(401);
 
@@ -100,8 +100,8 @@ describe('jwtInterceptor', () => {
     TestBed.runInInjectionContext(() => jwtInterceptor(req, next))
       .subscribe({ error: (e) => { errorPropagado = e; } });
 
-    expect(authService.logout).toHaveBeenCalled();
-    expect(navigateSpy).toHaveBeenCalledWith(['/']);
+    expect(authService.logout).toHaveBeenCalledWith('/login');
+    expect(navigateSpy).toHaveBeenCalledWith(['/login']);
     expect((errorPropagado as { status: number }).status).toBe(401);
   });
 });

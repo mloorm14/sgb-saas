@@ -42,11 +42,11 @@ export class AuthService {
     return this.http.post<any>(`${this.apiUrl}/auth/verificar-correo`, { correo, codigo });
   }
 
-  logout(): void {
+  logout(redirectTo: string = '/'): void {
     // Llama al backend para agregar el JTI a la blacklist de Redis
     this.http.post(`${this.apiUrl}/auth/logout`, {}, { withCredentials: true }).subscribe({
-      next: () => this.clearSession(),
-      error: () => this.clearSession() // limpia igual aunque falle la llamada
+      next: () => this.clearSession(redirectTo),
+      error: () => this.clearSession(redirectTo) // limpia igual aunque falle la llamada
     });
   }
 
@@ -61,9 +61,9 @@ export class AuthService {
     );
   }
 
-  private clearSession(): void {
+  private clearSession(redirectTo: string = '/'): void {
     this.accessToken = null;
-    this.router.navigate(['/']);
+    this.router.navigate([redirectTo]);
   }
 
   getAccessToken(): string | null {

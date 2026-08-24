@@ -11,7 +11,7 @@ export const authGuard: CanActivateFn = () => {
     // 403 del backend para invalidar la sesion. tokenExpirado() reusa la
     // decodificacion del JWT que ya vive en AuthService.
     if (authService.tokenExpirado()) {
-      authService.logout(); // limpia sesion y navega a /login
+      authService.logout('/login');
       return false;
     }
     return true;
