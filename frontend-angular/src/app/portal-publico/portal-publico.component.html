@@ -35,7 +35,7 @@
           class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-md text-body-md text-on-surface placeholder-outline" />
       </div>
       <select (change)="onCategoriaChange($any($event.target).value ? +$any($event.target).value : null)"
-        class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface cursor-pointer relative z-10">
+        class="h-10 min-w-[220px] pl-sm pr-xl rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface cursor-pointer relative z-10">
         <option [value]="''">Todas las categorías</option>
         @for (cat of categorias; track cat.id) {
           <option [value]="cat.id">{{ cat.nombre }}</option>
