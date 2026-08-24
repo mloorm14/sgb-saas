@@ -88,7 +88,7 @@ export class LibroDetalleComponent implements OnInit {
     if (!this.libro) return;
     const usuarioId = this.authService.getUserId();
     if (usuarioId === null) {
-      this.errorMsg = 'Iniciá sesión para reservar';
+      this.errorMsg = 'Inicia sesión para reservar';
       return;
     }
     this.fechaRetiro = this.minFechaRetiro;

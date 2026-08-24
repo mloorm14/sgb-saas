@@ -33,7 +33,7 @@ export class LoginComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.route.snapshot.queryParamMap.get('verificado') === '1') {
-      this.exitoMsg = 'Cuenta verificada correctamente. Ya podés iniciar sesión.';
+      this.exitoMsg = 'Cuenta verificada correctamente. Ya puedes iniciar sesión.';
     }
   }
 
@@ -91,7 +91,7 @@ export class LoginComponent implements OnInit {
             this.errorMsg = detail || 'Tu cuenta está bloqueada por una multa pendiente';
             break;
           case 429:
-            this.errorMsg = detail || 'Demasiados intentos. Esperá un momento antes de volver a intentar';
+            this.errorMsg = detail || 'Demasiados intentos. Espera un momento antes de volver a intentar';
             break;
           default:
             this.errorMsg = detail || 'Error al iniciar sesión, intente de nuevo';

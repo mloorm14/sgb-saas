@@ -183,8 +183,12 @@ describe('CatalogoComponent', () => {
     } as any));
 
     component.reservarLibro(new Event('click'), component.libros[0]);
+    expect(component.mostrarModalReserva).toBeTrue();
+    expect(component.libroParaReservar?.id).toBe(1);
 
-    expect(reservacionService.crear).toHaveBeenCalledWith({ usuarioId: 2, libroId: 1 });
+    component.confirmarReserva();
+
+    expect(reservacionService.crear).toHaveBeenCalledWith(jasmine.objectContaining({ usuarioId: 2, libroId: 1 }));
     expect(component.estaReservado(1)).toBeTrue();
     expect(component.toastMsg).toContain('Reservado');
     expect(component.toastMsg).toContain('18/08/2026');
@@ -195,6 +199,7 @@ describe('CatalogoComponent', () => {
     reservacionService.crear.and.returnValue(throwError(() => ({ status: 500 })));
 
     component.reservarLibro(new Event('click'), component.libros[0]);
+    component.confirmarReserva();
 
     expect(component.errorMsg).toBe('Error al reservar el libro');
     expect(component.estaReservado(1)).toBeFalse();

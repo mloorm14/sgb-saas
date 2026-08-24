@@ -56,6 +56,11 @@ export class CatalogoComponent implements OnInit, OnDestroy {
   categoriaId: number | null = null;
   autorId: number | null = null;
 
+  mostrarModalReserva = false;
+  libroParaReservar: Libro | null = null;
+  fechaRetiro: string = '';
+  minFechaRetiro: string = '';
+
   constructor(
     private libroService: LibroService,
     private categoriaService: CategoriaService,
@@ -67,6 +72,10 @@ export class CatalogoComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    const hoy = new Date();
+    this.minFechaRetiro = hoy.toISOString().split('T')[0];
+    this.fechaRetiro = this.minFechaRetiro;
+
     this.cargarCategorias();
     this.cargarAutores();
     this.cargarFavoritos();
@@ -109,17 +118,37 @@ export class CatalogoComponent implements OnInit, OnDestroy {
     event.stopPropagation();
     const usuarioId = this.authService.getUserId();
     if (usuarioId === null) {
-      this.errorMsg = 'Iniciá sesión para reservar';
+      this.errorMsg = 'Inicia sesión para reservar';
       return;
     }
-    this.reservacionService.crear({ usuarioId, libroId: libro.id }).subscribe({
+    this.libroParaReservar = libro;
+    this.fechaRetiro = this.minFechaRetiro;
+    this.mostrarModalReserva = true;
+  }
+
+  cancelarReserva(): void {
+    this.mostrarModalReserva = false;
+    this.libroParaReservar = null;
+  }
+
+  confirmarReserva(): void {
+    if (!this.libroParaReservar) return;
+    const libro = this.libroParaReservar;
+    this.mostrarModalReserva = false;
+    const usuarioId = this.authService.getUserId();
+    const fechaRetiroISO = this.fechaRetiro ? this.fechaRetiro + 'T00:00:00' : undefined;
+    this.reservacionService.crear({ usuarioId: usuarioId!, libroId: libro.id, fechaRetiro: fechaRetiroISO }).subscribe({
       next: (r) => {
         this.reservacionesPendientes.marcarReservada(libro.id);
+        this.libroParaReservar = null;
         this.mostrarToast(
-          `Reservado. Tenés hasta el ${this.formatearFecha(r.fechaLimiteRetiro)} para retirarlo.`
+          `Reservado. Tienes hasta el ${this.formatearFecha(r.fechaLimiteRetiro)} para retirarlo.`
         );
       },
-      error: () => (this.errorMsg = 'Error al reservar el libro')
+      error: () => {
+        this.libroParaReservar = null;
+        this.errorMsg = 'Error al reservar el libro';
+      }
     });
   }
 

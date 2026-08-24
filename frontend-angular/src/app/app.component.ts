@@ -114,7 +114,7 @@ export class AppComponent {
 
   cerrarSesion(): void {
     this.mostrarMenuUsuario = false;
-    if (confirm('¿Seguro que querés cerrar sesión?')) {
+    if (confirm('¿Seguro que quieres cerrar sesión?')) {
       this.authService.logout();
     }
   }

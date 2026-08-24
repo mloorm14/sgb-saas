@@ -206,7 +206,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
       },
       error: (err) => {
         this.errorMsg = err.status === 403
-          ? 'No tenés permisos para modificar la configuración del sistema'
+          ? 'No tienes permisos para modificar la configuración del sistema'
           : 'Error al actualizar el valor de configuración';
       }
     });

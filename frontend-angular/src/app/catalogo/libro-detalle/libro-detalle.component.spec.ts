@@ -147,7 +147,7 @@ describe('LibroDetalleComponent', () => {
 
     component.abrirModalReserva();
 
-    expect(component.errorMsg).toBe('Iniciá sesión para reservar');
+    expect(component.errorMsg).toBe('Inicia sesión para reservar');
     expect(component.mostrarModalReserva).toBeFalse();
   });
 });

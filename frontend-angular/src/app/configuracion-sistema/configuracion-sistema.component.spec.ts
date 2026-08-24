@@ -58,7 +58,7 @@ describe('ConfiguracionSistemaComponent', () => {
     expect(component.esAdmin).toBeFalse();
 
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('No tenés permisos');
+    expect(fixture.nativeElement.textContent).toContain('No tienes permisos');
   });
 
   it('muestra errorMsg sin romper la UI si el backend falla al listar', async () => {
@@ -130,6 +130,6 @@ describe('ConfiguracionSistemaComponent', () => {
     const req = httpMock.expectOne('http://localhost:8080/api/v1/configuracion/monto_multa_diaria');
     req.flush('error', { status: 403, statusText: 'Forbidden' });
 
-    expect(component.errorMsg).toBe('No tenés permisos para modificar la configuración del sistema');
+    expect(component.errorMsg).toBe('No tienes permisos para modificar la configuración del sistema');
   });
 });
