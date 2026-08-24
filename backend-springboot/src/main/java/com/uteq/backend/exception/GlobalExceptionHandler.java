@@ -4,6 +4,7 @@ import com.uteq.backend.service.ChatbotRateLimitExcedidoException;
 import com.uteq.backend.service.CodigoVerificacionInvalidoException;
 import com.uteq.backend.service.CorreoDominioNoPermitidoException;
 import com.uteq.backend.service.CorreoYaRegistradoException;
+import com.uteq.backend.service.EstadoReservacionInicialNoConfiguradoException;
 import com.uteq.backend.service.LimitePrestamosExcedidoException;
 import com.uteq.backend.service.LimiteRenovacionesExcedidoException;
 import com.uteq.backend.service.LoginRateLimitExcedidoException;
@@ -60,6 +61,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(LimitePrestamosExcedidoException.class)
     public ProblemDetail handleLimitePrestamosExcedido(LimitePrestamosExcedidoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(EstadoReservacionInicialNoConfiguradoException.class)
+    public ProblemDetail handleEstadoReservacionInicialNoConfigurado(EstadoReservacionInicialNoConfiguradoException ex) {
+        // 503: es un error de configuración del sistema (falta seed), no del cliente
+        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
     }
 
     @ExceptionHandler(BadCredentialsException.class)

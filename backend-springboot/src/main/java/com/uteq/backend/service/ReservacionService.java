@@ -65,12 +65,12 @@ public class ReservacionService {
     }
 
     private Reservacion fromDTO(ReservacionRequestDTO dto) {
-        // Se usa IllegalStateException: si falta la fila
+        // Se usa EstadoReservacionInicialNoConfiguradoException: si falta la fila
         // PENDIENTE en estados_reservacion es un problema de seed/configuración
         // del sistema, no un error del cliente -- mismo criterio que
         // LibroService.eliminar() con el catálogo estados_libro.
         EstadoReservacion estadoInicial = estadoReservacionRepo.findByNombre(ESTADO_INICIAL)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new EstadoReservacionInicialNoConfiguradoException(
                         "Catálogo estados_reservacion sin fila '" + ESTADO_INICIAL + "'"));
 
         OffsetDateTime ahora = OffsetDateTime.now();
@@ -109,7 +109,7 @@ public class ReservacionService {
         // reservación ya aceptada no tiene endpoint (fuera del alcance del
         // RF-10, documentado en el resumen de la rama).
         EstadoReservacion estadoInicial = estadoReservacionRepo.findByNombre(ESTADO_INICIAL)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new EstadoReservacionInicialNoConfiguradoException(
                         "Catálogo estados_reservacion sin fila '" + ESTADO_INICIAL + "'"));
         if (!estadoInicial.getId().equals(reservacion.getEstadoReservacionId())) {
             throw new IllegalStateException(
