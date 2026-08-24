@@ -314,8 +314,17 @@ export class PrestamosGestionComponent {
   // ── Caso C ──────────────────────────────────────────────
   gestionarMultas(): void {
     if (!this.usuario) return;
-    const dentroDelPanel = this.router.url.includes('/dashboard-bibliotecario');
-    const ruta = dentroDelPanel ? ['/dashboard-bibliotecario', 'multas'] : ['/multas'];
+    const url = this.router.url;
+    let ruta: string[];
+    if (url.includes('/dashboard-admin')) {
+      ruta = ['/dashboard-admin', 'multas'];
+    } else if (url.includes('/dashboard-bibliotecario')) {
+      ruta = ['/dashboard-bibliotecario', 'multas'];
+    } else if (url.includes('/dashboard-lector')) {
+      ruta = ['/dashboard-lector', 'multas'];
+    } else {
+      ruta = ['/multas'];
+    }
     this.router.navigate(ruta, { queryParams: { usuarioId: this.usuario.id } });
   }
 
