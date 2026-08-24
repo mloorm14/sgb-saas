@@ -62,10 +62,10 @@ public class GeminiClient {
                 .build();
 
         if (apiKey == null || apiKey.isBlank()) {
-            log.warn("GEMINI_API_KEY no está configurada — las llamadas a Gemini fallarán");
-        } else {
-            log.info("GeminiClient inicializado: modelo={}, url={}", modelo, urlBase);
+            throw new IllegalStateException(
+                    "GEMINI_API_KEY no configurada. Defínala en variables de entorno (Render) o .env local.");
         }
+        log.info("GeminiClient inicializado: modelo={}, url={}", modelo, urlBase);
     }
 
     // ── API legacy (sin tools, backward-compatible) ───────────────────────
@@ -108,12 +108,12 @@ public class GeminiClient {
                 if (intento == 0) continue;
                 return GeminiResponse.texto(MENSAJE_SATURADO);
             } catch (HttpClientErrorException ex) {
-                log.error("Gemini respondió {} en intento {}: body={}",
-                        ex.getStatusCode(), intento + 1, ex.getResponseBodyAsString());
+                String responseBody = ex.getResponseBodyAsString();
+                log.error("Gemini respondió {} en intento {}: body completo={}", ex.getStatusCode(), intento + 1, responseBody);
                 return GeminiResponse.texto(MENSAJE_FALLBACK_GENERICO);
             } catch (HttpServerErrorException ex) {
-                log.error("Gemini respondió error de servidor {} en intento {}: body={}",
-                        ex.getStatusCode(), intento + 1, ex.getResponseBodyAsString());
+                String responseBody = ex.getResponseBodyAsString();
+                log.error("Gemini respondió error de servidor {} en intento {}: body completo={}", ex.getStatusCode(), intento + 1, responseBody);
                 return GeminiResponse.texto(MENSAJE_FALLBACK_GENERICO);
             }
         }
@@ -196,8 +196,7 @@ public class GeminiClient {
             throw new IllegalStateException("No se pudo serializar el payload de Gemini", ex);
         }
 
-        log.debug("Payload Gemini (tools={}): {}", tools != null ? tools.size() : 0,
-                jsonBody.length() > 500 ? jsonBody.substring(0, 500) + "..." : jsonBody);
+        log.debug("Payload Gemini completo (tools={}): {}", tools != null ? tools.size() : 0, jsonBody);
 
         String respuestaJson = restClient.post()
                 .uri(url)
@@ -206,7 +205,7 @@ public class GeminiClient {
                 .retrieve()
                 .body(String.class);
 
-        log.debug("Respuesta cruda de Gemini: {}", respuestaJson);
+        log.debug("Respuesta cruda completa de Gemini: {}", respuestaJson);
         return parsearRespuesta(respuestaJson);
     }
 
@@ -243,7 +242,7 @@ public class GeminiClient {
             return GeminiResponse.texto(texto);
 
         } catch (Exception ex) {
-            log.error("No se pudo parsear la respuesta de Gemini", ex);
+            log.error("No se pudo parsear la respuesta de Gemini: {}", respuestaJson, ex);
             return GeminiResponse.texto(MENSAJE_FALLBACK_GENERICO);
         }
     }

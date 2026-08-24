@@ -112,7 +112,7 @@ public class ChatbotOrchestrator {
                 mensajeChatRepo.findBySesionIdOrderByCreadoEnAsc(sesion.getId());
 
         // Loop de function calling
-        String respuestaFinal = ejecutarLoopFunctionCalling(promptSistema, historial, dto.texto(), tools);
+        String respuestaFinal = ejecutarLoopFunctionCalling(promptSistema, historial, dto.texto(), tools, usuarioId);
 
         // Persistir respuesta del asistente
         MensajeChat msgAsistente = new MensajeChat();
@@ -151,7 +151,8 @@ public class ChatbotOrchestrator {
             String promptSistema,
             List<MensajeChat> historial,
             String mensajeUsuario,
-            List<Map<String, Object>> tools) {
+            List<Map<String, Object>> tools,
+            Long usuarioId) {
 
         // Trabajamos con una copia mutable del historial
         List<MensajeChat> historialTrabajo = new ArrayList<>(historial);
@@ -169,8 +170,11 @@ public class ChatbotOrchestrator {
             log.info("Function call iteración {}: {} con args {}",
                     i + 1, respuesta.functionName(), respuesta.functionArgs());
 
+            // Inyectar usuario_id si la tool lo requiere
+            JsonNode argsFinal = inyectarUsuarioIdSiRequerido(respuesta.functionName(), respuesta.functionArgs(), usuarioId);
+
             // Ejecutar la tool real
-            JsonNode resultado = toolRegistry.execute(respuesta.functionName(), respuesta.functionArgs());
+            JsonNode resultado = toolRegistry.execute(respuesta.functionName(), argsFinal);
 
             // Agregar al historial: el functionCall y el functionResponse
             MensajeChat msgFuncCall = new MensajeChat();
@@ -256,5 +260,29 @@ public class ChatbotOrchestrator {
         Usuario usuario = usuarioRepo.findByCorreo(correo)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo));
         return usuario.getId();
+    }
+
+    /**
+     * Inyecta automáticamente {@code usuario_id} en los argumentos de una tool
+     * si el schema de la tool lo requiere (está en el array {@code required}).
+     * <p>
+     * Esto evita que Gemini tenga que conocer el ID del usuario autenticado,
+     * y permite que tools como {@code consultar_multas}, {@code consultar_prestamos}
+     * y {@code consultar_reservaciones} funcionen transparentes.
+     */
+    private JsonNode inyectarUsuarioIdSiRequerido(String toolName, JsonNode args, Long usuarioId) {
+        if (toolRegistry.requiresUserId(toolName)) {
+            if (args == null || args.isNull() || !args.has("usuario_id") || args.path("usuario_id").asLong(0) == 0) {
+                ObjectNode argsConUsuario = mapper.createObjectNode();
+                if (args != null && !args.isNull()) {
+                    // Copiar campos existentes
+                    args.fields().forEachRemaining(entry -> argsConUsuario.set(entry.getKey(), entry.getValue()));
+                }
+                argsConUsuario.put("usuario_id", usuarioId);
+                log.debug("Inyectado usuario_id={} en tool {}", usuarioId, toolName);
+                return argsConUsuario;
+            }
+        }
+        return args;
     }
 }

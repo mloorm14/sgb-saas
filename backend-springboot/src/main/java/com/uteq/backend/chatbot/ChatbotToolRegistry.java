@@ -80,4 +80,34 @@ public class ChatbotToolRegistry {
     public boolean contains(String toolName) {
         return tools.containsKey(toolName);
     }
+
+    /**
+     * Retorna el JSON Schema de entrada de una tool por nombre.
+     * Útil para inspección dinámica (ej: verificar si requiere usuario_id).
+     */
+    public JsonNode getToolSchema(String toolName) {
+        ChatbotTool tool = tools.get(toolName);
+        if (tool == null) {
+            return MAPPER.createObjectNode();
+        }
+        return tool.getInputSchema();
+    }
+
+    /**
+     * Verifica si una tool requiere el parámetro {@code usuario_id} en su schema.
+     * Busca en el array {@code required} del JSON Schema.
+     */
+    public boolean requiresUserId(String toolName) {
+        JsonNode schema = getToolSchema(toolName);
+        JsonNode required = schema.path("required");
+        if (!required.isArray()) {
+            return false;
+        }
+        for (JsonNode req : required) {
+            if ("usuario_id".equals(req.asText())) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
