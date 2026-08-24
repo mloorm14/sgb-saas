@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { PrestamoService } from '../core/services/prestamo.service';
 import { LibroService } from '../core/services/libro.service';
+import { AuthService } from '../core/services/auth.service';
 import { PrestamoRequest } from '../core/models/prestamo.model';
 import {
   HistorialPrestamo,
@@ -21,6 +22,8 @@ import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.com
   templateUrl: './prestamos-gestion.component.html'
 })
 export class PrestamosGestionComponent {
+
+  showSinPermisosModal = false;
 
   // ── Búsqueda por correo (con autocompletado) ─────────────
   correoBusqueda: string = '';
@@ -57,7 +60,8 @@ export class PrestamosGestionComponent {
   constructor(
     private prestamoService: PrestamoService,
     private libroService: LibroService,
-    private router: Router
+    private router: Router,
+    private authService: AuthService
   ) {
     this.busquedaCorreo$.pipe(
       debounceTime(1300),
@@ -314,11 +318,13 @@ export class PrestamosGestionComponent {
   // ── Caso C ──────────────────────────────────────────────
   gestionarMultas(): void {
     if (!this.usuario) return;
+    if (this.authService.hasRole('ADMIN')) {
+      this.showSinPermisosModal = true;
+      return;
+    }
     const url = this.router.url;
     let ruta: string[];
-    if (url.includes('/dashboard-admin')) {
-      ruta = ['/dashboard-admin', 'multas'];
-    } else if (url.includes('/dashboard-bibliotecario')) {
+    if (url.includes('/dashboard-bibliotecario')) {
       ruta = ['/dashboard-bibliotecario', 'multas'];
     } else if (url.includes('/dashboard-lector')) {
       ruta = ['/dashboard-lector', 'multas'];
@@ -326,6 +332,10 @@ export class PrestamosGestionComponent {
       ruta = ['/multas'];
     }
     this.router.navigate(ruta, { queryParams: { usuarioId: this.usuario.id } });
+  }
+
+  cerrarSinPermisosModal(): void {
+    this.showSinPermisosModal = false;
   }
 
   // ── Presentación ────────────────────────────────────────
