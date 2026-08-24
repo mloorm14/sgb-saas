@@ -25,8 +25,8 @@
 
   <!-- Buscador predictivo + filtro por categoría -->
   <div class="max-w-3xl mx-auto mb-xl">
-    <div class="flex gap-sm items-stretch">
-      <div class="flex-1 rounded border border-outline-variant bg-white flex items-center px-sm glass-panel">
+    <div class="flex gap-sm items-stretch flex-wrap">
+      <div class="flex-1 min-w-[200px] rounded border border-outline-variant bg-white flex items-center px-sm glass-panel">
         <span class="material-symbols-outlined text-outline text-[20px] mr-xs">search</span>
         <input type="text" placeholder="Buscar por título..."
           [(ngModel)]="textoBusqueda"
@@ -35,7 +35,7 @@
           class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-md text-body-md text-on-surface placeholder-outline" />
       </div>
       <select (change)="onCategoriaChange($any($event.target).value ? +$any($event.target).value : null)"
-        class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface cursor-pointer">
+        class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface cursor-pointer relative z-10">
         <option [value]="''">Todas las categorías</option>
         @for (cat of categorias; track cat.id) {
           <option [value]="cat.id">{{ cat.nombre }}</option>

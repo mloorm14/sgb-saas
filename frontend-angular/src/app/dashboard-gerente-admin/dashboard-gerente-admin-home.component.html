@@ -34,21 +34,23 @@
     } @else {
       <div class="space-y-sm">
         @for (r of reservacionesHoy; track r.reservacionId) {
-          <div class="flex items-center gap-md p-sm rounded-lg border border-outline-variant">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-sm p-sm rounded-lg border border-outline-variant">
             <div class="flex-1 min-w-0">
               <p class="font-body-sm text-[13px] text-on-surface truncate">{{ r.libroTitulo }}</p>
               <p class="font-label-sm text-[11px] text-on-surface-variant truncate">{{ r.usuarioNombre }} · {{ r.usuarioCorreo }}</p>
             </div>
-            <span class="font-label-sm text-[11px] px-sm py-0.5 rounded-full shrink-0"
-              [class]="r.estadoNombre === 'LISTA_PARA_RETIRO' ? 'bg-secondary-container/30 text-secondary' : 'bg-warning/20 text-tertiary'">
-              {{ r.estadoNombre === 'LISTA_PARA_RETIRO' ? 'Lista para retiro' : 'Pendiente' }}
-            </span>
-            @if (r.estadoNombre === 'PENDIENTE') {
-              <button (click)="marcarListaParaRetiro(r.reservacionId)"
-                class="shrink-0 h-8 px-sm rounded-lg bg-primary text-on-primary font-label-sm text-[12px] hover:opacity-90 transition-opacity">
-                Marcar lista
-              </button>
-            }
+            <div class="flex items-center gap-sm shrink-0">
+              <span class="font-label-sm text-[11px] px-sm py-0.5 rounded-full"
+                [class]="r.estadoNombre === 'LISTA_PARA_RETIRO' ? 'bg-secondary-container/30 text-secondary' : 'bg-warning/20 text-tertiary'">
+                {{ r.estadoNombre === 'LISTA_PARA_RETIRO' ? 'Lista para retiro' : 'Pendiente' }}
+              </span>
+              @if (r.estadoNombre === 'PENDIENTE') {
+                <button (click)="marcarListaParaRetiro(r.reservacionId)"
+                  class="h-8 px-sm rounded-lg bg-primary text-on-primary font-label-sm text-[12px] hover:opacity-90 transition-opacity">
+                  Marcar lista
+                </button>
+              }
+            </div>
           </div>
         }
       </div>
@@ -117,9 +119,9 @@
 
     <!-- Grafica de barras: libros mas prestados -->
     <div class="lg:col-span-3 rounded-xl border border-outline-variant bg-white p-lg">
-      <div class="flex items-center justify-between mb-lg">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-sm mb-lg">
         <h2 class="font-headline-md text-headline-md text-on-background">Libros más prestados</h2>
-        <div class="flex items-center gap-1 bg-surface-container-low rounded-full p-1">
+        <div class="flex items-center gap-1 bg-surface-container-low rounded-full p-1 shrink-0">
           @for (opcion of [5, 10, 20]; track opcion) {
             <button (click)="cambiarLimiteLibros(opcion)"
               class="px-sm py-1 rounded-full font-label-sm text-[11px] transition-colors"
@@ -150,6 +152,9 @@
             </g>
           }
         </svg>
+        <a routerLink="/dashboard-admin/reportes" class="inline-flex items-center gap-xs mt-md font-label-sm text-label-sm text-primary hover:underline">
+          Ver reporte completo <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+        </a>
       }
     </div>
 
@@ -242,6 +247,11 @@
           </tbody>
         </table>
       </div>
+    }
+    @if (usuariosEnMora.length > 0) {
+      <a routerLink="/dashboard-admin/reportes" class="inline-flex items-center gap-xs mt-md font-label-sm text-label-sm text-primary hover:underline">
+        Ver morosidad completa <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+      </a>
     }
   </div>
 
