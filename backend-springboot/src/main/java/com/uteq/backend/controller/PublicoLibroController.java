@@ -68,7 +68,7 @@ public class PublicoLibroController {
     // ── GET /api/publico/libros/{id} ─────────────────────────────────
     @GetMapping("/{id}")
     public LibroResponseDTO obtener(@PathVariable Long id) {
-        return libroService.buscarPorId(id);
+        return libroService.buscarPorIdPublico(id);
     }
 
     // ── GET /api/publico/libros/{id}/portada ─────────────────────────

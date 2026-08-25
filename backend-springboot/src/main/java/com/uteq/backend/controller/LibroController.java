@@ -61,6 +61,17 @@ public class LibroController {
         return ResponseEntity.ok(libroService.sugerir(texto));
     }
 
+    // ── GET /api/v1/libros/pendientes ────────────────
+    // Listado de libros pendientes de revisión (GERENTE/ADMIN crean como PENDIENTE)
+    @GetMapping("/pendientes")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    public ResponseEntity<Page<LibroResponseDTO>> pendientes(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) Integer anioPublicacion,
+            @PageableDefault(size = 10, sort = "fechaRegistro,desc") Pageable pageable) {
+        return ResponseEntity.ok(libroService.listarPendientes(q, anioPublicacion, pageable));
+    }
+
     // ── GET /api/v1/libros/lookup-isbn?isbn= ─────────────
     // Módulo inventario (mockup 14): autocompletar desde Google Books.
     // La ruta literal /lookup-isbn gana sobre /{id} (Spring elige el
@@ -68,8 +79,8 @@ public class LibroController {
     @GetMapping("/lookup-isbn")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<LibroIsbnLookupDTO> lookupIsbn(
-            @RequestParam @Pattern(regexp = "^[0-9\\-]{10,17}$", message = "ISBN inválido")
-            @Size(max = 13, message = "El ISBN no puede superar 13 caracteres") String isbn) {
+            @RequestParam @Pattern(regexp = "^[0-9]{10,13}$", message = "ISBN debe tener 10 a 13 dígitos")
+            @Size(min = 10, max = 13, message = "El ISBN debe tener entre 10 y 13 caracteres") String isbn) {
         return ResponseEntity.ok(libroIsbnLookupService.buscarPorIsbn(isbn));
     }
 
@@ -80,8 +91,8 @@ public class LibroController {
     @GetMapping("/lookup-isbn/portada")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<byte[]> lookupIsbnPortada(
-            @RequestParam @Pattern(regexp = "^[0-9\\-]{10,17}$", message = "ISBN inválido")
-            @Size(max = 13, message = "El ISBN no puede superar 13 caracteres") String isbn) {
+            @RequestParam @Pattern(regexp = "^[0-9]{10,13}$", message = "ISBN debe tener 10 a 13 dígitos")
+            @Size(min = 10, max = 13, message = "El ISBN debe tener entre 10 y 13 caracteres") String isbn) {
         PortadaImagenDTO portada = libroIsbnLookupService.obtenerPortada(isbn);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(portada.contentType()))

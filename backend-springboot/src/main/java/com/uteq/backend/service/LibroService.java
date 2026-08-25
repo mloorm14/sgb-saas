@@ -34,6 +34,7 @@ public class LibroService {
     private static final String LIBRO_NO_ENCONTRADO = "Libro no encontrado con id: ";
     private static final String ESTADO_ACTIVO = "ACTIVO";
     private static final String ESTADO_DADO_DE_BAJA = "DADO_DE_BAJA";
+    private static final String ESTADO_PENDIENTE = "PENDIENTE";
     // Módulo portada binaria: límite de tamaño (MB) en configuracion_sistema
     // (misma clave que inserta V13__portada_imagen.sql), no hardcodeada acá
     // -- el Admin la ajusta sin despliegue nuevo vía ConfiguracionSistema.
@@ -116,6 +117,26 @@ public class LibroService {
                 .getId();
     }
 
+    @Transactional(readOnly = true)
+    public Page<LibroResponseDTO> listarPendientes(String q, Integer anioPublicacion, Pageable pageable) {
+        Integer pendienteId = estadoRepo.findByNombre(ESTADO_PENDIENTE)
+                .orElseThrow(() -> new IllegalStateException("Catálogo estados_libro sin fila '" + ESTADO_PENDIENTE + "'"))
+                .getId();
+        Page<LibroResponseDTO> base;
+        if (q != null && !q.isBlank()) {
+            base = libroRepo.buscarPorTextoOIsbn(q, pendienteId, pageable).map(this::toDTO);
+        } else {
+            base = libroRepo.findByEstadoId(pendienteId, pageable).map(this::toDTO);
+        }
+        if (anioPublicacion != null) {
+            List<LibroResponseDTO> filtrados = base.getContent().stream()
+                    .filter(l -> anioPublicacion.equals(l.anioPublicacion()))
+                    .toList();
+            return new org.springframework.data.domain.PageImpl<>(filtrados, pageable, filtrados.size());
+        }
+        return base;
+    }
+
     // Módulo 9.1: filtros de catálogo por categoría/autor
     // (LibroController ?categoriaId=/?autorId=). No lleva @Cacheable a
     // propósito: el cache "libros" ya cachea el listado sin filtro
@@ -138,6 +159,14 @@ public class LibroService {
 
     @Transactional(readOnly = true)
     public LibroResponseDTO buscarPorId(Long id) {
+        return libroRepo.findById(id)
+                .map(this::toDTO)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        LIBRO_NO_ENCONTRADO + id));
+    }
+
+    @Transactional(readOnly = true)
+    public LibroResponseDTO buscarPorIdPublico(Long id) {
         return libroRepo.findById(id)
                 .filter(l -> l.getEstado() != null && ESTADO_ACTIVO.equals(l.getEstado().getNombre()))
                 .map(this::toDTO)
@@ -175,8 +204,34 @@ public class LibroService {
             throw new IllegalArgumentException(
                     "ISBN ya registrado: " + dto.isbn());
         }
+        validarAnio(dto.anioPublicacion());
+        validarResumen(dto.resumen());
         validarStock(dto.stockTotal(), dto.stockDisponible());
-        return toDTO(libroRepo.save(fromDTO(dto)));
+        if (dto.numeroPaginas() != null && dto.numeroPaginas() <= 0) {
+            throw new IllegalArgumentException("El número de páginas debe ser mayor a 0");
+        }
+        if (dto.precioBase() != null && dto.precioBase().signum() < 0) {
+            throw new IllegalArgumentException("El precio base no puede ser negativo");
+        }
+        // Si el creador es GERENTE/ADMIN, forzar estado PENDIENTE (no visible al público)
+        Libro libro = fromDTO(dto);
+        if (esGerenteOAdmin() && dto.precioBase() != null) {
+            // precio ya seteado en fromDTO; mantenerlo
+        } else if (esGerenteOAdmin()) {
+            // gerente/admin creando sin precio también va a pendiente según regla
+            // pero permitir si explícitamente manda ACTIVO? Forzar pendiente igual
+        }
+        if (esGerenteOAdmin()) {
+            EstadoLibro pendiente = estadoRepo.findByNombre(ESTADO_PENDIENTE).orElse(null);
+            if (pendiente != null) {
+                libro.setEstado(pendiente);
+            }
+        }
+        // Bibliotecario: ignorar precioBase si viene (no autorizado)
+        if (esBibliotecarioSolo() && libro.getPrecioBase() != null) {
+            libro.setPrecioBase(null);
+        }
+        return toDTO(libroRepo.save(libro));
     }
 
     @CacheEvict(value = "libros", allEntries = true)
@@ -189,7 +244,12 @@ public class LibroService {
             throw new IllegalArgumentException(
                     "ISBN ya usado por otro libro: " + dto.isbn());
         }
+        validarAnio(dto.anioPublicacion());
+        validarResumen(dto.resumen());
         validarStock(dto.stockTotal(), dto.stockDisponible());
+        if (dto.numeroPaginas() != null && dto.numeroPaginas() <= 0) {
+            throw new IllegalArgumentException("El número de páginas debe ser mayor a 0");
+        }
 
         libro.setTitulo(dto.titulo());
         libro.setIsbn(dto.isbn());
@@ -197,6 +257,8 @@ public class LibroService {
         libro.setPortadaUrl(dto.portadaUrl());
         libro.setUbicacionFisica(dto.ubicacionFisica());
         libro.setAnioPublicacion(dto.anioPublicacion().shortValue());
+        if (dto.numeroPaginas() != null) libro.setNumeroPaginas(dto.numeroPaginas().shortValue());
+        else libro.setNumeroPaginas(null);
         libro.setStockTotal(dto.stockTotal().shortValue());
         libro.setStockDisponible(dto.stockDisponible().shortValue());
         libro.setEditorial(dto.editorialId() != null ? editorialRepo.getReferenceById(dto.editorialId()) : null);
@@ -204,6 +266,14 @@ public class LibroService {
         libro.setEstado(dto.estadoId() != null ? estadoRepo.getReferenceById(dto.estadoId()) : null);
         libro.setCategorias(resolverCategorias(dto.categoriaIds()));
         libro.setAutores(resolverAutores(dto.autorIds()));
+        // precioBase solo GERENTE/ADMIN puede modificar
+        if (esGerenteOAdmin()) {
+            if (dto.precioBase() != null && dto.precioBase().signum() < 0) {
+                throw new IllegalArgumentException("El precio base no puede ser negativo");
+            }
+            libro.setPrecioBase(dto.precioBase());
+        }
+        // si es bibliotecario solo, ignorar dto.precioBase (no se modifica)
 
         return toDTO(libroRepo.save(libro));
     }
@@ -293,6 +363,34 @@ public class LibroService {
         }
     }
 
+    private void validarAnio(Integer anio) {
+        if (anio == null) return;
+        int max = java.time.Year.now().getValue() + 1;
+        if (anio < 1950 || anio > max) {
+            throw new IllegalArgumentException("El año debe estar entre 1950 y " + max);
+        }
+    }
+
+    private void validarResumen(String resumen) {
+        if (resumen != null && resumen.length() > 2000) {
+            throw new IllegalArgumentException("El resumen no puede superar 2000 caracteres");
+        }
+    }
+
+    private boolean esGerenteOAdmin() {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) return false;
+        return auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_GERENTE") || a.getAuthority().equals("ROLE_ADMIN"));
+    }
+
+    private boolean esBibliotecarioSolo() {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) return false;
+        boolean isBiblio = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_BIBLIOTECARIO"));
+        boolean isGerenteAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_GERENTE") || a.getAuthority().equals("ROLE_ADMIN"));
+        return isBiblio && !isGerenteAdmin;
+    }
+
     // getReferenceById por cada id, sin validar existencia una por una:
     // mismo criterio que editorialRepo.getReferenceById(...) arriba -- si
     // el id no existe, Hibernate lanza EntityNotFoundException recién al
@@ -330,6 +428,8 @@ public class LibroService {
                 l.getPortadaNombre(),
                 l.getPortadaTipo(),
                 l.getAnioPublicacion() != null ? l.getAnioPublicacion().intValue() : null,
+                l.getNumeroPaginas() != null ? l.getNumeroPaginas().intValue() : null,
+                l.getPrecioBase(),
                 l.getEditorial()  != null ? l.getEditorial().getId()     : null,
                 l.getEditorial()  != null ? l.getEditorial().getNombre() : null,
                 l.getIdioma()     != null ? l.getIdioma().getId()        : null,
@@ -355,6 +455,8 @@ public class LibroService {
         l.setPortadaUrl(dto.portadaUrl());
         l.setUbicacionFisica(dto.ubicacionFisica());
         l.setAnioPublicacion(dto.anioPublicacion().shortValue());
+        if (dto.numeroPaginas() != null) l.setNumeroPaginas(dto.numeroPaginas().shortValue());
+        l.setPrecioBase(dto.precioBase());
         l.setStockTotal(dto.stockTotal().shortValue());
         l.setStockDisponible(dto.stockDisponible().shortValue());
         l.setEditorial(editorialRepo.getReferenceById(dto.editorialId()));

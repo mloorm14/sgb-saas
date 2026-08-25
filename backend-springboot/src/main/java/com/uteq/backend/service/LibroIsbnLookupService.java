@@ -90,6 +90,7 @@ public class LibroIsbnLookupService {
             String resumen = volumeInfo.path("description").asText(null);
             Integer anio = anioDesde(volumeInfo.path("publishedDate").asText(null));
             boolean portada = !volumeInfo.path("imageLinks").path("thumbnail").isMissingNode();
+            String editorial = volumeInfo.path("publisher").asText(null);
 
             // Solo titulo/resumen/anio son requeridos por el frontend; si Google trae alguno vacío,
             // se intenta complementar con IA (traducción/generación de resumen en español neutro).
@@ -98,7 +99,7 @@ public class LibroIsbnLookupService {
                 if (iaResumen != null && !iaResumen.isBlank()) resumen = iaResumen;
             }
 
-            return new LibroIsbnLookupDTO(titulo, autor, resumen, anio, portada);
+            return new LibroIsbnLookupDTO(titulo, autor, resumen, anio, portada, editorial);
         } catch (EntityNotFoundException ex) {
             // Google no encontró (o 429): fallback a Open Library (gratis, sin key, mejor para fondo español).
             LibroIsbnLookupDTO ol = buscarEnOpenLibrary(isbn);
@@ -107,7 +108,7 @@ public class LibroIsbnLookupService {
                 if ((ol.resumen() == null || ol.resumen().isBlank()) && geminiClient != null) {
                     String iaResumen = generarResumenViaIA(ol.titulo(), ol.autor(), isbn);
                     if (iaResumen != null && !iaResumen.isBlank()) {
-                        return new LibroIsbnLookupDTO(ol.titulo(), ol.autor(), iaResumen, ol.anioPublicacion(), ol.portadaDisponible());
+                        return new LibroIsbnLookupDTO(ol.titulo(), ol.autor(), iaResumen, ol.anioPublicacion(), ol.portadaDisponible(), ol.editorial());
                     }
                 }
                 return ol;
@@ -144,9 +145,12 @@ public class LibroIsbnLookupService {
                 if (m.find()) anio = Integer.parseInt(m.group(1));
             }
             boolean portada = data.has("cover") && !data.path("cover").path("medium").isMissingNode();
+            String editorial = null;
+            JsonNode pubs = data.path("publishers");
+            if (pubs.isArray() && pubs.size() > 0) editorial = pubs.get(0).path("name").asText(null);
             if (titulo == null && resumen == null && anio == null) return null;
             log.info("Open Library fallback OK para ISBN {} -> {}", isbn, titulo);
-            return new LibroIsbnLookupDTO(titulo, autor, resumen, anio, portada);
+            return new LibroIsbnLookupDTO(titulo, autor, resumen, anio, portada, editorial);
         } catch (Exception e) {
             log.debug("Open Library fallback falló para ISBN {}", isbn, e);
             return null;
