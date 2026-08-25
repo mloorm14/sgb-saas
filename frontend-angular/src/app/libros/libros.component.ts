@@ -1,12 +1,14 @@
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { LibroService } from '../core/services/libro.service';
 import { CategoriaService } from '../core/services/categoria.service';
 import { AutorService } from '../core/services/autor.service';
 import { EditorialService } from '../core/services/editorial.service';
 import { IdiomaService } from '../core/services/idioma.service';
 import { EstadoLibroService } from '../core/services/estado-libro.service';
+import { AuthService } from '../core/services/auth.service';
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
 import { Categoria } from '../core/models/categoria.model';
 import { Autor } from '../core/models/autor.model';
@@ -30,6 +32,7 @@ export class LibrosComponent implements OnInit, OnDestroy {
   errorMsg: string = '';
   mostrarFormulario: boolean = false;
   modoEdicion: boolean = false;
+  modoRevisionPendiente: boolean = false;
   libroSeleccionadoId: number | null = null;
   form: FormGroup;
   lookupError: string = '';
@@ -50,20 +53,32 @@ export class LibrosComponent implements OnInit, OnDestroy {
 
   textoAutor: string = '';
   textoCategoria: string = '';
+  textoEditorial: string = '';
+  textoIdioma: string = '';
 
   textoBusqueda: string = '';
   estadoLibroFiltro: number | null = null;
 
   sugerenciasAutor: Autor[] = [];
   sugerenciasCategoria: Categoria[] = [];
+  sugerenciasEditorial: Editorial[] = [];
+  sugerenciasIdioma: Idioma[] = [];
   mostrarSugerenciasAutor: boolean = false;
   mostrarSugerenciasCategoria: boolean = false;
+  mostrarSugerenciasEditorial: boolean = false;
+  mostrarSugerenciasIdioma: boolean = false;
   indiceAutor: number = -1;
   indiceCategoria: number = -1;
+  indiceEditorial: number = -1;
+  indiceIdioma: number = -1;
+
+  editorialSeleccionadaNombre: string = '';
+  idiomaSeleccionadoNombre: string = '';
+
+  anioMax: number = new Date().getFullYear() + 1;
+  esGerenteAdmin: boolean = false;
 
   private busqueda$ = new Subject<string>();
-  private autorBusqueda$ = new Subject<string>();
-  private categoriaBusqueda$ = new Subject<string>();
   private destroy$ = new Subject<void>();
 
   get paginasVisibles(): number[] {
@@ -77,16 +92,22 @@ export class LibrosComponent implements OnInit, OnDestroy {
     private editorialService: EditorialService,
     private idiomaService: IdiomaService,
     private estadoLibroService: EstadoLibroService,
+    private authService: AuthService,
+    private route: ActivatedRoute,
+    private router: Router,
     private fb: FormBuilder
   ) {
+    this.esGerenteAdmin = this.authService.hasRole('GERENTE', 'ADMIN');
     this.form = this.fb.group({
-      isbn: ['', [Validators.required]],
-      titulo: ['', [Validators.required]],
-      resumen: [''],
-      ubicacionFisica: [''],
-      anioPublicacion: ['', [Validators.required]],
-      stockTotal: ['', [Validators.required]],
-      stockDisponible: ['', [Validators.required]],
+      isbn: ['', [Validators.required, Validators.pattern('^[0-9]{10,13}$'), Validators.minLength(10), Validators.maxLength(13)]],
+      titulo: ['', [Validators.required, Validators.maxLength(255)]],
+      resumen: ['', [Validators.maxLength(2000)]],
+      ubicacionFisica: ['', [Validators.maxLength(50)]],
+      anioPublicacion: ['', [Validators.required, Validators.min(1950), Validators.max(this.anioMax)]],
+      numeroPaginas: ['', [Validators.min(1), Validators.max(99999)]],
+      precioBase: [{ value: '', disabled: !this.esGerenteAdmin }, [Validators.min(0)]],
+      stockTotal: ['', [Validators.required, Validators.min(0)]],
+      stockDisponible: ['', [Validators.required, Validators.min(0)]],
       editorialId: [null, [Validators.required]],
       idiomaId: [null, [Validators.required]],
       estadoId: [null, [Validators.required]],
@@ -105,43 +126,20 @@ export class LibrosComponent implements OnInit, OnDestroy {
       takeUntil(this.destroy$)
     ).subscribe(() => { this.currentPage = 0; this.cargarLibros(); });
 
-    this.autorBusqueda$.pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      takeUntil(this.destroy$)
-    ).subscribe(texto => {
-      if (!texto.trim()) { this.sugerenciasAutor = []; return; }
-      this.autorService.buscar(texto).subscribe({
-        next: (result) => { this.sugerenciasAutor = result; this.indiceAutor = -1; },
-        error: () => { this.sugerenciasAutor = []; }
-      });
-    });
-
-    this.categoriaBusqueda$.pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      takeUntil(this.destroy$)
-    ).subscribe(texto => {
-      if (!texto.trim()) { this.sugerenciasCategoria = []; return; }
-      this.categoriaService.buscar(texto).subscribe({
-        next: (result) => { this.sugerenciasCategoria = result; this.indiceCategoria = -1; },
-        error: () => { this.sugerenciasCategoria = []; }
-      });
-    });
-
-    // Auto-lookup ISBN: 13 dígitos sin guiones + 2s debounce, sin romper botón manual
-    this.form.get('isbn')!.valueChanges.pipe(
-      debounceTime(2000),
-      distinctUntilChanged(),
-      takeUntil(this.destroy$)
-    ).subscribe((val: string) => {
-      const raw = (val ?? '').trim();
-      const limpio = raw.replace(/-/g, '').replace(/\s/g, '');
-      if (limpio.length !== 13) return;
-      if (!/^[0-9]{13}$/.test(limpio)) return;
-      if (!/^[0-9\-]{10,17}$/.test(raw)) return;
-      if (!this.mostrarFormulario) return;
-      this.ejecutarLookupIsbn(raw, true);
+    // Soporte para modo revisión pendiente vía query param ?revision=ID
+    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      const rev = params['revision'];
+      if (rev) {
+        const id = Number(rev);
+        if (!isNaN(id)) {
+          this.libroService.obtener(id).subscribe({
+            next: (libro) => {
+              this.abrirFormularioEditar(libro, true);
+            },
+            error: () => { this.errorMsg = 'No se pudo cargar el libro pendiente'; }
+          });
+        }
+      }
     });
   }
 
@@ -226,30 +224,47 @@ export class LibrosComponent implements OnInit, OnDestroy {
 
   abrirFormularioCrear(): void {
     this.modoEdicion = false;
+    this.modoRevisionPendiente = false;
     this.libroSeleccionadoId = null;
-    this.form.reset({ categoriaIds: [], autorIds: [], editorialId: null, idiomaId: null, estadoId: null });
+    this.form.reset({ categoriaIds: [], autorIds: [], editorialId: null, idiomaId: null, estadoId: null, numeroPaginas: '', precioBase: '' });
+    if (this.esGerenteAdmin) this.form.get('precioBase')?.enable(); else this.form.get('precioBase')?.disable();
     this.limpiarPortada();
     this.textoAutor = '';
     this.textoCategoria = '';
+    this.textoEditorial = '';
+    this.textoIdioma = '';
+    this.editorialSeleccionadaNombre = '';
+    this.idiomaSeleccionadoNombre = '';
     this.sugerenciasAutor = [];
     this.sugerenciasCategoria = [];
+    this.sugerenciasEditorial = [];
+    this.sugerenciasIdioma = [];
     this.mostrarFormulario = true;
   }
 
-  abrirFormularioEditar(libro: Libro): void {
+  abrirFormularioEditar(libro: Libro, esRevisionPendiente: boolean = false): void {
     this.modoEdicion = true;
+    this.modoRevisionPendiente = esRevisionPendiente;
     this.libroSeleccionadoId = libro.id;
     this.limpiarPortada();
     this.textoAutor = '';
     this.textoCategoria = '';
+    this.textoEditorial = '';
+    this.textoIdioma = '';
     this.sugerenciasAutor = [];
     this.sugerenciasCategoria = [];
+    this.sugerenciasEditorial = [];
+    this.sugerenciasIdioma = [];
+    this.editorialSeleccionadaNombre = libro.editorial ?? '';
+    this.idiomaSeleccionadoNombre = libro.idioma ?? '';
     this.form.patchValue({
       isbn: libro.isbn,
       titulo: libro.titulo,
       resumen: libro.resumen,
       ubicacionFisica: libro.ubicacionFisica,
       anioPublicacion: libro.anioPublicacion,
+      numeroPaginas: libro.numeroPaginas ?? '',
+      precioBase: libro.precioBase ?? '',
       stockTotal: libro.stockTotal,
       stockDisponible: libro.stockDisponible,
       editorialId: libro.editorialId,
@@ -258,6 +273,14 @@ export class LibrosComponent implements OnInit, OnDestroy {
       categoriaIds: this.idsDeNombres(this.categorias, libro.categorias),
       autorIds: this.idsDeNombres(this.autores, libro.autores)
     });
+    // Precio solo editable por GERENTE/ADMIN, y nunca en modo revisión pendiente si es bibliotecario
+    if (this.modoRevisionPendiente && !this.esGerenteAdmin) {
+      this.form.get('precioBase')?.disable();
+    } else if (this.esGerenteAdmin) {
+      this.form.get('precioBase')?.enable();
+    } else {
+      this.form.get('precioBase')?.disable();
+    }
     this.mostrarFormulario = true;
   }
 
@@ -270,20 +293,31 @@ export class LibrosComponent implements OnInit, OnDestroy {
 
   cerrarFormulario(): void {
     this.mostrarFormulario = false;
-    this.form.reset({ categoriaIds: [], autorIds: [], editorialId: null, idiomaId: null, estadoId: null });
+    this.modoRevisionPendiente = false;
+    this.form.reset({ categoriaIds: [], autorIds: [], editorialId: null, idiomaId: null, estadoId: null, numeroPaginas: '', precioBase: '' });
+    if (this.esGerenteAdmin) this.form.get('precioBase')?.enable(); else this.form.get('precioBase')?.disable();
     this.limpiarPortada();
     this.textoAutor = '';
     this.textoCategoria = '';
+    this.textoEditorial = '';
+    this.textoIdioma = '';
     this.sugerenciasAutor = [];
     this.sugerenciasCategoria = [];
+    this.sugerenciasEditorial = [];
+    this.sugerenciasIdioma = [];
+    // limpiar query param revision si existe
+    this.router.navigate([], { queryParams: {}, queryParamsHandling: 'merge' });
   }
 
-  // ── Autocomplete: Autores ──
+  // ── Autocomplete manual: Autores ──
 
-  onBusquedaAutor(texto: string): void {
-    this.textoAutor = texto;
-    this.autorBusqueda$.next(texto);
-    this.mostrarSugerenciasAutor = texto.trim().length >= 1;
+  buscarAutorManualmente(): void {
+    const texto = this.textoAutor.trim();
+    if (!texto) { this.sugerenciasAutor = []; this.mostrarSugerenciasAutor = false; return; }
+    this.autorService.buscar(texto).subscribe({
+      next: (result) => { this.sugerenciasAutor = result; this.indiceAutor = -1; this.mostrarSugerenciasAutor = true; },
+      error: () => { this.sugerenciasAutor = []; this.mostrarSugerenciasAutor = true; }
+    });
   }
 
   seleccionarAutor(autor: Autor): void {
@@ -299,8 +333,8 @@ export class LibrosComponent implements OnInit, OnDestroy {
     this.mostrarSugerenciasAutor = false;
   }
 
-  agregarAutor(event: Event): void {
-    event.preventDefault();
+  agregarAutor(event?: Event): void {
+    if (event) event.preventDefault();
     const texto = this.textoAutor.trim();
     if (!texto) return;
 
@@ -334,12 +368,15 @@ export class LibrosComponent implements OnInit, OnDestroy {
     return this.autores.find(a => a.id === id)?.nombre ?? `#${id}`;
   }
 
-  // ── Autocomplete: Categorías ──
+  // ── Autocomplete manual: Categorías ──
 
-  onBusquedaCategoria(texto: string): void {
-    this.textoCategoria = texto;
-    this.categoriaBusqueda$.next(texto);
-    this.mostrarSugerenciasCategoria = texto.trim().length >= 1;
+  buscarCategoriaManualmente(): void {
+    const texto = this.textoCategoria.trim();
+    if (!texto) { this.sugerenciasCategoria = []; this.mostrarSugerenciasCategoria = false; return; }
+    this.categoriaService.buscar(texto).subscribe({
+      next: (result) => { this.sugerenciasCategoria = result; this.indiceCategoria = -1; this.mostrarSugerenciasCategoria = true; },
+      error: () => { this.sugerenciasCategoria = []; this.mostrarSugerenciasCategoria = true; }
+    });
   }
 
   seleccionarCategoria(cat: Categoria): void {
@@ -355,8 +392,8 @@ export class LibrosComponent implements OnInit, OnDestroy {
     this.mostrarSugerenciasCategoria = false;
   }
 
-  agregarCategoria(event: Event): void {
-    event.preventDefault();
+  agregarCategoria(event?: Event): void {
+    if (event) event.preventDefault();
     const texto = this.textoCategoria.trim();
     if (!texto) return;
 
@@ -390,8 +427,99 @@ export class LibrosComponent implements OnInit, OnDestroy {
     return this.categorias.find(c => c.id === id)?.nombre ?? `#${id}`;
   }
 
+  // ── Autocomplete manual: Editorial ──
+  buscarEditorialManualmente(): void {
+    const texto = this.textoEditorial.trim();
+    if (!texto) { this.sugerenciasEditorial = []; this.mostrarSugerenciasEditorial = false; return; }
+    this.editorialService.buscar(texto).subscribe({
+      next: (res) => { this.sugerenciasEditorial = res; this.indiceEditorial = -1; this.mostrarSugerenciasEditorial = true; },
+      error: () => { this.sugerenciasEditorial = []; this.mostrarSugerenciasEditorial = true; }
+    });
+  }
+
+  seleccionarEditorial(ed: Editorial): void {
+    this.form.patchValue({ editorialId: ed.id });
+    this.editorialSeleccionadaNombre = ed.nombre;
+    this.textoEditorial = '';
+    this.sugerenciasEditorial = [];
+    this.mostrarSugerenciasEditorial = false;
+    if (!this.editoriales.find(e => e.id === ed.id)) this.editoriales = [...this.editoriales, ed];
+  }
+
+  agregarEditorial(event?: Event): void {
+    if (event) event.preventDefault();
+    const texto = this.textoEditorial.trim();
+    if (!texto) return;
+    const existente = this.editoriales.find(e => e.nombre.toLowerCase() === texto.toLowerCase());
+    if (existente) { this.seleccionarEditorial(existente); return; }
+    this.editorialService.crear(texto).subscribe({
+      next: (nuevo) => {
+        this.editoriales = [...this.editoriales, nuevo];
+        this.seleccionarEditorial(nuevo);
+      },
+      error: () => { this.errorMsg = 'No se pudo crear la editorial'; }
+    });
+  }
+
+  quitarEditorial(): void {
+    this.form.patchValue({ editorialId: null });
+    this.editorialSeleccionadaNombre = '';
+  }
+
+  // ── Autocomplete manual: Idioma ──
+  buscarIdiomaManualmente(): void {
+    const texto = this.textoIdioma.trim();
+    if (!texto) { this.sugerenciasIdioma = []; this.mostrarSugerenciasIdioma = false; return; }
+    this.idiomaService.buscar(texto).subscribe({
+      next: (res) => { this.sugerenciasIdioma = res; this.indiceIdioma = -1; this.mostrarSugerenciasIdioma = true; },
+      error: () => { this.sugerenciasIdioma = []; this.mostrarSugerenciasIdioma = true; }
+    });
+  }
+
+  seleccionarIdioma(idioma: Idioma): void {
+    this.form.patchValue({ idiomaId: idioma.id });
+    this.idiomaSeleccionadoNombre = idioma.nombre;
+    this.textoIdioma = '';
+    this.sugerenciasIdioma = [];
+    this.mostrarSugerenciasIdioma = false;
+    if (!this.idiomas.find(i => i.id === idioma.id)) this.idiomas = [...this.idiomas, idioma];
+  }
+
+  agregarIdioma(event?: Event): void {
+    if (event) event.preventDefault();
+    const texto = this.textoIdioma.trim();
+    if (!texto) return;
+    const existente = this.idiomas.find(i => i.nombre.toLowerCase() === texto.toLowerCase());
+    if (existente) { this.seleccionarIdioma(existente); return; }
+    this.idiomaService.crear(texto).subscribe({
+      next: (nuevo) => {
+        this.idiomas = [...this.idiomas, nuevo];
+        this.seleccionarIdioma(nuevo);
+      },
+      error: () => { this.errorMsg = 'No se pudo crear el idioma'; }
+    });
+  }
+
+  quitarIdioma(): void {
+    this.form.patchValue({ idiomaId: null });
+    this.idiomaSeleccionadoNombre = '';
+  }
+
+  nombreEditorialSeleccionada(): string {
+    if (this.editorialSeleccionadaNombre) return this.editorialSeleccionadaNombre;
+    const id = this.form.get('editorialId')?.value;
+    return this.editoriales.find(e => e.id === id)?.nombre ?? '';
+  }
+
+  nombreIdiomaSeleccionado(): string {
+    if (this.idiomaSeleccionadoNombre) return this.idiomaSeleccionadoNombre;
+    const id = this.form.get('idiomaId')?.value;
+    return this.idiomas.find(i => i.id === id)?.nombre ?? '';
+  }
+
   formatarEstado(nombre: string): string {
-    return nombre.replace(/_/g, ' ');
+    if (!nombre) return '';
+    return nombre.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
   }
 
   // ── Navegación con teclado (autocomplete) ──
@@ -446,6 +574,54 @@ export class LibrosComponent implements OnInit, OnDestroy {
     }
   }
 
+  onKeydownEditorial(event: KeyboardEvent): void {
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        this.indiceEditorial = Math.min(this.indiceEditorial + 1, this.sugerenciasEditorial.length - 1);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.indiceEditorial = Math.max(this.indiceEditorial - 1, -1);
+        break;
+      case 'Enter':
+        event.preventDefault();
+        if (this.indiceEditorial >= 0 && this.indiceEditorial < this.sugerenciasEditorial.length) {
+          this.seleccionarEditorial(this.sugerenciasEditorial[this.indiceEditorial]);
+        } else {
+          this.agregarEditorial(event);
+        }
+        break;
+      case 'Escape':
+        this.mostrarSugerenciasEditorial = false;
+        break;
+    }
+  }
+
+  onKeydownIdioma(event: KeyboardEvent): void {
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        this.indiceIdioma = Math.min(this.indiceIdioma + 1, this.sugerenciasIdioma.length - 1);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.indiceIdioma = Math.max(this.indiceIdioma - 1, -1);
+        break;
+      case 'Enter':
+        event.preventDefault();
+        if (this.indiceIdioma >= 0 && this.indiceIdioma < this.sugerenciasIdioma.length) {
+          this.seleccionarIdioma(this.sugerenciasIdioma[this.indiceIdioma]);
+        } else {
+          this.agregarIdioma(event);
+        }
+        break;
+      case 'Escape':
+        this.mostrarSugerenciasIdioma = false;
+        break;
+    }
+  }
+
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
@@ -454,6 +630,12 @@ export class LibrosComponent implements OnInit, OnDestroy {
     }
     if (!target.closest('[data-autocomplete-categorias]')) {
       this.mostrarSugerenciasCategoria = false;
+    }
+    if (!target.closest('[data-autocomplete-editorial]')) {
+      this.mostrarSugerenciasEditorial = false;
+    }
+    if (!target.closest('[data-autocomplete-idioma]')) {
+      this.mostrarSugerenciasIdioma = false;
     }
   }
 
@@ -518,24 +700,22 @@ export class LibrosComponent implements OnInit, OnDestroy {
     this.lookupError = '';
   }
 
-  // ── ISBN lookup (solo titulo, resumen, anio) con fallback IA en backend ──
+  // ── ISBN lookup (solo manual + editorial) ──
 
   buscarPorIsbn(): void {
     const isbn = (this.form.get('isbn')?.value as string ?? '').trim();
-    this.ejecutarLookupIsbn(isbn, false);
+    this.ejecutarLookupIsbn(isbn);
   }
 
-  private ejecutarLookupIsbn(isbn: string, esAuto: boolean): void {
+  private ejecutarLookupIsbn(isbn: string): void {
     if (!isbn) {
-      if (!esAuto) this.lookupError = 'Ingresa un ISBN para buscar';
+      this.lookupError = 'Ingresa un ISBN para buscar';
       return;
     }
-    if (!/^[0-9\-]{10,17}$/.test(isbn)) {
-      if (!esAuto) this.lookupError = 'ISBN inválido (10-13 dígitos, guiones permitidos)';
+    if (!/^[0-9]{10,13}$/.test(isbn)) {
+      this.lookupError = 'ISBN debe tener 10 a 13 dígitos numéricos';
       return;
     }
-    const limpio = isbn.replace(/-/g, '').trim();
-    if (esAuto && limpio.length !== 13) return;
     if (this.lookupCargando) return;
     this.lookupCargando = true;
     this.lookupError = '';
@@ -545,8 +725,19 @@ export class LibrosComponent implements OnInit, OnDestroy {
         if (dto.titulo) patch['titulo'] = dto.titulo;
         if (dto.resumen) patch['resumen'] = dto.resumen;
         if (dto.anioPublicacion != null) patch['anioPublicacion'] = dto.anioPublicacion;
-        if (Object.keys(patch).length) this.form.patchValue(patch, { emitEvent: false });
-        if (!dto.titulo && !dto.resumen && dto.anioPublicacion == null) {
+        if (Object.keys(patch).length) this.form.patchValue(patch);
+        if (dto.editorial) {
+          // intentar resolver editorial existente de forma síncrona, sino dejar sugerencia
+          const existente = this.editoriales.find(e => e.nombre.toLowerCase() === dto.editorial!.toLowerCase());
+          if (existente) {
+            this.form.patchValue({ editorialId: existente.id });
+            this.editorialSeleccionadaNombre = existente.nombre;
+          } else {
+            this.textoEditorial = dto.editorial!;
+            this.lookupError = `Editorial sugerida: "${dto.editorial}" — usá el buscador de editorial para agregarla`;
+          }
+        }
+        if (!dto.titulo && !dto.resumen && dto.anioPublicacion == null && !dto.editorial) {
           this.lookupError = 'No se encontraron datos para ese ISBN, completa manualmente';
         }
         this.lookupCargando = false;
@@ -566,8 +757,31 @@ export class LibrosComponent implements OnInit, OnDestroy {
   // ── Guardar ──
 
   guardarLibro(): void {
+    this.form.markAllAsTouched();
     if (this.form.invalid) return;
-    const datos = this.form.value as LibroRequest;
+    const raw = this.form.getRawValue() as LibroRequest;
+    // Validación año dinámico ya en validators, pero doble check
+    if (raw.anioPublicacion < 1950 || raw.anioPublicacion > this.anioMax) {
+      this.errorMsg = `El año debe estar entre 1950 y ${this.anioMax}`;
+      return;
+    }
+    const datos: LibroRequest = {
+      titulo: raw.titulo,
+      isbn: raw.isbn,
+      anioPublicacion: raw.anioPublicacion,
+      numeroPaginas: raw.numeroPaginas ? Number(raw.numeroPaginas) : null,
+      precioBase: raw.precioBase !== '' && raw.precioBase != null ? Number(raw.precioBase) : null,
+      resumen: raw.resumen,
+      ubicacionFisica: raw.ubicacionFisica,
+      portadaUrl: raw.portadaUrl,
+      editorialId: raw.editorialId,
+      idiomaId: raw.idiomaId,
+      estadoId: raw.estadoId,
+      stockTotal: raw.stockTotal,
+      stockDisponible: raw.stockDisponible,
+      categoriaIds: raw.categoriaIds,
+      autorIds: raw.autorIds
+    } as LibroRequest;
 
     const accion = this.modoEdicion && this.libroSeleccionadoId
       ? this.libroService.actualizar(this.libroSeleccionadoId, datos)
@@ -578,10 +792,9 @@ export class LibrosComponent implements OnInit, OnDestroy {
         this.guardarPortadaPendiente(libro.id);
         this.cerrarFormulario();
       },
-      error: () => {
-        this.errorMsg = this.modoEdicion
-          ? 'Error al actualizar el libro'
-          : 'Error al crear el libro';
+      error: (err) => {
+        const detail = err?.error?.detail ?? err?.error?.title ?? '';
+        this.errorMsg = detail || (this.modoEdicion ? 'Error al actualizar el libro' : 'Error al crear el libro');
       }
     });
   }

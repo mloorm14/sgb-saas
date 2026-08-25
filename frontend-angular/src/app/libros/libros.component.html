@@ -79,16 +79,20 @@
           <!-- Título -->
           <div class="mb-md">
             <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Título *</label>
-            <input formControlName="titulo" type="text" placeholder="Título del libro"
+            <input formControlName="titulo" type="text" maxlength="255" placeholder="Título del libro"
               class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+            <p class="text-[11px] text-on-surface-variant text-right mt-1">{{ form.get('titulo')?.value?.length || 0 }}/255</p>
+            @if (form.get('titulo')?.touched && form.get('titulo')?.invalid) {
+              <p class="text-[12px] text-error mt-1">Título requerido (máx 255)</p>
+            }
           </div>
 
-          <!-- Fila: ISBN + Año + Idioma -->
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-md mb-md">
-            <div class="sm:col-span-1">
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">ISBN</label>
+          <!-- Fila: ISBN + Año + Nº páginas + Idioma -->
+          <div class="grid grid-cols-12 gap-md mb-md">
+            <div class="col-span-12 sm:col-span-5">
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">ISBN *</label>
               <div class="flex gap-xs">
-                <input formControlName="isbn" type="text" placeholder="978..."
+                <input formControlName="isbn" type="text" inputmode="numeric" maxlength="13" placeholder="978..."
                   class="flex-1 min-w-0 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
                 <button type="button" (click)="buscarPorIsbn()" [disabled]="lookupCargando"
                   class="h-11 px-sm rounded bg-primary text-on-primary font-label-sm text-[13px] flex items-center gap-xs hover:bg-on-primary-fixed-variant disabled:opacity-40 shrink-0 cursor-pointer">
@@ -99,32 +103,92 @@
               @if (lookupError) {
                 <p class="font-body-sm text-[12px] text-error mt-xs">{{ lookupError }}</p>
               }
+              @if (form.get('isbn')?.touched && form.get('isbn')?.invalid) {
+                <p class="text-[12px] text-error mt-1">ISBN 10 a 13 dígitos numéricos</p>
+              }
             </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Año de publicación *</label>
-              <input formControlName="anioPublicacion" type="number" min="1000" max="2100" placeholder="2024"
+            <div class="col-span-6 sm:col-span-2">
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Año *</label>
+              <input formControlName="anioPublicacion" type="number" [min]="1950" [max]="anioMax" [placeholder]="anioMax.toString()"
+                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+              @if (form.get('anioPublicacion')?.touched && form.get('anioPublicacion')?.invalid) {
+                <p class="text-[11px] text-error mt-1">Entre 1950 y {{anioMax}}</p>
+              }
+            </div>
+            <div class="col-span-6 sm:col-span-2">
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Nº páginas</label>
+              <input formControlName="numeroPaginas" type="number" min="1" max="99999" placeholder="320"
                 class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
             </div>
-            <div>
+            <div class="col-span-12 sm:col-span-3" data-autocomplete-idioma>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Idioma *</label>
-              <select formControlName="idiomaId"
-                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white">
-                <option [ngValue]="null" disabled>Seleccioná un idioma</option>
-                @for (item of idiomas; track item.id) {
-                  <option [ngValue]="item.id">{{ item.nombre }}</option>
+              @if (form.get('idiomaId')?.value) {
+                <div class="flex items-center gap-xs mb-xs">
+                  <span class="inline-flex items-center gap-1 px-sm py-xs rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-[11px]">
+                    {{ nombreIdiomaSeleccionado() }}
+                    <button type="button" (click)="quitarIdioma()" class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-on-primary-fixed-variant/20 cursor-pointer">
+                      <span class="material-symbols-outlined text-[12px]">close</span>
+                    </button>
+                  </span>
+                </div>
+              }
+              <div class="relative flex items-center gap-1">
+                <input type="text" [ngModel]="textoIdioma" [ngModelOptions]="{standalone: true}"
+                  (keydown)="onKeydownIdioma($event)"
+                  (focus)="textoIdioma.trim().length >=1 && (mostrarSugerenciasIdioma = true)"
+                  placeholder="Buscar idioma..."
+                  class="flex-1 min-w-0 h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+                <button type="button" (click)="buscarIdiomaManualmente()" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
+                  <span class="material-symbols-outlined text-[18px]">search</span>
+                </button>
+                <button type="button" (click)="agregarIdioma()" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Agregar">
+                  <span class="material-symbols-outlined text-[18px]">add</span>
+                </button>
+                @if (mostrarSugerenciasIdioma) {
+                  <ul class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                    @if (sugerenciasIdioma.length > 0) {
+                      @for (s of sugerenciasIdioma; track s.id; let i = $index) {
+                        <li (mousedown)="seleccionarIdioma(s)" class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low" [class.bg-primary-container]="i===indiceIdioma">{{ s.nombre }}</li>
+                      }
+                    } @else if (textoIdioma.trim().length >=1) {
+                      <li (mousedown)="agregarIdioma($event)" class="px-sm py-xs cursor-pointer font-body-sm text-body-sm text-primary hover:bg-primary-container flex items-center gap-xs">
+                        <span class="material-symbols-outlined text-[16px]">add</span> Crear "{{ textoIdioma.trim() }}"
+                      </li>
+                    }
+                    @if (sugerenciasIdioma.length===0 && !textoIdioma.trim()) {
+                      <li class="px-sm py-xs font-body-sm text-body-sm text-on-surface-variant">Escribí y pulsá Buscar</li>
+                    }
+                  </ul>
                 }
-              </select>
+              </div>
             </div>
           </div>
 
           <!-- Resumen -->
           <div class="mb-md">
             <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Resumen</label>
-            <textarea formControlName="resumen" rows="3" placeholder="Breve descripción del libro..."
+            <textarea formControlName="resumen" rows="3" maxlength="2000" placeholder="Breve descripción del libro..."
               class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm resize-y"></textarea>
+            <p class="text-[11px] text-on-surface-variant text-right mt-1">{{ form.get('resumen')?.value?.length || 0 }}/2000</p>
           </div>
 
-          <!-- Fila: Autores + Categorías (autocomplete) -->
+          <!-- Precio base (solo GERENTE/ADMIN, bibliotecario disabled con X roja) -->
+          @if (esGerenteAdmin || form.get('precioBase')?.value) {
+            <div class="mb-md">
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Precio base</label>
+              <div class="relative group w-full sm:w-48">
+                <input formControlName="precioBase" type="number" min="0" step="0.01" placeholder="0.00"
+                  class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm disabled:bg-surface-container-low disabled:opacity-60" />
+                @if (modoRevisionPendiente && !esGerenteAdmin) {
+                  <span class="absolute right-2 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center justify-center w-6 h-6 rounded-full bg-error text-white">
+                    <span class="material-symbols-outlined text-[16px]">close</span>
+                  </span>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Fila: Autores + Categorías (autocomplete manual) -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-md mb-md">
             <!-- Autores -->
             <div data-autocomplete-autores>
@@ -141,30 +205,36 @@
                     </span>
                   }
                 </div>
-                <div class="relative">
+                <div class="relative flex items-center gap-1">
                   <input type="text" [ngModel]="textoAutor" [ngModelOptions]="{standalone: true}"
-                    (ngModelChange)="onBusquedaAutor($event)"
                     (keydown)="onKeydownAutor($event)"
-                    (focus)="textoAutor.trim().length >= 1 && (mostrarSugerenciasAutor = true)"
                     placeholder="Buscar autor..."
-                    class="w-full h-8 px-sm rounded font-body-sm text-body-sm outline-none" />
-                  @if (mostrarSugerenciasAutor && sugerenciasAutor.length > 0) {
+                    class="flex-1 min-w-0 h-8 px-sm rounded font-body-sm text-body-sm outline-none border border-transparent" />
+                  <button type="button" (click)="buscarAutorManualmente()" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
+                    <span class="material-symbols-outlined text-[16px]">search</span>
+                  </button>
+                  <button type="button" (click)="agregarAutor()" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Agregar">
+                    <span class="material-symbols-outlined text-[16px]">add</span>
+                  </button>
+                  @if (mostrarSugerenciasAutor) {
                     <ul class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-                      @for (sugerencia of sugerenciasAutor; track sugerencia.id; let i = $index) {
-                        <li (mousedown)="seleccionarAutor(sugerencia)"
-                          class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low"
-                          [class.bg-primary-container]="i === indiceAutor">
-                          {{ sugerencia.nombre }}
+                      @if (sugerenciasAutor.length > 0) {
+                        @for (sugerencia of sugerenciasAutor; track sugerencia.id; let i = $index) {
+                          <li (mousedown)="seleccionarAutor(sugerencia)"
+                            class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low"
+                            [class.bg-primary-container]="i === indiceAutor">
+                            {{ sugerencia.nombre }}
+                          </li>
+                        }
+                      } @else if (textoAutor.trim().length >= 1) {
+                        <li (mousedown)="agregarAutor($event)"
+                          class="px-sm py-xs cursor-pointer font-body-sm text-body-sm text-primary hover:bg-primary-container flex items-center gap-xs">
+                          <span class="material-symbols-outlined text-[16px]">add</span>
+                          Crear "{{ textoAutor.trim() }}"
                         </li>
+                      } @else {
+                        <li class="px-sm py-xs font-body-sm text-body-sm text-on-surface-variant">Escribí y pulsá Buscar</li>
                       }
-                    </ul>
-                  } @else if (mostrarSugerenciasAutor && textoAutor.trim().length >= 1) {
-                    <ul class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10">
-                      <li (mousedown)="agregarAutor($event)"
-                        class="px-sm py-xs cursor-pointer font-body-sm text-body-sm text-primary hover:bg-primary-container flex items-center gap-xs">
-                        <span class="material-symbols-outlined text-[16px]">add</span>
-                        Crear "{{ textoAutor.trim() }}"
-                      </li>
                     </ul>
                   }
                 </div>
@@ -185,30 +255,36 @@
                     </span>
                   }
                 </div>
-                <div class="relative">
+                <div class="relative flex items-center gap-1">
                   <input type="text" [ngModel]="textoCategoria" [ngModelOptions]="{standalone: true}"
-                    (ngModelChange)="onBusquedaCategoria($event)"
                     (keydown)="onKeydownCategoria($event)"
-                    (focus)="textoCategoria.trim().length >= 1 && (mostrarSugerenciasCategoria = true)"
                     placeholder="Buscar categoría..."
-                    class="w-full h-8 px-sm rounded font-body-sm text-body-sm outline-none" />
-                  @if (mostrarSugerenciasCategoria && sugerenciasCategoria.length > 0) {
+                    class="flex-1 min-w-0 h-8 px-sm rounded font-body-sm text-body-sm outline-none border border-transparent" />
+                  <button type="button" (click)="buscarCategoriaManualmente()" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
+                    <span class="material-symbols-outlined text-[16px]">search</span>
+                  </button>
+                  <button type="button" (click)="agregarCategoria()" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Agregar">
+                    <span class="material-symbols-outlined text-[16px]">add</span>
+                  </button>
+                  @if (mostrarSugerenciasCategoria) {
                     <ul class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-                      @for (sugerencia of sugerenciasCategoria; track sugerencia.id; let i = $index) {
-                        <li (mousedown)="seleccionarCategoria(sugerencia)"
-                          class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low"
-                          [class.bg-primary-container]="i === indiceCategoria">
-                          {{ sugerencia.nombre }}
+                      @if (sugerenciasCategoria.length > 0) {
+                        @for (sugerencia of sugerenciasCategoria; track sugerencia.id; let i = $index) {
+                          <li (mousedown)="seleccionarCategoria(sugerencia)"
+                            class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low"
+                            [class.bg-primary-container]="i === indiceCategoria">
+                            {{ sugerencia.nombre }}
+                          </li>
+                        }
+                      } @else if (textoCategoria.trim().length >= 1) {
+                        <li (mousedown)="agregarCategoria($event)"
+                          class="px-sm py-xs cursor-pointer font-body-sm text-body-sm text-primary hover:bg-primary-container flex items-center gap-xs">
+                          <span class="material-symbols-outlined text-[16px]">add</span>
+                          Crear "{{ textoCategoria.trim() }}"
                         </li>
+                      } @else {
+                        <li class="px-sm py-xs font-body-sm text-body-sm text-on-surface-variant">Escribí y pulsá Buscar</li>
                       }
-                    </ul>
-                  } @else if (mostrarSugerenciasCategoria && textoCategoria.trim().length >= 1) {
-                    <ul class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10">
-                      <li (mousedown)="agregarCategoria($event)"
-                        class="px-sm py-xs cursor-pointer font-body-sm text-body-sm text-primary hover:bg-primary-container flex items-center gap-xs">
-                        <span class="material-symbols-outlined text-[16px]">add</span>
-                        Crear "{{ textoCategoria.trim() }}"
-                      </li>
                     </ul>
                   }
                 </div>
@@ -218,18 +294,46 @@
 
           <!-- Fila: Editorial + Estado -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-md mb-lg">
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Editorial</label>
-              <select formControlName="editorialId"
-                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white">
-                <option [ngValue]="null" disabled>Seleccioná una editorial</option>
-                @for (item of editoriales; track item.id) {
-                  <option [ngValue]="item.id">{{ item.nombre }}</option>
+            <div data-autocomplete-editorial>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Editorial *</label>
+              @if (form.get('editorialId')?.value) {
+                <div class="flex items-center gap-xs mb-xs">
+                  <span class="inline-flex items-center gap-1 px-sm py-xs rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-[11px]">
+                    {{ nombreEditorialSeleccionada() }}
+                    <button type="button" (click)="quitarEditorial()" class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-on-primary-fixed-variant/20 cursor-pointer">
+                      <span class="material-symbols-outlined text-[12px]">close</span>
+                    </button>
+                  </span>
+                </div>
+              }
+              <div class="relative flex items-center gap-1">
+                <input type="text" [ngModel]="textoEditorial" [ngModelOptions]="{standalone: true}"
+                  (keydown)="onKeydownEditorial($event)"
+                  placeholder="Buscar editorial..."
+                  class="flex-1 min-w-0 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+                <button type="button" (click)="buscarEditorialManualmente()" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
+                  <span class="material-symbols-outlined text-[18px]">search</span>
+                </button>
+                <button type="button" (click)="agregarEditorial()" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Agregar">
+                  <span class="material-symbols-outlined text-[18px]">add</span>
+                </button>
+                @if (mostrarSugerenciasEditorial) {
+                  <ul class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                    @if (sugerenciasEditorial.length>0) {
+                      @for (s of sugerenciasEditorial; track s.id; let i=$index) {
+                        <li (mousedown)="seleccionarEditorial(s)" class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low" [class.bg-primary-container]="i===indiceEditorial">{{ s.nombre }}</li>
+                      }
+                    } @else if (textoEditorial.trim().length>=1) {
+                      <li (mousedown)="agregarEditorial($event)" class="px-sm py-xs cursor-pointer font-body-sm text-body-sm text-primary hover:bg-primary-container flex items-center gap-xs"><span class="material-symbols-outlined text-[16px]">add</span>Crear "{{ textoEditorial.trim() }}"</li>
+                    } @else {
+                      <li class="px-sm py-xs font-body-sm text-body-sm text-on-surface-variant">Escribí y pulsá Buscar</li>
+                    }
+                  </ul>
                 }
-              </select>
+              </div>
             </div>
             <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Estado</label>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Estado *</label>
               <select formControlName="estadoId"
                 class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white">
                 <option [ngValue]="null" disabled>Seleccioná un estado</option>
