@@ -318,16 +318,18 @@ export class PrestamosGestionComponent {
   // ── Caso C ──────────────────────────────────────────────
   gestionarMultas(): void {
     if (!this.usuario) return;
-    if (this.authService.hasRole('ADMIN')) {
-      this.showSinPermisosModal = true;
-      return;
-    }
     const url = this.router.url;
     let ruta: string[];
     if (url.includes('/dashboard-bibliotecario')) {
       ruta = ['/dashboard-bibliotecario', 'multas'];
+    } else if (url.includes('/dashboard-admin')) {
+      ruta = ['/dashboard-admin', 'multas'];
     } else if (url.includes('/dashboard-lector')) {
       ruta = ['/dashboard-lector', 'multas'];
+    } else if (this.authService.hasRole('BIBLIOTECARIO')) {
+      ruta = ['/dashboard-bibliotecario', 'multas'];
+    } else if (this.authService.hasRole('GERENTE') || this.authService.hasRole('ADMIN')) {
+      ruta = ['/dashboard-admin', 'multas'];
     } else {
       ruta = ['/multas'];
     }

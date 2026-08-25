@@ -152,7 +152,7 @@ security:
   jwt:
     secret: ${JWT_SECRET:CAMBIAR_EN_PRODUCCION_MIN_256_BITS}
     expiration-ms: 3600000
-    refresh-expiration-ms: 604800000
+    refresh-expiration-ms: 10800000
 
 springdoc:
   api-docs:
