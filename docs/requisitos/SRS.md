@@ -149,7 +149,7 @@ limitaciones honestas encontradas al consolidar este documento.
 
 SGB-SaaS es un sistema nuevo (no un reemplazo ni una migración de un
 sistema legado), construido como PFC con una arquitectura de tres capas:
-frontend SPA en Angular 17, backend API REST en Spring Boot 4.0.6
+frontend SPA en Angular 21, backend API REST en Spring Boot 4.0.6
 (Java 21), persistencia en PostgreSQL 16, y una capa de caché/blacklist de
 tokens en Redis 7. El sistema modela el ciclo completo de una biblioteca
 institucional: catálogo de libros, préstamos, reservaciones, multas y
@@ -216,7 +216,7 @@ REQ-NF-010):
 ### 2.4 Restricciones
 
 - **Tecnológicas** (no negociables para esta entrega, ya decididas vía
-  ADR): Spring Boot 4.0.6/Java 21 (ADR-001), Angular 17 (ADR-001),
+  ADR): Spring Boot 4.0.6/Java 21 (ADR-001), Angular 21 (ADR-001),
   PostgreSQL 16 (ADR-011), Redis 7 (ADR-003/ADR-008), Docker Compose
   (ADR-012), Flyway 9 + `db/schema.sql`/`db/seed.sql` (ADR-006).
   Estrategia híbrida de acceso a datos obligatoria: CRUD elemental vía

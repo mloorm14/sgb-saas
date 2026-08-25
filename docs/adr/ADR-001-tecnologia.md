@@ -30,14 +30,14 @@
 > vigente al momento de esta ADR, y se actualizó de forma natural en el
 > tiempo sin que cambiara ninguna de las razones de la elección.
 
-## Frontend: Angular 17
+## Frontend: Angular 21
 
 * **Contexto:** Se necesita un framework SPA con manejo robusto de formularios reactivos (validaciones de negocio en préstamos/multas), tipado estático que reduzca errores de integración contra el contrato REST del backend, e inyección de dependencias madura para servicios (auth, interceptors HTTP).
 * **Opciones consideradas:**
   * **React 18** -- Ecosistema enorme, pero sin framework de formularios ni HTTP client oficial: requiere ensamblar librerías de terceros (elección adicional no trivial para un equipo de 3).
   * **Vue 3** -- Curva de aprendizaje baja, pero ecosistema de tipado estricto (TypeScript end-to-end) menos maduro que Angular en 2026.
-  * **Angular 17** -- TypeScript de primera clase, `HttpClient` e interceptors oficiales (usados para adjuntar el `accessToken`, ver `jwt.interceptor.ts`), formularios reactivos (`ReactiveFormsModule`) con validadores síncronos/asíncronos nativos.
-* **Decisión:** Se eligió **Angular 17**. El tipado estático end-to-end (interfaces TypeScript que reflejan los DTOs de Spring) reduce errores de contrato entre frontend y backend, y el sistema de interceptors resuelve de forma nativa el manejo del `accessToken` en memoria (ver `adr-010-autenticacion-jwt-rbac.md` para la decisión de por qué JWT en primer lugar).
+  * **Angular 21** -- TypeScript de primera clase, `HttpClient` e interceptors oficiales (usados para adjuntar el `accessToken`, ver `jwt.interceptor.ts`), formularios reactivos (`ReactiveFormsModule`) con validadores síncronos/asíncronos nativos.
+* **Decisión:** Se eligió **Angular 21**. El tipado estático end-to-end (interfaces TypeScript que reflejan los DTOs de Spring) reduce errores de contrato entre frontend y backend, y el sistema de interceptors resuelve de forma nativa el manejo del `accessToken` en memoria (ver `adr-010-autenticacion-jwt-rbac.md` para la decisión de por qué JWT en primer lugar).
 * **Consecuencias positivas:** contrato de API auto-documentado en el propio TypeScript; formularios reactivos reducen bugs de validación duplicada cliente/servidor.
 * **Consecuencias negativas:** curva de aprendizaje de RxJS/Observables para quien no la conocía (mitigado con la guía oficial de Angular); bundle inicial más pesado que una SPA minimalista, aceptable para el volumen de usuarios del proyecto.
 

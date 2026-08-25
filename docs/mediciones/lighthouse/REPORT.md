@@ -5,7 +5,7 @@
 - **Fecha (ISO 8601 UTC)**: 2026-07-31T03:13:28Z
 - **Commit**: `a3d41ac`
 - **Docker**: Docker version 29.5.3, build d1c06ef
-- **Frontend probado**: `http://localhost:4200/` (contenedor `sgb_frontend`, nginx sirviendo el build de Angular 17)
+- **Frontend probado**: `http://localhost:4200/` (contenedor `sgb_frontend`, nginx sirviendo el build de Angular 21)
 - **Lighthouse**: v12.x (`npx lighthouse`)
 - **Chrome/Chromium usado**: Microsoft Edge 150.0.4078.105 en modo headless (`CHROME_PATH` apuntando a `msedge.exe`, no hay Chrome/Chromium nativo instalado en esta máquina)
 

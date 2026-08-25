@@ -55,7 +55,7 @@ arquitectura desplegada en [docs/despliegue/DEPLOYMENT.md](docs/despliegue/DEPLO
 
 ## 🚀 Tecnologías
 
-- **Frontend:** Angular 17 / Tailwind CSS
+- **Frontend:** Angular 21 / Tailwind CSS
 - **Backend:** Spring Boot 4.0.6 / Java 21 / Spring Security 7.x
 - **Base de datos:** PostgreSQL 16
 - **Caché y Auth:** Redis 7 (lista negra de tokens JWT)
@@ -145,7 +145,7 @@ Autenticación stateless basada en **JWT (HS256)**: `accessToken` de corta durac
 ```
 sgb-saas/
 ├── backend-springboot/   # API REST: Spring Boot 4.0.6 + JPA + Security + JWT
-├── frontend-angular/      # SPA Angular 17
+├── frontend-angular/      # SPA Angular 21
 ├── database/
 │   └── migrations/        # Scripts versionados de Flyway (V1__, V2__, ...)
 ├── docs/                   # Diagramas, ADRs, informes técnicos
