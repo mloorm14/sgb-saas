@@ -30,6 +30,7 @@ import { DashboardGerenteAdminComponent } from './dashboard-gerente-admin/dashbo
 import { DashboardLectorComponent } from './dashboard-lector/dashboard-lector.component';
 import { MiCredencialComponent } from './mi-credencial/mi-credencial.component';
 import { DevolucionesComponent } from './devoluciones/devoluciones.component';
+import { LibrosPendientesComponent } from './libros-pendientes/libros-pendientes.component';
 
 // Los roleGuard de abajo reflejan los @PreAuthorize reales de cada
 // controller en backend-springboot (verificado en el codigo, no asumido):
@@ -79,6 +80,7 @@ export const routes: Routes = [
     children: [
       { path: '', component: DashboardBibliotecarioHomeComponent },
       { path: 'libros', component: LibrosComponent },
+      { path: 'libros-pendientes', component: LibrosPendientesComponent },
       { path: 'prestamos/gestion', component: PrestamosGestionComponent },
       { path: 'reservaciones', component: ReservacionesComponent },
       { path: 'devoluciones', component: DevolucionesComponent },
@@ -93,6 +95,7 @@ export const routes: Routes = [
     children: [
       { path: '', component: DashboardGerenteAdminHomeComponent },
       { path: 'libros', component: LibrosComponent },
+      { path: 'libros-pendientes', component: LibrosPendientesComponent },
       { path: 'prestamos/gestion', component: PrestamosGestionComponent },
       { path: 'reservaciones', component: ReservacionesComponent },
       { path: 'multas', component: MultasComponent },
