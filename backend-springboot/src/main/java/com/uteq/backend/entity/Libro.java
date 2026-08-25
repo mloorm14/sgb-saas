@@ -69,6 +69,12 @@ public class Libro {
     @Column(name = "anio_publicacion", nullable = false, columnDefinition = "SMALLINT")
     private Short anioPublicacion;
 
+    @Column(name = "numero_paginas", columnDefinition = "SMALLINT")
+    private Short numeroPaginas;
+
+    @Column(name = "precio_base", precision = 10, scale = 2)
+    private java.math.BigDecimal precioBase;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "editorial_id", nullable = false)
     private Editorial editorial;

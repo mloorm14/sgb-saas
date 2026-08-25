@@ -25,6 +25,8 @@ public record LibroResponseDTO(
         String portadaNombre,
         String portadaTipo,
         Integer anioPublicacion,
+        Integer numeroPaginas,
+        java.math.BigDecimal precioBase,
         Integer editorialId,
         String editorial,
         Integer idiomaId,
