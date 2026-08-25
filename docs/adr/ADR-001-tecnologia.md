@@ -29,6 +29,23 @@
 > `backend-springboot/pom.xml`); la decisión original evaluó la serie 3,
 > vigente al momento de esta ADR, y se actualizó de forma natural en el
 > tiempo sin que cambiara ninguna de las razones de la elección.
+>
+>
+> Nota sobre la guía de la Entrega Final: la guía oficial de la Entrega
+> Final especifica Spring Boot en su serie 3.2.x. El equipo evaluó realizar
+> un downgrade de 4.0.6 a 3.2.x y decidió NO hacerlo, por las siguientes
+> razones: (1) toda la suite de 268 pruebas backend, incluyendo el módulo
+> de seguridad completo (filtros JWT, rate limiting, DaoAuthenticationProvider
+> con inyección por constructor, anotación @MockitoBean en reemplazo de
+> @MockBean), está escrita contra APIs específicas de Spring Boot 4.x que
+> cambiaron respecto a la serie 3.x; (2) un downgrade a días del cierre de
+> la Entrega Final introduce un riesgo de regresión alto sobre un sistema
+> que hoy pasa el 100% de sus pruebas y tiene cobertura JaCoCo verificada,
+> a cambio de un beneficio bajo (alinear un número de versión); (3) las
+> razones técnicas originales de esta ADR (Spring Security nativo para JWT,
+> Spring Data JPA, springdoc-openapi) siguen siendo válidas en la serie 4.x
+> sin cambios de fondo. El equipo asume esta desviación de la guía como una
+> decisión documentada y trazable, no como un descuido.
 
 ## Frontend: Angular 21
 
