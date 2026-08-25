@@ -108,7 +108,7 @@ class LibroControllerSecurityTest {
 
     private LibroRequestDTO libroValido() {
         return new LibroRequestDTO(
-                "Clean Code", "9780132350884", 2008, "resumen", null, null,
+                "Clean Code", "9780132350884", 2008, null, null, "resumen", null, null,
                 1, 1, 1, 3, 3, null, null
         );
     }
@@ -116,7 +116,7 @@ class LibroControllerSecurityTest {
     private LibroResponseDTO libroCreado() {
         return new LibroResponseDTO(
                 1L, "Clean Code", "9780132350884", "resumen", null,
-                false, null, null, 2008,
+                false, null, null, 2008, null, null,
                 1, "Editorial X", 1, "Español", 1, "ACTIVO", 3, 3, null,
                 OffsetDateTime.now(), List.of(), List.of()
         );
@@ -203,7 +203,7 @@ class LibroControllerSecurityTest {
     @WithMockUser(roles = "ADMIN")
     void lookupIsbn_conRolAdmin_sePermite() throws Exception {
         when(libroIsbnLookupService.buscarPorIsbn("9780132350884"))
-                .thenReturn(new LibroIsbnLookupDTO("Clean Code", "Robert C. Martin", "resumen", 2008, true));
+                .thenReturn(new LibroIsbnLookupDTO("Clean Code", "Robert C. Martin", "resumen", 2008, true, null));
 
         mockMvc.perform(get("/api/v1/libros/lookup-isbn").param("isbn", "9780132350884"))
                 .andExpect(status().isOk())

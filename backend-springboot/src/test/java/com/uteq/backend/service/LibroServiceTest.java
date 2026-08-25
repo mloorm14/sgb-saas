@@ -60,19 +60,19 @@ class LibroServiceTest {
     // ── Test 1: crear libro exitosamente ──────────────────
     @Test
     void crearLibro_cuandoIsbnNuevo_retornaDTO() {
-        given(libroRepo.existsByIsbn("978-1234567890")).willReturn(false);
+        given(libroRepo.existsByIsbn("9780132350884")).willReturn(false);
         given(libroRepo.save(any())).willReturn(libroConId());
 
         LibroResponseDTO resultado = libroService.crear(requestDTO());
 
-        assertThat(resultado.isbn()).isEqualTo("978-1234567890");
+        assertThat(resultado.isbn()).isEqualTo("9780132350884");
         assertThat(resultado.titulo()).isEqualTo("Clean Code");
     }
 
     // ── Test 2: ISBN duplicado lanza excepcion ────────────
     @Test
     void crearLibro_cuandoIsbnDuplicado_lanzaExcepcion() {
-        given(libroRepo.existsByIsbn("978-1234567890")).willReturn(true);
+        given(libroRepo.existsByIsbn("9780132350884")).willReturn(true);
 
         assertThatThrownBy(() -> libroService.crear(requestDTO()))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -240,7 +240,7 @@ class LibroServiceTest {
     // DTO de respuesta la devuelve (LibroRequestDTO.ubicacionFisica) ──
     @Test
     void crearLibro_persisteUbicacionFisicaYLaDevuelveEnDTO() {
-        given(libroRepo.existsByIsbn("978-1234567890")).willReturn(false);
+        given(libroRepo.existsByIsbn("9780132350884")).willReturn(false);
         given(libroRepo.save(any())).willAnswer(inv -> inv.getArgument(0));
 
         LibroResponseDTO resultado = libroService.crear(requestDTO());
@@ -256,7 +256,7 @@ class LibroServiceTest {
         Libro libro = libroConId();
         libro.setUbicacionFisica("Estante viejo");
         given(libroRepo.findById(1L)).willReturn(Optional.of(libro));
-        given(libroRepo.existsByIsbnAndIdNot("978-1234567890", 1L)).willReturn(false);
+        given(libroRepo.existsByIsbnAndIdNot("9780132350884", 1L)).willReturn(false);
         given(libroRepo.save(any())).willReturn(libro);
 
         LibroResponseDTO resultado = libroService.actualizar(1L, requestDTO());
@@ -270,7 +270,7 @@ class LibroServiceTest {
         Libro libro = new Libro();
         libro.setId(1L);
         libro.setTitulo("Clean Code");
-        libro.setIsbn("978-1234567890");
+        libro.setIsbn("9780132350884");
         libro.setEstado(estadoConNombre("ACTIVO"));
         return libro;
     }
@@ -285,8 +285,10 @@ class LibroServiceTest {
     private LibroRequestDTO requestDTO() {
         return new LibroRequestDTO(
                 "Clean Code",
-                "978-1234567890",
+                "9780132350884",
                 2008,
+                null,
+                null,
                 null,
                 "Estante A-12",
                 null,
