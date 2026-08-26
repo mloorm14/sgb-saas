@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 /**
  * CRUD elemental sobre {@code bitacora_auditoria}, más el filtro paginado
@@ -47,4 +48,28 @@ public interface BitacoraAuditoriaRepository extends JpaRepository<BitacoraAudit
             @Param("desde") OffsetDateTime desde,
             @Param("hasta") OffsetDateTime hasta,
             Pageable pageable);
+
+    // Resumen por categoría: una sola query de agregación en vez de 8
+    // llamadas al listado paginado. Devuelve Object[] porque la query
+    // nativa no mapea directamente a un record -- el service
+    // transforma a ResumenCategoriaAuditoriaDTO.
+    @Query(value = """
+            SELECT b.tabla_afectada,
+                   COUNT(*) AS total_eventos,
+                   COUNT(*) FILTER (WHERE b.fecha_hora >= :desdeHoy) AS eventos_hoy,
+                   MAX(b.fecha_hora) AS ultimo_evento
+            FROM bitacora_auditoria b
+            GROUP BY b.tabla_afectada
+            ORDER BY b.tabla_afectada
+            """, nativeQuery = true)
+    List<Object[]> resumenPorCategoria(@Param("desdeHoy") OffsetDateTime desdeHoy);
+
+    // Login fallidos en las últimas 24h (para decidir "Revisar" en sesiones)
+    @Query(value = """
+            SELECT COUNT(*) FROM bitacora_auditoria
+            WHERE tabla_afectada = 'sesiones'
+              AND tipo_operacion = 'LOGIN_FAIL'
+              AND fecha_hora >= :desde
+            """, nativeQuery = true)
+    long contarLoginFailRecientes(@Param("desde") OffsetDateTime desde);
 }
