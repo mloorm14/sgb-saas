@@ -3,6 +3,7 @@ package com.uteq.backend.service;
 import com.uteq.backend.dto.MultaAccionResponseDTO;
 import com.uteq.backend.dto.ResumenFinancieroMultasResponseDTO;
 import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.LibroRepository;
 import com.uteq.backend.repository.MultaProcedureRepository;
 import com.uteq.backend.repository.MultaRepository;
@@ -42,6 +43,7 @@ class MultaServiceTest {
     @Mock UsuarioRepository usuarioRepo;
     @Mock LibroRepository libroRepo;
     @Mock PrestamoRepository prestamoRepo;
+    @Mock BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     @InjectMocks MultaService multaService;
 

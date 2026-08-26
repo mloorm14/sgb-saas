@@ -11,6 +11,7 @@ import com.uteq.backend.entity.EstadoReservacion;
 import com.uteq.backend.entity.Prestamo;
 import com.uteq.backend.entity.Reservacion;
 import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.EstadoPrestamoRepository;
 import com.uteq.backend.repository.EstadoReservacionRepository;
 import com.uteq.backend.repository.PrestamoProcedureRepository;
@@ -59,6 +60,7 @@ class PrestamoServiceTest {
     @Mock ConfiguracionSistemaService configuracionSistemaService;
     @Mock CredencialQrService credencialQrService;
     @Mock NotificacionService notificacionService;
+    @Mock BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     @InjectMocks PrestamoService prestamoService;
 
@@ -175,6 +177,7 @@ class PrestamoServiceTest {
                 .willReturn(false);
         given(configuracionSistemaService.obtenerValorEntero("dias_prestamo_default")).willReturn(15);
         given(estadoPrestamoRepo.findByNombre("RENOVADO")).willReturn(Optional.of(estadoPrestamo(2, "RENOVADO")));
+        given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec")).willReturn(Optional.of(usuarioConId(5L)));
 
         RenovacionResponseDTO resultado = prestamoService.renovar(50L, auth);
 

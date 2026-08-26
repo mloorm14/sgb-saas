@@ -7,6 +7,7 @@ import com.uteq.backend.dto.PortadaImagenDTO;
 import com.uteq.backend.entity.EstadoLibro;
 import com.uteq.backend.entity.Libro;
 import com.uteq.backend.repository.AutorRepository;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.CategoriaRepository;
 import com.uteq.backend.repository.EditorialRepository;
 import com.uteq.backend.repository.EstadoLibroRepository;
@@ -54,6 +55,7 @@ class LibroServiceTest {
     // tamaño de portada en configuracion_sistema). Solo se stubea en los
     // tests de actualizarPortada_*.
     @Mock ConfiguracionSistemaService configuracionSistemaService;
+    @Mock BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     @InjectMocks LibroService libroService;
 

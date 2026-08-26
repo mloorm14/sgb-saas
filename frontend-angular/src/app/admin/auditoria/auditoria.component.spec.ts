@@ -20,8 +20,9 @@ describe('AuditoriaComponent', () => {
   };
 
   beforeEach(async () => {
-    auditoriaService = jasmine.createSpyObj('AuditoriaService', ['listar']);
+    auditoriaService = jasmine.createSpyObj('AuditoriaService', ['listar', 'resumen']);
     auditoriaService.listar.and.returnValue(of(pagina as any));
+    auditoriaService.resumen.and.returnValue(of([]));
     const usuarioAdminServiceSpy = jasmine.createSpyObj('UsuarioAdminService', ['listar']);
 
     await TestBed.configureTestingModule({
@@ -38,6 +39,7 @@ describe('AuditoriaComponent', () => {
   });
 
   it('carga la bitácora inicial sin filtros', () => {
+    component.abrirHistorial('usuarios');
     expect(auditoriaService.listar).toHaveBeenCalledWith(
       jasmine.objectContaining({ page: 0, size: 20 })
     );
@@ -45,6 +47,7 @@ describe('AuditoriaComponent', () => {
   });
 
   it('muestra "—" cuando el usuario del evento es null (Javadoc de EventoAuditoriaResponseDTO)', () => {
+    component.abrirHistorial('usuarios');
     expect(component.usuarioLabel(component.eventos[1])).toBe('—');
     expect(component.usuarioLabel(component.eventos[0])).toBe('admin@sgb-saas.local');
   });

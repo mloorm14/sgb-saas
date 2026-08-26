@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import { Page } from '../models/pagina.model';
 import { ProblemDetail } from '../models/problem-detail.model';
 import { EventoAuditoria } from '../models/evento-auditoria.model';
+import { ResumenCategoriaAuditoria } from '../models/resumen-auditoria.model';
 
 // Contrato de AuditoriaController (/api/v1/auditoria), verificado en
 // backend-springboot: GERENTE/ADMIN a nivel de clase. Filtros opcionales:
@@ -36,6 +37,12 @@ export class AuditoriaService {
     if (opciones.hasta) params = params.set('hasta', opciones.hasta);
 
     return this.http.get<Page<EventoAuditoria>>(this.apiUrl, { params }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  resumen(): Observable<ResumenCategoriaAuditoria[]> {
+    return this.http.get<ResumenCategoriaAuditoria[]>(`${this.apiUrl}/resumen`).pipe(
       catchError(err => this.manejarError(err))
     );
   }
