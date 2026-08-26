@@ -79,4 +79,10 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
             + "ORDER BY similarity(titulo, :p_texto) DESC "
             + "LIMIT 10", nativeQuery = true)
     List<Libro> sugerirPorTitulo(@Param("p_texto") String texto, @Param("p_estado_id") Integer estadoId);
+
+    @Query("SELECT l FROM Libro l WHERE l.estado.id = :estadoId "
+            + "AND (:q IS NULL OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) "
+            + "OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', :q, '%')))"
+            + "AND (:anio IS NULL OR l.anioPublicacion = :anio)")
+    Page<Libro> buscarPendientes(@Param("q") String q, @Param("anio") Integer anio, @Param("estadoId") Integer estadoId, Pageable pageable);
 }

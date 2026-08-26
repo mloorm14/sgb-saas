@@ -122,19 +122,7 @@ public class LibroService {
         Integer pendienteId = estadoRepo.findByNombre(ESTADO_PENDIENTE)
                 .orElseThrow(() -> new IllegalStateException("Catálogo estados_libro sin fila '" + ESTADO_PENDIENTE + "'"))
                 .getId();
-        Page<LibroResponseDTO> base;
-        if (q != null && !q.isBlank()) {
-            base = libroRepo.buscarPorTextoOIsbn(q, pendienteId, pageable).map(this::toDTO);
-        } else {
-            base = libroRepo.findByEstadoId(pendienteId, pageable).map(this::toDTO);
-        }
-        if (anioPublicacion != null) {
-            List<LibroResponseDTO> filtrados = base.getContent().stream()
-                    .filter(l -> anioPublicacion.equals(l.anioPublicacion()))
-                    .toList();
-            return new org.springframework.data.domain.PageImpl<>(filtrados, pageable, filtrados.size());
-        }
-        return base;
+        return libroRepo.buscarPendientes(q, anioPublicacion, pendienteId, pageable).map(this::toDTO);
     }
 
     // Módulo 9.1: filtros de catálogo por categoría/autor
