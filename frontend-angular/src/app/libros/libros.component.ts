@@ -222,6 +222,12 @@ export class LibrosComponent implements OnInit, OnDestroy {
     }
   }
 
+  cambiarTamanoPage(nuevo: number): void {
+    this.pageSize = Number(nuevo);
+    this.currentPage = 0;
+    this.cargarLibros();
+  }
+
   abrirFormularioCrear(): void {
     this.modoEdicion = false;
     this.modoRevisionPendiente = false;

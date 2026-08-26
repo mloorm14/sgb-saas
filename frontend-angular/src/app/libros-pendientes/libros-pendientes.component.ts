@@ -66,6 +66,7 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
 
   cargar(): void {
     this.cargando = true;
+    this.errorMsg = '';
     const anioNum = this.anioFiltro ? Number(this.anioFiltro) : undefined;
     this.libroService.listarPendientes({
       q: this.q.trim() || undefined,
@@ -75,7 +76,6 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (data) => {
         let content = data.content;
-        // filtro estado local si se seleccionó (ej. Pendiente)
         if (this.estadoFiltro !== null) {
           content = content.filter(l => l.estadoId === this.estadoFiltro);
         }
@@ -83,8 +83,9 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
         this.totalPages = data.totalPages;
         this.cargando = false;
       },
-      error: () => {
-        this.errorMsg = 'Error al cargar libros pendientes';
+      error: (err) => {
+        const detail = err?.error?.detail ?? err?.error?.title ?? '';
+        this.errorMsg = detail || 'Error al cargar libros pendientes';
         this.cargando = false;
       }
     });
@@ -102,6 +103,12 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
     if (current.includes('dashboard-admin')) base = '/dashboard-admin/libros';
     else if (current.includes('/libros') && !current.includes('dashboard')) base = '/libros';
     this.router.navigate([base], { queryParams: { revision: libro.id } });
+  }
+
+  cambiarTamano(nuevo: number): void {
+    this.pageSize = Number(nuevo);
+    this.currentPage = 0;
+    this.cargar();
   }
 
   paginaAnterior(): void {

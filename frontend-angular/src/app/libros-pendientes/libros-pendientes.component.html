@@ -1,7 +1,7 @@
 <main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
   <div class="mb-lg">
     <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Libros pendientes de revisión</h1>
-    <p class="font-body-sm text-body-sm text-on-surface-variant">Libros registrados por GERENTE/ADMIN que requieren aprobación del bibliotecario. Al aprobar pasan a estado Activo y se publican.</p>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Libros en espera de habilitación en el catálogo. Seleccioná uno para continuar con su revisión.</p>
   </div>
 
   <!-- Filtros -->
@@ -39,13 +39,24 @@
     }
   </div>
 
-  @if (totalPages>1) {
-    <div class="flex justify-center mt-lg gap-xs">
-      <button (click)="paginaAnterior()" [disabled]="currentPage===0" class="w-8 h-8 rounded border border-outline-variant disabled:opacity-40 cursor-pointer"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
-      @for (p of paginasVisibles; track p) {
-        <button (click)="irAPagina(p)" class="w-8 h-8 rounded font-label-sm text-label-sm cursor-pointer" [class.bg-primary]="p===currentPage" [class.text-on-primary]="p===currentPage" [class.text-on-surface-variant]="p!==currentPage">{{ p+1 }}</button>
-      }
-      <button (click)="paginaSiguiente()" [disabled]="currentPage>=totalPages-1" class="w-8 h-8 rounded border border-outline-variant disabled:opacity-40 cursor-pointer"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+  <div class="flex flex-wrap justify-between items-center mt-lg gap-sm">
+    <div class="flex items-center gap-xs font-body-sm text-body-sm">
+      <span class="text-on-surface-variant">Mostrar</span>
+      <select [ngModel]="pageSize" (ngModelChange)="cambiarTamano($event)" class="h-8 px-sm rounded border border-outline-variant bg-white cursor-pointer">
+        <option [ngValue]="10">10</option>
+        <option [ngValue]="20">20</option>
+        <option [ngValue]="30">30</option>
+      </select>
+      <span class="text-on-surface-variant">por página</span>
     </div>
-  }
+    @if (totalPages>1) {
+      <div class="flex justify-center gap-xs">
+        <button (click)="paginaAnterior()" [disabled]="currentPage===0" class="w-8 h-8 rounded border border-outline-variant disabled:opacity-40 cursor-pointer"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
+        @for (p of paginasVisibles; track p) {
+          <button (click)="irAPagina(p)" class="w-8 h-8 rounded font-label-sm text-label-sm cursor-pointer" [class.bg-primary]="p===currentPage" [class.text-on-primary]="p===currentPage" [class.text-on-surface-variant]="p!==currentPage">{{ p+1 }}</button>
+        }
+        <button (click)="paginaSiguiente()" [disabled]="currentPage>=totalPages-1" class="w-8 h-8 rounded border border-outline-variant disabled:opacity-40 cursor-pointer"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+      </div>
+    }
+  </div>
 </main>

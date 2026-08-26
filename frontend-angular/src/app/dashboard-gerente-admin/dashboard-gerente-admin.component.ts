@@ -38,9 +38,10 @@ export class DashboardGerenteAdminComponent {
       ]
     },
     {
-       titulo: 'GESTIÓN',
+        titulo: 'GESTIÓN',
       enlaces: [
         { ruta: '/dashboard-admin/libros', etiqueta: 'Libros', icono: 'inventory_2', roles: ['GERENTE', 'ADMIN'] },
+        { ruta: '/dashboard-admin/libros-pendientes', etiqueta: 'Pendientes', icono: 'pending_actions', roles: ['GERENTE', 'ADMIN'] },
         { ruta: '/dashboard-admin/prestamos/gestion', etiqueta: 'Préstamos', icono: 'menu_book', roles: ['GERENTE', 'ADMIN'] },
         { ruta: '/dashboard-admin/reservaciones', etiqueta: 'Reservaciones', icono: 'event_available', roles: ['GERENTE', 'ADMIN'] },
         { ruta: '/dashboard-admin/multas', etiqueta: 'Multas', icono: 'payments', roles: ['GERENTE', 'ADMIN'] },
