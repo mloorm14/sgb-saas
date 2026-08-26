@@ -727,14 +727,14 @@ export class LibrosComponent implements OnInit, OnDestroy {
         if (dto.anioPublicacion != null) patch['anioPublicacion'] = dto.anioPublicacion;
         if (Object.keys(patch).length) this.form.patchValue(patch);
         if (dto.editorial) {
-          // intentar resolver editorial existente de forma síncrona, sino dejar sugerencia
           const existente = this.editoriales.find(e => e.nombre.toLowerCase() === dto.editorial!.toLowerCase());
           if (existente) {
             this.form.patchValue({ editorialId: existente.id });
             this.editorialSeleccionadaNombre = existente.nombre;
           } else {
+            // Pre-llenar el buscador de editorial para que el usuario solo tenga que pulsar '+'
+            // No usar lookupError (era el mensaje rojo "Editorial sugerida...") — viene tal cual del API (Google Books/Open Library)
             this.textoEditorial = dto.editorial!;
-            this.lookupError = `Editorial sugerida: "${dto.editorial}" — usá el buscador de editorial para agregarla`;
           }
         }
         if (!dto.titulo && !dto.resumen && dto.anioPublicacion == null && !dto.editorial) {
