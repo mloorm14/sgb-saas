@@ -87,9 +87,9 @@
             }
           </div>
 
-          <!-- Fila: ISBN + Año + Nº páginas + Idioma -->
+          <!-- Fila: ISBN + Año + Nº páginas + Idioma + Precio -->
           <div class="grid grid-cols-12 gap-md mb-md">
-            <div class="col-span-12 sm:col-span-5">
+            <div class="col-span-12 sm:col-span-3">
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">ISBN *</label>
               <div class="flex gap-xs">
                 <input formControlName="isbn" type="text" inputmode="numeric" maxlength="13" placeholder="978..."
@@ -120,7 +120,7 @@
               <input formControlName="numeroPaginas" type="number" min="1" max="99999" placeholder="320"
                 class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
             </div>
-            <div class="col-span-12 sm:col-span-3" data-autocomplete-idioma>
+            <div class="col-span-6 sm:col-span-3" data-autocomplete-idioma>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Idioma *</label>
               @if (form.get('idiomaId')?.value) {
                 <div class="flex items-center gap-xs mb-xs">
@@ -133,7 +133,7 @@
                 </div>
               }
               <div class="relative flex items-center gap-1">
-                <input type="text" [ngModel]="textoIdioma" [ngModelOptions]="{standalone: true}"
+                <input type="text" [(ngModel)]="textoIdioma" [ngModelOptions]="{standalone: true}"
                   (keydown)="onKeydownIdioma($event)"
                   (focus)="textoIdioma.trim().length >=1 && (mostrarSugerenciasIdioma = true)"
                   placeholder="Buscar idioma..."
@@ -155,13 +155,24 @@
                         <span class="material-symbols-outlined text-[16px]">add</span> Crear "{{ textoIdioma.trim() }}"
                       </li>
                     }
-                    @if (sugerenciasIdioma.length===0 && !textoIdioma.trim()) {
-                      <li class="px-sm py-xs font-body-sm text-body-sm text-on-surface-variant">Escribí y pulsá Buscar</li>
-                    }
                   </ul>
                 }
               </div>
             </div>
+            @if (esGerenteAdmin || modoRevisionPendiente) {
+              <div class="col-span-6 sm:col-span-2">
+                <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Precio</label>
+                <div class="relative group">
+                  <input formControlName="precioBase" type="number" min="0" step="0.01" placeholder="199.99"
+                    class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm disabled:bg-surface-container-low disabled:opacity-60" />
+                  @if (modoRevisionPendiente && !esGerenteAdmin) {
+                    <span class="absolute right-2 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center justify-center w-6 h-6 rounded-full bg-error text-white">
+                      <span class="material-symbols-outlined text-[16px]">close</span>
+                    </span>
+                  }
+                </div>
+              </div>
+            }
           </div>
 
           <!-- Resumen -->
@@ -172,21 +183,7 @@
             <p class="text-[11px] text-on-surface-variant text-right mt-1">{{ form.get('resumen')?.value?.length || 0 }}/2000</p>
           </div>
 
-          <!-- Precio base (solo GERENTE/ADMIN, bibliotecario disabled con X roja) -->
-          @if (esGerenteAdmin || form.get('precioBase')?.value) {
-            <div class="mb-md">
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Precio base</label>
-              <div class="relative group w-full sm:w-48">
-                <input formControlName="precioBase" type="number" min="0" step="0.01" placeholder="0.00"
-                  class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm disabled:bg-surface-container-low disabled:opacity-60" />
-                @if (modoRevisionPendiente && !esGerenteAdmin) {
-                  <span class="absolute right-2 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center justify-center w-6 h-6 rounded-full bg-error text-white">
-                    <span class="material-symbols-outlined text-[16px]">close</span>
-                  </span>
-                }
-              </div>
-            </div>
-          }
+
 
           <!-- Fila: Autores + Categorías (autocomplete manual) -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-md mb-md">
@@ -206,7 +203,7 @@
                   }
                 </div>
                 <div class="relative flex items-center gap-1">
-                  <input type="text" [ngModel]="textoAutor" [ngModelOptions]="{standalone: true}"
+                  <input type="text" [(ngModel)]="textoAutor" [ngModelOptions]="{standalone: true}"
                     (keydown)="onKeydownAutor($event)"
                     placeholder="Buscar autor..."
                     class="flex-1 min-w-0 h-8 px-sm rounded font-body-sm text-body-sm outline-none border border-transparent" />
@@ -232,8 +229,6 @@
                           <span class="material-symbols-outlined text-[16px]">add</span>
                           Crear "{{ textoAutor.trim() }}"
                         </li>
-                      } @else {
-                        <li class="px-sm py-xs font-body-sm text-body-sm text-on-surface-variant">Escribí y pulsá Buscar</li>
                       }
                     </ul>
                   }
@@ -256,7 +251,7 @@
                   }
                 </div>
                 <div class="relative flex items-center gap-1">
-                  <input type="text" [ngModel]="textoCategoria" [ngModelOptions]="{standalone: true}"
+                  <input type="text" [(ngModel)]="textoCategoria" [ngModelOptions]="{standalone: true}"
                     (keydown)="onKeydownCategoria($event)"
                     placeholder="Buscar categoría..."
                     class="flex-1 min-w-0 h-8 px-sm rounded font-body-sm text-body-sm outline-none border border-transparent" />
@@ -282,8 +277,6 @@
                           <span class="material-symbols-outlined text-[16px]">add</span>
                           Crear "{{ textoCategoria.trim() }}"
                         </li>
-                      } @else {
-                        <li class="px-sm py-xs font-body-sm text-body-sm text-on-surface-variant">Escribí y pulsá Buscar</li>
                       }
                     </ul>
                   }
@@ -307,7 +300,7 @@
                 </div>
               }
               <div class="relative flex items-center gap-1">
-                <input type="text" [ngModel]="textoEditorial" [ngModelOptions]="{standalone: true}"
+                <input type="text" [(ngModel)]="textoEditorial" [ngModelOptions]="{standalone: true}"
                   (keydown)="onKeydownEditorial($event)"
                   placeholder="Buscar editorial..."
                   class="flex-1 min-w-0 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
@@ -325,8 +318,6 @@
                       }
                     } @else if (textoEditorial.trim().length>=1) {
                       <li (mousedown)="agregarEditorial($event)" class="px-sm py-xs cursor-pointer font-body-sm text-body-sm text-primary hover:bg-primary-container flex items-center gap-xs"><span class="material-symbols-outlined text-[16px]">add</span>Crear "{{ textoEditorial.trim() }}"</li>
-                    } @else {
-                      <li class="px-sm py-xs font-body-sm text-body-sm text-on-surface-variant">Escribí y pulsá Buscar</li>
                     }
                   </ul>
                 }
