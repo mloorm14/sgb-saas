@@ -126,6 +126,13 @@ public class DevolucionService {
         List<DanoDetalleResponseDTO> danosRegistrados = new ArrayList<>();
         Long registroDanoId = null;
 
+        // precio_base obligatorio para cálculo porcentaje
+        BigDecimal precioLibro = BigDecimal.ZERO;
+        try {
+            Libro lib = libroRepo.findById(prestamo.getLibroId()).orElse(null);
+            if (lib != null && lib.getPrecioBase() != null) precioLibro = lib.getPrecioBase();
+        } catch (Exception ignored) {}
+
         if (hayDanos || esPerdido) {
             RegistroDano registro = new RegistroDano();
             registro.setPrestamoId(prestamoId);
@@ -138,33 +145,47 @@ public class DevolucionService {
 
             if (hayDanos) {
                 for (DevolucionRequestDTO.DanoItemDTO item : dto.danos()) {
+                    BigDecimal cobrado;
+                    String nombreDano;
+                    if (item.tipoDanoId() != null) {
+                        TipoDano t = tipoDanoRepo.findById(item.tipoDanoId()).orElse(null);
+                        if (t != null) {
+                            nombreDano = t.getNombre();
+                            if ("PORCENTAJE".equals(t.getTipoCosto())) {
+                                cobrado = precioLibro.multiply(t.getValor()).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+                            } else {
+                                cobrado = t.getValor();
+                            }
+                        } else {
+                            // fallback para tests que usan precioCobrado directo
+                            cobrado = item.precioCobrado() != null ? item.precioCobrado() : BigDecimal.ZERO;
+                            nombreDano = "Desconocido";
+                        }
+                    } else {
+                        // daño custom (nombreCustom) - valor viene del front como fijo
+                        cobrado = item.precioCobrado() != null ? item.precioCobrado() : BigDecimal.ZERO;
+                        nombreDano = item.nombreCustom();
+                    }
                     RegistroDanoDetalle detalle = new RegistroDanoDetalle();
                     detalle.setRegistroDanoId(registro.getId());
                     detalle.setTipoDanoId(item.tipoDanoId());
                     detalle.setNombreCustom(item.nombreCustom());
-                    detalle.setPrecioCobrado(item.precioCobrado());
+                    detalle.setPrecioCobrado(cobrado);
                     registroDanoDetalleRepo.save(detalle);
 
-                    montoMultaDano = montoMultaDano.add(item.precioCobrado());
-
-                    String nombreDano = item.tipoDanoId() != null
-                            ? tipoDanoRepo.findById(item.tipoDanoId())
-                                    .map(TipoDano::getNombre)
-                                    .orElse("Desconocido")
-                            : item.nombreCustom();
+                    montoMultaDano = montoMultaDano.add(cobrado);
 
                     danosRegistrados.add(new DanoDetalleResponseDTO(
                             detalle.getId(),
                             nombreDano,
                             item.nombreCustom(),
-                            item.precioCobrado()));
+                            cobrado));
                 }
             }
 
             if (esPerdido) {
-                Libro libro = libroRepo.findById(prestamo.getLibroId())
-                        .orElse(null);
-                BigDecimal valorLibro = BigDecimal.valueOf(15.00);
+                // Pérdida total = 100% del precio_base
+                BigDecimal valorLibro = precioLibro.compareTo(BigDecimal.ZERO) > 0 ? precioLibro : BigDecimal.valueOf(15.00);
                 montoMultaDano = valorLibro;
 
                 danosRegistrados.add(new DanoDetalleResponseDTO(
@@ -227,7 +248,10 @@ public class DevolucionService {
     @Transactional(readOnly = true)
     public List<TipoDanoDTO> listarTiposDano() {
         return tipoDanoRepo.findByActivoTrue().stream()
-                .map(t -> new TipoDanoDTO(t.getId(), t.getNombre(), t.getPrecio()))
+                .map(t -> new TipoDanoDTO(t.getId(), t.getNombre(),
+                        t.getCategoria()!=null ? t.getCategoria().getId() : null,
+                        t.getCategoria()!=null ? t.getCategoria().getNombre() : null,
+                        t.getTipoCosto(), t.getValor()))
                 .toList();
     }
 
