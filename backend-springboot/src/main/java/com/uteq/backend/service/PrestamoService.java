@@ -12,10 +12,12 @@ import com.uteq.backend.dto.ReporteInventarioResponseDTO;
 import com.uteq.backend.dto.ReporteMorosidadResponseDTO;
 import com.uteq.backend.dto.ReporteUsoPorPeriodoResponseDTO;
 import com.uteq.backend.dto.ReporteVencidosResponseDTO;
+import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.EstadoPrestamo;
 import com.uteq.backend.entity.Prestamo;
 import com.uteq.backend.entity.Reservacion;
 import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.EstadoPrestamoRepository;
 import com.uteq.backend.repository.EstadoReservacionRepository;
 import com.uteq.backend.repository.PrestamoProcedureRepository;
@@ -48,6 +50,7 @@ import java.util.Map;
 @Service
 public class PrestamoService {
 
+    private static final String TABLA_PRESTAMOS = "prestamos";
     private static final String PRESTAMO_NO_ENCONTRADO = "Préstamo no encontrado con id: ";
     private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado: ";
     private static final String ROL_LECTOR = "LECTOR";
@@ -73,6 +76,7 @@ public class PrestamoService {
     private final ConfiguracionSistemaService configuracionSistemaService;
     private final CredencialQrService credencialQrService;
     private final NotificacionService notificacionService;
+    private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     public PrestamoService(PrestamoRepository prestamoRepo,
                            PrestamoProcedureRepository prestamoProcRepo,
@@ -82,7 +86,8 @@ public class PrestamoService {
                            EstadoReservacionRepository estadoReservacionRepo,
                            ConfiguracionSistemaService configuracionSistemaService,
                            CredencialQrService credencialQrService,
-                           NotificacionService notificacionService) {
+                           NotificacionService notificacionService,
+                           BitacoraAuditoriaRepository bitacoraAuditoriaRepo) {
         this.prestamoRepo = prestamoRepo;
         this.prestamoProcRepo = prestamoProcRepo;
         this.usuarioRepo = usuarioRepo;
@@ -92,6 +97,7 @@ public class PrestamoService {
         this.configuracionSistemaService = configuracionSistemaService;
         this.credencialQrService = credencialQrService;
         this.notificacionService = notificacionService;
+        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
     }
 
     @Transactional
@@ -118,6 +124,7 @@ public class PrestamoService {
             reservaOrigen.setEstadoReservacionId(idEstadoReservacion(ESTADO_RESERVA_RETIRADA));
             reservacionRepo.save(reservaOrigen);
         }
+        registrarAuditoria(bibliotecarioId, prestamoId, "Creación de préstamo " + prestamoId + " para usuario " + usuarioId);
         return toDTO(prestamo);
     }
 
@@ -189,6 +196,8 @@ public class PrestamoService {
             notificacionService.notificarMulta(prestamo.getUsuarioId(), prestamoId, montoMulta);
         }
 
+        registrarAuditoria(null, prestamoId, "Devolución registrada del préstamo " + prestamoId);
+
         return new DevolucionResponseDTO(
                 (Long) resultado.get("o_prestamo_id"), huboMulta, montoMulta);
     }
@@ -247,6 +256,8 @@ public class PrestamoService {
         prestamo.setRenovacionesRealizadas((short) (prestamo.getRenovacionesRealizadas() + 1));
         prestamo.setEstadoPrestamoId(idEstadoPrestamo(ESTADO_RENOVADO));
         prestamoRepo.save(prestamo);
+
+        registrarAuditoria(resolverIdPorCorreo(authentication.getName()), prestamoId, "Renovación del préstamo " + prestamoId + " (renovación " + prestamo.getRenovacionesRealizadas() + "/" + maxRenovaciones + ")");
 
         return new RenovacionResponseDTO(
                 prestamo.getId(),
@@ -492,6 +503,18 @@ public class PrestamoService {
                 p.getPeriodo() != null ? p.getPeriodo().atOffset(ZoneOffset.UTC) : null,
                 p.getTotalPrestamos(),
                 p.getTotalDevoluciones());
+    }
+
+    private void registrarAuditoria(Long ejecutorId, Long registroId, String detalles) {
+        BitacoraAuditoria evento = BitacoraAuditoria.builder()
+                .usuarioId(ejecutorId)
+                .tipoOperacion("UPDATE")
+                .tablaAfectada(TABLA_PRESTAMOS)
+                .registroId(registroId)
+                .detalles(detalles)
+                .fechaHora(OffsetDateTime.now())
+                .build();
+        bitacoraAuditoriaRepo.save(evento);
     }
 
     private void validarLimitePrestamos(Long usuarioId) {

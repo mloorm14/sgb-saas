@@ -5,10 +5,12 @@ import com.uteq.backend.dto.LibroResponseDTO;
 import com.uteq.backend.dto.LibroSugerenciaDTO;
 import com.uteq.backend.dto.PortadaImagenDTO;
 import com.uteq.backend.entity.Autor;
+import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.Categoria;
 import com.uteq.backend.entity.EstadoLibro;
 import com.uteq.backend.entity.Libro;
 import com.uteq.backend.repository.AutorRepository;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.CategoriaRepository;
 import com.uteq.backend.repository.EditorialRepository;
 import com.uteq.backend.repository.EstadoLibroRepository;
@@ -24,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -32,6 +35,7 @@ import java.util.Set;
 public class LibroService {
 
     private static final String LIBRO_NO_ENCONTRADO = "Libro no encontrado con id: ";
+    private static final String TABLA_LIBROS = "libros";
     private static final String ESTADO_ACTIVO = "ACTIVO";
     private static final String ESTADO_DADO_DE_BAJA = "DADO_DE_BAJA";
     // Módulo portada binaria: límite de tamaño (MB) en configuracion_sistema
@@ -56,6 +60,7 @@ public class LibroService {
     // memoria (ver ConfiguracionSistemaService), mismo patrón que
     // PrestamoService con dias_prestamo_default/max_renovaciones_default.
     private final ConfiguracionSistemaService configuracionSistemaService;
+    private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     public LibroService(LibroRepository libroRepo,
                         EditorialRepository editorialRepo,
@@ -63,7 +68,8 @@ public class LibroService {
                         EstadoLibroRepository estadoRepo,
                         CategoriaRepository categoriaRepo,
                         AutorRepository autorRepo,
-                        ConfiguracionSistemaService configuracionSistemaService) {
+                        ConfiguracionSistemaService configuracionSistemaService,
+                        BitacoraAuditoriaRepository bitacoraAuditoriaRepo) {
         this.libroRepo     = libroRepo;
         this.editorialRepo = editorialRepo;
         this.idiomaRepo    = idiomaRepo;
@@ -71,6 +77,19 @@ public class LibroService {
         this.categoriaRepo = categoriaRepo;
         this.autorRepo     = autorRepo;
         this.configuracionSistemaService = configuracionSistemaService;
+        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
+    }
+
+    private void registrarAuditoria(Long usuarioId, String tipoOperacion, Long registroId, String detalles) {
+        BitacoraAuditoria evento = BitacoraAuditoria.builder()
+                .usuarioId(usuarioId)
+                .tipoOperacion(tipoOperacion)
+                .tablaAfectada(TABLA_LIBROS)
+                .registroId(registroId)
+                .detalles(detalles)
+                .fechaHora(OffsetDateTime.now())
+                .build();
+        bitacoraAuditoriaRepo.save(evento);
     }
 
     @Cacheable("libros")
@@ -176,7 +195,9 @@ public class LibroService {
                     "ISBN ya registrado: " + dto.isbn());
         }
         validarStock(dto.stockTotal(), dto.stockDisponible());
-        return toDTO(libroRepo.save(fromDTO(dto)));
+        LibroResponseDTO resultado = toDTO(libroRepo.save(fromDTO(dto)));
+        registrarAuditoria(null, "INSERT", resultado.id(), "Libro creado: " + dto.titulo());
+        return resultado;
     }
 
     @CacheEvict(value = "libros", allEntries = true)
@@ -205,7 +226,9 @@ public class LibroService {
         libro.setCategorias(resolverCategorias(dto.categoriaIds()));
         libro.setAutores(resolverAutores(dto.autorIds()));
 
-        return toDTO(libroRepo.save(libro));
+        LibroResponseDTO resultado = toDTO(libroRepo.save(libro));
+        registrarAuditoria(null, "UPDATE", id, "Libro actualizado: " + dto.titulo());
+        return resultado;
     }
 
     @CacheEvict(value = "libros", allEntries = true)
@@ -219,6 +242,7 @@ public class LibroService {
                         "Catalogo estados_libro sin fila '" + ESTADO_DADO_DE_BAJA + "'"));
         libro.setEstado(estadoDadoDeBaja);
         libroRepo.save(libro);
+        registrarAuditoria(null, "DELETE", id, "Libro dado de baja: " + libro.getTitulo());
     }
 
     // ── Portada binaria (V13__portada_imagen.sql) ─────────────
