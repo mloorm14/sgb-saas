@@ -4,6 +4,7 @@ import { catchError, Observable, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ProblemDetail } from '../models/problem-detail.model';
 import {
+  CategoriaDano,
   DevolucionCompletaResponse,
   DevolucionHistorial,
   DevolucionRequest,
@@ -38,15 +39,25 @@ export class DevolucionService {
     ).pipe(catchError(err => this.manejarError(err)));
   }
 
-  crearTipoDano(nombre: string, precio: number): Observable<TipoDano> {
-    return this.http.post<TipoDano>(
-      `${environment.apiUrl}/v1/tipos-dano`, { nombre, precio }
+  listarCategoriasDano(): Observable<CategoriaDano[]> {
+    return this.http.get<CategoriaDano[]>(
+      `${environment.apiUrl}/v1/categorias-dano`
     ).pipe(catchError(err => this.manejarError(err)));
   }
 
-  actualizarTipoDano(id: number, nombre: string, precio: number): Observable<TipoDano> {
+  crearCategoriaDano(nombre: string): Observable<CategoriaDano> {
+    return this.http.post<CategoriaDano>(`${environment.apiUrl}/v1/categorias-dano`, { nombre }).pipe(catchError(err => this.manejarError(err)));
+  }
+
+  crearTipoDano(nombre: string, categoriaId: number, tipoCosto: string, valor: number): Observable<TipoDano> {
+    return this.http.post<TipoDano>(
+      `${environment.apiUrl}/v1/tipos-dano`, { nombre, categoriaId, tipoCosto, valor }
+    ).pipe(catchError(err => this.manejarError(err)));
+  }
+
+  actualizarTipoDano(id: number, nombre: string, categoriaId: number, tipoCosto: string, valor: number): Observable<TipoDano> {
     return this.http.put<TipoDano>(
-      `${environment.apiUrl}/v1/tipos-dano/${id}`, { nombre, precio }
+      `${environment.apiUrl}/v1/tipos-dano/${id}`, { nombre, categoriaId, tipoCosto, valor }
     ).pipe(catchError(err => this.manejarError(err)));
   }
 

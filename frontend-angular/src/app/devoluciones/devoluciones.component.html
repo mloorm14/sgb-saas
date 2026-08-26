@@ -248,7 +248,7 @@
                           class="w-4 h-4 rounded text-orange-600 focus:ring-orange-500" />
                         <span class="font-body-sm text-body-sm text-on-surface">{{ tipo.nombre }}</span>
                       </div>
-                      <span class="font-body-sm text-body-sm text-on-surface-variant">${{ tipo.precio }}</span>
+                      <span class="font-body-sm text-body-sm text-on-surface-variant">{{ tipo.tipoCosto === 'PORCENTAJE' ? tipo.valor + '%' : '$' + tipo.valor.toFixed(2) }}</span>
                     </label>
                   }
                 </div>

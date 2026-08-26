@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ConfiguracionSistemaService, ParametroConfiguracion } from '../core/services/configuracion-sistema.service';
 import { DevolucionService } from '../core/services/devolucion.service';
 import { AuthService } from '../core/services/auth.service';
-import { TipoDano } from '../core/models/devoluciones.model';
+import { TipoDano, CategoriaDano } from '../core/models/devoluciones.model';
 
 const VALOR_MAX_LENGTH = 200;
 
@@ -116,10 +116,14 @@ export class ConfiguracionSistemaComponent implements OnInit {
   valorEditando: string = '';
 
   tiposDano: TipoDano[] = [];
+  categoriasDano: CategoriaDano[] = [];
   cargandoTiposDano = false;
   editandoTipoDano: TipoDano | null = null;
   nuevoTipoDanoNombre = '';
-  nuevoTipoDanoPrecio: number | null = null;
+  nuevoTipoDanoCategoriaId: number | null = null;
+  nuevoTipoDanoTipoCosto: string = 'FIJO';
+  nuevoTipoDanoValor: number | null = null;
+  nuevoCategoriaNombre = '';
   errorMsgTiposDano = '';
 
   constructor(
@@ -132,6 +136,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
     this.esAdmin = this.authService.hasRole('ADMIN');
     if (this.esAdmin) {
       this.cargarConfiguraciones();
+      this.cargarCategoriasDano();
       this.cargarTiposDano();
     }
   }
@@ -191,7 +196,13 @@ export class ConfiguracionSistemaComponent implements OnInit {
   }
 
   get puedeAgregarTipoDano(): boolean {
-    return !!this.nuevoTipoDanoNombre.trim() && this.nuevoTipoDanoPrecio !== null && this.nuevoTipoDanoPrecio >= 0;
+    return !!this.nuevoTipoDanoNombre.trim() && this.nuevoTipoDanoCategoriaId !== null
+      && !!this.nuevoTipoDanoTipoCosto && this.nuevoTipoDanoValor !== null && this.nuevoTipoDanoValor >= 0
+      && (this.nuevoTipoDanoTipoCosto !== 'PORCENTAJE' || this.nuevoTipoDanoValor <= 100);
+  }
+
+  get puedeAgregarCategoria(): boolean {
+    return !!this.nuevoCategoriaNombre.trim();
   }
 
   guardarValor(): void {
@@ -209,6 +220,13 @@ export class ConfiguracionSistemaComponent implements OnInit {
           ? 'No tienes permisos para modificar la configuración del sistema'
           : 'Error al actualizar el valor de configuración';
       }
+    });
+  }
+
+  private cargarCategoriasDano(): void {
+    this.devolucionService.listarCategoriasDano().subscribe({
+      next: (data) => { this.categoriasDano = data; },
+      error: () => { this.errorMsgTiposDano = 'Error al cargar categorías de daño'; }
     });
   }
 
@@ -230,22 +248,32 @@ export class ConfiguracionSistemaComponent implements OnInit {
 
   guardarTipoDano(): void {
     if (!this.editandoTipoDano) return;
-    const { id, nombre, precio } = this.editandoTipoDano;
-    if (!nombre?.trim() || precio == null || precio < 0) return;
-    this.devolucionService.actualizarTipoDano(id, nombre.trim(), precio).subscribe({
+    const { id, nombre, categoriaId, tipoCosto, valor } = this.editandoTipoDano;
+    if (!nombre?.trim() || categoriaId == null || !tipoCosto || valor == null || valor < 0) return;
+    if (tipoCosto === 'PORCENTAJE' && valor > 100) return;
+    this.devolucionService.actualizarTipoDano(id, nombre.trim(), categoriaId, tipoCosto, valor).subscribe({
       next: () => { this.cancelarEdicionTipoDano(); this.cargarTiposDano(); },
       error: (err) => { this.errorMsgTiposDano = err.message; }
     });
   }
 
   agregarTipoDano(): void {
-    if (!this.nuevoTipoDanoNombre.trim() || this.nuevoTipoDanoPrecio == null || this.nuevoTipoDanoPrecio < 0) return;
-    this.devolucionService.crearTipoDano(this.nuevoTipoDanoNombre.trim(), this.nuevoTipoDanoPrecio).subscribe({
+    if (!this.nuevoTipoDanoNombre.trim() || this.nuevoTipoDanoCategoriaId == null || !this.nuevoTipoDanoTipoCosto || this.nuevoTipoDanoValor == null || this.nuevoTipoDanoValor < 0) return;
+    if (this.nuevoTipoDanoTipoCosto === 'PORCENTAJE' && this.nuevoTipoDanoValor > 100) return;
+    this.devolucionService.crearTipoDano(this.nuevoTipoDanoNombre.trim(), this.nuevoTipoDanoCategoriaId, this.nuevoTipoDanoTipoCosto, this.nuevoTipoDanoValor).subscribe({
       next: () => {
         this.nuevoTipoDanoNombre = '';
-        this.nuevoTipoDanoPrecio = null;
+        this.nuevoTipoDanoValor = null;
         this.cargarTiposDano();
       },
+      error: (err) => { this.errorMsgTiposDano = err.message; }
+    });
+  }
+
+  agregarCategoriaDano(): void {
+    if (!this.nuevoCategoriaNombre.trim()) return;
+    this.devolucionService.crearCategoriaDano(this.nuevoCategoriaNombre.trim()).subscribe({
+      next: () => { this.nuevoCategoriaNombre = ''; this.cargarCategoriasDano(); },
       error: (err) => { this.errorMsgTiposDano = err.message; }
     });
   }
