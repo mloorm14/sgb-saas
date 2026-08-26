@@ -121,7 +121,7 @@ class AuthControllerTest {
                 .andExpect(header().string("Set-Cookie", containsString("refreshToken=refresh-token-y")))
                 .andExpect(header().string("Set-Cookie", containsString("HttpOnly")))
                 .andExpect(header().string("Set-Cookie", containsString("Secure")))
-                .andExpect(header().string("Set-Cookie", containsString("SameSite=Strict")));
+                .andExpect(header().string("Set-Cookie", containsString("SameSite=None")));
     }
 
     @Test

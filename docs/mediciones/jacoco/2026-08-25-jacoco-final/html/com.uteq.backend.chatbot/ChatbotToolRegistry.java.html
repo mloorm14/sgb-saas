@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ChatbotToolRegistry.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.chatbot</a> &gt; <span class="el_source">ChatbotToolRegistry.java</span></div><h1>ChatbotToolRegistry.java</h1><pre class="source lang-java linenums">package com.uteq.backend.chatbot;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Registry que recolecta todas las {@link ChatbotTool} beans y las expone
+ * en dos formatos:
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@link #buildToolsPayload()} — formato Gemini (para el campo {@code tools} del payload)&lt;/li&gt;
+ *   &lt;li&gt;{@link #execute(String, JsonNode)} — ejecuta una tool por nombre y devuelve el resultado&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+@Component
+public class ChatbotToolRegistry {
+
+<span class="fc" id="L26">    private static final Logger log = LoggerFactory.getLogger(ChatbotToolRegistry.class);</span>
+<span class="fc" id="L27">    private static final ObjectMapper MAPPER = new ObjectMapper();</span>
+
+    private final Map&lt;String, ChatbotTool&gt; tools;
+
+<span class="fc" id="L31">    public ChatbotToolRegistry(List&lt;ChatbotTool&gt; toolList) {</span>
+<span class="fc" id="L32">        this.tools = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        for (ChatbotTool tool : toolList) {</span>
+<span class="fc" id="L34">            this.tools.put(tool.getName(), tool);</span>
+<span class="fc" id="L35">            log.info(&quot;Chatbot tool registrada: {} — {}&quot;, tool.getName(), tool.getDescription());</span>
+<span class="fc" id="L36">        }</span>
+<span class="fc" id="L37">        log.info(&quot;Total tools disponibles: {}&quot;, tools.size());</span>
+<span class="fc" id="L38">    }</span>
+
+    /**
+     * Construye el array {@code tools} en el formato que espera Gemini:
+     * &lt;pre&gt;
+     * [{ &quot;functionDeclarations&quot;: [ { name, description, parameters }, ... ] }]
+     * &lt;/pre&gt;
+     */
+    public List&lt;Map&lt;String, Object&gt;&gt; buildToolsPayload() {
+<span class="nc" id="L47">        ArrayNode functionDeclarations = MAPPER.createArrayNode();</span>
+
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        for (ChatbotTool tool : tools.values()) {</span>
+<span class="nc" id="L50">            ObjectNode declaration = MAPPER.createObjectNode();</span>
+<span class="nc" id="L51">            declaration.put(&quot;name&quot;, tool.getName());</span>
+<span class="nc" id="L52">            declaration.put(&quot;description&quot;, tool.getDescription());</span>
+<span class="nc" id="L53">            declaration.set(&quot;parameters&quot;, tool.getInputSchema());</span>
+<span class="nc" id="L54">            functionDeclarations.add(declaration);</span>
+<span class="nc" id="L55">        }</span>
+
+<span class="nc" id="L57">        Map&lt;String, Object&gt; functionDeclarationsWrapper = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc" id="L58">        functionDeclarationsWrapper.put(&quot;functionDeclarations&quot;, functionDeclarations);</span>
+
+<span class="nc" id="L60">        return List.of(functionDeclarationsWrapper);</span>
+    }
+
+    /**
+     * Ejecuta una tool por nombre. Si la tool no existe, retorna un error JSON.
+     */
+    public JsonNode execute(String toolName, JsonNode args) {
+<span class="nc" id="L67">        ChatbotTool tool = tools.get(toolName);</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">        if (tool == null) {</span>
+<span class="nc" id="L69">            log.warn(&quot;Tool desconocida solicitada por Gemini: {}&quot;, toolName);</span>
+<span class="nc" id="L70">            return MAPPER.createObjectNode().put(&quot;error&quot;, &quot;Tool no encontrada: &quot; + toolName);</span>
+        }
+        try {
+<span class="nc" id="L73">            return tool.execute(args);</span>
+<span class="nc" id="L74">        } catch (Exception ex) {</span>
+<span class="nc" id="L75">            log.error(&quot;Error ejecutando tool {}: {}&quot;, toolName, ex.getMessage(), ex);</span>
+<span class="nc" id="L76">            return MAPPER.createObjectNode().put(&quot;error&quot;, &quot;Error ejecutando &quot; + toolName + &quot;: &quot; + ex.getMessage());</span>
+        }
+    }
+
+    public boolean contains(String toolName) {
+<span class="nc" id="L81">        return tools.containsKey(toolName);</span>
+    }
+
+    /**
+     * Retorna el JSON Schema de entrada de una tool por nombre.
+     * Útil para inspección dinámica (ej: verificar si requiere usuario_id).
+     */
+    public JsonNode getToolSchema(String toolName) {
+<span class="nc" id="L89">        ChatbotTool tool = tools.get(toolName);</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">        if (tool == null) {</span>
+<span class="nc" id="L91">            return MAPPER.createObjectNode();</span>
+        }
+<span class="nc" id="L93">        return tool.getInputSchema();</span>
+    }
+
+    /**
+     * Verifica si una tool requiere el parámetro {@code usuario_id} en su schema.
+     * Busca en el array {@code required} del JSON Schema.
+     */
+    public boolean requiresUserId(String toolName) {
+<span class="nc" id="L101">        JsonNode schema = getToolSchema(toolName);</span>
+<span class="nc" id="L102">        JsonNode required = schema.path(&quot;required&quot;);</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        if (!required.isArray()) {</span>
+<span class="nc" id="L104">            return false;</span>
+        }
+<span class="nc bnc" id="L106" title="All 2 branches missed.">        for (JsonNode req : required) {</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">            if (&quot;usuario_id&quot;.equals(req.asText())) {</span>
+<span class="nc" id="L108">                return true;</span>
+            }
+<span class="nc" id="L110">        }</span>
+<span class="nc" id="L111">        return false;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

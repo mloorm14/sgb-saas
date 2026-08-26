@@ -244,26 +244,32 @@ parte de evaluar el efecto de la estrategia híbrida de acceso a datos
 sobre la cobertura de pruebas.
 
 \textbf{Métrica.} Porcentaje de líneas, ramas y complejidad ciclomática
-cubiertas por los 272 tests del backend (1 fallo, 9 errores, 2 \emph{skipped}),
+cubiertas por los 284 tests del backend (0 fallos, 2 \emph{skipped}),
 medido con \texttt{jacoco-maven-plugin}. Cifra re-verificada con una
-corrida real de \texttt{./mvnw clean test jacoco:report -Dmaven.test.failure.ignore=true}
-sobre el commit vigente al cierre de esta entrega (\texttt{c2d76ad}) --
+corrida real de \texttt{./mvnw clean verify} sobre el commit vigente al
+cierre de esta entrega (\texttt{825ad34}) --
 reemplaza la cifra citada anteriormente (82,97\,\% en commit
 \texttt{0d1474d}) que no tenía artefacto versionado asociado; esta
 medición sí genera reporte XML/HTML versionado. La base de líneas
 analizables creció de 1456 a 2408 por la incorporación de nuevos
 controladores y módulos (auditoría, chatbot, credencial QR, entre
-otros) y la cobertura real bajó a 61,30\,\%, bajo el umbral de 70\,\%
+otros) y la cobertura real bajó a 61,50\,\%, bajo el umbral de 70\,\%
 exigido para la Entrega Final -- se reporta con honestidad en vez de
-repetir la cifra anterior sin artefacto respaldatorio.
+repetir la cifra anterior sin artefacto respaldatorio. NOTA: esta cifra
+fue medida DESPUÉS del fix de Testcontainers y SameSite de este mismo
+commit; la medición intermedia previa (commit \texttt{c2d76ad}) dio
+61,30\,\% antes de que los 9 tests de integración contribuyeran a la
+cobertura.
 
 \textbf{Datos crudos.} \texttt{docs/mediciones/jacoco/report.xml},
 \texttt{report.csv}, \texttt{html/index.html} (reporte navegable
 completo, commit \texttt{a2c88f8}); narrativa y desglose por clase en
 \texttt{docs/mediciones/jacoco/2026-08-13-cobertura-jacoco-post-merge-8-modulos.md}.
-La corrida vigente (\texttt{c2d76ad}) se versiona ahora como
-\texttt{2026-08-25-cobertura-jacoco-cierre-entrega-final.md} con sus
-artefactos XML/HTML/CSV en \texttt{docs/mediciones/jacoco/}.
+La corrida final vigente (\texttt{825ad34}) se documenta en
+\texttt{2026-08-25-cobertura-jacoco-final.md}, con sus
+artefactos XML/HTML/CSV en \texttt{docs/mediciones/jacoco/2026-08-25-jacoco-final/}.
+La medición intermedia previa (\texttt{c2d76ad}, 61,30\,\%) permanece documentada sin modificar en
+\texttt{2026-08-25-cobertura-jacoco-cierre-entrega-final.md} como registro honesto del proceso.
 
 \textbf{Estadística descriptiva.} Esta métrica es una medición agregada
 sobre la totalidad del código analizado (56 clases en la corrida
@@ -277,14 +283,14 @@ número reportado es el porcentaje real exacto, sin margen de muestreo.
 \small
 \begin{tabular}{lrrrr}
 \toprule
-Métrica & 30-jul (pre-merge) & 13-ago (post-merge, \texttt{a2c88f8}) & \textbf{Vigente (\texttt{c2d76ad})} & Umbral \\
+Métrica & 30-jul (pre-merge) & 13-ago (post-merge, \texttt{a2c88f8}) & \textbf{Vigente (\texttt{825ad34})} & Umbral \\
 \midrule
-Lines & 75,85\,\% (380/501) & 81,64\,\% (1014/1242) & \textbf{61,30\,\% (1476/2408)} & $\geq$70\,\% \textbf{No} \\
-Branches & 49,02\,\% (50/102) & 58,05\,\% (137/236) & \textbf{38,16\,\% (232/608)} & -- \\
-Complexity & 58,42\,\% (111/190) & 65,16\,\% (288/442) & \textbf{47,56\,\% (399/839)} & -- \\
+Lines & 75,85\,\% (380/501) & 81,64\,\% (1014/1242) & \textbf{61,50\,\% (1481/2408)} & $\geq$70\,\% \textbf{No} \\
+Branches & 49,02\,\% (50/102) & 58,05\,\% (137/236) & \textbf{38,98\,\% (237/608)} & -- \\
+Complexity & 58,42\,\% (111/190) & 65,16\,\% (288/442) & \textbf{48,15\,\% (404/839)} & -- \\
 \bottomrule
 \end{tabular}
-\caption{Cobertura JaCoCo: pre-merge, post-merge de 8 módulos de dominio, y corrida vigente al cierre de la Entrega Final (re-verificada con artefacto versionado)}
+\caption{Cobertura JaCoCo: pre-merge, post-merge de 8 módulos de dominio, y corrida vigente al cierre de la Entrega Final (medición final tras estabilizar suite: Testcontainers + fix SameSite)}
 \label{tab:res-jacoco}
 \end{table}
 
@@ -292,7 +298,7 @@ Complexity & 58,42\,\% (111/190) & 65,16\,\% (288/442) & \textbf{47,56\,\% (399/
 concreto y un artefacto versionado que lo respalda: la base de líneas
 analizables creció de 1242 a 2408 con los commits posteriores al merge
 de los 8 módulos (nuevos controladores, chatbot, auditoría, QR, etc.),
-y la cobertura de líneas \textbf{bajó} de 81,64\,\% a 61,30\,\%, quedando
+y la cobertura de líneas \textbf{bajó} de 81,64\,\% a 61,50\,\%, quedando
 \textbf{por debajo del umbral de 70\,\%} exigido para la Entrega Final.
 El paquete más bajo sigue siendo \texttt{integration} (12,1\,\% de líneas,
 clase \texttt{GeminiClient}), seguido de \texttt{exception} (42,6\,\%) y
@@ -301,7 +307,12 @@ clase \texttt{GeminiClient}), seguido de \texttt{exception} (42,6\,\%) y
 resultado contradice la cifra de 82,97\,\% citada en una versión anterior
 de este documento (commit \texttt{0d1474d}) que carecía de artefacto
 versionado asociado; se corrige aquí con honestidad y se versiona el
-reporte real correspondiente al commit \texttt{c2d76ad}.
+reporte real correspondiente al commit \texttt{825ad34}. La medición
+intermedia en \texttt{c2d76ad} (61,30\,\%) se mantiene documentada en
+\texttt{2026-08-25-cobertura-jacoco-cierre-entrega-final.md} como paso
+previo; la medición final (\texttt{825ad34}, 61,50\,\%) incorpora la
+cobertura real de los 9 tests de integración habilitados por Testcontainers
+y del test de cookie SameSite corregido.
 
 \section{Bloque 4 -- Calidad web (Lighthouse)}
 \label{sec:res-lighthouse}

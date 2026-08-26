@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ChatbotOrchestrator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.chatbot</a> &gt; <span class="el_source">ChatbotOrchestrator.java</span></div><h1>ChatbotOrchestrator.java</h1><pre class="source lang-java linenums">package com.uteq.backend.chatbot;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.uteq.backend.dto.MensajeChatHistorialDTO;
+import com.uteq.backend.dto.MensajeChatRequestDTO;
+import com.uteq.backend.dto.MensajeChatResponseDTO;
+import com.uteq.backend.entity.BaseConocimiento;
+import com.uteq.backend.entity.MensajeChat;
+import com.uteq.backend.entity.SesionChat;
+import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.integration.GeminiClient;
+import com.uteq.backend.integration.GeminiClient.GeminiResponse;
+import com.uteq.backend.repository.BaseConocimientoRepository;
+import com.uteq.backend.repository.MensajeChatRepository;
+import com.uteq.backend.repository.SesionChatRepository;
+import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.security.ChatbotRateLimiter;
+import com.uteq.backend.service.ChatbotRateLimitExcedidoException;
+import com.uteq.backend.service.SesionChatNoEncontradaException;
+import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * Orquestador del chatbot con function calling (reemplaza a ChatbotService).
+ * &lt;p&gt;
+ * Flujo:
+ * &lt;ol&gt;
+ *   &lt;li&gt;Resuelve usuario, valida rate limit, resuelve sesión&lt;/li&gt;
+ *   &lt;li&gt;Persiste el mensaje del usuario&lt;/li&gt;
+ *   &lt;li&gt;Construye el system prompt con grounding (base_conocimiento)&lt;/li&gt;
+ *   &lt;li&gt;Obtiene las tools del {@link ChatbotToolRegistry}&lt;/li&gt;
+ *   &lt;li&gt;Llama a Gemini con tools habilitados&lt;/li&gt;
+ *   &lt;li&gt;Si Gemini responde con functionCall → ejecuta la tool real → devuelve resultado a Gemini&lt;/li&gt;
+ *   &lt;li&gt;Repite hasta obtener respuesta de texto&lt;/li&gt;
+ *   &lt;li&gt;Persiste la respuesta y retorna&lt;/li&gt;
+ * &lt;/ol&gt;
+ */
+@Service
+public class ChatbotOrchestrator {
+
+<span class="fc" id="L54">    private static final Logger log = LoggerFactory.getLogger(ChatbotOrchestrator.class);</span>
+
+    private static final String USUARIO_NO_ENCONTRADO = &quot;Usuario no encontrado: &quot;;
+    private static final String ROL_USUARIO = &quot;USUARIO&quot;;
+    private static final String ROL_ASISTENTE = &quot;ASISTENTE&quot;;
+
+    /** Máximo de iteraciones functionCall antes de cortar (evita loops infinitos). */
+    private static final int MAX_FUNCTION_CALL_ITERATIONS = 5;
+
+    private final SesionChatRepository sesionChatRepo;
+    private final MensajeChatRepository mensajeChatRepo;
+    private final BaseConocimientoRepository baseConocimientoRepo;
+    private final UsuarioRepository usuarioRepo;
+    private final GeminiClient geminiClient;
+    private final ChatbotToolRegistry toolRegistry;
+    private final ChatbotRateLimiter chatbotRateLimiter;
+<span class="fc" id="L70">    private final ObjectMapper mapper = new ObjectMapper();</span>
+
+    public ChatbotOrchestrator(
+            SesionChatRepository sesionChatRepo,
+            MensajeChatRepository mensajeChatRepo,
+            BaseConocimientoRepository baseConocimientoRepo,
+            UsuarioRepository usuarioRepo,
+            GeminiClient geminiClient,
+            ChatbotToolRegistry toolRegistry,
+<span class="fc" id="L79">            ChatbotRateLimiter chatbotRateLimiter) {</span>
+<span class="fc" id="L80">        this.sesionChatRepo = sesionChatRepo;</span>
+<span class="fc" id="L81">        this.mensajeChatRepo = mensajeChatRepo;</span>
+<span class="fc" id="L82">        this.baseConocimientoRepo = baseConocimientoRepo;</span>
+<span class="fc" id="L83">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L84">        this.geminiClient = geminiClient;</span>
+<span class="fc" id="L85">        this.toolRegistry = toolRegistry;</span>
+<span class="fc" id="L86">        this.chatbotRateLimiter = chatbotRateLimiter;</span>
+<span class="fc" id="L87">    }</span>
+
+    @Transactional
+    public MensajeChatResponseDTO enviarMensaje(MensajeChatRequestDTO dto, Authentication authentication) {
+<span class="nc" id="L91">        Long usuarioId = resolverIdPorCorreo(authentication.getName());</span>
+
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        if (chatbotRateLimiter.estaBloqueado(usuarioId)) {</span>
+<span class="nc" id="L94">            throw new ChatbotRateLimitExcedidoException(</span>
+                    &quot;Has alcanzado el límite de mensajes al asistente. Intenta de nuevo en un momento.&quot;);
+        }
+
+<span class="nc" id="L98">        SesionChat sesion = resolverSesion(dto.sesionId(), usuarioId);</span>
+
+        // Persistir mensaje del usuario ANTES de llamar a Gemini
+<span class="nc" id="L101">        MensajeChat msgUsuario = new MensajeChat();</span>
+<span class="nc" id="L102">        msgUsuario.setSesionId(sesion.getId());</span>
+<span class="nc" id="L103">        msgUsuario.setRol(ROL_USUARIO);</span>
+<span class="nc" id="L104">        msgUsuario.setContenido(dto.texto());</span>
+<span class="nc" id="L105">        msgUsuario.setCreadoEn(OffsetDateTime.now());</span>
+<span class="nc" id="L106">        mensajeChatRepo.save(msgUsuario);</span>
+
+        // Construir system prompt + tools
+<span class="nc" id="L109">        String promptSistema = construirPromptSistema();</span>
+<span class="nc" id="L110">        List&lt;Map&lt;String, Object&gt;&gt; tools = toolRegistry.buildToolsPayload();</span>
+<span class="nc" id="L111">        List&lt;MensajeChat&gt; historial =</span>
+<span class="nc" id="L112">                mensajeChatRepo.findBySesionIdOrderByCreadoEnAsc(sesion.getId());</span>
+
+        // Loop de function calling
+<span class="nc" id="L115">        String respuestaFinal = ejecutarLoopFunctionCalling(promptSistema, historial, dto.texto(), tools, usuarioId);</span>
+
+        // Persistir respuesta del asistente
+<span class="nc" id="L118">        MensajeChat msgAsistente = new MensajeChat();</span>
+<span class="nc" id="L119">        msgAsistente.setSesionId(sesion.getId());</span>
+<span class="nc" id="L120">        msgAsistente.setRol(ROL_ASISTENTE);</span>
+<span class="nc" id="L121">        msgAsistente.setContenido(respuestaFinal);</span>
+<span class="nc" id="L122">        msgAsistente.setCreadoEn(OffsetDateTime.now());</span>
+<span class="nc" id="L123">        mensajeChatRepo.save(msgAsistente);</span>
+
+<span class="nc" id="L125">        sesion.setUltimaActividad(OffsetDateTime.now());</span>
+<span class="nc" id="L126">        sesionChatRepo.save(sesion);</span>
+
+<span class="nc" id="L128">        chatbotRateLimiter.registrarMensaje(usuarioId);</span>
+
+<span class="nc" id="L130">        return new MensajeChatResponseDTO(sesion.getId(), respuestaFinal, msgAsistente.getCreadoEn());</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;MensajeChatHistorialDTO&gt; obtenerHistorial(UUID sesionId, Authentication authentication) {
+<span class="nc" id="L135">        Long usuarioId = resolverIdPorCorreo(authentication.getName());</span>
+<span class="nc" id="L136">        SesionChat sesion = validarPropiedadSesion(sesionId, usuarioId);</span>
+<span class="nc" id="L137">        return mensajeChatRepo.findBySesionIdOrderByCreadoEnAsc(sesion.getId()).stream()</span>
+<span class="nc" id="L138">                .map(m -&gt; new MensajeChatHistorialDTO(m.getRol(), m.getContenido(), m.getCreadoEn()))</span>
+<span class="nc" id="L139">                .toList();</span>
+    }
+
+    // ── Function calling loop ─────────────────────────────────────────────
+
+    /**
+     * Ejecuta el loop de function calling:
+     * 1. Envía a Gemini con tools
+     * 2. Si Gemini responde con functionCall → ejecuta tool → agrega resultado al historial → repite
+     * 3. Si Gemini responde con texto → retorna
+     */
+    private String ejecutarLoopFunctionCalling(
+            String promptSistema,
+            List&lt;MensajeChat&gt; historial,
+            String mensajeUsuario,
+            List&lt;Map&lt;String, Object&gt;&gt; tools,
+            Long usuarioId) {
+
+        // Trabajamos con una copia mutable del historial
+<span class="nc" id="L158">        List&lt;MensajeChat&gt; historialTrabajo = new ArrayList&lt;&gt;(historial);</span>
+
+<span class="nc bnc" id="L160" title="All 2 branches missed.">        for (int i = 0; i &lt; MAX_FUNCTION_CALL_ITERATIONS; i++) {</span>
+<span class="nc" id="L161">            GeminiResponse respuesta = geminiClient.generarRespuestaConTools(</span>
+                    promptSistema, historialTrabajo, mensajeUsuario, tools);
+
+<span class="nc bnc" id="L164" title="All 2 branches missed.">            if (!respuesta.isFunctionCall()) {</span>
+                // Respuesta de texto final
+<span class="nc" id="L166">                return respuesta.getTexto();</span>
+            }
+
+            // Gemini pidió ejecutar una tool
+<span class="nc" id="L170">            log.info(&quot;Function call iteración {}: {} con args {}&quot;,</span>
+<span class="nc" id="L171">                    i + 1, respuesta.functionName(), respuesta.functionArgs());</span>
+
+            // Inyectar usuario_id si la tool lo requiere
+<span class="nc" id="L174">            JsonNode argsFinal = inyectarUsuarioIdSiRequerido(respuesta.functionName(), respuesta.functionArgs(), usuarioId);</span>
+
+            // Ejecutar la tool real
+<span class="nc" id="L177">            JsonNode resultado = toolRegistry.execute(respuesta.functionName(), argsFinal);</span>
+
+            // Agregar al historial: el functionCall y el functionResponse
+<span class="nc" id="L180">            MensajeChat msgFuncCall = new MensajeChat();</span>
+<span class="nc" id="L181">            msgFuncCall.setRol(ROL_ASISTENTE);</span>
+<span class="nc" id="L182">            msgFuncCall.setContenido(&quot;[FunctionCall:&quot; + respuesta.functionName() + &quot;:&quot; + respuesta.functionArgs() + &quot;]&quot;);</span>
+<span class="nc" id="L183">            msgFuncCall.setCreadoEn(OffsetDateTime.now());</span>
+<span class="nc" id="L184">            historialTrabajo.add(msgFuncCall);</span>
+
+<span class="nc" id="L186">            MensajeChat msgFuncResponse = new MensajeChat();</span>
+<span class="nc" id="L187">            msgFuncResponse.setRol(ROL_USUARIO);</span>
+<span class="nc" id="L188">            msgFuncResponse.setContenido(&quot;[FunctionResponse:&quot; + respuesta.functionName() + &quot;:&quot; + resultado.toString() + &quot;]&quot;);</span>
+<span class="nc" id="L189">            msgFuncResponse.setCreadoEn(OffsetDateTime.now());</span>
+<span class="nc" id="L190">            historialTrabajo.add(msgFuncResponse);</span>
+
+            // En la siguiente iteración, Gemini verá el resultado y decidirá
+            // si necesita otra tool o si ya puede responder al usuario.
+            // El &quot;mensajeNuevo&quot; se mantiene como el último mensaje del usuario
+            // para que Gemini tenga contexto de qué se pidió originalmente.
+        }
+
+<span class="nc" id="L198">        log.warn(&quot;Máximo de iteraciones de function calling alcanzado ({})&quot;, MAX_FUNCTION_CALL_ITERATIONS);</span>
+<span class="nc" id="L199">        return &quot;No pude completar tu consulta con las herramientas disponibles. &quot;</span>
+                + &quot;Por favor, intenta reformular tu pregunta o consulta en ventanilla.&quot;;
+    }
+
+    // ── System prompt ─────────────────────────────────────────────────────
+
+    private String construirPromptSistema() {
+<span class="nc" id="L206">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L207">        sb.append(&quot;Eres el asistente virtual de la biblioteca SGB-SaaS de la Universidad Técnica de Quevedo (UTEQ). &quot;)</span>
+<span class="nc" id="L208">                .append(&quot;Tienes acceso a herramientas que consultan la base de datos real de la biblioteca. &quot;)</span>
+<span class="nc" id="L209">                .append(&quot;Usa las herramientas cuando el usuario pregunte sobre:\n&quot;)</span>
+<span class="nc" id="L210">                .append(&quot;- Libros del catálogo (buscar por título, autor o tema)\n&quot;)</span>
+<span class="nc" id="L211">                .append(&quot;- Disponibilidad de un libro\n&quot;)</span>
+<span class="nc" id="L212">                .append(&quot;- Préstamos activos de un usuario\n&quot;)</span>
+<span class="nc" id="L213">                .append(&quot;- Multas pendientes de pago\n&quot;)</span>
+<span class="nc" id="L214">                .append(&quot;- Horarios de apertura\n&quot;)</span>
+<span class="nc" id="L215">                .append(&quot;- Políticas de préstamo, devolución y sanciones\n\n&quot;)</span>
+<span class="nc" id="L216">                .append(&quot;INSTRUCCIONES IMPORTANTES:\n&quot;)</span>
+<span class="nc" id="L217">                .append(&quot;1. NUNCA inventes datos. Si una herramienta no retorna resultados, dilo claramente.\n&quot;)</span>
+<span class="nc" id="L218">                .append(&quot;2. Si el usuario pregunta por disponibilidad de un libro, USA la herramienta buscar_libro.\n&quot;)</span>
+<span class="nc" id="L219">                .append(&quot;3. Si el usuario pregunta por sus préstamos o multas, USA las herramientas correspondientes con el usuario_id que se proporciona en el contexto.\n&quot;)</span>
+<span class="nc" id="L220">                .append(&quot;4. Si el usuario quiere RESERVAR un libro, NO ejecutes la reserva. Indícale que puede hacerlo desde el catálogo o en ventanilla.\n&quot;)</span>
+<span class="nc" id="L221">                .append(&quot;5. Responde en español, breve y útil. Usa un tono amigable de bibliotecario virtual.\n&quot;)</span>
+<span class="nc" id="L222">                .append(&quot;6. Si no tienes contexto suficiente para responder, sugiere consultar en ventanilla.\n\n&quot;);</span>
+
+<span class="nc" id="L224">        sb.append(&quot;### Base de conocimiento:\n&quot;);</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">        for (BaseConocimiento bc : baseConocimientoRepo.findByActivoTrue()) {</span>
+<span class="nc" id="L226">            sb.append(&quot;- [&quot;).append(bc.getCategoria()).append(&quot;] &quot;)</span>
+<span class="nc" id="L227">                    .append(bc.getPreguntaEjemplo()).append(&quot; =&gt; &quot;).append(bc.getRespuesta())</span>
+<span class="nc" id="L228">                    .append(&quot;\n&quot;);</span>
+<span class="nc" id="L229">        }</span>
+
+<span class="nc" id="L231">        return sb.toString();</span>
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+
+    private SesionChat resolverSesion(UUID sesionId, Long usuarioId) {
+<span class="nc bnc" id="L237" title="All 2 branches missed.">        if (sesionId == null) {</span>
+<span class="nc" id="L238">            OffsetDateTime ahora = OffsetDateTime.now();</span>
+<span class="nc" id="L239">            SesionChat nueva = new SesionChat();</span>
+<span class="nc" id="L240">            nueva.setUsuarioId(usuarioId);</span>
+<span class="nc" id="L241">            nueva.setCreadoEn(ahora);</span>
+<span class="nc" id="L242">            nueva.setUltimaActividad(ahora);</span>
+<span class="nc" id="L243">            return sesionChatRepo.save(nueva);</span>
+        }
+<span class="nc" id="L245">        return validarPropiedadSesion(sesionId, usuarioId);</span>
+    }
+
+    private SesionChat validarPropiedadSesion(UUID sesionId, Long usuarioId) {
+<span class="nc" id="L249">        SesionChat sesion = sesionChatRepo.findById(sesionId)</span>
+<span class="nc" id="L250">                .orElseThrow(() -&gt; new SesionChatNoEncontradaException(</span>
+                        &quot;Sesión de chat no encontrada: &quot; + sesionId));
+<span class="nc bnc" id="L252" title="All 2 branches missed.">        if (!sesion.getUsuarioId().equals(usuarioId)) {</span>
+<span class="nc" id="L253">            throw new SesionChatNoEncontradaException(</span>
+                    &quot;Sesión de chat no encontrada: &quot; + sesionId);
+        }
+<span class="nc" id="L256">        return sesion;</span>
+    }
+
+    private Long resolverIdPorCorreo(String correo) {
+<span class="nc" id="L260">        Usuario usuario = usuarioRepo.findByCorreo(correo)</span>
+<span class="nc" id="L261">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo));</span>
+<span class="nc" id="L262">        return usuario.getId();</span>
+    }
+
+    /**
+     * Inyecta automáticamente {@code usuario_id} en los argumentos de una tool
+     * si el schema de la tool lo requiere (está en el array {@code required}).
+     * &lt;p&gt;
+     * Esto evita que Gemini tenga que conocer el ID del usuario autenticado,
+     * y permite que tools como {@code consultar_multas}, {@code consultar_prestamos}
+     * y {@code consultar_reservaciones} funcionen transparentes.
+     */
+    private JsonNode inyectarUsuarioIdSiRequerido(String toolName, JsonNode args, Long usuarioId) {
+<span class="nc bnc" id="L274" title="All 2 branches missed.">        if (toolRegistry.requiresUserId(toolName)) {</span>
+<span class="nc bnc" id="L275" title="All 8 branches missed.">            if (args == null || args.isNull() || !args.has(&quot;usuario_id&quot;) || args.path(&quot;usuario_id&quot;).asLong(0) == 0) {</span>
+<span class="nc" id="L276">                ObjectNode argsConUsuario = mapper.createObjectNode();</span>
+<span class="nc bnc" id="L277" title="All 4 branches missed.">                if (args != null &amp;&amp; !args.isNull()) {</span>
+                    // Copiar campos existentes
+<span class="nc" id="L279">                    args.fields().forEachRemaining(entry -&gt; argsConUsuario.set(entry.getKey(), entry.getValue()));</span>
+                }
+<span class="nc" id="L281">                argsConUsuario.put(&quot;usuario_id&quot;, usuarioId);</span>
+<span class="nc" id="L282">                log.debug(&quot;Inyectado usuario_id={} en tool {}&quot;, usuarioId, toolName);</span>
+<span class="nc" id="L283">                return argsConUsuario;</span>
+            }
+        }
+<span class="nc" id="L286">        return args;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

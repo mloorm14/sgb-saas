@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JwtService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.security</a> &gt; <span class="el_source">JwtService.java</span></div><h1>JwtService.java</h1><pre class="source lang-java linenums">package com.uteq.backend.security;
+
+import com.uteq.backend.entity.Rol;
+import com.uteq.backend.entity.Usuario;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+<span class="fc" id="L20">public class JwtService {</span>
+
+    // Orden de mayor a menor privilegio, usado solo para elegir el claim
+    // &quot;rol&quot; (singular) de retrocompatibilidad -- ver comentario en
+    // buildToken(). No afecta autorización real: JwtAuthFilter reconstruye
+    // las authorities en cada request vía UserDetailsServiceImpl (consulta
+    // fresca a la BD), nunca lee claims de rol del propio JWT.
+<span class="fc" id="L27">    private static final List&lt;String&gt; JERARQUIA_ROLES = List.of(&quot;ADMIN&quot;, &quot;GERENTE&quot;, &quot;BIBLIOTECARIO&quot;, &quot;LECTOR&quot;);</span>
+
+    @Value(&quot;${security.jwt.secret}&quot;)
+    private String secret;
+
+    @Value(&quot;${security.jwt.expiration-ms}&quot;)
+    private long expirationMs;
+
+    @Value(&quot;${security.jwt.refresh-expiration-ms}&quot;)
+    private long refreshExpirationMs;
+
+    public long getExpirationMs() {
+<span class="nc" id="L39">        return expirationMs;</span>
+    }
+
+    public long getRefreshExpirationMs() {
+<span class="nc" id="L43">        return refreshExpirationMs;</span>
+    }
+
+    private SecretKey getSigningKey() {
+<span class="fc" id="L47">        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));</span>
+    }
+
+    public String generateToken(Usuario usuario) {
+<span class="fc" id="L51">        return buildToken(usuario, expirationMs);</span>
+    }
+
+    public String generateRefreshToken(Usuario usuario) {
+<span class="fc" id="L55">        return buildToken(usuario, refreshExpirationMs);</span>
+    }
+
+    private String buildToken(Usuario usuario, long ttlMs) {
+<span class="fc" id="L59">        Date now = new Date();</span>
+<span class="fc" id="L60">        Date expiration = new Date(now.getTime() + ttlMs);</span>
+
+<span class="fc" id="L62">        List&lt;String&gt; roles = usuario.getRoles().stream()</span>
+<span class="fc" id="L63">                .map(Rol::getNombre)</span>
+<span class="fc" id="L64">                .toList();</span>
+
+<span class="fc" id="L66">        return Jwts.builder()</span>
+<span class="fc" id="L67">                .subject(String.valueOf(usuario.getId()))</span>
+<span class="fc" id="L68">                .claim(&quot;correo&quot;, usuario.getCorreo())</span>
+                // Claim real para autorización: arreglo completo de roles.
+<span class="fc" id="L70">                .claim(&quot;roles&quot;, roles)</span>
+                // DECISIÓN TEMPORAL DE RETROCOMPATIBILIDAD (TAREA 4.1): se
+                // conserva el claim singular &quot;rol&quot; (el de mayor privilegio
+                // según JERARQUIA_ROLES) solo por si algún código frontend
+                // ya existente lo lee. Eliminar este claim cuando el
+                // frontend (Panama) migre a leer &quot;roles&quot; (array) en su
+                // lugar -- no agregar más lógica que dependa de &quot;rol&quot;
+                // mientras tanto.
+<span class="fc" id="L78">                .claim(&quot;rol&quot;, rolPrincipal(roles))</span>
+<span class="fc" id="L79">                .id(UUID.randomUUID().toString())</span>
+<span class="fc" id="L80">                .issuedAt(now)</span>
+<span class="fc" id="L81">                .expiration(expiration)</span>
+<span class="fc" id="L82">                .signWith(getSigningKey(), Jwts.SIG.HS256)</span>
+<span class="fc" id="L83">                .compact();</span>
+    }
+
+    private String rolPrincipal(List&lt;String&gt; roles) {
+<span class="fc" id="L87">        return roles.stream()</span>
+<span class="fc" id="L88">                .min(Comparator.comparingInt(nombre -&gt; {</span>
+<span class="fc" id="L89">                    int idx = JERARQUIA_ROLES.indexOf(nombre);</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">                    return idx == -1 ? Integer.MAX_VALUE : idx;</span>
+                }))
+<span class="fc" id="L92">                .orElse(null);</span>
+    }
+
+    public boolean validateToken(String token) {
+        try {
+<span class="fc" id="L97">            Jwts.parser()</span>
+<span class="fc" id="L98">                    .verifyWith(getSigningKey())</span>
+<span class="fc" id="L99">                    .build()</span>
+<span class="fc" id="L100">                    .parseSignedClaims(token);</span>
+<span class="fc" id="L101">            return true;</span>
+<span class="fc" id="L102">        } catch (JwtException | IllegalArgumentException e) {</span>
+<span class="fc" id="L103">            return false;</span>
+        }
+    }
+
+    public String extractCorreo(String token) {
+<span class="fc" id="L108">        return extractClaims(token).get(&quot;correo&quot;, String.class);</span>
+    }
+
+    public String extractJti(String token) {
+<span class="fc" id="L112">        return extractClaims(token).getId();</span>
+    }
+
+    public Date extractExpiration(String token) {
+<span class="fc" id="L116">        return extractClaims(token).getExpiration();</span>
+    }
+
+    private Claims extractClaims(String token) {
+<span class="fc" id="L120">        return Jwts.parser()</span>
+<span class="fc" id="L121">                .verifyWith(getSigningKey())</span>
+<span class="fc" id="L122">                .build()</span>
+<span class="fc" id="L123">                .parseSignedClaims(token)</span>
+<span class="fc" id="L124">                .getPayload();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

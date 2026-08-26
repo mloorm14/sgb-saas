@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DevolucionController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.controller</a> &gt; <span class="el_source">DevolucionController.java</span></div><h1>DevolucionController.java</h1><pre class="source lang-java linenums">package com.uteq.backend.controller;
+
+import com.uteq.backend.dto.DevolucionCompletaResponseDTO;
+import com.uteq.backend.dto.DevolucionHistorialDTO;
+import com.uteq.backend.dto.DevolucionRequestDTO;
+import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.service.DevolucionService;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping(&quot;/api/v1/devoluciones&quot;)
+public class DevolucionController {
+
+    private final DevolucionService devolucionService;
+    private final UsuarioRepository usuarioRepo;
+
+    public DevolucionController(DevolucionService devolucionService,
+<span class="fc" id="L27">                                UsuarioRepository usuarioRepo) {</span>
+<span class="fc" id="L28">        this.devolucionService = devolucionService;</span>
+<span class="fc" id="L29">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L30">    }</span>
+
+    @PostMapping(&quot;/prestamo/{prestamoId}&quot;)
+    @PreAuthorize(&quot;hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;DevolucionCompletaResponseDTO&gt; registrarDevolucion(
+            @PathVariable Long prestamoId,
+            @Valid @RequestBody DevolucionRequestDTO dto,
+            Authentication authentication) {
+<span class="nc" id="L38">        Long bibliotecarioId = resolverIdPorCorreo(authentication.getName());</span>
+<span class="nc" id="L39">        return ResponseEntity.status(HttpStatus.CREATED)</span>
+<span class="nc" id="L40">                .body(devolucionService.registrarDevolucion(prestamoId, dto, bibliotecarioId));</span>
+    }
+
+    @GetMapping(&quot;/historial&quot;)
+    @PreAuthorize(&quot;hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;List&lt;DevolucionHistorialDTO&gt;&gt; historialDevoluciones(
+            Authentication authentication) {
+<span class="nc" id="L47">        Long bibliotecarioId = resolverIdPorCorreo(authentication.getName());</span>
+<span class="nc" id="L48">        return ResponseEntity.ok(devolucionService.historialDevoluciones(bibliotecarioId));</span>
+    }
+
+    private Long resolverIdPorCorreo(String correo) {
+<span class="nc" id="L52">        Usuario usuario = usuarioRepo.findByCorreo(correo)</span>
+<span class="nc" id="L53">                .orElseThrow(() -&gt; new EntityNotFoundException(&quot;Usuario no encontrado: &quot; + correo));</span>
+<span class="nc" id="L54">        return usuario.getId();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

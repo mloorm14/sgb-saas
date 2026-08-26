@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.controller</a> &gt; <span class="el_source">AuthController.java</span></div><h1>AuthController.java</h1><pre class="source lang-java linenums">package com.uteq.backend.controller;
+
+import com.uteq.backend.dto.CodigoVerificacionRequestDTO;
+import com.uteq.backend.dto.LoginRequestDTO;
+import com.uteq.backend.dto.RegistroRequestDTO;
+import com.uteq.backend.dto.TokenResponseDTO;
+import com.uteq.backend.dto.UsuarioResponseDTO;
+import com.uteq.backend.security.JwtService;
+import com.uteq.backend.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.time.Duration;
+
+@RestController
+@RequestMapping(&quot;/api/auth&quot;)
+@RequiredArgsConstructor
+public class AuthController {
+
+    private static final String BEARER_PREFIX = &quot;Bearer &quot;;
+    private static final String REFRESH_COOKIE_NAME = &quot;refreshToken&quot;;
+
+    private final AuthService authService;
+    private final JwtService jwtService;
+
+    @PostMapping(&quot;/registro&quot;)
+    public ResponseEntity&lt;UsuarioResponseDTO&gt; registro(@Valid @RequestBody RegistroRequestDTO dto) {
+<span class="fc" id="L39">        UsuarioResponseDTO usuario = authService.registrar(dto);</span>
+<span class="fc" id="L40">        return ResponseEntity.status(HttpStatus.CREATED).body(usuario);</span>
+    }
+
+    // Módulo 9.5: sin @PreAuthorize / sin JWT -- el usuario recién
+    // registrado todavía no puede loguearse (ver AuthService.ESTADO_INICIAL),
+    // así que no hay token que exigir aquí. La identidad se prueba con el
+    // código de un solo uso, no con autenticación.
+    @PostMapping(&quot;/verificar-correo&quot;)
+    public ResponseEntity&lt;UsuarioResponseDTO&gt; verificarCorreo(
+            @Valid @RequestBody CodigoVerificacionRequestDTO dto, HttpServletRequest request) {
+<span class="nc" id="L50">        UsuarioResponseDTO usuario = authService.verificarCorreo(dto.correo(), dto.codigo(), obtenerIpOrigen(request));</span>
+<span class="nc" id="L51">        return ResponseEntity.ok(usuario);</span>
+    }
+
+    @PostMapping(&quot;/login&quot;)
+    public ResponseEntity&lt;TokenResponseDTO&gt; login(@Valid @RequestBody LoginRequestDTO dto, HttpServletRequest request) {
+<span class="fc" id="L56">        TokenResponseDTO tokens = authService.login(dto, obtenerIpOrigen(request));</span>
+<span class="fc" id="L57">        ResponseCookie cookie = buildRefreshCookie(tokens.refreshToken(), jwtService.getRefreshExpirationMs());</span>
+<span class="fc" id="L58">        return ResponseEntity.ok()</span>
+<span class="fc" id="L59">                .header(HttpHeaders.SET_COOKIE, cookie.toString())</span>
+<span class="fc" id="L60">                .body(tokens);</span>
+    }
+
+    @PostMapping(&quot;/logout&quot;)
+    public ResponseEntity&lt;Void&gt; logout(@RequestHeader(&quot;Authorization&quot;) String authHeader, HttpServletRequest request) {
+<span class="fc" id="L65">        String token = authHeader.substring(BEARER_PREFIX.length());</span>
+<span class="fc" id="L66">        authService.logout(token, obtenerIpOrigen(request));</span>
+<span class="fc" id="L67">        ResponseCookie cookieLimpia = buildRefreshCookie(&quot;&quot;, 0);</span>
+<span class="fc" id="L68">        return ResponseEntity.noContent()</span>
+<span class="fc" id="L69">                .header(HttpHeaders.SET_COOKIE, cookieLimpia.toString())</span>
+<span class="fc" id="L70">                .build();</span>
+    }
+
+    // Bloque C.2 (OWASP A07/A09): IP real del cliente, usada para el rate
+    // limiter de login y el logging de eventos de autenticación. Se lee
+    // directo de request.getRemoteAddr() -- NO de X-Forwarded-For, que
+    // cualquier cliente puede falsificar libremente; este entorno no tiene
+    // un proxy reverso de confianza delante que lo sobreescriba con un
+    // valor fiable. Si en el futuro se agrega uno, este método es el único
+    // punto a ajustar (validar contra una lista de proxies de confianza
+    // antes de usarlo, no confiar en el header a ciegas).
+    private String obtenerIpOrigen(HttpServletRequest request) {
+<span class="fc" id="L82">        return request.getRemoteAddr();</span>
+    }
+
+    // El refresh token viaja SOLO en la cookie HttpOnly (nunca en el body):
+    // así JS del frontend no puede leerlo ni reenviarlo manualmente, que es
+    // precisamente el punto de HttpOnly. required=false + validación manual
+    // (en vez de required=true) para que la ausencia de cookie caiga en el
+    // handler ya existente de IllegalArgumentException (400, RFC 7807) en
+    // vez de en el mecanismo de error por defecto de Spring MVC.
+    @PostMapping(&quot;/refresh&quot;)
+    public ResponseEntity&lt;TokenResponseDTO&gt; refresh(
+            @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshTokenCookie) {
+<span class="pc bpc" id="L94" title="1 of 4 branches missed.">        if (refreshTokenCookie == null || refreshTokenCookie.isBlank()) {</span>
+<span class="fc" id="L95">            throw new IllegalArgumentException(&quot;Falta la cookie &quot; + REFRESH_COOKIE_NAME);</span>
+        }
+
+<span class="fc" id="L98">        TokenResponseDTO tokens = authService.refresh(refreshTokenCookie);</span>
+<span class="fc" id="L99">        ResponseCookie cookie = buildRefreshCookie(tokens.refreshToken(), jwtService.getRefreshExpirationMs());</span>
+<span class="fc" id="L100">        return ResponseEntity.ok()</span>
+<span class="fc" id="L101">                .header(HttpHeaders.SET_COOKIE, cookie.toString())</span>
+<span class="fc" id="L102">                .body(tokens);</span>
+    }
+
+    // path=&quot;/api/auth&quot; limita el envío de la cookie a los endpoints de
+    // autenticación (nunca viaja en llamadas a /api/v1/**). Ver
+    // docs/adr/adr-007-cookies-jwt.md para el resto de decisiones de diseño
+    // (por qué solo el refreshToken migra a cookie, no el accessToken).
+    private ResponseCookie buildRefreshCookie(String valor, long maxAgeMs) {
+<span class="fc" id="L110">        return ResponseCookie.from(REFRESH_COOKIE_NAME, valor)</span>
+<span class="fc" id="L111">                .httpOnly(true)</span>
+<span class="fc" id="L112">                .secure(true)</span>
+<span class="fc" id="L113">                .sameSite(&quot;None&quot;)</span>
+<span class="fc" id="L114">                .path(&quot;/api/auth&quot;)</span>
+<span class="fc" id="L115">                .maxAge(Duration.ofMillis(maxAgeMs))</span>
+<span class="fc" id="L116">                .build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

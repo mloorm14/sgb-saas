@@ -103,6 +103,23 @@ bloqueada intencionalmente hasta coordinar con Panama los cambios
 correspondientes en `jwt.interceptor.ts`, `auth.service.ts` y, del lado
 backend, `JwtAuthFilter`.
 
+
+> **Actualización 2026-08-24 (commit 2884126, autor MoisesPanama):** el
+> atributo `SameSite` de la cookie del refreshToken se cambió de `Strict` a
+> `None`. Motivo: el frontend (`biblora-sgb.onrender.com`) y el backend
+> (`sgb-backend-b058.onrender.com`) se despliegan en subdominios distintos
+> de Render (orígenes diferentes). Con `SameSite=Strict`, el navegador
+> bloquea silenciosamente el envío de la cookie en peticiones cross-origin,
+> rompiendo el flujo de *silent refresh* del `accessToken`. Se mantiene
+> `Secure=true` y `HttpOnly=true` (la cookie sigue siendo inaccesible a
+> JavaScript y solo viaja por HTTPS). El `path=/api/auth` ya documentado
+> en la Decisión limita el alcance de la cookie a los endpoints de
+> autenticación (`/api/auth/*`), mitigando parcialmente la superficie de
+> exposición CSRF que reintroduce `SameSite=None`. La decisión original
+> (documentada más arriba) se conserva como registro histórico; este cambio
+> es una evolución necesaria para que el *silent refresh* funcione en
+> producción con los orígenes reales de Render.
+
 ## Consequences
 
 **Positivas:**

@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MultaService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.service</a> &gt; <span class="el_source">MultaService.java</span></div><h1>MultaService.java</h1><pre class="source lang-java linenums">package com.uteq.backend.service;
+
+import com.uteq.backend.dto.MultaAccionResponseDTO;
+import com.uteq.backend.dto.MultaDetalleResponseDTO;
+import com.uteq.backend.dto.MultaResponseDTO;
+import com.uteq.backend.dto.ResumenFinancieroMultasResponseDTO;
+import com.uteq.backend.entity.Libro;
+import com.uteq.backend.entity.Multa;
+import com.uteq.backend.entity.Prestamo;
+import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.LibroRepository;
+import com.uteq.backend.repository.MultaProcedureRepository;
+import com.uteq.backend.repository.MultaRepository;
+import com.uteq.backend.repository.PrestamoRepository;
+import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.repository.projection.ResumenFinancieroMultasProjection;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Map;
+import java.util.Set;
+
+@Service
+public class MultaService {
+
+    private static final String USUARIO_NO_ENCONTRADO = &quot;Usuario no encontrado: &quot;;
+    private static final String ROL_LECTOR = &quot;LECTOR&quot;;
+<span class="fc" id="L37">    private static final Set&lt;String&gt; ROLES_ANULACION = Set.of(&quot;GERENTE&quot;, &quot;ADMIN&quot;);</span>
+
+    private final MultaRepository multaRepo;
+    private final MultaProcedureRepository multaProcRepo;
+    private final UsuarioRepository usuarioRepo;
+    private final LibroRepository libroRepo;
+    private final PrestamoRepository prestamoRepo;
+
+    public MultaService(MultaRepository multaRepo,
+                        MultaProcedureRepository multaProcRepo,
+                        UsuarioRepository usuarioRepo,
+                        LibroRepository libroRepo,
+<span class="fc" id="L49">                        PrestamoRepository prestamoRepo) {</span>
+<span class="fc" id="L50">        this.multaRepo = multaRepo;</span>
+<span class="fc" id="L51">        this.multaProcRepo = multaProcRepo;</span>
+<span class="fc" id="L52">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L53">        this.libroRepo = libroRepo;</span>
+<span class="fc" id="L54">        this.prestamoRepo = prestamoRepo;</span>
+<span class="fc" id="L55">    }</span>
+
+    @Transactional(readOnly = true)
+    public Page&lt;MultaResponseDTO&gt; listarPorUsuario(Long usuarioId, Authentication authentication, Pageable pageable) {
+<span class="nc" id="L59">        validarAccesoUsuario(usuarioId, authentication);</span>
+<span class="nc" id="L60">        return multaRepo.findByUsuarioId(usuarioId, pageable).map(this::toDTO);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Page&lt;MultaDetalleResponseDTO&gt; listarDetallePorUsuario(Long usuarioId, Authentication authentication, Pageable pageable) {
+<span class="nc" id="L65">        validarAccesoUsuario(usuarioId, authentication);</span>
+<span class="nc" id="L66">        return multaRepo.findByUsuarioId(usuarioId, pageable).map(this::toDetalleDTO);</span>
+    }
+
+    @Transactional
+    public Map&lt;String, Object&gt; pagoParcial(Long multaId, BigDecimal montoPagado) {
+<span class="nc" id="L71">        return multaProcRepo.spPagoParcialMulta(multaId, montoPagado);</span>
+    }
+
+    @Transactional
+    public MultaAccionResponseDTO pagar(Long multaId) {
+<span class="fc" id="L76">        Map&lt;String, Object&gt; resultado = multaProcRepo.spPagarMulta(multaId);</span>
+<span class="fc" id="L77">        return new MultaAccionResponseDTO(</span>
+<span class="fc" id="L78">                (Long) resultado.get(&quot;o_multa_id&quot;),</span>
+<span class="fc" id="L79">                (Boolean) resultado.get(&quot;o_usuario_desbloqueado&quot;));</span>
+    }
+
+    @Transactional
+    public MultaAccionResponseDTO anular(Long multaId, String motivo, Authentication authentication) {
+<span class="fc" id="L84">        String rolEjecutor = resolverRolAnulacion(authentication);</span>
+<span class="fc" id="L85">        Map&lt;String, Object&gt; resultado = multaProcRepo.spAnularMulta(multaId, motivo, rolEjecutor);</span>
+<span class="fc" id="L86">        return new MultaAccionResponseDTO(</span>
+<span class="fc" id="L87">                (Long) resultado.get(&quot;o_multa_id&quot;),</span>
+<span class="fc" id="L88">                (Boolean) resultado.get(&quot;o_usuario_desbloqueado&quot;));</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Long resolverUsuarioIdDeMulta(Long multaId) {
+<span class="nc" id="L93">        Multa multa = multaRepo.findById(multaId)</span>
+<span class="nc" id="L94">                .orElseThrow(() -&gt; new EntityNotFoundException(&quot;Multa no encontrada: &quot; + multaId));</span>
+<span class="nc" id="L95">        Prestamo prestamo = prestamoRepo.findById(multa.getPrestamoId())</span>
+<span class="nc" id="L96">                .orElseThrow(() -&gt; new EntityNotFoundException(&quot;Prestamo no encontrado: &quot; + multa.getPrestamoId()));</span>
+<span class="nc" id="L97">        return prestamo.getUsuarioId();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public ResumenFinancieroMultasResponseDTO reporteResumenFinanciero(OffsetDateTime desde, OffsetDateTime hasta) {
+<span class="fc" id="L102">        ResumenFinancieroMultasProjection resumen = multaProcRepo.fnReporteResumenFinanciero(desde, hasta);</span>
+
+        // Total generado hoy: SUM(monto) de multas generadas hoy
+<span class="fc" id="L105">        java.time.OffsetDateTime inicioHoy = java.time.OffsetDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);</span>
+<span class="fc" id="L106">        java.time.OffsetDateTime finHoy = inicioHoy.plusDays(1);</span>
+<span class="fc" id="L107">        ResumenFinancieroMultasProjection hoy = multaProcRepo.fnReporteResumenFinanciero(inicioHoy, finHoy);</span>
+<span class="fc" id="L108">        BigDecimal totalGeneradoHoy = hoy.getTotalRecaudado().add(hoy.getTotalPendiente());</span>
+
+        // Pagos recientes: últimos 5
+<span class="fc" id="L111">        var pagosRecientes = multaProcRepo.fnPagosRecientes(5).stream()</span>
+<span class="pc" id="L112">                .map(p -&gt; new com.uteq.backend.dto.PagoRecienteDTO(</span>
+<span class="nc" id="L113">                        p.getMultaId(),</span>
+<span class="nc" id="L114">                        p.getMontoPagado(),</span>
+<span class="nc" id="L115">                        p.getFechaPagada().atOffset(java.time.ZoneOffset.UTC),</span>
+<span class="nc" id="L116">                        p.getUsuarioCorreo(),</span>
+<span class="nc" id="L117">                        p.getUsuarioNombre(),</span>
+<span class="nc" id="L118">                        p.getLibroTitulo()))</span>
+<span class="fc" id="L119">                .toList();</span>
+
+<span class="fc" id="L121">        return new ResumenFinancieroMultasResponseDTO(</span>
+<span class="fc" id="L122">                resumen.getTotalRecaudado(),</span>
+<span class="fc" id="L123">                resumen.getTotalPendiente(),</span>
+                totalGeneradoHoy,
+                pagosRecientes);
+    }
+
+    private String resolverRolAnulacion(Authentication authentication) {
+<span class="fc" id="L129">        return authentication.getAuthorities().stream()</span>
+<span class="fc" id="L130">                .map(GrantedAuthority::getAuthority)</span>
+<span class="fc" id="L131">                .filter(rol -&gt; rol.startsWith(&quot;ROLE_&quot;))</span>
+<span class="fc" id="L132">                .map(rol -&gt; rol.substring(&quot;ROLE_&quot;.length()))</span>
+<span class="fc" id="L133">                .filter(ROLES_ANULACION::contains)</span>
+<span class="fc" id="L134">                .findFirst()</span>
+<span class="fc" id="L135">                .orElseThrow(() -&gt; new AuthorizationDeniedException(</span>
+                        &quot;Solo GERENTE o ADMIN puede anular multas.&quot;));
+    }
+
+    private void validarAccesoUsuario(Long usuarioIdSolicitado, Authentication authentication) {
+<span class="fc" id="L140">        boolean esLector = authentication.getAuthorities().stream()</span>
+<span class="fc" id="L141">                .map(GrantedAuthority::getAuthority)</span>
+<span class="fc" id="L142">                .anyMatch(rol -&gt; rol.equals(&quot;ROLE_&quot; + ROL_LECTOR));</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">        if (!esLector) {</span>
+<span class="nc" id="L144">            return;</span>
+        }
+<span class="fc" id="L146">        Long idPropio = resolverIdPorCorreo(authentication.getName());</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">        if (!idPropio.equals(usuarioIdSolicitado)) {</span>
+<span class="fc" id="L148">            throw new AuthorizationDeniedException(</span>
+                    &quot;Un LECTOR solo puede consultar sus propias multas.&quot;);
+        }
+<span class="nc" id="L151">    }</span>
+
+    private Long resolverIdPorCorreo(String correo) {
+<span class="fc" id="L154">        Usuario usuario = usuarioRepo.findByCorreo(correo)</span>
+<span class="pc" id="L155">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo));</span>
+<span class="fc" id="L156">        return usuario.getId();</span>
+    }
+
+    private MultaResponseDTO toDTO(Multa m) {
+<span class="nc" id="L160">        return new MultaResponseDTO(</span>
+<span class="nc" id="L161">                m.getId(), m.getPrestamoId(), m.getMonto(),</span>
+<span class="nc" id="L162">                m.getEstadoMultaId(), m.getFechaGenerada(),</span>
+<span class="nc" id="L163">                m.getFechaPagada(), m.getObservaciones());</span>
+    }
+
+    private MultaDetalleResponseDTO toDetalleDTO(Multa m) {
+<span class="nc" id="L167">        Prestamo prestamo = prestamoRepo.findById(m.getPrestamoId()).orElse(null);</span>
+<span class="nc" id="L168">        String libroTitulo = &quot;&quot;;</span>
+<span class="nc" id="L169">        String libroIsbn = &quot;&quot;;</span>
+<span class="nc" id="L170">        OffsetDateTime fechaPrestamoInicio = null;</span>
+<span class="nc" id="L171">        OffsetDateTime fechaPrestamoFin = null;</span>
+
+<span class="nc bnc" id="L173" title="All 2 branches missed.">        if (prestamo != null) {</span>
+<span class="nc" id="L174">            fechaPrestamoInicio = prestamo.getFechaPrestamo();</span>
+<span class="nc" id="L175">            fechaPrestamoFin = prestamo.getFechaDevolucionEstimada();</span>
+<span class="nc" id="L176">            Libro libro = libroRepo.findById(prestamo.getLibroId()).orElse(null);</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">            if (libro != null) {</span>
+<span class="nc" id="L178">                libroTitulo = libro.getTitulo();</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">                libroIsbn = libro.getIsbn() != null ? libro.getIsbn() : &quot;&quot;;</span>
+            }
+        }
+
+<span class="nc" id="L183">        int diasAtraso = 0;</span>
+<span class="nc bnc" id="L184" title="All 4 branches missed.">        if (m.getFechaPagada() != null &amp;&amp; m.getFechaGenerada() != null) {</span>
+<span class="nc" id="L185">            diasAtraso = (int) ChronoUnit.DAYS.between(m.getFechaGenerada(), m.getFechaPagada());</span>
+<span class="nc bnc" id="L186" title="All 4 branches missed.">        } else if (m.getEstadoMultaId() != null &amp;&amp; m.getEstadoMultaId() == 1) {</span>
+<span class="nc" id="L187">            diasAtraso = (int) ChronoUnit.DAYS.between(m.getFechaGenerada(), OffsetDateTime.now());</span>
+        }
+
+<span class="nc bnc" id="L190" title="All 2 branches missed.">        BigDecimal montoPagado = m.getMontoPagado() != null ? m.getMontoPagado() : BigDecimal.ZERO;</span>
+<span class="nc" id="L191">        BigDecimal saldo = m.getMonto().subtract(montoPagado);</span>
+
+<span class="nc" id="L193">        Map&lt;Integer, String&gt; estados = Map.of(1, &quot;PENDIENTE&quot;, 2, &quot;PAGADA&quot;, 3, &quot;ANULADA&quot;);</span>
+<span class="nc" id="L194">        String estadoNombre = estados.getOrDefault(m.getEstadoMultaId(), &quot;DESCONOCIDO&quot;);</span>
+
+<span class="nc" id="L196">        return new MultaDetalleResponseDTO(</span>
+<span class="nc" id="L197">                m.getId(),</span>
+<span class="nc" id="L198">                m.getPrestamoId(),</span>
+                libroTitulo,
+                libroIsbn,
+<span class="nc" id="L201">                m.getObservaciones(),</span>
+<span class="nc" id="L202">                m.getMonto(),</span>
+                montoPagado,
+                saldo,
+<span class="nc" id="L205">                m.getEstadoMultaId(),</span>
+                estadoNombre,
+<span class="nc" id="L207">                m.getFechaGenerada(),</span>
+<span class="nc" id="L208">                m.getFechaPagada(),</span>
+                fechaPrestamoInicio,
+                fechaPrestamoFin,
+                diasAtraso);
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

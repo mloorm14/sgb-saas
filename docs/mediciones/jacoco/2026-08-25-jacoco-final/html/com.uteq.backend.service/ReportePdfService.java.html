@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReportePdfService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.service</a> &gt; <span class="el_source">ReportePdfService.java</span></div><h1>ReportePdfService.java</h1><pre class="source lang-java linenums">package com.uteq.backend.service;
+
+import com.itextpdf.io.font.constants.StandardFonts;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.properties.TextAlignment;
+import com.itextpdf.layout.properties.UnitValue;
+import com.uteq.backend.dto.LibroMasPrestadoDetalladoResponseDTO;
+import com.uteq.backend.dto.ReporteCategoriasDemandadasResponseDTO;
+import com.uteq.backend.dto.ReporteInventarioResponseDTO;
+import com.uteq.backend.dto.ReporteMorosidadResponseDTO;
+import com.uteq.backend.dto.ReporteVencidosResponseDTO;
+import org.springframework.stereotype.Service;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
+@Service
+<span class="fc" id="L28">public class ReportePdfService {</span>
+
+<span class="fc" id="L30">    private static final DateTimeFormatter FORMATO_FECHA_GENERACION =</span>
+<span class="fc" id="L31">            DateTimeFormatter.ofPattern(&quot;dd/MM/yyyy HH:mm&quot;);</span>
+
+    private static PdfFont crearFuenteNegrita() {
+        try {
+<span class="fc" id="L35">            return PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);</span>
+<span class="nc" id="L36">        } catch (IOException ex) {</span>
+<span class="nc" id="L37">            throw new IllegalStateException(&quot;No se pudo cargar la fuente negrita del PDF&quot;, ex);</span>
+        }
+    }
+
+    private static PdfFont crearFuenteRegular() {
+        try {
+<span class="nc" id="L43">            return PdfFontFactory.createFont(StandardFonts.HELVETICA);</span>
+<span class="nc" id="L44">        } catch (IOException ex) {</span>
+<span class="nc" id="L45">            throw new IllegalStateException(&quot;No se pudo cargar la fuente del PDF&quot;, ex);</span>
+        }
+    }
+
+    private void agregarEncabezado(Document document, String titulo, PdfFont negrita) {
+<span class="fc" id="L50">        document.add(new Paragraph(&quot;Sistema de Gestión de Biblioteca — UTEQ&quot;)</span>
+<span class="fc" id="L51">                .setFont(negrita).setFontSize(14));</span>
+<span class="fc" id="L52">        document.add(new Paragraph(titulo).setFontSize(12));</span>
+<span class="fc" id="L53">        document.add(new Paragraph(&quot;Generado: &quot; + OffsetDateTime.now().format(FORMATO_FECHA_GENERACION))</span>
+<span class="fc" id="L54">                .setFontSize(9));</span>
+<span class="fc" id="L55">        document.add(new Paragraph(&quot;\n&quot;));</span>
+<span class="fc" id="L56">    }</span>
+
+    private Cell celdaEncabezado(String texto, PdfFont negrita) {
+<span class="fc" id="L59">        return new Cell()</span>
+<span class="fc" id="L60">                .add(new Paragraph(texto).setFont(negrita).setFontSize(8))</span>
+<span class="fc" id="L61">                .setTextAlignment(TextAlignment.CENTER)</span>
+<span class="fc" id="L62">                .setBackgroundColor(com.itextpdf.kernel.colors.ColorConstants.LIGHT_GRAY);</span>
+    }
+
+    // ── Morosidad ─────────────────────────────────────────
+    public byte[] generarReporteMorosidad(List&lt;ReporteMorosidadResponseDTO&gt; filas) {
+<span class="fc" id="L67">        ByteArrayOutputStream salida = new ByteArrayOutputStream();</span>
+<span class="fc" id="L68">        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(salida));</span>
+<span class="fc" id="L69">             Document document = new Document(pdfDoc)) {</span>
+<span class="fc" id="L70">            PdfFont negrita = crearFuenteNegrita();</span>
+<span class="fc" id="L71">            agregarEncabezado(document, &quot;Reporte de índice de morosidad&quot;, negrita);</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">            if (filas.isEmpty()) {</span>
+<span class="fc" id="L73">                document.add(new Paragraph(&quot;No hay usuarios con multas pendientes.&quot;));</span>
+            } else {
+<span class="fc" id="L75">                Table tabla = new Table(UnitValue.createPercentArray(new float[]{3, 3, 2, 2, 2})).useAllAvailableWidth();</span>
+<span class="fc" id="L76">                tabla.addHeaderCell(celdaEncabezado(&quot;Usuario&quot;, negrita));</span>
+<span class="fc" id="L77">                tabla.addHeaderCell(celdaEncabezado(&quot;Correo&quot;, negrita));</span>
+<span class="fc" id="L78">                tabla.addHeaderCell(celdaEncabezado(&quot;Monto adeudado&quot;, negrita));</span>
+<span class="fc" id="L79">                tabla.addHeaderCell(celdaEncabezado(&quot;Multas pendientes&quot;, negrita));</span>
+<span class="fc" id="L80">                tabla.addHeaderCell(celdaEncabezado(&quot;Días atraso (prom.)&quot;, negrita));</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">                for (var f : filas) {</span>
+<span class="fc" id="L82">                    tabla.addCell(new Cell().add(new Paragraph(f.nombre() + &quot; &quot; + f.apellido())));</span>
+<span class="fc" id="L83">                    tabla.addCell(new Cell().add(new Paragraph(f.correo())));</span>
+<span class="fc" id="L84">                    tabla.addCell(new Cell().add(new Paragraph(&quot;$&quot; + f.montoTotalAdeudado())));</span>
+<span class="fc" id="L85">                    tabla.addCell(new Cell().add(new Paragraph(String.valueOf(f.cantidadMultasPendientes()))));</span>
+<span class="fc" id="L86">                    tabla.addCell(new Cell().add(new Paragraph(String.valueOf(f.diasAtrasoPromedio()))));</span>
+<span class="fc" id="L87">                }</span>
+<span class="fc" id="L88">                document.add(tabla);</span>
+            }
+        }
+<span class="fc" id="L91">        return salida.toByteArray();</span>
+    }
+
+    // ── Libros más prestados ──────────────────────────────
+    public byte[] generarReporteLibrosMasPrestados(List&lt;LibroMasPrestadoDetalladoResponseDTO&gt; filas) {
+<span class="nc" id="L96">        ByteArrayOutputStream salida = new ByteArrayOutputStream();</span>
+<span class="nc" id="L97">        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(salida));</span>
+<span class="nc" id="L98">             Document document = new Document(pdfDoc)) {</span>
+<span class="nc" id="L99">            PdfFont negrita = crearFuenteNegrita();</span>
+<span class="nc" id="L100">            agregarEncabezado(document, &quot;Reporte de libros más prestados&quot;, negrita);</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">            if (filas.isEmpty()) {</span>
+<span class="nc" id="L102">                document.add(new Paragraph(&quot;No hay datos de préstamos.&quot;));</span>
+            } else {
+<span class="nc" id="L104">                Table tabla = new Table(UnitValue.createPercentArray(new float[]{1, 3, 2, 2, 2, 1.5f, 1.5f})).useAllAvailableWidth();</span>
+<span class="nc" id="L105">                tabla.addHeaderCell(celdaEncabezado(&quot;#&quot;, negrita));</span>
+<span class="nc" id="L106">                tabla.addHeaderCell(celdaEncabezado(&quot;Título&quot;, negrita));</span>
+<span class="nc" id="L107">                tabla.addHeaderCell(celdaEncabezado(&quot;ISBN&quot;, negrita));</span>
+<span class="nc" id="L108">                tabla.addHeaderCell(celdaEncabezado(&quot;Autor&quot;, negrita));</span>
+<span class="nc" id="L109">                tabla.addHeaderCell(celdaEncabezado(&quot;Categoría&quot;, negrita));</span>
+<span class="nc" id="L110">                tabla.addHeaderCell(celdaEncabezado(&quot;Préstamos&quot;, negrita));</span>
+<span class="nc" id="L111">                tabla.addHeaderCell(celdaEncabezado(&quot;% del total&quot;, negrita));</span>
+<span class="nc" id="L112">                int i = 1;</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">                for (var f : filas) {</span>
+<span class="nc" id="L114">                    tabla.addCell(new Cell().add(new Paragraph(String.valueOf(i++))));</span>
+<span class="nc" id="L115">                    tabla.addCell(new Cell().add(new Paragraph(f.titulo())));</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">                    tabla.addCell(new Cell().add(new Paragraph(f.isbn() != null ? f.isbn() : &quot;—&quot;)));</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">                    tabla.addCell(new Cell().add(new Paragraph(f.autorNombre() != null ? f.autorNombre() : &quot;—&quot;)));</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">                    tabla.addCell(new Cell().add(new Paragraph(f.categoriaNombre() != null ? f.categoriaNombre() : &quot;—&quot;)));</span>
+<span class="nc" id="L119">                    tabla.addCell(new Cell().add(new Paragraph(String.valueOf(f.totalPrestamos()))));</span>
+<span class="nc" id="L120">                    tabla.addCell(new Cell().add(new Paragraph(f.porcentaje() + &quot;%&quot;)));</span>
+<span class="nc" id="L121">                }</span>
+<span class="nc" id="L122">                document.add(tabla);</span>
+            }
+        }
+<span class="nc" id="L125">        return salida.toByteArray();</span>
+    }
+
+    // ── Inventario ────────────────────────────────────────
+    public byte[] generarReporteInventario(List&lt;ReporteInventarioResponseDTO&gt; filas) {
+<span class="nc" id="L130">        ByteArrayOutputStream salida = new ByteArrayOutputStream();</span>
+<span class="nc" id="L131">        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(salida));</span>
+<span class="nc" id="L132">             Document document = new Document(pdfDoc)) {</span>
+<span class="nc" id="L133">            PdfFont negrita = crearFuenteNegrita();</span>
+<span class="nc" id="L134">            agregarEncabezado(document, &quot;Reporte de inventario y disponibilidad&quot;, negrita);</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">            if (filas.isEmpty()) {</span>
+<span class="nc" id="L136">                document.add(new Paragraph(&quot;No hay datos de inventario.&quot;));</span>
+            } else {
+<span class="nc" id="L138">                Table tabla = new Table(UnitValue.createPercentArray(new float[]{3, 2, 2, 2, 1, 1, 2})).useAllAvailableWidth();</span>
+<span class="nc" id="L139">                tabla.addHeaderCell(celdaEncabezado(&quot;Título&quot;, negrita));</span>
+<span class="nc" id="L140">                tabla.addHeaderCell(celdaEncabezado(&quot;ISBN&quot;, negrita));</span>
+<span class="nc" id="L141">                tabla.addHeaderCell(celdaEncabezado(&quot;Autor&quot;, negrita));</span>
+<span class="nc" id="L142">                tabla.addHeaderCell(celdaEncabezado(&quot;Categoría&quot;, negrita));</span>
+<span class="nc" id="L143">                tabla.addHeaderCell(celdaEncabezado(&quot;Stock&quot;, negrita));</span>
+<span class="nc" id="L144">                tabla.addHeaderCell(celdaEncabezado(&quot;Disponible&quot;, negrita));</span>
+<span class="nc" id="L145">                tabla.addHeaderCell(celdaEncabezado(&quot;Estado&quot;, negrita));</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">                for (var f : filas) {</span>
+<span class="nc" id="L147">                    tabla.addCell(new Cell().add(new Paragraph(f.titulo())));</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">                    tabla.addCell(new Cell().add(new Paragraph(f.isbn() != null ? f.isbn() : &quot;—&quot;)));</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">                    tabla.addCell(new Cell().add(new Paragraph(f.autorNombre() != null ? f.autorNombre() : &quot;—&quot;)));</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">                    tabla.addCell(new Cell().add(new Paragraph(f.categoriaNombre() != null ? f.categoriaNombre() : &quot;—&quot;)));</span>
+<span class="nc" id="L151">                    tabla.addCell(new Cell().add(new Paragraph(String.valueOf(f.stockTotal()))));</span>
+<span class="nc" id="L152">                    tabla.addCell(new Cell().add(new Paragraph(String.valueOf(f.stockDisponible()))));</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">                    tabla.addCell(new Cell().add(new Paragraph(f.estadoDisponibilidad() != null ? f.estadoDisponibilidad() : &quot;—&quot;)));</span>
+<span class="nc" id="L154">                }</span>
+<span class="nc" id="L155">                document.add(tabla);</span>
+            }
+        }
+<span class="nc" id="L158">        return salida.toByteArray();</span>
+    }
+
+    // ── Préstamos vencidos ────────────────────────────────
+    public byte[] generarReporteVencidos(List&lt;ReporteVencidosResponseDTO&gt; filas) {
+<span class="nc" id="L163">        ByteArrayOutputStream salida = new ByteArrayOutputStream();</span>
+<span class="nc" id="L164">        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(salida));</span>
+<span class="nc" id="L165">             Document document = new Document(pdfDoc)) {</span>
+<span class="nc" id="L166">            PdfFont negrita = crearFuenteNegrita();</span>
+<span class="nc" id="L167">            agregarEncabezado(document, &quot;Reporte de préstamos vencidos activos&quot;, negrita);</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">            if (filas.isEmpty()) {</span>
+<span class="nc" id="L169">                document.add(new Paragraph(&quot;No hay préstamos vencidos.&quot;));</span>
+            } else {
+<span class="nc" id="L171">                Table tabla = new Table(UnitValue.createPercentArray(new float[]{2.5f, 2.5f, 2.5f, 2, 2, 1, 1.5f})).useAllAvailableWidth();</span>
+<span class="nc" id="L172">                tabla.addHeaderCell(celdaEncabezado(&quot;Usuario&quot;, negrita));</span>
+<span class="nc" id="L173">                tabla.addHeaderCell(celdaEncabezado(&quot;Correo&quot;, negrita));</span>
+<span class="nc" id="L174">                tabla.addHeaderCell(celdaEncabezado(&quot;Libro&quot;, negrita));</span>
+<span class="nc" id="L175">                tabla.addHeaderCell(celdaEncabezado(&quot;ISBN&quot;, negrita));</span>
+<span class="nc" id="L176">                tabla.addHeaderCell(celdaEncabezado(&quot;Vencimiento&quot;, negrita));</span>
+<span class="nc" id="L177">                tabla.addHeaderCell(celdaEncabezado(&quot;Días&quot;, negrita));</span>
+<span class="nc" id="L178">                tabla.addHeaderCell(celdaEncabezado(&quot;Multa est.&quot;, negrita));</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">                for (var f : filas) {</span>
+<span class="nc" id="L180">                    tabla.addCell(new Cell().add(new Paragraph(f.usuarioNombre())));</span>
+<span class="nc" id="L181">                    tabla.addCell(new Cell().add(new Paragraph(f.usuarioCorreo())));</span>
+<span class="nc" id="L182">                    tabla.addCell(new Cell().add(new Paragraph(f.libroTitulo())));</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">                    tabla.addCell(new Cell().add(new Paragraph(f.libroIsbn() != null ? f.libroIsbn() : &quot;—&quot;)));</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">                    tabla.addCell(new Cell().add(new Paragraph(f.fechaDevolucionEstimada() != null</span>
+<span class="nc" id="L185">                            ? f.fechaDevolucionEstimada().format(DateTimeFormatter.ofPattern(&quot;dd/MM/yyyy&quot;)) : &quot;—&quot;)));</span>
+<span class="nc" id="L186">                    tabla.addCell(new Cell().add(new Paragraph(String.valueOf(f.diasAtraso()))));</span>
+<span class="nc" id="L187">                    tabla.addCell(new Cell().add(new Paragraph(&quot;$&quot; + f.montoMultaEstimada())));</span>
+<span class="nc" id="L188">                }</span>
+<span class="nc" id="L189">                document.add(tabla);</span>
+            }
+        }
+<span class="nc" id="L192">        return salida.toByteArray();</span>
+    }
+
+    // ── Categorías demandadas ─────────────────────────────
+    public byte[] generarReporteCategoriasDemandadas(List&lt;ReporteCategoriasDemandadasResponseDTO&gt; filas) {
+<span class="nc" id="L197">        ByteArrayOutputStream salida = new ByteArrayOutputStream();</span>
+<span class="nc" id="L198">        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(salida));</span>
+<span class="nc" id="L199">             Document document = new Document(pdfDoc)) {</span>
+<span class="nc" id="L200">            PdfFont negrita = crearFuenteNegrita();</span>
+<span class="nc" id="L201">            agregarEncabezado(document, &quot;Reporte de categorías más demandadas&quot;, negrita);</span>
+<span class="nc bnc" id="L202" title="All 2 branches missed.">            if (filas.isEmpty()) {</span>
+<span class="nc" id="L203">                document.add(new Paragraph(&quot;No hay datos de categorías.&quot;));</span>
+            } else {
+<span class="nc" id="L205">                Table tabla = new Table(UnitValue.createPercentArray(new float[]{1, 4, 2, 2})).useAllAvailableWidth();</span>
+<span class="nc" id="L206">                tabla.addHeaderCell(celdaEncabezado(&quot;#&quot;, negrita));</span>
+<span class="nc" id="L207">                tabla.addHeaderCell(celdaEncabezado(&quot;Categoría&quot;, negrita));</span>
+<span class="nc" id="L208">                tabla.addHeaderCell(celdaEncabezado(&quot;Préstamos&quot;, negrita));</span>
+<span class="nc" id="L209">                tabla.addHeaderCell(celdaEncabezado(&quot;% del total&quot;, negrita));</span>
+<span class="nc" id="L210">                int i = 1;</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">                for (var f : filas) {</span>
+<span class="nc" id="L212">                    tabla.addCell(new Cell().add(new Paragraph(String.valueOf(i++))));</span>
+<span class="nc" id="L213">                    tabla.addCell(new Cell().add(new Paragraph(f.categoriaNombre())));</span>
+<span class="nc" id="L214">                    tabla.addCell(new Cell().add(new Paragraph(String.valueOf(f.totalPrestamos()))));</span>
+<span class="nc" id="L215">                    tabla.addCell(new Cell().add(new Paragraph(f.porcentaje() + &quot;%&quot;)));</span>
+<span class="nc" id="L216">                }</span>
+<span class="nc" id="L217">                document.add(tabla);</span>
+            }
+        }
+<span class="nc" id="L220">        return salida.toByteArray();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
