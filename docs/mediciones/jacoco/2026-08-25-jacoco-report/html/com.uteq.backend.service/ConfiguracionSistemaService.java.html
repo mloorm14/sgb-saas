@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ConfiguracionSistemaService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.service</a> &gt; <span class="el_source">ConfiguracionSistemaService.java</span></div><h1>ConfiguracionSistemaService.java</h1><pre class="source lang-java linenums">package com.uteq.backend.service;
+
+import com.uteq.backend.dto.ConfiguracionSistemaResponseDTO;
+import com.uteq.backend.entity.ConfiguracionSistema;
+import com.uteq.backend.repository.ConfiguracionSistemaRepository;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * Parámetros del sistema (tabla {@code configuracion_sistema}), pensados
+ * para leerse en cada préstamo/reserva/multa sin ir a la base de datos cada
+ * vez (Módulo 9.4 del roadmap). Cache en memoria simple (no Redis): un
+ * {@link ConcurrentHashMap} por instancia de la app, invalidado clave por
+ * clave al escribir — suficiente porque este valor cambia con muy poca
+ * frecuencia (un Admin ajustando un parámetro puntual), a diferencia del
+ * cache &quot;libros&quot; (ver RedisConfig), que sí necesita compartirse entre
+ * instancias e invalidarse por TTL.
+ *
+ * IMPORTANTE para consumidores futuros (Ramas C/D/E del roadmap: límite de
+ * renovaciones, caducidad de reservas, etc.): usar
+ * {@link #obtenerValor(String)}/{@link #obtenerValorEntero(String)}/
+ * {@link #obtenerValorDecimal(String)} en vez de inyectar
+ * {@link ConfiguracionSistemaRepository} directo, para no perder el cache.
+ */
+@Service
+public class ConfiguracionSistemaService {
+
+    private static final String CLAVE_NO_ENCONTRADA = &quot;Clave de configuración no encontrada: &quot;;
+
+    private final ConfiguracionSistemaRepository repo;
+<span class="fc" id="L36">    private final ConcurrentHashMap&lt;String, String&gt; cache = new ConcurrentHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L38">    public ConfiguracionSistemaService(ConfiguracionSistemaRepository repo) {</span>
+<span class="fc" id="L39">        this.repo = repo;</span>
+<span class="fc" id="L40">    }</span>
+
+    @Transactional(readOnly = true)
+    public List&lt;ConfiguracionSistemaResponseDTO&gt; listar() {
+<span class="fc" id="L44">        return repo.findAll().stream()</span>
+<span class="fc" id="L45">                .map(c -&gt; new ConfiguracionSistemaResponseDTO(c.getClave(), c.getValor()))</span>
+<span class="fc" id="L46">                .toList();</span>
+    }
+
+    /**
+     * Actualiza el valor de una clave que YA existe. A propósito no crea
+     * claves nuevas por esta vía: el catálogo de parámetros válidos lo
+     * define el dominio (ver seed.sql / migraciones), no quien llama al
+     * endpoint — evita que quede una clave suelta que ningún consumidor
+     * real lee.
+     */
+    @Transactional
+    public ConfiguracionSistemaResponseDTO actualizar(String clave, String nuevoValor) {
+<span class="fc" id="L58">        ConfiguracionSistema config = repo.findById(clave)</span>
+<span class="fc" id="L59">                .orElseThrow(() -&gt; new EntityNotFoundException(CLAVE_NO_ENCONTRADA + clave));</span>
+<span class="fc" id="L60">        config.setValor(nuevoValor);</span>
+<span class="fc" id="L61">        repo.save(config);</span>
+<span class="fc" id="L62">        cache.remove(clave);</span>
+<span class="fc" id="L63">        return new ConfiguracionSistemaResponseDTO(config.getClave(), config.getValor());</span>
+    }
+
+    @Transactional(readOnly = true)
+    public String obtenerValor(String clave) {
+<span class="fc" id="L68">        String cacheado = cache.get(clave);</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        if (cacheado != null) {</span>
+<span class="fc" id="L70">            return cacheado;</span>
+        }
+<span class="fc" id="L72">        String valor = repo.findById(clave)</span>
+<span class="fc" id="L73">                .orElseThrow(() -&gt; new EntityNotFoundException(CLAVE_NO_ENCONTRADA + clave))</span>
+<span class="fc" id="L74">                .getValor();</span>
+<span class="fc" id="L75">        cache.put(clave, valor);</span>
+<span class="fc" id="L76">        return valor;</span>
+    }
+
+    public Integer obtenerValorEntero(String clave) {
+<span class="fc" id="L80">        String valor = obtenerValor(clave);</span>
+        try {
+<span class="nc" id="L82">            return Integer.valueOf(valor);</span>
+<span class="fc" id="L83">        } catch (NumberFormatException ex) {</span>
+<span class="fc" id="L84">            throw new IllegalStateException(</span>
+                    &quot;Valor no numérico para la clave '&quot; + clave + &quot;': &quot; + valor);
+        }
+    }
+
+    public BigDecimal obtenerValorDecimal(String clave) {
+<span class="nc" id="L90">        String valor = obtenerValor(clave);</span>
+        try {
+<span class="nc" id="L92">            return new BigDecimal(valor);</span>
+<span class="nc" id="L93">        } catch (NumberFormatException ex) {</span>
+<span class="nc" id="L94">            throw new IllegalStateException(</span>
+                    &quot;Valor no decimal para la clave '&quot; + clave + &quot;': &quot; + valor);
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

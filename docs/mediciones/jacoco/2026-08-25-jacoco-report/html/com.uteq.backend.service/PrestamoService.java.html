@@ -1,0 +1,506 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PrestamoService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.service</a> &gt; <span class="el_source">PrestamoService.java</span></div><h1>PrestamoService.java</h1><pre class="source lang-java linenums">package com.uteq.backend.service;
+
+import com.uteq.backend.dto.DevolucionResponseDTO;
+import com.uteq.backend.dto.LibroMasPrestadoDetalladoResponseDTO;
+import com.uteq.backend.dto.LibroMasPrestadoResponseDTO;
+import com.uteq.backend.dto.PrestamoActivoResponseDTO;
+import com.uteq.backend.dto.PrestamoRequestDTO;
+import com.uteq.backend.dto.PrestamoResponseDTO;
+import com.uteq.backend.dto.RenovacionResponseDTO;
+import com.uteq.backend.dto.ReporteCategoriasDemandadasResponseDTO;
+import com.uteq.backend.dto.ReporteInventarioResponseDTO;
+import com.uteq.backend.dto.ReporteMorosidadResponseDTO;
+import com.uteq.backend.dto.ReporteUsoPorPeriodoResponseDTO;
+import com.uteq.backend.dto.ReporteVencidosResponseDTO;
+import com.uteq.backend.entity.EstadoPrestamo;
+import com.uteq.backend.entity.Prestamo;
+import com.uteq.backend.entity.Reservacion;
+import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.EstadoPrestamoRepository;
+import com.uteq.backend.repository.EstadoReservacionRepository;
+import com.uteq.backend.repository.PrestamoProcedureRepository;
+import com.uteq.backend.repository.PrestamoRepository;
+import com.uteq.backend.repository.ReservacionRepository;
+import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.repository.projection.LibroMasPrestadoDetalladoProjection;
+import com.uteq.backend.repository.projection.LibroMasPrestadoProjection;
+import com.uteq.backend.repository.projection.PrestamoActivoProjection;
+import com.uteq.backend.repository.projection.ReporteCategoriasDemandadasProjection;
+import com.uteq.backend.repository.projection.ReporteInventarioProjection;
+import com.uteq.backend.repository.projection.ReporteMorosidadProjection;
+import com.uteq.backend.repository.projection.ReporteUsoPorPeriodoProjection;
+import com.uteq.backend.repository.projection.ReporteVencidosProjection;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class PrestamoService {
+
+    private static final String PRESTAMO_NO_ENCONTRADO = &quot;Préstamo no encontrado con id: &quot;;
+    private static final String USUARIO_NO_ENCONTRADO = &quot;Usuario no encontrado: &quot;;
+    private static final String ROL_LECTOR = &quot;LECTOR&quot;;
+
+    // ── Constantes de renovar() ─────────────────────────────
+    private static final String ESTADO_DEVUELTO = &quot;DEVUELTO&quot;;
+    private static final String ESTADO_RENOVADO = &quot;RENOVADO&quot;;
+    // &quot;Vigente&quot; para efectos de bloquear una renovación: cualquier reserva
+    // que todavía pueda terminar en un retiro (no RETIRADA/EXPIRADA/
+    // CANCELADA). No existe un estado literal &quot;ACTIVA&quot; en estados_reservacion
+    // (ver db/seed.sql) -- son estos dos los que cuentan como &quot;en curso&quot;.
+<span class="fc" id="L62">    private static final List&lt;String&gt; ESTADOS_RESERVA_VIGENTE = List.of(&quot;PENDIENTE&quot;, &quot;LISTA_PARA_RETIRO&quot;);</span>
+    private static final String ESTADO_RESERVA_RETIRADA = &quot;RETIRADA&quot;;
+    private static final String CLAVE_DIAS_PRESTAMO_DEFAULT = &quot;dias_prestamo_default&quot;;
+    private static final String CLAVE_MAX_RENOVACIONES_DEFAULT = &quot;max_renovaciones_default&quot;;
+
+    private final PrestamoRepository prestamoRepo;
+    private final PrestamoProcedureRepository prestamoProcRepo;
+    private final UsuarioRepository usuarioRepo;
+    private final EstadoPrestamoRepository estadoPrestamoRepo;
+    private final ReservacionRepository reservacionRepo;
+    private final EstadoReservacionRepository estadoReservacionRepo;
+    private final ConfiguracionSistemaService configuracionSistemaService;
+    private final CredencialQrService credencialQrService;
+    private final NotificacionService notificacionService;
+
+    public PrestamoService(PrestamoRepository prestamoRepo,
+                           PrestamoProcedureRepository prestamoProcRepo,
+                           UsuarioRepository usuarioRepo,
+                           EstadoPrestamoRepository estadoPrestamoRepo,
+                           ReservacionRepository reservacionRepo,
+                           EstadoReservacionRepository estadoReservacionRepo,
+                           ConfiguracionSistemaService configuracionSistemaService,
+                           CredencialQrService credencialQrService,
+<span class="fc" id="L85">                           NotificacionService notificacionService) {</span>
+<span class="fc" id="L86">        this.prestamoRepo = prestamoRepo;</span>
+<span class="fc" id="L87">        this.prestamoProcRepo = prestamoProcRepo;</span>
+<span class="fc" id="L88">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L89">        this.estadoPrestamoRepo = estadoPrestamoRepo;</span>
+<span class="fc" id="L90">        this.reservacionRepo = reservacionRepo;</span>
+<span class="fc" id="L91">        this.estadoReservacionRepo = estadoReservacionRepo;</span>
+<span class="fc" id="L92">        this.configuracionSistemaService = configuracionSistemaService;</span>
+<span class="fc" id="L93">        this.credencialQrService = credencialQrService;</span>
+<span class="fc" id="L94">        this.notificacionService = notificacionService;</span>
+<span class="fc" id="L95">    }</span>
+
+    @Transactional
+    public PrestamoResponseDTO crear(PrestamoRequestDTO dto, Authentication authentication) {
+<span class="fc" id="L99">        Long usuarioId = resolverUsuarioId(dto);</span>
+<span class="fc" id="L100">        Long bibliotecarioId = resolverIdPorCorreo(authentication.getName());</span>
+
+<span class="fc" id="L102">        validarLimitePrestamos(usuarioId);</span>
+
+        // Ventanilla: si el préstamo nace de una reserva, se valida ANTES de
+        // tocar stock (falla rápido, sin efectos secundarios) y se vincula
+        // DESPUÉS del SP -- sp_crear_prestamo no conoce reservaciones (no
+        // acepta ese parámetro) y la conversión reserva-&gt;préstamo son dos
+        // UPDATEs simples sobre filas ya cargadas, sin la atomicidad multi-
+        // tabla que sí justifica un procedimiento.
+<span class="fc" id="L110">        Reservacion reservaOrigen = validarReservaSiAplica(dto, usuarioId);</span>
+<span class="fc" id="L111">        Long prestamoId = prestamoProcRepo.spCrearPrestamo(</span>
+<span class="fc" id="L112">                usuarioId, dto.libroId(), bibliotecarioId, dto.diasPrestamo());</span>
+<span class="fc" id="L113">        Prestamo prestamo = prestamoRepo.findById(prestamoId)</span>
+<span class="pc" id="L114">                .orElseThrow(() -&gt; new EntityNotFoundException(PRESTAMO_NO_ENCONTRADO + prestamoId));</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (reservaOrigen != null) {</span>
+<span class="fc" id="L116">            prestamo.setReservacionId(reservaOrigen.getId());</span>
+<span class="fc" id="L117">            prestamoRepo.save(prestamo);</span>
+<span class="fc" id="L118">            reservaOrigen.setEstadoReservacionId(idEstadoReservacion(ESTADO_RESERVA_RETIRADA));</span>
+<span class="fc" id="L119">            reservacionRepo.save(reservaOrigen);</span>
+        }
+<span class="fc" id="L121">        return toDTO(prestamo);</span>
+    }
+
+    // Valida que la reservacionId del body sea una reserva VIGENTE del mismo
+    // usuario y sobre el MISMO libro del préstamo. Devuelve la entidad para
+    // reutilizarla en crear() (vincular + marcar RETIRADA), o null cuando el
+    // préstamo es directo (sin reservacionId).
+    private Reservacion validarReservaSiAplica(PrestamoRequestDTO dto, Long usuarioId) {
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        if (dto.reservacionId() == null) {</span>
+<span class="fc" id="L130">            return null;</span>
+        }
+<span class="fc" id="L132">        Reservacion reservacion = reservacionRepo.findById(dto.reservacionId())</span>
+<span class="pc" id="L133">                .orElseThrow(() -&gt; new EntityNotFoundException(</span>
+<span class="nc" id="L134">                        &quot;Reservación no encontrada: &quot; + dto.reservacionId()));</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        if (!usuarioId.equals(reservacion.getUsuarioId())) {</span>
+<span class="fc" id="L136">            throw new IllegalArgumentException(</span>
+<span class="fc" id="L137">                    &quot;La reservación &quot; + dto.reservacionId() + &quot; no pertenece al usuario del préstamo.&quot;);</span>
+        }
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        if (!dto.libroId().equals(reservacion.getLibroId())) {</span>
+<span class="fc" id="L140">            throw new IllegalArgumentException(</span>
+                    &quot;El libro del préstamo no coincide con el de la reservación &quot;
+<span class="fc" id="L142">                            + dto.reservacionId() + &quot;.&quot;);</span>
+        }
+<span class="fc" id="L144">        List&lt;Integer&gt; idsVigentes = ESTADOS_RESERVA_VIGENTE.stream()</span>
+<span class="fc" id="L145">                .map(nombre -&gt; estadoReservacionRepo.findByNombre(nombre)</span>
+<span class="pc" id="L146">                        .orElseThrow(() -&gt; new IllegalStateException(</span>
+                                &quot;Catálogo estados_reservacion sin fila '&quot; + nombre + &quot;'&quot;))
+<span class="fc" id="L148">                        .getId())</span>
+<span class="fc" id="L149">                .toList();</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">        if (!idsVigentes.contains(reservacion.getEstadoReservacionId())) {</span>
+<span class="fc" id="L151">            throw new IllegalStateException(</span>
+<span class="fc" id="L152">                    &quot;La reservación &quot; + dto.reservacionId()</span>
+                            + &quot; ya no está vigente (pendiente o lista para retiro).&quot;);
+        }
+<span class="fc" id="L155">        return reservacion;</span>
+    }
+
+    // Módulo 8 (credencial QR): resuelve el usuario del préstamo por
+    // credencialQrToken si vino en el body, o usa usuarioId directo si no.
+    // &quot;tieneToken == tieneUsuarioId&quot; cubre ambos casos inválidos con una
+    // sola condición: los dos presentes (true == true) Y los dos ausentes
+    // (false == false) son igual de inválidos -- debe venir EXACTAMENTE uno.
+    private Long resolverUsuarioId(PrestamoRequestDTO dto) {
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        boolean tieneToken = dto.credencialQrToken() != null;</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">        boolean tieneUsuarioId = dto.usuarioId() != null;</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        if (tieneToken == tieneUsuarioId) {</span>
+<span class="fc" id="L167">            throw new IllegalArgumentException(</span>
+                    &quot;Debe enviarse exactamente uno de: usuarioId o credencialQrToken.&quot;);
+        }
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        if (tieneToken) {</span>
+<span class="fc" id="L171">            return credencialQrService.resolverPorToken(dto.credencialQrToken()).getId();</span>
+        }
+<span class="fc" id="L173">        return dto.usuarioId();</span>
+    }
+
+    @Transactional
+    public DevolucionResponseDTO registrarDevolucion(Long prestamoId) {
+<span class="fc" id="L178">        Map&lt;String, Object&gt; resultado = prestamoProcRepo.spRegistrarDevolucion(prestamoId);</span>
+<span class="fc" id="L179">        Boolean huboMulta = (Boolean) resultado.get(&quot;o_hubo_multa&quot;);</span>
+<span class="fc" id="L180">        BigDecimal montoMulta = (BigDecimal) resultado.get(&quot;o_monto_multa&quot;);</span>
+
+        // Módulo 2: multas se crean dentro de sp_registrar_devolucion (no
+        // en MultaService -- ver Javadoc de MultaService, que solo lista/
+        // paga/anula multas ya existentes), así que este es el único punto
+        // de la aplicación donde se sabe, recién creada, que hubo una.
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        if (Boolean.TRUE.equals(huboMulta)) {</span>
+<span class="fc" id="L187">            Prestamo prestamo = prestamoRepo.findById(prestamoId)</span>
+<span class="pc" id="L188">                    .orElseThrow(() -&gt; new EntityNotFoundException(PRESTAMO_NO_ENCONTRADO + prestamoId));</span>
+<span class="fc" id="L189">            notificacionService.notificarMulta(prestamo.getUsuarioId(), prestamoId, montoMulta);</span>
+        }
+
+<span class="fc" id="L192">        return new DevolucionResponseDTO(</span>
+<span class="fc" id="L193">                (Long) resultado.get(&quot;o_prestamo_id&quot;), huboMulta, montoMulta);</span>
+    }
+
+    // ── POST /{id}/renovacion ────────────────────────────────
+    // Validaciones en Java (no un stored procedure nuevo, a diferencia de
+    // crear()/registrarDevolucion()): a esta altura del proyecto ya existe
+    // ConfiguracionSistemaService (dias_prestamo_default,
+    // max_renovaciones_default) y las 4 reglas de negocio son consultas y un
+    // UPDATE simple sobre una sola fila -- no requiere la atomicidad
+    // multi-tabla que sí justifica un SP como sp_registrar_devolucion
+    // (préstamo + multa + posible desbloqueo de usuario en una transacción).
+    //
+    // Orden de validación (cada una lanza una excepción distinta para que
+    // el cliente pueda distinguir el motivo del rechazo):
+    //   1. Préstamo no existe -&gt; 404 (EntityNotFoundException)
+    //   2. Autorización: LECTOR solo sobre su propio préstamo -&gt; 403
+    //   3. Ya devuelto -&gt; 400 (no es &quot;vencido&quot; ni las otras 3 reglas
+    //      explícitas del alcance original, pero renovar algo ya cerrado no
+    //      tiene sentido de negocio y se rechaza igual)
+    //   4. Vencido (fecha_devolucion_estimada ya pasó) -&gt; 409
+    //   5. Límite de renovaciones alcanzado -&gt; 409
+    //   6. Reserva vigente de OTRO usuario sobre el mismo libro -&gt; 409
+    @Transactional
+    public RenovacionResponseDTO renovar(Long prestamoId, Authentication authentication) {
+<span class="fc" id="L217">        Prestamo prestamo = prestamoRepo.findById(prestamoId)</span>
+<span class="pc" id="L218">                .orElseThrow(() -&gt; new EntityNotFoundException(PRESTAMO_NO_ENCONTRADO + prestamoId));</span>
+
+<span class="fc" id="L220">        validarAccesoUsuario(prestamo.getUsuarioId(), authentication);</span>
+
+<span class="fc bfc" id="L222" title="All 2 branches covered.">        if (ESTADO_DEVUELTO.equals(nombreEstadoPrestamo(prestamo.getEstadoPrestamoId()))) {</span>
+<span class="fc" id="L223">            throw new IllegalArgumentException(</span>
+                    &quot;El préstamo &quot; + prestamoId + &quot; ya fue devuelto, no se puede renovar.&quot;);
+        }
+
+<span class="fc bfc" id="L227" title="All 2 branches covered.">        if (prestamo.getFechaDevolucionEstimada().isBefore(OffsetDateTime.now())) {</span>
+<span class="fc" id="L228">            throw new PrestamoVencidoException(</span>
+                    &quot;El préstamo &quot; + prestamoId + &quot; está vencido, no se puede renovar.&quot;);
+        }
+
+<span class="fc" id="L232">        int maxRenovaciones = configuracionSistemaService.obtenerValorEntero(CLAVE_MAX_RENOVACIONES_DEFAULT);</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">        if (prestamo.getRenovacionesRealizadas() &gt;= maxRenovaciones) {</span>
+<span class="fc" id="L234">            throw new LimiteRenovacionesExcedidoException(</span>
+                    &quot;El préstamo &quot; + prestamoId + &quot; ya alcanzó el máximo de &quot;
+                            + maxRenovaciones + &quot; renovaciones permitidas.&quot;);
+        }
+
+<span class="fc bfc" id="L239" title="All 2 branches covered.">        if (existeReservaVigenteDeOtroUsuario(prestamo.getLibroId(), prestamo.getUsuarioId())) {</span>
+<span class="fc" id="L240">            throw new MaterialReservadoException(</span>
+                    &quot;El libro del préstamo &quot; + prestamoId
+                            + &quot; tiene una reserva vigente de otro usuario.&quot;);
+        }
+
+<span class="fc" id="L245">        int diasPrestamo = configuracionSistemaService.obtenerValorEntero(CLAVE_DIAS_PRESTAMO_DEFAULT);</span>
+<span class="fc" id="L246">        prestamo.setFechaDevolucionEstimada(OffsetDateTime.now().plusDays(diasPrestamo));</span>
+<span class="fc" id="L247">        prestamo.setRenovacionesRealizadas((short) (prestamo.getRenovacionesRealizadas() + 1));</span>
+<span class="fc" id="L248">        prestamo.setEstadoPrestamoId(idEstadoPrestamo(ESTADO_RENOVADO));</span>
+<span class="fc" id="L249">        prestamoRepo.save(prestamo);</span>
+
+<span class="fc" id="L251">        return new RenovacionResponseDTO(</span>
+<span class="fc" id="L252">                prestamo.getId(),</span>
+<span class="fc" id="L253">                prestamo.getFechaDevolucionEstimada(),</span>
+<span class="fc" id="L254">                prestamo.getRenovacionesRealizadas(),</span>
+<span class="fc" id="L255">                (short) (maxRenovaciones - prestamo.getRenovacionesRealizadas()));</span>
+    }
+
+    private boolean existeReservaVigenteDeOtroUsuario(Long libroId, Long usuarioIdDuenoPrestamo) {
+<span class="fc" id="L259">        List&lt;Integer&gt; idsEstadosVigentes = ESTADOS_RESERVA_VIGENTE.stream()</span>
+<span class="fc" id="L260">                .map(nombre -&gt; estadoReservacionRepo.findByNombre(nombre)</span>
+<span class="pc" id="L261">                        .orElseThrow(() -&gt; new IllegalStateException(</span>
+                                &quot;Catálogo estados_reservacion sin fila '&quot; + nombre + &quot;'&quot;))
+<span class="fc" id="L263">                        .getId())</span>
+<span class="fc" id="L264">                .toList();</span>
+<span class="fc" id="L265">        return reservacionRepo.existsByLibroIdAndEstadoReservacionIdInAndUsuarioIdNot(</span>
+                libroId, idsEstadosVigentes, usuarioIdDuenoPrestamo);
+    }
+
+    // Se usa IllegalStateException para &quot;fila de catálogo faltante&quot;: es un
+    // problema de seed/configuración del sistema, no un error del cliente
+    // -- mismo criterio que ReservacionService.fromDTO() con estados_reservacion.
+    private String nombreEstadoPrestamo(Integer estadoId) {
+<span class="fc" id="L273">        return estadoPrestamoRepo.findById(estadoId)</span>
+<span class="fc" id="L274">                .map(EstadoPrestamo::getNombre)</span>
+<span class="pc" id="L275">                .orElseThrow(() -&gt; new IllegalStateException(</span>
+                        &quot;estado_prestamo_id &quot; + estadoId + &quot; no existe en el catálogo estados_prestamo&quot;));
+    }
+
+    private Integer idEstadoPrestamo(String nombre) {
+<span class="fc" id="L280">        return estadoPrestamoRepo.findByNombre(nombre)</span>
+<span class="pc" id="L281">                .orElseThrow(() -&gt; new IllegalStateException(</span>
+                        &quot;Catálogo estados_prestamo sin fila '&quot; + nombre + &quot;'&quot;))
+<span class="fc" id="L283">                .getId();</span>
+    }
+
+    // Ventanilla: conversión de reserva en préstamo (crear() marca la
+    // reserva origen como RETIRADA para que no quede pendiente).
+    private Integer idEstadoReservacion(String nombre) {
+<span class="fc" id="L289">        return estadoReservacionRepo.findByNombre(nombre)</span>
+<span class="pc" id="L290">                .orElseThrow(() -&gt; new IllegalStateException(</span>
+                        &quot;Catálogo estados_reservacion sin fila '&quot; + nombre + &quot;'&quot;))
+<span class="fc" id="L292">                .getId();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Page&lt;PrestamoResponseDTO&gt; listarPorUsuario(Long usuarioId, Authentication authentication, Pageable pageable) {
+<span class="nc" id="L297">        validarAccesoUsuario(usuarioId, authentication);</span>
+<span class="nc" id="L298">        return prestamoRepo.findByUsuarioId(usuarioId, pageable).map(this::toDTO);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;PrestamoActivoResponseDTO&gt; listarActivosPorUsuario(Long usuarioId, Authentication authentication) {
+<span class="nc" id="L303">        validarAccesoUsuario(usuarioId, authentication);</span>
+<span class="nc" id="L304">        return prestamoRepo.findActivosByUsuarioId(usuarioId).stream()</span>
+<span class="nc" id="L305">                .map(this::toDTO)</span>
+<span class="nc" id="L306">                .toList();</span>
+    }
+
+    private static final int LIMITE_REPORTE_DEFAULT = 10;
+
+    @Transactional(readOnly = true)
+    public List&lt;LibroMasPrestadoResponseDTO&gt; reporteLibrosMasPrestados(
+            Integer limite, OffsetDateTime desde, OffsetDateTime hasta) {
+        // El DEFAULT 10 de fn_reporte_libros_mas_prestados solo se activa
+        // cuando el parámetro se omite POR COMPLETO de la llamada SQL. La
+        // @Query nativeQuery de PrestamoProcedureRepository siempre envía
+        // los 3 parámetros nombrados, así que un null explícito produce
+        // &quot;LIMIT NULL&quot; en Postgres = sin límite, no el default esperado.
+        // Se aplica el default aquí para que el comportamiento.
+<span class="pc bpc" id="L320" title="1 of 2 branches missed.">        Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;</span>
+<span class="fc" id="L321">        return prestamoProcRepo.fnReporteLibrosMasPrestados(limiteEfectivo, desde, hasta).stream()</span>
+<span class="fc" id="L322">                .map(this::toDTO)</span>
+<span class="fc" id="L323">                .toList();</span>
+    }
+
+    // ── GET /reportes/morosidad (Módulo 7) ──────────────────
+    // Mismo motivo del default aplicado en Java (no en el parámetro SQL)
+    // que reporteLibrosMasPrestados: la @Query nativeQuery siempre envía
+    // p_limite explícito, así que un null produce &quot;LIMIT NULL&quot; (sin
+    // límite) en vez de activar el DEFAULT 10 de la función SQL.
+    @Transactional(readOnly = true)
+    public List&lt;ReporteMorosidadResponseDTO&gt; reporteMorosidad(Integer limite) {
+<span class="fc bfc" id="L333" title="All 2 branches covered.">        Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;</span>
+<span class="fc" id="L334">        return prestamoProcRepo.fnReporteIndiceMorosidad(limiteEfectivo).stream()</span>
+<span class="fc" id="L335">                .map(this::toDTO)</span>
+<span class="fc" id="L336">                .toList();</span>
+    }
+
+    // ── GET /reportes/uso (Módulo 7) ────────────────────────
+    // Validación de p_granularidad en Java (400 vía IllegalArgumentException
+    // -&gt; GlobalExceptionHandler) en vez de dejar que un valor no reconocido
+    // caiga silenciosamente al &quot;ELSE 'day'&quot; de fn_reporte_uso_por_periodo:
+    // el fallback en SQL es defensa en profundidad, no la validación
+    // primaria -- un cliente que manda &quot;dias&quot; (typo) debe recibir un 400
+    // explicando el valor esperado, no un reporte diario silencioso.
+<span class="fc" id="L346">    private static final List&lt;String&gt; GRANULARIDADES_VALIDAS = List.of(&quot;dia&quot;, &quot;semana&quot;, &quot;mes&quot;);</span>
+
+    @Transactional(readOnly = true)
+    public List&lt;ReporteUsoPorPeriodoResponseDTO&gt; reporteUsoPorPeriodo(
+            String granularidad, OffsetDateTime desde, OffsetDateTime hasta) {
+<span class="pc bpc" id="L351" title="1 of 2 branches missed.">        String granularidadEfectiva = (granularidad != null) ? granularidad.toLowerCase() : &quot;dia&quot;;</span>
+<span class="fc bfc" id="L352" title="All 2 branches covered.">        if (!GRANULARIDADES_VALIDAS.contains(granularidadEfectiva)) {</span>
+<span class="fc" id="L353">            throw new IllegalArgumentException(</span>
+                    &quot;granularidad inválida: '&quot; + granularidad
+                            + &quot;'. Valores permitidos: dia, semana, mes.&quot;);
+        }
+<span class="fc" id="L357">        return prestamoProcRepo.fnReporteUsoPorPeriodo(granularidadEfectiva, desde, hasta).stream()</span>
+<span class="fc" id="L358">                .map(this::toDTO)</span>
+<span class="fc" id="L359">                .toList();</span>
+    }
+
+    // ── &quot;Propio vs cualquiera&quot;: LECTOR solo puede pedir su propio
+    // usuarioId; BIBLIOTECARIO/GERENTE no tienen restricción (mismo
+    // patrón descrito en docs/reparto-entrega-3/cajas-backend/INSTRUCCIONES.md,
+    // sección 1). ──
+    private void validarAccesoUsuario(Long usuarioIdSolicitado, Authentication authentication) {
+<span class="fc" id="L367">        boolean esLector = authentication.getAuthorities().stream()</span>
+<span class="fc" id="L368">                .map(GrantedAuthority::getAuthority)</span>
+<span class="fc" id="L369">                .anyMatch(rol -&gt; rol.equals(&quot;ROLE_&quot; + ROL_LECTOR));</span>
+<span class="fc bfc" id="L370" title="All 2 branches covered.">        if (!esLector) {</span>
+<span class="fc" id="L371">            return;</span>
+        }
+<span class="fc" id="L373">        Long idPropio = resolverIdPorCorreo(authentication.getName());</span>
+<span class="pc bpc" id="L374" title="1 of 2 branches missed.">        if (!idPropio.equals(usuarioIdSolicitado)) {</span>
+<span class="fc" id="L375">            throw new AuthorizationDeniedException(</span>
+                    &quot;Un LECTOR solo puede consultar sus propios préstamos.&quot;);
+        }
+<span class="nc" id="L378">    }</span>
+
+    private Long resolverIdPorCorreo(String correo) {
+<span class="fc" id="L381">        Usuario usuario = usuarioRepo.findByCorreo(correo)</span>
+<span class="pc" id="L382">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo));</span>
+<span class="fc" id="L383">        return usuario.getId();</span>
+    }
+
+    private PrestamoResponseDTO toDTO(Prestamo p) {
+<span class="fc" id="L387">        return new PrestamoResponseDTO(</span>
+<span class="fc" id="L388">                p.getId(),</span>
+<span class="fc" id="L389">                p.getUsuarioId(),</span>
+<span class="fc" id="L390">                p.getLibroId(),</span>
+<span class="fc" id="L391">                p.getBibliotecarioId(),</span>
+<span class="fc" id="L392">                p.getReservacionId(),</span>
+<span class="fc" id="L393">                p.getFechaPrestamo(),</span>
+<span class="fc" id="L394">                p.getFechaDevolucionEstimada(),</span>
+<span class="fc" id="L395">                p.getFechaDevolucionReal(),</span>
+<span class="fc" id="L396">                p.getRenovacionesRealizadas(),</span>
+<span class="fc" id="L397">                p.getEstadoPrestamoId());</span>
+    }
+
+    private PrestamoActivoResponseDTO toDTO(PrestamoActivoProjection p) {
+<span class="nc" id="L401">        return new PrestamoActivoResponseDTO(</span>
+<span class="nc" id="L402">                p.getPrestamoId(),</span>
+<span class="nc" id="L403">                p.getLibroTitulo(),</span>
+<span class="nc" id="L404">                p.getLibroIsbn(),</span>
+<span class="nc bnc" id="L405" title="All 2 branches missed.">                p.getFechaPrestamo() != null ? p.getFechaPrestamo().atOffset(ZoneOffset.UTC) : null,</span>
+<span class="nc bnc" id="L406" title="All 2 branches missed.">                p.getFechaDevolucionEstimada() != null ? p.getFechaDevolucionEstimada().atOffset(ZoneOffset.UTC) : null,</span>
+<span class="nc" id="L407">                p.getDiasRestantes(),</span>
+<span class="nc" id="L408">                p.getEstadoNombre());</span>
+    }
+
+    private LibroMasPrestadoResponseDTO toDTO(LibroMasPrestadoProjection p) {
+<span class="nc" id="L412">        return new LibroMasPrestadoResponseDTO(</span>
+<span class="nc" id="L413">                p.getLibroId(),</span>
+<span class="nc" id="L414">                p.getTitulo(),</span>
+<span class="nc" id="L415">                p.getIsbn(),</span>
+<span class="nc" id="L416">                p.getTotalPrestamos());</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;LibroMasPrestadoDetalladoResponseDTO&gt; reporteLibrosMasPrestadosDetallado(
+            Integer limite, OffsetDateTime desde, OffsetDateTime hasta, Integer categoriaId) {
+<span class="nc bnc" id="L422" title="All 2 branches missed.">        Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;</span>
+<span class="nc" id="L423">        return prestamoProcRepo.fnReporteLibrosMasPrestadosDetallado(limiteEfectivo, desde, hasta, categoriaId).stream()</span>
+<span class="nc" id="L424">                .map(p -&gt; new LibroMasPrestadoDetalladoResponseDTO(</span>
+<span class="nc" id="L425">                        p.getLibroId(),</span>
+<span class="nc" id="L426">                        p.getTitulo(),</span>
+<span class="nc" id="L427">                        p.getIsbn(),</span>
+<span class="nc" id="L428">                        p.getAutorNombre(),</span>
+<span class="nc" id="L429">                        p.getCategoriaNombre(),</span>
+<span class="nc" id="L430">                        p.getTotalPrestamos(),</span>
+<span class="nc" id="L431">                        p.getPorcentaje()))</span>
+<span class="nc" id="L432">                .toList();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;ReporteInventarioResponseDTO&gt; reporteInventario(
+            Integer categoriaId, String estadoStock, String busqueda) {
+<span class="nc" id="L438">        return prestamoProcRepo.fnReporteInventario(categoriaId, estadoStock, busqueda).stream()</span>
+<span class="nc" id="L439">                .map(p -&gt; new ReporteInventarioResponseDTO(</span>
+<span class="nc" id="L440">                        p.getLibroId(),</span>
+<span class="nc" id="L441">                        p.getTitulo(),</span>
+<span class="nc" id="L442">                        p.getIsbn(),</span>
+<span class="nc" id="L443">                        p.getAutorNombre(),</span>
+<span class="nc" id="L444">                        p.getCategoriaNombre(),</span>
+<span class="nc" id="L445">                        p.getStockTotal(),</span>
+<span class="nc" id="L446">                        p.getStockDisponible(),</span>
+<span class="nc" id="L447">                        p.getEstadoDisponibilidad()))</span>
+<span class="nc" id="L448">                .toList();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;ReporteVencidosResponseDTO&gt; reportePrestamosVencidos(Integer diasAtrasoMin, String busqueda) {
+<span class="nc" id="L453">        return prestamoProcRepo.fnReportePrestamosVencidos(diasAtrasoMin, busqueda).stream()</span>
+<span class="nc" id="L454">                .map(p -&gt; new ReporteVencidosResponseDTO(</span>
+<span class="nc" id="L455">                        p.getPrestamoId(),</span>
+<span class="nc" id="L456">                        p.getUsuarioNombre(),</span>
+<span class="nc" id="L457">                        p.getUsuarioCorreo(),</span>
+<span class="nc" id="L458">                        p.getLibroTitulo(),</span>
+<span class="nc" id="L459">                        p.getLibroIsbn(),</span>
+<span class="nc bnc" id="L460" title="All 2 branches missed.">                        p.getFechaDevolucionEstimada() != null ? p.getFechaDevolucionEstimada().atOffset(ZoneOffset.UTC) : null,</span>
+<span class="nc" id="L461">                        p.getDiasAtraso(),</span>
+<span class="nc" id="L462">                        p.getMontoMultaEstimada()))</span>
+<span class="nc" id="L463">                .toList();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;ReporteCategoriasDemandadasResponseDTO&gt; reporteCategoriasDemandadas(
+            Integer limite, OffsetDateTime desde, OffsetDateTime hasta) {
+<span class="nc bnc" id="L469" title="All 2 branches missed.">        Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;</span>
+<span class="nc" id="L470">        return prestamoProcRepo.fnReporteCategoriasDemandadas(limiteEfectivo, desde, hasta).stream()</span>
+<span class="nc" id="L471">                .map(p -&gt; new ReporteCategoriasDemandadasResponseDTO(</span>
+<span class="nc" id="L472">                        p.getCategoriaId(),</span>
+<span class="nc" id="L473">                        p.getCategoriaNombre(),</span>
+<span class="nc" id="L474">                        p.getTotalPrestamos(),</span>
+<span class="nc" id="L475">                        p.getPorcentaje()))</span>
+<span class="nc" id="L476">                .toList();</span>
+    }
+
+    private ReporteMorosidadResponseDTO toDTO(ReporteMorosidadProjection p) {
+<span class="fc" id="L480">        return new ReporteMorosidadResponseDTO(</span>
+<span class="fc" id="L481">                p.getUsuarioId(),</span>
+<span class="fc" id="L482">                p.getNombre(),</span>
+<span class="fc" id="L483">                p.getApellido(),</span>
+<span class="fc" id="L484">                p.getCorreo(),</span>
+<span class="fc" id="L485">                p.getMontoTotalAdeudado(),</span>
+<span class="fc" id="L486">                p.getCantidadMultasPendientes(),</span>
+<span class="fc" id="L487">                p.getDiasAtrasoPromedio());</span>
+    }
+
+    private ReporteUsoPorPeriodoResponseDTO toDTO(ReporteUsoPorPeriodoProjection p) {
+<span class="fc" id="L491">        return new ReporteUsoPorPeriodoResponseDTO(</span>
+<span class="pc bpc" id="L492" title="1 of 2 branches missed.">                p.getPeriodo() != null ? p.getPeriodo().atOffset(ZoneOffset.UTC) : null,</span>
+<span class="fc" id="L493">                p.getTotalPrestamos(),</span>
+<span class="fc" id="L494">                p.getTotalDevoluciones());</span>
+    }
+
+    private void validarLimitePrestamos(Long usuarioId) {
+<span class="fc" id="L498">        int maxPrestamos = configuracionSistemaService.obtenerValorEntero(&quot;max_prestamos_usuario&quot;);</span>
+<span class="fc" id="L499">        List&lt;PrestamoActivoProjection&gt; activos = prestamoProcRepo.fnListarPrestamosActivosPorUsuario(usuarioId);</span>
+<span class="pc bpc" id="L500" title="1 of 2 branches missed.">        if (activos.size() &gt;= maxPrestamos) {</span>
+<span class="nc" id="L501">            throw new LimitePrestamosExcedidoException(</span>
+<span class="nc" id="L502">                    &quot;El usuario ya tiene &quot; + activos.size() + &quot; préstamos activos. El máximo permitido es &quot; + maxPrestamos + &quot;.&quot;);</span>
+        }
+<span class="fc" id="L504">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

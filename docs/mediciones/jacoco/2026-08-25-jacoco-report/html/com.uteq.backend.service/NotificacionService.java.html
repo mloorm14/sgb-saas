@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NotificacionService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.service</a> &gt; <span class="el_source">NotificacionService.java</span></div><h1>NotificacionService.java</h1><pre class="source lang-java linenums">package com.uteq.backend.service;
+
+import com.uteq.backend.dto.NotificacionResponseDTO;
+import com.uteq.backend.entity.Libro;
+import com.uteq.backend.entity.Notificacion;
+import com.uteq.backend.entity.Prestamo;
+import com.uteq.backend.entity.Reservacion;
+import com.uteq.backend.entity.TipoNotificacion;
+import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.LibroRepository;
+import com.uteq.backend.repository.NotificacionRepository;
+import com.uteq.backend.repository.TipoNotificacionRepository;
+import com.uteq.backend.repository.UsuarioRepository;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+
+/**
+ * Genera y envía las 3 alertas del Módulo 2 (VENCIMIENTO, MULTA,
+ * RESERVA_CADUCADA), y expone el listado por usuario para
+ * {@code NotificacionController}. Cada método público corresponde a un
+ * disparador distinto -- ver {@code NotificacionVencimientoScheduler},
+ * {@code PrestamoService#registrarDevolucion} y
+ * {@code ReservacionScheduler} para dónde se invocan.
+ */
+@Service
+public class NotificacionService {
+
+    private static final String TIPO_VENCIMIENTO = &quot;VENCIMIENTO&quot;;
+    private static final String TIPO_MULTA = &quot;MULTA&quot;;
+    private static final String TIPO_RESERVA_CADUCADA = &quot;RESERVA_CADUCADA&quot;;
+    private static final String TIPO_COMPROBANTE_PAGO = &quot;COMPROBANTE_PAGO&quot;;
+    private static final String ROL_LECTOR = &quot;LECTOR&quot;;
+    private static final String USUARIO_NO_ENCONTRADO = &quot;Usuario no encontrado: &quot;;
+    private static final String TIPO_NO_ENCONTRADO = &quot;Catalogo tipos_notificacion sin fila '&quot;;
+
+    private final NotificacionRepository notificacionRepo;
+    private final TipoNotificacionRepository tipoNotificacionRepo;
+    private final UsuarioRepository usuarioRepo;
+    private final LibroRepository libroRepo;
+    private final EmailService emailService;
+
+    public NotificacionService(NotificacionRepository notificacionRepo,
+                                TipoNotificacionRepository tipoNotificacionRepo,
+                                UsuarioRepository usuarioRepo,
+                                LibroRepository libroRepo,
+<span class="fc" id="L55">                                EmailService emailService) {</span>
+<span class="fc" id="L56">        this.notificacionRepo = notificacionRepo;</span>
+<span class="fc" id="L57">        this.tipoNotificacionRepo = tipoNotificacionRepo;</span>
+<span class="fc" id="L58">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L59">        this.libroRepo = libroRepo;</span>
+<span class="fc" id="L60">        this.emailService = emailService;</span>
+<span class="fc" id="L61">    }</span>
+
+    /**
+     * Invocado por {@code NotificacionVencimientoScheduler}. No hace nada
+     * si ya existe una notificación VENCIMIENTO para este préstamo (ver
+     * {@code NotificacionRepository#existsByPrestamoIdAndTipoNotificacionId})
+     * -- el scheduler corre cada minuto y un préstamo puede seguir dentro
+     * de la ventana de anticipación en varias ejecuciones consecutivas.
+     */
+    @Transactional
+    public void generarAlertaVencimiento(Prestamo prestamo) {
+<span class="fc" id="L72">        Integer tipoId = idDelTipo(TIPO_VENCIMIENTO);</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        if (notificacionRepo.existsByPrestamoIdAndTipoNotificacionId(prestamo.getId(), tipoId)) {</span>
+<span class="fc" id="L74">            return;</span>
+        }
+
+<span class="fc" id="L77">        String titulo = tituloDelLibro(prestamo.getLibroId());</span>
+<span class="fc" id="L78">        String mensaje = &quot;Tu préstamo de \&quot;&quot; + titulo + &quot;\&quot; vence el &quot; + prestamo.getFechaDevolucionEstimada()</span>
+                + &quot;. Recuerda devolverlo o renovarlo a tiempo.&quot;;
+
+<span class="fc" id="L81">        crearYEnviar(prestamo.getUsuarioId(), prestamo.getId(), tipoId, mensaje,</span>
+                &quot;Tu préstamo está por vencer&quot;);
+<span class="fc" id="L83">    }</span>
+
+    /**
+     * Invocado por {@code PrestamoService#registrarDevolucion} cuando el
+     * resultado de {@code sp_registrar_devolucion} reporta
+     * {@code o_hubo_multa = true}. No hay deduplicación aquí (a diferencia
+     * de {@code generarAlertaVencimiento}): una devolución con atraso
+     * genera la multa una sola vez, nunca dos veces para el mismo préstamo.
+     */
+    @Transactional
+    public void notificarMulta(Long usuarioId, Long prestamoId, BigDecimal monto) {
+<span class="fc" id="L94">        String mensaje = &quot;Se generó una multa de $&quot; + monto + &quot; asociada a tu préstamo #&quot; + prestamoId</span>
+                + &quot; por atraso en la devolución.&quot;;
+<span class="fc" id="L96">        crearYEnviar(usuarioId, prestamoId, idDelTipo(TIPO_MULTA), mensaje, &quot;Se generó una multa en tu cuenta&quot;);</span>
+<span class="fc" id="L97">    }</span>
+
+    /**
+     * Invocado por {@code ReservacionScheduler} para cada reservación que
+     * va a expirar en la corrida actual (resuelta ANTES de invocar
+     * {@code sp_expirar_reservaciones_vencidas}, que solo devuelve un
+     * conteo -- ver Javadoc de {@code ReservacionScheduler}).
+     */
+    @Transactional
+    public void notificarReservaCaducada(Reservacion reservacion) {
+<span class="fc" id="L107">        String titulo = tituloDelLibro(reservacion.getLibroId());</span>
+<span class="fc" id="L108">        String mensaje = &quot;Tu reserva de \&quot;&quot; + titulo + &quot;\&quot; caducó porque no se retiró dentro del plazo.&quot;;</span>
+<span class="fc" id="L109">        crearYEnviar(reservacion.getUsuarioId(), null, idDelTipo(TIPO_RESERVA_CADUCADA), mensaje,</span>
+                &quot;Tu reserva caducó&quot;);
+<span class="fc" id="L111">    }</span>
+
+    // ── GET /notificaciones/usuario/{id} -- &quot;propio vs cualquiera&quot;, mismo
+    // patrón que MultaService/PrestamoService/ReservacionService. ──
+    @Transactional(readOnly = true)
+    public Page&lt;NotificacionResponseDTO&gt; listarPorUsuario(Long usuarioId, Authentication authentication, Pageable pageable) {
+<span class="fc" id="L117">        validarAccesoUsuario(usuarioId, authentication);</span>
+<span class="fc" id="L118">        return notificacionRepo.findByUsuarioId(usuarioId, pageable).map(this::toDTO);</span>
+    }
+
+    /**
+     * Envía comprobante de pago de multa por correo al usuario dueño.
+     * Incluye formato profesional: nombre del sistema, fecha/hora, datos
+     * del usuario, detalle del pago con monto pagado y saldo.
+     */
+    @Transactional
+    public void notificarComprobantePago(Long usuarioId, Long multaId, BigDecimal montoPagado) {
+<span class="nc" id="L128">        Usuario usuario = usuarioRepo.findById(usuarioId)</span>
+<span class="nc" id="L129">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));</span>
+
+<span class="nc" id="L131">        String asunto = &quot;Comprobante de pago de multa - SGB&quot;;</span>
+<span class="nc" id="L132">        String fechaHora = java.time.LocalDateTime.now()</span>
+<span class="nc" id="L133">                .format(java.time.format.DateTimeFormatter.ofPattern(&quot;dd 'de' MMMM 'de' yyyy, HH:mm:ss&quot;));</span>
+
+<span class="nc" id="L135">        String html = &quot;&lt;div style=\&quot;font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;\&quot;&gt;&quot;</span>
+                + &quot;&lt;div style=\&quot;background:#1a237e;color:white;padding:24px;text-align:center;\&quot;&gt;&quot;
+                + &quot;&lt;h1 style=\&quot;margin:0;font-size:22px;\&quot;&gt;Sistema de Gestion Bibliotecaria&lt;/h1&gt;&quot;
+                + &quot;&lt;p style=\&quot;margin:8px 0 0;font-size:14px;opacity:0.9;\&quot;&gt;Comprobante de Pago de Multa&lt;/p&gt;&quot;
+                + &quot;&lt;/div&gt;&quot;
+                + &quot;&lt;div style=\&quot;padding:24px;\&quot;&gt;&quot;
+                + &quot;&lt;p style=\&quot;color:#555;font-size:13px;margin:0 0 16px;\&quot;&gt;Fecha: &lt;strong&gt;&quot; + fechaHora + &quot;&lt;/strong&gt;&lt;/p&gt;&quot;
+                + &quot;&lt;p style=\&quot;color:#555;font-size:13px;margin:0 0 4px;\&quot;&gt;Cliente: &lt;strong&gt;&quot;
+<span class="nc" id="L143">                + usuario.getNombre() + &quot; &quot; + usuario.getApellido() + &quot;&lt;/strong&gt;&lt;/p&gt;&quot;</span>
+<span class="nc" id="L144">                + &quot;&lt;p style=\&quot;color:#555;font-size:13px;margin:0 0 20px;\&quot;&gt;&quot; + usuario.getCorreo() + &quot;&lt;/p&gt;&quot;</span>
+                + &quot;&lt;hr style=\&quot;border:none;border-top:1px solid #e0e0e0;margin:0 0 20px;\&quot;&gt;&quot;
+                + &quot;&lt;table style=\&quot;width:100%;font-size:14px;\&quot;&gt;&quot;
+                + &quot;&lt;tr&gt;&lt;td style=\&quot;padding:6px 0;color:#555;\&quot;&gt;Multa #&lt;/td&gt;&lt;td style=\&quot;padding:6px 0;text-align:right;font-weight:bold;\&quot;&gt;&quot; + multaId + &quot;&lt;/td&gt;&lt;/tr&gt;&quot;
+                + &quot;&lt;tr&gt;&lt;td style=\&quot;padding:6px 0;color:#555;\&quot;&gt;Monto pagado&lt;/td&gt;&lt;td style=\&quot;padding:6px 0;text-align:right;font-weight:bold;color:#1565c0;\&quot;&gt;$&quot; + montoPagado + &quot;&lt;/td&gt;&lt;/tr&gt;&quot;
+                + &quot;&lt;/table&gt;&quot;
+                + &quot;&lt;div style=\&quot;background:#e8f5e9;border-radius:8px;padding:16px;text-align:center;margin-top:20px;\&quot;&gt;&quot;
+                + &quot;&lt;p style=\&quot;margin:0;color:#2e7d32;font-size:13px;\&quot;&gt;Estado del pago&lt;/p&gt;&quot;
+                + &quot;&lt;p style=\&quot;margin:4px 0 0;color:#1b5e20;font-size:18px;font-weight:bold;\&quot;&gt;REGISTRADO&lt;/p&gt;&quot;
+                + &quot;&lt;/div&gt;&quot;
+                + &quot;&lt;/div&gt;&quot;
+                + &quot;&lt;div style=\&quot;background:#f5f5f5;padding:16px;text-align:center;font-size:11px;color:#999;\&quot;&gt;&quot;
+<span class="nc" id="L156">                + &quot;Sistema de Gestion Bibliotecaria &amp;copy; &quot; + java.time.Year.now().getValue()</span>
+                + &quot;&lt;/div&gt;&quot;
+                + &quot;&lt;/div&gt;&quot;;
+
+<span class="nc" id="L160">        crearYEnviar(usuarioId, null, idDelTipo(TIPO_COMPROBANTE_PAGO), html, asunto);</span>
+<span class="nc" id="L161">    }</span>
+
+    private void crearYEnviar(Long usuarioId, Long prestamoId, Integer tipoNotificacionId, String mensaje, String asunto) {
+<span class="fc" id="L164">        Usuario usuario = usuarioRepo.findById(usuarioId)</span>
+<span class="pc" id="L165">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));</span>
+
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">        String cuerpoHtml = mensaje.startsWith(&quot;&lt;&quot;) ? mensaje : &quot;&lt;p&gt;&quot; + mensaje + &quot;&lt;/p&gt;&quot;;</span>
+<span class="fc" id="L168">        boolean enviado = emailService.enviarCorreo(usuario.getCorreo(), asunto, cuerpoHtml);</span>
+
+<span class="fc" id="L170">        Notificacion notificacion = new Notificacion();</span>
+<span class="fc" id="L171">        notificacion.setUsuarioId(usuarioId);</span>
+<span class="fc" id="L172">        notificacion.setPrestamoId(prestamoId);</span>
+<span class="fc" id="L173">        notificacion.setTipoNotificacionId(tipoNotificacionId);</span>
+<span class="fc" id="L174">        notificacion.setMensaje(mensaje);</span>
+<span class="fc" id="L175">        notificacion.setEnviadoOk(enviado);</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">        notificacion.setErrorEnvio(enviado ? null : &quot;Fallo al enviar el correo (ver logs de EmailService)&quot;);</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">        notificacion.setFechaEnvio(enviado ? OffsetDateTime.now() : null);</span>
+<span class="fc" id="L178">        notificacion.setCreadoEn(OffsetDateTime.now());</span>
+<span class="fc" id="L179">        notificacionRepo.save(notificacion);</span>
+<span class="fc" id="L180">    }</span>
+
+    private String tituloDelLibro(Long libroId) {
+<span class="fc" id="L183">        return libroRepo.findById(libroId).map(Libro::getTitulo).orElse(&quot;(libro no encontrado)&quot;);</span>
+    }
+
+    private Integer idDelTipo(String nombre) {
+<span class="fc" id="L187">        return tipoNotificacionRepo.findByNombre(nombre)</span>
+<span class="fc" id="L188">                .map(TipoNotificacion::getId)</span>
+<span class="pc" id="L189">                .orElseThrow(() -&gt; new IllegalStateException(TIPO_NO_ENCONTRADO + nombre + &quot;'&quot;));</span>
+    }
+
+    private void validarAccesoUsuario(Long usuarioIdSolicitado, Authentication authentication) {
+<span class="fc" id="L193">        boolean esLector = authentication.getAuthorities().stream()</span>
+<span class="fc" id="L194">                .map(GrantedAuthority::getAuthority)</span>
+<span class="fc" id="L195">                .anyMatch(rol -&gt; rol.equals(&quot;ROLE_&quot; + ROL_LECTOR));</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">        if (!esLector) {</span>
+<span class="fc" id="L197">            return;</span>
+        }
+<span class="fc" id="L199">        Long idPropio = usuarioRepo.findByCorreo(authentication.getName())</span>
+<span class="pc" id="L200">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + authentication.getName()))</span>
+<span class="fc" id="L201">                .getId();</span>
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">        if (!idPropio.equals(usuarioIdSolicitado)) {</span>
+<span class="fc" id="L203">            throw new AuthorizationDeniedException(&quot;Un LECTOR solo puede consultar sus propias notificaciones.&quot;);</span>
+        }
+<span class="nc" id="L205">    }</span>
+
+    private NotificacionResponseDTO toDTO(Notificacion n) {
+<span class="nc" id="L208">        return new NotificacionResponseDTO(</span>
+<span class="nc" id="L209">                n.getId(), n.getPrestamoId(), n.getTipoNotificacionId(),</span>
+<span class="nc" id="L210">                n.getMensaje(), n.getFechaEnvio(), n.isEnviadoOk(), n.getCreadoEn());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

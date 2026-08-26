@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EvidenciaDanoController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.controller</a> &gt; <span class="el_source">EvidenciaDanoController.java</span></div><h1>EvidenciaDanoController.java</h1><pre class="source lang-java linenums">package com.uteq.backend.controller;
+
+import com.uteq.backend.dto.EvidenciaDanoResponseDTO;
+import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.service.DevolucionService;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+
+@RestController
+@RequestMapping(&quot;/api/v1/devoluciones&quot;)
+public class EvidenciaDanoController {
+
+    private final DevolucionService devolucionService;
+    private final UsuarioRepository usuarioRepo;
+
+    public EvidenciaDanoController(DevolucionService devolucionService,
+<span class="fc" id="L25">                                    UsuarioRepository usuarioRepo) {</span>
+<span class="fc" id="L26">        this.devolucionService = devolucionService;</span>
+<span class="fc" id="L27">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L28">    }</span>
+
+    @PostMapping(value = &quot;/evidencia/{registroDanoId}&quot;, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize(&quot;hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;EvidenciaDanoResponseDTO&gt; subirEvidencia(
+            @PathVariable Long registroDanoId,
+            @RequestParam(&quot;archivo&quot;) MultipartFile archivo,
+            Authentication authentication) {
+<span class="nc" id="L36">        Long bibliotecarioId = resolverIdPorCorreo(authentication.getName());</span>
+<span class="nc" id="L37">        return ResponseEntity.ok(devolucionService.subirEvidencia(registroDanoId, archivo, bibliotecarioId));</span>
+    }
+
+    @GetMapping(&quot;/evidencia/{registroDanoId}&quot;)
+    @PreAuthorize(&quot;hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;List&lt;EvidenciaDanoResponseDTO&gt;&gt; listarEvidencias(
+            @PathVariable Long registroDanoId) {
+<span class="nc" id="L44">        return ResponseEntity.ok(devolucionService.listarEvidencias(registroDanoId));</span>
+    }
+
+    @GetMapping(&quot;/evidencia/{id}/archivo&quot;)
+    @PreAuthorize(&quot;hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;byte[]&gt; obtenerArchivo(@PathVariable Long id) {
+<span class="nc" id="L50">        var evidencia = devolucionService.obtenerArchivoBinario(id);</span>
+<span class="nc" id="L51">        return ResponseEntity.ok()</span>
+<span class="nc" id="L52">                .contentType(MediaType.parseMediaType(evidencia.archivoTipo()))</span>
+<span class="nc" id="L53">                .body(evidencia.archivoBytes());</span>
+    }
+
+    private Long resolverIdPorCorreo(String correo) {
+<span class="nc" id="L57">        Usuario usuario = usuarioRepo.findByCorreo(correo)</span>
+<span class="nc" id="L58">                .orElseThrow(() -&gt; new EntityNotFoundException(&quot;Usuario no encontrado: &quot; + correo));</span>
+<span class="nc" id="L59">        return usuario.getId();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

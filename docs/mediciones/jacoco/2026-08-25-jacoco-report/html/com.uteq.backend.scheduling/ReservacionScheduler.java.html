@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReservacionScheduler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.scheduling</a> &gt; <span class="el_source">ReservacionScheduler.java</span></div><h1>ReservacionScheduler.java</h1><pre class="source lang-java linenums">package com.uteq.backend.scheduling;
+
+import com.uteq.backend.entity.EstadoReservacion;
+import com.uteq.backend.entity.Reservacion;
+import com.uteq.backend.repository.EstadoReservacionRepository;
+import com.uteq.backend.repository.ReservacionProcedureRepository;
+import com.uteq.backend.repository.ReservacionRepository;
+import com.uteq.backend.service.NotificacionService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+
+/**
+ * Job periódico que expira en lote las reservaciones vencidas no
+ * retiradas, invocando sp_expirar_reservaciones_vencidas (ver
+ * docs/basedatos/CATALOGO-SP.md #6). No hay endpoint manual de
+ * expiración a propósito -- ver Javadoc de ReservacionService.
+ * &lt;p&gt;
+ * Módulo 2 (notificaciones): {@code sp_expirar_reservaciones_vencidas}
+ * solo devuelve un conteo de filas actualizadas, no CUÁLES -- no alcanza
+ * para notificar individualmente después del UPDATE. Por eso este
+ * scheduler consulta primero, con el mismo filtro exacto que usa la
+ * función (ver {@code ReservacionRepository
+ * #findByEstadoReservacionIdInAndFechaLimiteRetiroBefore}), notifica cada
+ * una, y solo entonces invoca la función para el UPDATE masivo real. Se
+ * acepta como riesgo menor (no resuelto acá) que, en la ventana entre la
+ * consulta y el UPDATE, otro proceso pudiera alterar alguna fila -- este
+ * proyecto corre una sola instancia del scheduler, así que en la práctica
+ * no ocurre.
+ */
+@Component
+public class ReservacionScheduler {
+
+<span class="fc" id="L38">    private static final Logger log = LoggerFactory.getLogger(ReservacionScheduler.class);</span>
+<span class="fc" id="L39">    private static final List&lt;String&gt; ESTADOS_RESERVA_POR_EXPIRAR = List.of(&quot;PENDIENTE&quot;, &quot;LISTA_PARA_RETIRO&quot;);</span>
+
+    private final ReservacionProcedureRepository reservacionProcedureRepository;
+    private final ReservacionRepository reservacionRepository;
+    private final EstadoReservacionRepository estadoReservacionRepository;
+    private final NotificacionService notificacionService;
+
+    public ReservacionScheduler(ReservacionProcedureRepository reservacionProcedureRepository,
+                                ReservacionRepository reservacionRepository,
+                                EstadoReservacionRepository estadoReservacionRepository,
+<span class="fc" id="L49">                                NotificacionService notificacionService) {</span>
+<span class="fc" id="L50">        this.reservacionProcedureRepository = reservacionProcedureRepository;</span>
+<span class="fc" id="L51">        this.reservacionRepository = reservacionRepository;</span>
+<span class="fc" id="L52">        this.estadoReservacionRepository = estadoReservacionRepository;</span>
+<span class="fc" id="L53">        this.notificacionService = notificacionService;</span>
+<span class="fc" id="L54">    }</span>
+
+    // Cada 15 minutos -- valor que podra ser modificado mas adelante si es necesario
+    @Scheduled(fixedRate = 15 * 60 * 1000)
+    public void expirarReservacionesVencidas() {
+<span class="fc" id="L59">        notificarLasQueVanAExpirar();</span>
+
+<span class="fc" id="L61">        Integer filasActualizadas = reservacionProcedureRepository.spExpirarReservacionesVencidas();</span>
+<span class="fc" id="L62">        log.info(&quot;Job de expiración de reservaciones: {} filas actualizadas&quot;, filasActualizadas);</span>
+<span class="fc" id="L63">    }</span>
+
+    private void notificarLasQueVanAExpirar() {
+<span class="fc" id="L66">        List&lt;Integer&gt; estadoIds = ESTADOS_RESERVA_POR_EXPIRAR.stream()</span>
+<span class="fc" id="L67">                .map(this::idDelEstado)</span>
+<span class="fc" id="L68">                .toList();</span>
+
+<span class="fc" id="L70">        List&lt;Reservacion&gt; porExpirar = reservacionRepository</span>
+<span class="fc" id="L71">                .findByEstadoReservacionIdInAndFechaLimiteRetiroBefore(estadoIds, OffsetDateTime.now());</span>
+
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        for (Reservacion reservacion : porExpirar) {</span>
+<span class="fc" id="L74">            notificacionService.notificarReservaCaducada(reservacion);</span>
+<span class="fc" id="L75">        }</span>
+<span class="fc" id="L76">    }</span>
+
+    private Integer idDelEstado(String nombre) {
+<span class="fc" id="L79">        return estadoReservacionRepository.findByNombre(nombre)</span>
+<span class="fc" id="L80">                .map(EstadoReservacion::getId)</span>
+<span class="fc" id="L81">                .orElseThrow(() -&gt; new IllegalStateException(&quot;Catalogo estados_reservacion sin fila '&quot; + nombre + &quot;'&quot;));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

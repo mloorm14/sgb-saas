@@ -163,6 +163,27 @@
 			<artifactId>h2</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- Testcontainers PostgreSQL: SOLO para los tests de integracion que
+		     requieren Postgres real (PL/pgSQL stored procedures). El resto de la
+		     suite usa H2 en memoria. No usar @AutoConfigureTestDatabase en estas
+		     clases; Testcontainers gestiona el datasource via @ServiceConnection. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-testcontainers</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<version>1.20.5</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>1.20.5</version>
+			<scope>test</scope>
+		</dependency>
 		<!-- @WithMockUser / SecurityMockMvcRequestPostProcessors: necesario
 		     para testear @PreAuthorize a nivel de controller sin tener que
 		     generar un JWT real (ver LibroControllerSecurityTest). Version
