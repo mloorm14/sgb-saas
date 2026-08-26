@@ -770,7 +770,7 @@ export class LibrosComponent implements OnInit, OnDestroy {
       isbn: raw.isbn,
       anioPublicacion: raw.anioPublicacion,
       numeroPaginas: raw.numeroPaginas ? Number(raw.numeroPaginas) : null,
-      precioBase: raw.precioBase !== '' && raw.precioBase != null ? Number(raw.precioBase) : null,
+      precioBase: (raw.precioBase as unknown) !== '' && raw.precioBase != null ? Number(raw.precioBase) : null,
       resumen: raw.resumen,
       ubicacionFisica: raw.ubicacionFisica,
       portadaUrl: raw.portadaUrl,
