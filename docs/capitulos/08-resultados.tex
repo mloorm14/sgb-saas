@@ -314,6 +314,26 @@ previo; la medición final (\texttt{825ad34}, 61,50\,\%) incorpora la
 cobertura real de los 9 tests de integración habilitados por Testcontainers
 y del test de cookie SameSite corregido.
 
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrrc}
+\toprule
+Capa & Líneas cubiertas/total & Porcentaje & $\geq$65\,\%? \\
+\midrule
+Controller & 194/311 & 62,38\,\% & No \\
+Service & 1086/1740 & 62,41\,\% & No \\
+Domain/Entity & --- & Excluido & N/A \\
+\bottomrule
+\end{tabular}
+\caption{Cobertura JaCoCo por capa arquitectónica (commit 825ad34)}
+\label{tab:res-jacoco-capas}
+\end{table}
+
+\textbf{Interpretación por capa.} Ni \texttt{Controller} (62,38\,\%) ni \texttt{Service} (62,41\,\%) alcanzan individualmente el umbral del 65\,\% exigido por el criterio P1 de la guía para clasificar la cobertura como ``Satisfactorio'' (requiere al menos 2 de 3 capas $\geq$65\,\%). Por tanto, la clasificación de cobertura por capa cae en la categoría ``En desarrollo'' (50--65\,\%), consistente con la cifra global de 61,50\,\% reportada en la tabla anterior.
+
+La capa \texttt{Domain/Entity} (\texttt{com.uteq.backend.entity}) está deliberadamente excluida de la medición JaCoCo, tal como se declara en \texttt{backend-springboot/pom.xml} mediante las exclusiones: \texttt{com/uteq/backend/entity/**} (entidades JPA con getters/setters generados por Lombok, sin lógica de negocio propia), \texttt{com/uteq/backend/dto/**} (DTOs de transporte, solo estructura de datos), \texttt{com/uteq/backend/config/**} (configuración de beans/framework, probada indirectamente por tests de integración), y \texttt{com/uteq/backend/BackendApplication.class} (punto de entrada, sin lógica testable aislada). Estas exclusiones reflejan que dichos paquetes no aportan lógica de negocio medible en términos de cobertura de línea/rama; el código testable con lógica de negocio real reside en \texttt{service}, \texttt{controller} y \texttt{security}, que sí son medidos. El equipo identifica el aumento de cobertura en \texttt{controller} y \texttt{service} (ambas a menos de 3 puntos porcentuales del 65\,\%) como trabajo prioritario antes de la defensa final, manteniendo la exclusión de entidades/DTOs/config como decisión de diseño documentada y razonada.
+
 \section{Bloque 4 -- Calidad web (Lighthouse)}
 \label{sec:res-lighthouse}
 
