@@ -120,14 +120,24 @@ public class LibroService {
     }
 
     @Transactional(readOnly = true)
-    public Page<LibroResponseDTO> listarPendientes(String q, Integer anioPublicacion, Pageable pageable) {
-        Optional<EstadoLibro> pendienteOpt = estadoRepo.findByNombre(ESTADO_PENDIENTE);
-        if (pendienteOpt.isEmpty()) {
+    public Page<LibroResponseDTO> listarPendientes(String q, Integer anioPublicacion, List<Integer> estadoIds, Pageable pageable) {
+        List<Integer> estados = resolverEstadosPendientes(estadoIds);
+        if (estados.isEmpty()) {
             return Page.empty(pageable);
         }
-        Integer pendienteId = pendienteOpt.get().getId();
         Short anioShort = anioPublicacion != null ? anioPublicacion.shortValue() : null;
-        return libroRepo.buscarPendientes(q, anioShort, pendienteId, pageable).map(this::toDTO);
+        return libroRepo.buscarPorEstados(estados, q, anioShort, pageable).map(this::toDTO);
+    }
+
+    private List<Integer> resolverEstadosPendientes(List<Integer> estadoIds) {
+        if (estadoIds != null && !estadoIds.isEmpty()) {
+            return estadoIds;
+        }
+        List<String> nombresPorDefecto = List.of("DADO_DE_BAJA", "PENDIENTE", "EN_REPARACION", "PERDIDO");
+        return nombresPorDefecto.stream()
+                .map(n -> estadoRepo.findByNombre(n).map(EstadoLibro::getId).orElse(null))
+                .filter(id -> id != null)
+                .toList();
     }
 
     // Módulo 9.1: filtros de catálogo por categoría/autor

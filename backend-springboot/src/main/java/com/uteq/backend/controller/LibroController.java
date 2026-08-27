@@ -64,14 +64,16 @@ public class LibroController {
     }
 
     // ── GET /api/v1/libros/pendientes ────────────────
-    // Listado de libros pendientes de revisión (GERENTE/ADMIN crean como PENDIENTE)
+    // Listado de libros en estados de gestión: DADO_DE_BAJA, PENDIENTE, EN_REPARACION, PERDIDO
+    // Si no se envía estadoIds, usa los 4 por defecto.
     @GetMapping("/pendientes")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<Page<LibroResponseDTO>> pendientes(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) Integer anioPublicacion,
+            @RequestParam(required = false) List<Integer> estadoIds,
             @PageableDefault(size = 10) @SortDefault(sort = "fechaRegistro", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(libroService.listarPendientes(q, anioPublicacion, pageable));
+        return ResponseEntity.ok(libroService.listarPendientes(q, anioPublicacion, estadoIds, pageable));
     }
 
     // ── GET /api/v1/libros/lookup-isbn?isbn= ─────────────
