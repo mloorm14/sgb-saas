@@ -12,7 +12,7 @@
     </div>
 
     <!-- Botón Contraer/Expandir - debajo del logo -->
-    <div class="border-b border-outline-variant px-sm py-xs flex" [class.justify-center]="isCollapsed()" [class.justify-start]="!isCollapsed()">
+    <div class="border-b border-outline-variant mx-sm flex" [class.justify-center]="isCollapsed()" [class.justify-start]="!isCollapsed()">
       <button (click)="toggleSidebar(); $event.stopPropagation()"
         [attr.aria-label]="isCollapsed() ? 'Expandir menú' : 'Contraer menú'"
         [attr.title]="isCollapsed() ? 'Expandir menú' : 'Contraer menú'"
