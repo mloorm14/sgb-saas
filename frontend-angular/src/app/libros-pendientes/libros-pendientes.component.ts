@@ -23,8 +23,11 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
 
   q: string = '';
   anioFiltro: string = '';
-  estadoFiltro: number | null = null;
+  estadosFiltro: number[] = [];
   estados: EstadoLibro[] = [];
+
+  // Los 4 estados que se muestran por defecto en "Pendientes"
+  readonly estadosPendientesPorDefecto = ['DADO_DE_BAJA', 'PENDIENTE', 'EN_REPARACION', 'PERDIDO'];
 
   private filtro$ = new Subject<void>();
   private destroy$ = new Subject<void>();
@@ -52,6 +55,47 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
     private estadoService: EstadoLibroService,
     private router: Router
   ) {}
+
+  mostrarEstados = false;
+
+  get estadosSeleccionadosTexto(): string {
+    if (this.estadosFiltro.length === 0) return '4 estados por defecto';
+    const nombres = this.estadosFiltro.map(id => {
+      const e = this.estados.find(est => est.id === id);
+      return e ? this.formatarEstado(e.nombre) : '';
+    }).filter(n => n).join(', ');
+    return nombres || 'Sin selección';
+  }
+
+  esEstadoPendiente(nombre: string): boolean {
+    return this.estadosPendientesPorDefecto.includes(nombre);
+  }
+
+  limpiarEstados(): void {
+    this.estadosFiltro = [];
+    this.mostrarEstados = false;
+    this.onFiltroChange();
+  }
+
+  // Check si un estado está seleccionado (para el multiselect)
+  isEstadoSeleccionado(estadoId: number): boolean {
+    return this.estadosFiltro.includes(estadoId);
+  }
+
+  toggleEstado(estadoId: number): void {
+    const idx = this.estadosFiltro.indexOf(estadoId);
+    if (idx >= 0) {
+      this.estadosFiltro.splice(idx, 1);
+    } else {
+      this.estadosFiltro.push(estadoId);
+    }
+    this.onFiltroChange();
+  }
+
+  // Si no hay selección, se usan los 4 por defecto en el backend
+  get estadosParaEnviar(): number[] | undefined {
+    return this.estadosFiltro.length > 0 ? this.estadosFiltro : undefined;
+  }
 
   ngOnInit(): void {
     this.estadoService.listar().subscribe({
@@ -85,15 +129,12 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
     this.libroService.listarPendientes({
       q: this.q.trim() || undefined,
       anioPublicacion: anioNum,
+      estadoIds: this.estadosParaEnviar,
       page: this.currentPage,
       size: this.pageSize
     }).subscribe({
       next: (data) => {
-        let content = data.content;
-        if (this.estadoFiltro !== null) {
-          content = content.filter(l => l.estadoId === this.estadoFiltro);
-        }
-        this.libros = content;
+        this.libros = data.content;
         this.totalPages = data.totalPages;
         this.cargando = false;
       },
