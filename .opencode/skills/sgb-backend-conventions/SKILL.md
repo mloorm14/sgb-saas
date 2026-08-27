@@ -81,6 +81,42 @@ a un service que ya audita `pagar()`), confirmá que AMBOS terminen
 llamando a auditoría de forma simétrica — es un bug común en este
 proyecto que un método hermano quede sin instrumentar.
 
+## Patrón de excepciones
+
+Todas las excepciones custom viven en `service/` (no en un paquete
+`exception/` separado). Todas extienden `RuntimeException`. El
+`GlobalExceptionHandler` (`exception/GlobalExceptionHandler.java`) las
+captura y las mapea a `ProblemDetail` (RFC 7807).
+
+| Excepción | HTTP Status | Cuándo usarla |
+|-----------|-------------|---------------|
+| `NotFoundException` | 404 | Entidad no encontrada por ID |
+| `BadRequestException` | 400 | Validación de negocio fallida |
+| `ConflictException` | 409 | Dato duplicado (ISBN ya existe, correo ya registrado) |
+| `LoginRateLimitExcedidoException` | 429 | Demasiados intentos de login |
+| `ChatbotRateLimitExcedidoException` | 429 | Demasiadas llamadas al chatbot |
+| `CorreoDominioNoPermitidoException` | 400 | Dominio de email no permitido |
+| `CodigoVerificacionInvalidoException` | 400 | Código de verificación incorrecto |
+| `RefreshTokenInvalidoException` | 401 | Refresh token inválido o expirado |
+| `LimitePrestamosExcedidoException` | 403 | Usuario superó el límite de préstamos |
+| `LimiteRenovacionesExcedidoException` | 403 | Préstamo ya renovado el máximo de veces |
+| `MaterialReservadoException` | 403 | Material tiene reservación activa |
+| `PrestamoVencidoException` | 403 | Préstamo vencido, no se puede renovar |
+| `ServicioTemporalmenteNoDisponibleException` | 503 | Servicio caído (Gemini, SMTP) |
+
+**Regla:** Si creás un service nuevo que lanza excepciones, verificá si
+ya existe una excepción similar en `service/` antes de crear una nueva.
+No dupliques excepciones con nombres distintos para el mismo caso.
+
+## Cómo elegir el tipo de test
+
+| Tipo de test | Anotación | Cuándo usar |
+|---|---|---|
+| Service unitario | `@ExtendWith(MockitoExtension.class)` | Lógica de negocio pura, mock de repositorios |
+| Controller HTTP | `@WebMvcTest(XxxController.class)` | Endpoints HTTP, validación de request/response |
+| Integración completa | `@SpringBootTest` | Cuando necesitás el contexto de Spring completo (múltiples services, BD real) |
+| Integración + PL/pgSQL | `@SpringBootTest` + `@Testcontainers` | Stored procedures que no funcionan con H2 |
+
 ## Catálogos de referencia (Editorial, Idioma, Estado*)
 
 Antes de agregar un `<select>` en el frontend para un campo que en

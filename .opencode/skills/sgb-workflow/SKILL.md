@@ -86,7 +86,27 @@ archivo que estás tocando (`--include='**/archivo.spec.ts'` en frontend,
 al final, y reportá el TOTAL exacto en el resumen — nunca un número
 aproximado.
 
-## 9. Al terminar cualquier tarea
+## 9. Comandos del Makefile
+
+El proyecto tiene un Makefile en la raíz con comandos commonly used:
+
+```bash
+make test-backend   # ./mvnw -B clean verify (unit + integration tests)
+make test-frontend  # npx ng test --watch=false --browsers=ChromeHeadless
+make test           # ambos (backend + frontend)
+make up             # docker compose up con healthcheck wait
+make down           # docker compose down (preserva volúmenes)
+make clean          # docker down -v + remove build artifacts
+make bench          # k6 load tests
+make audit          # SQL injection + OWASP audits
+```
+
+Para iterar rápido mientras desarrollás, NO uses `make test` (corre
+todo). Usá los comandos directos:
+- Backend: `cd backend-springboot && ./mvnw test -Dtest=MiClaseTest`
+- Frontend: `cd frontend-angular && npx ng test --include='**/mi.component.spec.ts' --watch=false`
+
+## 10. Al terminar cualquier tarea
 
 Cerrá con un resumen que incluya: archivos creados/editados (backend y
 frontend por separado si tocaste ambos), decisiones tomadas que no

@@ -129,6 +129,33 @@ git add <archivo>
 git rebase --continue
 ```
 
+## Problema 9: Quiero traer un commit específico de otra rama
+
+```bash
+# Cherry-pick: traer un solo commit a mi rama
+git cherry-pick <commit-hash>
+
+# Si hay conflictos durante cherry-pick
+git add <archivo>
+git cherry-pick --continue
+```
+
+**Uso real:** Cuando tu compañeropusheó un fix a `demo/interfaces-completas`
+y necesitás ese fix en tu rama sin merge.
+
+## Problema 10: Rebase con conflictos múltiples
+
+```bash
+# Si el rebase tiene muchos conflictos y querés abortar
+git rebase --abort
+
+# Alternativa: merge en vez de rebase (más simple para principiantes)
+git merge demo/interfaces-completas
+# Resolver conflictos manualmente
+git add .
+git commit -m "merge: integrar cambios de demo"
+```
+
 ## Ramas protegidas
 
 | Rama | Regla |

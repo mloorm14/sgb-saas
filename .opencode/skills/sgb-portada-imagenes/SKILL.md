@@ -39,6 +39,39 @@ ALTER TABLE configuracion_sistema ADD COLUMN max_tamano_portada_mb INT DEFAULT 2
 
 `image/png`, `image/jpeg`, `image/webp`, `image/avif`
 
+### Detección de Content-Type al servir
+
+El controller de portada detecta el tipo MIME desde los bytes reales
+de la imagen (no confía en el nombre de archivo):
+
+```java
+@GetMapping("/{id}/portada")
+public ResponseEntity<byte[]> obtenerPortada(@PathVariable Long id) {
+    byte[] imagen = libroService.obtenerPortada(id);
+    String contentType = detectarContentType(imagen);
+    return ResponseEntity.ok()
+        .contentType(MediaType.parseMediaType(contentType))
+        .body(imagen);
+}
+
+private String detectarContentType(byte[] bytes) {
+    if (bytes.length < 4) return "application/octet-stream";
+    // PNG: 89 50 4E 47
+    if (bytes[0] == (byte) 0x89 && bytes[1] == 0x50) return "image/png";
+    // JPEG: FF D8 FF
+    if (bytes[0] == (byte) 0xFF && bytes[1] == (byte) 0xD8) return "image/jpeg";
+    // WebP: RIFF....WEBP
+    if (bytes[0] == 0x52 && bytes[8] == 0x57) return "image/webp";
+    // AVIF: ....ftypavif
+    if (bytes.length > 12 && new String(bytes, 8, 4).equals("ftypavif")) return "image/avif";
+    return "application/octet-stream";
+}
+```
+
+**REGLA:** NUNCA confiés en `archivo.getContentType()` del
+`MultipartFile` para guardar el tipo — el browser puede mandar
+`application/octet-stream`. Detectar desde los bytes.
+
 ### Límite de tamaño
 
 Configurable via tabla `configuracion_sistema` con key `max_tamano_portada_mb` (default: 2 MB).

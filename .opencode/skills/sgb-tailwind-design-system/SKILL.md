@@ -53,8 +53,13 @@ Cada color principal tiene un token `on-*` para el color del texto encima:
 
 | Familia | Uso | Tailwind class |
 |---------|-----|----------------|
-| Plus Jakarta Sans | Headlines, títulos | `font-headline` |
-| Inter | Body text, labels, forms | `font-body` |
+| Plus Jakarta Sans | Headlines (xl, lg, lg-mobile, md) | `font-headline-xl`, `font-headline-lg`, `font-headline-md` |
+| Inter | Body (lg, md, sm) + Labels (lg, md, sm) | `font-body-lg`, `font-body-md`, `font-body-sm`, `font-label-lg`, `font-label-md`, `font-label-sm` |
+
+**REGLA:** No existe `font-headline` ni `font-body` genérico. Siempre
+usar el token con tamaño: `font-headline-lg` (no `font-headline`),
+`font-body-md` (no `font-body`). Las fuentes están auto-hospedadas en
+`src/assets/fonts/` (CSP-compliant).
 
 ### Tamaños de fuente
 
@@ -143,4 +148,25 @@ El plugin `@tailwindcss/container-queries` está habilitado. Para usar:
     <!-- Layout responsive por container, no por viewport -->
   </div>
 </div>
+```
+
+## Cómo agregar un token nuevo
+
+Si necesitás un color, fuente o spacing que no existe:
+
+1. Abrir `tailwind.config.js`
+2. Agregar el token en la sección correspondiente (`theme.extend.colors`,
+   `theme.extend.fontFamily`, etc.)
+3. Usar SOLO el token nuevo, nunca el valor raw
+
+```javascript
+// Ejemplo: agregar un color de acento
+theme: {
+  extend: {
+    colors: {
+      'accent': '#ff6b35',  // NUEVO token
+    }
+  }
+}
+// Uso: class="bg-accent text-on-surface" (NO class="bg-[#ff6b35]")
 ```

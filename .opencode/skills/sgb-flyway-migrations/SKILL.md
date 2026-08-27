@@ -40,6 +40,45 @@ V{N}__{descripcion_en_snake_case}.sql
 - NUNCA modificar una migración que ya fue aplicada (ya está en la BD)
 - Si necesitás corregir algo de una migración anterior, crear una nueva migración
 
+## Configuración de Flyway
+
+En `application.yml`:
+```yaml
+spring:
+  flyway:
+    baseline-version: 14
+    baseline-on-migrate: true
+```
+
+Esto significa que Flyway ya considera aplicadas las migraciones V1-V14
+(existentes en `conf-producción`). Si estás creando una migración nueva,
+el siguiente número válido es **V27** (V24, V25, V26 ya están tomados en
+`demo/interfaces-completas`).
+
+## Migraciones vs Repeatable
+
+| Tipo | Prefijo | Cuándo usar |
+|------|---------|-------------|
+| Versioned | `V{N}__` | Cambios de schema (ALTER, CREATE TABLE, etc.) |
+| Repeatable | `R__` | Stored procedures, vistas, funciones que pueden re-ejecutarse |
+
+Los `R__` se re-ejecutan automáticamente si su contenido cambia. Usarlos
+para `R__stored_procedures.sql` que contiene todos los SPs del proyecto.
+
+## Bug conocido: duplicado de versión V24
+
+En `conf-producción` existía `V24__add_precio_to_tipos_dano.sql` y en
+`demo/interfaces-completas` se creó otro `V24__libro_ajustes_biblioteca.sql`.
+Flyway falla con "Validate failed: Migrations have failed validation"
+cuando hay duplicados. **Solución:** al crear una migración, SIEMPRE
+verificar que el número no existe en NINGUNA rama:
+
+```bash
+# Verificar en todas las ramas
+git ls-tree -r --name-only HEAD database/migrations/ | sort -V
+git ls-tree -r --name-only origin/conf-produccion database/migrations/ | sort -V
+```
+
 ## Migraciones existentes
 
 | Versión | Archivo | Propósito |
@@ -48,6 +87,12 @@ V{N}__{descripcion_en_snake_case}.sql
 | V2 | seed_roles | Roles: LECTOR, BIBLIOTECARIO, GERENTE, ADMIN |
 | V3-V12 | (varias) | Funcionalidades incrementales |
 | V13 | portada_imagen | Columnas BYTEA para portadas de libros |
+| V14 | seed_configuracion | Datos iniciales de configuración_sistema |
+| V15-V23 | (varias) | Funcionalidades incrementales |
+| V24 | add_precio_to_tipos_dano | Precio en tipos de daño (conf-producción) |
+| V25 | categoria_y_tipo_costo_dano | Categoría y tipo de costo en daños |
+| V26 | precio_base_nullable_para_bibliotecario | Precio base nullable para bibliotecario |
+| V27 | libro_ajustes_biblioteca | Ajustes de biblioteca (campos libro) |
 
 ## Patrón de una migración típica
 

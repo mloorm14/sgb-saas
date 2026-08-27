@@ -105,7 +105,10 @@ public class MiNuevoCliente {
     private final RestClient restClient;
 
     public MiNuevoCliente(RestClient.Builder builder) {
-        this.restClient = builder.baseUrl("https://api.externa.com").build();
+        this.restClient = builder
+            .baseUrl("https://api.externa.com")
+            .defaultHeader("Accept", "application/json")
+            .build();
     }
 
     public MiResponse consultar(String param) {
@@ -119,6 +122,21 @@ public class MiNuevoCliente {
         }
     }
 }
+```
+
+**Configuración de timeouts** (en `application.properties`):
+```properties
+# Para APIs externas, configurar timeouts en RestClient.Builder
+app.external-api.timeout-ms=10000
+```
+
+Si la API externa es lenta, usar `RestClient.Builder` con
+`requestFactory` configurado:
+```java
+SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+factory.setConnectTimeout(5000);
+factory.setReadTimeout(10000);
+restClient = builder.baseUrl(url).requestFactory(factory).build();
 ```
 
 ### Paso 2: Crear DTOs para la respuesta

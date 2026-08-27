@@ -47,6 +47,54 @@ Cada shell es un componente standalone con un `<nav>` sidebar y un `<router-outl
 - **Componente:** `dashboard-gerente.component.ts`
 - **Rol:** `GERENTE`
 - **NO es shell** — es una página standalone con KPI widgets
+- **No tiene sidebar ni router-outlet** — es una sola pantalla
+
+## Guards de autenticación
+
+El proyecto usa guards funcionales (Angular 15+) en `core/guards/`:
+
+```typescript
+// auth.guard.ts — verifica token válido y no expirado
+export const authGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+  if (authService.isLoggedIn()) {
+    if (authService.tokenExpirado()) {
+      authService.logout('/login');
+      return false;
+    }
+    return true;
+  }
+  router.navigate(['/login']);
+  return false;
+};
+
+// role.guard.ts — higher-order function que retorna CanActivateFn
+export function roleGuard(rolesPermitidos: string[]): CanActivateFn {
+  return () => {
+    const auth = inject(AuthService);
+    const router = inject(Router);
+    if (rolesPermitidos.some(r => auth.hasRole(r))) return true;
+    router.navigate(['/no-autorizado']);
+    return false;
+  };
+}
+```
+
+**Uso en rutas:** `{ canActivate: [authGuard, roleGuard(['BIBLIOTECARIO'])] }`
+
+## HomeComponent por shell
+
+Cada shell tiene su propio HomeComponent (no hay uno genérico):
+
+| Shell | HomeComponent |
+|-------|---------------|
+| Bibliotecario | `DashboardBibliotecarioHomeComponent` |
+| Gerente/Admin | `DashboardGerenteAdminHomeComponent` |
+| Lector | (ruta `''` apunta al catálogo directamente) |
+
+Al crear una ruta hija, el path `''` del shell debe apuntar al
+HomeComponent correspondiente.
 
 ## Cómo agregar una ruta hija a un shell
 

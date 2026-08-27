@@ -13,6 +13,32 @@ description: Convenciones de Angular, Tailwind, y UX ya establecidas en el front
   `template:` inline en el `.ts`, aunque sea corto.
 - Tailwind con los tokens de `tailwind.config.js` únicamente. Nunca un
   color hex, fuente o spacing suelto fuera de esos tokens.
+- Componentes nuevos SIEMPRE `standalone: true` (default en Angular 17+).
+
+## Rutas lazy-loaded
+
+Las rutas de dashboard usan lazy-loading via `loadComponent` para
+mejorar el tiempo de carga inicial:
+
+```typescript
+// En app.routes.ts
+{
+  path: 'dashboard-bibliotecario',
+  component: DashboardBibliotecarioComponent,
+  canActivate: [authGuard, roleGuard(['BIBLIOTECARIO'])],
+  children: [
+    { path: '', component: DashboardBibliotecarioHomeComponent },
+    {
+      path: 'libros',
+      loadComponent: () => import('./admin/libros/libros.component')
+        .then(m => m.LibrosComponent)
+    },
+  ]
+}
+```
+
+**Regla:** Si el componente es pesado (>500 líneas), usar
+`loadComponent`. Si es liviano, importarlo directamente.
 
 ## Manejo de errores en services
 

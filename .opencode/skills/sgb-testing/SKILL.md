@@ -88,24 +88,14 @@ Solo usar cuando se necesita PL/pgSQL stored procedures (no funcionan con H2):
 
 ```java
 @SpringBootTest
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class PrestamoMultaProcedureTest {
 
     @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16")
-            .withDatabaseName("sgb_test")
-            .withUsername("test")
-            .withPassword("test")
-            .withInitScript("schema-init.sql");
+    @ServiceConnection
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-    }
-
-    @Autowired private JdbcTemplate jdbcTemplate;
+    @Autowired JdbcTemplate jdbcTemplate;
 
     @Test
     void deberiaCalcularMultaPorDiasRetraso() {
@@ -113,6 +103,13 @@ class PrestamoMultaProcedureTest {
     }
 }
 ```
+
+**IMPORTANTE:** Siempre usar `@Testcontainers(disabledWithoutDocker = true)`
+para que los tests se skippeen graceful cuando Docker no está disponible.
+Sin esta flag, el test falla con `IllegalStateException: Could not find a
+valid Docker environment`. También usar `@ServiceConnection` en el
+`@Container` en vez de `@DynamicPropertySource` — es el patrón más
+moderno de Spring Boot 3.1+.
 
 ### Cobertura (JaCoCo)
 
@@ -236,3 +233,4 @@ make test           # ambos
 - Mockear solo lo necesario — no hagas mock de la base de datos H2 en tests de service.
 - Al reportar el TOTAL de tests al final de una tarea, reportá el número EXACTo, no aproximado.
 - Si un test flaky falla, documentalo pero no lo borres — reportalo al equipo.
+- SIEMPRE usar `disabledWithoutDocker = true` en `@Testcontainers` para que el test se skippee sin Docker.
