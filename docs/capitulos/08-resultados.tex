@@ -487,6 +487,26 @@ captura puntual, no como un defecto de aplicación reproducible, y no se
 le atribuye causalmente al fix de CLS (son métricas distintas). No se
 investiga más a fondo por alcance de esta entrega.
 
+% --- NUEVA TABLA: resumen móvil vs escritorio ---
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+Categoría & Escritorio (media $\pm$ DT) & Móvil (media $\pm$ DT) & Umbral \\
+\midrule
+Performance & 100,0 $\pm$ 0,0 & 86,3 $\pm$ 1,5 & $\geq$80 \\
+Accessibility & 100,0 $\pm$ 0,0 & 100,0 $\pm$ 0,0 & $\geq$90 \\
+Best Practices & 100,0 $\pm$ 0,0 & 100,0 $\pm$ 0,0 & $\geq$90 \\
+SEO & 100,0 $\pm$ 0,0 & 100,0 $\pm$ 0,0 & $\geq$90 \\
+\bottomrule
+\end{tabular}
+\caption{Resumen Lighthouse móvil vs escritorio: media $\pm$ DT sobre 3 corridas de producción por perfil (commit 825ad34). Umbrales: Performance $\geq$80, Accessibility $\geq$90, Best Practices $\geq$90, SEO $\geq$90.}
+\label{tab:res-lighthouse-perfiles}
+\end{table}
+
+Las 4 categorías cumplen su umbral en \textbf{ambos perfiles} (móvil y escritorio), en las 6 corridas individuales (3 por perfil). Escritorio alcanza 100,0 en todas las categorías (DT 0,0); móvil alcanza 100,0 en Accessibility, Best Practices y SEO, y 86,3 $\pm$ 1,5 en Performance (margen cómodo sobre 80). Se cumple con margen el requisito de la Guía: ``al menos tres corridas por perfil (mobile, desktop) con media y desviación típica por categoría'' (P4/B.10).
+
 \section{Bloque 5 -- Usabilidad (SUS)}
 \label{sec:res-usabilidad}
 

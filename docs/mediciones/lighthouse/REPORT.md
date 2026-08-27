@@ -664,3 +664,98 @@ de producción** (no solo en la media -- en cada corrida individual), y
 no solo en la verificación local. El defecto identificado y corregido
 en esta actualización queda cerrado con evidencia de producción, no
 solo con evidencia local.
+
+---
+
+## Actualización — 6 corridas oficiales (desktop + móvil) contra producción (2026-08-18)
+
+Esta sección registra las **6 corridas oficiales finales** ejecutadas el 2026-08-18 contra `https://biblora-sgb.onrender.com/` tras el redeploy confirmado del fix de CLS (commit `fced67d` → hash de bundle `main-KA6MN67F.js`). Cumplen explícitamente el requisito de la Guía: "al menos tres corridas por perfil (mobile, desktop) con media y desviación típica por categoría" (P4/B.10).
+
+### Cabecera de medición
+
+- **Fecha (ISO 8601 UTC)**: 2026-08-18T06:02Z – 2026-08-18T06:07Z (las 6 corridas oficiales, secuenciales, ~6 minutos en total)
+- **Commit**: `825ad34` (`demo/interfaces-completas`, HEAD al momento de esta medición)
+- **Docker**: Docker version 29.5.3, build d1c06ef
+- **Docker Compose**: Docker Compose version v5.1.4
+- **Java**: openjdk version "21.0.11" 2026-04-21 LTS (Temurin)
+- **Maven**: Apache Maven 3.9.12
+- **PostgreSQL** (contenedor `sgb_postgres`): 16.14
+- **Redis** (contenedor `sgb_redis`): 7.4.9
+- **Frontend probado**: `https://biblora-sgb.onrender.com/` (producción real, no `localhost`)
+- **Lighthouse**: v13.4.1 (`npx lighthouse`)
+- **Chrome/Chromium usado**: Microsoft Edge 151.0.0.0 en modo headless (`CHROME_PATH` apuntando a `msedge.exe`, no hay Chrome/Chromium nativo instalado en esta máquina)
+
+### Metodología / comandos ejecutados
+
+#### Perfil móvil (3 corridas)
+
+```bash
+export CHROME_PATH="C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+npx lighthouse https://biblora-sgb.onrender.com/ \
+  --output=json \
+  --output-path="docs/mediciones/lighthouse/lhci-mobile-prod-<TS>-run<N>.json" \
+  --chrome-flags="--headless=new --no-sandbox --disable-gpu --user-data-dir=<tmp-unico-por-corrida>" \
+  --form-factor=mobile --screenEmulation.mobile --throttling-method=simulate \
+  --only-categories=performance,accessibility,best-practices,seo \
+  --max-wait-for-load=60000
+```
+
+#### Perfil escritorio (3 corridas)
+
+```bash
+export CHROME_PATH="C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+npx lighthouse https://biblora-sgb.onrender.com/ \
+  --output=json \
+  --output-path="docs/mediciones/lighthouse/lhci-desktop-prod-<TS>-run<N>.json" \
+  --chrome-flags="--headless=new --no-sandbox --disable-gpu --user-data-dir=<tmp-unico-por-corrida>" \
+  --preset=desktop \
+  --only-categories=performance,accessibility,best-practices,seo \
+  --max-wait-for-load=60000
+```
+
+Cada corrida usó un `--user-data-dir` distinto. En las 6 corridas, el JSON ya se escribió a disco antes de cualquier fallo de limpieza de `chrome-launcher` (variación del bug conocido de Windows), confirmado `runtimeError: null` en las 6 y `finalDisplayedUrl: https://biblora-sgb.onrender.com/` en todas.
+
+Los 6 JSON crudos quedan versionados sin editar:
+- `lhci-mobile-prod-20260818-0602-run1.json`
+- `lhci-mobile-prod-20260818-0603-run2.json`
+- `lhci-mobile-prod-20260818-0604-run3.json`
+- `lhci-desktop-prod-20260818-0606-run1.json`
+- `lhci-desktop-prod-20260818-0606-run2.json`
+- `lhci-desktop-prod-20260818-0606-run3.json`
+
+### Resultados — Perfil escritorio (3 corridas, 2026-08-18)
+
+| Categoría | Run 1 | Run 2 | Run 3 | **Media** | **DT** | Umbral | Cumple |
+|---|---|---|---|---|---|---|---|
+| Performance | 100 | 100 | 100 | **100,0** | **0,0** | ≥80 | ✅ Sí (todas) |
+| Accessibility | 100 | 100 | 100 | **100,0** | **0,0** | ≥90 | ✅ Sí |
+| Best Practices | 100 | 100 | 100 | **100,0** | **0,0** | ≥90 | ✅ Sí |
+| SEO | 100 | 100 | 100 | **100,0** | **0,0** | ≥90 | ✅ Sí |
+
+`runtimeError`: `null` en las 3. `finalDisplayedUrl`: `https://biblora-sgb.onrender.com/`.
+
+### Resumen escritorio
+Todas las 4 categorías cumplen su umbral **en las 3 corridas individuales** (no solo en la media). DT = 0,0 en todas las categorías — estabilidad perfecta.
+
+### Resultados — Perfil móvil (3 corridas, 2026-08-18)
+
+| Categoría | Run 1 | Run 2 | Run 3 | **Media** | **DT** | Umbral | Cumple |
+|---|---|---|---|---|---|---|---|
+| Performance | 86 | 88 | 85 | **86,3** | **1,5** | ≥80 | ✅ Sí (todas) |
+| Accessibility | 100 | 100 | 100 | **100,0** | **0,0** | ≥90 | ✅ Sí |
+| Best Practices | 100 | 100 | 100 | **100,0** | **0,0** | ≥90 | ✅ Sí |
+| SEO | 100 | 100 | 100 | **100,0** | **0,0** | ≥90 | ✅ Sí |
+
+`runtimeError`: `null` en las 3. `finalDisplayedUrl`: `https://biblora-sgb.onrender.com/`.
+
+### Resumen móvil
+Todas las 4 categorías cumplen su umbral **en las 3 corridas individuales**. Performance móvil 86,3 ± 1,5 (margen cómodo sobre 80). Accessibility, Best Practices, SEO = 100 % con DT = 0.
+
+### Conclusión: cumplimiento total del requisito de la Guía
+
+| Perfil | Performance | Accessibility | Best Practices | SEO | Cumple ≥3 corridas |
+|---|---|---|---|---|---|
+| **Escritorio** | ✅ 100,0 (DT 0,0) | ✅ 100,0 | ✅ 100,0 | ✅ 100,0 | ✅ 3/3 |
+| **Móvil** | ✅ 86,3 (DT 1,5) | ✅ 100,0 | ✅ 100,0 | ✅ 100,0 | ✅ 3/3 |
+
+**Todas las 4 categorías cumplen su umbral en AMBOS perfiles (móvil y escritorio), en las 6 corridas individuales (3 por perfil).** Se cumple con margen el requisito de la Guía: "al menos tres corridas por perfil (mobile, desktop) con media y desviación típica por categoría" (P4/B.10). Las 6 corridas oficiales contra producción real (`https://biblora-sgb.onrender.com/`) demuestran cumplimiento robusto y estable.
