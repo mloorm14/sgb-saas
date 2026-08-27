@@ -38,6 +38,9 @@ describe('ConfiguracionSistemaComponent', () => {
       { clave: 'dias_prestamo_default', valor: '15' }
     ]);
 
+    const reqCategoriasDano = httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano');
+    reqCategoriasDano.flush([]);
+
     const reqDanos = httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano');
     reqDanos.flush([
       { id: 1, nombre: 'Páginas rotas', precio: 5.0 }
@@ -68,6 +71,9 @@ describe('ConfiguracionSistemaComponent', () => {
     const reqConfig = httpMock.expectOne('http://localhost:8080/api/v1/configuracion');
     reqConfig.flush('error', { status: 500, statusText: 'Server Error' });
 
+    const reqCategoriasDano = httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano');
+    reqCategoriasDano.flush([]);
+
     const reqDanos = httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano');
     reqDanos.flush([]);
 
@@ -81,6 +87,7 @@ describe('ConfiguracionSistemaComponent', () => {
 
     httpMock.expectOne('http://localhost:8080/api/v1/configuracion')
       .flush([{ clave: 'monto_multa_diaria', valor: '0.50' }]);
+    httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano').flush([]);
     httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
 
     component.iniciarEdicion(component.configuraciones[0]);
@@ -105,6 +112,7 @@ describe('ConfiguracionSistemaComponent', () => {
 
     httpMock.expectOne('http://localhost:8080/api/v1/configuracion')
       .flush([{ clave: 'monto_multa_diaria', valor: '0.50' }]);
+    httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano').flush([]);
     httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
 
     component.iniciarEdicion(component.configuraciones[0]);
@@ -121,6 +129,7 @@ describe('ConfiguracionSistemaComponent', () => {
 
     httpMock.expectOne('http://localhost:8080/api/v1/configuracion')
       .flush([{ clave: 'monto_multa_diaria', valor: '0.50' }]);
+    httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano').flush([]);
     httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
 
     component.iniciarEdicion(component.configuraciones[0]);
