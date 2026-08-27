@@ -72,7 +72,7 @@ public class Libro {
     @Column(name = "numero_paginas", columnDefinition = "SMALLINT")
     private Short numeroPaginas;
 
-    @Column(name = "precio_base", nullable = false, precision = 10, scale = 2)
+    @Column(name = "precio_base", precision = 10, scale = 2)
     private java.math.BigDecimal precioBase;
 
     @ManyToOne(fetch = FetchType.LAZY)

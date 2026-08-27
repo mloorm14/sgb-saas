@@ -126,7 +126,8 @@ public class LibroService {
             return Page.empty(pageable);
         }
         Integer pendienteId = pendienteOpt.get().getId();
-        return libroRepo.buscarPendientes(q, anioPublicacion, pendienteId, pageable).map(this::toDTO);
+        Short anioShort = anioPublicacion != null ? anioPublicacion.shortValue() : null;
+        return libroRepo.buscarPendientes(q, anioShort, pendienteId, pageable).map(this::toDTO);
     }
 
     // Módulo 9.1: filtros de catálogo por categoría/autor

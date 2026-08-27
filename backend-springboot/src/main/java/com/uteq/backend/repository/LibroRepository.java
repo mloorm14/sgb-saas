@@ -82,9 +82,13 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
     List<Libro> sugerirPorTitulo(@Param("p_texto") String texto, @Param("p_estado_id") Integer estadoId);
 
     @EntityGraph(attributePaths = {"editorial", "idioma", "estado", "categorias", "autores"})
-    @Query("SELECT l FROM Libro l WHERE l.estado.id = :estadoId "
+    @Query(value = "SELECT l FROM Libro l WHERE l.estado.id = :estadoId "
             + "AND (:q IS NULL OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) "
             + "OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', :q, '%')))"
-            + "AND (:anio IS NULL OR l.anioPublicacion = :anio)")
-    Page<Libro> buscarPendientes(@Param("q") String q, @Param("anio") Integer anio, @Param("estadoId") Integer estadoId, Pageable pageable);
+            + "AND (:anio IS NULL OR l.anioPublicacion = :anio)",
+            countQuery = "SELECT count(l) FROM Libro l WHERE l.estado.id = :estadoId "
+                    + "AND (:q IS NULL OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) "
+                    + "OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', :q, '%')))"
+                    + "AND (:anio IS NULL OR l.anioPublicacion = :anio)")
+    Page<Libro> buscarPendientes(@Param("q") String q, @Param("anio") Short anio, @Param("estadoId") Integer estadoId, Pageable pageable);
 }

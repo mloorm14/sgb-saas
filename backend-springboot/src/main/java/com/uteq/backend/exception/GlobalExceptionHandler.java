@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.dao.UncategorizedDataAccessException;
 import org.springframework.jdbc.UncategorizedSQLException;
@@ -218,6 +219,13 @@ public class GlobalExceptionHandler {
     // Antes de este handler, ambas caían en handleStoredProcedureError -> 500
     // con el mensaje engañoso "Error no controlado en procedimiento
     // almacenado" (ver docs/mediciones/sec/2026-08-14-incidente-500-auth-redis-produccion.md).
+    @ExceptionHandler(InvalidDataAccessApiUsageException.class)
+    public ProblemDetail handleSortInvalido(InvalidDataAccessApiUsageException ex) {
+        log.warn("Parámetro de ordenamiento inválido", ex);
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                "Parámetro de ordenamiento inválido: " + ex.getMessage());
+    }
+
     @ExceptionHandler({DataAccessResourceFailureException.class, UncategorizedDataAccessException.class})
     public ProblemDetail handleDataAccessResourceFailure(DataAccessException ex) {
         log.error("Fallo de acceso a dependencia de datos (Redis/BD)", ex);

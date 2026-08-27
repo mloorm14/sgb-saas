@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.SortDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -69,7 +70,7 @@ public class LibroController {
     public ResponseEntity<Page<LibroResponseDTO>> pendientes(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) Integer anioPublicacion,
-            @PageableDefault(size = 10, sort = "fechaRegistro", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 10) @SortDefault(sort = "fechaRegistro", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(libroService.listarPendientes(q, anioPublicacion, pageable));
     }
 

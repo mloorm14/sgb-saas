@@ -22,9 +22,8 @@ public record LibroRequestDTO(
         @Min(value = 1, message = "El número de páginas debe ser mayor a 0")
         Integer numeroPaginas,
 
-        @NotNull(message = "El precio base es obligatorio")
         @Digits(integer = 8, fraction = 2, message = "Precio base inválido")
-        @DecimalMin(value = "0.01", message = "El precio base debe ser mayor a 0")
+        @DecimalMin(value = "0.00", message = "El precio base debe ser mayor o igual a 0")
         java.math.BigDecimal precioBase,
 
         @Size(max = 2000, message = "El resumen no puede superar 2000 caracteres")
