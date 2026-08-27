@@ -5,10 +5,10 @@ module.exports = {
   ],
   darkMode: "class",
   theme: {
-    screens: {
-      tablet: '840px',
-    },
     extend: {
+      screens: {
+        tablet: '840px',
+      },
       colors: {
         "secondary-container": "#76f4e0",
         "surface": "#f8f9ff",
