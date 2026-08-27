@@ -139,7 +139,7 @@ no solo revisando que el YAML "se ve bien".
 
 ## 3. Migración pendiente de `refreshToken` a cookie — coordinación explícita
 
-`docs/adr/adr-007-cookies-jwt.md` **ya está implementado del lado del
+`docs/adr/adr-012-cookies-jwt.md` **ya está implementado del lado del
 backend**: el `refreshToken` viaja en una cookie
 `HttpOnly+Secure+SameSite=Strict` con `path=/api/auth` desde
 `/api/auth/login` y `/api/auth/refresh`, y **ya no viene en el cuerpo

@@ -9,7 +9,7 @@ el rol del usuario.
 
 ## Context
 
-Los ADRs existentes (`ADR-003-jwt-redis.md`, `adr-007-cookies-jwt.md`)
+Los ADRs existentes (`ADR-003-jwt-redis.md`, `adr-012-cookies-jwt.md`)
 documentan decisiones *derivadas* de que el sistema ya usa JWT: cómo se
 revoca un token (blacklist en Redis) y cómo se transporta (cookie
 HttpOnly para el refresh token). Ninguno de los dos documenta la decisión
@@ -18,7 +18,7 @@ raíz, de **por qué el rol de un usuario vive en un modelo relacional
 normalizado** (`roles`, `usuario_roles`, `permisos`, `rol_permisos` en
 `db/schema.sql`) en vez de una columna simple `usuarios.rol VARCHAR`.
 
-Este ADR cierra ese hueco: es la decisión de la que ADR-003 y adr-007 son
+Este ADR cierra ese hueco: es la decisión de la que ADR-003 y adr-012 son
 consecuencia, no un reemplazo de ninguno de los dos.
 
 ### Por qué JWT stateless sobre sesiones server-side
@@ -112,11 +112,11 @@ tomada e implementada; no introduce cambio de código).
 - Cierra el hueco de trazabilidad detectado en la auditoría de ADRs del
   Bloque D: "esquema de autenticación" ahora tiene un ADR que explica la
   decisión raíz, no solo sus consecuencias.
-- [[ADR-003-jwt-redis]] (blacklist/revocación) y [[adr-007-cookies-jwt]]
+- [[ADR-003-jwt-redis]] (blacklist/revocación) y [[adr-012-cookies-jwt]]
   (transporte del refresh token en cookie HttpOnly) quedan explícitamente
   enlazados como decisiones *derivadas* de esta — un lector nuevo entiende
   el orden: primero "por qué JWT y por qué RBAC normalizado" (aquí),
-  después "cómo se revoca" (ADR-003) y "cómo se transporta" (adr-007).
+  después "cómo se revoca" (ADR-003) y "cómo se transporta" (adr-012).
 - El modelo RBAC normalizado ya soporta el caso de multi-rol sin cambios
   futuros de esquema (la tabla `usuario_roles` ya es N:M).
 
@@ -136,7 +136,7 @@ tomada e implementada; no introduce cambio de código).
 ## Referencias
 
 - [[ADR-003-jwt-redis]] (revocación de tokens, decisión derivada de esta)
-- [[adr-007-cookies-jwt]] (transporte del refresh token, decisión derivada de esta)
+- [[adr-012-cookies-jwt]] (transporte del refresh token, decisión derivada de esta)
 - `db/schema.sql` (tablas `roles`, `usuario_roles`, `permisos`, `rol_permisos`)
 - `backend-springboot/src/main/java/com/uteq/backend/config/SecurityConfig.java`
 - OWASP Top 10:2021, A01 (Broken Access Control) y A07 (Identification and Authentication Failures)

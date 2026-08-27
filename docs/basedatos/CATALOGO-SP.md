@@ -22,7 +22,7 @@ revierte todos los cambios hechos dentro de esa llamada.
 
 ## Nota de diseño: los 10 objetos se invocan vía `@Query(nativeQuery = true)`, no `@Procedure`
 
-El plan original (ADR-013, requisito A.2.1 de la guía) era invocar las 5
+El plan original (ADR-006, requisito A.2.1 de la guía) era invocar las 5
 funciones con efectos secundarios (`sp_crear_prestamo`,
 `sp_registrar_devolucion`, `sp_pagar_multa`, `sp_anular_multa`,
 `sp_expirar_reservaciones_vencidas`) vía `@Procedure` (directo o
@@ -52,7 +52,7 @@ Postgres rechaza como `call ...` porque el objeto es `FUNCTION`, no
 uniforme vía `@Query(nativeQuery = true)` con parámetros nombrados `@Param`
 (p. ej. `SELECT * FROM sp_registrar_devolucion(:p_prestamo_id)`). La
 decisión quedó registrada como addendum en
-`docs/adr/adr-013-acceso-datos-orm-sp.md`.
+`docs/adr/adr-006-acceso-datos-orm-sp.md`.
 
 Esto **no debilita el cumplimiento de la regla A.2.3** (invocación
 parametrizada nombrada, sin `EXECUTE`/SQL dinámico, sin concatenación de
@@ -291,4 +291,4 @@ los 5 métodos afectados en `MultaProcedureRepository`/
 y la misma suite confirmó los 6 escenarios en verde
 (`Tests run: 6, Failures: 0, Errors: 0`). Ver evidencia completa en
 `docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md` y
-el cambio de decisión reflejado en `docs/adr/adr-013-acceso-datos-orm-sp.md`.
+el cambio de decisión reflejado en `docs/adr/adr-006-acceso-datos-orm-sp.md`.

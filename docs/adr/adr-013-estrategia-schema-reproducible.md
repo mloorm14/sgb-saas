@@ -1,4 +1,4 @@
-# ADR-006: Estrategia de esquema reproducible (Flyway + db/schema.sql y db/seed.sql)
+# ADR-013: Estrategia de esquema reproducible (Flyway + db/schema.sql y db/seed.sql)
 
 ## Title
 

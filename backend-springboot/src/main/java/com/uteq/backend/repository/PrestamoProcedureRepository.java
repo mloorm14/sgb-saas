@@ -18,7 +18,7 @@ import org.springframework.data.repository.query.Param;
 // Hibernate 6.2+/7.x sin fix oficial, ver
 // docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md y
 // spring-projects/spring-data-jpa#3393). Reemplazado por @Query nativa,
-// aprobado por el equipo -- pendiente de actualizar ADR-013.
+// aprobado por el equipo -- pendiente de actualizar ADR-006.
 
 import java.time.OffsetDateTime;
 import java.util.List;
