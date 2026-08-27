@@ -14,7 +14,7 @@ directamente del repositorio.
 \section{Procedimiento almacenado y su invocación desde Spring Data JPA}
 \label{sec:sp-invocacion}
 
-La estrategia híbrida de acceso a datos (ADR-013, \autoref{sec:adrs})
+La estrategia híbrida de acceso a datos (ADR-006, \autoref{sec:adrs})
 exige que las operaciones con validación cruzada multi-tabla se
 implementen como procedimiento o función SQL. El siguiente listado es
 \texttt{db/procs/sp\_crear\_prestamo.sql} completo: registra un préstamo
@@ -346,8 +346,8 @@ incompatible con el caché de listado general.
 \section{Transporte del token de sesión en cookie \texttt{HttpOnly}}
 
 El \texttt{refreshToken} viaja exclusivamente en una cookie
-\texttt{HttpOnly}, \texttt{Secure}, \texttt{SameSite=Strict}, con
-\texttt{path=/api/auth} (ADR-007) -- nunca en el cuerpo JSON, para que
+\texttt{HttpOnly}, \texttt{Secure}, \texttt{SameSite=None}, con
+\texttt{path=/api/auth} (ADR-012) -- nunca en el cuerpo JSON, para que
 JavaScript del frontend no pueda leerlo ni reenviarlo manualmente:
 
 \begin{lstlisting}[language=Java, caption={\texttt{AuthController.buildRefreshCookie} (real, completo)}, label={lst:jwt-cookie}]
@@ -355,7 +355,7 @@ private ResponseCookie buildRefreshCookie(String valor, long maxAgeMs) {
     return ResponseCookie.from(REFRESH_COOKIE_NAME, valor)
             .httpOnly(true)
             .secure(true)
-            .sameSite("Strict")
+            .sameSite("None")
             .path("/api/auth")
             .maxAge(Duration.ofMillis(maxAgeMs))
             .build();
@@ -367,6 +367,6 @@ El mismo método se reutiliza para \emph{limpiar} la cookie en
 \texttt{maxAge=0}). El \texttt{accessToken}, de vida corta (1\,h), sigue
 viajando en el cuerpo JSON de la respuesta -- migrarlo también a cookie
 está deliberadamente diferido (ver la nota de honestidad de
-\texttt{ADR-007} y \texttt{REQ-NF-002}, \autoref{cap:ingenieria-requisitos})
+\texttt{ADR-012} y \texttt{REQ-NF-002}, \autoref{cap:ingenieria-requisitos})
 por el impacto que tendría en \texttt{jwt.interceptor.ts}/
 \texttt{auth.service.ts} del frontend, no por un olvido.
