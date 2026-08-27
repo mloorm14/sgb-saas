@@ -34,10 +34,11 @@ spring:
     # debe ser siempre la migración más alta cuyos cambios ya estén
     # reflejados en db/schema.sql — subirlo cada vez que se agregue una
     # migración nueva Y se regenere el snapshot para incluirla (ver
-    # docs/adr/adr-006-estrategia-schema-reproducible.md). Actualmente: V13
-    # (V13__portada_imagen.sql: columnas portada_* en libros y clave
-    # max_tamano_portada_mb, regenerado en db/schema.sql).
-    baseline-version: 13
+    # docs/adr/adr-006-estrategia-schema-reproducible.md). Actualmente: V14
+    # (V14__devoluciones_danos.sql: tablas tipos_dano, registro_danos,
+    # registro_dano_detalle, evidencia_dano y columna registro_dano_id en
+    # multas, reflejado en db/schema.sql).
+    baseline-version: 14
   data:
     redis:
       # Upstash (Redis gestionado del despliegue en Render) exige
