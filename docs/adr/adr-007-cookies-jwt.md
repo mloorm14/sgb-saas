@@ -122,6 +122,38 @@ backend, `JwtAuthFilter`.
 
 ## Consequences
 
+**Riesgo aceptado (no mitigado): CSRF contra `/api/auth/refresh` con
+`SameSite=None`.** Verificado directamente en el código actual
+(`SecurityConfig.java`, línea 55): `.csrf(csrf -> csrf.disable())` --
+la protección CSRF nativa de Spring Security está desactivada. Con
+`SameSite=Strict`, esto era aceptable porque el propio atributo de la
+cookie ya bloqueaba su envío en peticiones cross-site. Al cambiar a
+`SameSite=None` (actualización 2026-08-24 de más arriba), esa
+protección implícita desaparece: el navegador vuelve a adjuntar la
+cookie `refreshToken` en peticiones cross-origin. El único control que
+queda activo es la lista blanca de CORS (`http://localhost:4200`,
+`https://biblora-sgb.onrender.com`, con `allowCredentials(true)`), y no
+existe en el código ningún mecanismo adicional de token CSRF ni
+validación manual de `Origin`/`Referer` (confirmado por búsqueda
+directa en el repositorio, cero resultados). Es importante no
+confundir lo que la lista blanca de CORS sí y no hace: CORS controla
+qué origen puede **leer** la respuesta de un fetch cross-origin, no
+qué origen puede **enviar** la petición. Un sitio externo puede emitir
+un `fetch`/`XMLHttpRequest` con `credentials: 'include'` o un
+formulario HTML simple hacia `/api/auth/refresh` y el navegador
+adjuntará la cookie igualmente; el backend la procesará como una
+petición válida aunque la respuesta nunca sea legible por el sitio
+atacante. Para un endpoint de refresh de sesión, donde el efecto de la
+petición (emitir nuevos tokens) no depende de que el atacante lea la
+respuesta, esto es una superficie de CSRF real, no solo teórica. Se
+documenta explícitamente como **riesgo aceptado para este despliegue
+académico**, no como un riesgo mitigado: la lista blanca de CORS reduce
+la exfiltración de datos de respuestas cross-origin, pero no impide que
+la petición cross-site llegue al endpoint. La corrección adecuada
+(token CSRF o patrón *double-submit cookie*) queda registrada como
+trabajo futuro, no como algo ya resuelto por el diseño actual (ver
+`docs/capitulos/10-trabajo-futuro.tex`, sección de CSRF).
+
 **Positivas:**
 
 - El refreshToken (secreto de 7 días) ya no es legible por JavaScript ni

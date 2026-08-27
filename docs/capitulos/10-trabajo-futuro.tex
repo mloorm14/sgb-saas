@@ -97,6 +97,43 @@ en \texttt{frontend-angular/lighthouserc.js}, ya preparado para un
 típica/IC~95\% por perfil -- una estadística que, con $n=2$ en un único
 perfil, este documento decidió no forzar (\autoref{sec:res-lighthouse}).
 
+\section{Defensa CSRF dedicada para \texttt{/api/auth/refresh}}
+\label{sec:tf-csrf}
+
+El ADR-007 (\texttt{docs/adr/adr-007-cookies-jwt.md}) documenta que la
+cookie del \texttt{refreshToken} pasó de \texttt{SameSite=Strict} a
+\texttt{SameSite=None} para que el navegador la enviara en peticiones
+cross-origin entre el frontend
+(\texttt{biblora-sgb.onrender.com}) y el backend en Render, requisito
+para que el \emph{silent refresh} funcionara en producción. Verificado
+en el código actual (\texttt{SecurityConfig.java}, línea 55), la
+protección CSRF nativa de Spring Security está desactivada
+(\texttt{.csrf(csrf -> csrf.disable())}), y no existe en el
+repositorio ningún mecanismo de token CSRF ni validación manual de
+\texttt{Origin}/\texttt{Referer} (verificado por búsqueda directa, cero
+resultados). El único control activo es la lista blanca de CORS, que
+impide que un origen no autorizado \emph{lea} la respuesta de
+\texttt{/api/auth/refresh}, pero no impide que dicho origen
+\emph{envíe} la petición con la cookie adjunta -- el navegador la
+adjunta igual por ser \texttt{SameSite=None}. Quedó fuera de alcance de
+esta entrega porque corregirlo exige un cambio coordinado
+backend/frontend (emitir el token en un lugar legible por JavaScript,
+p.\,ej. otra cookie no \texttt{HttpOnly} o un header de respuesta, y
+que \texttt{jwt.interceptor.ts} lo reenvíe en cada petición de refresh)
+que no se priorizó frente a los hallazgos de mayor severidad ya
+cerrados en esta entrega (ADR-007 original, ADR-003). Se documenta
+explícitamente como riesgo aceptado, no como algo ya mitigado por el
+diseño actual (ver ADR-007, sección \emph{Consequences}). La línea de
+trabajo futura concreta es implementar un token CSRF de patrón
+\emph{double-submit cookie}: al emitir el \texttt{refreshToken}, emitir
+también un valor aleatorio en una segunda cookie legible por
+JavaScript (\texttt{SameSite=None} pero sin \texttt{HttpOnly}); el
+frontend lo reenvía en un header custom (p.\,ej.
+\texttt{X-CSRF-Token}) en la petición de refresh, y el backend rechaza
+la petición si el valor del header no coincide con el de la cookie --
+un atacante cross-site puede lograr que el navegador adjunte la cookie,
+pero no puede leer su valor para construir el header a mano.
+
 \section{Salvaguarda contra auto-degradación del rol ADMIN}
 \label{sec:tf-admin-safeguard}
 
