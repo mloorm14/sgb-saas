@@ -1,6 +1,7 @@
 package com.uteq.backend.controller;
 
 import com.uteq.backend.dto.EventoAuditoriaResponseDTO;
+import com.uteq.backend.dto.ResumenCategoriaAuditoriaDTO;
 import com.uteq.backend.service.AuditoriaService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 /**
  * Módulo 6: consulta de bitácora de auditoría, solo GERENTE/ADMIN (mismo
@@ -48,5 +50,13 @@ public class AuditoriaController {
             @PageableDefault(size = 20, sort = "fecha_hora", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(
                 auditoriaService.listar(usuarioId, modulo, desde, hasta, pageable));
+    }
+
+    // ── GET /api/v1/auditoria/resumen ────────────────────────
+    // Agregación por tabla_afectada: total, hoy, último evento.
+    // Misma restricción @PreAuthorize que el listado (GERENTE/ADMIN).
+    @GetMapping("/resumen")
+    public ResponseEntity<List<ResumenCategoriaAuditoriaDTO>> resumen() {
+        return ResponseEntity.ok(auditoriaService.resumen());
     }
 }

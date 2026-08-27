@@ -1,6 +1,7 @@
 package com.uteq.backend.service;
 
 import com.uteq.backend.dto.EventoAuditoriaResponseDTO;
+import com.uteq.backend.dto.ResumenCategoriaAuditoriaDTO;
 import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.Usuario;
 import com.uteq.backend.repository.BitacoraAuditoriaRepository;
@@ -11,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,6 +26,10 @@ import java.util.stream.Collectors;
  */
 @Service
 public class AuditoriaService {
+
+    // Umbral para marcar "Revisar" en la categoría sesiones: 3 o más
+    // LOGIN_FAIL en las últimas 24 horas.
+    private static final long UMBRAL_LOGIN_FAIL_REVISAR = 3;
 
     private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
     private final UsuarioRepository usuarioRepo;
@@ -53,6 +60,39 @@ public class AuditoriaService {
                 .collect(Collectors.toMap(Usuario::getId, Usuario::getCorreo));
 
         return pagina.map(evento -> toDTO(evento, correoPorId));
+    }
+
+    /**
+     * Resumen por categoría: una sola query de agregación agrupando por
+     * tabla_afectada. Devuelve una lista con un elemento por cada categoría
+     * que tenga al menos 1 evento en la bitácora.
+     */
+    @Transactional(readOnly = true)
+    public List<ResumenCategoriaAuditoriaDTO> resumen() {
+        OffsetDateTime desdeHoy = OffsetDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
+
+        List<Object[]> filas = bitacoraAuditoriaRepo.resumenPorCategoria(desdeHoy);
+        List<ResumenCategoriaAuditoriaDTO> resultado = new ArrayList<>();
+
+        for (Object[] fila : filas) {
+            String tablaAfectada = (String) fila[0];
+            long totalEventos = (Long) fila[1];
+            long eventosHoy = (Long) fila[2];
+            OffsetDateTime ultimoEvento = fila[3] instanceof OffsetDateTime odt ? odt : null;
+
+            // TODO: definir criterio de "Revisar" cuando el equipo lo defina
+            boolean requiereRevision = false;
+            if ("sesiones".equals(tablaAfectada)) {
+                long failsRecientes = bitacoraAuditoriaRepo.contarLoginFailRecientes(
+                        OffsetDateTime.now().minusHours(24));
+                requiereRevision = failsRecientes >= UMBRAL_LOGIN_FAIL_REVISAR;
+            }
+
+            resultado.add(new ResumenCategoriaAuditoriaDTO(
+                    tablaAfectada, totalEventos, eventosHoy, ultimoEvento, requiereRevision));
+        }
+
+        return resultado;
     }
 
     private EventoAuditoriaResponseDTO toDTO(BitacoraAuditoria evento, Map<Long, String> correoPorId) {

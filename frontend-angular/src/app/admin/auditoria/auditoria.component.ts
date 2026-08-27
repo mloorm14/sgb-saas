@@ -6,6 +6,7 @@ import { AuditoriaService } from '../../core/services/auditoria.service';
 import { UsuarioAdminService } from '../../core/services/usuario-admin.service';
 import { EventoAuditoria } from '../../core/models/evento-auditoria.model';
 import { UsuarioAdmin } from '../../core/models/usuario-admin.model';
+import { ResumenCategoriaAuditoria } from '../../core/models/resumen-auditoria.model';
 
 export interface ModuloOpcion {
   valor: string;
@@ -14,10 +15,14 @@ export interface ModuloOpcion {
 
 const MODULOS: ModuloOpcion[] = [
   { valor: 'usuarios', etiqueta: 'Usuarios' },
+  { valor: 'sesiones', etiqueta: 'Accesos al sistema' },
   { valor: 'prestamos', etiqueta: 'Préstamos' },
   { valor: 'libros', etiqueta: 'Libros' },
   { valor: 'multas', etiqueta: 'Multas' },
-  { valor: 'sugerencias_adquisicion', etiqueta: 'Sugerencias de adquisición' }
+  { valor: 'reservaciones', etiqueta: 'Reservaciones' },
+  { valor: 'registro_danos', etiqueta: 'Registro de daños' },
+  { valor: 'sugerencias_adquisicion', etiqueta: 'Sugerencias de adquisición' },
+  { valor: 'configuracion_sistema', etiqueta: 'Configuración del sistema' }
 ];
 
 @Component({
@@ -29,6 +34,14 @@ const MODULOS: ModuloOpcion[] = [
 export class AuditoriaComponent implements OnInit, OnDestroy {
   modulos = MODULOS;
 
+  // Vista actual: 'tarjetas' (default) o 'historial'
+  vista: 'tarjetas' | 'historial' = 'tarjetas';
+
+  // Datos del resumen por categoría
+  resumenCategorias: ResumenCategoriaAuditoria[] = [];
+  cargandoResumen: boolean = false;
+
+  // Filtros del historial
   filtroUsuarioId: string = '';
   filtroModulo: string = '';
   filtroDesde: string = '';
@@ -56,7 +69,7 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.cargarPagina();
+    this.cargarResumen();
 
     // Suscripción al autocomplete de usuarios
     this.busquedaSubject.pipe(
@@ -87,6 +100,37 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  cargarResumen(): void {
+    this.cargandoResumen = true;
+    this.auditoriaService.resumen().subscribe({
+      next: (data) => {
+        this.resumenCategorias = data;
+        this.cargandoResumen = false;
+      },
+      error: () => {
+        this.cargandoResumen = false;
+      }
+    });
+  }
+
+  abrirHistorial(modulo: string): void {
+    this.filtroModulo = modulo;
+    this.currentPage = 0;
+    this.vista = 'historial';
+    this.cargarPagina();
+  }
+
+  volverATarjetas(): void {
+    this.vista = 'tarjetas';
+    this.filtroModulo = '';
+    this.filtroUsuarioId = '';
+    this.filtroDesde = '';
+    this.filtroHasta = '';
+    this.eventos = [];
+    this.usuarioSeleccionado = null;
+    this.cargarResumen();
   }
 
   onBusquedaUsuario(texto: string): void {
@@ -223,5 +267,70 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
       case 'CORREO_VERIFICADO': return 'verified';
       default: return 'event_note';
     }
+  }
+
+  // ── Helpers para tarjetas ─────────────────────────────────
+  iconoCategoria(tabla: string): string {
+    const iconos: Record<string, string> = {
+      'usuarios': 'manage_accounts',
+      'sesiones': 'shield',
+      'prestamos': 'menu_book',
+      'libros': 'inventory_2',
+      'multas': 'payments',
+      'reservaciones': 'event_available',
+      'registro_danos': 'report_problem',
+      'sugerencias_adquisicion': 'lightbulb',
+      'configuracion_sistema': 'settings'
+    };
+    return iconos[tabla] || 'folder';
+  }
+
+  codigoCategoria(tabla: string): string {
+    const codigos: Record<string, string> = {
+      'usuarios': 'AUD-USR',
+      'sesiones': 'AUD-SES',
+      'prestamos': 'AUD-PRE',
+      'libros': 'AUD-LIB',
+      'multas': 'AUD-MUL',
+      'reservaciones': 'AUD-RES',
+      'registro_danos': 'AUD-DAN',
+      'sugerencias_adquisicion': 'AUD-SUG',
+      'configuracion_sistema': 'AUD-CFG'
+    };
+    return codigos[tabla] || tabla.toUpperCase().substring(0, 7);
+  }
+
+  descripcionCategoria(tabla: string): string {
+    const descripciones: Record<string, string> = {
+      'usuarios': 'Gestión de cuentas y permisos',
+      'sesiones': 'Login, logout y intentos de acceso',
+      'prestamos': 'Creación, devolución y renovación',
+      'libros': 'Alta, edición y baja del catálogo',
+      'multas': 'Pago y anulación de sanciones',
+      'reservaciones': 'Aceptación y rechazo de reservas',
+      'registro_danos': 'Devoluciones con daños reportados',
+      'sugerencias_adquisicion': 'Evaluación de propuestas',
+      'configuracion_sistema': 'Cambios de parámetros globales'
+    };
+    return descripciones[tabla] || tabla;
+  }
+
+  colorCategoria(tabla: string): string {
+    const colores: Record<string, string> = {
+      'usuarios': 'bg-primary/10 text-primary',
+      'sesiones': 'bg-secondary/10 text-secondary',
+      'prestamos': 'bg-tertiary/10 text-tertiary',
+      'libros': 'bg-primary-container/30 text-primary',
+      'multas': 'bg-error/10 text-error',
+      'reservaciones': 'bg-success/10 text-success',
+      'registro_danos': 'bg-error/10 text-error',
+      'sugerencias_adquisicion': 'bg-warning/20 text-tertiary',
+      'configuracion_sistema': 'bg-surface-variant/50 text-on-surface-variant'
+    };
+    return colores[tabla] || 'bg-surface-variant/50 text-on-surface-variant';
+  }
+
+  etiquetaModulo(valor: string): string {
+    return this.modulos.find(m => m.valor === valor)?.etiqueta || valor;
   }
 }
