@@ -34,10 +34,11 @@ spring:
     # debe ser siempre la migración más alta cuyos cambios ya estén
     # reflejados en db/schema.sql — subirlo cada vez que se agregue una
     # migración nueva Y se regenere el snapshot para incluirla (ver
-    # docs/adr/adr-006-estrategia-schema-reproducible.md). Actualmente: V3
-    # (V3__multas_multiples_por_prestamo.sql: quita el UNIQUE de
-    # multas.prestamo_id, ya reflejado en db/schema.sql).
-    baseline-version: 3
+    # docs/adr/adr-006-estrategia-schema-reproducible.md). Actualmente: V14
+    # (V14__devoluciones_danos.sql: tablas tipos_dano, registro_danos,
+    # registro_dano_detalle, evidencia_dano y columna registro_dano_id en
+    # multas, reflejado en db/schema.sql).
+    baseline-version: 14
   data:
     redis:
       # Upstash (Redis gestionado del despliegue en Render) exige
@@ -66,9 +67,19 @@ spring:
           starttls:
             enable: true
             required: true
+  # Módulo portada binaria (POST /api/v1/libros/{id}/portada). Límites del
+  # contenedor de servlets para uploads multipart, SIEMPRE por encima del
+  # límite de negocio (max_tamano_portada_mb, default 2 MB, en
+  # configuracion_sistema): si el archivo excede el límite de negocio lo
+  # frena LibroService.actualizarPortada con un 400+ProblemDetail legible,
+  # no el contenedor con un error genérico de multipart.
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
 
 server:
-  port: 8080
+  port: ${PORT:8080}
   # REQ-NF-012 / ADR-015 (Módulo 10.1): el backend nunca termina TLS él
   # mismo -- eso queda del lado del proxy (frontend-angular/nginx.conf en
   # dev, o el balanceador en producción). 'framework' activa el
@@ -82,7 +93,7 @@ server:
 
 # Módulo 2: notificaciones por correo.
 notificaciones:
-  remitente: no-reply@sgb-saas.local
+  remitente: ${MAIL_FROM:no-reply@sgb-saas.local}
   # Ventana de anticipación con la que NotificacionVencimientoScheduler
   # detecta préstamos por vencer (minutos antes de
   # fecha_devolucion_estimada). Config externa, mismo criterio que
@@ -120,6 +131,11 @@ app:
     # Módulo 9.5: TTL del código de 6 dígitos en Redis, mismo mecanismo que
     # app.security.login (ver VerificacionCorreoService/LoginRateLimiter).
     ttl-minutes: ${VERIFICACION_CORREO_TTL_MINUTES:10}
+  google-books:
+    # Módulo inventario (autocompletar por ISBN, mockup 14). La API
+    # pública de Google Books no requiere API key para /volumes?q=isbn:.
+    url-base: ${GOOGLE_BOOKS_URL_BASE:https://www.googleapis.com/books/v1}
+    timeout-ms: ${GOOGLE_BOOKS_TIMEOUT_MS:8000}
   gemini:
     # Módulo H (chatbot asistente virtual). API key de Google AI Studio --
     # ver .env.example y docker-compose.yml, ya declaraban GEMINI_API_KEY
