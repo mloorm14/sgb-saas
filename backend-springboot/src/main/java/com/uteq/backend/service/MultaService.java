@@ -92,6 +92,8 @@ public class MultaService {
     public MultaAccionResponseDTO anular(Long multaId, String motivo, Authentication authentication) {
         String rolEjecutor = resolverRolAnulacion(authentication);
         Map<String, Object> resultado = multaProcRepo.spAnularMulta(multaId, motivo, rolEjecutor);
+        Long ejecutorId = resolverIdPorCorreo(authentication.getName());
+        registrarAuditoria(ejecutorId, multaId, "Anulación de la multa " + multaId + ": " + motivo);
         return new MultaAccionResponseDTO(
                 (Long) resultado.get("o_multa_id"),
                 (Boolean) resultado.get("o_usuario_desbloqueado"));
