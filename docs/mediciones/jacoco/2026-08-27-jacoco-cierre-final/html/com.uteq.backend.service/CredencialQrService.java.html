@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CredencialQrService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.service</a> &gt; <span class="el_source">CredencialQrService.java</span></div><h1>CredencialQrService.java</h1><pre class="source lang-java linenums">package com.uteq.backend.service;
+
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.UsuarioRepository;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.UUID;
+
+/**
+ * Genera y resuelve la credencial QR de un usuario (Módulo 8). Decisión de
+ * diseño: el QR NO reemplaza el login por correo, es un método adicional de
+ * identificación rápida en ventanilla -- el bibliotecario escanea la
+ * credencial del estudiante para agilizar el registro de un préstamo (ver
+ * PrestamoService.crear()), y el ingreso manual de usuarioId se mantiene
+ * siempre disponible como contingencia.
+ */
+@Service
+public class CredencialQrService {
+
+    private static final int TAMANO_PX = 300;
+    private static final String ESTADO_ACTIVO = &quot;ACTIVO&quot;;
+    private static final String CREDENCIAL_NO_RECONOCIDA =
+            &quot;Credencial QR no reconocida o usuario inactivo.&quot;;
+
+    private final UsuarioRepository usuarioRepo;
+
+<span class="fc" id="L36">    public CredencialQrService(UsuarioRepository usuarioRepo) {</span>
+<span class="fc" id="L37">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L38">    }</span>
+
+    /**
+     * Genera la imagen PNG del QR del usuario autenticado (GET
+     * /mi-credencial). No recibe un usuarioId por parámetro a propósito:
+     * cada usuario solo puede pedir SU propio QR, nunca el de otro.
+     */
+    public byte[] generarImagenQrPropio(Authentication authentication) {
+<span class="fc" id="L46">        Usuario usuario = usuarioRepo.findByCorreo(authentication.getName())</span>
+<span class="fc" id="L47">                .orElseThrow(() -&gt; new EntityNotFoundException(</span>
+<span class="fc" id="L48">                        &quot;Usuario no encontrado: &quot; + authentication.getName()));</span>
+<span class="fc" id="L49">        return generarImagenQr(usuario);</span>
+    }
+
+    /**
+     * Codifica ÚNICAMENTE el {@code credencialQrToken} (UUID) dentro del QR
+     * -- nunca el correo ni la identificación en claro, para que el QR
+     * físico/impreso no filtre datos personales por sí solo si se pierde o
+     * lo ve alguien más.
+     */
+    private byte[] generarImagenQr(Usuario usuario) {
+        try {
+<span class="fc" id="L60">            BitMatrix matriz = new QRCodeWriter().encode(</span>
+<span class="fc" id="L61">                    usuario.getCredencialQrToken().toString(),</span>
+                    BarcodeFormat.QR_CODE, TAMANO_PX, TAMANO_PX);
+<span class="fc" id="L63">            ByteArrayOutputStream salida = new ByteArrayOutputStream();</span>
+<span class="fc" id="L64">            MatrixToImageWriter.writeToStream(matriz, &quot;PNG&quot;, salida);</span>
+<span class="fc" id="L65">            return salida.toByteArray();</span>
+<span class="nc" id="L66">        } catch (WriterException | IOException ex) {</span>
+            // No debería ocurrir con un UUID.toString() como contenido (36
+            // caracteres ASCII, muy por debajo de la capacidad de un QR) --
+            // si pasa, es un problema del entorno (encoder/IO), no del dato.
+<span class="nc" id="L70">            throw new IllegalStateException(&quot;No se pudo generar el código QR.&quot;, ex);</span>
+        }
+    }
+
+    /**
+     * Resuelve el usuario a partir del token leído del QR escaneado en
+     * ventanilla. Rechaza tanto un token inexistente como un usuario que no
+     * esté en estado ACTIVO (bloqueado por multa, inactivo, pendiente de
+     * verificación) con el MISMO mensaje genérico: el bibliotecario ve
+     * &quot;credencial no reconocida&quot; en ambos casos, sin filtrar por qué (evita
+     * que escanear credenciales ajenas sirva para enumerar qué usuarios
+     * existen o están bloqueados), y usa el ingreso manual de cédula como
+     * contingencia.
+     */
+    public Usuario resolverPorToken(UUID token) {
+<span class="fc" id="L85">        Usuario usuario = usuarioRepo.findByCredencialQrToken(token)</span>
+<span class="fc" id="L86">                .orElseThrow(() -&gt; new EntityNotFoundException(CREDENCIAL_NO_RECONOCIDA));</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        if (!ESTADO_ACTIVO.equals(usuario.getEstado().getNombre())) {</span>
+<span class="fc" id="L88">            throw new EntityNotFoundException(CREDENCIAL_NO_RECONOCIDA);</span>
+        }
+<span class="fc" id="L90">        return usuario;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

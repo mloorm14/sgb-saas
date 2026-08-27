@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ConsultarMultasTool.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.chatbot.tool</a> &gt; <span class="el_source">ConsultarMultasTool.java</span></div><h1>ConsultarMultasTool.java</h1><pre class="source lang-java linenums">package com.uteq.backend.chatbot.tool;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.uteq.backend.chatbot.ChatbotTool;
+import com.uteq.backend.repository.MultaRepository;
+import com.uteq.backend.repository.EstadoMultaRepository;
+import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+
+/**
+ * Tool que consulta las multas pendientes de pago de un usuario.
+ * Incluye saldo total adeudado y cantidad de multas.
+ */
+@Component
+public class ConsultarMultasTool implements ChatbotTool {
+
+    private final MultaRepository multaRepo;
+    private final EstadoMultaRepository estadoMultaRepo;
+<span class="fc" id="L23">    private final ObjectMapper mapper = new ObjectMapper();</span>
+
+<span class="fc" id="L25">    public ConsultarMultasTool(MultaRepository multaRepo, EstadoMultaRepository estadoMultaRepo) {</span>
+<span class="fc" id="L26">        this.multaRepo = multaRepo;</span>
+<span class="fc" id="L27">        this.estadoMultaRepo = estadoMultaRepo;</span>
+<span class="fc" id="L28">    }</span>
+
+    @Override
+    public String getName() {
+<span class="fc" id="L32">        return &quot;consultar_multas&quot;;</span>
+    }
+
+    @Override
+    public String getDescription() {
+<span class="fc" id="L37">        return &quot;Consulta las multas pendientes de pago de un usuario de la biblioteca. &quot;</span>
+                + &quot;Devuelve el saldo total adeudado y la cantidad de multas pendientes.&quot;;
+    }
+
+    @Override
+    public JsonNode getInputSchema() {
+<span class="nc" id="L43">        ObjectNode schema = mapper.createObjectNode();</span>
+<span class="nc" id="L44">        schema.put(&quot;type&quot;, &quot;object&quot;);</span>
+
+<span class="nc" id="L46">        ObjectNode properties = mapper.createObjectNode();</span>
+<span class="nc" id="L47">        ObjectNode usuarioIdProp = mapper.createObjectNode();</span>
+<span class="nc" id="L48">        usuarioIdProp.put(&quot;type&quot;, &quot;integer&quot;);</span>
+<span class="nc" id="L49">        usuarioIdProp.put(&quot;description&quot;, &quot;ID del usuario (se resuelve automáticamente desde la sesión autenticada)&quot;);</span>
+<span class="nc" id="L50">        properties.set(&quot;usuario_id&quot;, usuarioIdProp);</span>
+
+<span class="nc" id="L52">        schema.set(&quot;properties&quot;, properties);</span>
+
+<span class="nc" id="L54">        ArrayNode required = mapper.createArrayNode();</span>
+<span class="nc" id="L55">        required.add(&quot;usuario_id&quot;);</span>
+<span class="nc" id="L56">        schema.set(&quot;required&quot;, required);</span>
+
+<span class="nc" id="L58">        return schema;</span>
+    }
+
+    @Override
+    public JsonNode execute(JsonNode args) {
+<span class="nc" id="L63">        Long usuarioId = args.path(&quot;usuario_id&quot;).asLong(0);</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">        if (usuarioId == 0) {</span>
+<span class="nc" id="L65">            ObjectNode error = mapper.createObjectNode();</span>
+<span class="nc" id="L66">            error.put(&quot;error&quot;, &quot;Se requiere usuario_id&quot;);</span>
+<span class="nc" id="L67">            return error;</span>
+        }
+
+<span class="nc" id="L70">        Integer estadoPendienteId = estadoMultaRepo.findByNombre(&quot;PENDIENTE&quot;)</span>
+<span class="nc" id="L71">                .map(e -&gt; e.getId())</span>
+<span class="nc" id="L72">                .orElse(null);</span>
+
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        if (estadoPendienteId == null) {</span>
+<span class="nc" id="L75">            ObjectNode error = mapper.createObjectNode();</span>
+<span class="nc" id="L76">            error.put(&quot;error&quot;, &quot;Estado PENDIENTE no encontrado en catálogo&quot;);</span>
+<span class="nc" id="L77">            return error;</span>
+        }
+
+<span class="nc" id="L80">        long cantidad = multaRepo.countByUsuarioIdAndEstadoMultaId(usuarioId, estadoPendienteId);</span>
+<span class="nc" id="L81">        BigDecimal saldoTotal = multaRepo.sumSaldoByUsuarioIdAndEstadoMultaId(usuarioId, estadoPendienteId);</span>
+
+<span class="nc" id="L83">        ObjectNode respuesta = mapper.createObjectNode();</span>
+<span class="nc" id="L84">        respuesta.put(&quot;usuario_id&quot;, usuarioId);</span>
+<span class="nc" id="L85">        respuesta.put(&quot;multas_pendientes&quot;, cantidad);</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        respuesta.put(&quot;saldo_total_pendiente&quot;, saldoTotal != null ? saldoTotal.doubleValue() : 0.0);</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        respuesta.put(&quot;tiene_multas_pendientes&quot;, cantidad &gt; 0);</span>
+<span class="nc" id="L88">        return respuesta;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
