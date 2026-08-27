@@ -22,6 +22,18 @@ export class EditorialService {
     );
   }
 
+  buscar(q: string): Observable<Editorial[]> {
+    return this.http.get<Editorial[]>(`${this.apiUrl}/buscar`, { params: { q } }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  crear(nombre: string): Observable<Editorial> {
+    return this.http.post<Editorial>(this.apiUrl, { nombre }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
   // RFC 7807: el backend responde ProblemDetail. El error se re-lanza
   // intacto (status + error.detail siguen disponibles en el componente).
   private manejarError(err: unknown): Observable<never> {

@@ -6,6 +6,9 @@ module.exports = {
   darkMode: "class",
   theme: {
     extend: {
+      screens: {
+        tablet: '840px',
+      },
       colors: {
         "secondary-container": "#76f4e0",
         "surface": "#f8f9ff",

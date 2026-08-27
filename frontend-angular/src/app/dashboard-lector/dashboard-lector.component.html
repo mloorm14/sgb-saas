@@ -1,28 +1,43 @@
 <div class="flex h-screen">
 
   <!-- Sidebar -->
-  <aside class="w-64 bg-white border-r border-outline-variant flex flex-col shrink-0">
+  <aside [class]="isCollapsed() ? 'w-[72px]' : 'w-64'" class="bg-white border-r border-outline-variant flex flex-col shrink-0 overflow-hidden transition-[width] duration-200 ease-in-out">
 
     <!-- Logo -->
-    <div class="px-lg py-md border-b border-outline-variant">
-      <span class="flex items-center gap-sm">
-        <span class="material-symbols-outlined text-3xl text-primary" style="font-variation-settings: 'FILL' 1;">local_library</span>
-        <span class="font-headline-md text-headline-md text-primary tracking-tight">SGB UTEQ</span>
-      </span>
+    <div class="px-lg py-md border-b border-outline-variant flex items-center gap-sm">
+      <span class="material-symbols-outlined text-3xl text-primary" style="font-variation-settings: 'FILL' 1;">local_library</span>
+      @if (!isCollapsed()) {
+        <span class="font-headline-md text-headline-md text-primary tracking-tight whitespace-nowrap overflow-hidden" style="transition: opacity 0.15s ease-in-out" [style.opacity]="isCollapsed() ? 0 : 1">SGB UTEQ</span>
+      }
+    </div>
+
+    <!-- Botón Contraer/Expandir - debajo del logo -->
+    <div class="border-b border-outline-variant px-sm py-xs flex" [class.justify-center]="isCollapsed()" [class.justify-start]="!isCollapsed()">
+      <button (click)="toggleSidebar()"
+        [attr.aria-label]="isCollapsed() ? 'Expandir menú' : 'Contraer menú'"
+        [attr.title]="isCollapsed() ? 'Expandir menú' : 'Contraer menú'"
+        class="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-surface-container-low transition-colors cursor-pointer shrink-0">
+        <span class="material-symbols-outlined text-[22px] text-on-surface-variant">menu</span>
+      </button>
     </div>
 
     <!-- Navegación -->
     <nav class="flex-1 overflow-y-auto py-md">
       @for (seccion of secciones; track seccion.titulo) {
         <div class="mb-sm">
-          <p class="px-lg font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">{{ seccion.titulo }}</p>
+          @if (seccion.titulo && !isCollapsed()) {
+            <p class="px-lg font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs whitespace-nowrap overflow-hidden" style="transition: opacity 0.15s ease-in-out">{{ seccion.titulo }}</p>
+          }
           @for (enlace of seccion.enlaces; track enlace.ruta) {
             <a [routerLink]="enlace.ruta"
                routerLinkActive="bg-primary-fixed text-primary"
                [routerLinkActiveOptions]="{ exact: true }"
-               class="flex items-center gap-sm px-lg py-sm mx-sm rounded-lg font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer">
-              <span class="material-symbols-outlined text-[20px]">{{ enlace.icono }}</span>
-              {{ enlace.etiqueta }}
+               class="flex items-center gap-sm py-sm mx-sm rounded-lg font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap overflow-hidden"
+               [class.px-lg]="!isCollapsed()" [class.px-2]="isCollapsed()" [class.justify-center]="isCollapsed()">
+              <span class="material-symbols-outlined text-[20px] shrink-0">{{ enlace.icono }}</span>
+              @if (!isCollapsed()) {
+                <span class="whitespace-nowrap overflow-hidden" style="transition: opacity 0.15s ease-in-out">{{ enlace.etiqueta }}</span>
+              }
             </a>
           }
         </div>
@@ -32,15 +47,17 @@
     <!-- Usuario -->
     <div class="relative border-t border-outline-variant px-lg py-md" data-menu-usuario-sidebar>
       <button (click)="mostrarMenuUsuario = !mostrarMenuUsuario"
-        class="w-full flex items-center gap-sm cursor-pointer">
+        class="w-full flex items-center gap-sm cursor-pointer" [class.justify-center]="isCollapsed()">
         <span class="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-sm text-label-sm shrink-0">{{ inicialesUsuario }}</span>
-        <div class="flex-1 text-left min-w-0">
-          <p class="font-body-sm text-body-sm text-on-surface truncate">{{ correoUsuario }}</p>
-          @if (nombreRol) {
-            <p class="font-label-sm text-label-sm text-on-surface-variant">{{ nombreRol }}</p>
-          }
-        </div>
-        <span class="material-symbols-outlined text-[18px] text-on-surface-variant"
+        @if (!isCollapsed()) {
+          <div class="flex-1 text-left min-w-0 overflow-hidden">
+            <p class="font-body-sm text-body-sm text-on-surface truncate whitespace-nowrap">{{ correoUsuario }}</p>
+            @if (nombreRol) {
+              <p class="font-label-sm text-label-sm text-on-surface-variant whitespace-nowrap">{{ nombreRol }}</p>
+            }
+          </div>
+        }
+        <span class="material-symbols-outlined text-[18px] text-on-surface-variant shrink-0"
           [class.rotate-180]="mostrarMenuUsuario"
           style="transition: transform 0.2s">expand_less</span>
       </button>
@@ -48,7 +65,7 @@
       @if (mostrarMenuUsuario) {
         <div class="absolute bottom-full left-2 right-2 mb-xs bg-white rounded-xl border border-outline-variant shadow-lg overflow-hidden z-30">
           <button (click)="cerrarSesion()"
-            class="w-full flex items-center gap-sm px-md py-sm text-left font-body-sm text-body-sm text-error hover:bg-error-container/40 transition-colors cursor-pointer">
+            class="w-full flex items-center gap-sm px-md py-sm text-left font-body-sm text-body-sm text-error hover:bg-error-container/40 transition-colors cursor-pointer whitespace-nowrap">
             <span class="material-symbols-outlined text-[18px]">logout</span>
             Cerrar sesión
           </button>
@@ -57,8 +74,13 @@
     </div>
   </aside>
 
+  <!-- Overlay para mobile -->
+  @if (!isCollapsed() && isMobile()) {
+    <div class="fixed inset-0 bg-black/40 z-30 lg:hidden" (click)="isCollapsed.set(true)"></div>
+  }
+
   <!-- Contenido principal -->
-  <main class="flex-1 overflow-y-auto bg-surface">
+  <main class="flex-1 overflow-y-auto bg-surface min-w-0">
     <router-outlet />
   </main>
 

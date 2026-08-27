@@ -8,5 +8,10 @@ import java.math.BigDecimal;
 public record TipoDanoDTO(
         Integer id,
         String nombre,
-        BigDecimal precio
-) {}
+        Integer categoriaId,
+        String categoriaNombre,
+        String tipoCosto,
+        BigDecimal valor
+) {
+    public BigDecimal precio() { return valor; }
+}

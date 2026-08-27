@@ -1,4 +1,4 @@
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, OnInit, effect, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
@@ -20,8 +20,9 @@ interface SeccionSidebar {
   imports: [CommonModule, RouterLink, RouterLinkActive, RouterOutlet],
   templateUrl: './dashboard-bibliotecario.component.html'
 })
-export class DashboardBibliotecarioComponent {
+export class DashboardBibliotecarioComponent implements OnInit {
   mostrarMenuUsuario = false;
+  isCollapsed = signal(false);
 
   private secciones: SeccionSidebar[] = [
     {
@@ -34,6 +35,7 @@ export class DashboardBibliotecarioComponent {
       titulo: 'GESTIÓN',
       enlaces: [
         { ruta: '/dashboard-bibliotecario/libros', etiqueta: 'Libros', icono: 'inventory_2' },
+        { ruta: '/dashboard-bibliotecario/libros-pendientes', etiqueta: 'Pendientes', icono: 'pending_actions' },
         { ruta: '/dashboard-bibliotecario/prestamos/gestion', etiqueta: 'Préstamos', icono: 'assignment_return' },
         { ruta: '/dashboard-bibliotecario/reservaciones', etiqueta: 'Reservaciones', icono: 'event_available' },
         { ruta: '/dashboard-bibliotecario/devoluciones', etiqueta: 'Devoluciones', icono: 'assignment_return' },
@@ -48,11 +50,28 @@ export class DashboardBibliotecarioComponent {
 
   constructor(private authService: AuthService) {}
 
+  ngOnInit(): void {
+    // Restaurar estado del sidebar desde localStorage
+    const saved = localStorage.getItem('sidebar:collapsed');
+    if (saved !== null) {
+      this.isCollapsed.set(saved === 'true');
+    }
+  }
+
   get seccionesVisibles(): SeccionSidebar[] {
     if (this.authService.hasRole('BIBLIOTECARIO')) {
       return this.secciones.filter(s => s.titulo !== 'SISTEMA');
     }
     return this.secciones;
+  }
+
+  isMobile(): boolean {
+    return window.innerWidth < 1024;
+  }
+
+  toggleSidebar(): void {
+    this.isCollapsed.update(v => !v);
+    localStorage.setItem('sidebar:collapsed', String(this.isCollapsed()));
   }
 
   @HostListener('document:click', ['$event'])

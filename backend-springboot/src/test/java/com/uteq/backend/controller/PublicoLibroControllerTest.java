@@ -75,7 +75,7 @@ class PublicoLibroControllerTest {
     private LibroResponseDTO libroRespuesta() {
         return new LibroResponseDTO(
                 1L, "Clean Code", "9780132350884", "resumen", null,
-                false, null, null, 2008,
+                false, null, null, 2008, null, null,
                 1, "Editorial X", 1, "Español", 1, "ACTIVO", 3, 3, null,
                 OffsetDateTime.now(), List.of(), List.of()
         );
@@ -125,7 +125,7 @@ class PublicoLibroControllerTest {
 
     @Test
     void obtener_sinToken_responde200() throws Exception {
-        when(libroService.buscarPorId(1L)).thenReturn(libroRespuesta());
+        when(libroService.buscarPorIdPublico(1L)).thenReturn(libroRespuesta());
 
         mockMvc.perform(get("/api/publico/libros/1"))
                 .andExpect(status().isOk())
