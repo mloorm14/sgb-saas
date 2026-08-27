@@ -36,7 +36,7 @@
    `tabla_afectada='usuarios'`, `ip_origen`, `fecha_hora`, y
    `detalles` con el correo involucrado. La inserción es un `INSERT`
    simple de una sola tabla (sin joins ni lógica cruzada), consistente
-   con la estrategia CRUD-ORM de `adr-013-acceso-datos-orm-sp.md` —
+   con la estrategia CRUD-ORM de `adr-006-acceso-datos-orm-sp.md` —
    no justifica un procedimiento almacenado.
 
 ### Extensiones (flujos alternativos)

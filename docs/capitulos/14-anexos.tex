@@ -449,13 +449,13 @@ REQ-F-016 & funcional & Must & HU-F04 (Panama) & CU-F04 (Panama) & PrestamosGest
 \hline
 REQ-NF-001 & no funcional & Must & HU-AUTH-03 & CU-AUTH-03 & AuthService/JwtService (ADR-003) & POST /api/auth/logout & AuthServiceTest.logoutGuardaTokenEnBlacklist & N/A (Redis, no BD) & docs/mediciones/sec/2026-07-30-owasp-a09-fix-logging-autenticacion.md & verificado \\
 \hline
-REQ-NF-002 & no funcional & Must & HU-AUTH-04 & CU-AUTH-04 & AuthController/AuthService (adr-007-cookies-jwt.md) & POST /api/auth/login; POST /api/auth/refresh; POST /api/auth/logout & AuthServiceTest.refreshConTokenValido & CRUD-ORM & docs/mediciones/sec/2026-07-21-cookie-refresh-token.md & verificado \\
+REQ-NF-002 & no funcional & Must & HU-AUTH-04 & CU-AUTH-04 & AuthController/AuthService (adr-012-cookies-jwt.md) & POST /api/auth/login; POST /api/auth/refresh; POST /api/auth/logout & AuthServiceTest.refreshConTokenValido & CRUD-ORM & docs/mediciones/sec/2026-07-21-cookie-refresh-token.md & verificado \\
 \hline
 REQ-NF-003 & no funcional & Should & --- (requisito a nivel de configuración, ver CU-LIB-01) & CU-LIB-01 & LibroService (adr-008-ttl-cache-libros.md) & GET /api/v1/libros & --- & CRUD-ORM (dato subyacente) + cache Redis (TTL configurable) & docs/mediciones/sec/2026-07-21-cache-libros-ttl.md & implementado \\
 \hline
-REQ-NF-004 & no funcional & Must & HU-01 (Cajas, lado SP); HU-AUTH-06 (Marlon, lado ORM) & CU-01 (Cajas); CU-AUTH-06 (Marlon) & transversal: PrestamoService/MultaService/ReservacionService (SP) + AuthService (ORM) (adr-013-acceso-datos-orm-sp.md) & N/A (decisión de arquitectura transversal) & PrestamoMultaProcedureIntegrationTest (6 tests, SP real); AuthServiceTest (8 tests, ORM) & Híbrido: SP (préstamos/multas/reservaciones complejas) + CRUD-ORM (auth/libros/bitácora, CRUD de una sola tabla) & docs/mediciones/backend/2026-07-29-flujo-prestamo-devolucion-multa-e2e.md & verificado \\
+REQ-NF-004 & no funcional & Must & HU-01 (Cajas, lado SP); HU-AUTH-06 (Marlon, lado ORM) & CU-01 (Cajas); CU-AUTH-06 (Marlon) & transversal: PrestamoService/MultaService/ReservacionService (SP) + AuthService (ORM) (adr-006-acceso-datos-orm-sp.md) & N/A (decisión de arquitectura transversal) & PrestamoMultaProcedureIntegrationTest (6 tests, SP real); AuthServiceTest (8 tests, ORM) & Híbrido: SP (préstamos/multas/reservaciones complejas) + CRUD-ORM (auth/libros/bitácora, CRUD de una sola tabla) & docs/mediciones/backend/2026-07-29-flujo-prestamo-devolucion-multa-e2e.md & verificado \\
 \hline
-REQ-NF-005 & no funcional & Should & N/A - decisión arquitectónica & N/A - decisión arquitectónica & db/schema.sql + db/seed.sql + Flyway (adr-006-estrategia-schema-reproducible.md) & N/A & --- & N/A (esquema/infraestructura, no aplica CRUD-ORM/SP) & --- & implementado \\
+REQ-NF-005 & no funcional & Should & N/A - decisión arquitectónica & N/A - decisión arquitectónica & db/schema.sql + db/seed.sql + Flyway (adr-013-estrategia-schema-reproducible.md) & N/A & --- & N/A (esquema/infraestructura, no aplica CRUD-ORM/SP) & --- & implementado \\
 \hline
 REQ-NF-006 & no funcional & Must & HU-AUTH-05 & CU-AUTH-05 & LoginRateLimiter & POST /api/auth/login & LoginRateLimiterTest (6 tests); AuthServiceTest.login*RateLimit* (3 tests) & N/A (Redis, no BD) & docs/mediciones/sec/2026-07-30-owasp-a07-fix-rate-limiting-login.md & verificado \\
 \hline
@@ -463,7 +463,7 @@ REQ-NF-007 & no funcional & Must & HU-AUTH-06 & CU-AUTH-06 & AuthService/Bitacor
 \hline
 REQ-NF-008 & no funcional & Should & N/A - decisión arquitectónica & N/A - decisión arquitectónica & toda la capa de persistencia (adr-011-gestor-base-datos.md) & N/A & PrestamoMultaProcedureIntegrationTest (corre contra Postgres real, no contra un mock) & N/A (elección de motor de base de datos) & --- & implementado \\
 \hline
-REQ-NF-009 & no funcional & Should & N/A - decisión arquitectónica & N/A - decisión arquitectónica & docker-compose.yml + Dockerfiles (adr-012-estrategia-despliegue.md) & N/A & --- & N/A & --- & implementado \\
+REQ-NF-009 & no funcional & Should & N/A - decisión arquitectónica & N/A - decisión arquitectónica & docker-compose.yml + Dockerfiles (adr-007-estrategia-despliegue.md) & N/A & --- & N/A & --- & implementado \\
 \hline
 REQ-NF-010 & no funcional & Must & HU-AUTH-07 & CU-AUTH-07 & Spring Security (@PreAuthorize) + SPs (defensa en profundidad) (adr-010-autenticacion-jwt-rbac.md) & transversal (todos los endpoints con @PreAuthorize) & MultaServiceTest.anular\_sinRolGerenteOAdmin\_lanzaAccesoDenegado; .listarPorUsuario\_cuandoLectorPideOtroUsuario\_lanzaAccesoDenegado (+ patrones equivalentes en Prestamo/ReservacionServiceTest) & N/A (control de acceso, no patrón de acceso a datos) & docs/mediciones/sec/2026-07-30-owasp-a01-control-acceso-roto.md & verificado \\
 \hline

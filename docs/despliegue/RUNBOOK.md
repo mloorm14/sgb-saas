@@ -155,6 +155,6 @@ Flujo ante borrado/corrupción de datos:
 
 - [DEPLOYMENT.md](DEPLOYMENT.md) — topología, límites y despliegue desde cero.
 - [BACKUP.md](BACKUP.md) — retención, fechas críticas y prueba de restauración.
-- `docs/adr/adr-012-estrategia-despliegue.md` — decisión arquitectónica.
+- `docs/adr/adr-007-estrategia-despliegue.md` — decisión arquitectónica.
 - Documentación oficial: `render.com/docs/free`, `render.com/docs/deploys`,
   `neon.com/docs/guides/branch-restore`, `upstash.com/docs`.

@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ConfiguracionSistemaService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.service</a> &gt; <span class="el_source">ConfiguracionSistemaService.java</span></div><h1>ConfiguracionSistemaService.java</h1><pre class="source lang-java linenums">package com.uteq.backend.service;
+
+import com.uteq.backend.dto.ConfiguracionSistemaResponseDTO;
+import com.uteq.backend.entity.BitacoraAuditoria;
+import com.uteq.backend.entity.ConfiguracionSistema;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
+import com.uteq.backend.repository.ConfiguracionSistemaRepository;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * Parámetros del sistema (tabla {@code configuracion_sistema}), pensados
+ * para leerse en cada préstamo/reserva/multa sin ir a la base de datos cada
+ * vez (Módulo 9.4 del roadmap). Cache en memoria simple (no Redis): un
+ * {@link ConcurrentHashMap} por instancia de la app, invalidado clave por
+ * clave al escribir — suficiente porque este valor cambia con muy poca
+ * frecuencia (un Admin ajustando un parámetro puntual), a diferencia del
+ * cache &quot;libros&quot; (ver RedisConfig), que sí necesita compartirse entre
+ * instancias e invalidarse por TTL.
+ *
+ * IMPORTANTE para consumidores futuros (Ramas C/D/E del roadmap: límite de
+ * renovaciones, caducidad de reservas, etc.): usar
+ * {@link #obtenerValor(String)}/{@link #obtenerValorEntero(String)}/
+ * {@link #obtenerValorDecimal(String)} en vez de inyectar
+ * {@link ConfiguracionSistemaRepository} directo, para no perder el cache.
+ */
+@Service
+public class ConfiguracionSistemaService {
+
+    private static final String CLAVE_NO_ENCONTRADA = &quot;Clave de configuración no encontrada: &quot;;
+    private static final String TABLA_CONFIG = &quot;configuracion_sistema&quot;;
+
+    private final ConfiguracionSistemaRepository repo;
+    private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
+<span class="fc" id="L41">    private final ConcurrentHashMap&lt;String, String&gt; cache = new ConcurrentHashMap&lt;&gt;();</span>
+
+    public ConfiguracionSistemaService(ConfiguracionSistemaRepository repo,
+<span class="fc" id="L44">                                        BitacoraAuditoriaRepository bitacoraAuditoriaRepo) {</span>
+<span class="fc" id="L45">        this.repo = repo;</span>
+<span class="fc" id="L46">        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;</span>
+<span class="fc" id="L47">    }</span>
+
+    @Transactional(readOnly = true)
+    public List&lt;ConfiguracionSistemaResponseDTO&gt; listar() {
+<span class="fc" id="L51">        return repo.findAll().stream()</span>
+<span class="fc" id="L52">                .map(c -&gt; new ConfiguracionSistemaResponseDTO(c.getClave(), c.getValor()))</span>
+<span class="fc" id="L53">                .toList();</span>
+    }
+
+    /**
+     * Actualiza el valor de una clave que YA existe. A propósito no crea
+     * claves nuevas por esta vía: el catálogo de parámetros válidos lo
+     * define el dominio (ver seed.sql / migraciones), no quien llama al
+     * endpoint — evita que quede una clave suelta que ningún consumidor
+     * real lee.
+     */
+    @Transactional
+    public ConfiguracionSistemaResponseDTO actualizar(String clave, String nuevoValor) {
+<span class="fc" id="L65">        ConfiguracionSistema config = repo.findById(clave)</span>
+<span class="fc" id="L66">                .orElseThrow(() -&gt; new EntityNotFoundException(CLAVE_NO_ENCONTRADA + clave));</span>
+<span class="fc" id="L67">        config.setValor(nuevoValor);</span>
+<span class="fc" id="L68">        repo.save(config);</span>
+<span class="fc" id="L69">        cache.remove(clave);</span>
+<span class="fc" id="L70">        registrarAuditoria(null, null, &quot;Actualización de configuración: &quot; + clave + &quot; = &quot; + nuevoValor);</span>
+<span class="fc" id="L71">        return new ConfiguracionSistemaResponseDTO(config.getClave(), config.getValor());</span>
+    }
+
+    private void registrarAuditoria(Long ejecutorId, Long registroId, String detalles) {
+<span class="fc" id="L75">        BitacoraAuditoria evento = BitacoraAuditoria.builder()</span>
+<span class="fc" id="L76">                .usuarioId(ejecutorId)</span>
+<span class="fc" id="L77">                .tipoOperacion(&quot;UPDATE&quot;)</span>
+<span class="fc" id="L78">                .tablaAfectada(TABLA_CONFIG)</span>
+<span class="fc" id="L79">                .registroId(registroId)</span>
+<span class="fc" id="L80">                .detalles(detalles)</span>
+<span class="fc" id="L81">                .fechaHora(OffsetDateTime.now())</span>
+<span class="fc" id="L82">                .build();</span>
+<span class="fc" id="L83">        bitacoraAuditoriaRepo.save(evento);</span>
+<span class="fc" id="L84">    }</span>
+
+    @Transactional(readOnly = true)
+    public String obtenerValor(String clave) {
+<span class="fc" id="L88">        String cacheado = cache.get(clave);</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        if (cacheado != null) {</span>
+<span class="fc" id="L90">            return cacheado;</span>
+        }
+<span class="fc" id="L92">        String valor = repo.findById(clave)</span>
+<span class="fc" id="L93">                .orElseThrow(() -&gt; new EntityNotFoundException(CLAVE_NO_ENCONTRADA + clave))</span>
+<span class="fc" id="L94">                .getValor();</span>
+<span class="fc" id="L95">        cache.put(clave, valor);</span>
+<span class="fc" id="L96">        return valor;</span>
+    }
+
+    public Integer obtenerValorEntero(String clave) {
+<span class="fc" id="L100">        String valor = obtenerValor(clave);</span>
+        try {
+<span class="fc" id="L102">            return Integer.valueOf(valor);</span>
+<span class="fc" id="L103">        } catch (NumberFormatException ex) {</span>
+<span class="fc" id="L104">            throw new IllegalStateException(</span>
+                    &quot;Valor no numérico para la clave '&quot; + clave + &quot;': &quot; + valor);
+        }
+    }
+
+    public BigDecimal obtenerValorDecimal(String clave) {
+<span class="nc" id="L110">        String valor = obtenerValor(clave);</span>
+        try {
+<span class="nc" id="L112">            return new BigDecimal(valor);</span>
+<span class="nc" id="L113">        } catch (NumberFormatException ex) {</span>
+<span class="nc" id="L114">            throw new IllegalStateException(</span>
+                    &quot;Valor no decimal para la clave '&quot; + clave + &quot;': &quot; + valor);
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

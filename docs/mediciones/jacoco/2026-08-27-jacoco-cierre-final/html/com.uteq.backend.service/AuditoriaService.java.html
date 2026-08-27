@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuditoriaService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.service</a> &gt; <span class="el_source">AuditoriaService.java</span></div><h1>AuditoriaService.java</h1><pre class="source lang-java linenums">package com.uteq.backend.service;
+
+import com.uteq.backend.dto.EventoAuditoriaResponseDTO;
+import com.uteq.backend.dto.ResumenCategoriaAuditoriaDTO;
+import com.uteq.backend.entity.BitacoraAuditoria;
+import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
+import com.uteq.backend.repository.UsuarioRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/**
+ * Consulta de {@code bitacora_auditoria} para GERENTE/ADMIN (Módulo 6). La
+ * tabla y el repositorio ya existían (escritos desde el Módulo de
+ * autenticación y, desde el Módulo 5, por {@code UsuarioAdminService}) --
+ * lo que faltaba era exponerlos de lectura.
+ */
+@Service
+public class AuditoriaService {
+
+    // Umbral para marcar &quot;Revisar&quot; en la categoría sesiones: 3 o más
+    // LOGIN_FAIL en las últimas 24 horas.
+    private static final long UMBRAL_LOGIN_FAIL_REVISAR = 3;
+
+    private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
+    private final UsuarioRepository usuarioRepo;
+
+    public AuditoriaService(BitacoraAuditoriaRepository bitacoraAuditoriaRepo,
+<span class="fc" id="L38">                             UsuarioRepository usuarioRepo) {</span>
+<span class="fc" id="L39">        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;</span>
+<span class="fc" id="L40">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L41">    }</span>
+
+    @Transactional(readOnly = true)
+    public Page&lt;EventoAuditoriaResponseDTO&gt; listar(Long usuarioId, String modulo,
+                                                     OffsetDateTime desde, OffsetDateTime hasta,
+                                                     Pageable pageable) {
+<span class="fc" id="L47">        Page&lt;BitacoraAuditoria&gt; pagina = bitacoraAuditoriaRepo.buscarConFiltros(</span>
+                usuarioId, modulo, desde, hasta, pageable);
+
+        // Resolver correo por id en un solo IN (...) en vez de una consulta
+        // por fila -- evita N+1 sobre una página de hasta N eventos.
+        // BitacoraAuditoria.usuarioId no es una relación @ManyToOne (ver
+        // Javadoc de la entidad: &quot;columnas planas, sin joins&quot;), así que
+        // este mapeo se resuelve acá, no con un JOIN FETCH en el repositorio.
+<span class="fc" id="L55">        Set&lt;Long&gt; idsUsuarios = pagina.getContent().stream()</span>
+<span class="fc" id="L56">                .map(BitacoraAuditoria::getUsuarioId)</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">                .filter(id -&gt; id != null)</span>
+<span class="fc" id="L58">                .collect(Collectors.toSet());</span>
+<span class="fc" id="L59">        Map&lt;Long, String&gt; correoPorId = usuarioRepo.findAllById(idsUsuarios).stream()</span>
+<span class="fc" id="L60">                .collect(Collectors.toMap(Usuario::getId, Usuario::getCorreo));</span>
+
+<span class="fc" id="L62">        return pagina.map(evento -&gt; toDTO(evento, correoPorId));</span>
+    }
+
+    /**
+     * Resumen por categoría: una sola query de agregación agrupando por
+     * tabla_afectada. Devuelve una lista con un elemento por cada categoría
+     * que tenga al menos 1 evento en la bitácora.
+     */
+    @Transactional(readOnly = true)
+    public List&lt;ResumenCategoriaAuditoriaDTO&gt; resumen() {
+<span class="nc" id="L72">        OffsetDateTime desdeHoy = OffsetDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);</span>
+
+<span class="nc" id="L74">        List&lt;Object[]&gt; filas = bitacoraAuditoriaRepo.resumenPorCategoria(desdeHoy);</span>
+<span class="nc" id="L75">        List&lt;ResumenCategoriaAuditoriaDTO&gt; resultado = new ArrayList&lt;&gt;();</span>
+
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        for (Object[] fila : filas) {</span>
+<span class="nc" id="L78">            String tablaAfectada = (String) fila[0];</span>
+<span class="nc" id="L79">            long totalEventos = (Long) fila[1];</span>
+<span class="nc" id="L80">            long eventosHoy = (Long) fila[2];</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">            OffsetDateTime ultimoEvento = fila[3] instanceof OffsetDateTime odt ? odt : null;</span>
+
+            // TODO: definir criterio de &quot;Revisar&quot; cuando el equipo lo defina
+<span class="nc" id="L84">            boolean requiereRevision = false;</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">            if (&quot;sesiones&quot;.equals(tablaAfectada)) {</span>
+<span class="nc" id="L86">                long failsRecientes = bitacoraAuditoriaRepo.contarLoginFailRecientes(</span>
+<span class="nc" id="L87">                        OffsetDateTime.now().minusHours(24));</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">                requiereRevision = failsRecientes &gt;= UMBRAL_LOGIN_FAIL_REVISAR;</span>
+            }
+
+<span class="nc" id="L91">            resultado.add(new ResumenCategoriaAuditoriaDTO(</span>
+                    tablaAfectada, totalEventos, eventosHoy, ultimoEvento, requiereRevision));
+<span class="nc" id="L93">        }</span>
+
+<span class="nc" id="L95">        return resultado;</span>
+    }
+
+    private EventoAuditoriaResponseDTO toDTO(BitacoraAuditoria evento, Map&lt;Long, String&gt; correoPorId) {
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        String correo = evento.getUsuarioId() == null ? null : correoPorId.get(evento.getUsuarioId());</span>
+<span class="fc" id="L100">        return new EventoAuditoriaResponseDTO(</span>
+<span class="fc" id="L101">                evento.getId(),</span>
+                correo,
+<span class="fc" id="L103">                evento.getTipoOperacion(),</span>
+<span class="fc" id="L104">                evento.getFechaHora(),</span>
+<span class="fc" id="L105">                evento.getTablaAfectada(),</span>
+<span class="fc" id="L106">                evento.getDetalles());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

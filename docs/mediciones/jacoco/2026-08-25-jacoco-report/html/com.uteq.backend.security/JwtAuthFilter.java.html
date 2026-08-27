@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JwtAuthFilter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.security</a> &gt; <span class="el_source">JwtAuthFilter.java</span></div><h1>JwtAuthFilter.java</h1><pre class="source lang-java linenums">package com.uteq.backend.security;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+
+@Component
+@RequiredArgsConstructor
+public class JwtAuthFilter extends OncePerRequestFilter {
+
+<span class="fc" id="L27">    private static final Logger log = LoggerFactory.getLogger(JwtAuthFilter.class);</span>
+
+    private static final String BEARER_PREFIX = &quot;Bearer &quot;;
+
+    private final JwtService jwtService;
+    private final RedisTemplate&lt;String, String&gt; redisTemplate;
+    private final UserDetailsServiceImpl userDetailsServiceImpl;
+
+    @Override
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain
+    ) throws ServletException, IOException {
+        try {
+<span class="fc" id="L42">            String authHeader = request.getHeader(&quot;Authorization&quot;);</span>
+
+<span class="pc bpc" id="L44" title="1 of 4 branches missed.">            if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {</span>
+<span class="fc" id="L45">                filterChain.doFilter(request, response);</span>
+<span class="fc" id="L46">                return;</span>
+            }
+
+<span class="fc" id="L49">            String token = authHeader.substring(BEARER_PREFIX.length());</span>
+
+<span class="fc bfc" id="L51" title="All 2 branches covered.">            if (!jwtService.validateToken(token)) {</span>
+<span class="fc" id="L52">                filterChain.doFilter(request, response);</span>
+<span class="fc" id="L53">                return;</span>
+            }
+
+<span class="fc" id="L56">            String jti = jwtService.extractJti(token);</span>
+            try {
+<span class="fc bfc" id="L58" title="All 2 branches covered.">                if (estaRevocado(jti)) {</span>
+<span class="fc" id="L59">                    filterChain.doFilter(request, response);</span>
+<span class="fc" id="L60">                    return;</span>
+                }
+<span class="fc" id="L62">            } catch (DataAccessException e) {</span>
+                // Fail-closed (decisión OWASP A07, ver
+                // docs/mediciones/sec/owasp/decision-fail-closed-jwt-redis.md):
+                // no poder consultar la blacklist no equivale a &quot;token vigente&quot;;
+                // un token revocado (logout, cambio de contraseña, cuenta
+                // bloqueada) tratado como válido durante el corte restablece
+                // accesos que ya fueron removidos. Se rechaza con 401 y no se
+                // continúa la cadena del filtro. El log es best-effort (no
+                // depende de Redis) para distinguir en monitoreo un outage de
+                // infraestructura de una revocación real.
+<span class="fc" id="L72">                SecurityContextHolder.clearContext();</span>
+<span class="fc" id="L73">                log.error(&quot;Redis no disponible al verificar revocación (fail-closed, request rechazada con 401): jti={}&quot;, jti, e);</span>
+<span class="fc" id="L74">                response.setStatus(HttpStatus.UNAUTHORIZED.value());</span>
+<span class="fc" id="L75">                response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);</span>
+                // ProblemDetail serializado a mano: este filtro corre antes del
+                // despacho MVC, así que no depende de un ObjectMapper inyectado
+                // (que tampoco existe en contextos de test tipo @WebMvcTest).
+<span class="fc" id="L79">                response.getWriter().write(</span>
+                        &quot;{\&quot;type\&quot;:\&quot;about:blank\&quot;,\&quot;title\&quot;:\&quot;Unauthorized\&quot;,\&quot;status\&quot;:401,&quot;
+                                + &quot;\&quot;detail\&quot;:\&quot;No se pudo confirmar la validez del token. Intente nuevamente.\&quot;}&quot;
+                );
+<span class="fc" id="L83">                return;</span>
+<span class="fc" id="L84">            }</span>
+
+<span class="fc" id="L86">            String correo = jwtService.extractCorreo(token);</span>
+<span class="fc" id="L87">            UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(correo);</span>
+
+<span class="fc" id="L89">            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(</span>
+<span class="fc" id="L90">                    userDetails, null, userDetails.getAuthorities()</span>
+            );
+<span class="fc" id="L92">            SecurityContextHolder.getContext().setAuthentication(authentication);</span>
+<span class="fc" id="L93">        } catch (Exception e) {</span>
+<span class="fc" id="L94">            SecurityContextHolder.clearContext();</span>
+<span class="fc" id="L95">        }</span>
+
+<span class="fc" id="L97">        filterChain.doFilter(request, response);</span>
+<span class="fc" id="L98">    }</span>
+
+    /**
+     * La revocación por logout vive en la blacklist de Redis. Consulta directa
+     * sin degradación local: si Redis no responde, la {@link DataAccessException}
+     * se propaga al catch de {@link #doFilterInternal} que la maneja en
+     * fail-closed (401). Ver
+     * docs/mediciones/sec/owasp/decision-fail-closed-jwt-redis.md.
+     */
+    private boolean estaRevocado(String jti) {
+<span class="fc" id="L108">        return Boolean.TRUE.equals(redisTemplate.hasKey(&quot;blacklist:&quot; + jti));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

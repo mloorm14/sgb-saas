@@ -13,7 +13,7 @@
 - **Garantía de éxito (postcondición)**: se emite un `accessToken`
   (JWT, en el cuerpo de la respuesta, vigencia corta) y un
   `refreshToken` (cookie `HttpOnly+Secure+SameSite=Strict`,
-  `path=/api/auth`, ver `adr-007-cookies-jwt.md`); se registra el
+  `path=/api/auth`, ver `adr-012-cookies-jwt.md`); se registra el
   evento `LOGIN_OK`.
 - **Disparador**: el usuario envía correo y contraseña
   (`POST /api/auth/login`).

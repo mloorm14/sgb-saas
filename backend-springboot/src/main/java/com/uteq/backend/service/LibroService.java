@@ -5,10 +5,12 @@ import com.uteq.backend.dto.LibroResponseDTO;
 import com.uteq.backend.dto.LibroSugerenciaDTO;
 import com.uteq.backend.dto.PortadaImagenDTO;
 import com.uteq.backend.entity.Autor;
+import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.Categoria;
 import com.uteq.backend.entity.EstadoLibro;
 import com.uteq.backend.entity.Libro;
 import com.uteq.backend.repository.AutorRepository;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.CategoriaRepository;
 import com.uteq.backend.repository.EditorialRepository;
 import com.uteq.backend.repository.EstadoLibroRepository;
@@ -28,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +42,7 @@ public class LibroService {
     private static final Logger log = LoggerFactory.getLogger(LibroService.class);
 
     private static final String LIBRO_NO_ENCONTRADO = "Libro no encontrado con id: ";
+    private static final String TABLA_LIBROS = "libros";
     private static final String ESTADO_ACTIVO = "ACTIVO";
     private static final String ESTADO_DADO_DE_BAJA = "DADO_DE_BAJA";
     private static final String ESTADO_PENDIENTE = "PENDIENTE";
@@ -64,6 +68,7 @@ public class LibroService {
     // memoria (ver ConfiguracionSistemaService), mismo patrón que
     // PrestamoService con dias_prestamo_default/max_renovaciones_default.
     private final ConfiguracionSistemaService configuracionSistemaService;
+    private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     public LibroService(LibroRepository libroRepo,
                         EditorialRepository editorialRepo,
@@ -71,7 +76,8 @@ public class LibroService {
                         EstadoLibroRepository estadoRepo,
                         CategoriaRepository categoriaRepo,
                         AutorRepository autorRepo,
-                        ConfiguracionSistemaService configuracionSistemaService) {
+                        ConfiguracionSistemaService configuracionSistemaService,
+                        BitacoraAuditoriaRepository bitacoraAuditoriaRepo) {
         this.libroRepo     = libroRepo;
         this.editorialRepo = editorialRepo;
         this.idiomaRepo    = idiomaRepo;
@@ -79,6 +85,19 @@ public class LibroService {
         this.categoriaRepo = categoriaRepo;
         this.autorRepo     = autorRepo;
         this.configuracionSistemaService = configuracionSistemaService;
+        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
+    }
+
+    private void registrarAuditoria(Long usuarioId, String tipoOperacion, Long registroId, String detalles) {
+        BitacoraAuditoria evento = BitacoraAuditoria.builder()
+                .usuarioId(usuarioId)
+                .tipoOperacion(tipoOperacion)
+                .tablaAfectada(TABLA_LIBROS)
+                .registroId(registroId)
+                .detalles(detalles)
+                .fechaHora(OffsetDateTime.now())
+                .build();
+        bitacoraAuditoriaRepo.save(evento);
     }
 
     @Cacheable("libros")
@@ -225,13 +244,11 @@ public class LibroService {
         if (dto.precioBase() != null && dto.precioBase().signum() < 0) {
             throw new IllegalArgumentException("El precio base no puede ser negativo");
         }
-        // Si el creador es GERENTE/ADMIN, forzar estado PENDIENTE (no visible al público)
         Libro libro = fromDTO(dto);
         if (esGerenteOAdmin() && dto.precioBase() != null) {
             // precio ya seteado en fromDTO; mantenerlo
         } else if (esGerenteOAdmin()) {
             // gerente/admin creando sin precio también va a pendiente según regla
-            // pero permitir si explícitamente manda ACTIVO? Forzar pendiente igual
         }
         if (esGerenteOAdmin()) {
             EstadoLibro pendiente = estadoRepo.findByNombre(ESTADO_PENDIENTE).orElse(null);
@@ -239,11 +256,12 @@ public class LibroService {
                 libro.setEstado(pendiente);
             }
         }
-        // Bibliotecario: ignorar precioBase si viene (no autorizado)
         if (esBibliotecarioSolo() && libro.getPrecioBase() != null) {
             libro.setPrecioBase(null);
         }
-        return toDTO(libroRepo.save(libro));
+        LibroResponseDTO resultado = toDTO(libroRepo.save(libro));
+        registrarAuditoria(null, "INSERT", resultado.id(), "Libro creado: " + dto.titulo());
+        return resultado;
     }
 
     @CacheEvict(value = "libros", allEntries = true)
@@ -287,7 +305,9 @@ public class LibroService {
         }
         // si es bibliotecario solo, ignorar dto.precioBase (no se modifica)
 
-        return toDTO(libroRepo.save(libro));
+        LibroResponseDTO resultado = toDTO(libroRepo.save(libro));
+        registrarAuditoria(null, "UPDATE", id, "Libro actualizado: " + dto.titulo());
+        return resultado;
     }
 
     @CacheEvict(value = "libros", allEntries = true)
@@ -301,6 +321,7 @@ public class LibroService {
                         "Catalogo estados_libro sin fila '" + ESTADO_DADO_DE_BAJA + "'"));
         libro.setEstado(estadoDadoDeBaja);
         libroRepo.save(libro);
+        registrarAuditoria(null, "DELETE", id, "Libro dado de baja: " + libro.getTitulo());
     }
 
     // ── Portada binaria (V13__portada_imagen.sql) ─────────────

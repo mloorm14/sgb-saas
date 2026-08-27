@@ -4,6 +4,7 @@ import com.uteq.backend.dto.SugerenciaAdquisicionRequestDTO;
 import com.uteq.backend.dto.SugerenciaAdquisicionResponseDTO;
 import com.uteq.backend.entity.SugerenciaAdquisicion;
 import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.SugerenciaAdquisicionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -31,6 +32,7 @@ class SugerenciaAdquisicionServiceTest {
     @Mock SugerenciaAdquisicionRepository sugerenciaRepo;
     @Mock UsuarioRepository usuarioRepo;
     @Mock Authentication authentication;
+    @Mock BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     @InjectMocks SugerenciaAdquisicionService sugerenciaService;
 

@@ -794,3 +794,127 @@ ALTER TABLE ONLY public.usuarios
 ALTER TABLE ONLY public.verificaciones_correo
     ADD CONSTRAINT verificaciones_correo_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id) ON DELETE CASCADE;
 
+-- ============================================================================
+-- V14: Devoluciones con registro de daños
+-- ============================================================================
+
+CREATE TABLE public.tipos_dano (
+    id integer NOT NULL,
+    nombre character varying(50) NOT NULL,
+    precio numeric(8,2) NOT NULL CHECK (precio >= 0),
+    activo boolean DEFAULT true NOT NULL
+);
+
+CREATE SEQUENCE public.tipos_dano_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.tipos_dano_id_seq OWNED BY public.tipos_dano.id;
+
+ALTER TABLE ONLY public.tipos_dano ALTER COLUMN id SET DEFAULT nextval('public.tipos_dano_id_seq'::regclass);
+
+ALTER TABLE ONLY public.tipos_dano
+    ADD CONSTRAINT tipos_dano_nombre_key UNIQUE (nombre);
+
+ALTER TABLE ONLY public.tipos_dano
+    ADD CONSTRAINT tipos_dano_pkey PRIMARY KEY (id);
+
+INSERT INTO public.tipos_dano (nombre, precio) VALUES
+    ('Paginas rotas', 3.00),
+    ('Manchas', 5.00),
+    ('Portada/Lomo', 7.00),
+    ('Humedad', 10.00),
+    ('Rayon', 4.00)
+ON CONFLICT (nombre) DO NOTHING;
+
+CREATE TABLE public.registro_danos (
+    id bigint NOT NULL,
+    prestamo_id bigint NOT NULL,
+    estado_devolucion character varying(20) NOT NULL CHECK (estado_devolucion IN ('BUEN_ESTADO', 'CON_DANO', 'PERDIDO')),
+    descripcion text,
+    bibliotecario_id bigint NOT NULL,
+    fecha_registro timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE SEQUENCE public.registro_danos_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.registro_danos_id_seq OWNED BY public.registro_danos.id;
+
+ALTER TABLE ONLY public.registro_danos ALTER COLUMN id SET DEFAULT nextval('public.registro_danos_id_seq'::regclass);
+
+ALTER TABLE ONLY public.registro_danos
+    ADD CONSTRAINT registro_danos_pkey PRIMARY KEY (id);
+
+CREATE UNIQUE INDEX uq_registro_danos_prestamo ON public.registro_danos(prestamo_id);
+
+CREATE TABLE public.registro_dano_detalle (
+    id bigint NOT NULL,
+    registro_dano_id bigint NOT NULL,
+    tipo_dano_id integer,
+    nombre_custom character varying(100),
+    precio_cobrado numeric(8,2) NOT NULL CHECK (precio_cobrado >= 0),
+    CHECK (tipo_dano_id IS NOT NULL OR nombre_custom IS NOT NULL)
+);
+
+CREATE SEQUENCE public.registro_dano_detalle_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.registro_dano_detalle_id_seq OWNED BY public.registro_dano_detalle.id;
+
+ALTER TABLE ONLY public.registro_dano_detalle ALTER COLUMN id SET DEFAULT nextval('public.registro_dano_detalle_id_seq'::regclass);
+
+ALTER TABLE ONLY public.registro_dano_detalle
+    ADD CONSTRAINT registro_dano_detalle_pkey PRIMARY KEY (id);
+
+CREATE TABLE public.evidencia_dano (
+    id bigint NOT NULL,
+    registro_dano_id bigint NOT NULL,
+    archivo_nombre character varying(255) NOT NULL,
+    archivo_tipo character varying(100) NOT NULL,
+    archivo_bytes bytea NOT NULL,
+    subido_en timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE SEQUENCE public.evidencia_dano_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.evidencia_dano_id_seq OWNED BY public.evidencia_dano.id;
+
+ALTER TABLE ONLY public.evidencia_dano ALTER COLUMN id SET DEFAULT nextval('public.evidencia_dano_id_seq'::regclass);
+
+ALTER TABLE ONLY public.evidencia_dano
+    ADD CONSTRAINT evidencia_dano_pkey PRIMARY KEY (id);
+
+ALTER TABLE public.multas ADD COLUMN registro_dano_id bigint REFERENCES public.registro_danos(id);
+
+ALTER TABLE ONLY public.registro_danos
+    ADD CONSTRAINT registro_danos_prestamo_id_fkey FOREIGN KEY (prestamo_id) REFERENCES public.prestamos(id) ON DELETE RESTRICT;
+
+ALTER TABLE ONLY public.registro_danos
+    ADD CONSTRAINT registro_danos_bibliotecario_id_fkey FOREIGN KEY (bibliotecario_id) REFERENCES public.usuarios(id) ON DELETE RESTRICT;
+
+ALTER TABLE ONLY public.registro_dano_detalle
+    ADD CONSTRAINT registro_dano_detalle_registro_dano_id_fkey FOREIGN KEY (registro_dano_id) REFERENCES public.registro_danos(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.registro_dano_detalle
+    ADD CONSTRAINT registro_dano_detalle_tipo_dano_id_fkey FOREIGN KEY (tipo_dano_id) REFERENCES public.tipos_dano(id);
+
+ALTER TABLE ONLY public.evidencia_dano
+    ADD CONSTRAINT evidencia_dano_registro_dano_id_fkey FOREIGN KEY (registro_dano_id) REFERENCES public.registro_danos(id) ON DELETE CASCADE;
+

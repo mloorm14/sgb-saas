@@ -7,7 +7,7 @@
     mientras siga usando el sistema.
   - Responsable de seguridad: quiere que el `refreshToken` nunca sea
     accesible desde JavaScript (por eso viaja en cookie `HttpOnly`, ver
-    `adr-007-cookies-jwt.md`) y que el `accessToken` siga siendo de
+    `adr-012-cookies-jwt.md`) y que el `accessToken` siga siendo de
     vida corta.
 - **Precondiciones**: existe una cookie `refreshToken` en el navegador
   (`HttpOnly+Secure+SameSite=Strict`, `path=/api/auth`).

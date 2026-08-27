@@ -33,7 +33,7 @@ requisito A.1 de la guía (autenticación bajo cookie HttpOnly+Secure+SameSite=S
 **Contexto de la corrección**: al revisar `AuthController`/`AuthService`
 antes de este cambio se confirmó que el `refreshToken` NO usaba cookie en
 absoluto (viajaba en texto plano en el cuerpo JSON, sin protección alguna;
-ver `docs/adr/adr-007-cookies-jwt.md` para el detalle completo de esta
+ver `docs/adr/adr-012-cookies-jwt.md` para el detalle completo de esta
 corrección de premisa). Toda la evidencia de abajo es POSTERIOR a la
 implementación de la cookie.
 

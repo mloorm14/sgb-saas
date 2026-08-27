@@ -2,7 +2,9 @@ package com.uteq.backend.service;
 
 import com.uteq.backend.dto.SugerenciaAdquisicionRequestDTO;
 import com.uteq.backend.dto.SugerenciaAdquisicionResponseDTO;
+import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.SugerenciaAdquisicion;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.SugerenciaAdquisicionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -11,6 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.OffsetDateTime;
 
 // Módulo 9.3 del roadmap. crear() resuelve el usuarioId siempre desde el
 // Authentication autenticado (mismo criterio que FavoritoService): un
@@ -23,14 +27,18 @@ public class SugerenciaAdquisicionService {
 
     private static final String SUGERENCIA_NO_ENCONTRADA = "Sugerencia de adquisición no encontrada con id: ";
     private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado con correo: ";
+    private static final String TABLA_SUGERENCIAS = "sugerencias_adquisicion";
 
     private final SugerenciaAdquisicionRepository sugerenciaRepo;
     private final UsuarioRepository usuarioRepo;
+    private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     public SugerenciaAdquisicionService(SugerenciaAdquisicionRepository sugerenciaRepo,
-                                         UsuarioRepository usuarioRepo) {
+                                         UsuarioRepository usuarioRepo,
+                                         BitacoraAuditoriaRepository bitacoraAuditoriaRepo) {
         this.sugerenciaRepo = sugerenciaRepo;
         this.usuarioRepo = usuarioRepo;
+        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
     }
 
     @Transactional
@@ -74,7 +82,21 @@ public class SugerenciaAdquisicionService {
         sugerencia.setEstado(nuevoEstado);
         sugerencia.setRevisadoPor(revisorId);
 
-        return toDTO(sugerenciaRepo.save(sugerencia));
+        SugerenciaAdquisicionResponseDTO resultado = toDTO(sugerenciaRepo.save(sugerencia));
+        registrarAuditoria(revisorId, id, "Cambio de estado de sugerencia " + id + " a " + nuevoEstado);
+        return resultado;
+    }
+
+    private void registrarAuditoria(Long ejecutorId, Long registroId, String detalles) {
+        BitacoraAuditoria evento = BitacoraAuditoria.builder()
+                .usuarioId(ejecutorId)
+                .tipoOperacion("UPDATE")
+                .tablaAfectada(TABLA_SUGERENCIAS)
+                .registroId(registroId)
+                .detalles(detalles)
+                .fechaHora(OffsetDateTime.now())
+                .build();
+        bitacoraAuditoriaRepo.save(evento);
     }
 
     private Long resolverIdPorCorreo(String correo) {

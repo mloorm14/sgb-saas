@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LibroIsbnLookupService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.service</a> &gt; <span class="el_source">LibroIsbnLookupService.java</span></div><h1>LibroIsbnLookupService.java</h1><pre class="source lang-java linenums">package com.uteq.backend.service;
+
+import com.uteq.backend.dto.LibroIsbnLookupDTO;
+import com.uteq.backend.dto.PortadaImagenDTO;
+import com.uteq.backend.integration.GeminiClient;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * Autocompletar de inventario (Módulo inventario, mockup 14): consulta la
+ * API pública de Google Books ({@code /volumes?q=isbn:...}) y mapea el
+ * primer resultado a {@link LibroIsbnLookupDTO}. Mismo criterio de HTTP
+ * directo que {@code integration/GeminiClient}: {@link RestClient} con
+ * timeouts configurables, sin dependencias nuevas (verificado en pom.xml).
+ * &lt;p&gt;
+ * NUNCA se propagan errores de transporte al cliente HTTP: cualquier
+ * fallo de red o 4xx/5xx de Google Books se traduce a
+ * {@link EntityNotFoundException} (404 con ProblemDetail vía
+ * GlobalExceptionHandler), igual que un ISBN sin resultados -- el
+ * frontend muestra el mensaje &quot;no se encontró información&quot; en todos los
+ * casos. La portada NO viaja en el DTO: se descarga por separado en
+ * {@link #obtenerPortada(String)} (el frontend la sube con
+ * LibroService.subirPortada al guardar el libro).
+ */
+@Service
+public class LibroIsbnLookupService {
+
+<span class="fc" id="L40">    private static final Logger log = LoggerFactory.getLogger(LibroIsbnLookupService.class);</span>
+
+    private static final String NO_ENCONTRADO =
+            &quot;No se pudo encontrar información de ese libro&quot;;
+    private static final String ERROR_GOOGLE =
+            &quot;No se pudo encontrar información de ese libro&quot;;
+<span class="fc" id="L46">    private static final Pattern ANIO_PATTERN = Pattern.compile(&quot;^(\\d{4})&quot;);</span>
+
+    private final RestClient restClient;
+    private final ObjectMapper objectMapper;
+    private final String urlBase;
+    private final String openLibraryUrlBase;
+    private final GeminiClient geminiClient;
+
+    public LibroIsbnLookupService(
+            @Value(&quot;${app.google-books.url-base}&quot;) String urlBase,
+            @Value(&quot;${app.google-books.timeout-ms}&quot;) long timeoutMs,
+            @Value(&quot;${app.open-library.url-base:https://openlibrary.org}&quot;) String openLibraryUrlBase,
+<span class="fc" id="L58">            @Autowired(required = false) GeminiClient geminiClient) {</span>
+<span class="fc" id="L59">        this.urlBase = urlBase;</span>
+<span class="fc" id="L60">        this.openLibraryUrlBase = openLibraryUrlBase;</span>
+<span class="fc" id="L61">        this.objectMapper = new ObjectMapper();</span>
+<span class="fc" id="L62">        this.geminiClient = geminiClient;</span>
+
+        // Timeout de conexión/lectura configurable (app.google-books.timeout-ms),
+        // mismo criterio de configuración externa que app.gemini.
+<span class="fc" id="L66">        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();</span>
+<span class="fc" id="L67">        requestFactory.setConnectTimeout((int) timeoutMs);</span>
+<span class="fc" id="L68">        requestFactory.setReadTimeout((int) timeoutMs);</span>
+
+        // RestClient propio (igual que GeminiClient): NO se inyecta
+        // RestClient.Builder porque Boot 4 modular de este proyecto no
+        // autoconfigura el bean (verificado: el context no arrancaba).
+<span class="fc" id="L73">        this.restClient = RestClient.builder()</span>
+<span class="fc" id="L74">                .requestFactory(requestFactory)</span>
+<span class="fc" id="L75">                .build();</span>
+<span class="fc" id="L76">    }</span>
+
+    public LibroIsbnLookupDTO buscarPorIsbn(String isbn) {
+        try {
+<span class="fc" id="L80">            JsonNode volume = buscarPrimerVolume(isbn);</span>
+<span class="fc" id="L81">            JsonNode volumeInfo = volume.path(&quot;volumeInfo&quot;);</span>
+
+<span class="fc" id="L83">            String autor = null;</span>
+<span class="fc" id="L84">            JsonNode authors = volumeInfo.path(&quot;authors&quot;);</span>
+<span class="pc bpc" id="L85" title="2 of 4 branches missed.">            if (authors.isArray() &amp;&amp; authors.size() &gt; 0) {</span>
+<span class="fc" id="L86">                autor = authors.get(0).asText(null);</span>
+            }
+
+<span class="fc" id="L89">            String titulo = volumeInfo.path(&quot;title&quot;).asText(null);</span>
+<span class="fc" id="L90">            String resumen = volumeInfo.path(&quot;description&quot;).asText(null);</span>
+<span class="fc" id="L91">            Integer anio = anioDesde(volumeInfo.path(&quot;publishedDate&quot;).asText(null));</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">            boolean portada = !volumeInfo.path(&quot;imageLinks&quot;).path(&quot;thumbnail&quot;).isMissingNode();</span>
+
+            // Solo titulo/resumen/anio son requeridos por el frontend; si Google trae alguno vacío,
+            // se intenta complementar con IA (traducción/generación de resumen en español neutro).
+<span class="pc bpc" id="L96" title="4 of 6 branches missed.">            if ((resumen == null || resumen.isBlank()) &amp;&amp; geminiClient != null) {</span>
+<span class="nc" id="L97">                String iaResumen = generarResumenViaIA(titulo, autor, isbn);</span>
+<span class="nc bnc" id="L98" title="All 4 branches missed.">                if (iaResumen != null &amp;&amp; !iaResumen.isBlank()) resumen = iaResumen;</span>
+            }
+
+<span class="fc" id="L101">            return new LibroIsbnLookupDTO(titulo, autor, resumen, anio, portada);</span>
+<span class="fc" id="L102">        } catch (EntityNotFoundException ex) {</span>
+            // Google no encontró (o 429): fallback a Open Library (gratis, sin key, mejor para fondo español).
+<span class="fc" id="L104">            LibroIsbnLookupDTO ol = buscarEnOpenLibrary(isbn);</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">            if (ol != null) {</span>
+                // Si Open Library trae titulo pero sin resumen, complementar solo resumen con IA
+<span class="nc bnc" id="L107" title="All 6 branches missed.">                if ((ol.resumen() == null || ol.resumen().isBlank()) &amp;&amp; geminiClient != null) {</span>
+<span class="nc" id="L108">                    String iaResumen = generarResumenViaIA(ol.titulo(), ol.autor(), isbn);</span>
+<span class="nc bnc" id="L109" title="All 4 branches missed.">                    if (iaResumen != null &amp;&amp; !iaResumen.isBlank()) {</span>
+<span class="nc" id="L110">                        return new LibroIsbnLookupDTO(ol.titulo(), ol.autor(), iaResumen, ol.anioPublicacion(), ol.portadaDisponible());</span>
+                    }
+                }
+<span class="nc" id="L113">                return ol;</span>
+            }
+<span class="fc" id="L115">            throw ex;</span>
+        }
+    }
+
+    private LibroIsbnLookupDTO buscarEnOpenLibrary(String isbn) {
+        try {
+<span class="fc" id="L121">            String limpio = isbn.replace(&quot;-&quot;, &quot;&quot;).replace(&quot; &quot;, &quot;&quot;);</span>
+<span class="fc" id="L122">            String url = openLibraryUrlBase + &quot;/api/books?bibkeys=ISBN:&quot; + limpio + &quot;&amp;format=json&amp;jscmd=data&quot;;</span>
+<span class="fc" id="L123">            String json = restClient.get().uri(url).retrieve().body(String.class);</span>
+<span class="pc bpc" id="L124" title="3 of 6 branches missed.">            if (json == null || json.isBlank() || json.trim().equals(&quot;{}&quot;)) return null;</span>
+<span class="nc" id="L125">            JsonNode root = objectMapper.readTree(json);</span>
+<span class="nc" id="L126">            JsonNode data = root.path(&quot;ISBN:&quot; + limpio);</span>
+<span class="nc bnc" id="L127" title="All 4 branches missed.">            if (data.isMissingNode() || data.isEmpty()) return null;</span>
+<span class="nc" id="L128">            String titulo = data.path(&quot;title&quot;).asText(null);</span>
+<span class="nc" id="L129">            String resumen = null;</span>
+<span class="nc" id="L130">            JsonNode desc = data.path(&quot;description&quot;);</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">            if (desc.isTextual()) resumen = desc.asText(null);</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">            else if (desc.isObject()) resumen = desc.path(&quot;value&quot;).asText(null);</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">            if (resumen == null) {</span>
+<span class="nc" id="L134">                JsonNode excerpts = data.path(&quot;excerpts&quot;);</span>
+<span class="nc bnc" id="L135" title="All 4 branches missed.">                if (excerpts.isArray() &amp;&amp; excerpts.size() &gt; 0) resumen = excerpts.get(0).path(&quot;text&quot;).asText(null);</span>
+            }
+<span class="nc" id="L137">            String autor = null;</span>
+<span class="nc" id="L138">            JsonNode authors = data.path(&quot;authors&quot;);</span>
+<span class="nc bnc" id="L139" title="All 4 branches missed.">            if (authors.isArray() &amp;&amp; authors.size() &gt; 0) autor = authors.get(0).path(&quot;name&quot;).asText(null);</span>
+<span class="nc" id="L140">            Integer anio = null;</span>
+<span class="nc" id="L141">            String publishDate = data.path(&quot;publish_date&quot;).asText(null);</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">            if (publishDate != null) {</span>
+<span class="nc" id="L143">                Matcher m = ANIO_PATTERN.matcher(publishDate);</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">                if (m.find()) anio = Integer.parseInt(m.group(1));</span>
+            }
+<span class="nc bnc" id="L146" title="All 4 branches missed.">            boolean portada = data.has(&quot;cover&quot;) &amp;&amp; !data.path(&quot;cover&quot;).path(&quot;medium&quot;).isMissingNode();</span>
+<span class="nc bnc" id="L147" title="All 6 branches missed.">            if (titulo == null &amp;&amp; resumen == null &amp;&amp; anio == null) return null;</span>
+<span class="nc" id="L148">            log.info(&quot;Open Library fallback OK para ISBN {} -&gt; {}&quot;, isbn, titulo);</span>
+<span class="nc" id="L149">            return new LibroIsbnLookupDTO(titulo, autor, resumen, anio, portada);</span>
+<span class="nc" id="L150">        } catch (Exception e) {</span>
+<span class="nc" id="L151">            log.debug(&quot;Open Library fallback falló para ISBN {}&quot;, isbn, e);</span>
+<span class="nc" id="L152">            return null;</span>
+        }
+    }
+
+    private String generarResumenViaIA(String titulo, String autor, String isbn) {
+        try {
+<span class="nc" id="L158">            String promptSistema = &quot;Eres bibliotecario. Genera un resumen breve (max 500 caracteres, español neutro) para el libro.&quot;</span>
+                    + &quot; Si no lo conoces, responde vacio. Responde SOLO con el texto del resumen, sin JSON ni comillas extra.&quot;;
+<span class="nc bnc" id="L160" title="All 4 branches missed.">            String mensaje = &quot;ISBN: &quot; + isbn + (titulo != null ? &quot;, Titulo: &quot; + titulo : &quot;&quot;) + (autor != null ? &quot;, Autor: &quot; + autor : &quot;&quot;);</span>
+<span class="nc" id="L161">            String resp = geminiClient.generarRespuesta(promptSistema, List.of(), mensaje);</span>
+<span class="nc bnc" id="L162" title="All 6 branches missed.">            if (resp == null || resp.isBlank() || resp.contains(&quot;No se pudo&quot;)) return null;</span>
+<span class="nc" id="L163">            return resp.trim();</span>
+<span class="nc" id="L164">        } catch (Exception e) {</span>
+<span class="nc" id="L165">            log.warn(&quot;Fallback IA resumen falló para ISBN {}&quot;, isbn, e);</span>
+<span class="nc" id="L166">            return null;</span>
+        }
+    }
+
+    public PortadaImagenDTO obtenerPortada(String isbn) {
+<span class="fc" id="L171">        JsonNode volume = buscarPrimerVolume(isbn);</span>
+<span class="fc" id="L172">        String thumbnail = volume.path(&quot;volumeInfo&quot;).path(&quot;imageLinks&quot;).path(&quot;thumbnail&quot;).asText(null);</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        if (thumbnail == null) {</span>
+<span class="fc" id="L174">            throw new EntityNotFoundException(NO_ENCONTRADO);</span>
+        }
+<span class="fc" id="L176">        byte[] bytes = restClient.get()</span>
+<span class="fc" id="L177">                .uri(thumbnail)</span>
+<span class="fc" id="L178">                .retrieve()</span>
+<span class="fc" id="L179">                .body(byte[].class);</span>
+<span class="fc" id="L180">        return new PortadaImagenDTO(bytes, &quot;image/jpeg&quot;);</span>
+    }
+
+    // El ISBN guardado admite guiones (misma regex que LibroRequestDTO);
+    // Google Books espera solo dígitos, así que se limpian acá.
+    private JsonNode buscarPrimerVolume(String isbn) {
+<span class="fc" id="L186">        String url = urlBase + &quot;/volumes?q=isbn:&quot; + isbn.replace(&quot;-&quot;, &quot;&quot;);</span>
+<span class="fc" id="L187">        String json = null;</span>
+        try {
+<span class="fc" id="L189">            json = restClient.get().uri(url).retrieve().body(String.class);</span>
+<span class="fc" id="L190">        } catch (Exception ex) {</span>
+            // 429 Too Many Requests de Google (cuota sin API key) es temporal: reintento una vez
+<span class="pc bpc" id="L192" title="2 of 4 branches missed.">            if (ex.getMessage() != null &amp;&amp; ex.getMessage().contains(&quot;429&quot;)) {</span>
+<span class="nc" id="L193">                try { Thread.sleep(1200); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }</span>
+                try {
+<span class="nc" id="L195">                    json = restClient.get().uri(url).retrieve().body(String.class);</span>
+<span class="nc" id="L196">                } catch (Exception ex2) {</span>
+<span class="nc" id="L197">                    log.error(&quot;Google Books no respondió (reintento) para el ISBN {}&quot;, isbn, ex2);</span>
+<span class="nc" id="L198">                    throw new EntityNotFoundException(ERROR_GOOGLE);</span>
+<span class="nc" id="L199">                }</span>
+            } else {
+<span class="fc" id="L201">                log.error(&quot;Google Books no respondió para el ISBN {}&quot;, isbn, ex);</span>
+<span class="fc" id="L202">                throw new EntityNotFoundException(ERROR_GOOGLE);</span>
+            }
+<span class="fc" id="L204">        }</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">        if (json == null) {</span>
+<span class="nc" id="L206">            throw new EntityNotFoundException(ERROR_GOOGLE);</span>
+        }
+
+        JsonNode root;
+        try {
+<span class="fc" id="L211">            root = objectMapper.readTree(json);</span>
+<span class="nc" id="L212">        } catch (Exception ex) {</span>
+<span class="nc" id="L213">            log.error(&quot;No se pudo parsear la respuesta de Google Books para el ISBN {}&quot;, isbn, ex);</span>
+<span class="nc" id="L214">            throw new EntityNotFoundException(ERROR_GOOGLE);</span>
+<span class="fc" id="L215">        }</span>
+
+<span class="fc" id="L217">        JsonNode items = root.path(&quot;items&quot;);</span>
+<span class="pc bpc" id="L218" title="1 of 6 branches missed.">        if (root.path(&quot;totalItems&quot;).asInt(0) == 0 || !items.isArray() || items.isEmpty()) {</span>
+<span class="fc" id="L219">            throw new EntityNotFoundException(NO_ENCONTRADO);</span>
+        }
+<span class="fc" id="L221">        return items.get(0);</span>
+    }
+
+    // &quot;2008&quot; -&gt; 2008, &quot;2008-06-19&quot; -&gt; 2008, sin fecha -&gt; null.
+    private Integer anioDesde(String publishedDate) {
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">        if (publishedDate == null) {</span>
+<span class="nc" id="L227">            return null;</span>
+        }
+<span class="fc" id="L229">        Matcher matcher = ANIO_PATTERN.matcher(publishedDate);</span>
+<span class="pc bpc" id="L230" title="1 of 2 branches missed.">        return matcher.find() ? Integer.parseInt(matcher.group(1)) : null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

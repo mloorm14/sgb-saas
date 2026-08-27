@@ -7,6 +7,7 @@ import com.uteq.backend.dto.PortadaImagenDTO;
 import com.uteq.backend.entity.EstadoLibro;
 import com.uteq.backend.entity.Libro;
 import com.uteq.backend.repository.AutorRepository;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.CategoriaRepository;
 import com.uteq.backend.repository.EditorialRepository;
 import com.uteq.backend.repository.EstadoLibroRepository;
@@ -42,18 +43,10 @@ class LibroServiceTest {
     @Mock EditorialRepository editorialRepo;
     @Mock IdiomaRepository idiomaRepo;
     @Mock EstadoLibroRepository estadoRepo;
-    // Módulo 9.1/3 (rama E): repos nuevos que ahora recibe el constructor
-    // de LibroService. No se stubean en los tests preexistentes (1-5)
-    // porque esos flujos nunca resuelven categoriaIds/autorIds no-nulos --
-    // Mockito los inyecta igual por tipo vía @InjectMocks, pero
-    // permanecen "unused" (sin given(...)) en esos casos, que es lo
-    // esperado.
     @Mock CategoriaRepository categoriaRepo;
     @Mock AutorRepository autorRepo;
-    // Módulo portada binaria: para leer max_tamano_portada_mb (límite de
-    // tamaño de portada en configuracion_sistema). Solo se stubea en los
-    // tests de actualizarPortada_*.
     @Mock ConfiguracionSistemaService configuracionSistemaService;
+    @Mock BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     @InjectMocks LibroService libroService;
 

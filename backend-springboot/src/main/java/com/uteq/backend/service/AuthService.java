@@ -46,6 +46,7 @@ public class AuthService {
     private static final String ESTADO_INICIAL = "PENDIENTE_VERIFICACION";
     private static final String ESTADO_VERIFICADO = "ACTIVO";
     private static final String TABLA_USUARIOS = "usuarios";
+    private static final String TABLA_SESIONES = "sesiones";
 
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
@@ -206,12 +207,18 @@ public class AuthService {
     // no se resolvió aún (login fallido, logout) para no pagar una consulta
     // extra solo para la bitácora -- el correo intentado ya queda en
     // "detalles" para correlación manual si hace falta.
+    // 2026-08: Separación de tablas: LOGIN_OK/LOGIN_FAIL/LOGOUT escriben
+    // en 'sesiones' (antes mezclados bajo 'usuarios'). CORREO_VERIFICADO
+    // sigue en 'usuarios' porque es una operación sobre la entidad usuario.
     private void registrarAuditoria(Long usuarioId, String tipoOperacion, Long registroId,
                                     String detalles, String ipOrigen) {
+        boolean esSesion = "LOGIN_OK".equals(tipoOperacion)
+                || "LOGIN_FAIL".equals(tipoOperacion)
+                || "LOGOUT".equals(tipoOperacion);
         BitacoraAuditoria evento = BitacoraAuditoria.builder()
                 .usuarioId(usuarioId)
                 .tipoOperacion(tipoOperacion)
-                .tablaAfectada(TABLA_USUARIOS)
+                .tablaAfectada(esSesion ? TABLA_SESIONES : TABLA_USUARIOS)
                 .registroId(registroId)
                 .detalles(detalles)
                 .ipOrigen(ipOrigen)

@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PrestamosGestionService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.service</a> &gt; <span class="el_source">PrestamosGestionService.java</span></div><h1>PrestamosGestionService.java</h1><pre class="source lang-java linenums">package com.uteq.backend.service;
+
+import com.uteq.backend.dto.HistorialPrestamoDTO;
+import com.uteq.backend.dto.ReservaActivaDTO;
+import com.uteq.backend.dto.UsuarioPrestamosGestionDTO;
+import com.uteq.backend.dto.UsuarioSugerenciaDTO;
+import com.uteq.backend.entity.Libro;
+import com.uteq.backend.entity.Prestamo;
+import com.uteq.backend.entity.Reservacion;
+import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.EstadoMultaRepository;
+import com.uteq.backend.repository.EstadoPrestamoRepository;
+import com.uteq.backend.repository.EstadoReservacionRepository;
+import com.uteq.backend.repository.LibroRepository;
+import com.uteq.backend.repository.MultaRepository;
+import com.uteq.backend.repository.PrestamoRepository;
+import com.uteq.backend.repository.ReservacionRepository;
+import com.uteq.backend.repository.UsuarioRepository;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/**
+ * Lecturas de la ventanilla de préstamos del bibliotecario (módulo
+ * &quot;Préstamos&quot; del sidebar): encontrar al usuario por correo y armar todo lo
+ * que la pantalla necesita en una pasada -- tarjeta de identificación,
+ * reserva vigente (Caso A) e historial reciente.
+ *
+ * Reutiliza el modelo existente sin duplicar nada (ver Javadoc de los DTOs):
+ * - correo           -&gt; usuarios.correo (identidad de login, UNIQUE; misma
+ *                       columna que resuelve findByCorreo en todo el sistema)
+ * - cédula (informativa en la tarjeta) -&gt; usuarios.identificacion_usuario
+ * - tipo de usuario -&gt; roles del usuario
+ * - estado de cuenta-&gt; estados_usuario.nombre
+ * - multas pendientes -&gt; agregado sobre multas x prestamos (no es columna)
+ * - días de préstamo sugeridos -&gt; configuracion_sistema 'dias_prestamo_default'
+ *
+ * Sobre el bloqueo del Caso C: la REGLA de que no se puede prestar a un
+ * usuario con multas ya vive en sp_crear_prestamo (rechaza
+ * BLOQUEADO_POR_MULTA) y el sistema mantiene la invariante &quot;multas
+ * pendientes &gt; 0 &lt;=&gt; usuario BLOQUEADO_POR_MULTA&quot; de forma atómica
+ * (sp_registrar_devolucion bloquea al generar la multa; sp_pagar_multa /
+ * sp_anular_multa solo desbloquean cuando ya no queda ninguna PENDIENTE).
+ * Acá solo se CALCULA el monto para pintar la alerta y el motivo exacto --
+ * no se duplica la validación de creación, que sigue centralizada en el SP
+ * que invoca PrestamoService.crear().
+ */
+@Service
+public class PrestamosGestionService {
+
+    private static final String USUARIO_NO_ENCONTRADO =
+            &quot;No se encontró ningún usuario con este correo&quot;;
+    private static final String SIN_RESERVA_VIGENTE = &quot;El usuario no tiene reservas vigentes&quot;;
+    private static final String ESTADO_MULTA_PENDIENTE = &quot;PENDIENTE&quot;;
+
+    // &quot;Vigente&quot; = todavía puede terminar en retiro (mismo criterio que
+    // PrestamoService.ESTADOS_RESERVA_VIGENTE; no existe un estado literal
+    // &quot;ACTIVA&quot; en estados_reservacion).
+<span class="fc" id="L65">    private static final List&lt;String&gt; ESTADOS_RESERVA_VIGENTE =</span>
+<span class="fc" id="L66">            List.of(&quot;PENDIENTE&quot;, &quot;LISTA_PARA_RETIRO&quot;);</span>
+
+    private static final String CLAVE_DIAS_PRESTAMO_DEFAULT = &quot;dias_prestamo_default&quot;;
+
+    // Tope del historial reciente: línea de tiempo acotada, no un listado
+    // paginado (para el historial completo ya existe GET /prestamos/usuario/{id}).
+    private static final int LIMITE_HISTORIAL = 20;
+
+    private final UsuarioRepository usuarioRepo;
+    private final ReservacionRepository reservacionRepo;
+    private final EstadoReservacionRepository estadoReservacionRepo;
+    private final LibroRepository libroRepo;
+    private final PrestamoRepository prestamoRepo;
+    private final EstadoPrestamoRepository estadoPrestamoRepo;
+    private final MultaRepository multaRepo;
+    private final EstadoMultaRepository estadoMultaRepo;
+    private final ConfiguracionSistemaService configuracionSistemaService;
+
+    public PrestamosGestionService(UsuarioRepository usuarioRepo,
+                                   ReservacionRepository reservacionRepo,
+                                   EstadoReservacionRepository estadoReservacionRepo,
+                                   LibroRepository libroRepo,
+                                   PrestamoRepository prestamoRepo,
+                                   EstadoPrestamoRepository estadoPrestamoRepo,
+                                   MultaRepository multaRepo,
+                                   EstadoMultaRepository estadoMultaRepo,
+<span class="fc" id="L92">                                   ConfiguracionSistemaService configuracionSistemaService) {</span>
+<span class="fc" id="L93">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L94">        this.reservacionRepo = reservacionRepo;</span>
+<span class="fc" id="L95">        this.estadoReservacionRepo = estadoReservacionRepo;</span>
+<span class="fc" id="L96">        this.libroRepo = libroRepo;</span>
+<span class="fc" id="L97">        this.prestamoRepo = prestamoRepo;</span>
+<span class="fc" id="L98">        this.estadoPrestamoRepo = estadoPrestamoRepo;</span>
+<span class="fc" id="L99">        this.multaRepo = multaRepo;</span>
+<span class="fc" id="L100">        this.estadoMultaRepo = estadoMultaRepo;</span>
+<span class="fc" id="L101">        this.configuracionSistemaService = configuracionSistemaService;</span>
+<span class="fc" id="L102">    }</span>
+
+    // ── GET /gestion/buscar-usuario?correo= ──────────────────
+    @Transactional(readOnly = true)
+    public UsuarioPrestamosGestionDTO buscarPorCorreo(String correo) {
+<span class="nc" id="L107">        Usuario usuario = usuarioRepo.findByCorreo(correo)</span>
+<span class="nc" id="L108">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO));</span>
+
+<span class="nc" id="L110">        Integer idMultaPendiente = idEstadoMulta(ESTADO_MULTA_PENDIENTE);</span>
+<span class="nc" id="L111">        BigDecimal montoPendiente = multaRepo.sumMontoByUsuarioIdAndEstadoMultaId(</span>
+<span class="nc" id="L112">                usuario.getId(), idMultaPendiente);</span>
+<span class="nc" id="L113">        long cantidadPendientes = multaRepo.countByUsuarioIdAndEstadoMultaId(</span>
+<span class="nc" id="L114">                usuario.getId(), idMultaPendiente);</span>
+
+<span class="nc" id="L116">        return new UsuarioPrestamosGestionDTO(</span>
+<span class="nc" id="L117">                usuario.getId(),</span>
+<span class="nc" id="L118">                (usuario.getNombre() + &quot; &quot; + usuario.getApellido()).trim(),</span>
+<span class="nc" id="L119">                usuario.getIdentificacionUsuario(),</span>
+<span class="nc" id="L120">                usuario.getCorreo(),</span>
+<span class="nc" id="L121">                usuario.getRoles().stream()</span>
+<span class="nc" id="L122">                        .map(rol -&gt; rol.getNombre())</span>
+<span class="nc" id="L123">                        .sorted()</span>
+<span class="nc" id="L124">                        .toList(),</span>
+<span class="nc" id="L125">                usuario.getEstado().getNombre(),</span>
+                montoPendiente,
+<span class="nc" id="L127">                cantidadPendientes,</span>
+<span class="nc" id="L128">                diasPrestamoSugerido());</span>
+    }
+
+    // ── GET /gestion/sugerencias-usuarios?correo= ───────────
+    // Autocompletado predictivo: retorna hasta 3 usuarios cuyo correo
+    // contenga el texto ingresado (case-insensitive).
+    @Transactional(readOnly = true)
+    public List&lt;UsuarioSugerenciaDTO&gt; sugerenciasUsuarios(String correo) {
+<span class="nc bnc" id="L136" title="All 4 branches missed.">        if (correo == null || correo.trim().length() &lt; 2) {</span>
+<span class="nc" id="L137">            return List.of();</span>
+        }
+<span class="nc" id="L139">        return usuarioRepo.findTop3ByCorreoContainingIgnoreCaseOrderByNombreAsc(correo.trim())</span>
+<span class="nc" id="L140">                .stream()</span>
+<span class="nc" id="L141">                .map(u -&gt; new UsuarioSugerenciaDTO(</span>
+<span class="nc" id="L142">                        u.getId(),</span>
+<span class="nc" id="L143">                        (u.getNombre() + &quot; &quot; + u.getApellido()).trim(),</span>
+<span class="nc" id="L144">                        u.getCorreo(),</span>
+<span class="nc" id="L145">                        u.getEstado().getNombre()))</span>
+<span class="nc" id="L146">                .toList();</span>
+    }
+
+    // ── GET /gestion/reserva-activa?usuarioId= ───────────────
+    // 404 (EntityNotFoundException) si no hay reserva vigente: el frontend
+    // interpreta ese 404 como &quot;Caso B: préstamo directo&quot;.
+    @Transactional(readOnly = true)
+    public ReservaActivaDTO reservaActiva(Long usuarioId) {
+<span class="nc" id="L154">        List&lt;Integer&gt; idsVigentes = ESTADOS_RESERVA_VIGENTE.stream()</span>
+<span class="nc" id="L155">                .map(this::idEstadoReservacion)</span>
+<span class="nc" id="L156">                .toList();</span>
+
+<span class="nc" id="L158">        Reservacion reservacion = reservacionRepo</span>
+<span class="nc" id="L159">                .findFirstByUsuarioIdAndEstadoReservacionIdInOrderByFechaReservaDesc(usuarioId, idsVigentes)</span>
+<span class="nc" id="L160">                .orElseThrow(() -&gt; new EntityNotFoundException(SIN_RESERVA_VIGENTE));</span>
+
+<span class="nc" id="L162">        Libro libro = libroRepo.findById(reservacion.getLibroId())</span>
+<span class="nc" id="L163">                .orElseThrow(() -&gt; new EntityNotFoundException(</span>
+<span class="nc" id="L164">                        &quot;El libro de la reservación &quot; + reservacion.getId() + &quot; no existe&quot;));</span>
+
+<span class="nc" id="L166">        return new ReservaActivaDTO(</span>
+<span class="nc" id="L167">                reservacion.getId(),</span>
+<span class="nc" id="L168">                libro.getId(),</span>
+<span class="nc" id="L169">                libro.getTitulo(),</span>
+<span class="nc" id="L170">                libro.getAutores().stream()</span>
+<span class="nc" id="L171">                        .map(autor -&gt; autor.getNombre())</span>
+<span class="nc" id="L172">                        .sorted()</span>
+<span class="nc" id="L173">                        .toList(),</span>
+<span class="nc" id="L174">                libro.getIsbn(),</span>
+<span class="nc" id="L175">                reservacion.getFechaReserva(),</span>
+<span class="nc" id="L176">                reservacion.getFechaLimiteRetiro(),</span>
+<span class="nc" id="L177">                diasPrestamoSugerido(),</span>
+<span class="nc" id="L178">                libro.getAnioPublicacion(),</span>
+<span class="nc" id="L179">                libro.getStockDisponible(),</span>
+<span class="nc" id="L180">                libro.getStockTotal(),</span>
+<span class="nc" id="L181">                libro.getUbicacionFisica(),</span>
+<span class="nc" id="L182">                libro.getCategorias().stream()</span>
+<span class="nc" id="L183">                        .map(cat -&gt; cat.getNombre())</span>
+<span class="nc" id="L184">                        .sorted()</span>
+<span class="nc" id="L185">                        .toList(),</span>
+<span class="nc bnc" id="L186" title="All 6 branches missed.">                libro.getPortadaImagen() != null || (libro.getPortadaUrl() != null &amp;&amp; !libro.getPortadaUrl().isBlank()));</span>
+    }
+
+    // ── GET /gestion/historial?usuarioId= ────────────────────
+    // Tres consultas en total (préstamos, libros+estados por lote, multas
+    // agrupadas), nunca una por fila. Lista vacía si el usuario no tiene
+    // préstamos: el frontend muestra &quot;Este usuario no tiene préstamos
+    // registrados&quot;.
+    @Transactional(readOnly = true)
+    public List&lt;HistorialPrestamoDTO&gt; historial(Long usuarioId) {
+<span class="nc" id="L196">        List&lt;Prestamo&gt; prestamos = prestamoRepo.findByUsuarioIdOrderByIdDesc(usuarioId);</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">        if (prestamos.isEmpty()) {</span>
+<span class="nc" id="L198">            return List.of();</span>
+        }
+<span class="nc bnc" id="L200" title="All 2 branches missed.">        if (prestamos.size() &gt; LIMITE_HISTORIAL) {</span>
+<span class="nc" id="L201">            prestamos = prestamos.subList(0, LIMITE_HISTORIAL);</span>
+        }
+
+<span class="nc" id="L204">        List&lt;Libro&gt; libros = libroRepo.findAllById(</span>
+<span class="nc" id="L205">                        prestamos.stream().map(Prestamo::getLibroId).distinct().toList());</span>
+<span class="nc" id="L206">        Map&lt;Long, String&gt; titulosPorLibro = libros.stream()</span>
+<span class="nc" id="L207">                .collect(Collectors.toMap(Libro::getId, Libro::getTitulo));</span>
+<span class="nc" id="L208">        Map&lt;Long, String&gt; isbnPorLibro = libros.stream()</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">                .collect(Collectors.toMap(Libro::getId, l -&gt; l.getIsbn() != null ? l.getIsbn() : &quot;&quot;));</span>
+<span class="nc" id="L210">        Map&lt;Long, List&lt;String&gt;&gt; autoresPorLibro = libros.stream()</span>
+<span class="nc" id="L211">                .collect(Collectors.toMap(Libro::getId,</span>
+<span class="nc" id="L212">                        l -&gt; l.getAutores().stream().map(a -&gt; a.getNombre()).toList()));</span>
+<span class="nc" id="L213">        Map&lt;Long, List&lt;String&gt;&gt; categoriasPorLibro = libros.stream()</span>
+<span class="nc" id="L214">                .collect(Collectors.toMap(Libro::getId,</span>
+<span class="nc" id="L215">                        l -&gt; l.getCategorias().stream().map(c -&gt; c.getNombre()).toList()));</span>
+
+<span class="nc" id="L217">        Map&lt;Integer, String&gt; nombresPorEstado = estadoPrestamoRepo.findAllById(</span>
+<span class="nc" id="L218">                        prestamos.stream().map(Prestamo::getEstadoPrestamoId).distinct().toList())</span>
+<span class="nc" id="L219">                .stream()</span>
+<span class="nc" id="L220">                .collect(Collectors.toMap(e -&gt; e.getId(), e -&gt; e.getNombre()));</span>
+
+<span class="nc" id="L222">        Integer idMultaPendiente = idEstadoMulta(ESTADO_MULTA_PENDIENTE);</span>
+<span class="nc" id="L223">        Map&lt;Long, BigDecimal&gt; pendientesPorPrestamo = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">        for (var fila : multaRepo.findPendientesAgrupadasPorPrestamo(usuarioId, idMultaPendiente)) {</span>
+<span class="nc" id="L225">            pendientesPorPrestamo.put(fila.getPrestamoId(), fila.getTotalPendiente());</span>
+<span class="nc" id="L226">        }</span>
+
+<span class="nc" id="L228">        Usuario usuario = usuarioRepo.findById(usuarioId).orElse(null);</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">        String usuarioNombre = usuario != null</span>
+<span class="nc" id="L230">                ? (usuario.getNombre() + &quot; &quot; + usuario.getApellido()).trim()</span>
+<span class="nc" id="L231">                : &quot;&quot;;</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">        String usuarioCorreo = usuario != null ? usuario.getCorreo() : &quot;&quot;;</span>
+
+<span class="nc" id="L234">        return prestamos.stream()</span>
+<span class="nc" id="L235">                .map(p -&gt; toHistorialDTO(p, titulosPorLibro, isbnPorLibro, autoresPorLibro, categoriasPorLibro, nombresPorEstado, pendientesPorPrestamo, usuarioNombre, usuarioCorreo))</span>
+<span class="nc" id="L236">                .toList();</span>
+    }
+
+    private HistorialPrestamoDTO toHistorialDTO(
+            Prestamo p,
+            Map&lt;Long, String&gt; titulosPorLibro,
+            Map&lt;Long, String&gt; isbnPorLibro,
+            Map&lt;Long, List&lt;String&gt;&gt; autoresPorLibro,
+            Map&lt;Long, List&lt;String&gt;&gt; categoriasPorLibro,
+            Map&lt;Integer, String&gt; nombresPorEstado,
+            Map&lt;Long, BigDecimal&gt; pendientesPorPrestamo,
+            String usuarioNombre,
+            String usuarioCorreo) {
+<span class="nc" id="L249">        BigDecimal montoPendiente = pendientesPorPrestamo.get(p.getId());</span>
+<span class="nc" id="L250">        return new HistorialPrestamoDTO(</span>
+<span class="nc" id="L251">                p.getId(),</span>
+<span class="nc" id="L252">                p.getLibroId(),</span>
+<span class="nc" id="L253">                titulosPorLibro.getOrDefault(p.getLibroId(), &quot;Libro #&quot; + p.getLibroId()),</span>
+<span class="nc" id="L254">                isbnPorLibro.getOrDefault(p.getLibroId(), &quot;&quot;),</span>
+<span class="nc" id="L255">                autoresPorLibro.getOrDefault(p.getLibroId(), List.of()),</span>
+<span class="nc" id="L256">                categoriasPorLibro.getOrDefault(p.getLibroId(), List.of()),</span>
+<span class="nc" id="L257">                p.getFechaPrestamo(),</span>
+<span class="nc" id="L258">                p.getFechaDevolucionEstimada(),</span>
+<span class="nc" id="L259">                p.getFechaDevolucionReal(),</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">                nombresPorEstado.getOrDefault(p.getEstadoPrestamoId(), &quot;&quot;),</span>
+                montoPendiente != null,
+<span class="nc bnc" id="L262" title="All 2 branches missed.">                montoPendiente != null ? montoPendiente : BigDecimal.ZERO,</span>
+                usuarioNombre,
+                usuarioCorreo);
+    }
+
+    // Días de préstamo prellenados según la configuración del sistema
+    // ('dias_prestamo_default', editable por el Admin en /admin/configuracion).
+    private Integer diasPrestamoSugerido() {
+<span class="nc" id="L270">        return configuracionSistemaService.obtenerValorEntero(CLAVE_DIAS_PRESTAMO_DEFAULT);</span>
+    }
+
+    // Se usa IllegalStateException para &quot;fila de catálogo faltante&quot;: problema
+    // de seed/configuración, no error del cliente (mismo criterio que
+    // PrestamoService.idEstadoPrestamo).
+    private Integer idEstadoMulta(String nombre) {
+<span class="nc" id="L277">        return estadoMultaRepo.findByNombre(nombre)</span>
+<span class="nc" id="L278">                .orElseThrow(() -&gt; new IllegalStateException(</span>
+                        &quot;Catálogo estados_multa sin fila '&quot; + nombre + &quot;'&quot;))
+<span class="nc" id="L280">                .getId();</span>
+    }
+
+    private Integer idEstadoReservacion(String nombre) {
+<span class="nc" id="L284">        return estadoReservacionRepo.findByNombre(nombre)</span>
+<span class="nc" id="L285">                .orElseThrow(() -&gt; new IllegalStateException(</span>
+                        &quot;Catálogo estados_reservacion sin fila '&quot; + nombre + &quot;'&quot;))
+<span class="nc" id="L287">                .getId();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

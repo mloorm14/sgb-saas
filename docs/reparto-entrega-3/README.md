@@ -29,7 +29,7 @@ Verificado contra el código real antes de escribir las instrucciones
 - **Backend**: Spring Boot 4.0.6 / Java 21, RBAC normalizado
   (`roles`, `usuario_roles`, `permisos` — ver `docs/adr/adr-010-autenticacion-jwt-rbac.md`),
   autenticación JWT con `accessToken` en body/header y `refreshToken` en
-  cookie `HttpOnly+Secure+SameSite=Strict` (`docs/adr/adr-007-cookies-jwt.md`),
+  cookie `HttpOnly+Secure+SameSite=Strict` (`docs/adr/adr-012-cookies-jwt.md`),
   blacklist de revocación en Redis (`ADR-003-jwt-redis.md`), cache del
   catálogo de libros con TTL externo (`adr-008-ttl-cache-libros.md`).
   Único módulo de negocio completo hoy: **Libros** (CRUD vía

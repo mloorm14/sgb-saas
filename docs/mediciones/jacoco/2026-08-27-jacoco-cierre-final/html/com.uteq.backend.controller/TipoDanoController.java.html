@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TipoDanoController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.controller</a> &gt; <span class="el_source">TipoDanoController.java</span></div><h1>TipoDanoController.java</h1><pre class="source lang-java linenums">package com.uteq.backend.controller;
+
+import com.uteq.backend.dto.TipoDanoDTO;
+import com.uteq.backend.service.TipoDanoService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.net.URI;
+import java.util.List;
+
+@RestController
+@RequestMapping(&quot;/api/v1/tipos-dano&quot;)
+@PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+public class TipoDanoController {
+
+    private final TipoDanoService tipoDanoService;
+
+<span class="fc" id="L24">    public TipoDanoController(TipoDanoService tipoDanoService) {</span>
+<span class="fc" id="L25">        this.tipoDanoService = tipoDanoService;</span>
+<span class="fc" id="L26">    }</span>
+
+    @GetMapping
+    @PreAuthorize(&quot;hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;List&lt;TipoDanoDTO&gt;&gt; listar() {
+<span class="nc" id="L31">        return ResponseEntity.ok(tipoDanoService.listarTodos());</span>
+    }
+
+    @PostMapping
+    public ResponseEntity&lt;TipoDanoDTO&gt; crear(@Valid @RequestBody TipoDanoRequestDTO dto) {
+<span class="nc" id="L36">        TipoDanoDTO creado = tipoDanoService.crear(dto.nombre(), dto.precio());</span>
+<span class="nc" id="L37">        return ResponseEntity.created(URI.create(&quot;/api/v1/tipos-dano/&quot; + creado.id())).body(creado);</span>
+    }
+
+    @PutMapping(&quot;/{id}&quot;)
+    public ResponseEntity&lt;TipoDanoDTO&gt; actualizar(@PathVariable Integer id, @Valid @RequestBody TipoDanoRequestDTO dto) {
+<span class="nc" id="L42">        return ResponseEntity.ok(tipoDanoService.actualizar(id, dto.nombre(), dto.precio()));</span>
+    }
+
+    @DeleteMapping(&quot;/{id}&quot;)
+    public ResponseEntity&lt;Void&gt; eliminar(@PathVariable Integer id) {
+<span class="nc" id="L47">        tipoDanoService.eliminar(id);</span>
+<span class="nc" id="L48">        return ResponseEntity.noContent().build();</span>
+    }
+
+<span class="nc" id="L51">    public record TipoDanoRequestDTO(</span>
+            @NotBlank String nombre,
+            @NotNull @DecimalMin(&quot;0&quot;) BigDecimal precio
+    ) {}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

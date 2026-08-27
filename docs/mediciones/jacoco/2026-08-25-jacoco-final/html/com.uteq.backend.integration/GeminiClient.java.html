@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GeminiClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.integration</a> &gt; <span class="el_source">GeminiClient.java</span></div><h1>GeminiClient.java</h1><pre class="source lang-java linenums">package com.uteq.backend.integration;
+
+import com.uteq.backend.entity.MensajeChat;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClient;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Cliente HTTP directo de la API {@code generateContent} de Gemini (Módulo H).
+ * Soporta function calling: puede enviar {@code tools} en el payload y
+ * parsear respuestas con {@code functionCall} en vez de solo texto.
+ * &lt;p&gt;
+ * La lógica de ejecución de tools vive en {@code ChatbotOrchestrator}, no
+ * acá. Este cliente solo transporta el payload y parsea la respuesta.
+ */
+@Component
+public class GeminiClient {
+
+<span class="fc" id="L33">    private static final Logger log = LoggerFactory.getLogger(GeminiClient.class);</span>
+
+    private static final String MENSAJE_SATURADO =
+            &quot;El asistente está saturado, intenta en unos segundos.&quot;;
+    private static final String MENSAJE_FALLBACK_GENERICO =
+            &quot;No se pudo obtener respuesta del asistente, intenta de nuevo.&quot;;
+
+    private final RestClient restClient;
+    private final ObjectMapper objectMapper;
+    private final String apiKey;
+    private final String modelo;
+    private final String urlBase;
+
+    public GeminiClient(
+            @Value(&quot;${app.gemini.api-key}&quot;) String apiKey,
+            @Value(&quot;${app.gemini.modelo}&quot;) String modelo,
+            @Value(&quot;${app.gemini.url-base}&quot;) String urlBase,
+<span class="fc" id="L50">            @Value(&quot;${app.gemini.timeout-ms}&quot;) long timeoutMs) {</span>
+<span class="fc" id="L51">        this.apiKey = apiKey;</span>
+<span class="fc" id="L52">        this.modelo = modelo;</span>
+<span class="fc" id="L53">        this.urlBase = urlBase;</span>
+<span class="fc" id="L54">        this.objectMapper = new ObjectMapper();</span>
+
+<span class="fc" id="L56">        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();</span>
+<span class="fc" id="L57">        requestFactory.setConnectTimeout((int) timeoutMs);</span>
+<span class="fc" id="L58">        requestFactory.setReadTimeout((int) timeoutMs);</span>
+
+<span class="fc" id="L60">        this.restClient = RestClient.builder()</span>
+<span class="fc" id="L61">                .requestFactory(requestFactory)</span>
+<span class="fc" id="L62">                .build();</span>
+
+<span class="pc bpc" id="L64" title="2 of 4 branches missed.">        if (apiKey == null || apiKey.isBlank()) {</span>
+<span class="fc" id="L65">            log.warn(&quot;GEMINI_API_KEY no configurada — Gemini deshabilitado (lookup ISBN usará solo Google Books).&quot;);</span>
+        } else {
+<span class="nc" id="L67">            log.info(&quot;GeminiClient inicializado: modelo={}, url={}&quot;, modelo, urlBase);</span>
+        }
+<span class="fc" id="L69">    }</span>
+
+    // ── API legacy (sin tools, backward-compatible) ───────────────────────
+
+    /**
+     * Genera una respuesta de texto simple (sin function calling).
+     * Se mantiene por backward-compatibility con tests existentes.
+     */
+    public String generarRespuesta(String promptSistema, List&lt;MensajeChat&gt; historial, String mensajeNuevo) {
+<span class="nc" id="L78">        GeminiResponse respuesta = generarRespuestaConTools(promptSistema, historial, mensajeNuevo, List.of());</span>
+<span class="nc" id="L79">        return respuesta.getTexto();</span>
+    }
+
+    // ── API con function calling ──────────────────────────────────────────
+
+    /**
+     * Genera una respuesta que puede ser texto o un functionCall.
+     *
+     * @param promptSistema prompt de sistema (grounding)
+     * @param historial     mensajes previos de la sesión
+     * @param mensajeNuevo  mensaje del usuario
+     * @param tools         lista de tools en formato Gemini (desde ChatbotToolRegistry)
+     * @return GeminiResponse con texto y/o functionCall
+     */
+    public GeminiResponse generarRespuestaConTools(
+            String promptSistema,
+            List&lt;MensajeChat&gt; historial,
+            String mensajeNuevo,
+            List&lt;Map&lt;String, Object&gt;&gt; tools) {
+
+<span class="nc bnc" id="L99" title="All 4 branches missed.">        if (apiKey == null || apiKey.isBlank()) {</span>
+<span class="nc" id="L100">            log.debug(&quot;Gemini deshabilitado (sin API key), devolviendo fallback&quot;);</span>
+<span class="nc" id="L101">            return GeminiResponse.texto(MENSAJE_FALLBACK_GENERICO);</span>
+        }
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        for (int intento = 0; intento &lt; 2; intento++) {</span>
+            try {
+<span class="nc" id="L105">                return llamarGemini(promptSistema, historial, mensajeNuevo, tools);</span>
+<span class="nc" id="L106">            } catch (HttpClientErrorException.TooManyRequests ex) {</span>
+<span class="nc" id="L107">                log.warn(&quot;Gemini respondió 429 (intento {}/2)&quot;, intento + 1);</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">                if (intento == 0) continue;</span>
+<span class="nc" id="L109">                return GeminiResponse.texto(MENSAJE_SATURADO);</span>
+<span class="nc" id="L110">            } catch (ResourceAccessException ex) {</span>
+<span class="nc" id="L111">                log.warn(&quot;Timeout/sin conexión hacia Gemini (intento {}/2)&quot;, intento + 1, ex);</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">                if (intento == 0) continue;</span>
+<span class="nc" id="L113">                return GeminiResponse.texto(MENSAJE_SATURADO);</span>
+<span class="nc" id="L114">            } catch (HttpClientErrorException ex) {</span>
+<span class="nc" id="L115">                String responseBody = ex.getResponseBodyAsString();</span>
+<span class="nc" id="L116">                log.error(&quot;Gemini respondió {} en intento {}: body completo={}&quot;, ex.getStatusCode(), intento + 1, responseBody);</span>
+<span class="nc" id="L117">                return GeminiResponse.texto(MENSAJE_FALLBACK_GENERICO);</span>
+<span class="nc" id="L118">            } catch (HttpServerErrorException ex) {</span>
+<span class="nc" id="L119">                String responseBody = ex.getResponseBodyAsString();</span>
+<span class="nc" id="L120">                log.error(&quot;Gemini respondió error de servidor {} en intento {}: body completo={}&quot;, ex.getStatusCode(), intento + 1, responseBody);</span>
+<span class="nc" id="L121">                return GeminiResponse.texto(MENSAJE_FALLBACK_GENERICO);</span>
+            }
+        }
+<span class="nc" id="L124">        return GeminiResponse.texto(MENSAJE_SATURADO);</span>
+    }
+
+    // ── Lógica interna ────────────────────────────────────────────────────
+
+    private GeminiResponse llamarGemini(
+            String promptSistema,
+            List&lt;MensajeChat&gt; historial,
+            String mensajeNuevo,
+            List&lt;Map&lt;String, Object&gt;&gt; tools) {
+
+<span class="nc" id="L135">        List&lt;Map&lt;String, Object&gt;&gt; contents = new ArrayList&lt;&gt;();</span>
+
+<span class="nc bnc" id="L137" title="All 2 branches missed.">        for (MensajeChat mensaje : historial) {</span>
+<span class="nc" id="L138">            String rol = geminiRol(mensaje.getRol());</span>
+<span class="nc" id="L139">            String contenido = mensaje.getContenido();</span>
+
+<span class="nc bnc" id="L141" title="All 6 branches missed.">            if (contenido != null &amp;&amp; contenido.startsWith(&quot;[FunctionCall:&quot;) &amp;&amp; contenido.endsWith(&quot;]&quot;)) {</span>
+                // Parsear: [FunctionCall:nombre:{...}]
+<span class="nc" id="L143">                String payload = contenido.substring(&quot;[FunctionCall:&quot;.length(), contenido.length() - 1);</span>
+<span class="nc" id="L144">                int sep = payload.indexOf(':');</span>
+<span class="nc" id="L145">                String name = payload.substring(0, sep);</span>
+<span class="nc" id="L146">                String argsJson = payload.substring(sep + 1);</span>
+                try {
+<span class="nc" id="L148">                    JsonNode argsNode = objectMapper.readTree(argsJson);</span>
+<span class="nc" id="L149">                    contents.add(Map.of(</span>
+                            &quot;role&quot;, &quot;model&quot;,
+<span class="nc" id="L151">                            &quot;parts&quot;, List.of(Map.of(&quot;functionCall&quot;, Map.of(&quot;name&quot;, name, &quot;args&quot;, argsNode)))));</span>
+<span class="nc" id="L152">                } catch (Exception ex) {</span>
+<span class="nc" id="L153">                    log.warn(&quot;No se pudo parsear FunctionCall: {}&quot;, contenido);</span>
+<span class="nc" id="L154">                    contents.add(Map.of(&quot;role&quot;, rol, &quot;parts&quot;, List.of(Map.of(&quot;text&quot;, contenido))));</span>
+<span class="nc" id="L155">                }</span>
+<span class="nc bnc" id="L156" title="All 6 branches missed.">            } else if (contenido != null &amp;&amp; contenido.startsWith(&quot;[FunctionResponse:&quot;) &amp;&amp; contenido.endsWith(&quot;]&quot;)) {</span>
+                // Parsear: [FunctionResponse:nombre:{...}]
+<span class="nc" id="L158">                String payload = contenido.substring(&quot;[FunctionResponse:&quot;.length(), contenido.length() - 1);</span>
+<span class="nc" id="L159">                int sep = payload.indexOf(':');</span>
+<span class="nc" id="L160">                String name = payload.substring(0, sep);</span>
+<span class="nc" id="L161">                String resultJson = payload.substring(sep + 1);</span>
+                try {
+<span class="nc" id="L163">                    JsonNode resultNode = objectMapper.readTree(resultJson);</span>
+<span class="nc" id="L164">                    contents.add(Map.of(</span>
+                            &quot;role&quot;, &quot;user&quot;,
+<span class="nc" id="L166">                            &quot;parts&quot;, List.of(Map.of(&quot;functionResponse&quot;, Map.of(&quot;name&quot;, name, &quot;response&quot;, resultNode)))));</span>
+<span class="nc" id="L167">                } catch (Exception ex) {</span>
+<span class="nc" id="L168">                    log.warn(&quot;No se pudo parsear FunctionResponse: {}&quot;, contenido);</span>
+<span class="nc" id="L169">                    contents.add(Map.of(&quot;role&quot;, rol, &quot;parts&quot;, List.of(Map.of(&quot;text&quot;, contenido))));</span>
+<span class="nc" id="L170">                }</span>
+<span class="nc" id="L171">            } else {</span>
+<span class="nc" id="L172">                contents.add(Map.of(</span>
+                        &quot;role&quot;, rol,
+<span class="nc bnc" id="L174" title="All 2 branches missed.">                        &quot;parts&quot;, List.of(Map.of(&quot;text&quot;, contenido != null ? contenido : &quot;&quot;))));</span>
+            }
+<span class="nc" id="L176">        }</span>
+
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        if (historial.isEmpty()</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">                || !&quot;USUARIO&quot;.equals(historial.get(historial.size() - 1).getRol())</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">                || !mensajeNuevo.equals(historial.get(historial.size() - 1).getContenido())) {</span>
+<span class="nc" id="L181">            contents.add(Map.of(</span>
+                    &quot;role&quot;, &quot;user&quot;,
+<span class="nc" id="L183">                    &quot;parts&quot;, List.of(Map.of(&quot;text&quot;, mensajeNuevo))));</span>
+        }
+
+<span class="nc" id="L186">        Map&lt;String, Object&gt; body = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc" id="L187">        body.put(&quot;contents&quot;, contents);</span>
+<span class="nc" id="L188">        body.put(&quot;systemInstruction&quot;, Map.of(&quot;parts&quot;, List.of(Map.of(&quot;text&quot;, promptSistema))));</span>
+
+<span class="nc bnc" id="L190" title="All 4 branches missed.">        if (tools != null &amp;&amp; !tools.isEmpty()) {</span>
+<span class="nc" id="L191">            body.put(&quot;tools&quot;, tools);</span>
+        }
+
+<span class="nc" id="L194">        String url = urlBase + &quot;/models/&quot; + modelo + &quot;:generateContent?key=&quot; + apiKey;</span>
+
+        String jsonBody;
+        try {
+<span class="nc" id="L198">            jsonBody = objectMapper.writeValueAsString(body);</span>
+<span class="nc" id="L199">        } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {</span>
+<span class="nc" id="L200">            throw new IllegalStateException(&quot;No se pudo serializar el payload de Gemini&quot;, ex);</span>
+<span class="nc" id="L201">        }</span>
+
+<span class="nc bnc" id="L203" title="All 2 branches missed.">        log.debug(&quot;Payload Gemini completo (tools={}): {}&quot;, tools != null ? tools.size() : 0, jsonBody);</span>
+
+<span class="nc" id="L205">        String respuestaJson = restClient.post()</span>
+<span class="nc" id="L206">                .uri(url)</span>
+<span class="nc" id="L207">                .contentType(MediaType.APPLICATION_JSON)</span>
+<span class="nc" id="L208">                .body(jsonBody)</span>
+<span class="nc" id="L209">                .retrieve()</span>
+<span class="nc" id="L210">                .body(String.class);</span>
+
+<span class="nc" id="L212">        log.debug(&quot;Respuesta cruda completa de Gemini: {}&quot;, respuestaJson);</span>
+<span class="nc" id="L213">        return parsearRespuesta(respuestaJson);</span>
+    }
+
+    private GeminiResponse parsearRespuesta(String respuestaJson) {
+        try {
+<span class="nc" id="L218">            JsonNode root = objectMapper.readTree(respuestaJson);</span>
+<span class="nc" id="L219">            JsonNode candidates = root.path(&quot;candidates&quot;);</span>
+<span class="nc bnc" id="L220" title="All 4 branches missed.">            if (!candidates.isArray() || candidates.isEmpty()) {</span>
+<span class="nc" id="L221">                log.warn(&quot;Respuesta de Gemini sin candidates: {}&quot;, respuestaJson);</span>
+<span class="nc" id="L222">                return GeminiResponse.texto(MENSAJE_FALLBACK_GENERICO);</span>
+            }
+
+<span class="nc" id="L225">            JsonNode candidate = candidates.get(0);</span>
+<span class="nc" id="L226">            JsonNode content = candidate.path(&quot;content&quot;);</span>
+<span class="nc" id="L227">            JsonNode parts = content.path(&quot;parts&quot;);</span>
+
+<span class="nc bnc" id="L229" title="All 4 branches missed.">            if (!parts.isArray() || parts.isEmpty()) {</span>
+<span class="nc" id="L230">                log.warn(&quot;Respuesta de Gemini sin parts: {}&quot;, respuestaJson);</span>
+<span class="nc" id="L231">                return GeminiResponse.texto(MENSAJE_FALLBACK_GENERICO);</span>
+            }
+
+            // Verificar si hay functionCall
+<span class="nc" id="L235">            JsonNode firstPart = parts.get(0);</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">            if (firstPart.has(&quot;functionCall&quot;)) {</span>
+<span class="nc" id="L237">                JsonNode functionCall = firstPart.path(&quot;functionCall&quot;);</span>
+<span class="nc" id="L238">                String name = functionCall.path(&quot;name&quot;).asText(&quot;&quot;);</span>
+<span class="nc" id="L239">                JsonNode args = functionCall.path(&quot;args&quot;);</span>
+<span class="nc" id="L240">                log.info(&quot;Gemini solicitó functionCall: {} con args: {}&quot;, name, args);</span>
+<span class="nc" id="L241">                return GeminiResponse.functionCall(name, args);</span>
+            }
+
+            // Respuesta de texto normal
+<span class="nc" id="L245">            String texto = firstPart.path(&quot;text&quot;).asText(&quot;&quot;);</span>
+<span class="nc" id="L246">            return GeminiResponse.texto(texto);</span>
+
+<span class="nc" id="L248">        } catch (Exception ex) {</span>
+<span class="nc" id="L249">            log.error(&quot;No se pudo parsear la respuesta de Gemini: {}&quot;, respuestaJson, ex);</span>
+<span class="nc" id="L250">            return GeminiResponse.texto(MENSAJE_FALLBACK_GENERICO);</span>
+        }
+    }
+
+    private String geminiRol(String rol) {
+<span class="nc bnc" id="L255" title="All 2 branches missed.">        return &quot;ASISTENTE&quot;.equals(rol) ? &quot;model&quot; : &quot;user&quot;;</span>
+    }
+
+    // ── Response record ───────────────────────────────────────────────────
+
+    /**
+     * Respuesta estructurada de Gemini: puede contener texto, un functionCall,
+     * o ambos (raro pero posible).
+     */
+<span class="nc" id="L264">    public record GeminiResponse(</span>
+            String texto,
+            String functionName,
+            JsonNode functionArgs,
+            boolean isFunctionCall
+    ) {
+        public static GeminiResponse texto(String texto) {
+<span class="nc" id="L271">            return new GeminiResponse(texto, null, null, false);</span>
+        }
+
+        public static GeminiResponse functionCall(String name, JsonNode args) {
+<span class="nc" id="L275">            return new GeminiResponse(null, name, args, true);</span>
+        }
+
+        public String getTexto() {
+<span class="nc bnc" id="L279" title="All 2 branches missed.">            return texto != null ? texto : &quot;&quot;;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -3,6 +3,7 @@ package com.uteq.backend.service;
 import com.uteq.backend.dto.MultaAccionResponseDTO;
 import com.uteq.backend.dto.ResumenFinancieroMultasResponseDTO;
 import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.LibroRepository;
 import com.uteq.backend.repository.MultaProcedureRepository;
 import com.uteq.backend.repository.MultaRepository;
@@ -25,10 +26,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.uteq.backend.entity.BitacoraAuditoria;
+import org.mockito.ArgumentCaptor;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -42,6 +47,7 @@ class MultaServiceTest {
     @Mock UsuarioRepository usuarioRepo;
     @Mock LibroRepository libroRepo;
     @Mock PrestamoRepository prestamoRepo;
+    @Mock BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     @InjectMocks MultaService multaService;
 
@@ -76,6 +82,8 @@ class MultaServiceTest {
     @Test
     void anular_conRolGerente_resuelveRolDesdeAuthentication() {
         Authentication auth = authComoRol("gerente@uteq.edu.ec", "GERENTE");
+        given(usuarioRepo.findByCorreo("gerente@uteq.edu.ec"))
+                .willReturn(Optional.of(usuarioConId(10L)));
         Map<String, Object> mapaResultado = new HashMap<>();
         mapaResultado.put("o_multa_id", 9L);
         mapaResultado.put("o_usuario_desbloqueado", true);
@@ -95,6 +103,8 @@ class MultaServiceTest {
     @Test
     void anular_conRolAdmin_resuelveRolAdmin() {
         Authentication auth = authComoRol("admin@uteq.edu.ec", "ADMIN");
+        given(usuarioRepo.findByCorreo("admin@uteq.edu.ec"))
+                .willReturn(Optional.of(usuarioConId(11L)));
         Map<String, Object> mapaResultado = new HashMap<>();
         mapaResultado.put("o_multa_id", 12L);
         mapaResultado.put("o_usuario_desbloqueado", false);
@@ -106,7 +116,29 @@ class MultaServiceTest {
         verify(multaProcRepo).spAnularMulta(12L, "Duplicado", "ADMIN");
     }
 
-    // ── Test 5: anular sin rol válido -> defensa en profundidad, denegado ──
+    // ── Test 5: anular registra evento de auditoría con usuarioId real ──
+    @Test
+    void anular_deberiaRegistrarAuditoria() {
+        Authentication auth = authComoRol("gerente@uteq.edu.ec", "GERENTE");
+        given(usuarioRepo.findByCorreo("gerente@uteq.edu.ec"))
+                .willReturn(Optional.of(usuarioConId(10L)));
+        Map<String, Object> mapaResultado = new HashMap<>();
+        mapaResultado.put("o_multa_id", 9L);
+        mapaResultado.put("o_usuario_desbloqueado", false);
+        given(multaProcRepo.spAnularMulta(9L, "Daño grave", "GERENTE"))
+                .willReturn(mapaResultado);
+
+        multaService.anular(9L, "Daño grave", auth);
+
+        ArgumentCaptor<BitacoraAuditoria> captor = ArgumentCaptor.forClass(BitacoraAuditoria.class);
+        verify(bitacoraAuditoriaRepo).save(captor.capture());
+        BitacoraAuditoria evento = captor.getValue();
+        assertThat(evento.getTablaAfectada()).isEqualTo("multas");
+        assertThat(evento.getUsuarioId()).isEqualTo(10L);
+        assertThat(evento.getDetalles()).isEqualTo("Anulación de la multa 9: Daño grave");
+    }
+
+    // ── Test 6: anular sin rol válido -> defensa en profundidad, denegado ──
     // (Escenario que en teoría @PreAuthorize del controller ya bloquea,
     // pero el service lo revalida por su cuenta -- ver Javadoc de
     // MultaService.resolverRolAnulacion.)

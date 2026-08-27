@@ -10,9 +10,15 @@ import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,21 +30,19 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Test de integración REAL contra Postgres (no mocks) de la portada binaria
  * del libro (V13__portada_imagen.sql, POST/GET
- * /api/v1/libros/{id}/portada). Misma premisa que
- * PrestamoMultaProcedureIntegrationTest: requiere el stack levantado
- * (application.yml por defecto apunta a localhost:5432/sgb_db) y
- * {@code @Transactional} en la clase para revertir cada test sin ensuciar
- * la base real.
- *
- * El objetivo acá es confirmar que el BYTEA se persiste y se recupera
- * byte a byte (no solo por tamaño) a través del service real, y que la
- * limpieza de portada_url al subir una portada también queda persistida.
- * El fixture se lee de src/test/resources/portada-fixture.png (PNG 1x1
- * válido de 70 bytes).
+ * /api/v1/libros/{id}/portada). Usa Testcontainers para levantar un
+ * PostgreSQL 16 real y aislado por test class -- no requiere stack externo.
+ * Flyway aplica las migraciones (incluyendo R__stored_procedures.sql y
+ * V13__portada_imagen.sql) automaticamente contra el container.
  */
+@Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest
 @Transactional
 class LibroPortadaIntegrationTest {
+
+    @Container
+    @ServiceConnection
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
     @Autowired LibroService libroService;
     @Autowired LibroRepository libroRepo;

@@ -157,7 +157,7 @@ administración de usuarios bajo RBAC. No depende de ningún sistema externo
 para operar (no hay integraciones con sistemas académicos institucionales
 ni pasarelas de pago en el alcance actual). Los cuatro servicios
 (frontend, backend, PostgreSQL, Redis) se orquestan con Docker Compose
-(ADR-012) y se comunican dentro de una red Docker interna; el único punto
+(ADR-007) y se comunican dentro de una red Docker interna; el único punto
 de entrada externo es el frontend (puerto 4200) y, para pruebas
 directas/Swagger, el backend (puerto 8080).
 
@@ -218,19 +218,19 @@ REQ-NF-010):
 - **Tecnológicas** (no negociables para esta entrega, ya decididas vía
   ADR): Spring Boot 4.0.6/Java 21 (ADR-001), Angular 21 (ADR-001),
   PostgreSQL 16 (ADR-011), Redis 7 (ADR-003/ADR-008), Docker Compose
-  (ADR-012), Flyway 9 + `db/schema.sql`/`db/seed.sql` (ADR-006).
+  (ADR-007), Flyway 9 + `db/schema.sql`/`db/seed.sql` (ADR-013).
   Estrategia híbrida de acceso a datos obligatoria: CRUD elemental vía
   Spring Data JPA, operaciones multi-tabla vía procedimientos/funciones
-  SQL (ADR-013, requisito explícito de la guía del PFC, Bloque A.2).
+  SQL (ADR-006, requisito explícito de la guía del PFC, Bloque A.2).
 - **De despliegue**: el sistema debe poder levantarse completo con un solo
   comando (`make up` / `docker compose up --build`) contra un volumen de
-  datos vacío (ADR-006, ADR-012) — requisito explícito del Bloque B de la
+  datos vacío (ADR-013, ADR-007) — requisito explícito del Bloque B de la
   guía (reproducibilidad).
 - **De licenciamiento**: licencia MIT (ADR-009), requerida para la
   publicación del repositorio con DOI en Zenodo.
 - **De entorno**: `JWT_SECRET` de mínimo 256 bits provisto vía `.env`
   (nunca hardcodeado ni committeado); ningún secreto vive en
-  `docker-compose.yml` (ADR-012).
+  `docker-compose.yml` (ADR-007).
 - **De tiempo del equipo**: 3 integrantes, sin dedicación exclusiva
   (proyecto académico) — restricción real que explica por qué ciertos
   requisitos quedan con estado "pendiente" (ver sección 6) en vez de
@@ -253,7 +253,7 @@ REQ-NF-010):
 - Este documento depende de que `docs/trazabilidad/matriz.csv` siga
   siendo la fuente de verdad para IDs de requisitos; si la matriz cambia
   (se agregan/eliminan requisitos) sin actualizar este SRS, ambos
-  documentos se desincronizan — mismo riesgo ya documentado en ADR-006
+  documentos se desincronizan — mismo riesgo ya documentado en ADR-013
   para el par Flyway/`schema.sql`.
 
 ---
@@ -360,7 +360,7 @@ formato.
   escribir su contraseña.
 - **Rationale**: evita interrupciones de sesión cada hora (vida del
   `accessToken`) sin comprometer el `refreshToken` (que nunca es legible
-  por JavaScript, ver ADR-007) — HU-AUTH-04.
+  por JavaScript, ver ADR-012) — HU-AUTH-04.
 - **Criterio de aceptación medible**:
   1. Cookie `refreshToken` válida presente → `200` con `accessToken`
      nuevo.
@@ -429,7 +429,7 @@ formato.
 - **Rationale**: núcleo del dominio bibliotecario — llevar control de qué
   ejemplares están fuera y cuándo deben devolverse (HU-01). La atomicidad
   de "crear préstamo + decrementar stock" está garantizada por el motor
-  (`sp_crear_prestamo`), no por disciplina de código Java (ADR-013).
+  (`sp_crear_prestamo`), no por disciplina de código Java (ADR-006).
 - **Criterio de aceptación medible**:
   1. Libro con stock > 0 y usuario `ACTIVO` → préstamo `ACTIVO`, stock
      decrementado en 1.
@@ -454,7 +454,7 @@ formato.
 - **Rationale**: liberar stock y detectar atraso sin intervención manual
   del bibliotecario (HU-02); la atomicidad de hasta 4 tablas en una sola
   transacción es exactamente el caso que justifica usar un SP en vez de
-  ORM puro (ADR-013).
+  ORM puro (ADR-006).
 - **Criterio de aceptación medible**:
   1. Devolución sin atraso → préstamo `DEVUELTO`, stock +1, sin multa.
   2. Devolución con atraso → préstamo `DEVUELTO`, multa `PENDIENTE`
@@ -588,7 +588,7 @@ formato.
 - **Rationale**: el lector recupera la posibilidad de pedir préstamos solo
   cuando ya no tiene ninguna multa pendiente (HU-04); el desbloqueo
   condicional (verificar que no queden otras multas) es exactamente el
-  tipo de lógica multi-fila que justifica un SP (ADR-013).
+  tipo de lógica multi-fila que justifica un SP (ADR-006).
 - **Criterio de aceptación medible**:
   1. Pago de la única multa pendiente → multa `PAGADA`, usuario `ACTIVO`.
   2. Pago con otras multas pendientes → multa pagada cambia a `PAGADA`,
@@ -989,14 +989,14 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-002 — Cookie HttpOnly/Secure/SameSite para el refresh token
 
 - **Prioridad**: Must
-- **Fuente**: HU-AUTH-04, ADR-007
+- **Fuente**: HU-AUTH-04, ADR-012
 - **Descripción**: el `refreshToken` debe transportarse exclusivamente en
   una cookie `HttpOnly`, `Secure`, `SameSite=Strict`, con `path=/api/auth`,
   nunca en el cuerpo JSON.
 - **Rationale**: un secreto de vida larga (7 días) legible por JavaScript
   es un vector directo de exfiltración vía XSS; migrarlo a cookie
-  `HttpOnly` lo hace inaccesible a JS por diseño del navegador (ADR-007,
-  OWASP A02). **Nota de honestidad heredada de ADR-007**: el
+  `HttpOnly` lo hace inaccesible a JS por diseño del navegador (ADR-012,
+  OWASP A02). **Nota de honestidad heredada de ADR-012**: el
   `accessToken` (de vida corta, 1h) **no** está migrado a cookie todavía
   — sigue en el cuerpo JSON/memoria del frontend, decisión explícitamente
   diferida por el impacto en `jwt.interceptor.ts`/`auth.service.ts`.
@@ -1150,7 +1150,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 - **Rationale**: la inyección SQL es uno de los riesgos más severos y
   mejor entendidos de OWASP Top 10; el patrón híbrido de este proyecto
   (JPA parametrizado + SPs con parámetros tipados) lo cubre por
-  construcción en ambos mecanismos (ADR-013, OWASP A03).
+  construcción en ambos mecanismos (ADR-006, OWASP A03).
 - **Criterio de aceptación medible**: ninguna consulta del código fuente
   concatena directamente un valor de entrada del usuario dentro de una
   cadena SQL.
@@ -1214,14 +1214,14 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-004 — Estrategia híbrida de acceso a datos (ORM + SP)
 
 - **Prioridad**: Must
-- **Fuente**: HU-01 (Cajas, lado SP) + HU-AUTH-06 (Marlon, lado ORM), ADR-013
+- **Fuente**: HU-01 (Cajas, lado SP) + HU-AUTH-06 (Marlon, lado ORM), ADR-006
 - **Descripción**: el CRUD elemental de una sola tabla debe implementarse
   vía Spring Data JPA; cualquier operación con joins, agregaciones o
   transacción atómica multi-tabla debe implementarse como
   procedimiento/función SQL.
 - **Rationale**: requisito explícito de la guía del PFC (Bloque A.2), no
   una preferencia de estilo — ver el análisis completo de alternativas
-  descartadas (ORM puro, SP puro) en ADR-013.
+  descartadas (ORM puro, SP puro) en ADR-006.
 - **Criterio de aceptación medible**: los 7 objetos SQL catalogados en
   `docs/basedatos/CATALOGO-SP.md` cubren exactamente las operaciones
   multi-tabla; el resto del acceso a datos usa `JpaRepository` estándar.
@@ -1233,19 +1233,19 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-005 — Esquema de base de datos reproducible
 
 - **Prioridad**: Should
-- **Fuente**: decisión arquitectónica, ADR-006
+- **Fuente**: decisión arquitectónica, ADR-013
 - **Descripción**: un evaluador debe poder levantar el sistema completo
   con datos ya poblados usando un solo comando, sin ejecutar migraciones
   manualmente.
 - **Rationale**: requisito explícito del Bloque B de la guía
   (reproducibilidad automática); Flyway sigue siendo la fuente de verdad
   incremental, `db/schema.sql`+`db/seed.sql` es el snapshot de
-  conveniencia para inicialización desde cero (ADR-006).
+  conveniencia para inicialización desde cero (ADR-013).
 - **Criterio de aceptación medible**: `docker compose down -v && make up`
   reconstruye el stack completo (26 tablas, datos de ejemplo) desde un
   volumen vacío, sin pasos manuales adicionales.
 - **Método de verificación**: **Demonstration** — verificado en vivo
-  repetidamente durante esta entrega (ver Status de ADR-006 y ADR-012).
+  repetidamente durante esta entrega (ver Status de ADR-013 y ADR-007).
 
 ##### REQ-NF-008 — PostgreSQL como motor único de base de datos
 
@@ -1269,19 +1269,19 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-009 — Despliegue vía Docker Compose
 
 - **Prioridad**: Should
-- **Fuente**: decisión arquitectónica, ADR-012
+- **Fuente**: decisión arquitectónica, ADR-007
 - **Descripción**: los 4 servicios del sistema se orquestan con Docker
   Compose, con imágenes base pinadas por digest sha256 y healthchecks que
   ordenan el arranque.
 - **Rationale**: reproducibilidad de un solo comando sin la complejidad
   operativa de un orquestador pensado para escalado multi-nodo que este
-  proyecto no necesita (ADR-012, comparación completa contra Kubernetes y
+  proyecto no necesita (ADR-007, comparación completa contra Kubernetes y
   despliegue manual).
 - **Criterio de aceptación medible**: `docker compose ps` reporta los 4
   servicios como `healthy`/`Up` tras `make up`; las imágenes base están
   documentadas por digest en `docs/DIGESTS-LOG.md`.
 - **Método de verificación**: **Demonstration** — verificado en vivo
-  repetidamente (Status de ADR-012).
+  repetidamente (Status de ADR-007).
 
 ##### REQ-NF-015 — Automatización de CI/CD y documentación de API
 
@@ -1355,7 +1355,7 @@ fuente machine-readable para validación automática. Si un requisito nuevo
 se agrega al sistema a futuro, el proceso correcto es: (1) agregar la fila
 a `matriz.csv`, (2) expandir la entrada correspondiente en este SRS, en
 ese orden — nunca solo uno de los dos, por el mismo riesgo de
-desincronización ya documentado en ADR-006 para Flyway/`schema.sql`.
+desincronización ya documentado en ADR-013 para Flyway/`schema.sql`.
 
 ## 5. Requisitos de calidad de software (ISO/IEC 25010)
 

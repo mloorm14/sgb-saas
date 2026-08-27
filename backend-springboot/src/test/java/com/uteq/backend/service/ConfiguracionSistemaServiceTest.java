@@ -2,6 +2,7 @@ package com.uteq.backend.service;
 
 import com.uteq.backend.dto.ConfiguracionSistemaResponseDTO;
 import com.uteq.backend.entity.ConfiguracionSistema;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.ConfiguracionSistemaRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import static org.mockito.Mockito.verify;
 class ConfiguracionSistemaServiceTest {
 
     @Mock ConfiguracionSistemaRepository repo;
+    @Mock BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     @InjectMocks ConfiguracionSistemaService service;
 

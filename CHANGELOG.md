@@ -34,10 +34,10 @@ objetivo `v0.9.0-rc` de esta Tercera Entrega.
 - Configuración base de k6 (perfil de VUs/duración) para la prueba de
   carga del Bloque C.1 (`4846ee8`).
 - `LICENSE` (MIT) (`468673e`).
-- 6 nuevos ADRs (`ADR-007` cookies JWT, `ADR-008` TTL de cache,
+- 6 nuevos ADRs (`ADR-012` cookies JWT, `ADR-008` TTL de cache,
   `ADR-009` licencia MIT, `ADR-010` autenticación JWT+RBAC, `ADR-011`
-  gestor de base de datos, `ADR-012` estrategia de despliegue,
-  `ADR-013` acceso a datos ORM+SP) y ampliación de `ADR-001` a la pila
+  gestor de base de datos, `ADR-007` estrategia de despliegue,
+  `ADR-006` acceso a datos ORM+SP) y ampliación de `ADR-001` a la pila
   principal completa (`6b58c89`, `239105d`, `468673e`, `4140488`,
   `2ed3d2a`, `587e4c6`, `3f7f177`, `a38f3a4`), con índice de mapeo en
   `docs/adr/README.md` (`5e05924`).
@@ -112,7 +112,7 @@ objetivo `v0.9.0-rc` de esta Tercera Entrega.
   `${VAR:default}` para que el contexto cargue sin credenciales
   (`48d0897`); `.env.example` documenta las variables opcionales del
   Módulo H (`895514c`).
-- `docs/adr/adr-012-estrategia-despliegue.md`: sección de Actualización
+- `docs/adr/adr-007-estrategia-despliegue.md`: sección de Actualización
   fechada (2026-08-13) — la producción pasa a Render + Neon + Upstash
   (descartada la VM Oracle Cloud ARM por saturación del Always Free);
   Docker Compose queda vigente para local/evaluación (`540f7c9`).

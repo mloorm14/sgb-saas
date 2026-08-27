@@ -409,7 +409,7 @@ antes de cambiar el mecanismo de invocación por tu cuenta** (ej. migrar
 de `@NamedStoredProcedureQuery` a `@Query(nativeQuery = true)` con
 `CALL`, u otra alternativa). No es tu culpa si falla — es exactamente el
 riesgo ya documentado — pero el cambio de mecanismo afecta una decisión
-ya registrada en `docs/adr/adr-013-acceso-datos-orm-sp.md`, así que
+ya registrada en `docs/adr/adr-006-acceso-datos-orm-sp.md`, así que
 requiere alinear con el equipo antes de aplicarlo.
 
 ## 7. Verificación final antes de dar por cerrado
