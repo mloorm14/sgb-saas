@@ -20,6 +20,7 @@ const MODULOS: ModuloOpcion[] = [
   { valor: 'libros', etiqueta: 'Libros' },
   { valor: 'multas', etiqueta: 'Multas' },
   { valor: 'reservaciones', etiqueta: 'Reservaciones' },
+  { valor: 'registro_danos', etiqueta: 'Registro de daños' },
   { valor: 'sugerencias_adquisicion', etiqueta: 'Sugerencias de adquisición' },
   { valor: 'configuracion_sistema', etiqueta: 'Configuración del sistema' }
 ];
@@ -277,6 +278,7 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
       'libros': 'inventory_2',
       'multas': 'payments',
       'reservaciones': 'event_available',
+      'registro_danos': 'report_problem',
       'sugerencias_adquisicion': 'lightbulb',
       'configuracion_sistema': 'settings'
     };
@@ -291,6 +293,7 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
       'libros': 'AUD-LIB',
       'multas': 'AUD-MUL',
       'reservaciones': 'AUD-RES',
+      'registro_danos': 'AUD-DAN',
       'sugerencias_adquisicion': 'AUD-SUG',
       'configuracion_sistema': 'AUD-CFG'
     };
@@ -305,6 +308,7 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
       'libros': 'Alta, edición y baja del catálogo',
       'multas': 'Pago y anulación de sanciones',
       'reservaciones': 'Aceptación y rechazo de reservas',
+      'registro_danos': 'Devoluciones con daños reportados',
       'sugerencias_adquisicion': 'Evaluación de propuestas',
       'configuracion_sistema': 'Cambios de parámetros globales'
     };
@@ -319,6 +323,7 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
       'libros': 'bg-primary-container/30 text-primary',
       'multas': 'bg-error/10 text-error',
       'reservaciones': 'bg-success/10 text-success',
+      'registro_danos': 'bg-error/10 text-error',
       'sugerencias_adquisicion': 'bg-warning/20 text-tertiary',
       'configuracion_sistema': 'bg-surface-variant/50 text-on-surface-variant'
     };
