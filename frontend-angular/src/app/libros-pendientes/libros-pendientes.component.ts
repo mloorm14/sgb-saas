@@ -26,6 +26,8 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
   estadoFiltro: number | null = null;
   estados: EstadoLibro[] = [];
 
+  private readonly estadosGestion = ['DADO_DE_BAJA', 'PENDIENTE', 'EN_REPARACION', 'PERDIDO'];
+
   private filtro$ = new Subject<void>();
   private destroy$ = new Subject<void>();
 
@@ -55,7 +57,7 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.estadoService.listar().subscribe({
-      next: (e) => this.estados = e,
+      next: (e) => this.estados = e.filter(est => this.estadosGestion.includes(est.nombre)),
       error: () => {}
     });
     this.cargar();
@@ -85,15 +87,12 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
     this.libroService.listarPendientes({
       q: this.q.trim() || undefined,
       anioPublicacion: anioNum,
+      estadoIds: this.estadoFiltro ? [this.estadoFiltro] : undefined,
       page: this.currentPage,
       size: this.pageSize
     }).subscribe({
       next: (data) => {
-        let content = data.content;
-        if (this.estadoFiltro !== null) {
-          content = content.filter(l => l.estadoId === this.estadoFiltro);
-        }
-        this.libros = content;
+        this.libros = data.content;
         this.totalPages = data.totalPages;
         this.cargando = false;
       },
@@ -110,8 +109,6 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
   }
 
   abrirRevision(libro: Libro): void {
-    // Navega al formulario de libros con query param revision
-    // Detectar si estamos en dashboard-bibliotecario o admin
     const current = this.router.url;
     let base = '/dashboard-bibliotecario/libros';
     if (current.includes('dashboard-admin')) base = '/dashboard-admin/libros';

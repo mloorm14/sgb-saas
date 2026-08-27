@@ -110,7 +110,7 @@ public class AuthController {
         return ResponseCookie.from(REFRESH_COOKIE_NAME, valor)
                 .httpOnly(true)
                 .secure(true)
-                .sameSite("None")
+                .sameSite("Strict")
                 .path("/api/auth")
                 .maxAge(Duration.ofMillis(maxAgeMs))
                 .build();
