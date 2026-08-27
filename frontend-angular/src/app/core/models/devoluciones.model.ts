@@ -2,10 +2,18 @@
 // DTOs en backend: DevolucionRequestDTO, DevolucionCompletaResponseDTO,
 // DanoDetalleResponseDTO, DevolucionHistorialDTO, TipoDanoDTO.
 
+export interface CategoriaDano {
+  id: number;
+  nombre: string;
+}
+
 export interface TipoDano {
   id: number;
   nombre: string;
-  precio: number;
+  categoriaId: number;
+  categoriaNombre: string;
+  tipoCosto: string; // FIJO | PORCENTAJE
+  valor: number;
 }
 
 export interface DanoItem {

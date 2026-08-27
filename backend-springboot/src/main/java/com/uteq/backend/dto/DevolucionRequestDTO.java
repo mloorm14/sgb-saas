@@ -26,7 +26,6 @@ public record DevolucionRequestDTO(
     public record DanoItemDTO(
             Integer tipoDanoId,
             String nombreCustom,
-            @NotNull(message = "El precio cobrado es obligatorio")
             BigDecimal precioCobrado
     ) {}
 }

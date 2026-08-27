@@ -13,4 +13,6 @@ public interface TipoDanoRepository extends JpaRepository<TipoDano, Integer> {
     List<TipoDano> findByActivoTrue();
 
     Optional<TipoDano> findByNombre(String nombre);
+
+    List<TipoDano> findByActivoTrueAndCategoriaId(Integer categoriaId);
 }

@@ -16,7 +16,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/tipos-dano")
-@PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+@PreAuthorize("hasRole('ADMIN')")
 public class TipoDanoController {
 
     private final TipoDanoService tipoDanoService;
@@ -33,13 +33,13 @@ public class TipoDanoController {
 
     @PostMapping
     public ResponseEntity<TipoDanoDTO> crear(@Valid @RequestBody TipoDanoRequestDTO dto) {
-        TipoDanoDTO creado = tipoDanoService.crear(dto.nombre(), dto.precio());
+        TipoDanoDTO creado = tipoDanoService.crear(dto.nombre(), dto.categoriaId(), dto.tipoCosto(), dto.valor());
         return ResponseEntity.created(URI.create("/api/v1/tipos-dano/" + creado.id())).body(creado);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<TipoDanoDTO> actualizar(@PathVariable Integer id, @Valid @RequestBody TipoDanoRequestDTO dto) {
-        return ResponseEntity.ok(tipoDanoService.actualizar(id, dto.nombre(), dto.precio()));
+        return ResponseEntity.ok(tipoDanoService.actualizar(id, dto.nombre(), dto.categoriaId(), dto.tipoCosto(), dto.valor()));
     }
 
     @DeleteMapping("/{id}")
@@ -50,6 +50,8 @@ public class TipoDanoController {
 
     public record TipoDanoRequestDTO(
             @NotBlank String nombre,
-            @NotNull @DecimalMin("0") BigDecimal precio
+            @NotNull Integer categoriaId,
+            @NotBlank String tipoCosto,
+            @NotNull @DecimalMin("0") BigDecimal valor
     ) {}
 }

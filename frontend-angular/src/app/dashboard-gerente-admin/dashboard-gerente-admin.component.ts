@@ -1,4 +1,4 @@
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, OnInit, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 
@@ -20,8 +20,9 @@ interface SeccionSidebar {
   imports: [RouterLink, RouterLinkActive, RouterOutlet],
   templateUrl: './dashboard-gerente-admin.component.html'
 })
-export class DashboardGerenteAdminComponent {
+export class DashboardGerenteAdminComponent implements OnInit {
   mostrarMenuUsuario = false;
+  isCollapsed = signal(false);
 
   // Espejo de los @PreAuthorize reales verificados en backend-springboot:
   // - /libros: todo el staff opera el inventario (LibroController).
@@ -41,6 +42,7 @@ export class DashboardGerenteAdminComponent {
        titulo: 'GESTIÓN',
       enlaces: [
         { ruta: '/dashboard-admin/libros', etiqueta: 'Libros', icono: 'inventory_2', roles: ['GERENTE', 'ADMIN'] },
+        { ruta: '/dashboard-admin/libros-pendientes', etiqueta: 'Pendientes', icono: 'pending_actions', roles: ['GERENTE', 'ADMIN'] },
         { ruta: '/dashboard-admin/prestamos/gestion', etiqueta: 'Préstamos', icono: 'menu_book', roles: ['GERENTE', 'ADMIN'] },
         { ruta: '/dashboard-admin/reservaciones', etiqueta: 'Reservaciones', icono: 'event_available', roles: ['GERENTE', 'ADMIN'] },
         { ruta: '/dashboard-admin/multas', etiqueta: 'Multas', icono: 'payments', roles: ['GERENTE', 'ADMIN'] },
@@ -60,8 +62,25 @@ export class DashboardGerenteAdminComponent {
 
   constructor(private authService: AuthService) {}
 
+  ngOnInit(): void {
+    // Restaurar estado del sidebar desde localStorage
+    const saved = localStorage.getItem('sidebar:collapsed');
+    if (saved !== null) {
+      this.isCollapsed.set(saved === 'true');
+    }
+  }
+
+  isMobile(): boolean {
+    return window.innerWidth < 1024;
+  }
+
   visibles(seccion: SeccionSidebar): EnlaceSidebar[] {
     return seccion.enlaces.filter(enlace => this.authService.hasRole(...enlace.roles));
+  }
+
+  toggleSidebar(): void {
+    this.isCollapsed.update(v => !v);
+    localStorage.setItem('sidebar:collapsed', String(this.isCollapsed()));
   }
 
   @HostListener('document:click', ['$event'])

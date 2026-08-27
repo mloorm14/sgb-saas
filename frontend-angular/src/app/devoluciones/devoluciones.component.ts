@@ -174,7 +174,7 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
       this.danosSeleccionados.push({
         tipoDanoId: tipoDano.id,
         nombreCustom: null,
-        precioCobrado: tipoDano.precio
+        precioCobrado: tipoDano.valor
       });
     } else {
       this.danosSeleccionados = this.danosSeleccionados.filter(
