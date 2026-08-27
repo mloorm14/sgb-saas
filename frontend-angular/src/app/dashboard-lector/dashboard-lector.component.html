@@ -12,19 +12,16 @@
     </div>
 
     <!-- Botón Contraer/Expandir - debajo del logo -->
-    <div class="border-b border-outline-variant mx-sm flex" [class.justify-center]="isCollapsed()" [class.justify-start]="!isCollapsed()">
-      <button (click)="toggleSidebar(); $event.stopPropagation()"
-        [attr.aria-label]="isCollapsed() ? 'Expandir menú' : 'Contraer menú'"
-        [attr.title]="isCollapsed() ? 'Expandir menú' : 'Contraer menú'"
-        class="mx-sm flex items-center gap-sm py-sm rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer shrink-0"
-        [class.px-lg]="!isCollapsed()" [class.px-2]="isCollapsed()"
-        [class.justify-center]="isCollapsed()" [class.justify-start]="!isCollapsed()">
-        <span class="material-symbols-outlined text-[22px] text-on-surface-variant shrink-0">menu</span>
-        @if (!isCollapsed()) {
-          <span class="font-body-sm text-body-sm text-on-surface-variant whitespace-nowrap">Menú</span>
-        }
-      </button>
-    </div>
+    <button (click)="toggleSidebar(); $event.stopPropagation()"
+      [attr.aria-label]="isCollapsed() ? 'Expandir menú' : 'Contraer menú'"
+      [attr.title]="isCollapsed() ? 'Expandir menú' : 'Contraer menú'"
+      class="flex items-center gap-sm py-sm mx-sm rounded-lg font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap overflow-hidden"
+      [class.px-lg]="!isCollapsed()" [class.px-2]="isCollapsed()" [class.justify-center]="isCollapsed()">
+      <span class="material-symbols-outlined text-[20px] shrink-0">menu</span>
+      @if (!isCollapsed()) {
+        <span class="whitespace-nowrap overflow-hidden">Menú</span>
+      }
+    </button>
 
     <!-- Navegación -->
     <nav class="flex-1 overflow-y-auto py-md">

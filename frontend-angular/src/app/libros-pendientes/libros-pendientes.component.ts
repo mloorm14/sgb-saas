@@ -23,11 +23,10 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
 
   q: string = '';
   anioFiltro: string = '';
-  estadosFiltro: number[] = [];
+  estadoFiltro: number | null = null;
   estados: EstadoLibro[] = [];
 
-  // Los 4 estados que se muestran por defecto en "Pendientes"
-  readonly estadosPendientesPorDefecto = ['DADO_DE_BAJA', 'PENDIENTE', 'EN_REPARACION', 'PERDIDO'];
+  private readonly estadosGestion = ['DADO_DE_BAJA', 'PENDIENTE', 'EN_REPARACION', 'PERDIDO'];
 
   private filtro$ = new Subject<void>();
   private destroy$ = new Subject<void>();
@@ -56,50 +55,9 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
     private router: Router
   ) {}
 
-  mostrarEstados = false;
-
-  get estadosSeleccionadosTexto(): string {
-    if (this.estadosFiltro.length === 0) return '4 estados por defecto';
-    const nombres = this.estadosFiltro.map(id => {
-      const e = this.estados.find(est => est.id === id);
-      return e ? this.formatarEstado(e.nombre) : '';
-    }).filter(n => n).join(', ');
-    return nombres || 'Sin selección';
-  }
-
-  esEstadoPendiente(nombre: string): boolean {
-    return this.estadosPendientesPorDefecto.includes(nombre);
-  }
-
-  limpiarEstados(): void {
-    this.estadosFiltro = [];
-    this.mostrarEstados = false;
-    this.onFiltroChange();
-  }
-
-  // Check si un estado está seleccionado (para el multiselect)
-  isEstadoSeleccionado(estadoId: number): boolean {
-    return this.estadosFiltro.includes(estadoId);
-  }
-
-  toggleEstado(estadoId: number): void {
-    const idx = this.estadosFiltro.indexOf(estadoId);
-    if (idx >= 0) {
-      this.estadosFiltro.splice(idx, 1);
-    } else {
-      this.estadosFiltro.push(estadoId);
-    }
-    this.onFiltroChange();
-  }
-
-  // Si no hay selección, se usan los 4 por defecto en el backend
-  get estadosParaEnviar(): number[] | undefined {
-    return this.estadosFiltro.length > 0 ? this.estadosFiltro : undefined;
-  }
-
   ngOnInit(): void {
     this.estadoService.listar().subscribe({
-      next: (e) => this.estados = e,
+      next: (e) => this.estados = e.filter(est => this.estadosGestion.includes(est.nombre)),
       error: () => {}
     });
     this.cargar();
@@ -129,7 +87,7 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
     this.libroService.listarPendientes({
       q: this.q.trim() || undefined,
       anioPublicacion: anioNum,
-      estadoIds: this.estadosParaEnviar,
+      estadoIds: this.estadoFiltro ? [this.estadoFiltro] : undefined,
       page: this.currentPage,
       size: this.pageSize
     }).subscribe({
@@ -151,8 +109,6 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
   }
 
   abrirRevision(libro: Libro): void {
-    // Navega al formulario de libros con query param revision
-    // Detectar si estamos en dashboard-bibliotecario o admin
     const current = this.router.url;
     let base = '/dashboard-bibliotecario/libros';
     if (current.includes('dashboard-admin')) base = '/dashboard-admin/libros';

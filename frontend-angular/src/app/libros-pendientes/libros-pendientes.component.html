@@ -5,7 +5,7 @@
   </div>
 
   <!-- Filtros -->
-  <div class="flex flex-wrap items-start gap-sm mb-md">
+  <div class="flex flex-wrap items-center gap-sm mb-md">
     <div class="relative flex-1 min-w-[220px]">
       <span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
       <input type="text" [(ngModel)]="q" (ngModelChange)="onFiltroChange()" placeholder="Buscar por título o ISBN..."
@@ -13,34 +13,13 @@
     </div>
     <input type="number" [(ngModel)]="anioFiltro" (ngModelChange)="onFiltroChange()" placeholder="Año"
       class="w-28 h-10 px-sm rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm focus:outline-none focus:border-primary" [min]="1950" />
-    
-    <!-- Multi-select de estados (checkboxes) -->
-    <div class="relative" (click)="$event.stopPropagation()">
-      <button type="button" (click)="mostrarEstados = !mostrarEstados"
-        class="h-10 px-sm pr-8 rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm cursor-pointer flex items-center gap-xs">
-        <span>{{ estadosSeleccionadosTexto }}</span>
-        <span class="material-symbols-outlined text-on-surface-variant"
-          [class.rotate-180]="mostrarEstados" style="transition: transform 0.2s">expand_more</span>
-      </button>
-      @if (mostrarEstados) {
-        <div class="absolute top-full left-0 mt-xs min-w-[180px] bg-white rounded-lg border border-outline-variant shadow-lg p-xs z-30"
-          (click)="$event.stopPropagation()">
-          @for (e of estados; track e.id) {
-            @if (esEstadoPendiente(e.nombre)) {
-              <label class="flex items-center gap-sm px-sm py-xs cursor-pointer hover:bg-surface-container-low rounded-sm">
-                <input type="checkbox" [checked]="isEstadoSeleccionado(e.id)" (change)="toggleEstado(e.id)"
-                  class="w-4 h-4 accent-primary cursor-pointer">
-                <span class="font-body-sm text-body-sm text-on-surface">{{ formatarEstado(e.nombre) }}</span>
-              </label>
-            }
-          }
-          <hr class="border-outline-variant my-xs">
-          <button type="button" (click)="limpiarEstados()" class="w-full text-left px-sm py-xs font-body-sm text-body-sm text-primary hover:bg-primary-container/40 rounded-sm">
-            Limpiar selección (usar 4 por defecto)
-          </button>
-        </div>
+    <select [(ngModel)]="estadoFiltro" (ngModelChange)="onFiltroChange()"
+      class="h-10 px-sm pr-8 rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm cursor-pointer appearance-none">
+      <option [ngValue]="null">Todos (4 estados)</option>
+      @for (e of estados; track e.id) {
+        <option [ngValue]="e.id">{{ formatarEstado(e.nombre) }}</option>
       }
-    </div>
+    </select>
   </div>
 
   @if (errorMsg) { <p class="text-error font-body-sm text-body-sm mb-md">{{ errorMsg }}</p> }

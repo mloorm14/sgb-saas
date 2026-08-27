@@ -24,6 +24,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
@@ -32,6 +35,8 @@ import java.util.Set;
 
 @Service
 public class LibroService {
+
+    private static final Logger log = LoggerFactory.getLogger(LibroService.class);
 
     private static final String LIBRO_NO_ENCONTRADO = "Libro no encontrado con id: ";
     private static final String ESTADO_ACTIVO = "ACTIVO";
@@ -123,21 +128,25 @@ public class LibroService {
     public Page<LibroResponseDTO> listarPendientes(String q, Integer anioPublicacion, List<Integer> estadoIds, Pageable pageable) {
         List<Integer> estados = resolverEstadosPendientes(estadoIds);
         if (estados.isEmpty()) {
+            log.warn("listarPendientes: lista vacía - estadoIds={}", estadoIds);
             return Page.empty(pageable);
         }
         Short anioShort = anioPublicacion != null ? anioPublicacion.shortValue() : null;
-        return libroRepo.buscarPorEstados(estados, q, anioShort, pageable).map(this::toDTO);
+        try {
+            return libroRepo.buscarPorEstados(estados, q, anioShort, pageable).map(this::toDTO);
+        } catch (Exception e) {
+            log.error("listarPendientes error consultando {} libros con estados {}", estados.size(), q, e);
+            throw new RuntimeException("Error interno al listar libros pendientes", e);
+        }
     }
 
     private List<Integer> resolverEstadosPendientes(List<Integer> estadoIds) {
         if (estadoIds != null && !estadoIds.isEmpty()) {
             return estadoIds;
         }
-        List<String> nombresPorDefecto = List.of("DADO_DE_BAJA", "PENDIENTE", "EN_REPARACION", "PERDIDO");
-        return nombresPorDefecto.stream()
-                .map(n -> estadoRepo.findByNombre(n).map(EstadoLibro::getId).orElse(null))
-                .filter(id -> id != null)
-                .toList();
+        List<Integer> defaults = List.of(2, 3, 4, 5); // IDs por defecto: DADO_DE_BAJA, PENDIENTE, EN_REPARACION, PERDIDO
+        log.warn("listarPendientes: usando estados por defecto, estadoIds={}", estadoIds);
+        return defaults;
     }
 
     // Módulo 9.1: filtros de catálogo por categoría/autor

@@ -84,26 +84,26 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
     @EntityGraph(attributePaths = {"editorial", "idioma", "estado", "categorias", "autores"})
     @Query(value = "SELECT l FROM Libro l WHERE l.estado.id = :estadoId "
             + "AND ( :q IS NULL "
-            + "      OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) "
-            + "      OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', :q, '%')) )"
+            + "      OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) "
+            + "      OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) )"
             + "AND ( :anio IS NULL OR l.anioPublicacion = :anio )",
             countQuery = "SELECT count(l) FROM Libro l WHERE l.estado.id = :estadoId "
                     + "AND ( :q IS NULL "
-                    + "      OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) "
-                    + "      OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', :q, '%')) )"
+                    + "      OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) "
+                    + "      OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) )"
                     + "AND ( :anio IS NULL OR l.anioPublicacion = :anio )")
     Page<Libro> buscarPendientes(@Param("q") String q, @Param("anio") Short anio, @Param("estadoId") Integer estadoId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"editorial", "idioma", "estado", "categorias", "autores"})
     @Query(value = "SELECT l FROM Libro l WHERE l.estado.id IN :estadoIds "
             + "AND ( :q IS NULL "
-            + "      OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) "
-            + "      OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', :q, '%')) )"
+            + "      OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) "
+            + "      OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) )"
             + "AND ( :anio IS NULL OR l.anioPublicacion = :anio )",
             countQuery = "SELECT count(l) FROM Libro l WHERE l.estado.id IN :estadoIds "
                     + "AND ( :q IS NULL "
-                    + "      OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) "
-                    + "      OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', :q, '%')) )"
+                    + "      OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) "
+                    + "      OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) )"
                     + "AND ( :anio IS NULL OR l.anioPublicacion = :anio )")
     Page<Libro> buscarPorEstados(@Param("estadoIds") List<Integer> estadoIds, @Param("q") String q, @Param("anio") Short anio, Pageable pageable);
 }
