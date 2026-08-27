@@ -19,7 +19,7 @@ Entrega.
 ## `docs/mediciones/sec/2026-07-21-cookie-refresh-token.md`
 
 Evidencia de la migración del `refreshToken` a cookie HttpOnly (ver
-`docs/adr/adr-007-cookies-jwt.md`).
+`docs/adr/adr-012-cookies-jwt.md`).
 
 | Campo / variable | Tipo de dato | Unidad | Rango esperado | Significado |
 |---|---|---|---|---|
@@ -177,7 +177,7 @@ un campo nuevo -- decisión de esta tarea, no una omisión.
 
 - `docs/mediciones/README.md` (convención general de evidencia)
 - `docs/mediciones/TEMPLATE.md` (plantilla de cada archivo de evidencia)
-- `docs/adr/adr-007-cookies-jwt.md`, `docs/adr/adr-008-ttl-cache-libros.md`
+- `docs/adr/adr-012-cookies-jwt.md`, `docs/adr/adr-008-ttl-cache-libros.md`
 - `docs/mediciones/DATA-PROVENANCE.md` (traza cada tabla/figura del
   informe académico hacia el archivo crudo que la origina, complementa
   este diccionario documentando de dónde viene cada dato, no qué forma

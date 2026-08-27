@@ -1,4 +1,4 @@
-# ADR-007: Cookies HttpOnly para JWT — refreshToken migrado, accessToken pendiente
+# ADR-012: Cookies HttpOnly para JWT — refreshToken migrado, accessToken pendiente
 
 ## Title
 

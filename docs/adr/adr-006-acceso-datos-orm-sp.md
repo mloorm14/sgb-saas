@@ -1,4 +1,4 @@
-# ADR-013: Estrategia híbrida de acceso a datos — CRUD elemental vía ORM, el resto vía stored procedures
+# ADR-006: Estrategia híbrida de acceso a datos — CRUD elemental vía ORM, el resto vía stored procedures
 
 ## Title
 

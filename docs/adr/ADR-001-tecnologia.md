@@ -85,7 +85,7 @@ segunda pieza de infraestructura.
 
 Justificación de alto nivel — el análisis completo de alternativas
 (Kubernetes, despliegue manual) vive en
-**`adr-012-estrategia-despliegue.md`**. En resumen: Docker Compose da
+**`adr-007-estrategia-despliegue.md`**. En resumen: Docker Compose da
 reproducibilidad de un solo comando (`make up`) para los 4 servicios
 reales del stack (frontend, backend, PostgreSQL, Redis) sin la
 complejidad operativa de un orquestador pensado para escalado

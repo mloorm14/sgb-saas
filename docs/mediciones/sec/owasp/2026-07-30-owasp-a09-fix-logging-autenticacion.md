@@ -107,7 +107,7 @@ en su `CHECK` de `tipo_operacion` desde el diseño original del schema
 usaba todavía. Se implementó como `INSERT` simple desde
 `AuthService.registrarAuditoria()` (sin procedimiento almacenado,
 consistente con la estrategia CRUD-ORM de
-`adr-013-acceso-datos-orm-sp.md` para operaciones de una sola tabla).
+`adr-006-acceso-datos-orm-sp.md` para operaciones de una sola tabla).
 El logging de aplicación se mantiene en paralelo porque sirve un
 propósito distinto y complementario: es lo que un operador revisa en
 vivo con `docker logs`/agregador de logs sin necesidad de consultar la

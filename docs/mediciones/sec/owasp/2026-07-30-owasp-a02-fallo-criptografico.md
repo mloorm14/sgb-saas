@@ -104,7 +104,7 @@ hash real capturado en `db/seed.sql` con el comentario `$2a$12$...`) —
 no se repite esa evidencia acá para no duplicar.
 
 **`accessToken`**: sigue viajando en el cuerpo JSON (no en cookie), tal
-como documenta `docs/adr/adr-007-cookies-jwt.md` — es una decisión
+como documenta `docs/adr/adr-012-cookies-jwt.md` — es una decisión
 deliberada y ya evaluada en ese ADR, no un descuido de esta prueba.
 
 ## Estado: GAP CONOCIDO (TLS) + evidencia parcial PASA (preparación del código para TLS)

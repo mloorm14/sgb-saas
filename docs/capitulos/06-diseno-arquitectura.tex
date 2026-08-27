@@ -122,14 +122,17 @@ al DSL fuente.
 El repositorio contiene \textbf{13 Architecture Decision Records}
 (\texttt{docs/adr/}), agrupados a continuación según los 6 temas
 obligatorios del Bloque~D de la guía (mapeo completo en
-\texttt{docs/adr/README.md}); dos de esos temas están cubiertos por un
-ADR cuya numeración interna del repositorio no coincide con la
-numeración sugerida por la guía (\texttt{ADR-006}/\texttt{ADR-007}
-sugeridos por la guía para acceso a datos y despliegue corresponden a
-\texttt{ADR-013} y \texttt{ADR-012} en este repositorio), por
-continuidad con la numeración ya evaluada en la Tercera Entrega -- ver
-la nota explícita en \texttt{docs/adr/README.md} sobre por qué no se
-renumeraron los archivos.
+\texttt{docs/adr/README.md}). Hasta el 26 de agosto de 2026, dos de esos
+temas estaban cubiertos por un ADR cuya numeración interna del
+repositorio no coincidía con la numeración sugerida por la guía
+(\texttt{ADR-006}/\texttt{ADR-007} sugeridos por la guía para acceso a
+datos y despliegue correspondían a \texttt{ADR-013} y \texttt{ADR-012}
+en este repositorio), por continuidad con la numeración ya evaluada en
+la Tercera Entrega. Se decidió renumerar de todas formas para que la
+numeración coincida literalmente con la guía en vez de dejarlo como una
+diferencia solo explicada en prosa -- ver la nota histórica en
+\texttt{docs/adr/README.md} con el detalle del intercambio y las
+referencias cruzadas actualizadas en el mismo cambio.
 
 \begin{center}
 \small
@@ -140,22 +143,22 @@ renumeraron los archivos.
 \hline
 1 & Elección de la pila tecnológica principal & \texttt{ADR-001} \\
 \hline
-2 & Esquema de autenticación & \texttt{ADR-010} + \texttt{ADR-003} + \texttt{ADR-007} \\
+2 & Esquema de autenticación & \texttt{ADR-010} + \texttt{ADR-003} + \texttt{ADR-012} \\
 \hline
 3 & Gestor de base de datos & \texttt{ADR-011} \\
 \hline
 4 & Estrategia de caché & \texttt{ADR-008} \\
 \hline
-5 & Estrategia de despliegue & \texttt{ADR-012} \\
+5 & Estrategia de despliegue & \texttt{ADR-007} \\
 \hline
-6 & Estrategia de acceso a datos (CRUD-ORM vs.\ SP) & \texttt{ADR-013} \\
+6 & Estrategia de acceso a datos (CRUD-ORM vs.\ SP) & \texttt{ADR-006} \\
 \hline
 \end{tabularx}
 \end{center}
 
 Los 7 ADR restantes no mapean a ninguno de los 6 temas obligatorios,
 pero documentan decisiones reales tomadas durante el desarrollo:
-\texttt{ADR-006} (versionado de esquema reproducible, Flyway + snapshot),
+\texttt{ADR-013} (versionado de esquema reproducible, Flyway + snapshot),
 \texttt{ADR-009} (licencia MIT), \texttt{ADR-014} (separación de
 responsabilidades entre \texttt{ADMIN} y \texttt{GERENTE}: el primero
 administra permisos/configuración de plataforma, el segundo la operación
@@ -200,7 +203,7 @@ Usabilidad & Alta & \texttt{sp\_registrar\_devolucion} valida el estado del pré
 \hline
 Fiabilidad & Alta & Parcialmente atendida: ADR-003 documenta explícitamente que, si Redis cae, \texttt{JwtAuthFilter} queda sin forma de verificar revocaciones -- la decisión \emph{fail-open} vs.\ \emph{fail-closed} sigue anotada como pendiente para producción, no resuelta. Los \emph{healthchecks} de \texttt{docker-compose.yml} sí garantizan un orden de arranque correcto. \\
 \hline
-Seguridad & Alta & Cookie \texttt{HttpOnly+Secure+SameSite=None} para el \texttt{refreshToken} (ADR-007), BCrypt costo 12, blacklist de tokens revocados (ADR-003), respuestas de error RFC~7807 sin fuga de detalles internos. \textbf{Nota de este informe}\footnote{\texttt{SameSite=None} era necesario para que el navegador enviara la cookie entre los orígenes cross-origin de Render (frontend y backend en subdominios distintos), pero reintroduce la exposición a CSRF que \texttt{SameSite=Strict} bloqueaba por sí solo. El código actual tiene \texttt{.csrf(csrf -> csrf.disable())} activo (\texttt{SecurityConfig.java}, línea 55) y no implementa ningún token CSRF; el único control vigente es la lista blanca de CORS, que impide leer la respuesta cross-origin pero no impide el envío de la petición con la cookie adjunta. El ADR-007 documenta esto explícitamente como riesgo aceptado, no mitigado, con la corrección (token CSRF / \emph{double-submit cookie}) registrada como trabajo futuro (\autoref{sec:tf-csrf}).}: el diseño actual acepta explícitamente el riesgo de CSRF residual sobre \texttt{/api/auth/refresh} que introduce \texttt{SameSite=None}, según ADR-007 -- ver aclaración al pie. \\
+Seguridad & Alta & Cookie \texttt{HttpOnly+Secure+SameSite=None} para el \texttt{refreshToken} (ADR-012), BCrypt costo 12, blacklist de tokens revocados (ADR-003), respuestas de error RFC~7807 sin fuga de detalles internos. \textbf{Nota de este informe}\footnote{\texttt{SameSite=None} era necesario para que el navegador enviara la cookie entre los orígenes cross-origin de Render (frontend y backend en subdominios distintos), pero reintroduce la exposición a CSRF que \texttt{SameSite=Strict} bloqueaba por sí solo. El código actual tiene \texttt{.csrf(csrf -> csrf.disable())} activo (\texttt{SecurityConfig.java}, línea 55) y no implementa ningún token CSRF; el único control vigente es la lista blanca de CORS, que impide leer la respuesta cross-origin pero no impide el envío de la petición con la cookie adjunta. El ADR-012 documenta esto explícitamente como riesgo aceptado, no mitigado, con la corrección (token CSRF / \emph{double-submit cookie}) registrada como trabajo futuro (\autoref{sec:tf-csrf}).}: el diseño actual acepta explícitamente el riesgo de CSRF residual sobre \texttt{/api/auth/refresh} que introduce \texttt{SameSite=None}, según ADR-012 -- ver aclaración al pie. \\
 \hline
 Mantenibilidad & Alta & Los ADR de \texttt{docs/adr/} documentan decisiones no obvias con sus alternativas consideradas; \texttt{docs/basedatos/CATALOGO-SP.md} documenta el criterio de separación CRUD-ORM vs.\ procedimientos. \textbf{Nota de este informe}\footnote{El texto original de \texttt{ISO25010.md} en esta fila cita ``6 ADRs existentes'', cifra que quedó desactualizada tras incorporar los 8 módulos construidos después de la Tercera Entrega -- el repositorio contiene 13 ADRs a la fecha de este capítulo (\autoref{sec:adrs}). Se transcribe el texto original de la fuente junto con esta aclaración en vez de editarlo silenciosamente, ya que corregir \texttt{ISO25010.md} está fuera del alcance de esta tarea.}: la cifra real de ADRs es 13, no 6 -- ver aclaración al pie. \\
 \hline
@@ -219,7 +222,7 @@ capítulo no reproduce las 46 filas (el detalle completo por requisito
 vive en \autoref{cap:ingenieria-requisitos} y en la propia matriz);
 resume aquí la columna \texttt{tipo\_acceso}, relevante para esta
 sección por ser la evidencia directa de que la estrategia híbrida
-CRUD-ORM/SP declarada en ADR-013 se aplica de verdad y no solo en
+CRUD-ORM/SP declarada en ADR-006 se aplica de verdad y no solo en
 teoría.
 
 \textbf{Nota de corrección respecto a una versión anterior de este
@@ -276,7 +279,7 @@ procedimiento o función SQL (8 exclusivamente, 2 en combinación con
 CRUD-ORM: \texttt{REQ-NF-004}, transversal a los módulos de
 préstamos/multas/reservaciones vs.\ auth/libros/bitácora, y
 \texttt{REQ-NF-013}, prevención de inyección SQL sobre ambos
-mecanismos), consistente con la justificación de ADR-013: reservar los
+mecanismos), consistente con la justificación de ADR-006: reservar los
 procedimientos almacenados para operaciones con validación cruzada
 multi-tabla o transacciones atómicas compuestas (registrar préstamo,
 registrar devolución, pagar multa, anular multa, expirar reservaciones
