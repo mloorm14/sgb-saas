@@ -1,4 +1,4 @@
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, OnInit, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { ChatbotWidgetComponent } from '../shared/chatbot-widget/chatbot-widget.component';
@@ -15,8 +15,9 @@ interface EnlaceSidebar {
   imports: [RouterLink, RouterLinkActive, RouterOutlet, ChatbotWidgetComponent],
   templateUrl: './dashboard-lector.component.html'
 })
-export class DashboardLectorComponent {
+export class DashboardLectorComponent implements OnInit {
   mostrarMenuUsuario = false;
+  isCollapsed = signal(false);
 
   // Rutas 100% LECTOR ya existentes (FavoritoController y
   // SugerenciaAdquisicionController exigen hasRole('LECTOR'); el resto
@@ -44,12 +45,33 @@ export class DashboardLectorComponent {
 
   constructor(private authService: AuthService) {}
 
+  ngOnInit(): void {
+    // Restaurar estado del sidebar desde localStorage
+    const saved = localStorage.getItem('sidebar:collapsed');
+    if (saved !== null) {
+      this.isCollapsed.set(saved === 'true');
+    }
+  }
+
+  isMobile(): boolean {
+    return window.innerWidth < 1024;
+  }
+
   @HostListener('document:click', ['$event'])
   cerrarMenuFuera(event: Event): void {
     const target = event.target as HTMLElement;
     if (!target.closest('[data-menu-usuario-sidebar]')) {
       this.mostrarMenuUsuario = false;
     }
+  }
+
+  toggleSidebar(): void {
+    this.isCollapsed.update(v => !v);
+    localStorage.setItem('sidebar:collapsed', String(this.isCollapsed()));
+  }
+
+  isMobile(): boolean {
+    return window.innerWidth < 1024;
   }
 
   get correoUsuario(): string {

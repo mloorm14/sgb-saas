@@ -14,6 +14,7 @@ import com.uteq.backend.repository.EditorialRepository;
 import com.uteq.backend.repository.EstadoLibroRepository;
 import com.uteq.backend.repository.IdiomaRepository;
 import com.uteq.backend.repository.LibroRepository;
+import jakarta.persistence.EntityGraph;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -26,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -119,9 +121,11 @@ public class LibroService {
 
     @Transactional(readOnly = true)
     public Page<LibroResponseDTO> listarPendientes(String q, Integer anioPublicacion, Pageable pageable) {
-        Integer pendienteId = estadoRepo.findByNombre(ESTADO_PENDIENTE)
-                .orElseThrow(() -> new IllegalStateException("Catálogo estados_libro sin fila '" + ESTADO_PENDIENTE + "'"))
-                .getId();
+        Optional<EstadoLibro> pendienteOpt = estadoRepo.findByNombre(ESTADO_PENDIENTE);
+        if (pendienteOpt.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        Integer pendienteId = pendienteOpt.get().getId();
         return libroRepo.buscarPendientes(q, anioPublicacion, pendienteId, pageable).map(this::toDTO);
     }
 

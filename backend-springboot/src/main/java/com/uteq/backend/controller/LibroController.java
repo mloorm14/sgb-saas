@@ -12,6 +12,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -68,7 +69,7 @@ public class LibroController {
     public ResponseEntity<Page<LibroResponseDTO>> pendientes(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) Integer anioPublicacion,
-            @PageableDefault(size = 10, sort = "fechaRegistro,desc") Pageable pageable) {
+            @PageableDefault(size = 10, sort = "fechaRegistro", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(libroService.listarPendientes(q, anioPublicacion, pageable));
     }
 

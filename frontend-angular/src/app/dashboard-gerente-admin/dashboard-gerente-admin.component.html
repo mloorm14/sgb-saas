@@ -1,14 +1,14 @@
 <div class="flex h-screen">
 
   <!-- Sidebar -->
-  <aside class="w-64 bg-white border-r border-outline-variant flex flex-col shrink-0">
+  <aside [class]="isCollapsed() ? 'w-[72px]' : 'w-64'" class="bg-white border-r border-outline-variant flex flex-col shrink-0 overflow-hidden transition-[width] duration-200 ease-in-out">
 
     <!-- Logo -->
-    <div class="px-lg py-md border-b border-outline-variant">
-      <span class="flex items-center gap-sm">
-        <span class="material-symbols-outlined text-3xl text-primary" style="font-variation-settings: 'FILL' 1;">local_library</span>
+    <div class="px-lg py-md border-b border-outline-variant flex items-center gap-sm">
+      <span class="material-symbols-outlined text-3xl text-primary" style="font-variation-settings: 'FILL' 1;">local_library</span>
+      @if (!isCollapsed()) {
         <span class="font-headline-md text-headline-md text-primary tracking-tight">SGB UTEQ</span>
-      </span>
+      }
     </div>
 
     <!-- Navegación -->
@@ -16,14 +16,18 @@
       @for (seccion of secciones; track seccion.titulo) {
         @if (visibles(seccion).length > 0) {
           <div class="mb-sm">
-            <p class="px-lg font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">{{ seccion.titulo }}</p>
+            @if (seccion.titulo && !isCollapsed()) {
+              <p class="px-lg font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">{{ seccion.titulo }}</p>
+            }
             @for (enlace of visibles(seccion); track enlace.ruta) {
               <a [routerLink]="enlace.ruta"
                  routerLinkActive="bg-primary-fixed text-primary"
                  [routerLinkActiveOptions]="{ exact: true }"
-                 class="flex items-center gap-sm px-lg py-sm mx-sm rounded-lg font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer">
+                 class="flex items-center gap-sm px-lg py-sm mx-sm rounded-lg font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer justify-center">
                 <span class="material-symbols-outlined text-[20px]">{{ enlace.icono }}</span>
-                {{ enlace.etiqueta }}
+                @if (!isCollapsed()) {
+                  <span class="font-body-sm text-body-sm">{{ enlace.etiqueta }}</span>
+                }
               </a>
             }
           </div>
@@ -31,15 +35,26 @@
       }
     </nav>
 
+    <!-- Botón Contraer/Expandir -->
+    <div class="border-t border-outline-variant px-sm py-xs">
+      <button (click)="toggleSidebar()"
+        [attr.aria-label]="isCollapsed() ? 'Expandir menú' : 'Contraer menú'"
+        class="w-full h-9 rounded-lg flex items-center justify-center hover:bg-surface-container-low transition-colors cursor-pointer">
+        <span class="material-symbols-outlined text-[22px] text-on-surface-variant">menu</span>
+      </button>
+    </div>
+
     <!-- Usuario -->
     <div class="relative border-t border-outline-variant px-lg py-md" data-menu-usuario-sidebar>
       <button (click)="mostrarMenuUsuario = !mostrarMenuUsuario"
-        class="w-full flex items-center gap-sm cursor-pointer">
+        class="w-full flex items-center gap-sm cursor-pointer justify-center">
         <span class="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-sm text-label-sm shrink-0">{{ inicialesUsuario }}</span>
-        <div class="flex-1 text-left min-w-0">
-          <p class="font-body-sm text-body-sm text-on-surface truncate">{{ correoUsuario }}</p>
-          <p class="font-label-sm text-label-sm text-on-surface-variant">{{ nombreRol }}</p>
-        </div>
+        @if (!isCollapsed()) {
+          <div class="flex-1 text-left min-w-0">
+            <p class="font-body-sm text-body-sm text-on-surface truncate">{{ correoUsuario }}</p>
+            <p class="font-label-sm text-label-sm text-on-surface-variant">{{ nombreRol }}</p>
+          </div>
+        }
         <span class="material-symbols-outlined text-[18px] text-on-surface-variant"
           [class.rotate-180]="mostrarMenuUsuario"
           style="transition: transform 0.2s">expand_less</span>
@@ -56,6 +71,11 @@
       }
     </div>
   </aside>
+
+  <!-- Overlay para mobile -->
+  @if (!isCollapsed() && isMobile()) {
+    <div class="fixed inset-0 bg-black/40 z-30 lg:hidden" (click)="isCollapsed.set(true)"></div>
+  }
 
   <!-- Contenido principal -->
   <main class="flex-1 overflow-y-auto bg-surface">

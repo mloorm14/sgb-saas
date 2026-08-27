@@ -28,10 +28,10 @@
     </div>
 
     <form [formGroup]="form" (ngSubmit)="guardarLibro()">
-      <div class="flex flex-col lg:flex-row gap-xl">
+      <div class="flex flex-col xl:flex-row gap-xl">
 
         <!-- ══ COLUMNA IZQUIERDA: Portada + Stock ══ -->
-        <div class="w-full lg:w-56 shrink-0 flex flex-col gap-lg">
+        <div class="w-full xl:w-56 shrink-0 flex flex-col gap-lg">
 
           <!-- Portada -->
           <div>
@@ -435,7 +435,7 @@
     <div class="flex flex-wrap justify-between items-center mt-lg gap-sm">
       <div class="flex items-center gap-xs font-body-sm text-body-sm">
         <span class="text-on-surface-variant">Mostrar</span>
-        <select [ngModel]="pageSize" (ngModelChange)="cambiarTamanoPage($event)" class="h-8 px-sm pr-8 rounded border border-outline-variant bg-white cursor-pointer appearance-none">
+        <select [ngModel]="pageSize" (ngModelChange)="cambiarTamanoPage($event)" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-white cursor-pointer appearance-none text-xs leading-tight py-1.5">
           <option [ngValue]="10">10</option>
           <option [ngValue]="20">20</option>
           <option [ngValue]="30">30</option>
