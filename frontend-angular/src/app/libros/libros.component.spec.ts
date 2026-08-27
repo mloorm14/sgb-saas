@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
 import { LibrosComponent } from './libros.component';
 import { LibroService } from '../core/services/libro.service';
 import { CategoriaService } from '../core/services/categoria.service';
@@ -58,7 +59,8 @@ describe('LibrosComponent', () => {
         { provide: AutorService, useValue: autorService },
         { provide: EditorialService, useValue: editorialService },
         { provide: IdiomaService, useValue: idiomaService },
-        { provide: EstadoLibroService, useValue: estadoLibroService }
+        { provide: EstadoLibroService, useValue: estadoLibroService },
+        { provide: ActivatedRoute, useValue: { queryParams: of({}) } }
       ]
     }).compileComponents();
 

@@ -40,12 +40,15 @@ export class LibroService {
     );
   }
 
-  listarPendientes(params: { q?: string; anioPublicacion?: number; page?: number; size?: number } = {}): Observable<Page<Libro>> {
+  listarPendientes(params: { q?: string; anioPublicacion?: number; page?: number; size?: number; estadoIds?: number[] } = {}): Observable<Page<Libro>> {
     let httpParams = new HttpParams();
     if (params.q) httpParams = httpParams.set('q', params.q);
     if (params.anioPublicacion !== undefined) httpParams = httpParams.set('anioPublicacion', params.anioPublicacion);
     if (params.page !== undefined) httpParams = httpParams.set('page', params.page);
     if (params.size !== undefined) httpParams = httpParams.set('size', params.size);
+    if (params.estadoIds && params.estadoIds.length > 0) {
+      params.estadoIds.forEach(id => httpParams = httpParams.append('estadoIds', id));
+    }
     return this.http.get<Page<Libro>>(`${this.apiUrl}/pendientes`, { params: httpParams }).pipe(
       catchError(err => this.manejarError(err))
     );

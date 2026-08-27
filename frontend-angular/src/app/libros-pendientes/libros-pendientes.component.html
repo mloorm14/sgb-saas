@@ -1,7 +1,7 @@
 <main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
   <div class="mb-lg">
     <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Libros pendientes</h1>
-    <p class="font-body-sm text-body-sm text-on-surface-variant">Gestión de libros incompletos</p>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Gestión de libros en estados de revisión (Dado de baja, Pendiente, En reparación, Perdido)</p>
   </div>
 
   <!-- Filtros -->
@@ -13,10 +13,12 @@
     </div>
     <input type="number" [(ngModel)]="anioFiltro" (ngModelChange)="onFiltroChange()" placeholder="Año"
       class="w-28 h-10 px-sm rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm focus:outline-none focus:border-primary" [min]="1950" />
-    <select [(ngModel)]="estadoFiltro" (ngModelChange)="onFiltroChange(); cargar()"
+    <select [(ngModel)]="estadoFiltro" (ngModelChange)="onFiltroChange()"
       class="h-10 px-sm pr-8 rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm cursor-pointer appearance-none">
-      <option [ngValue]="null">Todos los estados</option>
-      @for (e of estados; track e.id) { @if (e.nombre !== 'ACTIVO') { <option [ngValue]="e.id">{{ formatarEstado(e.nombre) }}</option> } }
+      <option [ngValue]="null">Todos (4 estados)</option>
+      @for (e of estados; track e.id) {
+        <option [ngValue]="e.id">{{ formatarEstado(e.nombre) }}</option>
+      }
     </select>
   </div>
 
@@ -35,7 +37,7 @@
         <span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
       </button>
     } @empty {
-      @if (!cargando) { <p class="text-center text-on-surface-variant py-lg">No hay libros pendientes</p> }
+      @if (!cargando) { <p class="text-center text-on-surface-variant py-lg">No hay libros en los estados seleccionados</p> }
     }
   </div>
 

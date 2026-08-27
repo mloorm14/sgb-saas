@@ -1,7 +1,7 @@
 <div class="flex h-screen">
 
   <!-- Sidebar -->
-  <aside [class]="isCollapsed() ? 'w-[72px]' : 'w-64'" class="bg-white border-r border-outline-variant flex flex-col shrink-0 overflow-hidden transition-[width] duration-200 ease-in-out">
+  <aside [class]="isCollapsed() ? 'w-[72px]' : 'w-64'" class="bg-white border-r border-outline-variant flex flex-col shrink-0 overflow-hidden transition-[width] duration-200 ease-in-out z-40">
 
     <!-- Logo -->
     <div class="px-lg py-md border-b border-outline-variant flex items-center gap-sm">
@@ -12,14 +12,16 @@
     </div>
 
     <!-- Botón Contraer/Expandir - debajo del logo -->
-    <div class="border-b border-outline-variant px-sm py-xs flex" [class.justify-center]="isCollapsed()" [class.justify-start]="!isCollapsed()">
-      <button (click)="toggleSidebar()"
-        [attr.aria-label]="isCollapsed() ? 'Expandir menú' : 'Contraer menú'"
-        [attr.title]="isCollapsed() ? 'Expandir menú' : 'Contraer menú'"
-        class="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-surface-container-low transition-colors cursor-pointer shrink-0">
-        <span class="material-symbols-outlined text-[22px] text-on-surface-variant">menu</span>
-      </button>
-    </div>
+    <button (click)="toggleSidebar(); $event.stopPropagation()"
+      [attr.aria-label]="isCollapsed() ? 'Expandir menú' : 'Contraer menú'"
+      [attr.title]="isCollapsed() ? 'Expandir menú' : 'Contraer menú'"
+      class="flex items-center gap-sm py-sm mx-sm rounded-lg font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap overflow-hidden"
+      [class.px-lg]="!isCollapsed()" [class.px-2]="isCollapsed()" [class.justify-center]="isCollapsed()">
+      <span class="material-symbols-outlined text-[20px] shrink-0">menu</span>
+      @if (!isCollapsed()) {
+        <span class="whitespace-nowrap overflow-hidden">Menú</span>
+      }
+    </button>
 
     <!-- Navegación -->
     <nav class="flex-1 overflow-y-auto py-md">
