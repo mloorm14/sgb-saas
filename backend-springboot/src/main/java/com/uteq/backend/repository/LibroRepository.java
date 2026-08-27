@@ -49,21 +49,21 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
     // Búsqueda por título O ISBN con estado específico
     @Query("SELECT l FROM Libro l WHERE l.estado.id = :estadoId "
             + "AND (LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) "
-            + "OR LOWER(CAST(l.isbn AS TEXT)) LIKE LOWER(CONCAT('%', :q, '%')))")
+            + "OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', :q, '%')))")
     Page<Libro> buscarPorTextoOIsbn(@Param("q") String q, @Param("estadoId") Integer estadoId, Pageable pageable);
 
     // Búsqueda por título O ISBN + categoría
     @Query("SELECT l FROM Libro l WHERE l.estado.id = :estadoId "
             + "AND :categoriaId MEMBER OF l.categorias "
             + "AND (LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) "
-            + "OR LOWER(CAST(l.isbn AS TEXT)) LIKE LOWER(CONCAT('%', :q, '%')))")
+            + "OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', :q, '%')))")
     Page<Libro> buscarPorTextoOIsbnYCategoria(@Param("q") String q, @Param("categoriaId") Integer categoriaId, @Param("estadoId") Integer estadoId, Pageable pageable);
 
     // Búsqueda por título O ISBN + autor
     @Query("SELECT l FROM Libro l WHERE l.estado.id = :estadoId "
             + "AND :autorId MEMBER OF l.autores "
             + "AND (LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) "
-            + "OR LOWER(CAST(l.isbn AS TEXT)) LIKE LOWER(CONCAT('%', :q, '%')))")
+            + "OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', :q, '%')))")
     Page<Libro> buscarPorTextoOIsbnYAutor(@Param("q") String q, @Param("autorId") Long autorId, @Param("estadoId") Integer estadoId, Pageable pageable);
 
     // Módulo 3 (búsqueda predictiva, RF-09/CU-08): similarity(...) es una
@@ -85,12 +85,12 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
     @Query(value = "SELECT l FROM Libro l WHERE l.estado.id = :estadoId "
             + "AND ( :q IS NULL "
             + "      OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) "
-            + "      OR LOWER(CAST(l.isbn AS TEXT)) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) )"
+            + "      OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) )"
             + "AND ( :anio IS NULL OR l.anioPublicacion = :anio )",
             countQuery = "SELECT count(l) FROM Libro l WHERE l.estado.id = :estadoId "
                     + "AND ( :q IS NULL "
                     + "      OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) "
-                    + "      OR LOWER(CAST(l.isbn AS TEXT)) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) )"
+                    + "      OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) )"
                     + "AND ( :anio IS NULL OR l.anioPublicacion = :anio )")
     Page<Libro> buscarPendientes(@Param("q") String q, @Param("anio") Short anio, @Param("estadoId") Integer estadoId, Pageable pageable);
 
@@ -98,12 +98,12 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
     @Query(value = "SELECT l FROM Libro l WHERE l.estado.id IN :estadoIds "
             + "AND ( :q IS NULL "
             + "      OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) "
-            + "      OR LOWER(CAST(l.isbn AS TEXT)) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) )"
+            + "      OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) )"
             + "AND ( :anio IS NULL OR l.anioPublicacion = :anio )",
             countQuery = "SELECT count(l) FROM Libro l WHERE l.estado.id IN :estadoIds "
                     + "AND ( :q IS NULL "
                     + "      OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) "
-                    + "      OR LOWER(CAST(l.isbn AS TEXT)) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) )"
+                    + "      OR LOWER(l.isbn) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) )"
                     + "AND ( :anio IS NULL OR l.anioPublicacion = :anio )")
     Page<Libro> buscarPorEstados(@Param("estadoIds") List<Integer> estadoIds, @Param("q") String q, @Param("anio") Short anio, Pageable pageable);
 }
