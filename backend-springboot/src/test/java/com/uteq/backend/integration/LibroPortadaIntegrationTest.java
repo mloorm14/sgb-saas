@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Flyway aplica las migraciones (incluyendo R__stored_procedures.sql y
  * V13__portada_imagen.sql) automaticamente contra el container.
  */
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest
 @Transactional
 class LibroPortadaIntegrationTest {

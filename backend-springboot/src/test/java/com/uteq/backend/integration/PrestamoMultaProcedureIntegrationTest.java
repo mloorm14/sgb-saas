@@ -51,7 +51,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * falta agregar maven-failsafe-plugin y renombrar esta clase a *IT, una
  * decisión de build que no tomé unilateralmente.
  */
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest
 @Transactional
 class PrestamoMultaProcedureIntegrationTest {
