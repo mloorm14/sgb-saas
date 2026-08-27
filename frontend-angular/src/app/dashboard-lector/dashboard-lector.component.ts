@@ -70,10 +70,6 @@ export class DashboardLectorComponent implements OnInit {
     localStorage.setItem('sidebar:collapsed', String(this.isCollapsed()));
   }
 
-  isMobile(): boolean {
-    return window.innerWidth < 1024;
-  }
-
   get correoUsuario(): string {
     return this.authService.getCorreo() ?? '';
   }
