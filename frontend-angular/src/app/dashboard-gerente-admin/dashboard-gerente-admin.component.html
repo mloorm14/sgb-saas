@@ -16,9 +16,10 @@
       <button (click)="toggleSidebar(); $event.stopPropagation()"
         [attr.aria-label]="isCollapsed() ? 'Expandir menú' : 'Contraer menú'"
         [attr.title]="isCollapsed() ? 'Expandir menú' : 'Contraer menú'"
-        class="w-9 h-9 rounded-lg flex items-center justify-center gap-2 hover:bg-surface-container-low transition-colors cursor-pointer shrink-0"
+        class="mx-sm flex items-center gap-sm py-sm rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer shrink-0"
+        [class.px-lg]="!isCollapsed()" [class.px-2]="isCollapsed()"
         [class.justify-center]="isCollapsed()" [class.justify-start]="!isCollapsed()">
-        <span class="material-symbols-outlined text-[22px] text-on-surface-variant">menu</span>
+        <span class="material-symbols-outlined text-[22px] text-on-surface-variant shrink-0">menu</span>
         @if (!isCollapsed()) {
           <span class="font-body-sm text-body-sm text-on-surface-variant whitespace-nowrap">Menú</span>
         }
