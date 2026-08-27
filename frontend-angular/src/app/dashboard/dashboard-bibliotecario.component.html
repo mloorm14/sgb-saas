@@ -13,11 +13,15 @@
 
     <!-- Botón Contraer/Expandir - debajo del logo -->
     <div class="border-b border-outline-variant px-sm py-xs flex" [class.justify-center]="isCollapsed()" [class.justify-start]="!isCollapsed()">
-      <button (click)="toggleSidebar()"
+      <button (click)="toggleSidebar(); $event.stopPropagation()"
         [attr.aria-label]="isCollapsed() ? 'Expandir menú' : 'Contraer menú'"
         [attr.title]="isCollapsed() ? 'Expandir menú' : 'Contraer menú'"
-        class="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-surface-container-low transition-colors cursor-pointer shrink-0">
+        class="w-9 h-9 rounded-lg flex items-center justify-center gap-2 hover:bg-surface-container-low transition-colors cursor-pointer shrink-0"
+        [class.justify-center]="isCollapsed()" [class.justify-start]="!isCollapsed()">
         <span class="material-symbols-outlined text-[22px] text-on-surface-variant">menu</span>
+        @if (!isCollapsed()) {
+          <span class="font-body-sm text-body-sm text-on-surface-variant whitespace-nowrap">Menú</span>
+        }
       </button>
     </div>
 
