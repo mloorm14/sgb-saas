@@ -18,7 +18,8 @@ interface SeccionSidebar {
   selector: 'app-dashboard-gerente-admin',
   standalone: true,
   imports: [RouterLink, RouterLinkActive, RouterOutlet],
-  templateUrl: './dashboard-gerente-admin.component.html'
+  templateUrl: './dashboard-gerente-admin.component.html',
+  styles: [`:host { display: block; height: 100%; overflow: hidden; }`]
 })
 export class DashboardGerenteAdminComponent implements OnInit {
   mostrarMenuUsuario = false;
@@ -91,6 +92,16 @@ export class DashboardGerenteAdminComponent implements OnInit {
   toggleSidebar(): void {
     this.isCollapsed.update(v => !v);
     localStorage.setItem('sidebar:collapsed', String(this.isCollapsed()));
+    if (!this.isCollapsed()) {
+      this.mostrarMenuUsuario = false;
+    }
+  }
+
+  onClickMenuUsuario(): void {
+    if (!this.isCollapsed()) {
+      return;
+    }
+    this.mostrarMenuUsuario = !this.mostrarMenuUsuario;
   }
 
   toggleSeccion(titulo: string): void {
