@@ -23,6 +23,7 @@ import { BuscadorUsuarioComponent } from '../shared/buscador-usuario/buscador-us
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
 
 @Component({
+  standalone: true,
   selector: 'app-devoluciones',
   imports: [CommonModule, FormsModule, BuscadorUsuarioComponent, PortadaLibroComponent],
   templateUrl: './devoluciones.component.html'
@@ -278,6 +279,11 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
       case 'PERDIDO': return 'text-error';
       default: return 'text-on-surface-variant';
     }
+  }
+
+  getNombreDano(dano: DanoItem): string {
+    const tipo = this.tiposDano.find(t => t.id === dano.tipoDanoId);
+    return tipo?.nombre ?? 'Daño';
   }
 
   iniciales(nombre: string): string {

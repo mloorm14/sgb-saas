@@ -9,6 +9,7 @@ import { Libro } from '../core/models/libro.model';
 import { EstadoLibro } from '../core/models/estado-libro.model';
 
 @Component({
+  standalone: true,
   selector: 'app-libros-pendientes',
   imports: [CommonModule, FormsModule],
   templateUrl: './libros-pendientes.component.html'
