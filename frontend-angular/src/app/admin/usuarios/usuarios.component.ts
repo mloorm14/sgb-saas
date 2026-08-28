@@ -65,7 +65,21 @@ export class UsuariosComponent implements OnInit {
   }
 
   get paginasVisibles(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i);
+    const windowSize = 4;
+    let start = Math.max(0, this.currentPage - 1);
+    let end = Math.min(this.totalPages, start + windowSize);
+    if (end - start < windowSize) {
+      start = Math.max(0, end - windowSize);
+    }
+    return Array.from({ length: end - start }, (_, i) => start + i);
+  }
+
+  get puedeAnterior(): boolean {
+    return this.currentPage > 0;
+  }
+
+  get puedeSiguiente(): boolean {
+    return this.currentPage < this.totalPages - 1;
   }
 
   buscarUsuarios(): void {
@@ -96,18 +110,28 @@ export class UsuariosComponent implements OnInit {
     });
   }
 
+  irAPagina(pagina: number): void {
+    if (pagina < 0 || pagina >= this.totalPages || pagina === this.currentPage) return;
+    this.currentPage = pagina;
+    this.cargarPagina();
+  }
+
   paginaAnterior(): void {
-    if (this.currentPage > 0) {
-      this.currentPage--;
-      this.cargarPagina();
+    if (this.puedeAnterior) {
+      this.irAPagina(this.currentPage - 1);
     }
   }
 
   paginaSiguiente(): void {
-    if (this.currentPage < this.totalPages - 1) {
-      this.currentPage++;
-      this.cargarPagina();
+    if (this.puedeSiguiente) {
+      this.irAPagina(this.currentPage + 1);
     }
+  }
+
+  cambiarTamanoPage(nuevo: number): void {
+    this.pageSize = Number(nuevo);
+    this.currentPage = 0;
+    this.cargarPagina();
   }
 
   etiquetaEstado(estado: string): string {

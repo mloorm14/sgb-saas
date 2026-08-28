@@ -25,7 +25,8 @@
 
   <div class="mb-lg">
     <app-buscador-usuario
-      (buscarAhora)="onBuscarAhora($event)">
+      (buscarAhora)="onBuscarAhora($event)"
+      (correoSeleccionado)="onBuscarAhora($event)">
     </app-buscador-usuario>
   </div>
 
@@ -33,7 +34,7 @@
     <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando usuarios…</p>
   }
 
-  <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
+  <div class="rounded-lg border border-outline-variant bg-white overflow-x-auto overflow-y-hidden">
     <table class="w-full text-left">
       <thead class="bg-surface-container-low">
         <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
@@ -125,33 +126,48 @@
     </table>
   </div>
 
-  @if (totalPages > 1) {
-    <div class="flex justify-center mt-lg gap-xs">
-      <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
-        class="w-8 h-8 min-w-[44px] min-h-[44px] rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
-        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
-      </button>
-      @for (pagina of paginasVisibles; track pagina) {
-        <button (click)="currentPage = pagina; cargarPagina()"
-          class="w-8 h-8 min-w-[44px] min-h-[44px] rounded font-label-sm text-label-sm cursor-pointer"
-          [class.bg-primary]="pagina === currentPage"
-          [class.text-on-primary]="pagina === currentPage"
-          [class.hover:bg-surface-container-low]="pagina !== currentPage"
-          [class.text-on-surface-variant]="pagina !== currentPage">
-          {{ pagina + 1 }}
-        </button>
-      }
-      <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
-        class="w-8 h-8 min-w-[44px] min-h-[44px] rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
-        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
-      </button>
+  <div class="flex flex-wrap justify-between items-center mt-lg gap-sm">
+    <div class="flex items-center gap-xs font-body-sm text-body-sm">
+      <span class="text-on-surface-variant">Mostrar</span>
+      <label for="page-size-usuarios" class="sr-only">Elementos por página</label>
+      <select [ngModel]="pageSize" (ngModelChange)="cambiarTamanoPage($event)" id="page-size-usuarios"
+        class="h-10 px-sm pr-8 rounded border border-outline-variant bg-white cursor-pointer appearance-none text-xs leading-tight py-1.5">
+        <option [ngValue]="10">10</option>
+        <option [ngValue]="20">20</option>
+        <option [ngValue]="30">30</option>
+      </select>
+      <span class="text-on-surface-variant">por página</span>
     </div>
-  }
+    @if (totalPages > 1) {
+      <div class="flex items-center gap-xs">
+        <button (click)="paginaAnterior()" [disabled]="!puedeAnterior"
+          class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">
+          <span class="material-symbols-outlined text-[18px]">chevron_left</span> Anterior
+        </button>
+        @for (pagina of paginasVisibles; track pagina) {
+          <button (click)="irAPagina(pagina)"
+            class="w-8 h-8 min-w-[44px] min-h-[44px] rounded font-label-sm text-label-sm cursor-pointer"
+            [class.bg-primary]="pagina === currentPage"
+            [class.text-on-primary]="pagina === currentPage"
+            [class.text-on-surface-variant]="pagina !== currentPage"
+            [class.border]="pagina !== currentPage"
+            [class.border-outline-variant]="pagina !== currentPage"
+            [class.hover:bg-surface-container-low]="pagina !== currentPage">
+            {{ pagina + 1 }}
+          </button>
+        }
+        <button (click)="paginaSiguiente()" [disabled]="!puedeSiguiente"
+          class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">
+          Siguiente <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+        </button>
+      </div>
+    }
+  </div>
 
   <!-- Modal: motivo obligatorio para cambio de estado -->
   @if (mostrarModalEstado && usuarioAccion) {
     <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-md"
-      role="dialog" aria-modal="true" attr.aria-labelledby="titulo-estado-usuario">
+      role="dialog" aria-modal="true" aria-labelledby="titulo-estado-usuario">
       <div class="bg-white rounded-xl glass-panel w-full max-w-md p-xl">
         <h2 id="titulo-estado-usuario" class="font-headline-md text-headline-md text-on-background mb-xs">
           {{ nuevoEstado === 'INACTIVO' ? 'Bloquear' : 'Activar' }} a {{ usuarioAccion.nombre }} {{ usuarioAccion.apellido }}
