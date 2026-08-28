@@ -132,7 +132,7 @@
           </div>
 
           @if (errorMsg) {
-            <div class="text-error text-body-sm">{{ errorMsg }}</div>
+            <div role="alert" class="text-error text-body-sm">{{ errorMsg }}</div>
           }
 
           <button type="submit" [disabled]="formRegistro.invalid || cargando"
@@ -180,7 +180,7 @@
           </div>
 
           @if (errorMsgVerificar) {
-            <div class="text-error text-body-sm">{{ errorMsgVerificar }}</div>
+            <div role="alert" class="text-error text-body-sm">{{ errorMsgVerificar }}</div>
           }
 
           <button type="submit" [disabled]="formVerificar.invalid || cargando"

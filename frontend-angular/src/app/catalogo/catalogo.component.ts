@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -300,5 +300,12 @@ export class CatalogoComponent implements OnInit, OnDestroy {
 
   paginaSiguiente(): void {
     this.irAPagina(this.currentPage + 1);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.mostrarModalReserva) {
+      this.cancelarReserva();
+    }
   }
 }

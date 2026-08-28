@@ -58,12 +58,22 @@
               <div>
                 <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Stock total *</label>
                 <input formControlName="stockTotal" type="number" min="0"
+                  [attr.aria-invalid]="form.get('stockTotal')?.invalid && form.get('stockTotal')?.touched ? true : null"
+                  [attr.aria-describedby]="form.get('stockTotal')?.invalid && form.get('stockTotal')?.touched ? 'stock-total-error' : null"
                   class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+                @if (form.get('stockTotal')?.touched && form.get('stockTotal')?.invalid) {
+                  <p id="stock-total-error" class="text-[12px] text-error mt-1">Requerido</p>
+                }
               </div>
               <div>
                 <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Stock disponible *</label>
                 <input formControlName="stockDisponible" type="number" min="0"
+                  [attr.aria-invalid]="form.get('stockDisponible')?.invalid && form.get('stockDisponible')?.touched ? true : null"
+                  [attr.aria-describedby]="form.get('stockDisponible')?.invalid && form.get('stockDisponible')?.touched ? 'stock-disponible-error' : null"
                   class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+                @if (form.get('stockDisponible')?.touched && form.get('stockDisponible')?.invalid) {
+                  <p id="stock-disponible-error" class="text-[12px] text-error mt-1">Requerido</p>
+                }
               </div>
               <div>
                 <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Ubicación física</label>
@@ -81,10 +91,12 @@
           <div class="mb-md">
             <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Título *</label>
             <input formControlName="titulo" type="text" maxlength="255" placeholder="Título del libro"
+              [attr.aria-invalid]="form.get('titulo')?.invalid && form.get('titulo')?.touched ? true : null"
+              [attr.aria-describedby]="form.get('titulo')?.invalid && form.get('titulo')?.touched ? 'titulo-error' : null"
               class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
             <p class="text-[11px] text-on-surface-variant text-right mt-1">{{ form.get('titulo')?.value?.length || 0 }}/255</p>
             @if (form.get('titulo')?.touched && form.get('titulo')?.invalid) {
-              <p class="text-[12px] text-error mt-1">Título requerido (máx 255)</p>
+              <p id="titulo-error" class="text-[12px] text-error mt-1">Título requerido (máx 255)</p>
             }
           </div>
 
@@ -94,6 +106,8 @@
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">ISBN *</label>
               <div class="flex gap-xs">
                 <input formControlName="isbn" type="text" inputmode="numeric" maxlength="13" placeholder="978..."
+                  [attr.aria-invalid]="form.get('isbn')?.invalid && form.get('isbn')?.touched ? true : null"
+                  [attr.aria-describedby]="form.get('isbn')?.invalid && form.get('isbn')?.touched ? 'isbn-error' : null"
                   class="flex-1 min-w-0 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
                 <button type="button" (click)="buscarPorIsbn()" [disabled]="lookupCargando"
                   class="h-11 px-sm rounded bg-primary text-on-primary font-label-sm text-[13px] flex items-center gap-xs hover:bg-on-primary-fixed-variant disabled:opacity-40 shrink-0 cursor-pointer">
@@ -105,7 +119,7 @@
                 <p class="font-body-sm text-[12px] text-error mt-xs">{{ lookupError }}</p>
               }
               @if (form.get('isbn')?.touched && form.get('isbn')?.invalid) {
-                <p class="text-[12px] text-error mt-1">ISBN 10 a 13 dígitos numéricos</p>
+                <p id="isbn-error" class="text-[12px] text-error mt-1">ISBN 10 a 13 dígitos numéricos</p>
               }
             </div>
             <div class="col-span-6 sm:col-span-2">
@@ -437,11 +451,11 @@
           <!-- Acciones -->
           <div class="flex gap-xs shrink-0">
             <button (click)="abrirFormularioEditar(libro)" title="Editar"
-              class="w-8 h-8 rounded flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant cursor-pointer">
+              class="w-8 h-8 min-w-[44px] min-h-[44px] rounded flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant cursor-pointer">
               <span class="material-symbols-outlined text-[18px]">edit</span>
             </button>
             <button (click)="eliminarLibro(libro.id)" title="Eliminar"
-              class="w-8 h-8 rounded flex items-center justify-center hover:bg-error-container/40 text-error cursor-pointer">
+              class="w-8 h-8 min-w-[44px] min-h-[44px] rounded flex items-center justify-center hover:bg-error-container/40 text-error cursor-pointer">
               <span class="material-symbols-outlined text-[18px]">delete</span>
             </button>
           </div>
@@ -468,12 +482,12 @@
       @if (totalPages > 1) {
         <div class="flex items-center gap-xs">
           <button (click)="paginaAnterior()" [disabled]="!puedeAnterior"
-            class="h-8 px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">
+            class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">
             <span class="material-symbols-outlined text-[18px]">chevron_left</span> Anterior
           </button>
           @for (p of paginasVisibles; track p) {
             <button (click)="currentPage = p; cargarLibros()"
-              class="w-8 h-8 rounded font-label-sm text-label-sm cursor-pointer"
+              class="w-8 h-8 min-w-[44px] min-h-[44px] rounded font-label-sm text-label-sm cursor-pointer"
               [class.bg-primary]="p===currentPage"
               [class.text-on-primary]="p===currentPage"
               [class.text-on-surface-variant]="p!==currentPage"
@@ -484,7 +498,7 @@
             </button>
           }
           <button (click)="paginaSiguiente()" [disabled]="!puedeSiguiente"
-            class="h-8 px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">
+            class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">
             Siguiente <span class="material-symbols-outlined text-[18px]">chevron_right</span>
           </button>
         </div>

@@ -896,7 +896,9 @@ export class LibrosComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape')
   onEscapeKey(): void {
-    if (this.portadaModalVisible) {
+    if (this.confirmacionVisible) {
+      this.cancelarConfirmacion();
+    } else if (this.portadaModalVisible) {
       this.cerrarPortada();
     } else if (this.mostrarFormulario) {
       this.cerrarFormulario();
