@@ -1,4 +1,4 @@
-<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
+<div class="max-w-container-max mx-auto px-md md:px-lg py-lg">
   <div class="mb-lg">
     <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Reportes gerenciales</h1>
     <p class="font-body-sm text-body-sm text-on-surface-variant">Estadísticas de inventario, morosidad, préstamos y categorías.</p>
@@ -8,378 +8,325 @@
     <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
   }
 
-  @if (cargando && libros.length === 0 && morosos.length === 0) {
-    <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando reportes…</p>
+  <!-- ═══ VISTA TARJETAS ═══ -->
+  @if (vista === 'tarjetas') {
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md">
+      @for (m of modulos; track m.id) {
+        <button (click)="abrirModulo(m.id)"
+          class="rounded-xl border border-outline-variant bg-white p-lg text-left hover:shadow-md transition-shadow cursor-pointer group">
+          <div class="flex items-center gap-sm mb-md">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center" [class]="m.color">
+              <span class="material-symbols-outlined text-[20px]">{{ m.icono }}</span>
+            </div>
+            <span class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">{{ m.codigo }}</span>
+          </div>
+          <h3 class="font-headline-sm text-headline-sm text-on-background mb-xs">{{ m.etiqueta }}</h3>
+          <p class="font-body-xs text-body-xs text-on-surface-variant mb-md">{{ m.descripcion }}</p>
+          <span class="inline-flex items-center gap-xs font-label-sm text-label-sm text-primary group-hover:underline">
+            Ver reporte <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+          </span>
+        </button>
+      }
+    </div>
   }
 
-  <!-- Filtros globales -->
-  <section class="mb-lg rounded-lg border border-outline-variant bg-white p-md">
-    <h3 class="font-label-md text-label-md text-on-surface mb-sm">Filtros globales</h3>
-    <div class="flex flex-wrap gap-sm items-end">
-      <div>
-        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
-        <input type="date" [(ngModel)]="fechaDesde"
-          class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+  <!-- ═══ VISTA MODULO DETALLE ═══ -->
+  @if (vista !== 'tarjetas') {
+    <div>
+      <div class="flex items-center gap-xs mb-md font-body-sm text-body-sm text-on-surface-variant">
+        <button (click)="volverATarjetas()" class="text-primary hover:underline cursor-pointer">Reportes</button>
+        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+        <span class="text-on-surface font-medium">{{ etiquetaModulo(vista) }}</span>
       </div>
-      <div>
-        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hasta</label>
-        <input type="date" [(ngModel)]="fechaHasta"
-          class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
-      </div>
-      <div>
-        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Los mejores</label>
-        <input type="number" min="1" max="100" [(ngModel)]="limiteTop" (ngModelChange)="cambiarLimite()"
-          class="h-9 w-20 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
-      </div>
-      <button (click)="aplicarFiltros()"
-        class="h-9 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm cursor-pointer">
-        Buscar
-      </button>
-      <button (click)="limpiarFiltros()"
-        class="h-9 px-md rounded border border-outline-variant font-label-sm text-label-sm hover:bg-surface-container-low cursor-pointer">
-        Limpiar
-      </button>
-    </div>
-  </section>
 
-  <!-- 1) Libros más prestados (detallado) -->
-  <section class="mb-lg">
-    <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
-      <h2 class="font-headline-sm text-headline-sm text-on-surface">Libros más prestados</h2>
-      <div class="flex items-center gap-xs">
-        <button (click)="descargarLibrosPdf()" [disabled]="descargandoPdf === 'libros-pdf'"
-          class="h-8 px-sm rounded bg-error/10 text-error font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer hover:bg-error/20 transition-colors">
-          <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
-          {{ descargandoPdf === 'libros-pdf' ? 'Generando…' : 'PDF' }}
-        </button>
-        <button (click)="excelLibros()"
-          class="h-8 px-sm rounded bg-success/10 text-success font-label-sm text-label-sm flex items-center gap-xs cursor-pointer hover:bg-success/20 transition-colors">
-          <span class="material-symbols-outlined text-[16px]">table_chart</span>
-          Excel
-        </button>
-      </div>
-    </div>
-    <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
-      <table class="w-full text-left">
-        <thead class="bg-surface-container-low">
-          <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
-            <th class="px-md py-sm">#</th>
-            <th class="px-md py-sm">Título</th>
-            <th class="px-md py-sm hidden md:table-cell">ISBN</th>
-            <th class="px-md py-sm hidden lg:table-cell">Autor</th>
-            <th class="px-md py-sm hidden lg:table-cell">Categoría</th>
-            <th class="px-md py-sm text-right">Préstamos</th>
-            <th class="px-md py-sm text-right">% del total</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-          @for (libro of libros; track libro.libroId; let i = $index) {
-            <tr>
-              <td class="px-md py-sm text-on-surface-variant">{{ i + 1 }}</td>
-              <td class="px-md py-sm font-medium">{{ libro.titulo }}</td>
-              <td class="px-md py-sm text-on-surface-variant hidden md:table-cell">{{ libro.isbn || '—' }}</td>
-              <td class="px-md py-sm hidden lg:table-cell">{{ libro.autorNombre }}</td>
-              <td class="px-md py-sm hidden lg:table-cell">
-                <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-primary/10 text-primary">
-                  {{ libro.categoriaNombre }}
-                </span>
-              </td>
-              <td class="px-md py-sm text-right">
-                <span class="inline-flex items-center gap-xs font-label-sm text-label-sm text-primary">
-                  <span class="material-symbols-outlined text-[16px]">menu_book</span>
-                  {{ libro.totalPrestamos }}
-                </span>
-              </td>
-              <td class="px-md py-sm text-right font-medium text-on-surface">{{ libro.porcentaje }}%</td>
-            </tr>
-          } @empty {
-            @if (!cargando) {
-              <tr>
-                <td colspan="7" class="px-md py-lg text-center text-on-surface-variant">Sin préstamos registrados</td>
-              </tr>
-            }
-          }
-        </tbody>
-      </table>
-    </div>
-  </section>
+      @if (cargando) {
+        <p class="font-body-sm text-body-sm text-on-surface-variant mb-md">Cargando reporte…</p>
+      }
 
-  <!-- 2) Morosidad -->
-  <section class="mb-lg">
-    <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
-      <h2 class="font-headline-sm text-headline-sm text-on-surface">Morosidad</h2>
-      <div class="flex items-center gap-xs">
-        <button (click)="descargarMorosidadPdf()" [disabled]="descargandoPdf === 'morosidad-pdf'"
-          class="h-8 px-sm rounded bg-error/10 text-error font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer hover:bg-error/20 transition-colors">
-          <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
-          {{ descargandoPdf === 'morosidad-pdf' ? 'Generando…' : 'PDF' }}
-        </button>
-        <button (click)="excelMorosidad()"
-          class="h-8 px-sm rounded bg-success/10 text-success font-label-sm text-label-sm flex items-center gap-xs cursor-pointer hover:bg-success/20 transition-colors">
-          <span class="material-symbols-outlined text-[16px]">table_chart</span>
-          Excel
-        </button>
-      </div>
-    </div>
-    <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
-      <table class="w-full text-left">
-        <thead class="bg-surface-container-low">
-          <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
-            <th class="px-md py-sm">Usuario</th>
-            <th class="px-md py-sm hidden md:table-cell">Correo</th>
-            <th class="px-md py-sm text-right">Deuda</th>
-            <th class="px-md py-sm text-right hidden sm:table-cell">Multas</th>
-            <th class="px-md py-sm text-right hidden lg:table-cell">Días atraso (prom.)</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-          @for (m of morosos; track m.usuarioId) {
-            <tr>
-              <td class="px-md py-sm font-medium">{{ m.nombre }} {{ m.apellido }}</td>
-              <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ m.correo }}</td>
-              <td class="px-md py-sm text-right font-medium text-error">$ {{ m.montoTotalAdeudado.toFixed(2) }}</td>
-              <td class="px-md py-sm text-right hidden sm:table-cell">{{ m.cantidadMultasPendientes }}</td>
-              <td class="px-md py-sm text-right hidden lg:table-cell text-on-surface-variant">{{ m.diasAtrasoPromedio }} días</td>
-            </tr>
-          } @empty {
-            @if (!cargando) {
-              <tr>
-                <td colspan="5" class="px-md py-lg text-center text-on-surface-variant">Sin morosidad registrada</td>
-              </tr>
-            }
-          }
-        </tbody>
-      </table>
-    </div>
-  </section>
+      <!-- 1) LIBROS MAS PRESTADOS -->
+      @if (vista === 'libros') {
+        <div class="rounded-lg border border-outline-variant bg-white p-md mb-md">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
+              <input type="date" [(ngModel)]="librosDesde" [disabled]="!!librosDia"
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white disabled:opacity-40 disabled:cursor-not-allowed" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hasta</label>
+              <input type="date" [(ngModel)]="librosHasta" [disabled]="!!librosDia"
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white disabled:opacity-40 disabled:cursor-not-allowed" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Fecha (dd-mm-yyyy)</label>
+              <input type="date" [(ngModel)]="librosDia"
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Tipo de días (1-7)</label>
+              <input type="number" min="1" max="7" [(ngModel)]="librosTipoDias" [disabled]="!!librosDia" placeholder="1-7"
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white disabled:opacity-40" />
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end mt-sm">
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Top (mejores)</label>
+              <input type="number" min="1" max="100" [(ngModel)]="limiteTop"
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+            </div>
+            <div class="flex gap-sm">
+              <button (click)="aplicarFiltros()" class="h-10 flex-1 rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer">
+                <span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar
+              </button>
+              <button (click)="limpiarFiltros()" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low">
+                <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+              </button>
+            </div>
+          </div>
+        </div>
 
-  <!-- 3) Inventario y disponibilidad -->
-  <section class="mb-lg">
-    <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
-      <h2 class="font-headline-sm text-headline-sm text-on-surface">Inventario y disponibilidad</h2>
-      <div class="flex items-center gap-xs">
-        <button (click)="descargarInventarioPdf()" [disabled]="descargandoPdf === 'inventario-pdf'"
-          class="h-8 px-sm rounded bg-error/10 text-error font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer hover:bg-error/20 transition-colors">
-          <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
-          {{ descargandoPdf === 'inventario-pdf' ? 'Generando…' : 'PDF' }}
-        </button>
-        <button (click)="excelInventario()"
-          class="h-8 px-sm rounded bg-success/10 text-success font-label-sm text-label-sm flex items-center gap-xs cursor-pointer hover:bg-success/20 transition-colors">
-          <span class="material-symbols-outlined text-[16px]">table_chart</span>
-          Excel
-        </button>
-      </div>
-    </div>
-    <div class="flex flex-wrap gap-sm mb-sm items-end">
-      <div>
-        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Buscar</label>
-        <label for="busqueda-reporte" class="sr-only">Título, ISBN o autor</label>
-        <input type="text" id="busqueda-reporte" [(ngModel)]="busquedaInventario" placeholder="Título, ISBN o autor"
-          class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white w-48" />
-      </div>
-      <div>
-        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Estado</label>
-        <select [(ngModel)]="estadoStock"
-          class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white cursor-pointer">
-          <option value="">Todos</option>
-          <option value="disponible">Disponibles</option>
-          <option value="baja">Baja disponibilidad</option>
-          <option value="agotado">Agotados</option>
-        </select>
-      </div>
-      <button (click)="filtrarInventario()"
-        class="h-9 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm cursor-pointer">
-        Filtrar
-      </button>
-    </div>
-    <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
-      <table class="w-full text-left">
-        <thead class="bg-surface-container-low">
-          <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
-            <th class="px-md py-sm">Título</th>
-            <th class="px-md py-sm hidden md:table-cell">ISBN</th>
-            <th class="px-md py-sm hidden lg:table-cell">Autor</th>
-            <th class="px-md py-sm hidden lg:table-cell">Categoría</th>
-            <th class="px-md py-sm text-right">Stock</th>
-            <th class="px-md py-sm text-right">Disponible</th>
-            <th class="px-md py-sm">Estado</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-          @for (item of inventario; track item.libroId) {
-            <tr>
-              <td class="px-md py-sm font-medium">{{ item.titulo }}</td>
-              <td class="px-md py-sm text-on-surface-variant hidden md:table-cell">{{ item.isbn || '—' }}</td>
-              <td class="px-md py-sm hidden lg:table-cell">{{ item.autorNombre }}</td>
-              <td class="px-md py-sm hidden lg:table-cell">
-                <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-primary/10 text-primary">
-                  {{ item.categoriaNombre }}
-                </span>
-              </td>
-              <td class="px-md py-sm text-right">{{ item.stockTotal }}</td>
-              <td class="px-md py-sm text-right font-medium">{{ item.stockDisponible }}</td>
-              <td class="px-md py-sm">
-                @if (item.estadoDisponibilidad === 'Agotado') {
-                  <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-error/15 text-error">
-                    <span class="material-symbols-outlined text-[14px]">block</span> Agotado
-                  </span>
-                } @else if (item.estadoDisponibilidad === 'Baja disponibilidad') {
-                  <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-warning/25 text-on-tertiary-container">
-                    <span class="material-symbols-outlined text-[14px]">warning</span> Baja
-                  </span>
-                } @else {
-                  <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-success/15 text-success">
-                    <span class="material-symbols-outlined text-[14px]">check_circle</span> OK
-                  </span>
-                }
-              </td>
-            </tr>
-          } @empty {
-            @if (!cargando) {
-              <tr>
-                <td colspan="7" class="px-md py-lg text-center text-on-surface-variant">Sin resultados</td>
-              </tr>
-            }
-          }
-        </tbody>
-      </table>
-    </div>
-  </section>
+        <div class="flex items-center justify-end gap-xs mb-sm">
+          <button (click)="descargarLibrosPdf()" [disabled]="descargandoPdf === 'libros-pdf'" class="h-8 px-sm rounded bg-error/10 text-error font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer">
+            <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span> {{ descargandoPdf === 'libros-pdf' ? 'Generando…' : 'PDF' }}
+          </button>
+          <button (click)="excelLibros()" class="h-8 px-sm rounded bg-success/10 text-success font-label-sm text-label-sm flex items-center gap-xs cursor-pointer">
+            <span class="material-symbols-outlined text-[16px]">table_chart</span> Excel
+          </button>
+        </div>
 
-  <!-- 4) Préstamos vencidos activos -->
-  <section class="mb-lg">
-    <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
-      <h2 class="font-headline-sm text-headline-sm text-on-surface">Préstamos vencidos activos</h2>
-      <div class="flex items-center gap-xs">
-        <button (click)="descargarVencidosPdf()" [disabled]="descargandoPdf === 'vencidos-pdf'"
-          class="h-8 px-sm rounded bg-error/10 text-error font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer hover:bg-error/20 transition-colors">
-          <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
-          {{ descargandoPdf === 'vencidos-pdf' ? 'Generando…' : 'PDF' }}
-        </button>
-        <button (click)="excelVencidos()"
-          class="h-8 px-sm rounded bg-success/10 text-success font-label-sm text-label-sm flex items-center gap-xs cursor-pointer hover:bg-success/20 transition-colors">
-          <span class="material-symbols-outlined text-[16px]">table_chart</span>
-          Excel
-        </button>
-      </div>
-    </div>
-    <div class="flex flex-wrap gap-sm mb-sm items-end">
-      <div>
-        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Buscar</label>
-        <label for="busqueda-prestamos" class="sr-only">Usuario o libro</label>
-        <input type="text" id="busqueda-prestamos" [(ngModel)]="busquedaVencidos" placeholder="Usuario o libro"
-          class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white w-48" />
-      </div>
-      <div>
-        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Días de atraso mín.</label>
-        <label for="limite-prestamos" class="sr-only">Límite</label>
-        <input type="number" id="limite-prestamos" [(ngModel)]="diasAtrasoMin" min="0" placeholder="0"
-          class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white w-24" />
-      </div>
-      <button (click)="filtrarVencidos()"
-        class="h-9 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm cursor-pointer">
-        Filtrar
-      </button>
-    </div>
-    <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
-      <table class="w-full text-left">
-        <thead class="bg-surface-container-low">
-          <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
-            <th class="px-md py-sm">Usuario</th>
-            <th class="px-md py-sm hidden md:table-cell">Correo</th>
-            <th class="px-md py-sm">Libro</th>
-            <th class="px-md py-sm hidden md:table-cell">ISBN</th>
-            <th class="px-md py-sm">Vencimiento</th>
-            <th class="px-md py-sm text-right">Días</th>
-            <th class="px-md py-sm text-right">Multa est.</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-          @for (v of vencidos; track v.prestamoId) {
-            <tr>
-              <td class="px-md py-sm font-medium">{{ v.usuarioNombre }}</td>
-              <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ v.usuarioCorreo }}</td>
-              <td class="px-md py-sm">{{ v.libroTitulo }}</td>
-              <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ v.libroIsbn || '—' }}</td>
-              <td class="px-md py-sm text-on-surface-variant">{{ fechaCorta(v.fechaDevolucionEstimada) }}</td>
-              <td class="px-md py-sm text-right font-medium text-error">{{ v.diasAtraso }}</td>
-              <td class="px-md py-sm text-right font-medium text-error">$ {{ v.montoMultaEstimada.toFixed(2) }}</td>
-            </tr>
-          } @empty {
-            @if (!cargando) {
-              <tr>
-                <td colspan="7" class="px-md py-lg text-center text-on-surface-variant">Sin préstamos vencidos</td>
+        <div class="rounded-lg border border-outline-variant bg-white overflow-x-auto overflow-y-hidden">
+          <table class="w-full text-left">
+            <thead class="bg-surface-container-low">
+              <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+                <th class="px-md py-sm">#</th>
+                <th class="px-md py-sm">Título</th>
+                <th class="px-md py-sm hidden md:table-cell">ISBN</th>
+                <th class="px-md py-sm hidden lg:table-cell">Autor</th>
+                <th class="px-md py-sm hidden lg:table-cell">Categoría</th>
+                <th class="px-md py-sm text-right">Préstamos</th>
+                <th class="px-md py-sm text-right">% del total</th>
               </tr>
-            }
-          }
-        </tbody>
-      </table>
-    </div>
-  </section>
+            </thead>
+            <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+              @for (libro of libros; track libro.libroId; let i = $index) {
+                <tr>
+                  <td class="px-md py-sm text-on-surface-variant">{{ i + 1 }}</td>
+                  <td class="px-md py-sm font-medium">{{ libro.titulo }}</td>
+                  <td class="px-md py-sm text-on-surface-variant hidden md:table-cell">{{ libro.isbn || '—' }}</td>
+                  <td class="px-md py-sm hidden lg:table-cell">{{ libro.autorNombre }}</td>
+                  <td class="px-md py-sm hidden lg:table-cell"><span class="inline-flex px-sm py-xs rounded-full font-label-sm text-[11px] bg-primary/10 text-primary">{{ libro.categoriaNombre }}</span></td>
+                  <td class="px-md py-sm text-right">{{ libro.totalPrestamos }}</td>
+                  <td class="px-md py-sm text-right font-medium">{{ libro.porcentaje }}%</td>
+                </tr>
+              } @empty {
+                @if (!cargando) { <tr><td colspan="7" class="px-md py-lg text-center text-on-surface-variant">Sin préstamos registrados</td></tr> }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
 
-  <!-- 5) Categorías más demandadas -->
-  <section class="mb-lg">
-    <div class="flex items-center justify-between flex-wrap gap-sm mb-sm">
-      <h2 class="font-headline-sm text-headline-sm text-on-surface">Categorías más demandadas</h2>
-      <div class="flex items-center gap-xs">
-        <button (click)="descargarCategoriasPdf()" [disabled]="descargandoPdf === 'categorias-pdf'"
-          class="h-8 px-sm rounded bg-error/10 text-error font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer hover:bg-error/20 transition-colors">
-          <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
-          {{ descargandoPdf === 'categorias-pdf' ? 'Generando…' : 'PDF' }}
-        </button>
-        <button (click)="excelCategorias()"
-          class="h-8 px-sm rounded bg-success/10 text-success font-label-sm text-label-sm flex items-center gap-xs cursor-pointer hover:bg-success/20 transition-colors">
-          <span class="material-symbols-outlined text-[16px]">table_chart</span>
-          Excel
-        </button>
-      </div>
-    </div>
-    <div class="flex flex-wrap gap-sm mb-sm items-end">
-      <div>
-        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Los mejores</label>
-        <label for="limite-categorias" class="sr-only">Límite</label>
-        <input type="number" id="limite-categorias" min="1" max="100" [(ngModel)]="limiteCategorias" (ngModelChange)="filtrarCategorias()"
-          class="h-9 w-20 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
-      </div>
-    </div>
-    <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
-      <table class="w-full text-left">
-        <thead class="bg-surface-container-low">
-          <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
-            <th class="px-md py-sm">#</th>
-            <th class="px-md py-sm">Categoría</th>
-            <th class="px-md py-sm text-right">Préstamos</th>
-            <th class="px-md py-sm text-right">Total prestados</th>
-            <th class="px-md py-sm text-right">% del total</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-          @for (cat of categorias; track cat.categoriaId; let i = $index) {
-            <tr>
-              <td class="px-md py-sm text-on-surface-variant">{{ i + 1 }}</td>
-              <td class="px-md py-sm font-medium">
-                <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-primary/10 text-primary">
-                  {{ cat.categoriaNombre }}
-                </span>
-              </td>
-              <td class="px-md py-sm text-right">
-                <span class="inline-flex items-center gap-xs font-label-sm text-label-sm text-primary">
-                  <span class="material-symbols-outlined text-[16px]">menu_book</span>
-                  {{ cat.totalPrestamos }}
-                </span>
-              </td>
-              <td class="px-md py-sm text-right font-medium text-on-surface">{{ cat.totalPrestamos }}</td>
-              <td class="px-md py-sm text-right font-medium text-on-surface">{{ cat.porcentaje }}%</td>
-            </tr>
-          } @empty {
-            @if (!cargando) {
-              <tr>
-                <td colspan="5" class="px-md py-lg text-center text-on-surface-variant">Sin datos de categorías</td>
+      <!-- 2) MOROSIDAD -->
+      @if (vista === 'morosidad') {
+        <div class="rounded-lg border border-outline-variant bg-white p-md mb-md">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Correo</label>
+              <input type="text" [(ngModel)]="morosidadCorreo" placeholder="Buscar por correo"
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
+              <input type="date" [(ngModel)]="morosidadDesde" [disabled]="!!morosidadDia"
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white disabled:opacity-40" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hasta</label>
+              <input type="date" [(ngModel)]="morosidadHasta" [disabled]="!!morosidadDia"
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white disabled:opacity-40" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Fecha (ej. 28-08-2026)</label>
+              <input type="date" [(ngModel)]="morosidadDia"
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end mt-sm">
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Tipo de días (1-7)</label>
+              <input type="number" min="1" max="7" [(ngModel)]="morosidadTipoDias" [disabled]="!!morosidadDia" placeholder="1-7"
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white disabled:opacity-40" />
+            </div>
+            <div class="flex gap-sm">
+              <button (click)="aplicarFiltros()" class="h-10 flex-1 rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer">
+                <span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar
+              </button>
+              <button (click)="limpiarFiltros()" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low">
+                <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-xs mb-sm">
+          <button (click)="descargarMorosidadPdf()" [disabled]="descargandoPdf === 'morosidad-pdf'" class="h-8 px-sm rounded bg-error/10 text-error font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer">
+            <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span> {{ descargandoPdf === 'morosidad-pdf' ? 'Generando…' : 'PDF' }}
+          </button>
+          <button (click)="excelMorosidad()" class="h-8 px-sm rounded bg-success/10 text-success font-label-sm text-label-sm flex items-center gap-xs cursor-pointer">
+            <span class="material-symbols-outlined text-[16px]">table_chart</span> Excel
+          </button>
+        </div>
+        <div class="rounded-lg border border-outline-variant bg-white overflow-x-auto overflow-y-hidden">
+          <table class="w-full text-left">
+            <thead class="bg-surface-container-low">
+              <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+                <th class="px-md py-sm">Usuario</th><th class="px-md py-sm hidden md:table-cell">Correo</th><th class="px-md py-sm text-right">Deuda</th><th class="px-md py-sm text-right hidden sm:table-cell">Multas</th><th class="px-md py-sm text-right hidden lg:table-cell">Días atraso (prom.)</th>
               </tr>
-            }
-          }
-        </tbody>
-      </table>
+            </thead>
+            <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+              @for (m of morosos; track m.usuarioId) {
+                <tr><td class="px-md py-sm font-medium">{{ m.nombre }} {{ m.apellido }}</td><td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ m.correo }}</td><td class="px-md py-sm text-right font-medium text-error">$ {{ m.montoTotalAdeudado.toFixed(2) }}</td><td class="px-md py-sm text-right hidden sm:table-cell">{{ m.cantidadMultasPendientes }}</td><td class="px-md py-sm text-right hidden lg:table-cell">{{ m.diasAtrasoPromedio }} días</td></tr>
+              } @empty {
+                @if (!cargando) { <tr><td colspan="5" class="px-md py-lg text-center text-on-surface-variant">Sin morosidad registrada</td></tr> }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <!-- 3) INVENTARIO -->
+      @if (vista === 'inventario') {
+        <div class="rounded-lg border border-outline-variant bg-white p-md mb-md">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Buscar (título, ISBN, autor)</label>
+              <input type="text" [(ngModel)]="busquedaInventario" placeholder="Título, ISBN o autor"
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Estado</label>
+              <select [(ngModel)]="estadoStock" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white cursor-pointer">
+                <option value="">Todos</option><option value="disponible">Disponibles</option><option value="baja">Baja disponibilidad</option><option value="agotado">Agotados</option>
+              </select>
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Fecha</label>
+              <input type="date" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white opacity-40 cursor-not-allowed" disabled title="Sin fecha en inventario — visual solo" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Tipo días (1-7)</label>
+              <input type="number" min="1" max="7" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white opacity-40 cursor-not-allowed" disabled title="Sin fecha en inventario" />
+            </div>
+          </div>
+          <div class="flex gap-sm mt-sm">
+            <button (click)="aplicarFiltros()" class="h-10 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm cursor-pointer">Filtrar</button>
+            <button (click)="limpiarFiltros()" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low">Limpiar</button>
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-xs mb-sm">
+          <button (click)="descargarInventarioPdf()" [disabled]="descargandoPdf === 'inventario-pdf'" class="h-8 px-sm rounded bg-error/10 text-error font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer"><span class="material-symbols-outlined text-[16px]">picture_as_pdf</span> {{ descargandoPdf === 'inventario-pdf' ? 'Generando…' : 'PDF' }}</button>
+          <button (click)="excelInventario()" class="h-8 px-sm rounded bg-success/10 text-success font-label-sm text-label-sm flex items-center gap-xs cursor-pointer"><span class="material-symbols-outlined text-[16px]">table_chart</span> Excel</button>
+        </div>
+        <div class="rounded-lg border border-outline-variant bg-white overflow-x-auto overflow-y-hidden">
+          <table class="w-full text-left">
+            <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">Título</th><th class="px-md py-sm hidden md:table-cell">ISBN</th><th class="px-md py-sm hidden lg:table-cell">Autor</th><th class="px-md py-sm hidden lg:table-cell">Categoría</th><th class="px-md py-sm text-right">Stock</th><th class="px-md py-sm text-right">Disponible</th><th class="px-md py-sm">Estado</th></tr></thead>
+            <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+              @for (item of inventario; track item.libroId) {
+                <tr><td class="px-md py-sm font-medium">{{ item.titulo }}</td><td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ item.isbn || '—' }}</td><td class="px-md py-sm hidden lg:table-cell">{{ item.autorNombre }}</td><td class="px-md py-sm hidden lg:table-cell"><span class="inline-flex px-sm py-xs rounded-full font-label-sm text-[11px] bg-primary/10 text-primary">{{ item.categoriaNombre }}</span></td><td class="px-md py-sm text-right">{{ item.stockTotal }}</td><td class="px-md py-sm text-right font-medium">{{ item.stockDisponible }}</td><td class="px-md py-sm">@if (item.estadoDisponibilidad === 'Agotado') {<span class="inline-flex gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-error/15 text-error">Agotado</span>} @else if (item.estadoDisponibilidad === 'Baja disponibilidad') {<span class="inline-flex gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-warning/25 text-on-tertiary-container">Baja</span>} @else {<span class="inline-flex gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-success/15 text-success">OK</span>}</td></tr>
+              } @empty { @if (!cargando) { <tr><td colspan="7" class="px-md py-lg text-center text-on-surface-variant">Sin resultados</td></tr> } }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <!-- 4) VENCIDOS -->
+      @if (vista === 'vencidos') {
+        <div class="rounded-lg border border-outline-variant bg-white p-md mb-md">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Correo</label>
+              <input type="text" [(ngModel)]="vencidosCorreo" placeholder="Buscar por correo" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Libro</label>
+              <input type="text" [(ngModel)]="vencidosLibro" placeholder="Título del libro" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">ISBN</label>
+              <input type="text" [(ngModel)]="vencidosIsbn" placeholder="ISBN" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Fecha</label>
+              <input type="date" [(ngModel)]="vencidosDia" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end mt-sm">
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
+              <input type="date" [(ngModel)]="vencidosDesde" [disabled]="!!vencidosDia" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white disabled:opacity-40" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hasta</label>
+              <input type="date" [(ngModel)]="vencidosHasta" [disabled]="!!vencidosDia" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white disabled:opacity-40" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Tipo días (1-7)</label>
+              <input type="number" min="1" max="7" [(ngModel)]="vencidosTipoDias" [disabled]="!!vencidosDia" placeholder="1-7" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white disabled:opacity-40" />
+            </div>
+            <div class="flex gap-sm">
+              <button (click)="aplicarFiltros()" class="h-10 flex-1 rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer"><span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar</button>
+              <button (click)="limpiarFiltros()" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low"><span class="material-symbols-outlined text-[18px]">restart_alt</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-xs mb-sm">
+          <button (click)="descargarVencidosPdf()" [disabled]="descargandoPdf === 'vencidos-pdf'" class="h-8 px-sm rounded bg-error/10 text-error font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer"><span class="material-symbols-outlined text-[16px]">picture_as_pdf</span> {{ descargandoPdf === 'vencidos-pdf' ? 'Generando…' : 'PDF' }}</button>
+          <button (click)="excelVencidos()" class="h-8 px-sm rounded bg-success/10 text-success font-label-sm text-label-sm flex items-center gap-xs cursor-pointer"><span class="material-symbols-outlined text-[16px]">table_chart</span> Excel</button>
+        </div>
+        <div class="rounded-lg border border-outline-variant bg-white overflow-x-auto overflow-y-hidden">
+          <table class="w-full text-left">
+            <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">Usuario</th><th class="px-md py-sm hidden md:table-cell">Correo</th><th class="px-md py-sm">Libro</th><th class="px-md py-sm hidden md:table-cell">ISBN</th><th class="px-md py-sm">Vencimiento</th><th class="px-md py-sm text-right">Días</th><th class="px-md py-sm text-right">Multa est.</th></tr></thead>
+            <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+              @for (v of vencidos; track v.prestamoId) {
+                <tr><td class="px-md py-sm font-medium">{{ v.usuarioNombre }}</td><td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ v.usuarioCorreo }}</td><td class="px-md py-sm">{{ v.libroTitulo }}</td><td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ v.libroIsbn || '—' }}</td><td class="px-md py-sm text-on-surface-variant">{{ fechaCorta(v.fechaDevolucionEstimada) }}</td><td class="px-md py-sm text-right font-medium text-error">{{ v.diasAtraso }}</td><td class="px-md py-sm text-right font-medium text-error">$ {{ v.montoMultaEstimada.toFixed(2) }}</td></tr>
+              } @empty { @if (!cargando) { <tr><td colspan="7" class="px-md py-lg text-center text-on-surface-variant">Sin préstamos vencidos</td></tr> } }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <!-- 5) CATEGORIAS -->
+      @if (vista === 'categorias') {
+        <div class="rounded-lg border border-outline-variant bg-white p-md mb-md">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Buscar categoría</label>
+              <input type="text" [(ngModel)]="categoriasBusqueda" placeholder="Nombre de categoría" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Los mejores (Top)</label>
+              <input type="number" min="1" max="100" [(ngModel)]="limiteCategorias" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+            </div>
+            <div class="flex gap-sm">
+              <button (click)="aplicarFiltros()" class="h-10 flex-1 rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer"><span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar</button>
+              <button (click)="limpiarFiltros()" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low"><span class="material-symbols-outlined text-[18px]">restart_alt</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-xs mb-sm">
+          <button (click)="descargarCategoriasPdf()" [disabled]="descargandoPdf === 'categorias-pdf'" class="h-8 px-sm rounded bg-error/10 text-error font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer"><span class="material-symbols-outlined text-[16px]">picture_as_pdf</span> {{ descargandoPdf === 'categorias-pdf' ? 'Generando…' : 'PDF' }}</button>
+          <button (click)="excelCategorias()" class="h-8 px-sm rounded bg-success/10 text-success font-label-sm text-label-sm flex items-center gap-xs cursor-pointer"><span class="material-symbols-outlined text-[16px]">table_chart</span> Excel</button>
+        </div>
+        <div class="rounded-lg border border-outline-variant bg-white overflow-x-auto overflow-y-hidden">
+          <table class="w-full text-left">
+            <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">#</th><th class="px-md py-sm">Categoría</th><th class="px-md py-sm text-right">Préstamos</th><th class="px-md py-sm text-right">% del total</th></tr></thead>
+            <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+              @for (cat of categorias; track cat.categoriaId; let i = $index) {
+                <tr><td class="px-md py-sm text-on-surface-variant">{{ i + 1 }}</td><td class="px-md py-sm font-medium"><span class="inline-flex px-sm py-xs rounded-full font-label-sm text-[11px] bg-primary/10 text-primary">{{ cat.categoriaNombre }}</span></td><td class="px-md py-sm text-right">{{ cat.totalPrestamos }}</td><td class="px-md py-sm text-right font-medium">{{ cat.porcentaje }}%</td></tr>
+              } @empty { @if (!cargando) { <tr><td colspan="4" class="px-md py-lg text-center text-on-surface-variant">Sin datos de categorías</td></tr> } }
+            </tbody>
+          </table>
+        </div>
+      }
     </div>
-  </section>
-</main>
+  }
+</div>

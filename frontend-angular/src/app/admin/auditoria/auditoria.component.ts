@@ -29,13 +29,7 @@ const MODULOS: ModuloOpcion[] = [
   selector: 'app-auditoria',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './auditoria.component.html',
-  styles: [`
-    :host {
-      display: block;
-      height: 100%;
-    }
-  `]
+  templateUrl: './auditoria.component.html'
 })
 export class AuditoriaComponent implements OnInit, OnDestroy {
   modulos = MODULOS;

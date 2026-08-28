@@ -1,8 +1,19 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReporteService, LibroMasPrestadoDetallado, ReporteMorosidad, ReporteInventario, ReporteVencidos, ReporteCategoriasDemandadas } from '../core/services/reporte-gerencial.service';
 import { Observable } from 'rxjs';
+
+export type VistaReporte = 'tarjetas' | 'libros' | 'morosidad' | 'inventario' | 'vencidos' | 'categorias';
+
+export interface ModuloReporte {
+  id: Exclude<VistaReporte, 'tarjetas'>;
+  codigo: string;
+  etiqueta: string;
+  descripcion: string;
+  icono: string;
+  color: string;
+}
 
 @Component({
   selector: 'app-reportes',
@@ -10,21 +21,91 @@ import { Observable } from 'rxjs';
   imports: [CommonModule, FormsModule],
   templateUrl: './reportes.component.html'
 })
-export class ReportesComponent implements OnInit {
+export class ReportesComponent {
+  vista: VistaReporte = 'tarjetas';
+
+  modulos: ModuloReporte[] = [
+    {
+      id: 'libros',
+      codigo: 'RPT-LIB',
+      etiqueta: 'Libros más prestados',
+      descripcion: 'Ranking de títulos con más préstamos',
+      icono: 'menu_book',
+      color: 'bg-primary/10 text-primary'
+    },
+    {
+      id: 'morosidad',
+      codigo: 'RPT-MOR',
+      etiqueta: 'Morosidad',
+      descripcion: 'Usuarios con deuda y atraso',
+      icono: 'payments',
+      color: 'bg-error/10 text-error'
+    },
+    {
+      id: 'inventario',
+      codigo: 'RPT-INV',
+      etiqueta: 'Inventario y disponibilidad',
+      descripcion: 'Stock, disponibilidad y estado',
+      icono: 'inventory_2',
+      color: 'bg-secondary/10 text-secondary'
+    },
+    {
+      id: 'vencidos',
+      codigo: 'RPT-VEN',
+      etiqueta: 'Préstamos vencidos activos',
+      descripcion: 'Préstamos sin devolver fuera de plazo',
+      icono: 'event_busy',
+      color: 'bg-tertiary/10 text-tertiary'
+    },
+    {
+      id: 'categorias',
+      codigo: 'RPT-CAT',
+      etiqueta: 'Categorías más demandadas',
+      descripcion: 'Categorías con mayor demanda de préstamos',
+      icono: 'category',
+      color: 'bg-success/10 text-success'
+    }
+  ];
+
   libros: LibroMasPrestadoDetallado[] = [];
   morosos: ReporteMorosidad[] = [];
   inventario: ReporteInventario[] = [];
   vencidos: ReporteVencidos[] = [];
   categorias: ReporteCategoriasDemandadas[] = [];
 
-  fechaDesde = '';
-  fechaHasta = '';
+  private morososTodos: ReporteMorosidad[] = [];
+  private vencidosTodos: ReporteVencidos[] = [];
+  private categoriasTodas: ReporteCategoriasDemandadas[] = [];
+
+  // Libros más prestados
+  librosDesde = '';
+  librosHasta = '';
+  librosDia = '';
+  librosTipoDias: number | null = null;
   limiteTop = 10;
 
+  // Morosidad
+  morosidadCorreo = '';
+  morosidadDesde = '';
+  morosidadHasta = '';
+  morosidadDia = '';
+  morosidadTipoDias: number | null = null;
+
+  // Inventario
   busquedaInventario = '';
   estadoStock = '';
-  busquedaVencidos = '';
-  diasAtrasoMin: number | null = null;
+
+  // Vencidos
+  vencidosCorreo = '';
+  vencidosLibro = '';
+  vencidosIsbn = '';
+  vencidosDesde = '';
+  vencidosHasta = '';
+  vencidosDia = '';
+  vencidosTipoDias: number | null = null;
+
+  // Categorías
+  categoriasBusqueda = '';
   limiteCategorias = 10;
 
   cargando = false;
@@ -33,109 +114,174 @@ export class ReportesComponent implements OnInit {
 
   constructor(private reporteService: ReporteService) {}
 
-  ngOnInit(): void {
-    this.cargarTodos();
+  abrirModulo(id: Exclude<VistaReporte, 'tarjetas'>): void {
+    this.vista = id;
+    this.errorMsg = '';
+    this.cargarModuloActual();
   }
 
-  private cargarTodos(): void {
+  volverATarjetas(): void {
+    this.vista = 'tarjetas';
+    this.errorMsg = '';
+  }
+
+  etiquetaModulo(id: VistaReporte): string {
+    return this.modulos.find(m => m.id === id)?.etiqueta ?? 'Reportes';
+  }
+
+  aplicarFiltros(): void {
+    this.cargarModuloActual();
+  }
+
+  limpiarFiltros(): void {
+    switch (this.vista) {
+      case 'libros':
+        this.librosDesde = '';
+        this.librosHasta = '';
+        this.librosDia = '';
+        this.librosTipoDias = null;
+        this.limiteTop = 10;
+        break;
+      case 'morosidad':
+        this.morosidadCorreo = '';
+        this.morosidadDesde = '';
+        this.morosidadHasta = '';
+        this.morosidadDia = '';
+        this.morosidadTipoDias = null;
+        break;
+      case 'inventario':
+        this.busquedaInventario = '';
+        this.estadoStock = '';
+        break;
+      case 'vencidos':
+        this.vencidosCorreo = '';
+        this.vencidosLibro = '';
+        this.vencidosIsbn = '';
+        this.vencidosDesde = '';
+        this.vencidosHasta = '';
+        this.vencidosDia = '';
+        this.vencidosTipoDias = null;
+        break;
+      case 'categorias':
+        this.categoriasBusqueda = '';
+        this.limiteCategorias = 10;
+        break;
+    }
+    this.cargarModuloActual();
+  }
+
+  private cargarModuloActual(): void {
+    switch (this.vista) {
+      case 'libros': this.cargarLibros(); break;
+      case 'morosidad': this.cargarMorosidad(); break;
+      case 'inventario': this.cargarInventario(); break;
+      case 'vencidos': this.cargarVencidos(); break;
+      case 'categorias': this.cargarCategorias(); break;
+    }
+  }
+
+  private cargarLibros(): void {
     this.cargando = true;
     this.errorMsg = '';
-    const desde = this.fechaDesde ? this.fechaDesde + 'T00:00:00Z' : undefined;
-    const hasta = this.fechaHasta ? this.fechaHasta + 'T23:59:59Z' : undefined;
-    this.reporteService.librosMasPrestadosDetallado(desde, hasta, this.limiteTop).subscribe({
+    const rango = this.rangoIso(this.librosDesde, this.librosHasta, this.librosDia, this.librosTipoDias);
+    this.reporteService.librosMasPrestadosDetallado(rango.desde, rango.hasta, this.limiteTop).subscribe({
       next: (libros) => {
         this.libros = libros;
-        this.cargarMorosidad();
-      },
-      error: (err) => this.fallar(err)
-    });
-  }
-
-  private cargarMorosidad(): void {
-    this.reporteService.morosidad().subscribe({
-      next: (morosos) => {
-        this.morosos = morosos;
-        this.cargarInventario();
-      },
-      error: (err) => this.fallar(err)
-    });
-  }
-
-  private cargarInventario(): void {
-    this.reporteService.inventario(undefined, this.estadoStock || undefined, this.busquedaInventario || undefined).subscribe({
-      next: (inventario) => {
-        this.inventario = inventario;
-        this.cargarVencidos();
-      },
-      error: (err) => this.fallar(err)
-    });
-  }
-
-  private cargarVencidos(): void {
-    this.reporteService.vencidos(this.diasAtrasoMin || undefined, this.busquedaVencidos || undefined).subscribe({
-      next: (vencidos) => {
-        this.vencidos = vencidos;
-        this.cargarCategorias();
-      },
-      error: (err) => this.fallar(err)
-    });
-  }
-
-  private cargarCategorias(): void {
-    const desde = this.fechaDesde ? this.fechaDesde + 'T00:00:00Z' : undefined;
-    const hasta = this.fechaHasta ? this.fechaHasta + 'T23:59:59Z' : undefined;
-    this.reporteService.categoriasDemandadas(desde, hasta, this.limiteCategorias).subscribe({
-      next: (categorias) => {
-        this.categorias = categorias;
         this.cargando = false;
       },
       error: (err) => this.fallar(err)
     });
   }
 
-  aplicarFiltros(): void { this.cargarTodos(); }
-
-  limpiarFiltros(): void {
-    this.fechaDesde = '';
-    this.fechaHasta = '';
-    this.limiteTop = 10;
-    this.busquedaInventario = '';
-    this.estadoStock = '';
-    this.busquedaVencidos = '';
-    this.diasAtrasoMin = null;
-    this.limiteCategorias = 10;
-    this.cargarTodos();
-  }
-
-  cambiarLimite(): void { this.cargarTodos(); }
-
-  filtrarInventario(): void {
+  private cargarMorosidad(): void {
     this.cargando = true;
     this.errorMsg = '';
-    this.reporteService.inventario(undefined, this.estadoStock || undefined, this.busquedaInventario || undefined).subscribe({
-      next: (inventario) => { this.inventario = inventario; this.cargando = false; },
+    this.reporteService.morosidad().subscribe({
+      next: (morosos) => {
+        this.morososTodos = morosos;
+        this.morosos = this.filtrarMorosidad(morosos);
+        this.cargando = false;
+      },
       error: (err) => this.fallar(err)
     });
   }
 
-  filtrarVencidos(): void {
+  private filtrarMorosidad(lista: ReporteMorosidad[]): ReporteMorosidad[] {
+    const correo = this.morosidadCorreo.trim().toLowerCase();
+    const tipo = this.normalizarTipoDias(this.morosidadTipoDias);
+    return lista.filter(m => {
+      if (correo && !(m.correo ?? '').toLowerCase().includes(correo)) return false;
+      if (tipo != null) {
+        const dias = Number(m.diasAtrasoPromedio);
+        if (Number.isNaN(dias) || dias < 1 || dias > tipo) return false;
+      }
+      return true;
+    });
+  }
+
+  private cargarInventario(): void {
     this.cargando = true;
     this.errorMsg = '';
-    this.reporteService.vencidos(this.diasAtrasoMin || undefined, this.busquedaVencidos || undefined).subscribe({
-      next: (vencidos) => { this.vencidos = vencidos; this.cargando = false; },
+    this.reporteService.inventario(undefined, this.estadoStock || undefined, this.busquedaInventario.trim() || undefined).subscribe({
+      next: (inventario) => {
+        this.inventario = inventario;
+        this.cargando = false;
+      },
       error: (err) => this.fallar(err)
     });
   }
 
-  filtrarCategorias(): void {
+  private cargarVencidos(): void {
     this.cargando = true;
     this.errorMsg = '';
-    const desde = this.fechaDesde ? this.fechaDesde + 'T00:00:00Z' : undefined;
-    const hasta = this.fechaHasta ? this.fechaHasta + 'T23:59:59Z' : undefined;
-    this.reporteService.categoriasDemandadas(desde, hasta, this.limiteCategorias).subscribe({
-      next: (categorias) => { this.categorias = categorias; this.cargando = false; },
+    const busqueda = this.vencidosCorreo.trim() || this.vencidosLibro.trim() || this.vencidosIsbn.trim() || undefined;
+    this.reporteService.vencidos(undefined, busqueda).subscribe({
+      next: (vencidos) => {
+        this.vencidosTodos = vencidos;
+        this.vencidos = this.filtrarVencidos(vencidos);
+        this.cargando = false;
+      },
       error: (err) => this.fallar(err)
     });
+  }
+
+  private filtrarVencidos(lista: ReporteVencidos[]): ReporteVencidos[] {
+    const correo = this.vencidosCorreo.trim().toLowerCase();
+    const libro = this.vencidosLibro.trim().toLowerCase();
+    const isbn = this.vencidosIsbn.trim().toLowerCase();
+    const tipo = this.normalizarTipoDias(this.vencidosTipoDias);
+    return lista.filter(v => {
+      if (correo && !(v.usuarioCorreo ?? '').toLowerCase().includes(correo)) return false;
+      if (libro && !(v.libroTitulo ?? '').toLowerCase().includes(libro)) return false;
+      if (isbn && !(v.libroIsbn ?? '').toLowerCase().includes(isbn)) return false;
+      if (tipo != null) {
+        const dias = Number(v.diasAtraso);
+        if (Number.isNaN(dias) || dias < 1 || dias > tipo) return false;
+      }
+      if (!this.enRangoFecha(v.fechaDevolucionEstimada, this.vencidosDia, this.vencidosDesde, this.vencidosHasta)) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  private cargarCategorias(): void {
+    this.cargando = true;
+    this.errorMsg = '';
+    this.reporteService.categoriasDemandadas(undefined, undefined, this.limiteCategorias).subscribe({
+      next: (categorias) => {
+        this.categoriasTodas = categorias;
+        this.categorias = this.filtrarCategorias(categorias);
+        this.cargando = false;
+      },
+      error: (err) => this.fallar(err)
+    });
+  }
+
+  private filtrarCategorias(lista: ReporteCategoriasDemandadas[]): ReporteCategoriasDemandadas[] {
+    const q = this.categoriasBusqueda.trim().toLowerCase();
+    if (!q) return lista;
+    return lista.filter(c => (c.categoriaNombre ?? '').toLowerCase().includes(q));
   }
 
   private fallar(err: unknown): void {
@@ -144,7 +290,45 @@ export class ReportesComponent implements OnInit {
       || 'Error al cargar los reportes';
   }
 
-  // ── PDF downloads ──────────────────────────────────────
+  normalizarTipoDias(valor: number | null): number | null {
+    if (valor == null || valor === 0) return null;
+    const n = Math.trunc(Number(valor));
+    if (Number.isNaN(n) || n < 1 || n > 7) return null;
+    return n;
+  }
+
+  private rangoIso(desde: string, hasta: string, dia: string, tipoDias: number | null): { desde?: string; hasta?: string } {
+    if (dia) {
+      return { desde: `${dia}T00:00:00.000Z`, hasta: `${dia}T23:59:59.999Z` };
+    }
+    const n = this.normalizarTipoDias(tipoDias);
+    if (n) {
+      const fin = new Date();
+      const ini = new Date();
+      ini.setUTCDate(fin.getUTCDate() - (n - 1));
+      return {
+        desde: `${ini.toISOString().slice(0, 10)}T00:00:00.000Z`,
+        hasta: `${fin.toISOString().slice(0, 10)}T23:59:59.999Z`
+      };
+    }
+    return {
+      desde: desde ? `${desde}T00:00:00.000Z` : undefined,
+      hasta: hasta ? `${hasta}T23:59:59.999Z` : undefined
+    };
+  }
+
+  private enRangoFecha(iso: string, dia: string, desde: string, hasta: string): boolean {
+    if (dia) {
+      if (!iso) return false;
+      const t = new Date(iso).getTime();
+      return t >= new Date(`${dia}T00:00:00.000Z`).getTime()
+        && t <= new Date(`${dia}T23:59:59.999Z`).getTime();
+    }
+    if (desde && iso && new Date(iso).getTime() < new Date(`${desde}T00:00:00.000Z`).getTime()) return false;
+    if (hasta && iso && new Date(iso).getTime() > new Date(`${hasta}T23:59:59.999Z`).getTime()) return false;
+    return true;
+  }
+
   private descargarPdf(blob$: Observable<Blob>, nombre: string, clave: string): void {
     this.descargandoPdf = clave;
     this.errorMsg = '';
@@ -166,10 +350,9 @@ export class ReportesComponent implements OnInit {
   }
 
   descargarLibrosPdf(): void {
-    const desde = this.fechaDesde ? this.fechaDesde + 'T00:00:00Z' : undefined;
-    const hasta = this.fechaHasta ? this.fechaHasta + 'T23:59:59Z' : undefined;
+    const rango = this.rangoIso(this.librosDesde, this.librosHasta, this.librosDia, this.librosTipoDias);
     this.descargarPdf(
-      this.reporteService.librosMasPrestadosPdf(desde, hasta, this.limiteTop),
+      this.reporteService.librosMasPrestadosPdf(rango.desde, rango.hasta, this.limiteTop),
       'reporte-libros-prestados.pdf', 'libros-pdf'
     );
   }
@@ -180,35 +363,31 @@ export class ReportesComponent implements OnInit {
 
   descargarInventarioPdf(): void {
     this.descargarPdf(
-      this.reporteService.inventarioPdf(this.estadoStock || undefined, this.busquedaInventario || undefined),
+      this.reporteService.inventarioPdf(this.estadoStock || undefined, this.busquedaInventario.trim() || undefined),
       'reporte-inventario.pdf', 'inventario-pdf'
     );
   }
 
   descargarVencidosPdf(): void {
+    const busqueda = this.vencidosCorreo.trim() || this.vencidosLibro.trim() || this.vencidosIsbn.trim() || undefined;
     this.descargarPdf(
-      this.reporteService.vencidosPdf(this.diasAtrasoMin || undefined, this.busquedaVencidos || undefined),
+      this.reporteService.vencidosPdf(undefined, busqueda),
       'reporte-vencidos.pdf', 'vencidos-pdf'
     );
   }
 
   descargarCategoriasPdf(): void {
-    const desde = this.fechaDesde ? this.fechaDesde + 'T00:00:00Z' : undefined;
-    const hasta = this.fechaHasta ? this.fechaHasta + 'T23:59:59Z' : undefined;
     this.descargarPdf(
-      this.reporteService.categoriasDemandadasPdf(desde, hasta, this.limiteCategorias),
+      this.reporteService.categoriasDemandadasPdf(undefined, undefined, this.limiteCategorias),
       'reporte-categorias.pdf', 'categorias-pdf'
     );
   }
 
-  // ── Excel downloads ────────────────────────────────────
   private async generarExcel(headers: string[], rows: (string | number)[][], nombre: string, sheetName: string): Promise<void> {
     const XLSX = await import('xlsx');
     const wb = XLSX.utils.book_new();
     const wsData = [headers, ...rows];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-    // Estilos de ancho de columna
     ws['!cols'] = headers.map((_, i) => {
       const maxLen = Math.max(
         headers[i].length,
@@ -216,7 +395,6 @@ export class ReportesComponent implements OnInit {
       );
       return { wch: Math.min(maxLen + 4, 40) };
     });
-
     XLSX.utils.book_append_sheet(wb, ws, sheetName);
     XLSX.writeFile(wb, nombre, { bookType: 'xlsx' });
   }
