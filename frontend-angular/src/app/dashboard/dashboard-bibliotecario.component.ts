@@ -18,7 +18,8 @@ interface SeccionSidebar {
   selector: 'app-dashboard-bibliotecario',
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive, RouterOutlet],
-  templateUrl: './dashboard-bibliotecario.component.html'
+  templateUrl: './dashboard-bibliotecario.component.html',
+  styles: [`:host { display: block; height: 100%; overflow: hidden; }`]
 })
 export class DashboardBibliotecarioComponent implements OnInit {
   mostrarMenuUsuario = false;
@@ -82,6 +83,16 @@ export class DashboardBibliotecarioComponent implements OnInit {
   toggleSidebar(): void {
     this.isCollapsed.update(v => !v);
     localStorage.setItem('sidebar:collapsed', String(this.isCollapsed()));
+    if (!this.isCollapsed()) {
+      this.mostrarMenuUsuario = false;
+    }
+  }
+
+  onClickMenuUsuario(): void {
+    if (!this.isCollapsed()) {
+      return;
+    }
+    this.mostrarMenuUsuario = !this.mostrarMenuUsuario;
   }
 
   toggleSeccion(titulo: string): void {
