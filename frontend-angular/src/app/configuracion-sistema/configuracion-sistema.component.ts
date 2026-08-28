@@ -192,6 +192,9 @@ export class ConfiguracionSistemaComponent implements OnInit {
 
   get puedeGuardarValor(): boolean {
     const valor = this.valorEditando.trim();
+    if (this.claveEditando === 'correo_dominios_permitidos') {
+      return valor.length <= this.valorMaxLength;
+    }
     return !!valor && valor.length <= this.valorMaxLength;
   }
 
