@@ -6,9 +6,13 @@ import { jwtInterceptor } from './core/interceptors/jwt.interceptor';
 import { loaderInterceptor } from './core/interceptors/loader.interceptor';
 import { AuthService } from './core/services/auth.service';
 
-function inicializarSesion(authService: AuthService): () => Promise<boolean> {
+// El accessToken vive solo en memoria. Tras F5 hay que pedir uno nuevo
+// con la cookie HttpOnly de refresh *antes* de que authGuard evalúe la
+// ruta. Si no hay cookie (visita anónima), el 400/401 se ignora y la
+// app arranca igual.
+export function inicializarSesion(authService: AuthService): () => Promise<boolean> {
   return () => new Promise((resolve) => {
-    if (!authService.isLoggedIn()) {
+    if (authService.isLoggedIn()) {
       resolve(true);
       return;
     }

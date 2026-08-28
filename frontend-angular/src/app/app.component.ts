@@ -14,6 +14,7 @@ interface EnlaceNav {
 }
 
 @Component({
+  standalone: true,
     selector: 'app-root',
     imports: [RouterOutlet, RouterLink, RouterLinkActive, ChatbotWidgetComponent, LoaderComponent],
     templateUrl: './app.component.html',
