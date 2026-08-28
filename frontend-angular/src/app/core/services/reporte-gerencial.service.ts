@@ -90,8 +90,10 @@ export class ReporteService {
     );
   }
 
-  morosidad(): Observable<ReporteMorosidad[]> {
-    return this.http.get<ReporteMorosidad[]>(`${this.apiUrl}/morosidad`).pipe(
+  morosidad(limite?: number): Observable<ReporteMorosidad[]> {
+    const params: Record<string, string> = {};
+    if (limite) params['limite'] = String(limite);
+    return this.http.get<ReporteMorosidad[]>(`${this.apiUrl}/morosidad`, { params }).pipe(
       catchError(err => this.manejarError(err))
     );
   }

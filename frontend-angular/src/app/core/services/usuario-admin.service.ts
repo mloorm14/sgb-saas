@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { catchError, Observable, throwError } from 'rxjs';
+import { catchError, map, Observable, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Page } from '../models/pagina.model';
+import { Page, normalizarPagina } from '../models/pagina.model';
 import { ProblemDetail } from '../models/problem-detail.model';
 import { UsuarioAdmin } from '../models/usuario-admin.model';
 
@@ -27,6 +27,7 @@ export class UsuarioAdminService {
       params = params.set('filtro', filtro.trim());
     }
     return this.http.get<Page<UsuarioAdmin>>(this.apiUrl, { params }).pipe(
+      map(data => normalizarPagina(data)),
       catchError(err => this.manejarError(err))
     );
   }
