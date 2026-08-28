@@ -14,6 +14,7 @@ import { Categoria } from '../core/models/categoria.model';
 // TODO(frontend/estudiante-chatbot): la Rama D montara el widget de chatbot
 // flotante sobre este componente raiz.
 @Component({
+  standalone: true,
   selector: 'app-portal-publico',
   imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './portal-publico.component.html'

@@ -8,6 +8,7 @@ import { Notificacion } from '../core/models/notificacion.model';
 import { Page } from '../core/models/pagina.model';
 
 @Component({
+  standalone: true,
   selector: 'app-notificaciones',
   imports: [CommonModule],
   templateUrl: './notificaciones.component.html'
