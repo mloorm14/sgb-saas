@@ -159,6 +159,20 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
     return Array.from({ length: this.totalPages }, (_, i) => i);
   }
 
+  get puedeAnterior(): boolean {
+    return this.currentPage > 0;
+  }
+
+  get puedeSiguiente(): boolean {
+    return this.currentPage < this.totalPages - 1;
+  }
+
+  cambiarTamanoPage(nuevo: number): void {
+    this.pageSize = Number(nuevo);
+    this.currentPage = 0;
+    this.cargarPagina();
+  }
+
   // type="date" da "yyyy-MM-dd"; el backend pide OffsetDateTime ISO, así
   // que se convierte a rango de ese día en UTC (offset Z explícito).
   private fechaInicio(fecha: string): string | undefined {
