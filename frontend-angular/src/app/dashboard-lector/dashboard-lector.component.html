@@ -1,7 +1,7 @@
 <div class="flex h-screen">
 
   <!-- Sidebar -->
-  <aside [class]="isCollapsed() ? 'w-[72px]' : 'w-64'" class="bg-white border-r border-outline-variant flex flex-col shrink-0 overflow-hidden transition-[width] duration-200 ease-in-out z-40">
+  <aside [class]="isCollapsed() ? 'w-[72px]' : 'w-64'" class="bg-white border-r border-outline-variant flex flex-col shrink-0 overflow-x-hidden transition-[width] duration-200 ease-in-out z-40">
 
     <!-- Logo -->
     <div class="px-lg py-md border-b border-outline-variant flex items-center gap-sm">
@@ -73,27 +73,14 @@ class="flex items-center gap-sm py-sm mx-sm mb-sm rounded-lg font-body-sm text-b
       </button>
 
       @if (mostrarMenuUsuario) {
-        <!-- Dropdown: fixed posicionado relativo al botón de usuario -->
-        @if (!isCollapsed()) {
-          <!-- Expandido: alineado con borde derecho del sidebar (64px=16rem), encima del botón -->
-          <div class="fixed bottom-[3.5rem] left-[16rem] bg-white rounded-xl border border-outline-variant shadow-lg overflow-hidden z-50 min-w-[200px] max-w-[90vw]">
-            <button (click)="cerrarSesion()"
-              class="w-full flex items-center gap-sm px-md py-sm text-left font-body-sm text-body-sm text-error hover:bg-error-container/40 transition-colors cursor-pointer whitespace-nowrap">
-              <span class="material-symbols-outlined text-[18px]">logout</span>
-              Cerrar sesión
-            </button>
-          </div>
-        }
-        @if (isCollapsed()) {
-          <!-- Colapsado: centrado en el sidebar (72px/2=36px=2.25rem), encima del botón -->
-          <div class="fixed bottom-[3.5rem] left-[2.25rem] bg-white rounded-xl border border-outline-variant shadow-lg overflow-hidden z-50 min-w-[200px] max-w-[90vw]">
-            <button (click)="cerrarSesion()"
-              class="w-full flex items-center gap-sm px-md py-sm text-left font-body-sm text-body-sm text-error hover:bg-error-container/40 transition-colors cursor-pointer whitespace-nowrap">
-              <span class="material-symbols-outlined text-[18px]">logout</span>
-              Cerrar sesión
-            </button>
-          </div>
-        }
+        <!-- Dropdown: absolute dentro del sidebar (overflow-x-hidden permite overflow vertical) -->
+        <div class="absolute bottom-full left-2 right-2 mb-xs bg-white rounded-xl border border-outline-variant shadow-lg overflow-hidden z-30">
+          <button (click)="cerrarSesion()"
+            class="w-full flex items-center gap-sm px-md py-sm text-left font-body-sm text-body-sm text-error hover:bg-error-container/40 transition-colors cursor-pointer whitespace-nowrap">
+            <span class="material-symbols-outlined text-[18px]">logout</span>
+            Cerrar sesión
+          </button>
+        </div>
       }
     </div>
   </aside>
