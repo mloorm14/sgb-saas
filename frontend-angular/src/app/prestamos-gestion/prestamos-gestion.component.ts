@@ -17,6 +17,7 @@ import {
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
 
 @Component({
+  standalone: true,
   selector: 'app-prestamos-gestion',
   imports: [CommonModule, FormsModule, PortadaLibroComponent],
   templateUrl: './prestamos-gestion.component.html'

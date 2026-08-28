@@ -9,6 +9,7 @@ import { Libro } from '../../core/models/libro.model';
 // portada directa en <img>, y las acciones que requieren cuenta se
 // bloquean con el cartel "requieren una cuenta" + Crear cuenta.
 @Component({
+  standalone: true,
   selector: 'app-detalle-publico',
   imports: [CommonModule, RouterLink],
   templateUrl: './detalle-publico.component.html'
