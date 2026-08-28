@@ -35,9 +35,7 @@
           <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm px-xs">{{ grupo.nombre }}</p>
           <div class="rounded-lg border border-outline-variant bg-white overflow-hidden divide-y divide-outline-variant">
             @for (config of grupo.parametros; track config.clave) {
-              <div class="flex flex-wrap items-center gap-md p-md transition-colors"
-                [class.bg-primary-fixed/20]="claveEditando === config.clave"
-                [class.hover:bg-surface-container-low/60]="claveEditando !== config.clave">
+              <div class="flex flex-wrap items-center gap-md p-md transition-colors" [ngClass]="claveEditando === config.clave ? 'bg-primary-fixed/20' : 'hover:bg-surface-container-low/60'">
                 <div class="w-10 h-10 rounded-lg bg-secondary-container/30 flex items-center justify-center shrink-0">
                   <span class="material-symbols-outlined text-[20px] text-secondary">{{ config.meta.icono }}</span>
                 </div>
@@ -127,9 +125,7 @@
       } @else {
         <div class="rounded-lg border border-outline-variant bg-white overflow-hidden divide-y divide-outline-variant">
           @for (tipo of tiposDano; track tipo.id) {
-            <div class="flex flex-wrap items-center gap-md p-6 transition-colors"
-              [class.bg-primary-fixed/20]="editandoTipoDano?.id === tipo.id"
-              [class.hover:bg-surface-container-low/60]="editandoTipoDano?.id !== tipo.id">
+            <div class="flex flex-wrap items-center gap-md p-md transition-colors" [ngClass]="editandoTipoDano?.id === tipo.id ? 'bg-primary-fixed/20' : 'hover:bg-surface-container-low/60'">
               @if (!editandoTipoDano || editandoTipoDano.id !== tipo.id) {
                 <div class="w-10 h-10 rounded-lg bg-secondary-container/30 flex items-center justify-center shrink-0">
                   <span class="material-symbols-outlined text-[20px] text-on-surface">report_problem</span>

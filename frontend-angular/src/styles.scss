@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+// El dashboard usa altura 100% + overflow interno. Sin esto, html/body
+// generan un segundo scrollbar y el contenido se sale del marco.
+html, body, app-root {
+  height: 100%;
+}
+
+app-root {
+  display: block;
+}
+
 // Fuentes auto-hospedadas (NO Google Fonts): los woff2 viven en
 // src/assets/fonts/. Motivo: (a) el build de produccion hacia una
 // peticion real a fonts.googleapis.com para inlinear el CSS y fallaba

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ConfiguracionSistemaService, ParametroConfiguracion } from '../core/services/configuracion-sistema.service';
 import { DevolucionService } from '../core/services/devolucion.service';
@@ -100,7 +101,7 @@ interface GrupoParametros {
 @Component({
   selector: 'app-configuracion-sistema',
   standalone: true,
-  imports: [FormsModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './configuracion-sistema.component.html'
 })
 export class ConfiguracionSistemaComponent implements OnInit {
