@@ -81,9 +81,9 @@
       <span class="text-on-surface font-medium">{{ etiquetaModulo(filtroModulo) }}</span>
     </div>
 
-    <!-- Filtros: usuarioId, modulo, desde, hasta -->
+    <!-- Filtros: usuarioId, modulo, desde, hasta, dia, hora -->
     <div class="rounded-lg border border-outline-variant bg-white glass-panel p-md mb-md">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-sm items-end">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
         <div>
           <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Usuario</label>
           @if (usuarioSeleccionado) {
@@ -134,21 +134,38 @@
           </select>
         </div>
         <div>
-          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
-          <label for="filtro-desde" class="sr-only">Fecha desde</label>
-          <input type="date" id="filtro-desde" [(ngModel)]="filtroDesde"
+          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Día</label>
+          <input type="date" [(ngModel)]="filtroDia"
             class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
         </div>
         <div>
-          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hasta</label>
-          <label for="filtro-hasta" class="sr-only">Fecha hasta</label>
-          <input type="date" id="filtro-hasta" [(ngModel)]="filtroHasta"
-            class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hora</label>
+          <input type="time" [(ngModel)]="filtroHora"
+            [disabled]="!filtroDia"
+            class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm disabled:opacity-40 disabled:cursor-not-allowed" />
         </div>
-        <button (click)="filtrar()"
-          class="h-10 rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer">
-          <span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar
-        </button>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end mt-sm">
+        <div>
+          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
+          <input type="date" [(ngModel)]="filtroDesde" [disabled]="!!filtroDia"
+            class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm disabled:opacity-40 disabled:cursor-not-allowed" />
+        </div>
+        <div>
+          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hasta</label>
+          <input type="date" [(ngModel)]="filtroHasta" [disabled]="!!filtroDia"
+            class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm disabled:opacity-40 disabled:cursor-not-allowed" />
+        </div>
+        <div class="flex gap-sm">
+          <button (click)="filtrar()"
+            class="h-10 flex-1 rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar
+          </button>
+          <button (click)="limpiarFiltros()"
+            class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer hover:bg-surface-container-low">
+            <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -164,14 +181,23 @@
             <th class="px-md py-sm">Usuario</th>
             <th class="px-md py-sm">Acción</th>
             <th class="px-md py-sm hidden md:table-cell">Módulo</th>
-            <th class="px-md py-sm hidden lg:table-cell">Detalle</th>
+            <th class="px-md py-sm text-right">Detalle</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
           @for (evento of eventos; track evento.id) {
-            <tr>
+            <tr class="hover:bg-surface-container-low/50 transition-colors">
               <td class="px-md py-sm text-on-surface-variant whitespace-nowrap">{{ formatoFecha(evento.fechaHora) }}</td>
-              <td class="px-md py-sm">{{ usuarioLabel(evento) }}</td>
+              <td class="px-md py-sm">
+                @if (esSistema(evento)) {
+                  <span class="inline-flex items-center gap-xs text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[16px]">smart_toy</span>
+                    <span class="font-label-sm text-label-sm">Sistema</span>
+                  </span>
+                } @else {
+                  {{ usuarioLabel(evento) }}
+                }
+              </td>
               <td class="px-md py-sm">
                 <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]"
                   [class]="claseAccion(evento.accion)">
@@ -180,7 +206,13 @@
                 </span>
               </td>
               <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ moduloLabel(evento.modulo) }}</td>
-              <td class="px-md py-sm hidden lg:table-cell text-on-surface-variant max-w-md truncate">{{ evento.detalle || '—' }}</td>
+              <td class="px-md py-sm text-right">
+                <button (click)="abrirDetalle(evento)"
+                  class="inline-flex items-center gap-xs px-sm py-xs rounded-full border border-outline-variant font-label-sm text-label-sm text-primary hover:bg-primary/5 transition-colors cursor-pointer">
+                  <span class="material-symbols-outlined text-[14px]">visibility</span>
+                  Ver
+                </button>
+              </td>
             </tr>
           } @empty {
             @if (!cargando) {
@@ -230,5 +262,68 @@
         </div>
       </div>
     }
+  }
+
+  <!-- ═══ MODAL DETALLE EVENTO ═══ -->
+  @if (modalVisible && eventoSeleccionado) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
+      (click)="cerrarDetalle()">
+      <div class="absolute inset-0 bg-black/50"></div>
+      <div role="dialog" aria-modal="true" aria-labelledby="titulo-detalle-auditoria"
+        class="relative z-10 w-full max-w-[620px] max-h-[78vh] bg-white rounded-xl shadow-xl flex flex-col overflow-hidden"
+        (click)="$event.stopPropagation()">
+
+        <!-- Encabezado -->
+        <div class="px-lg pt-lg pb-md border-b border-outline-variant/30 shrink-0">
+          <div class="flex items-start justify-between gap-sm mb-sm">
+            <div>
+              <h2 id="titulo-detalle-auditoria" class="font-headline-sm text-headline-sm text-on-surface">
+                {{ eventoSeleccionado.accion }} · {{ moduloLabel(eventoSeleccionado.modulo) }}
+              </h2>
+              <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">
+                {{ formatoFecha(eventoSeleccionado.fechaHora) }}
+                @if (!esSistema(eventoSeleccionado)) {
+                  <span class="ml-xs">· {{ eventoSeleccionado.usuario }}</span>
+                } @else {
+                  <span class="ml-xs">· Sistema</span>
+                }
+              </p>
+            </div>
+            <button (click)="cerrarDetalle()"
+              class="w-8 h-8 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center hover:bg-surface-container-low transition-colors cursor-pointer shrink-0"
+              aria-label="Cerrar">
+              <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Cuerpo: JSON -->
+        <div class="flex-1 overflow-auto px-lg py-md">
+          @if (eventoSeleccionado.detalle) {
+            <pre class="bg-surface-container-low rounded-lg p-md font-body-sm text-body-sm text-on-surface overflow-auto max-h-[50vh] whitespace-pre-wrap break-words border border-outline-variant/30"><code [innerHTML]="resaltarJson(detalleFormateado())"></code></pre>
+          } @else {
+            <div class="text-center py-lg text-on-surface-variant font-body-sm text-body-sm">
+              <span class="material-symbols-outlined text-[32px] block mb-sm">info</span>
+              Este evento no tiene detalle adicional registrado.
+            </div>
+          }
+        </div>
+
+        <!-- Pie: Copiar JSON -->
+        @if (eventoSeleccionado.detalle) {
+          <div class="px-lg py-md border-t border-outline-variant/30 shrink-0">
+            <button (click)="copiarJson()"
+              class="w-full h-10 rounded-lg border border-outline-variant font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer hover:bg-surface-container-low transition-colors"
+              [class.bg-success]="jsonCopiado"
+              [class.text-white]="jsonCopiado"
+              [class.border-success]="jsonCopiado"
+              [class.text-on-surface]="!jsonCopiado">
+              <span class="material-symbols-outlined text-[18px]">{{ jsonCopiado ? 'check' : 'content_copy' }}</span>
+              {{ jsonCopiado ? 'Copiado al portapapeles' : 'Copiar JSON' }}
+            </button>
+          </div>
+        }
+      </div>
+    </div>
   }
 </main>

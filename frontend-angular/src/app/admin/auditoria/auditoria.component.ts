@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs';
@@ -46,6 +46,8 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
   filtroModulo: string = '';
   filtroDesde: string = '';
   filtroHasta: string = '';
+  filtroDia: string = '';
+  filtroHora: string = '';
 
   eventos: EventoAuditoria[] = [];
   totalPages: number = 0;
@@ -53,6 +55,11 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
   pageSize: number = 20;
   cargando: boolean = false;
   errorMsg: string = '';
+
+  // Modal de detalle
+  modalVisible: boolean = false;
+  eventoSeleccionado: EventoAuditoria | null = null;
+  jsonCopiado: boolean = false;
 
   // Autocomplete de usuarios
   busquedaUsuario: string = '';
@@ -128,6 +135,8 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
     this.filtroUsuarioId = '';
     this.filtroDesde = '';
     this.filtroHasta = '';
+    this.filtroDia = '';
+    this.filtroHora = '';
     this.eventos = [];
     this.usuarioSeleccionado = null;
     this.cargarResumen();
@@ -179,6 +188,31 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
     this.cargarPagina();
   }
 
+  // Combina filtroDia + filtroHora para generar desde/hasta precisos.
+  // Si se proporciona dia pero no hora: rango completo de ese día.
+  // Si se proporciona dia + hora: ventana de 1 minuto exacta.
+  // Si NO se proporciona dia: usa los filtros Desde/Hasta tradicionales.
+  private construirRangoFechas(): { desde?: string; hasta?: string } {
+    if (this.filtroDia) {
+      const hora = this.filtroHora || '00:00';
+      const [h, m] = hora.split(':');
+      const desde = `${this.filtroDia}T${h}:${m}:00.000Z`;
+      let hasta: string;
+      if (this.filtroHora) {
+        // Ventana de 1 minuto: de HH:MM a HH:MM:59.999
+        hasta = `${this.filtroDia}T${h}:${m}:59.999Z`;
+      } else {
+        // Día completo
+        hasta = `${this.filtroDia}T23:59:59.999Z`;
+      }
+      return { desde, hasta };
+    }
+    return {
+      desde: this.fechaInicio(this.filtroDesde),
+      hasta: this.fechaFin(this.filtroHasta)
+    };
+  }
+
   // type="date" da "yyyy-MM-dd"; el backend pide OffsetDateTime ISO, así
   // que se convierte a rango de ese día en UTC (offset Z explícito).
   private fechaInicio(fecha: string): string | undefined {
@@ -201,15 +235,29 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
     this.cargarPagina();
   }
 
+  limpiarFiltros(): void {
+    this.filtroUsuarioId = '';
+    this.filtroModulo = '';
+    this.filtroDesde = '';
+    this.filtroHasta = '';
+    this.filtroDia = '';
+    this.filtroHora = '';
+    this.usuarioSeleccionado = null;
+    this.busquedaUsuario = '';
+    this.currentPage = 0;
+    this.cargarPagina();
+  }
+
   // Se llama desde el template (paginacion numerada) -> no private.
   cargarPagina(): void {
     this.cargando = true;
     this.errorMsg = '';
+    const rango = this.construirRangoFechas();
     this.auditoriaService.listar({
       usuarioId: this.usuarioId(),
       modulo: this.filtroModulo || undefined,
-      desde: this.fechaInicio(this.filtroDesde),
-      hasta: this.fechaFin(this.filtroHasta),
+      desde: rango.desde,
+      hasta: rango.hasta,
       page: this.currentPage,
       size: this.pageSize
     }).subscribe({
@@ -241,9 +289,13 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
   }
 
   // El DTO puede traer usuario null (EventoAuditoriaResponseDTO) -- la
-  // vista lo muestra como "—", no como texto vacío ni como error.
+  // vista lo muestra como ícono + "Sistema", nunca como texto vacío.
+  esSistema(evento: EventoAuditoria): boolean {
+    return !evento.usuario || evento.usuario.trim() === '';
+  }
+
   usuarioLabel(evento: EventoAuditoria): string {
-    return evento.usuario ?? '—';
+    return evento.usuario ?? '';
   }
 
   moduloLabel(modulo: string): string {
@@ -255,8 +307,65 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
   formatoFecha(iso: string): string {
     const fecha = new Date(iso);
     return fecha.toLocaleString('es-ES', {
-      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
     });
+  }
+
+  // ── Modal de detalle ──────────────────────────────────────
+  abrirDetalle(evento: EventoAuditoria): void {
+    this.eventoSeleccionado = evento;
+    this.modalVisible = true;
+    this.jsonCopiado = false;
+  }
+
+  cerrarDetalle(): void {
+    this.modalVisible = false;
+    this.eventoSeleccionado = null;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.modalVisible) {
+      this.cerrarDetalle();
+    }
+  }
+
+  detalleFormateado(): string {
+    if (!this.eventoSeleccionado?.detalle) return '';
+    try {
+      return JSON.stringify(JSON.parse(this.eventoSeleccionado.detalle), null, 2);
+    } catch {
+      return this.eventoSeleccionado.detalle;
+    }
+  }
+
+  resaltarJson(json: string): string {
+    if (!json) return '';
+    return json
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      // Claves: "nombre":
+      .replace(/"([^"]+)"(?=\s*:)/g, '<span class="text-primary">"$1"</span>')
+      // Strings values: ": "valor"
+      .replace(/:\s*"([^"]*)"/g, ': <span class="text-success">"$1"</span>')
+      // Numbers
+      .replace(/:\s*(\d+\.?\d*)/g, ': <span class="text-tertiary">$1</span>')
+      // Booleans
+      .replace(/:\s*(true|false)/g, ': <span class="text-error">$1</span>')
+      // Null
+      .replace(/:\s*(null)/g, ': <span class="text-on-surface-variant">$1</span>');
+  }
+
+  copiarJson(): void {
+    const json = this.detalleFormateado();
+    if (json) {
+      navigator.clipboard.writeText(json).then(() => {
+        this.jsonCopiado = true;
+        setTimeout(() => { this.jsonCopiado = false; }, 2000);
+      });
+    }
   }
 
   // Semáforo de acciones del mockup 21: INSERT/LOGIN_OK en verde,
