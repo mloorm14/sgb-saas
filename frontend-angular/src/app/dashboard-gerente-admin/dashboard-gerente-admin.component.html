@@ -23,25 +23,33 @@
       }
     </button>
 
-    <!-- Navegación -->
+<!-- Navegación -->
     <nav class="flex-1 overflow-y-auto py-md">
       @for (seccion of secciones; track seccion.titulo) {
         @if (visibles(seccion).length > 0) {
           <div class="mb-sm">
-            @if (seccion.titulo && !isCollapsed()) {
-              <p class="px-lg font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs whitespace-nowrap overflow-hidden" style="transition: opacity 0.15s ease-in-out">{{ seccion.titulo }}</p>
+            @if (!isCollapsed()) {
+              <button (click)="toggleSeccion(seccion.titulo)"
+                [attr.aria-expanded]="estaExpandida(seccion.titulo)"
+                class="flex items-center gap-sm px-lg py-xs font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider cursor-pointer hover:text-on-surface transition-colors whitespace-nowrap overflow-hidden">
+                {{ seccion.titulo }}
+                <span class="material-symbols-outlined text-[16px] transition-transform duration-200"
+                      [class.rotate-180]="!estaExpandida(seccion.titulo)">expand_more</span>
+              </button>
             }
-            @for (enlace of visibles(seccion); track enlace.ruta) {
-              <a [routerLink]="enlace.ruta"
-                 routerLinkActive="bg-primary-fixed text-primary"
-                 [routerLinkActiveOptions]="{ exact: true }"
-                 class="flex items-center gap-sm py-sm mx-sm rounded-lg font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap overflow-hidden"
-                 [class.px-lg]="!isCollapsed()" [class.px-2]="isCollapsed()" [class.justify-center]="isCollapsed()">
-                <span class="material-symbols-outlined text-[20px] shrink-0">{{ enlace.icono }}</span>
-                @if (!isCollapsed()) {
-                  <span class="whitespace-nowrap overflow-hidden" style="transition: opacity 0.15s ease-in-out">{{ enlace.etiqueta }}</span>
-                }
-              </a>
+            @if (estaExpandida(seccion.titulo) || isCollapsed()) {
+              @for (enlace of visibles(seccion); track enlace.ruta) {
+                <a [routerLink]="enlace.ruta"
+                   routerLinkActive="bg-primary-fixed text-primary"
+                   [routerLinkActiveOptions]="{ exact: true }"
+class="flex items-center gap-sm py-sm mx-sm mb-sm rounded-lg font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap overflow-hidden"
+                   [class.px-lg]="!isCollapsed()" [class.px-2]="isCollapsed()" [class.justify-center]="isCollapsed()">
+                  <span class="material-symbols-outlined text-[20px] shrink-0">{{ enlace.icono }}</span>
+                  @if (!isCollapsed()) {
+                    <span class="whitespace-nowrap overflow-hidden" style="transition: opacity 0.15s ease-in-out">{{ enlace.etiqueta }}</span>
+                  }
+                </a>
+              }
             }
           </div>
         }
