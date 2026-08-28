@@ -11,6 +11,7 @@ import { UsuarioSugerencia } from '../../core/models/prestamos-gestion.model';
 // Emite el correo seleccionado (click o Tab) y muestra el placeholder
 // dinámico con la sugerencia más probable.
 @Component({
+  standalone: true,
   selector: 'app-buscador-usuario',
   imports: [CommonModule, FormsModule],
   templateUrl: './buscador-usuario.component.html'

@@ -12,6 +12,7 @@ import { LibroSugerencia } from '../../core/models/libro.model';
 // selección (el libroId ya no corresponde). Rama E lo reutilizará en
 // prestamos-gestion para elegir el libro al crear un préstamo.
 @Component({
+  standalone: true,
   selector: 'app-buscador-libro',
   imports: [CommonModule, FormsModule],
   templateUrl: './buscador-libro.component.html'

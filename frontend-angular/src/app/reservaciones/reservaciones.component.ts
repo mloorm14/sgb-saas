@@ -16,6 +16,7 @@ import { BuscadorLibroComponent } from '../shared/buscador-libro/buscador-libro.
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
 
 @Component({
+  standalone: true,
   selector: 'app-reservaciones',
   imports: [
     CommonModule, ReactiveFormsModule, FormsModule, RouterLink,
