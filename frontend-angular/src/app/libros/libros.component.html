@@ -139,6 +139,9 @@
                   (keydown)="onKeydownIdioma($event)"
                   (focus)="textoIdioma.trim().length >=1 && (mostrarSugerenciasIdioma = true)"
                   placeholder="Buscar idioma..."
+                  role="combobox" [attr.aria-expanded]="mostrarSugerenciasIdioma"
+                  aria-controls="libro-idioma-listbox" aria-autocomplete="list"
+                  [attr.aria-activedescendant]="indiceIdioma >= 0 ? 'libro-idioma-option-' + indiceIdioma : null"
                   class="flex-1 min-w-0 h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
                 <button type="button" (click)="buscarIdiomaManualmente()" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
                   <span class="material-symbols-outlined text-[18px]">search</span>
@@ -147,10 +150,10 @@
                   <span class="material-symbols-outlined text-[18px]">add</span>
                 </button>
                 @if (mostrarSugerenciasIdioma) {
-                  <ul class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                  <ul id="libro-idioma-listbox" role="listbox" aria-label="Sugerencias de idiomas" class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
                     @if (sugerenciasIdioma.length > 0) {
                       @for (s of sugerenciasIdioma; track s.id; let i = $index) {
-                        <li (mousedown)="seleccionarIdioma(s)" class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low" [class.bg-primary-container]="i===indiceIdioma">{{ s.nombre }}</li>
+                        <li (mousedown)="seleccionarIdioma(s)" role="option" [id]="'libro-idioma-option-' + i" [attr.aria-selected]="i===indiceIdioma" class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low" [class.bg-primary-container]="i===indiceIdioma">{{ s.nombre }}</li>
                       }
                     } @else if (textoIdioma.trim().length >=1) {
                       <li (mousedown)="agregarIdioma($event)" class="px-sm py-xs cursor-pointer font-body-sm text-body-sm text-primary hover:bg-primary-container flex items-center gap-xs">
@@ -209,6 +212,9 @@
                   <input type="text" [(ngModel)]="textoAutor" [ngModelOptions]="{standalone: true}" id="buscar-autor"
                     (keydown)="onKeydownAutor($event)"
                     placeholder="Buscar autor..."
+                    role="combobox" [attr.aria-expanded]="mostrarSugerenciasAutor"
+                    aria-controls="libro-autor-listbox" aria-autocomplete="list"
+                    [attr.aria-activedescendant]="indiceAutor >= 0 ? 'libro-autor-option-' + indiceAutor : null"
                     class="flex-1 min-w-0 h-8 px-sm rounded font-body-sm text-body-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 border border-transparent" />
                   <button type="button" (click)="buscarAutorManualmente()" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
                     <span class="material-symbols-outlined text-[16px]">search</span>
@@ -217,10 +223,11 @@
                     <span class="material-symbols-outlined text-[16px]">add</span>
                   </button>
                   @if (mostrarSugerenciasAutor) {
-                    <ul class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                    <ul id="libro-autor-listbox" role="listbox" aria-label="Sugerencias de autores" class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
                       @if (sugerenciasAutor.length > 0) {
                         @for (sugerencia of sugerenciasAutor; track sugerencia.id; let i = $index) {
                           <li (mousedown)="seleccionarAutor(sugerencia)"
+                            role="option" [id]="'libro-autor-option-' + i" [attr.aria-selected]="i === indiceAutor"
                             class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low"
                             [class.bg-primary-container]="i === indiceAutor">
                             {{ sugerencia.nombre }}
@@ -258,6 +265,9 @@
                   <input type="text" [(ngModel)]="textoCategoria" [ngModelOptions]="{standalone: true}" id="buscar-categoria"
                     (keydown)="onKeydownCategoria($event)"
                     placeholder="Buscar categoría..."
+                    role="combobox" [attr.aria-expanded]="mostrarSugerenciasCategoria"
+                    aria-controls="libro-categoria-listbox" aria-autocomplete="list"
+                    [attr.aria-activedescendant]="indiceCategoria >= 0 ? 'libro-categoria-option-' + indiceCategoria : null"
                     class="flex-1 min-w-0 h-8 px-sm rounded font-body-sm text-body-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 border border-transparent" />
                   <button type="button" (click)="buscarCategoriaManualmente()" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
                     <span class="material-symbols-outlined text-[16px]">search</span>
@@ -266,10 +276,11 @@
                     <span class="material-symbols-outlined text-[16px]">add</span>
                   </button>
                   @if (mostrarSugerenciasCategoria) {
-                    <ul class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                    <ul id="libro-categoria-listbox" role="listbox" aria-label="Sugerencias de categorías" class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
                       @if (sugerenciasCategoria.length > 0) {
                         @for (sugerencia of sugerenciasCategoria; track sugerencia.id; let i = $index) {
                           <li (mousedown)="seleccionarCategoria(sugerencia)"
+                            role="option" [id]="'libro-categoria-option-' + i" [attr.aria-selected]="i === indiceCategoria"
                             class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low"
                             [class.bg-primary-container]="i === indiceCategoria">
                             {{ sugerencia.nombre }}
@@ -308,6 +319,9 @@
                 <input type="text" [(ngModel)]="textoEditorial" [ngModelOptions]="{standalone: true}" id="buscar-editorial"
                   (keydown)="onKeydownEditorial($event)"
                   placeholder="Buscar editorial..."
+                  role="combobox" [attr.aria-expanded]="mostrarSugerenciasEditorial"
+                  aria-controls="libro-editorial-listbox" aria-autocomplete="list"
+                  [attr.aria-activedescendant]="indiceEditorial >= 0 ? 'libro-editorial-option-' + indiceEditorial : null"
                   class="flex-1 min-w-0 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
                 <button type="button" (click)="buscarEditorialManualmente()" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
                   <span class="material-symbols-outlined text-[18px]">search</span>
@@ -316,10 +330,10 @@
                   <span class="material-symbols-outlined text-[18px]">add</span>
                 </button>
                 @if (mostrarSugerenciasEditorial) {
-                  <ul class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                  <ul id="libro-editorial-listbox" role="listbox" aria-label="Sugerencias de editoriales" class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
                     @if (sugerenciasEditorial.length>0) {
                       @for (s of sugerenciasEditorial; track s.id; let i=$index) {
-                        <li (mousedown)="seleccionarEditorial(s)" class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low" [class.bg-primary-container]="i===indiceEditorial">{{ s.nombre }}</li>
+                        <li (mousedown)="seleccionarEditorial(s)" role="option" [id]="'libro-editorial-option-' + i" [attr.aria-selected]="i===indiceEditorial" class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low" [class.bg-primary-container]="i===indiceEditorial">{{ s.nombre }}</li>
                       }
                     } @else if (textoEditorial.trim().length>=1) {
                       <li (mousedown)="agregarEditorial($event)" class="px-sm py-xs cursor-pointer font-body-sm text-body-sm text-primary hover:bg-primary-container flex items-center gap-xs"><span class="material-symbols-outlined text-[16px]">add</span>Crear "{{ textoEditorial.trim() }}"</li>

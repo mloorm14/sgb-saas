@@ -13,6 +13,11 @@
       [placeholder]="placeholderDinamico"
       autocomplete="off"
       maxlength="100"
+      role="combobox"
+      [attr.aria-expanded]="mostrarSugerencias && sugerencias.length > 0"
+      aria-controls="buscador-usuario-listbox"
+      aria-autocomplete="list"
+      [attr.aria-activedescendant]="indiceActivo >= 0 ? 'buscador-usuario-option-' + indiceActivo : null"
       class="w-full h-11 pl-11 pr-28 rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant/60 focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:border-primary focus:ring-2 focus:ring-primary/30" />
     <button (click)="buscarAhora.emit(texto.trim())"
       [disabled]="texto.trim().length < 2 || buscando"
@@ -29,12 +34,15 @@
   }
 
   @if (mostrarSugerencias && sugerencias.length > 0) {
-    <ul class="absolute z-20 left-0 right-0 mt-1 bg-surface-container-lowest border border-outline-variant/50 rounded-2xl shadow-lg overflow-hidden max-h-60 overflow-auto">
+    <ul id="buscador-usuario-listbox" role="listbox" aria-label="Sugerencias de usuarios" class="absolute z-20 left-0 right-0 mt-1 bg-surface-container-lowest border border-outline-variant/50 rounded-2xl shadow-lg overflow-hidden max-h-60 overflow-auto">
       @for (sugerencia of sugerencias; track sugerencia.id; let i = $index) {
         <li>
           <button type="button"
             (mousedown)="$event.preventDefault()"
             (click)="seleccionar(sugerencia)"
+            role="option"
+            [id]="'buscador-usuario-option-' + i"
+            [attr.aria-selected]="i === indiceActivo"
             class="w-full text-left px-6 py-4 hover:bg-surface-container-low flex items-center justify-between gap-3 transition-colors"
             [class.bg-surface-container-low]="i === indiceActivo">
             <div class="flex items-center gap-4">
