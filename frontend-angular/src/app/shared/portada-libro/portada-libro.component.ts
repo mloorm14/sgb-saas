@@ -13,6 +13,7 @@ import { LibroService } from '../../core/services/libro.service';
 //    trae el flag), se intenta cargar igual y se cae al placeholder ante
 //    404 (libro sin portada binaria).
 @Component({
+  standalone: true,
   selector: 'app-portada-libro',
   imports: [],
   templateUrl: './portada-libro.component.html'

@@ -3,6 +3,7 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
+  standalone: true,
   selector: 'app-no-autorizado',
   imports: [RouterModule],
   templateUrl: './no-autorizado.component.html'

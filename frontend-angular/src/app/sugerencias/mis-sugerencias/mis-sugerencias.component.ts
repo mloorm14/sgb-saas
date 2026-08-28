@@ -9,6 +9,7 @@ import { SugerenciaAdquisicion } from '../../core/models/sugerencia-adquisicion.
 // estado usan los 3 colores exactos del mockup: Pendiente (ámbar),
 // Aprobada (verde) y Rechazada (rojo error-container).
 @Component({
+  standalone: true,
   selector: 'app-mis-sugerencias',
   imports: [CommonModule, RouterLink],
   templateUrl: './mis-sugerencias.component.html'
