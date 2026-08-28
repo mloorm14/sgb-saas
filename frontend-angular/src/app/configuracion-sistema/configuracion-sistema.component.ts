@@ -211,7 +211,10 @@ export class ConfiguracionSistemaComponent implements OnInit {
   guardarValor(): void {
     if (!this.claveEditando) return;
     const valor = this.valorEditando.trim();
-    if (!valor || valor.length > VALOR_MAX_LENGTH) return;
+    // correo_dominios_permitidos permite vacío = acepta todos los dominios
+    const permiteVacio = this.claveEditando === 'correo_dominios_permitidos';
+    if (!permiteVacio && (!valor || valor.length > VALOR_MAX_LENGTH)) return;
+    if (permiteVacio && valor.length > VALOR_MAX_LENGTH) return;
 
     this.configuracionService.actualizar(this.claveEditando, valor).subscribe({
       next: () => {

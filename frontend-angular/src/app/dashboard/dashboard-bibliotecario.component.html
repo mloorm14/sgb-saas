@@ -15,7 +15,7 @@
     <button (click)="toggleSidebar(); $event.stopPropagation()"
       [attr.aria-label]="isCollapsed() ? 'Expandir menú' : 'Contraer menú'"
       [attr.title]="isCollapsed() ? 'Expandir menú' : 'Contraer menú'"
-      class="flex items-center gap-sm py-sm mx-sm rounded-lg font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap overflow-hidden"
+      class="flex items-center gap-sm py-sm mx-sm mb-sm rounded-lg font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap overflow-hidden"
       [class.px-lg]="!isCollapsed()" [class.px-2]="isCollapsed()" [class.justify-center]="isCollapsed()">
       <span class="material-symbols-outlined text-[20px] shrink-0">menu</span>
       @if (!isCollapsed()) {

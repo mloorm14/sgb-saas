@@ -1,267 +1,276 @@
-<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
-  <div class="mb-lg">
+<div class="h-full flex flex-col">
+  <!-- Header fijo -->
+  <div class="mb-lg shrink-0">
     <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Auditoría</h1>
     <p class="font-body-sm text-body-sm text-on-surface-variant">Historial de acciones realizadas en el sistema.</p>
   </div>
 
   @if (errorMsg) {
-    <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
+    <p class="font-body-sm text-body-sm text-error mb-md shrink-0">{{ errorMsg }}</p>
   }
 
   <!-- ═══ VISTA TARJETAS ═══ -->
   @if (vista === 'tarjetas') {
-    @if (cargandoResumen) {
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
-        @for (i of [1,2,3,4,5,6,7,8]; track i) {
-          <div class="rounded-xl border border-outline-variant bg-white p-lg animate-pulse">
-            <div class="flex items-center gap-sm mb-md">
-              <div class="w-10 h-10 rounded-lg bg-surface-container-high"></div>
-              <div class="h-4 w-16 bg-surface-container-high rounded"></div>
+    <div class="flex-1 overflow-y-auto">
+      @if (cargandoResumen) {
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
+          @for (i of [1,2,3,4,5,6,7,8]; track i) {
+            <div class="rounded-xl border border-outline-variant bg-white p-lg animate-pulse">
+              <div class="flex items-center gap-sm mb-md">
+                <div class="w-10 h-10 rounded-lg bg-surface-container-high"></div>
+                <div class="h-4 w-16 bg-surface-container-high rounded"></div>
+              </div>
+              <div class="h-5 w-32 bg-surface-container-high rounded mb-sm"></div>
+              <div class="h-3 w-48 bg-surface-container-low rounded mb-md"></div>
+              <div class="flex gap-md">
+                <div class="h-8 w-16 bg-surface-container-high rounded"></div>
+                <div class="h-8 w-16 bg-surface-container-high rounded"></div>
+              </div>
             </div>
-            <div class="h-5 w-32 bg-surface-container-high rounded mb-sm"></div>
-            <div class="h-3 w-48 bg-surface-container-low rounded mb-md"></div>
-            <div class="flex gap-md">
-              <div class="h-8 w-16 bg-surface-container-high rounded"></div>
-              <div class="h-8 w-16 bg-surface-container-high rounded"></div>
-            </div>
-          </div>
-        }
-      </div>
-    } @else {
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
-        @for (cat of resumenCategorias; track cat.tablaAfectada) {
-          <button (click)="abrirHistorial(cat.tablaAfectada)"
-            class="rounded-xl border border-outline-variant bg-white p-lg text-left hover:shadow-md transition-shadow cursor-pointer group">
-            <div class="flex items-center justify-between mb-md">
-              <div class="flex items-center gap-sm">
-                <div class="w-10 h-10 rounded-lg flex items-center justify-center" [class]="colorCategoria(cat.tablaAfectada)">
-                  <span class="material-symbols-outlined text-[20px]">{{ iconoCategoria(cat.tablaAfectada) }}</span>
+          }
+        </div>
+      } @else {
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
+          @for (cat of resumenCategorias; track cat.tablaAfectada) {
+            <button (click)="abrirHistorial(cat.tablaAfectada)"
+              class="rounded-xl border border-outline-variant bg-white p-lg text-left hover:shadow-md transition-shadow cursor-pointer group">
+              <div class="flex items-center justify-between mb-md">
+                <div class="flex items-center gap-sm">
+                  <div class="w-10 h-10 rounded-lg flex items-center justify-center" [class]="colorCategoria(cat.tablaAfectada)">
+                    <span class="material-symbols-outlined text-[20px]">{{ iconoCategoria(cat.tablaAfectada) }}</span>
+                  </div>
+                  <span class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">{{ codigoCategoria(cat.tablaAfectada) }}</span>
                 </div>
-                <span class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">{{ codigoCategoria(cat.tablaAfectada) }}</span>
+                @if (cat.requiereRevision) {
+                  <span class="px-sm py-0.5 rounded-full bg-error/10 text-error font-label-sm text-[11px] font-semibold">Revisar</span>
+                } @else {
+                  <span class="px-sm py-0.5 rounded-full bg-success/10 text-success font-label-sm text-[11px]">Normal</span>
+                }
               </div>
-              @if (cat.requiereRevision) {
-                <span class="px-sm py-0.5 rounded-full bg-error/10 text-error font-label-sm text-[11px] font-semibold">Revisar</span>
-              } @else {
-                <span class="px-sm py-0.5 rounded-full bg-success/10 text-success font-label-sm text-[11px]">Normal</span>
+              <h3 class="font-headline-sm text-headline-sm text-on-background mb-xs">{{ etiquetaModulo(cat.tablaAfectada) }}</h3>
+              <p class="font-body-xs text-body-xs text-on-surface-variant mb-md">{{ descripcionCategoria(cat.tablaAfectada) }}</p>
+              <div class="flex gap-lg mb-md">
+                <div>
+                  <p class="font-headline-sm text-[17px] text-on-background leading-tight">{{ cat.totalEventos }}</p>
+                  <p class="font-label-xs text-[10px] text-on-surface-variant">Total</p>
+                </div>
+                <div>
+                  <p class="font-headline-sm text-[17px] text-on-background leading-tight">{{ cat.eventosHoy }}</p>
+                  <p class="font-label-xs text-[10px] text-on-surface-variant">Hoy</p>
+                </div>
+              </div>
+              @if (cat.ultimoEvento) {
+                <p class="font-body-xs text-[11px] text-on-surface-variant mb-sm">
+                  Último: {{ formatoFecha(cat.ultimoEvento) }}
+                </p>
               }
-            </div>
-            <h3 class="font-headline-sm text-headline-sm text-on-background mb-xs">{{ etiquetaModulo(cat.tablaAfectada) }}</h3>
-            <p class="font-body-xs text-body-xs text-on-surface-variant mb-md">{{ descripcionCategoria(cat.tablaAfectada) }}</p>
-            <div class="flex gap-lg mb-md">
-              <div>
-                <p class="font-headline-sm text-[17px] text-on-background leading-tight">{{ cat.totalEventos }}</p>
-                <p class="font-label-xs text-[10px] text-on-surface-variant">Total</p>
-              </div>
-              <div>
-                <p class="font-headline-sm text-[17px] text-on-background leading-tight">{{ cat.eventosHoy }}</p>
-                <p class="font-label-xs text-[10px] text-on-surface-variant">Hoy</p>
-              </div>
-            </div>
-            @if (cat.ultimoEvento) {
-              <p class="font-body-xs text-[11px] text-on-surface-variant mb-sm">
-                Último: {{ formatoFecha(cat.ultimoEvento) }}
-              </p>
-            }
-            <span class="inline-flex items-center gap-xs font-label-sm text-label-sm text-primary group-hover:underline">
-              Ver historial completo
-              <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
-            </span>
-          </button>
-        }
-      </div>
-    }
+              <span class="inline-flex items-center gap-xs font-label-sm text-label-sm text-primary group-hover:underline">
+                Ver historial completo
+                <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+              </span>
+            </button>
+          }
+        </div>
+      }
+    </div>
   }
 
   <!-- ═══ VISTA HISTORIAL FILTRADO ═══ -->
   @if (vista === 'historial') {
-    <!-- Breadcrumb -->
-    <div class="flex items-center gap-xs mb-md font-body-sm text-body-sm text-on-surface-variant">
-      <button (click)="volverATarjetas()" class="text-primary hover:underline cursor-pointer">Auditoría</button>
-      <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-      <span class="text-on-surface font-medium">{{ etiquetaModulo(filtroModulo) }}</span>
-    </div>
+    <div class="flex-1 overflow-y-auto flex flex-col">
+      <!-- Breadcrumb -->
+      <div class="flex items-center gap-xs mb-md font-body-sm text-body-sm text-on-surface-variant shrink-0">
+        <button (click)="volverATarjetas()" class="text-primary hover:underline cursor-pointer">Auditoría</button>
+        <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+        <span class="text-on-surface font-medium">{{ etiquetaModulo(filtroModulo) }}</span>
+      </div>
 
-    <!-- Filtros: usuarioId, modulo, desde, hasta, dia, hora -->
-    <div class="rounded-lg border border-outline-variant bg-white glass-panel p-md mb-md">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
-        <div>
-          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Usuario</label>
-          @if (usuarioSeleccionado) {
-            <div class="h-10 px-sm rounded border border-outline-variant bg-white flex items-center gap-sm">
-              <span class="font-body-sm text-body-sm truncate flex-1">{{ usuarioSeleccionado.nombre }} {{ usuarioSeleccionado.apellido }}</span>
-              <button (click)="limpiarSeleccion()" class="text-on-surface-variant hover:text-error cursor-pointer">
-                <span class="material-symbols-outlined text-[16px]">close</span>
+      <!-- Filtros -->
+      <div class="rounded-lg border border-outline-variant bg-white glass-panel p-md mb-md shrink-0">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
+          <div>
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Usuario</label>
+            @if (usuarioSeleccionado) {
+              <div class="h-10 px-sm rounded border border-outline-variant bg-white flex items-center gap-sm">
+                <span class="font-body-sm text-body-sm truncate flex-1">{{ usuarioSeleccionado.nombre }} {{ usuarioSeleccionado.apellido }}</span>
+                <button (click)="limpiarSeleccion()" class="text-on-surface-variant hover:text-error cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px]">close</span>
+                </button>
+              </div>
+            } @else {
+              <div class="relative">
+                <label for="buscar-correo" class="sr-only">Buscar por correo</label>
+                <input type="text" id="buscar-correo" [(ngModel)]="busquedaUsuario" placeholder="Buscar por correo..."
+                  (input)="onBusquedaUsuario(busquedaUsuario)"
+                  (focus)="mostrandoDropdown = true"
+                  (blur)="cerrarDropdown()"
+                  class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+                @if (mostrandoDropdown && resultadosBusqueda.length > 0) {
+                  <div class="absolute z-10 mt-1 w-full bg-white border border-outline-variant rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    @for (u of resultadosBusqueda; track u.id) {
+                      <button (mousedown)="seleccionarUsuario(u)"
+                        class="w-full text-left px-sm py-sm hover:bg-surface-container-low flex items-center gap-sm cursor-pointer">
+                        <span class="material-symbols-outlined text-[18px] text-on-surface-variant">person</span>
+                        <div>
+                          <p class="font-body-sm text-body-sm text-on-surface">{{ u.correo }}</p>
+                          <p class="font-body-sm text-[12px] text-on-surface-variant">{{ u.nombre }} {{ u.apellido }}</p>
+                        </div>
+                      </button>
+                    }
+                  </div>
+                }
+                @if (mostrandoDropdown && busquedaUsuario.trim() && resultadosBusqueda.length === 0 && !buscandoUsuarios) {
+                  <div class="absolute z-10 mt-1 w-full bg-white border border-outline-variant rounded-lg shadow-lg p-sm text-center font-body-sm text-[13px] text-on-surface-variant">
+                    Sin resultados
+                  </div>
+                }
+              </div>
+            }
+          </div>
+          <div>
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Módulo</label>
+            <select [(ngModel)]="filtroModulo"
+              class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white cursor-pointer">
+              <option value="">Todos</option>
+              @for (modulo of modulos; track modulo.valor) {
+                <option [value]="modulo.valor">{{ modulo.etiqueta }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Día</label>
+            <input type="date" [(ngModel)]="filtroDia"
+              class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+          </div>
+          <div>
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hora</label>
+            <input type="time" [(ngModel)]="filtroHora"
+              [disabled]="!filtroDia"
+              class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm disabled:opacity-40 disabled:cursor-not-allowed" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end mt-sm">
+          <div>
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
+            <input type="date" [(ngModel)]="filtroDesde" [disabled]="!!filtroDia"
+              class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm disabled:opacity-40 disabled:cursor-not-allowed" />
+          </div>
+          <div>
+            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hasta</label>
+            <input type="date" [(ngModel)]="filtroHasta" [disabled]="!!filtroDia"
+              class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm disabled:opacity-40 disabled:cursor-not-allowed" />
+          </div>
+          <div class="flex gap-sm">
+            <button (click)="filtrar()"
+              class="h-10 flex-1 rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer">
+              <span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar
+            </button>
+            <button (click)="limpiarFiltros()"
+              class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer hover:bg-surface-container-low">
+              <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla con scroll propio -->
+      <div class="flex-1 min-h-0 overflow-auto">
+        @if (cargando && eventos.length === 0) {
+          <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando bitácora…</p>
+        }
+
+        <div class="rounded-lg border border-outline-variant bg-white overflow-auto">
+          <table class="w-full text-left">
+            <thead class="bg-surface-container-low sticky top-0 z-10">
+              <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+                <th class="px-md py-sm">Fecha/hora</th>
+                <th class="px-md py-sm">Usuario</th>
+                <th class="px-md py-sm">Acción</th>
+                <th class="px-md py-sm hidden md:table-cell">Módulo</th>
+                <th class="px-md py-sm text-right">Detalle</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+              @for (evento of eventos; track evento.id) {
+                <tr class="hover:bg-surface-container-low/50 transition-colors">
+                  <td class="px-md py-sm text-on-surface-variant whitespace-nowrap">{{ formatoFecha(evento.fechaHora) }}</td>
+                  <td class="px-md py-sm">
+                    @if (esSistema(evento)) {
+                      <span class="inline-flex items-center gap-xs text-on-surface-variant">
+                        <span class="material-symbols-outlined text-[16px]">smart_toy</span>
+                        <span class="font-label-sm text-label-sm">Sistema</span>
+                      </span>
+                    } @else {
+                      {{ usuarioLabel(evento) }}
+                    }
+                  </td>
+                  <td class="px-md py-sm">
+                    <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]"
+                      [class]="claseAccion(evento.accion)">
+                      <span class="material-symbols-outlined text-[14px]">{{ iconoAccion(evento.accion) }}</span>
+                      {{ evento.accion }}
+                    </span>
+                  </td>
+                  <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ moduloLabel(evento.modulo) }}</td>
+                  <td class="px-md py-sm text-right">
+                    <button (click)="abrirDetalle(evento)"
+                      class="inline-flex items-center gap-xs px-sm py-xs rounded-full border border-outline-variant font-label-sm text-label-sm text-primary hover:bg-primary/5 transition-colors cursor-pointer">
+                      <span class="material-symbols-outlined text-[14px]">visibility</span>
+                      Ver
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                @if (!cargando) {
+                  <tr>
+                    <td colspan="5" class="px-md py-lg text-center text-on-surface-variant">No hay eventos para los filtros aplicados</td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginación fija al final -->
+        @if (totalPages > 1) {
+          <div class="flex flex-wrap justify-between items-center mt-lg gap-sm shrink-0">
+            <div class="flex items-center gap-xs font-body-sm text-body-sm">
+              <span class="text-on-surface-variant">Mostrar</span>
+              <label for="page-size-auditoria" class="sr-only">Elementos por página</label>
+              <select [ngModel]="pageSize" (ngModelChange)="cambiarTamanoPage($event)" id="page-size-auditoria"
+                class="h-10 px-sm pr-8 rounded border border-outline-variant bg-white cursor-pointer appearance-none text-xs leading-tight py-1.5">
+                <option [ngValue]="10">10</option>
+                <option [ngValue]="20">20</option>
+                <option [ngValue]="50">50</option>
+              </select>
+              <span class="text-on-surface-variant">por página</span>
+            </div>
+            <div class="flex items-center gap-xs">
+              <button (click)="paginaAnterior()" [disabled]="!puedeAnterior"
+                class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">
+                <span class="material-symbols-outlined text-[18px]">chevron_left</span> Anterior
+              </button>
+              @for (pagina of paginasVisibles; track pagina) {
+                <button (click)="currentPage = pagina; cargarPagina()"
+                  class="w-8 h-8 min-w-[44px] min-h-[44px] rounded font-label-sm text-label-sm cursor-pointer"
+                  [class.bg-primary]="pagina === currentPage"
+                  [class.text-on-primary]="pagina === currentPage"
+                  [class.border]="pagina !== currentPage"
+                  [class.border-outline-variant]="pagina !== currentPage"
+                  [class.text-on-surface-variant]="pagina !== currentPage"
+                  [class.hover:bg-surface-container-low]="pagina !== currentPage">
+                  {{ pagina + 1 }}
+                </button>
+              }
+              <button (click)="paginaSiguiente()" [disabled]="!puedeSiguiente"
+                class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">
+                Siguiente <span class="material-symbols-outlined text-[18px]">chevron_right</span>
               </button>
             </div>
-          } @else {
-            <div class="relative">
-              <label for="buscar-correo" class="sr-only">Buscar por correo</label>
-              <input type="text" id="buscar-correo" [(ngModel)]="busquedaUsuario" placeholder="Buscar por correo..."
-                (input)="onBusquedaUsuario(busquedaUsuario)"
-                (focus)="mostrandoDropdown = true"
-                (blur)="cerrarDropdown()"
-                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
-              @if (mostrandoDropdown && resultadosBusqueda.length > 0) {
-                <div class="absolute z-10 mt-1 w-full bg-white border border-outline-variant rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  @for (u of resultadosBusqueda; track u.id) {
-                    <button (mousedown)="seleccionarUsuario(u)"
-                      class="w-full text-left px-sm py-sm hover:bg-surface-container-low flex items-center gap-sm cursor-pointer">
-                      <span class="material-symbols-outlined text-[18px] text-on-surface-variant">person</span>
-                      <div>
-                        <p class="font-body-sm text-body-sm text-on-surface">{{ u.correo }}</p>
-                        <p class="font-body-sm text-[12px] text-on-surface-variant">{{ u.nombre }} {{ u.apellido }}</p>
-                      </div>
-                    </button>
-                  }
-                </div>
-              }
-              @if (mostrandoDropdown && busquedaUsuario.trim() && resultadosBusqueda.length === 0 && !buscandoUsuarios) {
-                <div class="absolute z-10 mt-1 w-full bg-white border border-outline-variant rounded-lg shadow-lg p-sm text-center font-body-sm text-[13px] text-on-surface-variant">
-                  Sin resultados
-                </div>
-              }
-            </div>
-          }
-        </div>
-        <div>
-          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Módulo</label>
-          <select [(ngModel)]="filtroModulo"
-            class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white cursor-pointer">
-            <option value="">Todos</option>
-            @for (modulo of modulos; track modulo.valor) {
-              <option [value]="modulo.valor">{{ modulo.etiqueta }}</option>
-            }
-          </select>
-        </div>
-        <div>
-          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Día</label>
-          <input type="date" [(ngModel)]="filtroDia"
-            class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
-        </div>
-        <div>
-          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hora</label>
-          <input type="time" [(ngModel)]="filtroHora"
-            [disabled]="!filtroDia"
-            class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm disabled:opacity-40 disabled:cursor-not-allowed" />
-        </div>
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end mt-sm">
-        <div>
-          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
-          <input type="date" [(ngModel)]="filtroDesde" [disabled]="!!filtroDia"
-            class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm disabled:opacity-40 disabled:cursor-not-allowed" />
-        </div>
-        <div>
-          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hasta</label>
-          <input type="date" [(ngModel)]="filtroHasta" [disabled]="!!filtroDia"
-            class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm disabled:opacity-40 disabled:cursor-not-allowed" />
-        </div>
-        <div class="flex gap-sm">
-          <button (click)="filtrar()"
-            class="h-10 flex-1 rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer">
-            <span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar
-          </button>
-          <button (click)="limpiarFiltros()"
-            class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer hover:bg-surface-container-low">
-            <span class="material-symbols-outlined text-[18px]">restart_alt</span>
-          </button>
-        </div>
+          </div>
+        }
       </div>
     </div>
-
-    @if (cargando && eventos.length === 0) {
-      <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando bitácora…</p>
-    }
-
-    <div class="rounded-lg border border-outline-variant bg-white overflow-x-auto">
-      <table class="w-full text-left">
-        <thead class="bg-surface-container-low">
-          <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
-            <th class="px-md py-sm">Fecha/hora</th>
-            <th class="px-md py-sm">Usuario</th>
-            <th class="px-md py-sm">Acción</th>
-            <th class="px-md py-sm hidden md:table-cell">Módulo</th>
-            <th class="px-md py-sm text-right">Detalle</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-          @for (evento of eventos; track evento.id) {
-            <tr class="hover:bg-surface-container-low/50 transition-colors">
-              <td class="px-md py-sm text-on-surface-variant whitespace-nowrap">{{ formatoFecha(evento.fechaHora) }}</td>
-              <td class="px-md py-sm">
-                @if (esSistema(evento)) {
-                  <span class="inline-flex items-center gap-xs text-on-surface-variant">
-                    <span class="material-symbols-outlined text-[16px]">smart_toy</span>
-                    <span class="font-label-sm text-label-sm">Sistema</span>
-                  </span>
-                } @else {
-                  {{ usuarioLabel(evento) }}
-                }
-              </td>
-              <td class="px-md py-sm">
-                <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]"
-                  [class]="claseAccion(evento.accion)">
-                  <span class="material-symbols-outlined text-[14px]">{{ iconoAccion(evento.accion) }}</span>
-                  {{ evento.accion }}
-                </span>
-              </td>
-              <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ moduloLabel(evento.modulo) }}</td>
-              <td class="px-md py-sm text-right">
-                <button (click)="abrirDetalle(evento)"
-                  class="inline-flex items-center gap-xs px-sm py-xs rounded-full border border-outline-variant font-label-sm text-label-sm text-primary hover:bg-primary/5 transition-colors cursor-pointer">
-                  <span class="material-symbols-outlined text-[14px]">visibility</span>
-                  Ver
-                </button>
-              </td>
-            </tr>
-          } @empty {
-            @if (!cargando) {
-              <tr>
-                <td colspan="5" class="px-md py-lg text-center text-on-surface-variant">No hay eventos para los filtros aplicados</td>
-              </tr>
-            }
-          }
-        </tbody>
-      </table>
-    </div>
-
-    @if (totalPages > 1) {
-      <div class="flex flex-wrap justify-between items-center mt-lg gap-sm">
-        <div class="flex items-center gap-xs font-body-sm text-body-sm">
-          <span class="text-on-surface-variant">Mostrar</span>
-          <label for="page-size-auditoria" class="sr-only">Elementos por página</label>
-          <select [ngModel]="pageSize" (ngModelChange)="cambiarTamanoPage($event)" id="page-size-auditoria"
-            class="h-10 px-sm pr-8 rounded border border-outline-variant bg-white cursor-pointer appearance-none text-xs leading-tight py-1.5">
-            <option [ngValue]="10">10</option>
-            <option [ngValue]="20">20</option>
-            <option [ngValue]="50">50</option>
-          </select>
-          <span class="text-on-surface-variant">por página</span>
-        </div>
-        <div class="flex items-center gap-xs">
-          <button (click)="paginaAnterior()" [disabled]="!puedeAnterior"
-            class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">
-            <span class="material-symbols-outlined text-[18px]">chevron_left</span> Anterior
-          </button>
-          @for (pagina of paginasVisibles; track pagina) {
-            <button (click)="currentPage = pagina; cargarPagina()"
-              class="w-8 h-8 min-w-[44px] min-h-[44px] rounded font-label-sm text-label-sm cursor-pointer"
-              [class.bg-primary]="pagina === currentPage"
-              [class.text-on-primary]="pagina === currentPage"
-              [class.border]="pagina !== currentPage"
-              [class.border-outline-variant]="pagina !== currentPage"
-              [class.text-on-surface-variant]="pagina !== currentPage"
-              [class.hover:bg-surface-container-low]="pagina !== currentPage">
-              {{ pagina + 1 }}
-            </button>
-          }
-          <button (click)="paginaSiguiente()" [disabled]="!puedeSiguiente"
-            class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">
-            Siguiente <span class="material-symbols-outlined text-[18px]">chevron_right</span>
-          </button>
-        </div>
-      </div>
-    }
   }
 
   <!-- ═══ MODAL DETALLE EVENTO ═══ -->
@@ -326,4 +335,4 @@
       </div>
     </div>
   }
-</main>
+</div>
