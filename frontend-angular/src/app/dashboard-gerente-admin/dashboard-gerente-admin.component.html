@@ -73,10 +73,10 @@ class="flex items-center gap-sm py-sm mx-sm mb-sm rounded-lg font-body-sm text-b
       </button>
 
       @if (mostrarMenuUsuario) {
-        <!-- Dropdown: fixed en ambos casos para evitar clipping por overflow-hidden del sidebar -->
+        <!-- Dropdown: fixed posicionado relativo al botón de usuario -->
         @if (!isCollapsed()) {
-          <!-- Expandido: posicionado junto al botón de usuario (abajo a la izquierda del sidebar) -->
-          <div class="fixed bottom-16 left-16 bg-white rounded-xl border border-outline-variant shadow-lg overflow-hidden z-50 min-w-[200px] max-w-[90vw]">
+          <!-- Expandido: alineado con borde derecho del sidebar (64px=16rem), encima del botón -->
+          <div class="fixed bottom-[3.5rem] left-[16rem] bg-white rounded-xl border border-outline-variant shadow-lg overflow-hidden z-50 min-w-[200px] max-w-[90vw]">
             <button (click)="cerrarSesion()"
               class="w-full flex items-center gap-sm px-md py-sm text-left font-body-sm text-body-sm text-error hover:bg-error-container/40 transition-colors cursor-pointer whitespace-nowrap">
               <span class="material-symbols-outlined text-[18px]">logout</span>
@@ -85,8 +85,8 @@ class="flex items-center gap-sm py-sm mx-sm mb-sm rounded-lg font-body-sm text-b
           </div>
         }
         @if (isCollapsed()) {
-          <!-- Colapsado: centrado horizontalmente -->
-          <div class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-white rounded-xl border border-outline-variant shadow-lg overflow-hidden z-50 min-w-[200px] max-w-[90vw]">
+          <!-- Colapsado: centrado en el sidebar (72px/2=36px=2.25rem), encima del botón -->
+          <div class="fixed bottom-[3.5rem] left-[2.25rem] bg-white rounded-xl border border-outline-variant shadow-lg overflow-hidden z-50 min-w-[200px] max-w-[90vw]">
             <button (click)="cerrarSesion()"
               class="w-full flex items-center gap-sm px-md py-sm text-left font-body-sm text-body-sm text-error hover:bg-error-container/40 transition-colors cursor-pointer whitespace-nowrap">
               <span class="material-symbols-outlined text-[18px]">logout</span>
