@@ -31,6 +31,7 @@ import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.com
 // TODO(frontend/estudiante-chatbot): la Rama D montara el widget de chatbot
 // flotante sobre este componente raiz del catalogo.
 @Component({
+  standalone: true,
   selector: 'app-catalogo',
   imports: [CommonModule, FormsModule, RouterLink, PortadaLibroComponent],
   templateUrl: './catalogo.component.html'

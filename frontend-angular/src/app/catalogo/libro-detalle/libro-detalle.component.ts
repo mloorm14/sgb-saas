@@ -22,6 +22,7 @@ import { PortadaLibroComponent } from '../../shared/portada-libro/portada-libro.
 // fechaLimiteRetiro que devuelve ReservacionService.crear (campo real de
 // ReservacionResponseDTO).
 @Component({
+  standalone: true,
   selector: 'app-libro-detalle',
   imports: [CommonModule, FormsModule, RouterLink, PortadaLibroComponent],
   templateUrl: './libro-detalle.component.html'

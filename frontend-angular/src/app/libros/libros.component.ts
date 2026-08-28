@@ -19,6 +19,7 @@ import { Libro, LibroRequest } from '../core/models/libro.model';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 
 @Component({
+  standalone: true,
     selector: 'app-libros',
     imports: [CommonModule, ReactiveFormsModule, FormsModule, PortadaLibroComponent],
     templateUrl: './libros.component.html'
