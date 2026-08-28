@@ -156,7 +156,13 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
   }
 
   get paginasVisibles(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i);
+    const windowSize = 4;
+    let start = Math.max(0, this.currentPage - 1);
+    let end = Math.min(this.totalPages, start + windowSize);
+    if (end - start < windowSize) {
+      start = Math.max(0, end - windowSize);
+    }
+    return Array.from({ length: end - start }, (_, i) => start + i);
   }
 
   get puedeAnterior(): boolean {
