@@ -67,6 +67,7 @@ export class RegistroComponent {
   togglePassword2() { this.mostrarPassword2 = !this.mostrarPassword2; }
 
   submitRegistro() {
+    this.formRegistro.markAllAsTouched();
     if (this.formRegistro.invalid) return;
     this.cargando = true;
     this.errorMsg = '';

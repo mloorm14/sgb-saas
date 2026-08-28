@@ -57,7 +57,7 @@
                       <span class="font-label-sm text-[12px] text-on-surface-variant">{{ config.meta.sufijo }}</span>
                     }
                     <button type="button" (click)="iniciarEdicion(config)" aria-label="Editar"
-                      class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant hover:text-primary transition-colors cursor-pointer">
+                      class="w-8 h-8 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant hover:text-primary transition-colors cursor-pointer">
                       <span class="material-symbols-outlined text-[18px]">edit</span>
                     </button>
                   </div>
@@ -68,11 +68,11 @@
                       class="w-32 md:w-44 h-9 px-sm rounded border border-primary bg-white font-body-sm text-body-sm text-on-surface">
                     <button type="button" [disabled]="!puedeGuardarValor"
                       (click)="guardarValor()" aria-label="Guardar"
-                      class="w-9 h-9 rounded-full flex items-center justify-center bg-primary text-on-primary hover:bg-on-primary-fixed-variant transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                      class="w-9 h-9 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center bg-primary text-on-primary hover:bg-on-primary-fixed-variant transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                       <span class="material-symbols-outlined text-[18px]">check</span>
                     </button>
                     <button type="button" (click)="cancelarEdicion()" aria-label="Cancelar"
-                      class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer">
+                      class="w-9 h-9 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer">
                       <span class="material-symbols-outlined text-[18px]">close</span>
                     </button>
                   </div>
@@ -103,7 +103,8 @@
       </div>
       <p class="font-body-sm text-body-sm text-on-surface-variant sm:ml-[52px]">Gestiona categorías y tipos de daño. Cada tipo tiene costo FIJO ($) o PORCENTAJE del precio del libro.</p>
       <div class="flex items-center gap-sm mt-md sm:ml-[52px]">
-        <input [(ngModel)]="nuevoCategoriaNombre" type="text" placeholder="Nueva categoría (ej. Leve)"
+        <label for="nueva-categoria" class="sr-only">Nueva categoría</label>
+        <input [(ngModel)]="nuevoCategoriaNombre" id="nueva-categoria" type="text" placeholder="Nueva categoría (ej. Leve)"
           class="flex-1 max-w-[240px] h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm">
         <button type="button" (click)="agregarCategoriaDano()" [disabled]="!puedeAgregarCategoria"
           class="h-9 px-md rounded bg-secondary text-on-secondary font-label-sm text-label-sm flex items-center gap-xs hover:opacity-90 disabled:opacity-50 cursor-pointer">
@@ -144,11 +145,11 @@
                     <span class="font-headline-md text-[18px] text-on-background font-semibold">${{ tipo.valor.toFixed(2) }}</span>
                   }
                   <button type="button" (click)="iniciarEdicionTipoDano(tipo)" aria-label="Editar"
-                    class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant hover:text-primary transition-colors cursor-pointer">
+                    class="w-8 h-8 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant hover:text-primary transition-colors cursor-pointer">
                     <span class="material-symbols-outlined text-[18px]">edit</span>
                   </button>
                   <button type="button" (click)="eliminarTipoDano(tipo)" aria-label="Eliminar"
-                    class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-error-container text-on-surface-variant hover:text-error transition-colors cursor-pointer">
+                    class="w-8 h-8 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center hover:bg-error-container text-on-surface-variant hover:text-error transition-colors cursor-pointer">
                     <span class="material-symbols-outlined text-[18px]">delete</span>
                   </button>
                 </div>
@@ -157,30 +158,34 @@
                   <span class="material-symbols-outlined text-[20px] text-primary">edit</span>
                 </div>
                 <div class="flex-1 flex flex-wrap items-center gap-sm min-w-[200px]">
-                  <input [(ngModel)]="editandoTipoDano!.nombre" [ngModelOptions]="{standalone: true}" type="text"
+                  <label for="tipo-dano-nombre" class="sr-only">Nombre</label>
+                  <input [(ngModel)]="editandoTipoDano!.nombre" id="tipo-dano-nombre" [ngModelOptions]="{standalone: true}" type="text"
                     placeholder="Nombre" class="flex-1 min-w-[140px] h-9 px-sm rounded border border-primary bg-white font-body-sm text-body-sm">
-                  <select [(ngModel)]="editandoTipoDano!.categoriaId" [ngModelOptions]="{standalone: true}"
+                  <label for="tipo-dano-categoria" class="sr-only">Categoría</label>
+                  <select [(ngModel)]="editandoTipoDano!.categoriaId" id="tipo-dano-categoria" [ngModelOptions]="{standalone: true}"
                     class="w-32 h-9 px-sm rounded border border-primary bg-white font-body-sm text-body-sm">
                     @for (cat of categoriasDano; track cat.id) { <option [ngValue]="cat.id">{{ cat.nombre }}</option> }
                   </select>
-                  <select [(ngModel)]="editandoTipoDano!.tipoCosto" [ngModelOptions]="{standalone: true}"
+                  <label for="tipo-dano-costo" class="sr-only">Tipo de costo</label>
+                  <select [(ngModel)]="editandoTipoDano!.tipoCosto" id="tipo-dano-costo" [ngModelOptions]="{standalone: true}"
                     class="w-28 h-9 px-sm rounded border border-primary bg-white font-body-sm text-body-sm">
                     <option value="FIJO">FIJO</option>
                     <option value="PORCENTAJE">PORCENTAJE</option>
                   </select>
                   <div class="flex items-center gap-xs w-24 shrink-0">
                     <span class="text-on-surface-variant text-[14px] font-medium shrink-0">{{ editandoTipoDano!.tipoCosto === 'PORCENTAJE' ? '%' : '$' }}</span>
-                    <input [(ngModel)]="editandoTipoDano!.valor" [ngModelOptions]="{standalone: true}" type="number" min="0" [max]="editandoTipoDano!.tipoCosto === 'PORCENTAJE' ? 100 : null" step="0.01"
+                    <label for="tipo-dano-valor" class="sr-only">Valor</label>
+                    <input [(ngModel)]="editandoTipoDano!.valor" id="tipo-dano-valor" [ngModelOptions]="{standalone: true}" type="number" min="0" [max]="editandoTipoDano!.tipoCosto === 'PORCENTAJE' ? 100 : null" step="0.01"
                       placeholder="0.00" class="w-full h-9 px-sm rounded border border-primary bg-white font-body-sm text-body-sm">
                   </div>
                 </div>
                 <div class="flex items-center gap-xs shrink-0">
                   <button type="button" (click)="guardarTipoDano()" aria-label="Guardar"
-                    class="w-9 h-9 rounded-full flex items-center justify-center bg-primary text-on-primary hover:bg-on-primary-fixed-variant transition-colors cursor-pointer">
+                    class="w-9 h-9 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center bg-primary text-on-primary hover:bg-on-primary-fixed-variant transition-colors cursor-pointer">
                     <span class="material-symbols-outlined text-[18px]">check</span>
                   </button>
                   <button type="button" (click)="cancelarEdicionTipoDano()" aria-label="Cancelar"
-                    class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer">
+                    class="w-9 h-9 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer">
                     <span class="material-symbols-outlined text-[18px]">close</span>
                   </button>
                 </div>
@@ -194,19 +199,23 @@
               <span class="material-symbols-outlined text-[20px] text-on-surface">add_circle</span>
             </div>
             <div class="flex-1 flex flex-wrap items-center gap-sm min-w-[200px]">
-              <input [(ngModel)]="nuevoTipoDanoNombre" type="text" placeholder="Nombre del nuevo tipo"
+              <label for="nuevo-tipo-nombre" class="sr-only">Nombre del nuevo tipo</label>
+              <input [(ngModel)]="nuevoTipoDanoNombre" id="nuevo-tipo-nombre" type="text" placeholder="Nombre del nuevo tipo"
                 class="flex-1 min-w-[140px] h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm">
-              <select [(ngModel)]="nuevoTipoDanoCategoriaId" class="w-32 h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm">
+              <label for="nuevo-tipo-categoria" class="sr-only">Categoría</label>
+              <select [(ngModel)]="nuevoTipoDanoCategoriaId" id="nuevo-tipo-categoria" class="w-32 h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm">
                 <option [ngValue]="null" disabled>Categoría</option>
                 @for (cat of categoriasDano; track cat.id) { <option [ngValue]="cat.id">{{ cat.nombre }}</option> }
               </select>
-              <select [(ngModel)]="nuevoTipoDanoTipoCosto" class="w-28 h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm">
+              <label for="nuevo-tipo-costo" class="sr-only">Tipo de costo</label>
+              <select [(ngModel)]="nuevoTipoDanoTipoCosto" id="nuevo-tipo-costo" class="w-28 h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm">
                 <option value="FIJO">FIJO</option>
                 <option value="PORCENTAJE">PORCENTAJE</option>
               </select>
               <div class="flex items-center gap-xs w-24 shrink-0">
                 <span class="text-on-surface-variant text-[14px] font-medium shrink-0">{{ nuevoTipoDanoTipoCosto === 'PORCENTAJE' ? '%' : '$' }}</span>
-                <input [(ngModel)]="nuevoTipoDanoValor" type="number" min="0" [max]="nuevoTipoDanoTipoCosto === 'PORCENTAJE' ? 100 : null" step="0.01" placeholder="0.00"
+                <label for="nuevo-tipo-valor" class="sr-only">Valor</label>
+                <input [(ngModel)]="nuevoTipoDanoValor" id="nuevo-tipo-valor" type="number" min="0" [max]="nuevoTipoDanoTipoCosto === 'PORCENTAJE' ? 100 : null" step="0.01" placeholder="0.00"
                   class="w-full h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm">
               </div>
             </div>

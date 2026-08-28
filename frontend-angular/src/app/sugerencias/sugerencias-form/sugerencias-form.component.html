@@ -11,10 +11,11 @@
 
     <form [formGroup]="form" (ngSubmit)="enviar()" class="rounded-xl glass-panel p-xl space-y-md">
       <div class="space-y-xs">
+        <label for="sugerencia-titulo" class="sr-only">Título</label>
         <label class="font-label-sm text-label-sm text-on-surface">Título <span class="text-error">*</span></label>
         <div class="rounded border border-outline-variant bg-surface">
-          <input type="text" formControlName="titulo" maxlength="255" placeholder="Ej: Designing Data-Intensive Applications"
-            class="w-full bg-transparent border-none focus:ring-0 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+          <input type="text" id="sugerencia-titulo" formControlName="titulo" maxlength="255" placeholder="Ej: Designing Data-Intensive Applications"
+            class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
         </div>
         <p class="font-label-sm text-[11px] text-on-surface-variant">Máximo 255 caracteres</p>
         @if (campoInvalido('titulo')) {
@@ -23,10 +24,11 @@
       </div>
 
       <div class="space-y-xs">
+        <label for="sugerencia-autor" class="sr-only">Autor</label>
         <label class="font-label-sm text-label-sm text-on-surface">Autor</label>
         <div class="rounded border border-outline-variant bg-surface">
-          <input type="text" formControlName="autor" maxlength="150" placeholder="Ej: Martin Kleppmann"
-            class="w-full bg-transparent border-none focus:ring-0 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+          <input type="text" id="sugerencia-autor" formControlName="autor" maxlength="150" placeholder="Ej: Martin Kleppmann"
+            class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
         </div>
       </div>
 
@@ -34,7 +36,7 @@
         <label class="font-label-sm text-label-sm text-on-surface">ISBN</label>
         <div class="rounded border border-outline-variant bg-surface">
           <input type="text" formControlName="isbn" maxlength="13" placeholder="978-1449373320"
-            class="w-full bg-transparent border-none focus:ring-0 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+            class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
         </div>
         <p class="font-label-sm text-[11px] text-on-surface-variant">Formato numérico, 10 a 17 caracteres con guiones opcionales</p>
         @if (campoInvalido('isbn')) {
@@ -43,10 +45,11 @@
       </div>
 
       <div class="space-y-xs">
+        <label for="sugerencia-justificacion" class="sr-only">Justificación</label>
         <label class="font-label-sm text-label-sm text-on-surface">Justificación</label>
         <div class="rounded border border-outline-variant bg-surface">
-          <textarea formControlName="justificacion" rows="3" maxlength="1000" placeholder="¿Por qué la biblioteca debería adquirir este título?"
-            class="w-full bg-transparent border-none focus:ring-0 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline resize-none"></textarea>
+          <textarea id="sugerencia-justificacion" formControlName="justificacion" rows="3" maxlength="1000" placeholder="¿Por qué la biblioteca debería adquirir este título?"
+            class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline resize-none"></textarea>
         </div>
         <p class="font-label-sm text-[11px] text-on-surface-variant text-right">{{ form.get('justificacion')?.value?.length ?? 0 }} / 1000</p>
       </div>

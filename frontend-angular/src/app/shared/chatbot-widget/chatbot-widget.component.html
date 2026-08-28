@@ -39,7 +39,7 @@
     </div>
 
     <!-- Mensajes -->
-    <div class="flex-1 overflow-y-auto p-md space-y-sm bg-surface">
+    <div role="log" aria-live="polite" class="flex-1 overflow-y-auto p-md space-y-sm bg-surface">
       @if (mensajes.length === 0) {
         <div class="flex gap-xs items-end">
           <div class="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
@@ -102,7 +102,8 @@
 
     <!-- Input -->
     <div class="p-sm border-t border-outline-variant flex items-center gap-xs shrink-0 bg-white">
-      <input type="text" [(ngModel)]="textoMensaje"
+      <label for="chat-input" class="sr-only">Escribí tu mensaje</label>
+      <input id="chat-input" type="text" [(ngModel)]="textoMensaje"
         (keyup.enter)="enviar()"
         [disabled]="cargando"
         placeholder="Escribí tu mensaje..."

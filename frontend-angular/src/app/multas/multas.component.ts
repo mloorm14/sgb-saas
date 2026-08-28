@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
@@ -348,5 +348,18 @@ export class MultasComponent implements OnInit {
     this.filtroActivo = 'TODOS';
     this.errorMsg = '';
     this.exitoMsg = '';
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.confirmacionVisible) {
+      this.cerrarConfirmacion();
+    } else if (this.confirmacionAnulacionVisible) {
+      this.cerrarConfirmacionAnulacion();
+    } else if (this.modalPagoVisible) {
+      this.cerrarModalPago();
+    } else if (this.modalAnulacionVisible) {
+      this.cerrarModalAnulacion();
+    }
   }
 }

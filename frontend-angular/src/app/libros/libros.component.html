@@ -21,13 +21,13 @@
   <!-- ─── FORMULARIO INLINE ─── -->
   @if (mostrarFormulario) {
     <div class="mb-md">
-      <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">
+      <h2 id="titulo-form-libro" class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">
         {{ modoEdicion ? 'Editar libro' : 'Nuevo libro' }}
       </h2>
       <p class="font-body-sm text-body-sm text-on-surface-variant mb-lg">Completá los datos para agregarlo al catálogo</p>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="guardarLibro()">
+    <form [formGroup]="form" (ngSubmit)="guardarLibro()" role="dialog" aria-modal="true" attr.aria-labelledby="titulo-form-libro">
       <div class="flex flex-col xl:flex-row gap-xl">
 
         <!-- ══ COLUMNA IZQUIERDA: Portada + Stock ══ -->
@@ -44,7 +44,8 @@
                 <span class="font-body-sm text-body-sm text-on-surface-variant/60 text-center px-sm">Portada del libro</span>
               </div>
             }
-            <input type="file" accept="image/png,image/jpeg,image/webp,image/avif"
+            <label for="portada-upload" class="sr-only">Subir portada</label>
+            <input type="file" accept="image/png,image/jpeg,image/webp,image/avif" id="portada-upload"
               (change)="onArchivoPortadaSeleccionado($event)"
               class="mt-sm w-full text-body-sm text-on-surface-variant file:mr-sm file:h-9 file:px-sm file:rounded file:border-0 file:bg-primary-fixed file:text-on-primary-fixed-variant file:cursor-pointer" />
             <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">JPG / JPEG / PNG / WebP / AVIF</p>
@@ -133,7 +134,8 @@
                 </div>
               }
               <div class="relative flex items-center gap-1">
-                <input type="text" [(ngModel)]="textoIdioma" [ngModelOptions]="{standalone: true}"
+                <label for="buscar-idioma" class="sr-only">Buscar idioma</label>
+                <input type="text" [(ngModel)]="textoIdioma" [ngModelOptions]="{standalone: true}" id="buscar-idioma"
                   (keydown)="onKeydownIdioma($event)"
                   (focus)="textoIdioma.trim().length >=1 && (mostrarSugerenciasIdioma = true)"
                   placeholder="Buscar idioma..."
@@ -203,10 +205,11 @@
                   }
                 </div>
                 <div class="relative flex items-center gap-1">
-                  <input type="text" [(ngModel)]="textoAutor" [ngModelOptions]="{standalone: true}"
+                  <label for="buscar-autor" class="sr-only">Buscar autor</label>
+                  <input type="text" [(ngModel)]="textoAutor" [ngModelOptions]="{standalone: true}" id="buscar-autor"
                     (keydown)="onKeydownAutor($event)"
                     placeholder="Buscar autor..."
-                    class="flex-1 min-w-0 h-8 px-sm rounded font-body-sm text-body-sm outline-none border border-transparent" />
+                    class="flex-1 min-w-0 h-8 px-sm rounded font-body-sm text-body-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 border border-transparent" />
                   <button type="button" (click)="buscarAutorManualmente()" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
                     <span class="material-symbols-outlined text-[16px]">search</span>
                   </button>
@@ -251,10 +254,11 @@
                   }
                 </div>
                 <div class="relative flex items-center gap-1">
-                  <input type="text" [(ngModel)]="textoCategoria" [ngModelOptions]="{standalone: true}"
+                  <label for="buscar-categoria" class="sr-only">Buscar categoría</label>
+                  <input type="text" [(ngModel)]="textoCategoria" [ngModelOptions]="{standalone: true}" id="buscar-categoria"
                     (keydown)="onKeydownCategoria($event)"
                     placeholder="Buscar categoría..."
-                    class="flex-1 min-w-0 h-8 px-sm rounded font-body-sm text-body-sm outline-none border border-transparent" />
+                    class="flex-1 min-w-0 h-8 px-sm rounded font-body-sm text-body-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 border border-transparent" />
                   <button type="button" (click)="buscarCategoriaManualmente()" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
                     <span class="material-symbols-outlined text-[16px]">search</span>
                   </button>
@@ -300,7 +304,8 @@
                 </div>
               }
               <div class="relative flex items-center gap-1">
-                <input type="text" [(ngModel)]="textoEditorial" [ngModelOptions]="{standalone: true}"
+                <label for="buscar-editorial" class="sr-only">Buscar editorial</label>
+                <input type="text" [(ngModel)]="textoEditorial" [ngModelOptions]="{standalone: true}" id="buscar-editorial"
                   (keydown)="onKeydownEditorial($event)"
                   placeholder="Buscar editorial..."
                   class="flex-1 min-w-0 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
@@ -361,19 +366,22 @@
     <div class="flex flex-wrap items-center gap-sm mb-md">
       <div class="relative flex-1 min-w-[200px]">
         <span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
-        <input type="text" [ngModel]="textoBusqueda"
+        <label for="busqueda-libros" class="sr-only">Buscar por título o ISBN</label>
+        <input type="text" [ngModel]="textoBusqueda" id="busqueda-libros"
           (ngModelChange)="onBusquedaTexto($event)"
           placeholder="Buscar por título o ISBN..."
           class="w-full h-10 pl-[36px] pr-sm rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm focus:outline-none focus:border-primary" />
       </div>
-      <select (change)="filtrarPorCategoria()" [(ngModel)]="categoriaFiltro"
+      <label for="filtro-cat-libros" class="sr-only">Categoría</label>
+      <select (change)="filtrarPorCategoria()" [(ngModel)]="categoriaFiltro" id="filtro-cat-libros"
         class="h-10 px-sm pr-8 rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer">
         <option value="">Categorías</option>
         @for (categoria of categorias; track categoria.id) {
           <option [value]="categoria.id">{{ categoria.nombre }}</option>
         }
       </select>
-      <select (change)="filtrarPorEstado()" [(ngModel)]="estadoLibroFiltro"
+      <label for="filtro-estado-libros" class="sr-only">Estado</label>
+      <select (change)="filtrarPorEstado()" [(ngModel)]="estadoLibroFiltro" id="filtro-estado-libros"
         class="h-10 px-sm pr-8 rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer">
         <option [ngValue]="null">Estados</option>
         @for (estado of estados; track estado.id) {
@@ -435,7 +443,8 @@
     <div class="flex flex-wrap justify-between items-center mt-lg gap-sm">
       <div class="flex items-center gap-xs font-body-sm text-body-sm">
         <span class="text-on-surface-variant">Mostrar</span>
-        <select [ngModel]="pageSize" (ngModelChange)="cambiarTamanoPage($event)" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-white cursor-pointer appearance-none text-xs leading-tight py-1.5">
+        <label for="page-size-libros" class="sr-only">Elementos por página</label>
+        <select [ngModel]="pageSize" (ngModelChange)="cambiarTamanoPage($event)" id="page-size-libros" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-white cursor-pointer appearance-none text-xs leading-tight py-1.5">
           <option [ngValue]="10">10</option>
           <option [ngValue]="20">20</option>
           <option [ngValue]="30">30</option>
@@ -469,10 +478,30 @@
     </div>
   }
 
+  <!-- ─── MODAL CONFIRMACIÓN ─── -->
+  @if (confirmacionVisible) {
+    <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" (click)="cancelarConfirmacion()">
+      <div role="alertdialog" aria-modal="true" aria-labelledby="titulo-confirmacion"
+           class="bg-surface rounded-xl shadow-xl p-xl max-w-sm w-full" (click)="$event.stopPropagation()">
+        <h3 id="titulo-confirmacion" class="font-headline-md text-headline-md text-on-surface mb-md">{{ confirmacionMensaje }}</h3>
+        <div class="flex gap-sm justify-end">
+          <button (click)="cancelarConfirmacion()"
+                  class="px-4 py-2 rounded-full font-label-lg text-label-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer">
+            Cancelar
+          </button>
+          <button (click)="confirmarAccion()"
+                  class="px-4 py-2 rounded-full font-label-lg text-label-lg bg-error text-white hover:bg-error/80 transition-colors cursor-pointer">
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
   <!-- ─── MODAL PORTADA ─── -->
   @if (portadaModalVisible) {
     <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
-      (click)="cerrarPortada()">
+      role="dialog" aria-modal="true" (click)="cerrarPortada()">
       <!-- Overlay -->
       <div class="absolute inset-0 bg-black/60"></div>
       <!-- Contenido -->

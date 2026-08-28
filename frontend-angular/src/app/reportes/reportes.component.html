@@ -173,7 +173,8 @@
     <div class="flex flex-wrap gap-sm mb-sm items-end">
       <div>
         <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Buscar</label>
-        <input type="text" [(ngModel)]="busquedaInventario" placeholder="Título, ISBN o autor"
+        <label for="busqueda-reporte" class="sr-only">Título, ISBN o autor</label>
+        <input type="text" id="busqueda-reporte" [(ngModel)]="busquedaInventario" placeholder="Título, ISBN o autor"
           class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white w-48" />
       </div>
       <div>
@@ -265,12 +266,14 @@
     <div class="flex flex-wrap gap-sm mb-sm items-end">
       <div>
         <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Buscar</label>
-        <input type="text" [(ngModel)]="busquedaVencidos" placeholder="Usuario o libro"
+        <label for="busqueda-prestamos" class="sr-only">Usuario o libro</label>
+        <input type="text" id="busqueda-prestamos" [(ngModel)]="busquedaVencidos" placeholder="Usuario o libro"
           class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white w-48" />
       </div>
       <div>
         <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Días de atraso mín.</label>
-        <input type="number" [(ngModel)]="diasAtrasoMin" min="0" placeholder="0"
+        <label for="limite-prestamos" class="sr-only">Límite</label>
+        <input type="number" id="limite-prestamos" [(ngModel)]="diasAtrasoMin" min="0" placeholder="0"
           class="h-9 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white w-24" />
       </div>
       <button (click)="filtrarVencidos()"
@@ -334,7 +337,8 @@
     <div class="flex flex-wrap gap-sm mb-sm items-end">
       <div>
         <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Los mejores</label>
-        <input type="number" min="1" max="100" [(ngModel)]="limiteCategorias" (ngModelChange)="filtrarCategorias()"
+        <label for="limite-categorias" class="sr-only">Límite</label>
+        <input type="number" id="limite-categorias" min="1" max="100" [(ngModel)]="limiteCategorias" (ngModelChange)="filtrarCategorias()"
           class="h-9 w-20 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
       </div>
     </div>

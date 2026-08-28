@@ -2,7 +2,7 @@
 
   <!-- Toast de confirmación de reserva (mockup 16) -->
   @if (toastMsg) {
-    <div class="fixed top-20 left-1/2 -translate-x-1/2 bg-success text-white px-md py-sm rounded shadow-lg flex items-center gap-sm z-50">
+    <div role="status" aria-live="polite" class="fixed top-20 left-1/2 -translate-x-1/2 bg-success text-white px-md py-sm rounded shadow-lg flex items-center gap-sm z-50">
       <span class="material-symbols-outlined text-[18px]">event_available</span>
       <span class="font-label-md text-label-sm">{{ toastMsg }}</span>
     </div>
@@ -17,10 +17,11 @@
   <div class="relative mb-md max-w-xl">
     <div class="rounded border border-outline-variant bg-white flex items-center px-sm glass-panel">
       <span class="material-symbols-outlined text-outline text-[20px] mr-xs">search</span>
-      <input type="text" placeholder="Ej: estructuras de datos"
+      <label for="busqueda-catalogo" class="sr-only">Buscar libros</label>
+      <input type="text" id="busqueda-catalogo" placeholder="Ej: estructuras de datos"
         [(ngModel)]="textoBusqueda"
         (ngModelChange)="onBusquedaChange()"
-        class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+        class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
     </div>
     @if (sugerencias.length > 0) {
       <div class="absolute mt-xs w-full bg-white rounded shadow-lg border border-outline-variant overflow-hidden z-10">
@@ -41,14 +42,16 @@
 
   <!-- Filtros por categoria/autor (CategoriaService/AutorService reales) -->
   <div class="flex flex-wrap gap-sm mb-lg">
-    <select (change)="onCategoriaChange($event)"
+    <label for="filtro-categoria" class="sr-only">Categoría</label>
+    <select id="filtro-categoria" (change)="onCategoriaChange($event)"
       class="rounded border border-outline-variant bg-white text-body-sm text-on-surface pl-sm pr-lg py-xs cursor-pointer">
       <option value="">Todas las categorías</option>
       @for (categoria of categorias; track categoria.id) {
         <option [value]="categoria.id">{{ categoria.nombre }}</option>
       }
     </select>
-    <select (change)="onAutorChange($event)"
+    <label for="filtro-autor" class="sr-only">Autor</label>
+    <select id="filtro-autor" (change)="onAutorChange($event)"
       class="rounded border border-outline-variant bg-white text-body-sm text-on-surface pl-sm pr-lg py-xs cursor-pointer">
       <option value="">Todos los autores</option>
       @for (autor of autores; track autor.id) {
@@ -58,7 +61,7 @@
   </div>
 
   @if (errorMsg) {
-    <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
+    <p role="alert" class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
   }
 
   @if (cargando && libros.length === 0) {

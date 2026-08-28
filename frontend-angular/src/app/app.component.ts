@@ -20,11 +20,15 @@ interface EnlaceNav {
     styleUrl: './app.component.scss'
 })
 export class AppComponent {
-  title = 'frontend-angular';
+  title = 'SGB-SaaS';
   mostrarMenuUsuario = false;
   enRutaBibliotecario = false;
   enRutaAdmin = false;
   enRutaLector = false;
+  rutaAnnouncement = '';
+  confirmacionVisible = false;
+  confirmacionMensaje = '';
+  confirmacionPendiente: (() => void) | null = null;
 
   constructor(
     private authService: AuthService,
@@ -37,6 +41,7 @@ export class AppComponent {
       this.enRutaBibliotecario = url.startsWith('/dashboard-bibliotecario');
       this.enRutaAdmin = url.startsWith('/dashboard-admin');
       this.enRutaLector = url.startsWith('/dashboard-lector');
+      this.rutaAnnouncement = this.obtenerNombreRuta(url);
     });
   }
 
@@ -96,6 +101,33 @@ export class AppComponent {
     { ruta: '/dashboard-gerente', etiqueta: 'Dashboard', icono: 'dashboard', roles: ['GERENTE'] }
   ];
 
+  private obtenerNombreRuta(url: string): string {
+    const ruta = url.split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
+    const mapa: Record<string, string> = {
+      '/': 'Inicio',
+      '/catalogo': 'Catálogo de libros',
+      '/favoritos': 'Mis favoritos',
+      '/sugerencias': 'Sugerencias',
+      '/notificaciones': 'Notificaciones',
+      '/prestamos': 'Mis préstamos',
+      '/prestamos/gestion': 'Gestión de préstamos',
+      '/reservaciones': 'Reservaciones',
+      '/multas': 'Multas',
+      '/libros': 'Inventario de libros',
+      '/reportes': 'Reportes',
+      '/auditoria': 'Auditoría',
+      '/login': 'Iniciar sesión',
+    };
+    if (mapa[ruta]) return mapa[ruta];
+    if (ruta.startsWith('/dashboard-admin/admin/usuarios')) return 'Gestión de usuarios';
+    if (ruta.startsWith('/dashboard-admin/admin/configuracion')) return 'Configuración del sistema';
+    if (ruta.startsWith('/dashboard-admin')) return 'Panel de administración';
+    if (ruta.startsWith('/dashboard-bibliotecario')) return 'Panel de bibliotecario';
+    if (ruta.startsWith('/dashboard-gerente')) return 'Dashboard del gerente';
+    if (ruta.startsWith('/dashboard-lector')) return 'Panel del lector';
+    return 'Página';
+  }
+
   estaLogueado(): boolean {
     return this.authService.isLoggedIn();
   }
@@ -112,11 +144,30 @@ export class AppComponent {
     return this.authService.hasRole(...(enlace.roles ?? []));
   }
 
+  mostrarConfirmacion(mensaje: string, accion: () => void) {
+    this.confirmacionMensaje = mensaje;
+    this.confirmacionPendiente = accion;
+    this.confirmacionVisible = true;
+  }
+
+  confirmarAccion() {
+    this.confirmacionVisible = false;
+    if (this.confirmacionPendiente) {
+      this.confirmacionPendiente();
+      this.confirmacionPendiente = null;
+    }
+  }
+
+  cancelarConfirmacion() {
+    this.confirmacionVisible = false;
+    this.confirmacionPendiente = null;
+  }
+
   cerrarSesion(): void {
     this.mostrarMenuUsuario = false;
-    if (confirm('¿Seguro que quieres cerrar sesión?')) {
+    this.mostrarConfirmacion('¿Seguro que quieres cerrar sesión?', () => {
       this.authService.logout();
-    }
+    });
   }
 
   get correoUsuario(): string {

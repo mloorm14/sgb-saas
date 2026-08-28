@@ -1,12 +1,14 @@
 <div class="relative max-w-md">
   <div class="rounded border border-outline-variant bg-white flex items-center px-sm">
     <span class="material-symbols-outlined text-outline text-[20px] mr-xs">search</span>
+    <label for="buscador-libro" class="sr-only">Buscar libro</label>
     <input
+      id="buscador-libro"
       type="text"
       [(ngModel)]="texto"
       (ngModelChange)="onBusquedaChange()"
       placeholder="Buscar libro por título..."
-      class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline"
+      class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline"
     />
     @if (buscando) {
       <span class="material-symbols-outlined text-outline text-[16px] animate-spin">progress_activity</span>
