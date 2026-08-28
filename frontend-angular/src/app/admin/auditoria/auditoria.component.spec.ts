@@ -11,7 +11,7 @@ describe('AuditoriaComponent', () => {
 
   const pagina = {
     content: [
-      { id: 1, usuario: 'admin@sgb-saas.local', accion: 'UPDATE', fechaHora: '2026-08-16T15:02:00Z', modulo: 'usuarios', detalle: 'Cambio de rol' },
+      { id: 1, usuario: 'admin@sgb-saas.local', accion: 'UPDATE', fechaHora: '2026-08-16T15:02:00Z', modulo: 'usuarios', detalle: '{"nombre":"Ana","rol":"ADMIN"}' },
       { id: 2, usuario: null, accion: 'LOGIN_FAIL', fechaHora: '2026-08-16T14:58:00Z', modulo: 'usuarios', detalle: 'Intento con correo desconocido' },
       { id: 3, usuario: 'u@uteq.edu.ec', accion: 'LOGIN_OK', fechaHora: '2026-08-16T14:40:00Z', modulo: 'usuarios', detalle: null }
     ],
@@ -46,10 +46,10 @@ describe('AuditoriaComponent', () => {
     expect(component.eventos.length).toBe(3);
   });
 
-  it('muestra "—" cuando el usuario del evento es null (Javadoc de EventoAuditoriaResponseDTO)', () => {
+  it('identifica eventos del sistema cuando usuario es null', () => {
     component.abrirHistorial('usuarios');
-    expect(component.usuarioLabel(component.eventos[1])).toBe('—');
-    expect(component.usuarioLabel(component.eventos[0])).toBe('admin@sgb-saas.local');
+    expect(component.esSistema(component.eventos[1])).toBeTrue();
+    expect(component.esSistema(component.eventos[0])).toBeFalse();
   });
 
   it('aplica filtros y vuelve a la primera página', () => {
@@ -70,6 +70,46 @@ describe('AuditoriaComponent', () => {
       page: 0,
       size: 20
     });
+  });
+
+  it('aplica filtro de día con rango completo', () => {
+    component.filtroDia = '2026-08-16';
+
+    component.filtrar();
+
+    expect(auditoriaService.listar).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        desde: '2026-08-16T00:00:00.000Z',
+        hasta: '2026-08-16T23:59:59.999Z'
+      })
+    );
+  });
+
+  it('aplica filtro de día + hora con ventana de 1 minuto', () => {
+    component.filtroDia = '2026-08-16';
+    component.filtroHora = '14:58';
+
+    component.filtrar();
+
+    expect(auditoriaService.listar).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        desde: '2026-08-16T14:58:00.000Z',
+        hasta: '2026-08-16T14:58:59.999Z'
+      })
+    );
+  });
+
+  it('limpia todos los filtros con limpiarFiltros', () => {
+    component.filtroDia = '2026-08-16';
+    component.filtroHora = '10:00';
+    component.filtroModulo = 'usuarios';
+
+    component.limpiarFiltros();
+
+    expect(component.filtroDia).toBe('');
+    expect(component.filtroHora).toBe('');
+    expect(component.filtroModulo).toBe('');
+    expect(component.currentPage).toBe(0);
   });
 
   it('limpia el chip de usuario y vuelve a buscar sin filtro de usuario', () => {
@@ -106,5 +146,29 @@ describe('AuditoriaComponent', () => {
     expect(component.moduloLabel('sugerencias_adquisicion')).toBe('Sugerencias de adquisición');
     expect(component.moduloLabel('usuarios')).toBe('Usuarios');
     expect(component.moduloLabel('otro_modulo')).toBe('otro modulo');
+  });
+
+  it('abre y cierra el modal de detalle', () => {
+    const evento = component.eventos[0];
+    component.abrirDetalle(evento);
+    expect(component.modalVisible).toBeTrue();
+    expect(component.eventoSeleccionado).toBe(evento);
+
+    component.cerrarDetalle();
+    expect(component.modalVisible).toBeFalse();
+    expect(component.eventoSeleccionado).toBeNull();
+  });
+
+  it('formatea JSON válido para el modal', () => {
+    component.eventoSeleccionado = { id: 1, usuario: 'admin', accion: 'UPDATE', fechaHora: '2026-08-16T15:02:00Z', modulo: 'usuarios', detalle: '{"nombre":"Ana","rol":"ADMIN"}' };
+    const json = component.detalleFormateado();
+    expect(json).toContain('"nombre"');
+    expect(json).toContain('"Ana"');
+  });
+
+  it('maneja JSON inválido en detalleFormateado', () => {
+    component.eventoSeleccionado = { id: 2, usuario: null, accion: 'LOGIN_FAIL', fechaHora: '2026-08-16T14:58:00Z', modulo: 'usuarios', detalle: 'Intento con correo desconocido' };
+    const json = component.detalleFormateado();
+    expect(json).toBe('Intento con correo desconocido');
   });
 });
