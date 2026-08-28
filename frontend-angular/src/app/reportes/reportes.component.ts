@@ -94,6 +94,8 @@ export class ReportesComponent {
   // Inventario
   busquedaInventario = '';
   estadoStock = '';
+  inventarioPage = 0;
+  inventarioPageSize = 10;
 
   // Vencidos
   vencidosCorreo = '';
@@ -152,6 +154,7 @@ export class ReportesComponent {
       case 'inventario':
         this.busquedaInventario = '';
         this.estadoStock = '';
+        this.inventarioPage = 0;
         break;
       case 'vencidos':
         this.vencidosCorreo = '';
@@ -225,10 +228,39 @@ export class ReportesComponent {
     this.reporteService.inventario(undefined, this.estadoStock || undefined, this.busquedaInventario.trim() || undefined).subscribe({
       next: (inventario) => {
         this.inventario = inventario;
+        this.inventarioPage = 0;
         this.cargando = false;
       },
       error: (err) => this.fallar(err)
     });
+  }
+
+  // ── Paginación inventario (igual que libros) ──
+  get inventarioTotalPages(): number {
+    return Math.max(1, Math.ceil(this.inventario.length / this.inventarioPageSize));
+  }
+  get inventarioPaginado(): ReporteInventario[] {
+    const start = this.inventarioPage * this.inventarioPageSize;
+    return this.inventario.slice(start, start + this.inventarioPageSize);
+  }
+  get inventarioPaginasVisibles(): number[] {
+    const windowSize = 4;
+    let start = Math.max(0, this.inventarioPage - 1);
+    let end = Math.min(this.inventarioTotalPages, start + windowSize);
+    if (end - start < windowSize) start = Math.max(0, end - windowSize);
+    return Array.from({ length: end - start }, (_, i) => start + i);
+  }
+  get puedeInvAnterior(): boolean { return this.inventarioPage > 0; }
+  get puedeInvSiguiente(): boolean { return this.inventarioPage < this.inventarioTotalPages - 1; }
+  irAInventarioPage(p: number): void {
+    if (p < 0 || p >= this.inventarioTotalPages || p === this.inventarioPage) return;
+    this.inventarioPage = p;
+  }
+  paginaAnteriorInventario(): void { if (this.puedeInvAnterior) this.inventarioPage--; }
+  paginaSiguienteInventario(): void { if (this.puedeInvSiguiente) this.inventarioPage++; }
+  cambiarTamanoInventario(n: number): void {
+    this.inventarioPageSize = Number(n);
+    this.inventarioPage = 0;
   }
 
   private cargarVencidos(): void {
