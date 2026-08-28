@@ -9,6 +9,11 @@ interface EnlaceSidebar {
   icono: string;
 }
 
+interface SeccionSidebar {
+  titulo: string;
+  enlaces: EnlaceSidebar[];
+}
+
 @Component({
   selector: 'app-dashboard-lector',
   standalone: true,
@@ -18,11 +23,12 @@ interface EnlaceSidebar {
 export class DashboardLectorComponent implements OnInit {
   mostrarMenuUsuario = false;
   isCollapsed = signal(false);
+  seccionesExpandidas = signal<Set<string>>(new Set());
 
   // Rutas 100% LECTOR ya existentes (FavoritoController y
   // SugerenciaAdquisicionController exigen hasRole('LECTOR'); el resto
   // admite LECTOR). Espejo del navbar de lector de app.component.
-  secciones = [
+  secciones: SeccionSidebar[] = [
     {
       titulo: 'BIBLIOTECA',
       enlaces: [
@@ -30,7 +36,7 @@ export class DashboardLectorComponent implements OnInit {
         { ruta: '/dashboard-lector/prestamos', etiqueta: 'Mis Préstamos', icono: 'menu_book' },
         { ruta: '/dashboard-lector/reservaciones', etiqueta: 'Reservaciones', icono: 'event_available' },
         { ruta: '/dashboard-lector/multas', etiqueta: 'Multas', icono: 'payments' },
-      ] as EnlaceSidebar[]
+      ]
     },
     {
       titulo: 'MI CUENTA',
@@ -39,7 +45,7 @@ export class DashboardLectorComponent implements OnInit {
         { ruta: '/dashboard-lector/sugerencias', etiqueta: 'Sugerencias', icono: 'lightbulb' },
         { ruta: '/dashboard-lector/notificaciones', etiqueta: 'Notificaciones', icono: 'notifications' },
         { ruta: '/dashboard-lector/mi-credencial', etiqueta: 'Mi Credencial', icono: 'qr_code_2' },
-      ] as EnlaceSidebar[]
+      ]
     }
   ];
 
@@ -50,6 +56,15 @@ export class DashboardLectorComponent implements OnInit {
     const saved = localStorage.getItem('sidebar:collapsed');
     if (saved !== null) {
       this.isCollapsed.set(saved === 'true');
+    }
+    // Restaurar secciones expandidas
+    const savedSecciones = localStorage.getItem('sidebar:secciones-expandidas');
+    if (savedSecciones) {
+      try { this.seccionesExpandidas.set(new Set(JSON.parse(savedSecciones))); } catch {}
+    }
+    // Default: todas expandidas si no hay guardado
+    if (this.seccionesExpandidas().size === 0) {
+      this.seccionesExpandidas.set(new Set(this.secciones.map(s => s.titulo)));
     }
   }
 
@@ -68,6 +83,19 @@ export class DashboardLectorComponent implements OnInit {
   toggleSidebar(): void {
     this.isCollapsed.update(v => !v);
     localStorage.setItem('sidebar:collapsed', String(this.isCollapsed()));
+  }
+
+  toggleSeccion(titulo: string): void {
+    this.seccionesExpandidas.update(set => {
+      const nuevo = new Set(set);
+      nuevo.has(titulo) ? nuevo.delete(titulo) : nuevo.add(titulo);
+      localStorage.setItem('sidebar:secciones-expandidas', JSON.stringify([...nuevo]));
+      return nuevo;
+    });
+  }
+
+  estaExpandida(titulo: string): boolean {
+    return this.seccionesExpandidas().has(titulo);
   }
 
   get correoUsuario(): string {
