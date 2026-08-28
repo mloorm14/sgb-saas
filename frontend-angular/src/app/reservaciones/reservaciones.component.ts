@@ -1,4 +1,4 @@
-﻿import { Component, OnInit, OnDestroy } from '@angular/core';
+﻿import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -504,5 +504,12 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
     this.portadaModalVisible = false;
     this.portadaModalUrl = null;
     this.portadaModalCargando = false;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.portadaModalVisible) {
+      this.cerrarPortada();
+    }
   }
 }

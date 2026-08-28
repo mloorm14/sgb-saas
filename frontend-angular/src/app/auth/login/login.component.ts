@@ -58,6 +58,7 @@ export class LoginComponent implements OnInit {
   }
 
   submit() {
+    this.form.markAllAsTouched();
     if (this.form.invalid) return;
     this.cargando = true;
     this.errorMsg = '';

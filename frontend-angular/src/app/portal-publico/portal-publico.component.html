@@ -28,13 +28,15 @@
     <div class="flex gap-sm items-stretch flex-wrap">
       <div class="flex-1 min-w-[200px] rounded border border-outline-variant bg-white flex items-center px-sm glass-panel">
         <span class="material-symbols-outlined text-outline text-[20px] mr-xs">search</span>
-        <input type="text" placeholder="Buscar por título..."
+        <label for="busqueda-portal" class="sr-only">Buscar por título</label>
+        <input type="text" id="busqueda-portal" placeholder="Buscar por título..."
           [(ngModel)]="textoBusqueda"
           (ngModelChange)="onBusquedaChange()"
           (keyup.enter)="buscarPorNombre()"
-          class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-md text-body-md text-on-surface placeholder-outline" />
+          class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 py-sm font-body-md text-body-md text-on-surface placeholder-outline" />
       </div>
-      <select (change)="onCategoriaChange($any($event.target).value ? +$any($event.target).value : null)"
+      <label for="filtro-categoria-portal" class="sr-only">Categoría</label>
+      <select id="filtro-categoria-portal" (change)="onCategoriaChange($any($event.target).value ? +$any($event.target).value : null)"
         class="h-10 min-w-[220px] pl-sm pr-xl rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface cursor-pointer relative z-10">
         <option [value]="''">Todas las categorías</option>
         @for (cat of categorias; track cat.id) {

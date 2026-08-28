@@ -27,10 +27,10 @@ describe('AppComponent', () => {
     expect(app).toBeTruthy();
   });
 
-  it(`should have the 'frontend-angular' title`, () => {
+  it(`should have the 'SGB-SaaS' title`, () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
-    expect(app.title).toEqual('frontend-angular');
+    expect(app.title).toEqual('SGB-SaaS');
   });
 
   it('should render the router outlet', () => {
@@ -48,7 +48,6 @@ describe('AppComponent', () => {
   });
 
   it('muestra los enlaces del LECTOR y cierra sesion via dropdown', () => {
-    spyOn(window, 'confirm').and.returnValue(true);
     authService.isLoggedIn.and.returnValue(true);
     authService.hasRole.and.callFake((...roles: string[]) => roles.includes('LECTOR'));
     authService.getCorreo.and.returnValue('lector@uteq.edu.ec');
@@ -71,6 +70,13 @@ describe('AppComponent', () => {
     const botonCerrar = Array.from(compiled.querySelectorAll('button'))
       .find(b => b.textContent?.includes('Cerrar sesión'));
     botonCerrar?.click();
+    fixture.detectChanges();
+
+    // El modal de confirmación accesible reemplazó a window.confirm
+    const botonConfirmar = Array.from(compiled.querySelectorAll('button'))
+      .find(b => b.textContent?.includes('Confirmar'));
+    botonConfirmar?.click();
+    fixture.detectChanges();
 
     expect(authService.logout).toHaveBeenCalled();
   });

@@ -19,7 +19,7 @@
 
   @if (esLector) {
     @if (errorMsg) {
-      <div class="rounded-lg bg-error-container text-on-error-container font-body-sm text-body-sm p-sm mb-lg">{{ errorMsg }}</div>
+      <div role="alert" class="rounded-lg bg-error-container text-on-error-container font-body-sm text-body-sm p-sm mb-lg">{{ errorMsg }}</div>
     }
     @if (cargando) {
       <div class="text-center py-md font-body-sm text-body-sm text-on-surface-variant">Cargando reservaciones...</div>
@@ -95,13 +95,13 @@
 
           <!-- Mensajes -->
           @if (exitoMsg) {
-            <div class="rounded-lg bg-green-50 border border-green-200 text-green-700 font-body-sm text-body-sm p-sm mb-md flex items-center gap-sm">
+            <div role="status" class="rounded-lg bg-green-50 border border-green-200 text-green-700 font-body-sm text-body-sm p-sm mb-md flex items-center gap-sm">
               <span class="material-symbols-outlined text-[18px]">check_circle</span>
               {{ exitoMsg }}
             </div>
           }
           @if (errorMsgAccion) {
-            <div class="rounded-lg bg-red-50 border border-red-200 text-red-700 font-body-sm text-body-sm p-sm mb-md flex items-center gap-sm">
+            <div role="alert" class="rounded-lg bg-red-50 border border-red-200 text-red-700 font-body-sm text-body-sm p-sm mb-md flex items-center gap-sm">
               <span class="material-symbols-outlined text-[18px]">error</span>
               {{ errorMsgAccion }}
             </div>
@@ -114,6 +114,11 @@
               <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] pointer-events-none">search</span>
               <input
                 type="text"
+                role="combobox"
+                [attr.aria-expanded]="mostrarSugerenciasCorreo && sugerenciasCorreo.length > 0"
+                aria-controls="reservaciones-correo-listbox"
+                aria-autocomplete="list"
+                [attr.aria-activedescendant]="indiceActivoCorreo >= 0 ? 'reservaciones-correo-option-' + indiceActivoCorreo : null"
                 [(ngModel)]="correoBusqueda"
                 (ngModelChange)="onInputCorreo()"
                 (keydown)="onKeydownCorreo($event)"
@@ -127,10 +132,16 @@
             <!-- Dropdown sugerencias -->
             @if (mostrarSugerenciasCorreo && sugerenciasCorreo.length > 0) {
               <div class="mt-1 mb-8 relative z-20 max-w-4xl">
-                <ul class="bg-surface-container-lowest border border-outline-variant/50 rounded-2xl shadow-lg overflow-hidden">
+                <ul id="reservaciones-correo-listbox"
+                    role="listbox"
+                    aria-label="Sugerencias de usuarios"
+                    class="bg-surface-container-lowest border border-outline-variant/50 rounded-2xl shadow-lg overflow-hidden">
                   @for (sugerencia of sugerenciasCorreo; track sugerencia.id; let i = $index) {
                     <li>
                       <button type="button"
+                        role="option"
+                        [id]="'reservaciones-correo-option-' + i"
+                        [attr.aria-selected]="i === indiceActivoCorreo"
                         (mousedown)="$event.preventDefault()"
                         (click)="seleccionarSugerenciaCorreo(sugerencia)"
                         class="w-full text-left px-6 py-4 hover:bg-surface-container-low flex items-center justify-between gap-3 transition-colors"
@@ -158,7 +169,7 @@
             }
 
             @if (errorBusqueda) {
-              <div class="mt-sm rounded-lg bg-red-50 border border-red-200 text-red-700 font-body-sm text-body-sm p-sm flex items-center justify-between">
+              <div role="alert" class="mt-sm rounded-lg bg-red-50 border border-red-200 text-red-700 font-body-sm text-body-sm p-sm flex items-center justify-between">
                 <span class="flex items-center gap-sm">
                   <span class="material-symbols-outlined text-[16px]">error</span>
                   {{ errorBusqueda }}
@@ -326,7 +337,8 @@
   <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
     (click)="cerrarPortada()">
     <div class="absolute inset-0 bg-black/60"></div>
-    <div class="relative z-10 max-w-lg w-full bg-white rounded-xl shadow-xl overflow-hidden"
+    <div role="dialog" aria-modal="true" aria-label="Portada del libro"
+      class="relative z-10 max-w-lg w-full bg-white rounded-xl shadow-xl overflow-hidden"
       (click)="$event.stopPropagation()">
       <div class="relative bg-surface-container-low flex items-center justify-center"
         style="min-height: 300px; max-height: 70vh;">

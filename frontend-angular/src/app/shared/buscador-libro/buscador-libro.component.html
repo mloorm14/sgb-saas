@@ -1,12 +1,20 @@
 <div class="relative max-w-md">
   <div class="rounded border border-outline-variant bg-white flex items-center px-sm">
     <span class="material-symbols-outlined text-outline text-[20px] mr-xs">search</span>
+    <label for="buscador-libro" class="sr-only">Buscar libro</label>
     <input
+      id="buscador-libro"
       type="text"
       [(ngModel)]="texto"
       (ngModelChange)="onBusquedaChange()"
+      (keydown)="onKeydown($event)"
       placeholder="Buscar libro por título..."
-      class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline"
+      role="combobox"
+      [attr.aria-expanded]="sugerencias.length > 0"
+      aria-controls="buscador-libro-listbox"
+      aria-autocomplete="list"
+      [attr.aria-activedescendant]="indiceActivo >= 0 ? 'buscador-libro-option-' + indiceActivo : null"
+      class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline"
     />
     @if (buscando) {
       <span class="material-symbols-outlined text-outline text-[16px] animate-spin">progress_activity</span>
@@ -14,18 +22,20 @@
   </div>
 
   @if (sugerencias.length > 0) {
-    <div class="absolute mt-xs w-full bg-white rounded shadow-lg border border-outline-variant overflow-hidden z-10">
-      @for (libro of sugerencias; track libro.id) {
-        <button
-          type="button"
-          (click)="seleccionar(libro)"
-          class="w-full text-left px-md py-sm hover:bg-surface-container-low font-body-sm text-body-sm text-on-surface">
-          {{ libro.titulo }}
-          @if (!libro.disponible) {
-            <span class="text-outline font-label-sm text-[11px] ml-xs">· sin stock</span>
-          }
-        </button>
+    <ul id="buscador-libro-listbox" role="listbox" aria-label="Sugerencias de libros" class="absolute mt-xs w-full bg-white rounded shadow-lg border border-outline-variant overflow-hidden z-10">
+      @for (libro of sugerencias; track libro.id; let i = $index) {
+        <li [id]="'buscador-libro-option-' + i" role="option" [attr.aria-selected]="i === indiceActivo">
+          <button
+            type="button"
+            (click)="seleccionar(libro)"
+            class="w-full text-left px-md py-sm hover:bg-surface-container-low font-body-sm text-body-sm text-on-surface">
+            {{ libro.titulo }}
+            @if (!libro.disponible) {
+              <span class="text-outline font-label-sm text-[11px] ml-xs">· sin stock</span>
+            }
+          </button>
+        </li>
       }
-    </div>
+    </ul>
   }
 </div>

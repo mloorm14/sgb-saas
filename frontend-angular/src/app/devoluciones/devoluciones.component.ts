@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
@@ -366,6 +366,15 @@ export class DevolucionesComponent implements OnInit, OnDestroy {
   eliminarEvidencia(evidencia: EvidenciaLocal): void {
     URL.revokeObjectURL(evidencia.previewUrl);
     this.evidencias = this.evidencias.filter(e => e.id !== evidencia.id);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.evidenciaPreviewVisible) {
+      this.cerrarPreviewEvidencia();
+    } else if (this.portadaModalVisible) {
+      this.cerrarPortada();
+    }
   }
 
   private async subirEvidenciasAlServidor(registroDanoId: number): Promise<void> {

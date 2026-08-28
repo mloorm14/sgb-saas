@@ -21,13 +21,13 @@
 
   <!-- Mensajes -->
   @if (errorMsg) {
-    <div class="rounded-lg bg-red-50 border border-red-200 p-md mb-md flex items-center gap-sm">
+    <div role="alert" class="rounded-lg bg-red-50 border border-red-200 p-md mb-md flex items-center gap-sm">
       <span class="material-symbols-outlined text-red-500 text-[20px]">error</span>
       <p class="font-body-sm text-body-sm text-red-700">{{ errorMsg }}</p>
     </div>
   }
   @if (exitoMsg) {
-    <div class="rounded-lg bg-green-50 border border-green-200 p-md mb-md flex items-center gap-sm">
+    <div role="status" class="rounded-lg bg-green-50 border border-green-200 p-md mb-md flex items-center gap-sm">
       <span class="material-symbols-outlined text-green-500 text-[20px]">check_circle</span>
       <p class="font-body-sm text-body-sm text-green-700">{{ exitoMsg }}</p>
     </div>
@@ -191,12 +191,12 @@
       @if (totalPages > 1) {
         <div class="flex justify-center items-center gap-md font-body-sm text-body-sm mt-lg">
           <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
-            class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
+            class="w-8 h-8 min-w-[44px] min-h-[44px] rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
             <span class="material-symbols-outlined text-[18px]">chevron_left</span>
           </button>
           @for (pagina of paginasVisibles; track pagina) {
             <button (click)="irAPagina(pagina)"
-              class="w-8 h-8 rounded font-label-sm text-label-sm cursor-pointer"
+              class="w-8 h-8 min-w-[44px] min-h-[44px] rounded font-label-sm text-label-sm cursor-pointer"
               [class.bg-primary]="pagina === currentPage"
               [class.text-on-primary]="pagina === currentPage"
               [class.hover:bg-surface-container-low]="pagina !== currentPage"
@@ -205,7 +205,7 @@
             </button>
           }
           <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
-            class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
+            class="w-8 h-8 min-w-[44px] min-h-[44px] rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
             <span class="material-symbols-outlined text-[18px]">chevron_right</span>
           </button>
         </div>
@@ -216,12 +216,13 @@
   <!-- ═══ Modal Pago ═══ -->
   @if (modalPagoVisible && multaPagoActual) {
     <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
+      role="dialog" aria-modal="true" attr.aria-labelledby="titulo-pago"
       (click)="cerrarModalPago()">
       <div class="absolute inset-0 bg-black/40"></div>
       <div class="relative z-10 max-w-md w-full bg-white rounded-xl shadow-xl overflow-hidden"
         (click)="$event.stopPropagation()">
         <div class="p-lg">
-          <h2 class="font-headline-md text-headline-md text-on-background mb-lg">Realizar pago</h2>
+          <h2 id="titulo-pago" class="font-headline-md text-headline-md text-on-background mb-lg">Realizar pago</h2>
 
           <!-- Total a pagar -->
           <div class="bg-surface-container-low rounded-lg p-md flex justify-between items-center mb-lg">
@@ -230,8 +231,8 @@
           </div>
 
           <!-- Monto recibido -->
-          <label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">Monto Recibido ($)</label>
-          <input type="number" [(ngModel)]="montoRecibido"
+          <label for="monto-recibido" class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">Monto Recibido ($)</label>
+          <input id="monto-recibido" type="number" [(ngModel)]="montoRecibido"
             min="0" step="0.01"
             class="w-full h-12 px-md rounded-lg border border-outline-variant bg-white font-body-lg text-lg text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 mb-md" />
 
@@ -287,12 +288,13 @@
   <!-- ═══ Diálogo Confirmación ═══ -->
   @if (confirmacionVisible) {
     <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
+      role="dialog" aria-modal="true" attr.aria-labelledby="titulo-confirmacion-pago"
       (click)="cerrarConfirmacion()">
       <div class="absolute inset-0 bg-black/40"></div>
       <div class="relative z-10 max-w-sm w-full bg-white rounded-xl shadow-xl p-lg text-center"
         (click)="$event.stopPropagation()">
         <span class="material-symbols-outlined text-amber-500 text-[48px] block mb-sm">help</span>
-        <h3 class="font-headline-sm text-headline-sm text-on-background mb-sm">¿Estás seguro de confirmar el pago?</h3>
+        <h3 id="titulo-confirmacion-pago" class="font-headline-sm text-headline-sm text-on-background mb-sm">¿Estás seguro de confirmar el pago?</h3>
         <p class="font-body-sm text-body-sm text-on-surface-variant mb-lg">
           Se registrará un pago de <strong>${{ montoRecibido.toFixed(2) }}</strong> y se enviará el comprobante por correo al usuario.
         </p>
@@ -314,6 +316,7 @@
   <!-- ═══ Modal Anulación ═══ -->
   @if (modalAnulacionVisible && multaAnulacionActual) {
     <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
+      role="dialog" aria-modal="true" attr.aria-labelledby="titulo-anulacion"
       (click)="cerrarModalAnulacion()">
       <div class="absolute inset-0 bg-black/40"></div>
       <div class="relative z-10 max-w-md w-full bg-white rounded-xl shadow-xl overflow-hidden"
@@ -321,7 +324,7 @@
         <div class="p-lg">
           <div class="flex items-center gap-sm mb-lg">
             <span class="material-symbols-outlined text-red-500 text-[28px]">block</span>
-            <h2 class="font-headline-md text-headline-md text-on-background">Anular Multa</h2>
+            <h2 id="titulo-anulacion" class="font-headline-md text-headline-md text-on-background">Anular Multa</h2>
           </div>
 
           <!-- Info de la multa -->
@@ -332,8 +335,8 @@
           </div>
 
           <!-- Motivo -->
-          <label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">Motivo de anulación *</label>
-          <textarea [(ngModel)]="motivoAnulacion" rows="4" placeholder="Describe el motivo de la anulación..."
+          <label for="motivo-anulacion" class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">Motivo de anulación *</label>
+          <textarea id="motivo-anulacion" [(ngModel)]="motivoAnulacion" rows="4" placeholder="Describe el motivo de la anulación..."
             class="w-full px-md py-sm rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface resize-y focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 mb-md"></textarea>
 
           <!-- Botones -->
@@ -356,12 +359,13 @@
   <!-- ═══ Diálogo Confirmación Anulación ═══ -->
   @if (confirmacionAnulacionVisible) {
     <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
+      role="dialog" aria-modal="true" attr.aria-labelledby="titulo-confirmacion-anulacion"
       (click)="cerrarConfirmacionAnulacion()">
       <div class="absolute inset-0 bg-black/40"></div>
       <div class="relative z-10 max-w-sm w-full bg-white rounded-xl shadow-xl p-lg text-center"
         (click)="$event.stopPropagation()">
         <span class="material-symbols-outlined text-red-500 text-[48px] block mb-sm">warning</span>
-        <h3 class="font-headline-sm text-headline-sm text-on-background mb-sm">¿Anular esta multa?</h3>
+        <h3 id="titulo-confirmacion-anulacion" class="font-headline-sm text-headline-sm text-on-background mb-sm">¿Anular esta multa?</h3>
         <p class="font-body-sm text-body-sm text-on-surface-variant mb-lg">
           La multa de <strong>${{ multaAnulacionActual!.saldo.toFixed(2) }}</strong> será anulada. Esta acción no se puede deshacer.
         </p>

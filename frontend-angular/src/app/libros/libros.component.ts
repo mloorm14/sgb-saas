@@ -78,6 +78,10 @@ export class LibrosComponent implements OnInit, OnDestroy {
   anioMax: number = new Date().getFullYear() + 1;
   esGerenteAdmin: boolean = false;
 
+  confirmacionVisible = false;
+  confirmacionMensaje = '';
+  confirmacionPendiente: (() => void) | null = null;
+
   private busqueda$ = new Subject<string>();
   private destroy$ = new Subject<void>();
 
@@ -837,11 +841,31 @@ export class LibrosComponent implements OnInit, OnDestroy {
     });
   }
 
+  mostrarConfirmacion(mensaje: string, accion: () => void) {
+    this.confirmacionMensaje = mensaje;
+    this.confirmacionPendiente = accion;
+    this.confirmacionVisible = true;
+  }
+
+  confirmarAccion() {
+    this.confirmacionVisible = false;
+    if (this.confirmacionPendiente) {
+      this.confirmacionPendiente();
+      this.confirmacionPendiente = null;
+    }
+  }
+
+  cancelarConfirmacion() {
+    this.confirmacionVisible = false;
+    this.confirmacionPendiente = null;
+  }
+
   eliminarLibro(id: number): void {
-    if (!confirm('¿Está seguro de eliminar este libro?')) return;
-    this.libroService.eliminar(id).subscribe({
-      next: () => { this.cargarLibros(); },
-      error: () => { this.errorMsg = 'Error al eliminar el libro'; }
+    this.mostrarConfirmacion('¿Está seguro de eliminar este libro?', () => {
+      this.libroService.eliminar(id).subscribe({
+        next: () => { this.cargarLibros(); },
+        error: () => { this.errorMsg = 'Error al eliminar el libro'; }
+      });
     });
   }
 
@@ -868,6 +892,17 @@ export class LibrosComponent implements OnInit, OnDestroy {
     this.portadaModalVisible = false;
     this.portadaModalUrl = null;
     this.portadaModalCargando = false;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.confirmacionVisible) {
+      this.cancelarConfirmacion();
+    } else if (this.portadaModalVisible) {
+      this.cerrarPortada();
+    } else if (this.mostrarFormulario) {
+      this.cerrarFormulario();
+    }
   }
 
 }

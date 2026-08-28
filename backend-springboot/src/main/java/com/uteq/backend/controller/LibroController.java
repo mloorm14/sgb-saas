@@ -72,7 +72,7 @@ public class LibroController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) Integer anioPublicacion,
             @RequestParam(required = false) List<Integer> estadoIds,
-            @PageableDefault(size = 10) @SortDefault(sort = "fechaRegistro", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 10) @SortDefault(sort = "fecha_registro", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(libroService.listarPendientes(q, anioPublicacion, estadoIds, pageable));
     }
 
