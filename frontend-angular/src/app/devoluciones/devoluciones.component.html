@@ -254,7 +254,7 @@
                 </div>
 
                 <!-- Daños custom -->
-                @for (dano of danosSeleccionados; track $index; let i = $index) {
+                @for (dano of danosSeleccionados; track dano; let i = $index) {
                   @if (dano.tipoDanoId === null) {
                     <div class="flex items-center gap-sm mt-sm py-sm border-b border-outline-variant/50">
                       <label for="dano-custom" class="sr-only">Nombre del daño</label>
@@ -380,14 +380,14 @@
               </div>
             }
             @if (estadoDevolucion === 'CON_DANO' && totalDano > 0) {
-              @for (dano of danosSeleccionados; track $index) {
+              @for (dano of danosSeleccionados; track dano) {
                 <div class="flex justify-between items-center py-sm">
                   <span class="font-body-sm text-body-sm text-on-surface">
                     Penalidad por daño
                     @if (dano.tipoDanoId !== null) {
-                      ({{ tiposDano.find(t => t.id === dano.tipoDanoId)?.nombre ?? 'Daño' }})
+                      {{ getNombreDano(dano) }}
                     } @else {
-                      ({{ dano.nombreCustom || 'Personalizado' }})
+                      {{ dano.nombreCustom || 'Personalizado' }}
                     }
                   </span>
                   <span class="font-semibold text-on-surface">${{ dano.precioCobrado.toFixed(2) }}</span>

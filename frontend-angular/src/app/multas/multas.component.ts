@@ -10,6 +10,7 @@ import { UsuarioPrestamos, UsuarioSugerencia } from '../core/models/prestamos-ge
 import { BuscadorUsuarioComponent } from '../shared/buscador-usuario/buscador-usuario.component';
 
 @Component({
+  standalone: true,
   selector: 'app-multas',
   imports: [CommonModule, FormsModule, BuscadorUsuarioComponent],
   templateUrl: './multas.component.html'

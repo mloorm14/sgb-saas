@@ -10,6 +10,7 @@ import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.com
 // tienePortada/portadaNombre, así que la portada se intenta cargar igual y
 // PortadaLibroComponent cae al placeholder si el backend responde 404.
 @Component({
+  standalone: true,
   selector: 'app-favoritos',
   imports: [CommonModule, RouterLink, PortadaLibroComponent],
   templateUrl: './favoritos.component.html'
