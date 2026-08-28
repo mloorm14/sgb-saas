@@ -56,7 +56,7 @@ class="flex items-center gap-sm py-sm mx-sm mb-sm rounded-lg font-body-sm text-b
 
     <!-- Usuario -->
     <div class="relative border-t border-outline-variant px-lg py-md" data-menu-usuario-sidebar>
-      <button (click)="mostrarMenuUsuario = !mostrarMenuUsuario"
+      <button #btnUsuario (click)="mostrarMenuUsuario = !mostrarMenuUsuario"
         class="w-full flex items-center gap-sm cursor-pointer" [class.justify-center]="isCollapsed()">
         <span class="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-sm text-label-sm shrink-0">{{ inicialesUsuario }}</span>
         @if (!isCollapsed()) {
@@ -71,13 +71,26 @@ class="flex items-center gap-sm py-sm mx-sm mb-sm rounded-lg font-body-sm text-b
       </button>
 
       @if (mostrarMenuUsuario) {
-        <div class="absolute bottom-full left-2 right-2 mb-xs bg-white rounded-xl border border-outline-variant shadow-lg overflow-hidden z-30">
-          <button (click)="cerrarSesion()"
-            class="w-full flex items-center gap-sm px-md py-sm text-left font-body-sm text-body-sm text-error hover:bg-error-container/40 transition-colors cursor-pointer whitespace-nowrap">
-            <span class="material-symbols-outlined text-[18px]">logout</span>
-            Cerrar sesión
-          </button>
-        </div>
+        <!-- Dropdown expandido: absoluto dentro del sidebar -->
+        @if (!isCollapsed()) {
+          <div class="absolute bottom-full left-2 right-2 mb-xs bg-white rounded-xl border border-outline-variant shadow-lg overflow-hidden z-30">
+            <button (click)="cerrarSesion()"
+              class="w-full flex items-center gap-sm px-md py-sm text-left font-body-sm text-body-sm text-error hover:bg-error-container/40 transition-colors cursor-pointer whitespace-nowrap">
+              <span class="material-symbols-outlined text-[18px]">logout</span>
+              Cerrar sesión
+            </button>
+          </div>
+        }
+        <!-- Dropdown colapsado: fixed posicionado en viewport -->
+        @if (isCollapsed()) {
+          <div class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-white rounded-xl border border-outline-variant shadow-lg overflow-hidden z-50 min-w-[200px] max-w-[90vw]">
+            <button (click)="cerrarSesion()"
+              class="w-full flex items-center gap-sm px-md py-sm text-left font-body-sm text-body-sm text-error hover:bg-error-container/40 transition-colors cursor-pointer whitespace-nowrap">
+              <span class="material-symbols-outlined text-[18px]">logout</span>
+              Cerrar sesión
+            </button>
+          </div>
+        }
       }
     </div>
   </aside>

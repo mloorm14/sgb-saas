@@ -182,7 +182,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
 
   iniciarEdicion(config: ParametroConfiguracion): void {
     this.claveEditando = config.clave;
-    this.valorEditando = config.valor;
+    this.valorEditando = config.valor ?? '';
   }
 
   cancelarEdicion(): void {
@@ -191,7 +191,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
   }
 
   get puedeGuardarValor(): boolean {
-    const valor = this.valorEditando.trim();
+    const valor = (this.valorEditando ?? '').trim();
     if (this.claveEditando === 'correo_dominios_permitidos') {
       return valor.length <= this.valorMaxLength;
     }
@@ -210,7 +210,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
 
   guardarValor(): void {
     if (!this.claveEditando) return;
-    const valor = this.valorEditando.trim();
+    const valor = (this.valorEditando ?? '').trim();
     // correo_dominios_permitidos permite vacío = acepta todos los dominios
     const permiteVacio = this.claveEditando === 'correo_dominios_permitidos';
     if (!permiteVacio && (!valor || valor.length > VALOR_MAX_LENGTH)) return;
