@@ -23,6 +23,7 @@ interface SeccionSidebar {
 export class DashboardGerenteAdminComponent implements OnInit {
   mostrarMenuUsuario = false;
   isCollapsed = signal(false);
+  seccionesExpandidas = signal<Set<string>>(new Set());
 
   // Espejo de los @PreAuthorize reales verificados en backend-springboot:
   // - /libros: todo el staff opera el inventario (LibroController).
@@ -68,6 +69,15 @@ export class DashboardGerenteAdminComponent implements OnInit {
     if (saved !== null) {
       this.isCollapsed.set(saved === 'true');
     }
+    // Restaurar secciones expandidas
+    const savedSecciones = localStorage.getItem('sidebar:secciones-expandidas');
+    if (savedSecciones) {
+      try { this.seccionesExpandidas.set(new Set(JSON.parse(savedSecciones))); } catch {}
+    }
+    // Default: todas expandidas si no hay guardado
+    if (this.seccionesExpandidas().size === 0) {
+      this.seccionesExpandidas.set(new Set(this.secciones.map(s => s.titulo)));
+    }
   }
 
   isMobile(): boolean {
@@ -81,6 +91,19 @@ export class DashboardGerenteAdminComponent implements OnInit {
   toggleSidebar(): void {
     this.isCollapsed.update(v => !v);
     localStorage.setItem('sidebar:collapsed', String(this.isCollapsed()));
+  }
+
+  toggleSeccion(titulo: string): void {
+    this.seccionesExpandidas.update(set => {
+      const nuevo = new Set(set);
+      nuevo.has(titulo) ? nuevo.delete(titulo) : nuevo.add(titulo);
+      localStorage.setItem('sidebar:secciones-expandidas', JSON.stringify([...nuevo]));
+      return nuevo;
+    });
+  }
+
+  estaExpandida(titulo: string): boolean {
+    return this.seccionesExpandidas().has(titulo);
   }
 
   @HostListener('document:click', ['$event'])
