@@ -83,15 +83,11 @@ export class DashboardBibliotecarioComponent implements OnInit {
   toggleSidebar(): void {
     this.isCollapsed.update(v => !v);
     localStorage.setItem('sidebar:collapsed', String(this.isCollapsed()));
-    if (!this.isCollapsed()) {
-      this.mostrarMenuUsuario = false;
-    }
+    if (this.isCollapsed()) { this.mostrarMenuUsuario = false; }
   }
 
   onClickMenuUsuario(): void {
-    if (!this.isCollapsed()) {
-      return;
-    }
+    if (this.isCollapsed()) { return; }
     this.mostrarMenuUsuario = !this.mostrarMenuUsuario;
   }
 

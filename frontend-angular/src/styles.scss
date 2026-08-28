@@ -6,10 +6,17 @@
 // generan un segundo scrollbar y el contenido se sale del marco.
 html, body, app-root {
   height: 100%;
+  overflow: hidden;
 }
 
 app-root {
   display: block;
+}
+
+// Páginas dentro del dashboard no deben crear scroll propio: el scroll
+// lo maneja main#contenido-principal. Evita doble scrollbar.
+main#contenido-principal + * {
+  min-width: 0;
 }
 
 // Fuentes auto-hospedadas (NO Google Fonts): los woff2 viven en
