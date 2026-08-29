@@ -398,10 +398,14 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
     this.exitoMsg = '';
     this.errorMsgAccion = '';
 
+    const tzOffset = -new Date().getTimezoneOffset();
+    const sign = tzOffset >= 0 ? '+' : '-';
+    const pad = (n: number) => String(Math.floor(Math.abs(n))).padStart(2, '0');
+    const tz = `${sign}${pad(tzOffset / 60)}:${pad(tzOffset % 60)}`;
     const request: ReservacionRequest = {
       usuarioId: this.usuario.id,
       libroId: this.libroSeleccionado.id,
-      fechaRetiro: new Date(this.fechaRetiro + 'T12:00:00').toISOString()
+      fechaRetiro: `${this.fechaRetiro}T12:00:00${tz}`
     };
 
     this.reservacionService.crear(request).subscribe({

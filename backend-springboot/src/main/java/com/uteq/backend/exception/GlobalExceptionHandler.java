@@ -247,6 +247,12 @@ public class GlobalExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ProblemDetail handleIllegalState(IllegalStateException ex) {
+        log.warn("Estado ilegal de negocio", ex);
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     // Los SPs con efectos secundarios (sp_crear_prestamo, sp_registrar_devolucion,
     // sp_pagar_multa, sp_anular_multa, sp_expirar_reservaciones_vencidas) lanzan
     // RAISE EXCEPTION ... USING ERRCODE = 'LBxxx' (ver docs/basedatos/CATALOGO-SP.md).
