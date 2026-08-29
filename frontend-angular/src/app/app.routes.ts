@@ -140,8 +140,8 @@ export const routes: Routes = [
   // Rama F (panel administrativo): gestión de usuarios -- listado ADMIN/GERENTE,
   // PATCH de rol/estado solo ADMIN (UsuarioAdminController real).
   { path: 'admin/usuarios', component: UsuariosComponent, canActivate: [authGuard, roleGuard(['ADMIN', 'GERENTE'])] },
-  // Auditoría: bitácora de eventos, GERENTE/ADMIN (AuditoriaController real).
-  { path: 'auditoria', component: AuditoriaComponent, canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])] },
+  // Auditoría: bitácora de eventos, solo ADMIN.
+  { path: 'auditoria', component: AuditoriaComponent, canActivate: [authGuard, roleGuard(['ADMIN'])] },
   // Notificaciones: todas las roles autenticadas ven sus propias notificaciones
   // (el controller valida que solo veas las tuyas).
   { path: 'notificaciones', component: NotificacionesComponent, canActivate: [authGuard] },

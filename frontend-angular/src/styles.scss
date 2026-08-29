@@ -2,15 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-// El dashboard usa altura 100% + overflow interno. Sin esto, html/body
-// generan un segundo scrollbar y el contenido se sale del marco.
-html, body, app-root {
+html, body {
   height: 100%;
-  overflow: hidden;
 }
 
 app-root {
+  height: 100%;
   display: block;
+  overflow-y: auto;
 }
 
 // Páginas dentro del dashboard no deben crear scroll propio: el scroll

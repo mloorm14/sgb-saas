@@ -93,7 +93,7 @@ describe('AppComponent', () => {
     expect(compiled.textContent).toContain('Reportes');
   });
 
-  it('GERENTE ve reportes, sugerencias y auditoría pero NO usuarios', () => {
+  it('GERENTE ve reportes y sugerencias pero NO usuarios ni auditoría', () => {
     authService.isLoggedIn.and.returnValue(true);
     authService.hasRole.and.callFake((...roles: string[]) => roles.includes('GERENTE'));
 
@@ -104,7 +104,7 @@ describe('AppComponent', () => {
     expect(compiled.textContent).toContain('Reportes');
     expect(compiled.textContent).toContain('Sugerencias');
     expect(compiled.textContent).not.toContain('Usuarios');
-    expect(compiled.textContent).toContain('Auditoría');
+    expect(compiled.textContent).not.toContain('Auditoría');
     expect(compiled.textContent).not.toContain('Mis Préstamos');
   });
 

@@ -76,7 +76,8 @@ export class AppComponent {
   // - /prestamos/gestion, /reservaciones, /multas: BIBLIOTECARIO/GERENTE
   //   (ADMIN no tiene endpoints en esos controllers).
   // - /reportes: BIBLIOTECARIO/GERENTE (el ADMIN no entra).
-  // - /sugerencias/gestion, /admin/usuarios, /auditoria: GERENTE/ADMIN.
+  // - /sugerencias/gestion, /admin/usuarios: GERENTE/ADMIN.
+  // - /auditoria: solo ADMIN.
   // - /admin/configuracion: solo ADMIN (ConfiguracionSistemaController,
   //   @PreAuthorize a nivel de clase) -- antes vivía como botón ad-hoc
   //   dentro de LibrosComponent (no había navbar compartido todavía);
@@ -97,7 +98,7 @@ export class AppComponent {
     { ruta: '/reportes', etiqueta: 'Reportes', icono: 'bar_chart', roles: ['BIBLIOTECARIO', 'GERENTE'] },
     { ruta: '/sugerencias/gestion', etiqueta: 'Sugerencias', icono: 'lightbulb', roles: ['GERENTE', 'ADMIN'] },
     { ruta: '/admin/usuarios', etiqueta: 'Usuarios', icono: 'manage_accounts', roles: ['ADMIN'] },
-    { ruta: '/auditoria', etiqueta: 'Auditoría', icono: 'receipt_long', roles: ['GERENTE', 'ADMIN'] },
+    { ruta: '/auditoria', etiqueta: 'Auditoría', icono: 'receipt_long', roles: ['ADMIN'] },
     { ruta: '/admin/configuracion', etiqueta: 'Configuración', icono: 'settings', roles: ['ADMIN'] },
     { ruta: '/dashboard-gerente', etiqueta: 'Dashboard', icono: 'dashboard', roles: ['GERENTE'] }
   ];
