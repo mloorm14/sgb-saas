@@ -137,7 +137,8 @@ export class CatalogoComponent implements OnInit, OnDestroy {
     const libro = this.libroParaReservar;
     this.mostrarModalReserva = false;
     const usuarioId = this.authService.getUserId();
-    const fechaRetiroISO = this.fechaRetiro ? this.fechaRetiro + 'T00:00:00' : undefined;
+    const tzOffset = new Date().toISOString().slice(-6);
+    const fechaRetiroISO = this.fechaRetiro ? `${this.fechaRetiro}T00:00:00${tzOffset}` : undefined;
     this.reservacionService.crear({ usuarioId: usuarioId!, libroId: libro.id, fechaRetiro: fechaRetiroISO }).subscribe({
       next: (r) => {
         this.reservacionesPendientes.marcarReservada(libro.id);

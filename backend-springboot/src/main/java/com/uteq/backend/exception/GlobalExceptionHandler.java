@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
@@ -156,6 +157,14 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ProblemDetail handleBodyMalformed(HttpMessageNotReadableException ex) {
+        String detalle = ex.getMostSpecificCause() != null
+                ? ex.getMostSpecificCause().getMessage()
+                : "El cuerpo de la solicitud no es válido";
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detalle);
+    }
+
     @ExceptionHandler(EntityNotFoundException.class)
     public ProblemDetail handleNotFound(EntityNotFoundException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
@@ -262,6 +271,7 @@ public class GlobalExceptionHandler {
                 case "LB404" -> HttpStatus.NOT_FOUND;
                 case "LB409" -> HttpStatus.CONFLICT;
                 case "LB422" -> HttpStatus.UNPROCESSABLE_ENTITY;
+                case "23503" -> HttpStatus.BAD_REQUEST;
                 default -> null;
             };
             if (status != null) {
