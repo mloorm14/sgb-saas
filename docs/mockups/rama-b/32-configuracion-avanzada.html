@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SGB UTEQ — Configuración</title>
+<style>
+  :root{
+    --bg:#F5F6FB;
+    --card:#FFFFFF;
+    --border:#E6E8F0;
+    --text:#1F2430;
+    --text-muted:#6B7280;
+    --text-faint:#9AA1AF;
+    --indigo:#4F5FD6;
+    --indigo-soft:#EEF0FE;
+    --teal-bg:#D9F2ED;
+    --teal-ic:#0F7A66;
+    --amber-bg:#FCEFD8;
+    --amber-ic:#B5720A;
+    --rose-bg:#FBE3E3;
+    --rose-ic:#C23A3A;
+    --blue-bg:#DCE8FB;
+    --blue-ic:#2E5FA3;
+    --sidebar-w:260px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+    display:flex;
+    min-height:100vh;
+  }
+
+  /* ---------- SIDEBAR ---------- */
+  .sidebar{
+    width:var(--sidebar-w);
+    flex-shrink:0;
+    background:var(--card);
+    border-right:1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    padding:20px 14px;
+    position:sticky;
+    top:0;
+    height:100vh;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-weight:700;
+    font-size:18px;
+    color:var(--indigo);
+    padding:6px 8px 22px 8px;
+  }
+  .menu-toggle{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    color:var(--text-muted);
+    font-size:13px;
+    font-weight:600;
+    padding:8px 10px;
+    margin-bottom:14px;
+  }
+  .nav-label{
+    padding:9px 10px;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.08em;
+    color:var(--text-faint);
+  }
+  .nav-item{
+    display:flex;
+    align-items:center;
+    gap:11px;
+    padding:9px 10px 9px 14px;
+    border-radius:9px;
+    font-size:14px;
+    color:var(--text);
+    text-decoration:none;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+    margin:1px 0;
+  }
+  .nav-item svg{flex-shrink:0; opacity:.75;}
+  .nav-item:hover{background:#F2F3F9;}
+  .nav-item.active{background:var(--indigo-soft); color:var(--indigo); font-weight:600;}
+  .nav-item.active svg{opacity:1;}
+  .sidebar-footer{
+    margin-top:auto;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px;
+    border-top:1px solid var(--border);
+    padding-top:16px;
+  }
+  .avatar{
+    width:32px;height:32px;border-radius:50%;
+    background:var(--indigo); color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:700;
+  }
+  .sidebar-footer .who{display:flex;flex-direction:column;line-height:1.25;}
+  .sidebar-footer .who span:first-child{font-size:13px;font-weight:600;}
+  .sidebar-footer .who span:last-child{font-size:12px;color:var(--text-muted);}
+
+  /* ---------- MAIN ---------- */
+  .main{flex:1; padding:38px 44px 60px 44px; max-width:1220px;}
+
+  .page-header{display:flex; align-items:flex-start; gap:16px; margin-bottom:8px;}
+  .page-icon{
+    width:44px;height:44px;border-radius:12px;
+    background:var(--indigo-soft);
+    display:flex;align-items:center;justify-content:center; flex-shrink:0;
+  }
+  .page-title h1{margin:0 0 4px 0; font-size:26px; font-weight:800; letter-spacing:-.01em;}
+  .page-title p{margin:0; color:var(--text-muted); font-size:14.5px;}
+
+  /* ---------- BREADCRUMB ---------- */
+  .breadcrumb{
+    display:flex; align-items:center; gap:7px; flex-wrap:wrap;
+    font-size:13.5px; margin:22px 0 22px 0; padding-bottom:16px;
+    border-bottom:1px solid var(--border);
+  }
+  .crumb{color:var(--text-muted); cursor:pointer; font-weight:600;}
+  .crumb:hover{color:var(--indigo);}
+  .crumb.active{color:var(--text); font-weight:700; cursor:default;}
+  .crumb-sep{color:var(--text-faint);}
+
+  /* ---------- MODULE GRID (patrón Reportes) ---------- */
+  .module-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
+    gap:20px;
+  }
+  .module-card{
+    position:relative;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:24px;
+    cursor:pointer;
+    transition:box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+    text-align:left;
+  }
+  .module-card:hover{
+    box-shadow:0 10px 28px rgba(31,36,48,.08);
+    transform:translateY(-3px);
+    border-color:#DADDF0;
+  }
+  .module-badge{
+    position:absolute; top:16px; right:16px;
+    font-size:9.5px; font-weight:800; letter-spacing:.04em;
+    color:var(--teal-ic); background:var(--teal-bg);
+    border-radius:999px; padding:2.5px 8px;
+  }
+  .module-head{display:flex; align-items:center; gap:12px; margin-bottom:18px;}
+  .module-icon{
+    width:44px;height:44px;border-radius:11px;
+    display:flex;align-items:center;justify-content:center; flex-shrink:0;
+  }
+  .module-icon.teal{background:var(--teal-bg); color:var(--teal-ic);}
+  .module-icon.rose{background:var(--rose-bg); color:var(--rose-ic);}
+  .module-icon.indigo{background:var(--indigo-soft); color:var(--indigo);}
+  .module-icon.amber{background:var(--amber-bg); color:var(--amber-ic);}
+  .module-icon.blue{background:var(--blue-bg); color:var(--blue-ic);}
+  .module-code{font-size:11.5px; font-weight:700; letter-spacing:.05em; color:var(--text-faint);}
+  .module-card h3{margin:0 0 6px 0; font-size:17px; font-weight:800; letter-spacing:-.005em;}
+  .module-card p.mdesc{margin:0 0 18px 0; font-size:13.5px; color:var(--text-muted); line-height:1.45; min-height:36px;}
+  .module-link{
+    font-size:13.5px; font-weight:700; color:var(--indigo);
+    display:flex; align-items:center; gap:6px;
+  }
+  .module-link svg{transition:transform .15s ease;}
+  .module-card:hover .module-link svg{transform:translateX(3px);}
+
+  /* ---------- VIEWS ---------- */
+  .view{display:none; animation:fade .18s ease;}
+  .view.active{display:block;}
+  @keyframes fade{from{opacity:0; transform:translateY(3px);} to{opacity:1; transform:translateY(0);}}
+
+  .back-row{display:flex; align-items:center; gap:8px; margin-bottom:4px;}
+  .back-btn{
+    display:flex; align-items:center; gap:6px;
+    font-size:13.5px; font-weight:700; color:var(--text-muted);
+    background:none; border:none; cursor:pointer; font-family:inherit;
+    padding:6px 4px;
+  }
+  .back-btn:hover{color:var(--indigo);}
+
+  .section-label{
+    font-size:11.5px; font-weight:800; letter-spacing:.08em;
+    color:var(--text-faint); margin:26px 0 10px 2px;
+  }
+  .section-label:first-child{margin-top:0;}
+
+  .card-list{background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden;}
+  .cfg-card{display:flex; align-items:center; gap:16px; padding:16px 18px; border-bottom:1px solid var(--border);}
+  .cfg-card:last-child{border-bottom:none;}
+  .cfg-icon{width:38px;height:38px;border-radius:10px; background:var(--teal-bg); color:var(--teal-ic); display:flex;align-items:center;justify-content:center; flex-shrink:0;}
+  .cfg-icon.amber{background:var(--amber-bg); color:var(--amber-ic);}
+  .cfg-icon.rose{background:var(--rose-bg); color:var(--rose-ic);}
+  .cfg-icon.indigo{background:var(--indigo-soft); color:var(--indigo);}
+  .cfg-body{flex:1; min-width:0;}
+  .cfg-body .title{font-size:14.5px; font-weight:700; margin:0 0 2px 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .cfg-body .desc{font-size:13px; color:var(--text-muted); margin:0;}
+  .tag-new{font-size:9.5px; font-weight:800; letter-spacing:.03em; color:var(--teal-ic); background:var(--teal-bg); border-radius:999px; padding:1.5px 6px;}
+  .tag-locked{font-size:9.5px; font-weight:800; letter-spacing:.03em; color:var(--text-faint); background:#F0F1F5; border-radius:999px; padding:1.5px 6px; display:inline-flex; align-items:center; gap:3px;}
+  .cfg-value{display:flex; align-items:center; gap:10px; flex-shrink:0;}
+  .val-text{font-size:17px; font-weight:800;}
+  .val-unit{font-size:12.5px; color:var(--text-muted); font-weight:600;}
+  .edit-btn{width:32px;height:32px; border-radius:8px; border:1px solid var(--border); background:#fff; display:flex;align-items:center;justify-content:center; cursor:pointer; color:var(--text-muted); transition:background .15s ease, color .15s ease;}
+  .edit-btn:hover{background:var(--indigo-soft); color:var(--indigo); border-color:var(--indigo-soft);}
+  .edit-inline{display:flex; align-items:center; gap:8px;}
+  .edit-inline input{font-family:inherit; font-size:14px; font-weight:600; padding:6px 9px; border:1.5px solid var(--indigo); border-radius:8px; width:110px; color:var(--text);}
+  .save-btn, .cancel-btn{width:30px;height:30px;border-radius:7px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;}
+  .save-btn{background:var(--indigo); color:#fff;}
+  .cancel-btn{background:#F0F1F5; color:var(--text-muted);}
+
+  .switch{position:relative; width:42px; height:24px; flex-shrink:0;}
+  .switch input{opacity:0; width:0; height:0;}
+  .slider{position:absolute; inset:0; background:#D8DAE5; border-radius:999px; cursor:pointer; transition:.15s;}
+  .slider::before{content:""; position:absolute; height:18px; width:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.15s; box-shadow:0 1px 2px rgba(0,0,0,.2);}
+  .switch input:checked + .slider{background:var(--indigo);}
+  .switch input:checked + .slider::before{transform:translateX(18px);}
+
+  .empty-hint{display:flex; align-items:flex-start; gap:10px; background:var(--indigo-soft); color:var(--indigo); border-radius:12px; padding:13px 16px; font-size:13px; line-height:1.5; margin-top:14px;}
+
+  .sub-card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:18px 18px 16px 18px; margin-top:14px;}
+  .sub-card h3{margin:0 0 3px 0; font-size:14.5px; font-weight:700; display:flex; align-items:center; gap:8px;}
+  .sub-card p.hint{margin:0 0 14px 0; font-size:12.5px; color:var(--text-muted);}
+  .holiday-row{display:flex; align-items:center; gap:12px; padding:10px 4px; border-bottom:1px solid var(--border);}
+  .holiday-row:last-of-type{border-bottom:none;}
+  .holiday-date{font-size:13.5px; font-weight:700; width:110px; flex-shrink:0;}
+  .holiday-motivo{font-size:13.5px; color:var(--text-muted); flex:1;}
+  .del-btn{width:28px;height:28px;border-radius:7px; border:1px solid var(--border); background:#fff; color:var(--rose-ic); cursor:pointer; display:flex; align-items:center; justify-content:center;}
+  .del-btn:hover{background:var(--rose-bg);}
+  .add-holiday{display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;}
+  .add-holiday input{font-family:inherit; font-size:13.5px; padding:8px 10px; border:1px solid var(--border); border-radius:8px;}
+  .add-holiday input[type=date]{width:150px;}
+  .add-holiday input[type=text]{flex:1; min-width:160px;}
+  .add-btn{background:var(--indigo); color:#fff; border:none; border-radius:8px; font-family:inherit; font-size:13.5px; font-weight:700; padding:8px 16px; cursor:pointer; display:flex; align-items:center; gap:6px;}
+  .day-pills{display:flex; gap:6px; flex-wrap:wrap;}
+  .day-pill{font-size:12.5px; font-weight:700; padding:6px 10px; border-radius:8px; border:1.5px solid var(--border); color:var(--text-muted); cursor:pointer; background:#fff; user-select:none;}
+  .day-pill.on{background:var(--indigo); border-color:var(--indigo); color:#fff;}
+
+  .tpl-card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; margin-top:14px;}
+  .tpl-head{display:flex; align-items:center; justify-content:space-between; cursor:pointer;}
+  .tpl-head .left{display:flex; align-items:center; gap:12px;}
+  .tpl-name{font-size:14px; font-weight:700;}
+  .tpl-sub{font-size:12px; color:var(--text-muted);}
+  .chev{transition:transform .15s ease; color:var(--text-faint);}
+  .tpl-card.open .chev{transform:rotate(180deg);}
+  .tpl-fields{display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--border);}
+  .tpl-card.open .tpl-fields{display:block;}
+  .field-label{font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:5px; display:block;}
+  .tpl-fields input[type=text]{width:100%; font-family:inherit; font-size:13.5px; padding:9px 11px; border:1px solid var(--border); border-radius:8px; margin-bottom:12px;}
+  .tpl-fields textarea{width:100%; font-family:'SFMono-Regular',Consolas,monospace; font-size:12.5px; padding:10px 11px; border:1px solid var(--border); border-radius:8px; min-height:90px; resize:vertical;}
+  .placeholders{display:flex; gap:6px; flex-wrap:wrap; margin:8px 0 12px 0;}
+  .ph{font-size:11px; font-weight:700; background:var(--indigo-soft); color:var(--indigo); padding:3px 8px; border-radius:999px;}
+  .tpl-save{background:var(--indigo); color:#fff; border:none; border-radius:8px; font-family:inherit; font-size:13px; font-weight:700; padding:8px 16px; cursor:pointer;}
+
+  /* Tipos de daño */
+  .danos-toolbar{display:flex; gap:10px; margin-bottom:16px;}
+  .danos-toolbar input{font-family:inherit; font-size:13.5px; padding:9px 12px; border:1px solid var(--border); border-radius:9px; width:230px;}
+  .danos-toolbar button{background:var(--teal-ic); color:#fff; border:none; border-radius:9px; font-family:inherit; font-size:13.5px; font-weight:700; padding:9px 16px; cursor:pointer; display:flex; align-items:center; gap:6px;}
+  .dano-row{display:flex; align-items:center; gap:14px; padding:13px 16px; border-bottom:1px solid var(--border); background:var(--card);}
+  .dano-row:first-child{border-radius:14px 14px 0 0;}
+  .dano-row:last-child{border-bottom:none; border-radius:0 0 14px 14px;}
+  .card-list.danos{border:1px solid var(--border); border-radius:14px; overflow:hidden;}
+  .dano-icon{width:34px;height:34px;border-radius:9px; background:var(--teal-bg); color:var(--teal-ic); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .dano-body{flex:1;}
+  .dano-body .title{font-size:14px; font-weight:700; margin:0;}
+  .dano-body .sub{font-size:12.5px; color:var(--text-muted); margin:0;}
+  .dano-cost{font-size:16px; font-weight:800; width:70px; text-align:right; flex-shrink:0;}
+  .dano-actions{display:flex; gap:6px; flex-shrink:0;}
+  .add-dano-row{display:flex; gap:10px; padding:14px 16px; flex-wrap:wrap; align-items:center; background:#FAFAFD; border-top:1px solid var(--border);}
+  .add-dano-row input, .add-dano-row select{font-family:inherit; font-size:13.5px; padding:8px 10px; border:1px solid var(--border); border-radius:8px;}
+  .add-dano-row input[type=text]{flex:1; min-width:160px;}
+  .add-dano-row .amt{width:90px;}
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--text); color:#fff; padding:11px 20px; border-radius:10px;
+    font-size:13.5px; font-weight:600; opacity:0; pointer-events:none;
+    transition:all .25s ease; z-index:50; box-shadow:0 8px 24px rgba(0,0,0,.18);
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<!-- ============ SIDEBAR ============ -->
+<aside class="sidebar">
+  <div class="brand">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+    SGB UTEQ
+  </div>
+  <div class="menu-toggle">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    Menú
+  </div>
+  <div class="nav-label">INICIO</div>
+  <div class="nav-label">GESTIÓN</div>
+  <div class="nav-label">SISTEMA</div>
+  <a class="nav-item">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 9h8M8 13h8M8 17h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    Auditoría
+  </a>
+  <a class="nav-item">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M4 20V10M12 20V4M20 20v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    Reportes
+  </a>
+  <a class="nav-item active" id="nav-config">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    Configuración
+  </a>
+  <div class="sidebar-footer">
+    <div class="avatar">u</div>
+    <div class="who"><span>u@uteq.edu.ec</span><span>Gerente</span></div>
+  </div>
+</aside>
+
+<!-- ============ MAIN ============ -->
+<main class="main">
+  <div class="page-header">
+    <div class="page-icon" id="pageIcon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" stroke="#4F5FD6" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
+    <div class="page-title">
+      <h1 id="pageTitle">Configuración</h1>
+      <p id="pageDesc">Elegí un módulo para ver y editar sus parámetros.</p>
+    </div>
+  </div>
+
+  <div class="breadcrumb" id="breadcrumb"></div>
+
+  <!-- ===== VIEW 0: raíz — 2 módulos ===== -->
+  <section class="view active" id="view-root">
+    <div class="module-grid">
+      <div class="module-card" data-goto="grid-sistema">
+        <div class="module-head">
+          <div class="module-icon indigo">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </div>
+          <span class="module-code">CFG-SIS</span>
+        </div>
+        <h3>Configuración del sistema</h3>
+        <p class="mdesc">Préstamos, horarios, notificaciones, multas, usuarios, registro, archivos y mantenimiento.</p>
+        <span class="module-link">Ver módulos <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </div>
+
+      <div class="module-card" data-goto="detail-danos">
+        <div class="module-head">
+          <div class="module-icon teal">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2 2 20h20L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 9v5M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </div>
+          <span class="module-code">CFG-DAN</span>
+        </div>
+        <h3>Tipos de daño</h3>
+        <p class="mdesc">Categorías y costos por tipo de daño a un ejemplar: fijo ($) o porcentaje del precio del libro.</p>
+        <span class="module-link">Ver módulo <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== VIEW 1: grid de submódulos de "Configuración del sistema" ===== -->
+  <section class="view" id="view-grid-sistema">
+    <div class="module-grid" id="submoduleGrid"></div>
+  </section>
+
+  <!-- ===== VIEW 2: detalle de cada submódulo ===== -->
+  <section class="view" id="view-detail"><div id="detailContent"></div></section>
+
+  <!-- ===== VIEW 3: Tipos de daño ===== -->
+  <section class="view" id="view-danos">
+    <div class="danos-toolbar">
+      <input type="text" id="danoCategoriaNueva" placeholder="Nueva categoría (ej. Leve)">
+      <button id="addCategoriaBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/></svg>
+        Categoría
+      </button>
+    </div>
+    <p style="font-size:12.5px;color:var(--text-muted);margin:-10px 0 16px 2px;">Gestiona categorías y tipos de daño. Cada tipo tiene costo FIJO ($) o PORCENTAJE del precio del libro. Módulo existente — sin cambios estructurales.</p>
+    <div class="card-list danos" id="danoList"></div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ======================================================================
+   ICONS
+   ====================================================================== */
+function icoCal(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;}
+function icoClock(){return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;}
+function icoBell(){return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 9a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 20a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="2"/></svg>`;}
+function icoCoin(){return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v10M9.5 9.5c0-1.4 1.2-2 2.5-2s2.5.7 2.5 1.8c0 2.7-5 1.3-5 4 0 1.1 1.2 1.8 2.5 1.8s2.5-.6 2.5-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;}
+function icoUsers(){return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="2"/><path d="M2.5 20c.8-3.4 3.3-5.4 6.5-5.4s5.7 2 6.5 5.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 8.5a3 3 0 1 1 3.6 2.9M21.5 20c-.5-2.4-1.8-4.1-3.8-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;}
+function icoMail(){return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="2"/><path d="m4 7 8 6 8-6" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`;}
+function icoFile(){return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 3h8l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M14 3v5h5" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`;}
+function icoServer(){return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="6" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="18" height="6" rx="1.5" stroke="currentColor" stroke-width="2"/><circle cx="7" cy="7" r="1" fill="currentColor"/><circle cx="7" cy="17" r="1" fill="currentColor"/></svg>`;}
+function icoPencil(){return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="m16.5 3.5 4 4L7 21H3v-4L16.5 3.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`;}
+function icoCheck(){return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 12.5 9.5 18 20 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;}
+function icoX(){return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 5l14 14M19 5 5 19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`;}
+function icoTrash(){return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;}
+function icoPlus(){return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/></svg>`;}
+function icoChev(){return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;}
+function icoLock(){return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 11V8a4 4 0 1 1 8 0v3" stroke="currentColor" stroke-width="1.8"/></svg>`;}
+function icoArrow(){return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;}
+function icoBack(){return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;}
+
+/* ======================================================================
+   DATA MODEL
+   ====================================================================== */
+const state = {
+  values: {
+    minutos_retirar_reserva: {v:1440, unit:'min'},
+    dias_prestamo: {v:15, unit:'días'},
+    max_renovaciones: {v:2, unit:'veces'},
+    max_prestamos: {v:3, unit:'libros'},
+    hora_limite_retiro_reserva: {v:'18:00', unit:''},
+    hora_apertura: {v:'08:00', unit:''},
+    hora_cierre: {v:'18:00', unit:''},
+    dias_anticipacion: {v:3, unit:'días'},
+    monto_multa_diaria: {v:0.50, unit:'$'},
+    multa_maxima_por_prestamo: {v:15.00, unit:'$'},
+    monto_maximo_deuda_bloqueo: {v:10.00, unit:'$'},
+    metodos_pago: {v:'efectivo, transferencia', unit:''},
+    atrasos_para_suspension: {v:3, unit:'atrasos'},
+    dias_suspension_reincidencia: {v:15, unit:'días'},
+    dominios_correo: {v:'uteq.edu.ec', unit:''},
+    tamano_portada: {v:2, unit:'MB'},
+    tamano_evidencia: {v:2, unit:'MB'},
+    chatbot_max_mensajes: {v:10, unit:'msj/min'},
+    chatbot_ventana: {v:60, unit:'seg'},
+    modo_mantenimiento: {v:false}
+  },
+  diasAtencion: {LUNES:true,MARTES:true,MIERCOLES:true,JUEVES:true,VIERNES:true,SABADO:false,DOMINGO:false},
+  feriados: [
+    {fecha:'2026-01-01', motivo:'Año Nuevo'},
+    {fecha:'2026-05-01', motivo:'Día del Trabajo'},
+    {fecha:'2026-12-25', motivo:'Navidad'}
+  ],
+  plantillas: [
+    {tipo:'RECORDATORIO_VENCIMIENTO', nombre:'Recordatorio de vencimiento', asunto:'Tu préstamo vence pronto',
+     cuerpo:'Hola {{nombre}}, tu préstamo de "{{titulo}}" vence el {{fecha_vencimiento}}. Por favor renuévalo o devuélvelo a tiempo.',
+     placeholders:['nombre','titulo','fecha_vencimiento']},
+    {tipo:'RESERVA_POR_CADUCAR', nombre:'Reserva por caducar', asunto:'Tu reserva está por caducar',
+     cuerpo:'Hola {{nombre}}, tenés hasta el {{fecha_limite}} para retirar tu reserva de "{{titulo}}" antes de que caduque.',
+     placeholders:['nombre','titulo','fecha_limite']},
+    {tipo:'MULTA_GENERADA', nombre:'Notificación de multa', asunto:'Se generó una multa en tu cuenta',
+     cuerpo:'Hola {{nombre}}, se generó una multa de {{monto}} por el atraso en "{{titulo}}". Tu deuda total es {{deuda_total}}.',
+     placeholders:['nombre','monto','titulo','deuda_total']}
+  ],
+  danos: [
+    {id:1, nombre:'Paginas rotas', categoria:'Grave', tipo:'FIJO', valor:3.00},
+    {id:2, nombre:'Manchas', categoria:'Grave', tipo:'FIJO', valor:5.00},
+    {id:3, nombre:'Portada/Lomo', categoria:'Grave', tipo:'FIJO', valor:7.00},
+    {id:4, nombre:'Humedad', categoria:'Grave', tipo:'FIJO', valor:10.00},
+    {id:5, nombre:'Rayon', categoria:'Grave', tipo:'FIJO', valor:4.00},
+    {id:6, nombre:'Manchado de portada', categoria:'Leve', tipo:'FIJO', valor:10.00},
+    {id:7, nombre:'Esquinas dobladas', categoria:'Leve', tipo:'FIJO', valor:5.00},
+    {id:8, nombre:'Páginas rotas/faltantes', categoria:'Grave', tipo:'PORCENTAJE', valor:50},
+    {id:9, nombre:'Libro no recuperable', categoria:'Pérdida total', tipo:'PORCENTAJE', valor:100}
+  ]
+};
+const DAY_LABELS = {LUNES:'Lun',MARTES:'Mar',MIERCOLES:'Mié',JUEVES:'Jue',VIERNES:'Vie',SABADO:'Sáb',DOMINGO:'Dom'};
+
+/* ======================================================================
+   SUBMODULES (nivel 1, dentro de "Configuración del sistema")
+   ====================================================================== */
+const submodules = [
+  {id:'prestamos', code:'CFG-PRE', icon:icoCal(), color:'indigo', title:'Préstamos y reservas',
+   desc:'Duración, renovaciones, límite de préstamos y horario de retiro de reservas.'},
+  {id:'horarios', code:'CFG-HOR', icon:icoClock(), color:'teal', title:'Horarios', badge:'NUEVO',
+   desc:'Horario de atención, días hábiles y calendario de feriados.'},
+  {id:'notificaciones', code:'CFG-NOT', icon:icoBell(), color:'amber', title:'Notificaciones',
+   desc:'Recordatorios automáticos, plantillas de mensaje y avisos masivos.'},
+  {id:'multas', code:'CFG-MUL', icon:icoCoin(), color:'rose', title:'Multas',
+   desc:'Monto diario, tope máximo, umbral de bloqueo y métodos de pago.'},
+  {id:'usuarios', code:'CFG-USR', icon:icoUsers(), color:'indigo', title:'Usuarios y roles', badge:'NUEVO',
+   desc:'Reglas de suspensión por reincidencia y límites por tipo de usuario.'},
+  {id:'registro', code:'CFG-REG', icon:icoMail(), color:'indigo', title:'Registro',
+   desc:'Dominios de correo permitidos para el autorregistro de usuarios.'},
+  {id:'archivos', code:'CFG-ARC', icon:icoFile(), color:'indigo', title:'Archivos',
+   desc:'Tamaño máximo de portadas y evidencias subidas por el bibliotecario.'},
+  {id:'sistema', code:'CFG-SYS', icon:icoServer(), color:'rose', title:'Sistema / Mantenimiento', badge:'NUEVO',
+   desc:'Rate limit del chatbot y modo mantenimiento de la aplicación.'},
+];
+
+const submoduleGrid = document.getElementById('submoduleGrid');
+submoduleGrid.innerHTML = submodules.map(m=>`
+  <div class="module-card" data-goto="detail-${m.id}">
+    ${m.badge?`<span class="module-badge">${m.badge}</span>`:''}
+    <div class="module-head">
+      <div class="module-icon ${m.color}">${m.icon}</div>
+      <span class="module-code">${m.code}</span>
+    </div>
+    <h3>${m.title}</h3>
+    <p class="mdesc">${m.desc}</p>
+    <span class="module-link">Ver detalle ${icoArrow()}</span>
+  </div>
+`).join('');
+
+/* ======================================================================
+   NAVIGATION
+   ====================================================================== */
+const views = {
+  'root': {el:'view-root', title:'Configuración', desc:'Elegí un módulo para ver y editar sus parámetros.', crumbs:[{label:'Configuración', go:'root'}]},
+  'grid-sistema': {el:'view-grid-sistema', title:'Configuración del sistema', desc:'Ocho submódulos, cada uno con sus propios parámetros.', crumbs:[{label:'Configuración', go:'root'},{label:'Configuración del sistema', go:'grid-sistema'}]},
+  'detail-danos': {el:'view-danos', title:'Tipos de daño', desc:'Categorías y costos por tipo de daño a un ejemplar.', crumbs:[{label:'Configuración', go:'root'},{label:'Tipos de daño', go:'detail-danos'}]},
+};
+submodules.forEach(m=>{
+  views['detail-'+m.id] = {
+    el:'view-detail', title:m.title, desc:m.desc,
+    crumbs:[{label:'Configuración', go:'root'},{label:'Configuración del sistema', go:'grid-sistema'},{label:m.title, go:'detail-'+m.id}],
+    submoduleId:m.id
+  };
+});
+
+function goto(viewId){
+  const v = views[viewId];
+  if(!v) return;
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.getElementById(v.el).classList.add('active');
+  document.getElementById('pageTitle').textContent = v.title;
+  document.getElementById('pageDesc').textContent = v.desc;
+  renderBreadcrumb(v.crumbs);
+  if(v.submoduleId) renderDetail(v.submoduleId);
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function renderBreadcrumb(crumbs){
+  const el = document.getElementById('breadcrumb');
+  el.innerHTML = crumbs.map((c,i)=>`
+    ${i>0?`<span class="crumb-sep">/</span>`:''}
+    <span class="crumb ${i===crumbs.length-1?'active':''}" data-go="${c.go}">${c.label}</span>
+  `).join('');
+}
+
+document.body.addEventListener('click', e=>{
+  const gotoEl = e.target.closest('[data-goto]');
+  if(gotoEl){ goto(gotoEl.dataset.goto); return; }
+  const crumbEl = e.target.closest('[data-go]');
+  if(crumbEl){ goto(crumbEl.dataset.go); return; }
+});
+
+/* ======================================================================
+   CARD RENDERER (patrón METADATOS) — usado dentro de cada detalle
+   ====================================================================== */
+function cfgCard({key, icon='teal', title, desc, type='number', tag=null, locked=false}){
+  const entry = state.values[key];
+  const isBool = type==='bool';
+  return `
+  <div class="cfg-card" data-key="${key}" data-type="${type}">
+    <div class="cfg-icon ${icon}">${iconForKind(icon)}</div>
+    <div class="cfg-body">
+      <p class="title">${title} ${tag?`<span class="tag-new">${tag}</span>`:''} ${locked?`<span class="tag-locked">${icoLock()} solo lectura</span>`:''}</p>
+      <p class="desc">${desc}</p>
+    </div>
+    <div class="cfg-value" data-view>
+      ${isBool
+        ? `<label class="switch"><input type="checkbox" data-bool-toggle ${entry.v?'checked':''} ${locked?'disabled':''}><span class="slider"></span></label>`
+        : `<span class="val-text">${fmtVal(entry)}</span>${entry.unit?`<span class="val-unit">${entry.unit==='$'?'':entry.unit}</span>`:''}
+           ${locked?'':`<button class="edit-btn" data-edit>${icoPencil()}</button>`}`
+      }
+    </div>
+  </div>`;
+}
+function fmtVal(entry){ return entry.unit==='$' ? '$'+Number(entry.v).toFixed(2) : entry.v; }
+function iconForKind(kind){
+  if(kind==='teal') return icoCal();
+  if(kind==='amber') return icoBell();
+  if(kind==='rose') return icoCoin();
+  if(kind==='indigo') return icoServer();
+  return icoCal();
+}
+
+/* ======================================================================
+   DETAIL CONTENT PER SUBMODULE
+   ====================================================================== */
+function renderDetail(id){
+  const wrap = document.getElementById('detailContent');
+  let html = `<div class="back-row"><button class="back-btn" data-goto="grid-sistema">${icoBack()} Volver a Configuración del sistema</button></div>`;
+
+  if(id==='prestamos'){
+    html += `
+    <div class="section-label">PRÉSTAMOS Y RESERVAS</div>
+    <div class="card-list">
+      ${cfgCard({key:'minutos_retirar_reserva', title:'Minutos para retirar una reserva', desc:'Tiempo antes de que una reserva caduque automáticamente'})}
+      ${cfgCard({key:'dias_prestamo', title:'Días de préstamo por defecto', desc:'Cuánto tiempo dura un préstamo antes de vencer'})}
+      ${cfgCard({key:'max_renovaciones', title:'Máximo de renovaciones', desc:'Veces que un lector puede renovar el mismo préstamo'})}
+      ${cfgCard({key:'max_prestamos', title:'Máximo de préstamos simultáneos', desc:'Cantidad máxima de libros que un lector puede tener prestados al mismo tiempo'})}
+      ${cfgCard({key:'hora_limite_retiro_reserva', title:'Horario límite de retiro de reserva', desc:'Reservas hechas después de esta hora caducan al siguiente día hábil', tag:'NUEVO'})}
+    </div>`;
+  }
+
+  if(id==='horarios'){
+    html += `
+    <div class="section-label">HORARIO DE ATENCIÓN</div>
+    <div class="card-list">
+      ${cfgCard({key:'hora_apertura', title:'Hora de apertura', desc:'Hora en que abre la biblioteca', tag:'NUEVO'})}
+      ${cfgCard({key:'hora_cierre', title:'Hora de cierre', desc:'Hora en que cierra la biblioteca', tag:'NUEVO'})}
+    </div>
+    <div class="sub-card">
+      <h3>Días de atención <span class="tag-new">NUEVO</span></h3>
+      <p class="hint">Días de la semana en que la biblioteca opera con normalidad.</p>
+      <div class="day-pills" id="dayPills"></div>
+    </div>
+    <div class="section-label">FERIADOS Y DÍAS NO LABORABLES</div>
+    <div class="sub-card">
+      <h3>Días no laborables <span class="tag-new">NUEVO</span></h3>
+      <p class="hint">Se excluyen del cálculo de vencimientos y de retiro de reservas.</p>
+      <div id="holidayList"></div>
+      <div class="add-holiday">
+        <input type="date" id="newHolidayDate">
+        <input type="text" id="newHolidayMotivo" placeholder="Motivo (ej. Día del Trabajo)">
+        <button class="add-btn" id="addHolidayBtn">${icoPlus()} Agregar</button>
+      </div>
+    </div>`;
+  }
+
+  if(id==='notificaciones'){
+    html += `
+    <div class="section-label">NOTIFICACIONES</div>
+    <div class="card-list">
+      ${cfgCard({key:'dias_anticipacion', title:'Días de anticipación para recordatorio', desc:'Días antes del vencimiento para enviar notificación de recordatorio', icon:'amber'})}
+    </div>
+    <div class="section-label">PLANTILLAS DE MENSAJE <span class="tag-new">NUEVO</span></div>
+    <p style="font-size:12.5px;color:var(--text-muted);margin:-4px 0 0 2px;">Editá asunto y cuerpo de cada notificación automática.</p>
+    <div id="templateList"></div>
+    <div class="section-label">BROADCAST</div>
+    <div class="card-list">
+      <div class="cfg-card">
+        <div class="cfg-icon amber">${icoBell()}</div>
+        <div class="cfg-body">
+          <p class="title">Canal de notificación masiva <span class="tag-new">FEATURE NUEVA</span></p>
+          <p class="desc">Enviar un aviso por email a todos los usuarios activos. No es una configuración, es una acción.</p>
+        </div>
+        <div class="cfg-value"><button class="edit-btn" id="broadcastBtn" style="width:auto;padding:0 14px;gap:6px;font-size:13px;font-weight:700;color:var(--indigo);">Redactar aviso</button></div>
+      </div>
+    </div>`;
+  }
+
+  if(id==='multas'){
+    html += `
+    <div class="section-label">MULTAS Y PAGOS</div>
+    <div class="card-list">
+      ${cfgCard({key:'monto_multa_diaria', title:'Monto de multa por día de atraso', desc:'Se cobra por cada día de retraso en la devolución', icon:'rose'})}
+      ${cfgCard({key:'multa_maxima_por_prestamo', title:'Multa máxima por préstamo', desc:'Tope: nunca se genera una multa mayor a este valor', icon:'rose', tag:'NUEVO'})}
+      ${cfgCard({key:'monto_maximo_deuda_bloqueo', title:'Umbral de bloqueo por deuda', desc:'Por encima de este monto acumulado, el usuario queda BLOQUEADO_POR_MULTA', icon:'rose', tag:'NUEVO'})}
+      ${cfgCard({key:'metodos_pago', title:'Métodos de pago habilitados', desc:'Solo informativo — "pagar" sigue siendo marcar la multa como pagada manualmente', icon:'rose', tag:'NUEVO', type:'text'})}
+    </div>
+    <div class="empty-hint">ℹ️ Sin gateway de pago real: este bloque no procesa pagos electrónicos, solo declara qué métodos acepta la biblioteca de forma manual.</div>`;
+  }
+
+  if(id==='usuarios'){
+    html += `
+    <div class="section-label">USUARIOS Y ROLES</div>
+    <div class="card-list">
+      ${cfgCard({key:'atrasos_para_suspension', title:'Atrasos para suspensión', desc:'Cantidad de atrasos acumulados que activan la suspensión automática', icon:'indigo', tag:'NUEVO'})}
+      ${cfgCard({key:'dias_suspension_reincidencia', title:'Días de suspensión por reincidencia', desc:'Duración del estado SUSPENDIDO — no puede reservar ni pedir préstamo', icon:'indigo', tag:'NUEVO'})}
+      <div class="cfg-card">
+        <div class="cfg-icon indigo">${icoUsers()}</div>
+        <div class="cfg-body">
+          <p class="title">Máximo de préstamos por tipo de usuario <span class="tag-locked">${icoLock()} ya existe</span></p>
+          <p class="desc">Hoy es un valor único global (ver "Máximo de préstamos simultáneos" en Préstamos). Variante por rol pendiente de confirmar con el equipo.</p>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  if(id==='registro'){
+    html += `
+    <div class="section-label">REGISTRO</div>
+    <div class="card-list">
+      ${cfgCard({key:'dominios_correo', title:'Dominios de correo permitidos', desc:'Dominios separados por coma. Si está vacío, se aceptan todos.', icon:'indigo', type:'text'})}
+    </div>`;
+  }
+
+  if(id==='archivos'){
+    html += `
+    <div class="section-label">ARCHIVOS</div>
+    <div class="card-list">
+      ${cfgCard({key:'tamano_portada', title:'Tamaño máximo de portada', desc:'Límite para las imágenes de portada subidas por el bibliotecario', icon:'indigo'})}
+      ${cfgCard({key:'tamano_evidencia', title:'Tamaño máximo de evidencia', desc:'Límite para los archivos de evidencia de daño subidos por el bibliotecario', icon:'indigo'})}
+    </div>`;
+  }
+
+  if(id==='sistema'){
+    html += `
+    <div class="section-label">CHATBOT</div>
+    <div class="card-list">
+      ${cfgCard({key:'chatbot_max_mensajes', title:'Rate limit del chatbot', desc:'Mensajes máximos permitidos por usuario dentro de la ventana', icon:'indigo', tag:'NUEVO'})}
+      ${cfgCard({key:'chatbot_ventana', title:'Ventana de rate limit', desc:'Duración de la ventana de conteo para el límite anterior', icon:'indigo', tag:'NUEVO'})}
+    </div>
+    <p style="font-size:12.5px;color:var(--text-muted);margin:8px 0 0 2px;">Antes vivía fijo en <code>application.yml</code>. Ahora se lee desde <code>configuracion_sistema</code> sin redeploy.</p>
+    <div class="section-label">MANTENIMIENTO</div>
+    <div class="card-list">
+      ${cfgCard({key:'modo_mantenimiento', title:'Modo mantenimiento', desc:'Bloquea SOLO nuevas reservas y préstamos con 503. Login, consultas y el resto de la app siguen funcionando.', icon:'rose', tag:'NUEVO', type:'bool'})}
+    </div>
+    <div class="empty-hint">ℹ️ Alcance acotado a propósito: solo <code>POST /reservaciones</code> y <code>POST /prestamos</code>, con un <code>ProblemDetail</code> claro.</div>`;
+  }
+
+  wrap.innerHTML = html;
+
+  if(id==='horarios'){ renderDayPills(); renderHolidays(); bindHolidayForm(); }
+  if(id==='notificaciones'){ renderTemplates(); bindBroadcast(); }
+}
+
+/* ======================================================================
+   INLINE EDIT — delegado a nivel body para funcionar en cualquier vista
+   ====================================================================== */
+document.body.addEventListener('click', e=>{
+  const editBtn = e.target.closest('[data-edit]');
+  if(editBtn){
+    const card = editBtn.closest('.cfg-card');
+    const key = card.dataset.key;
+    const entry = state.values[key];
+    const valueWrap = card.querySelector('[data-view]');
+    const rawVal = entry.unit==='$' ? entry.v.toFixed(2) : entry.v;
+    valueWrap.dataset.prev = valueWrap.innerHTML;
+    valueWrap.innerHTML = `
+      <div class="edit-inline">
+        <input type="text" value="${rawVal}" id="tmpInput">
+        <button class="save-btn" data-save>${icoCheck()}</button>
+        <button class="cancel-btn" data-cancel>${icoX()}</button>
+      </div>`;
+    valueWrap.querySelector('#tmpInput').focus();
+    return;
+  }
+  const saveBtn = e.target.closest('[data-save]');
+  if(saveBtn){
+    const card = saveBtn.closest('.cfg-card');
+    const key = card.dataset.key;
+    const input = card.querySelector('#tmpInput');
+    let newVal = input.value.trim();
+    const entry = state.values[key];
+    if(entry.unit==='$'){
+      const n = Number(newVal); newVal = isNaN(n) ? entry.v : n;
+    } else if(entry.unit!=='' && !isNaN(Number(newVal))){
+      newVal = Number(newVal);
+    }
+    entry.v = newVal;
+    const valueWrap = card.querySelector('[data-view]');
+    valueWrap.innerHTML = `<span class="val-text">${fmtVal(entry)}</span>${entry.unit?`<span class="val-unit">${entry.unit==='$'?'':entry.unit}</span>`:''}<button class="edit-btn" data-edit>${icoPencil()}</button>`;
+    showToast('✓ Cambios guardados');
+    return;
+  }
+  const cancelBtn = e.target.closest('[data-cancel]');
+  if(cancelBtn){
+    const card = cancelBtn.closest('.cfg-card');
+    const valueWrap = card.querySelector('[data-view]');
+    valueWrap.innerHTML = valueWrap.dataset.prev;
+    return;
+  }
+});
+document.body.addEventListener('change', e=>{
+  if(e.target.matches('[data-bool-toggle]')){
+    const card = e.target.closest('.cfg-card');
+    state.values[card.dataset.key].v = e.target.checked;
+    showToast('✓ Cambios guardados');
+  }
+});
+
+/* ======================================================================
+   HORARIOS: días de atención + feriados
+   ====================================================================== */
+function renderDayPills(){
+  const el = document.getElementById('dayPills');
+  if(!el) return;
+  el.innerHTML = Object.keys(state.diasAtencion).map(d=>`
+    <div class="day-pill ${state.diasAtencion[d]?'on':''}" data-day="${d}">${DAY_LABELS[d]}</div>
+  `).join('');
+  el.onclick = e=>{
+    const pill = e.target.closest('.day-pill');
+    if(!pill) return;
+    const d = pill.dataset.day;
+    state.diasAtencion[d] = !state.diasAtencion[d];
+    renderDayPills();
+    showToast('✓ Días de atención actualizados');
+  };
+}
+function renderHolidays(){
+  const el = document.getElementById('holidayList');
+  if(!el) return;
+  if(state.feriados.length===0){
+    el.innerHTML = `<p style="font-size:13px;color:var(--text-faint);padding:10px 4px;">No hay días no laborables registrados.</p>`;
+    return;
+  }
+  el.innerHTML = state.feriados.slice().sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(f=>`
+    <div class="holiday-row" data-fecha="${f.fecha}">
+      <span class="holiday-date">${formatFecha(f.fecha)}</span>
+      <span class="holiday-motivo">${f.motivo}</span>
+      <button class="del-btn" data-del-holiday="${f.fecha}">${icoTrash()}</button>
+    </div>`).join('');
+  el.onclick = e=>{
+    const btn = e.target.closest('[data-del-holiday]');
+    if(!btn) return;
+    state.feriados = state.feriados.filter(f=>f.fecha!==btn.dataset.delHoliday);
+    renderHolidays();
+    showToast('✓ Día no laborable eliminado');
+  };
+}
+function formatFecha(iso){ const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+function bindHolidayForm(){
+  const btn = document.getElementById('addHolidayBtn');
+  if(!btn) return;
+  btn.onclick = ()=>{
+    const dateInput = document.getElementById('newHolidayDate');
+    const motivoInput = document.getElementById('newHolidayMotivo');
+    if(!dateInput.value || !motivoInput.value.trim()){
+      dateInput.style.borderColor = dateInput.value ? '' : 'var(--rose-ic)';
+      motivoInput.style.borderColor = motivoInput.value.trim() ? '' : 'var(--rose-ic)';
+      return;
+    }
+    if(state.feriados.some(f=>f.fecha===dateInput.value)){ showToast('⚠ Esa fecha ya está registrada'); return; }
+    state.feriados.push({fecha:dateInput.value, motivo:motivoInput.value.trim()});
+    dateInput.value=''; motivoInput.value='';
+    renderHolidays();
+    showToast('✓ Día no laborable agregado');
+  };
+}
+
+/* ======================================================================
+   NOTIFICACIONES: plantillas
+   ====================================================================== */
+function renderTemplates(){
+  const el = document.getElementById('templateList');
+  if(!el) return;
+  el.innerHTML = state.plantillas.map((t,i)=>`
+    <div class="tpl-card" data-idx="${i}">
+      <div class="tpl-head" data-toggle>
+        <div class="left">
+          <div class="cfg-icon amber" style="width:32px;height:32px;">${icoBell()}</div>
+          <div><div class="tpl-name">${t.nombre}</div><div class="tpl-sub">${t.tipo}</div></div>
+        </div>
+        <span class="chev">${icoChev()}</span>
+      </div>
+      <div class="tpl-fields">
+        <label class="field-label">Asunto</label>
+        <input type="text" data-field="asunto" value="${escapeHtml(t.asunto)}">
+        <label class="field-label">Variables disponibles</label>
+        <div class="placeholders">${t.placeholders.map(p=>`<span class="ph">{{${p}}}</span>`).join('')}</div>
+        <label class="field-label">Cuerpo del mensaje</label>
+        <textarea data-field="cuerpo">${escapeHtml(t.cuerpo)}</textarea>
+        <button class="tpl-save" data-save-tpl>Guardar plantilla</button>
+      </div>
+    </div>`).join('');
+  el.onclick = e=>{
+    const head = e.target.closest('[data-toggle]');
+    if(head){ head.closest('.tpl-card').classList.toggle('open'); return; }
+    const saveBtn = e.target.closest('[data-save-tpl]');
+    if(saveBtn){
+      const card = saveBtn.closest('.tpl-card');
+      const idx = Number(card.dataset.idx);
+      state.plantillas[idx].asunto = card.querySelector('[data-field="asunto"]').value;
+      state.plantillas[idx].cuerpo = card.querySelector('[data-field="cuerpo"]').value;
+      showToast('✓ Plantilla actualizada');
+    }
+  };
+}
+function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function bindBroadcast(){
+  const btn = document.getElementById('broadcastBtn');
+  if(!btn) return;
+  btn.onclick = ()=> showToast('Esto abriría el compositor de broadcast (feature nueva, fuera de alcance de este mock)');
+}
+
+/* ======================================================================
+   TIPOS DE DAÑO
+   ====================================================================== */
+function renderDanos(){
+  const el = document.getElementById('danoList');
+  const cats = [...new Set(state.danos.map(d=>d.categoria))];
+  el.innerHTML = state.danos.map(d=>`
+    <div class="dano-row" data-id="${d.id}">
+      <div class="dano-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2 2 20h20L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 9v5M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+      <div class="dano-body">
+        <p class="title">${d.nombre}</p>
+        <p class="sub">${d.categoria} · ${d.tipo==='FIJO' ? '$'+d.valor.toFixed(2) : d.valor+'%'}</p>
+      </div>
+      <div class="dano-cost">${d.tipo==='FIJO' ? '$'+d.valor.toFixed(2) : d.valor+'%'}</div>
+      <div class="dano-actions">
+        <button class="edit-btn" data-edit-dano="${d.id}">${icoPencil()}</button>
+        <button class="del-btn" data-del-dano="${d.id}">${icoTrash()}</button>
+      </div>
+    </div>
+  `).join('') + `
+    <div class="add-dano-row">
+      <input type="text" id="newDanoNombre" placeholder="Nombre del nuevo tipo">
+      <select id="newDanoCategoria">
+        ${cats.map(c=>`<option value="${c}">${c}</option>`).join('')}
+      </select>
+      <select id="newDanoTipo">
+        <option value="FIJO">FIJO</option>
+        <option value="PORCENTAJE">PORCENTAJE</option>
+      </select>
+      <input type="number" step="0.01" class="amt" id="newDanoValor" placeholder="0.00">
+      <button class="add-btn" id="addDanoBtn">${icoPlus()} Agregar</button>
+    </div>`;
+}
+renderDanos();
+
+document.getElementById('addCategoriaBtn').addEventListener('click', ()=>{
+  const input = document.getElementById('danoCategoriaNueva');
+  if(!input.value.trim()){ input.style.borderColor='var(--rose-ic)'; return; }
+  showToast(`✓ Categoría "${input.value.trim()}" creada`);
+  input.value=''; input.style.borderColor='';
+});
+
+document.getElementById('danoList').addEventListener('click', e=>{
+  const del = e.target.closest('[data-del-dano]');
+  if(del){
+    state.danos = state.danos.filter(d=>d.id!==Number(del.dataset.delDano));
+    renderDanos();
+    showToast('✓ Tipo de daño eliminado');
+    return;
+  }
+  const edit = e.target.closest('[data-edit-dano]');
+  if(edit){
+    const row = edit.closest('.dano-row');
+    const id = Number(edit.dataset.editDano);
+    const d = state.danos.find(x=>x.id===id);
+    const costEl = row.querySelector('.dano-cost');
+    costEl.dataset.prev = costEl.innerHTML;
+    costEl.innerHTML = `<input type="number" step="0.01" value="${d.valor}" style="width:64px;font-family:inherit;font-size:14px;font-weight:700;padding:5px 6px;border:1.5px solid var(--indigo);border-radius:6px;" id="editDanoInput">`;
+    edit.innerHTML = icoCheck();
+    edit.dataset.saveDano = id;
+    edit.removeAttribute('data-edit-dano');
+    return;
+  }
+  const save = e.target.closest('[data-save-dano]');
+  if(save){
+    const id = Number(save.dataset.saveDano);
+    const d = state.danos.find(x=>x.id===id);
+    const input = save.closest('.dano-row').querySelector('#editDanoInput');
+    const n = Number(input.value);
+    if(!isNaN(n)) d.valor = n;
+    renderDanos();
+    showToast('✓ Costo actualizado');
+    return;
+  }
+  const addBtn = e.target.closest('#addDanoBtn');
+  if(addBtn){
+    const nombre = document.getElementById('newDanoNombre').value.trim();
+    const categoria = document.getElementById('newDanoCategoria').value;
+    const tipo = document.getElementById('newDanoTipo').value;
+    const valor = Number(document.getElementById('newDanoValor').value);
+    if(!nombre || isNaN(valor)){ showToast('⚠ Completá nombre y valor'); return; }
+    const nextId = Math.max(0,...state.danos.map(d=>d.id))+1;
+    state.danos.push({id:nextId, nombre, categoria, tipo, valor});
+    renderDanos();
+    showToast('✓ Tipo de daño agregado');
+  }
+});
+
+/* ======================================================================
+   TOAST
+   ====================================================================== */
+let toastTimer;
+function showToast(msg){
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>toast.classList.remove('show'), 2200);
+}
+
+/* ======================================================================
+   INIT
+   ====================================================================== */
+goto('root');
+</script>
+</body>
+</html>
