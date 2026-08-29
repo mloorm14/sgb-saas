@@ -157,53 +157,6 @@ const METADATOS: Record<string, MetaParametro> = {
     tipo: 'texto',
     modulo: 'sistema',
     submodulo: 'registro'
-  },
-  atrasos_para_suspension: {
-    titulo: 'Atrasos para suspensión',
-    descripcion: 'Cantidad de atrasos acumulados que activan la suspensión automática',
-    icono: 'person_off',
-    grupo: 'Usuarios y roles',
-    tipo: 'numero',
-    modulo: 'sistema',
-    submodulo: 'usuarios'
-  },
-  dias_suspension_reincidencia: {
-    titulo: 'Días de suspensión por reincidencia',
-    descripcion: 'Duración del estado SUSPENDIDO — no puede reservar ni pedir préstamo',
-    icono: 'timer_off',
-    grupo: 'Usuarios y roles',
-    sufijo: 'días',
-    tipo: 'numero',
-    modulo: 'sistema',
-    submodulo: 'usuarios'
-  },
-  chatbot_max_mensajes_por_minuto: {
-    titulo: 'Rate limit del chatbot',
-    descripcion: 'Mensajes máximos permitidos por usuario dentro de la ventana',
-    icono: 'smart_toy',
-    grupo: 'Sistema',
-    tipo: 'numero',
-    modulo: 'sistema',
-    submodulo: 'sistema_mant'
-  },
-  chatbot_ventana_segundos: {
-    titulo: 'Ventana de rate limit',
-    descripcion: 'Duración de la ventana de conteo para el límite anterior',
-    icono: 'timer',
-    grupo: 'Sistema',
-    sufijo: 'seg',
-    tipo: 'numero',
-    modulo: 'sistema',
-    submodulo: 'sistema_mant'
-  },
-  modo_mantenimiento: {
-    titulo: 'Modo mantenimiento',
-    descripcion: 'Bloquea SOLO nuevas reservas y préstamos con 503. Login, consultas y el resto de la app siguen funcionando.',
-    icono: 'construction',
-    grupo: 'Sistema',
-    tipo: 'bool',
-    modulo: 'sistema',
-    submodulo: 'sistema_mant'
   }
 };
 
@@ -271,7 +224,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
       id: 'sistema',
       codigo: 'CFG-SIS',
       titulo: 'Configuración del sistema',
-      descripcion: 'Préstamos, horarios, notificaciones, multas, usuarios, registro, archivos y mantenimiento.',
+      descripcion: 'Préstamos, notificaciones, multas, registro y archivos.',
       icono: 'tune',
       color: 'bg-primary/10 text-primary'
     },
@@ -287,13 +240,10 @@ export class ConfiguracionSistemaComponent implements OnInit {
 
   submodulos: SubmoduloConfig[] = [
     { id: 'prestamos', codigo: 'CFG-PRE', titulo: 'Préstamos y reservas', descripcion: 'Duración, renovaciones, límite de préstamos y horario de retiro de reservas.', icono: 'calendar_month', color: 'bg-primary/10 text-primary' },
-    { id: 'horarios', codigo: 'CFG-HOR', titulo: 'Horarios', descripcion: 'Horario de atención, días hábiles y calendario de feriados.', icono: 'schedule', color: 'bg-secondary/10 text-secondary', badge: 'NUEVO' },
     { id: 'notificaciones', codigo: 'CFG-NOT', titulo: 'Notificaciones', descripcion: 'Recordatorios automáticos, plantillas de mensaje y avisos masivos.', icono: 'notifications_active', color: 'bg-tertiary/10 text-tertiary' },
     { id: 'multas', codigo: 'CFG-MUL', titulo: 'Multas', descripcion: 'Monto diario, tope máximo, umbral de bloqueo y métodos de pago.', icono: 'payments', color: 'bg-error/10 text-error' },
-    { id: 'usuarios', codigo: 'CFG-USR', titulo: 'Usuarios y roles', descripcion: 'Reglas de suspensión por reincidencia y límites por tipo de usuario.', icono: 'manage_accounts', color: 'bg-primary/10 text-primary', badge: 'NUEVO' },
     { id: 'registro', codigo: 'CFG-REG', titulo: 'Registro', descripcion: 'Dominios de correo permitidos para el autorregistro de usuarios.', icono: 'mail_lock', color: 'bg-primary/10 text-primary' },
-    { id: 'archivos', codigo: 'CFG-ARC', titulo: 'Archivos', descripcion: 'Tamaño máximo de portadas y evidencias subidas por el bibliotecario.', icono: 'attach_file', color: 'bg-primary/10 text-primary' },
-    { id: 'sistema_mant', codigo: 'CFG-SYS', titulo: 'Sistema / Mantenimiento', descripcion: 'Rate limit del chatbot y modo mantenimiento de la aplicación.', icono: 'dns', color: 'bg-error/10 text-error', badge: 'NUEVO' }
+    { id: 'archivos', codigo: 'CFG-ARC', titulo: 'Archivos', descripcion: 'Tamaño máximo de portadas y evidencias subidas por el bibliotecario.', icono: 'attach_file', color: 'bg-primary/10 text-primary' }
   ];
 
   constructor(
@@ -325,7 +275,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
       this.vista = 'grid';
       this.submoduloSeleccionado = null;
       this.tituloActual = 'Configuración del sistema';
-      this.descripcionActual = 'Ocho submódulos, cada uno con sus propios parámetros.';
+      this.descripcionActual = 'Cinco submódulos, cada uno con sus propios parámetros.';
       this.breadcrumbs = [
         { label: 'Configuración', vista: 'root' }
       ];
@@ -380,7 +330,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
         { label: 'Configuración', vista: 'root' }
       ];
       this.tituloActual = 'Configuración del sistema';
-      this.descripcionActual = 'Ocho submódulos, cada uno con sus propios parámetros.';
+      this.descripcionActual = 'Cinco submódulos, cada uno con sus propios parámetros.';
     } else if (item.submoduloId) {
       this.submoduloSeleccionado = item.submoduloId;
       const sub = this.submodulos.find(s => s.id === item.submoduloId);

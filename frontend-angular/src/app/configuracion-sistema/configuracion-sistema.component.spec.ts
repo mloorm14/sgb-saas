@@ -156,7 +156,7 @@ describe('ConfiguracionSistemaComponent', () => {
     expect(component.modulos[1].id).toBe('danos');
   });
 
-  it('abrirModulo("sistema") navega a grid con 8 submódulos', async () => {
+  it('abrirModulo("sistema") navega a grid con 5 submódulos', async () => {
     await configurar('ADMIN');
     fixture.detectChanges();
 
@@ -167,7 +167,7 @@ describe('ConfiguracionSistemaComponent', () => {
     component.abrirModulo('sistema');
 
     expect(component.vista).toBe('grid');
-    expect(component.submodulos.length).toBe(8);
+    expect(component.submodulos.length).toBe(5);
     expect(component.breadcrumbs.length).toBe(1);
     expect(component.breadcrumbs[0].label).toBe('Configuración');
   });
