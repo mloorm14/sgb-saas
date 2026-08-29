@@ -1,13 +1,13 @@
-<div class="max-w-4xl mx-auto px-md md:px-lg py-lg">
+<div class="max-w-container-max mx-auto px-md md:px-lg py-lg">
 
-  <div class="mb-xl">
+  <div class="mb-lg">
     <div class="flex items-center gap-sm mb-xs">
-      <div class="w-10 h-10 rounded-lg bg-primary-fixed flex items-center justify-center">
+      <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
         <span class="material-symbols-outlined text-[22px] text-primary">tune</span>
       </div>
-      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background">Configuración del sistema</h1>
+      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background">Configuración</h1>
     </div>
-    <p class="font-body-sm text-body-sm text-on-surface-variant sm:ml-[52px]">Parámetros globales que afectan el comportamiento de toda la biblioteca</p>
+    <p class="font-body-sm text-body-sm text-on-surface-variant sm:ml-[52px]">Elegí un módulo para ver y editar sus parámetros.</p>
   </div>
 
   @if (!esAdmin) {
@@ -18,6 +18,23 @@
   }
 
   @if (esAdmin) {
+
+    <!-- Breadcrumb -->
+    @if (breadcrumbs.length > 0) {
+      <div class="flex items-center gap-xs mb-lg font-body-sm text-body-sm text-on-surface-variant pb-md border-b border-outline-variant">
+        @for (crumb of breadcrumbs; track $index; let ultimo = $last) {
+          @if ($index > 0) {
+            <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+          }
+          @if (ultimo) {
+            <span class="text-on-surface font-medium">{{ crumb.label }}</span>
+          } @else {
+            <button (click)="navegarBreadcrumb(crumb)" class="text-primary hover:underline cursor-pointer">{{ crumb.label }}</button>
+          }
+        }
+      </div>
+    }
+
     @if (errorMsg) {
       <div class="rounded border border-error/40 bg-error-container/40 px-md py-sm mb-md flex items-center gap-sm">
         <span class="material-symbols-outlined text-[18px] text-error">error</span>
@@ -29,78 +46,121 @@
       <div class="text-center py-xl font-body-sm text-body-sm text-on-surface-variant">Cargando configuración...</div>
     }
 
-    @if (!cargando && grupos.length !== 0) {
-      @for (grupo of grupos; track grupo.nombre) {
-        <div class="mb-lg">
-          <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm px-xs">{{ grupo.nombre }}</p>
-          <div class="rounded-lg border border-outline-variant bg-white overflow-hidden divide-y divide-outline-variant">
-            @for (config of grupo.parametros; track config.clave) {
-              <div class="flex flex-wrap items-center gap-md p-md transition-colors" [ngClass]="claveEditando === config.clave ? 'bg-primary-fixed/20' : 'hover:bg-surface-container-low/60'">
-                <div class="w-10 h-10 rounded-lg bg-secondary-container/30 flex items-center justify-center shrink-0">
-                  <span class="material-symbols-outlined text-[20px] text-secondary">{{ config.meta.icono }}</span>
-                </div>
-                <div class="flex-1 min-w-[180px]">
-                  <p class="font-label-sm text-[14px] text-on-surface">{{ config.meta.titulo }}</p>
-                  @if (config.meta.descripcion) {
-                    <p class="font-body-sm text-[13px] text-on-surface-variant">{{ config.meta.descripcion }}</p>
-                  }
-                </div>
+    <!-- ═══ VISTA ROOT: 2 módulos ═══ -->
+    @if (vista === 'root' && !cargando) {
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md">
+        @for (m of modulos; track m.id) {
+          <button (click)="abrirModulo(m.id)"
+            class="rounded-xl border border-outline-variant bg-white p-lg text-left hover:shadow-md transition-shadow cursor-pointer group">
+            <div class="flex items-center gap-sm mb-md">
+              <div class="w-10 h-10 rounded-lg flex items-center justify-center" [class]="m.color">
+                <span class="material-symbols-outlined text-[20px]">{{ m.icono }}</span>
+              </div>
+              <span class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">{{ m.codigo }}</span>
+            </div>
+            <h3 class="font-headline-sm text-headline-sm text-on-background mb-xs">{{ m.titulo }}</h3>
+            <p class="font-body-xs text-body-xs text-on-surface-variant mb-md">{{ m.descripcion }}</p>
+            <span class="inline-flex items-center gap-xs font-label-sm text-label-sm text-primary group-hover:underline">
+              Ver módulo <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+            </span>
+          </button>
+        }
+      </div>
+    }
 
-                @if (claveEditando !== config.clave) {
-                  <div class="flex items-center gap-sm shrink-0 ml-auto">
-                    <span class="font-headline-md text-[20px] text-on-background font-semibold break-all max-w-[160px] text-right">
-                      @if (config.meta.sufijo === '$') { $ }{{ config.valor }}
-                    </span>
-                    @if (config.meta.sufijo && config.meta.sufijo !== '$') {
-                      <span class="font-label-sm text-[12px] text-on-surface-variant">{{ config.meta.sufijo }}</span>
-                    }
-                    <button type="button" (click)="iniciarEdicion(config)" aria-label="Editar"
-                      class="w-8 h-8 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant hover:text-primary transition-colors cursor-pointer">
-                      <span class="material-symbols-outlined text-[18px]">edit</span>
-                    </button>
-                  </div>
-                } @else {
-                  <div class="flex items-center gap-xs shrink-0 ml-auto">
-                    <input [(ngModel)]="valorEditando" [ngModelOptions]="{standalone: true}" type="text"
-                      [maxlength]="valorMaxLength" aria-label="Nuevo valor"
-                      class="w-32 md:w-44 h-9 px-sm rounded border border-primary bg-white font-body-sm text-body-sm text-on-surface">
-                    <button type="button" [disabled]="!puedeGuardarValor"
-                      (click)="guardarValor()" aria-label="Guardar"
-                      class="w-9 h-9 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center bg-primary text-on-primary hover:bg-on-primary-fixed-variant transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                      <span class="material-symbols-outlined text-[18px]">check</span>
-                    </button>
-                    <button type="button" (click)="cancelarEdicion()" aria-label="Cancelar"
-                      class="w-9 h-9 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer">
-                      <span class="material-symbols-outlined text-[18px]">close</span>
-                    </button>
-                  </div>
+    <!-- ═══ VISTA GRID: submódulos de Configuración del sistema ═══ -->
+    @if (vista === 'grid' && !cargando) {
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md">
+        @for (sub of submodulos; track sub.id) {
+          <button (click)="abrirSubmodulo(sub.id)"
+            class="rounded-xl border border-outline-variant bg-white p-lg text-left hover:shadow-md transition-shadow cursor-pointer group relative">
+            @if (sub.badge) {
+              <span class="absolute top-4 right-4 font-label-sm text-[10px] font-bold tracking-wider text-secondary bg-secondary/10 rounded-full px-2 py-0.5">{{ sub.badge }}</span>
+            }
+            <div class="flex items-center gap-sm mb-md">
+              <div class="w-10 h-10 rounded-lg flex items-center justify-center" [class]="sub.color">
+                <span class="material-symbols-outlined text-[20px]">{{ sub.icono }}</span>
+              </div>
+              <span class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">{{ sub.codigo }}</span>
+            </div>
+            <h3 class="font-headline-sm text-headline-sm text-on-background mb-xs">{{ sub.titulo }}</h3>
+            <p class="font-body-xs text-body-xs text-on-surface-variant mb-md">{{ sub.descripcion }}</p>
+            <span class="inline-flex items-center gap-xs font-label-sm text-label-sm text-primary group-hover:underline">
+              Ver detalle <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+            </span>
+          </button>
+        }
+      </div>
+    }
+
+    <!-- ═══ VISTA DETALLE: configuración de un submódulo ═══ -->
+    @if (vista === 'detalle' && !cargando && submoduloSeleccionado !== 'danos') {
+      @let configs = configsPorSubmodulo(submoduloSeleccionado!);
+      @if (configs.length > 0) {
+        <div class="rounded-lg border border-outline-variant bg-white overflow-hidden divide-y divide-outline-variant">
+          @for (config of configs; track config.clave) {
+            <div class="flex flex-wrap items-center gap-md p-md transition-colors" [ngClass]="claveEditando === config.clave ? 'bg-primary/5' : 'hover:bg-surface-container-low/60'">
+              <div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[20px] text-secondary">{{ config.meta.icono }}</span>
+              </div>
+              <div class="flex-1 min-w-[180px]">
+                <p class="font-label-sm text-[14px] text-on-surface">{{ config.meta.titulo }}</p>
+                @if (config.meta.descripcion) {
+                  <p class="font-body-sm text-[13px] text-on-surface-variant">{{ config.meta.descripcion }}</p>
                 }
               </div>
-              @if (claveEditando === config.clave) {
-                <div class="px-md pb-sm pt-0 text-right">
-                  <span class="font-label-sm text-[12px] text-on-surface-variant">{{ valorEditando.length }}/{{ valorMaxLength }}</span>
+
+              @if (claveEditando !== config.clave) {
+                <div class="flex items-center gap-sm shrink-0 ml-auto">
+                  <span class="font-headline-md text-[20px] text-on-background font-semibold break-all max-w-[160px] text-right">
+                    @if (config.meta.sufijo === '$') { $ }{{ config.valor }}
+                  </span>
+                  @if (config.meta.sufijo && config.meta.sufijo !== '$') {
+                    <span class="font-label-sm text-[12px] text-on-surface-variant">{{ config.meta.sufijo }}</span>
+                  }
+                  <button type="button" (click)="iniciarEdicion(config)" aria-label="Editar"
+                    class="w-8 h-8 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant hover:text-primary transition-colors cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">edit</span>
+                  </button>
+                </div>
+              } @else {
+                <div class="flex items-center gap-xs shrink-0 ml-auto">
+                  <input [(ngModel)]="valorEditando" [ngModelOptions]="{standalone: true}" type="text"
+                    [maxlength]="valorMaxLength" aria-label="Nuevo valor"
+                    class="w-32 md:w-44 h-9 px-sm rounded border border-primary bg-white font-body-sm text-body-sm text-on-surface">
+                  <button type="button" [disabled]="!puedeGuardarValor"
+                    (click)="guardarValor()" aria-label="Guardar"
+                    class="w-9 h-9 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center bg-primary text-on-primary hover:bg-primary/80 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span class="material-symbols-outlined text-[18px]">check</span>
+                  </button>
+                  <button type="button" (click)="cancelarEdicion()" aria-label="Cancelar"
+                    class="w-9 h-9 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">close</span>
+                  </button>
                 </div>
               }
+            </div>
+            @if (claveEditando === config.clave) {
+              <div class="px-md pb-sm pt-0 text-right">
+                <span class="font-label-sm text-[12px] text-on-surface-variant">{{ valorEditando.length }}/{{ valorMaxLength }}</span>
+              </div>
             }
-          </div>
+          }
+        </div>
+      } @else {
+        <div class="rounded-lg border border-outline-variant bg-white p-lg text-center">
+          <p class="font-body-sm text-body-sm text-on-surface-variant">No hay parámetros de configuración para este módulo.</p>
         </div>
       }
     }
 
-    @if (!cargando && errorMsg === '' && grupos.length === 0) {
-      <div class="text-center py-xl font-body-sm text-body-sm text-on-surface-variant">No hay parámetros de configuración</div>
-    }
-
-    <!-- Sección: Tipos de daño -->
-    <div class="mt-xl">
-      <div class="flex items-center gap-sm mb-xs">
-        <div class="w-10 h-10 rounded-lg bg-primary-fixed flex items-center justify-center shrink-0">
-          <span class="material-symbols-outlined text-[22px] text-primary">category</span>
-        </div>
-        <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background">Tipos de daño</h2>
+    <!-- ═══ VISTA DETALLE: Tipos de daño ═══ -->
+    @if (vista === 'detalle' && submoduloSeleccionado === 'danos') {
+      <div class="mb-md">
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Gestiona categorías y tipos de daño. Cada tipo tiene costo FIJO ($) o PORCENTAJE del precio del libro.</p>
       </div>
-      <p class="font-body-sm text-body-sm text-on-surface-variant sm:ml-[52px]">Gestiona categorías y tipos de daño. Cada tipo tiene costo FIJO ($) o PORCENTAJE del precio del libro.</p>
-      <div class="flex items-center gap-sm mt-md sm:ml-[52px]">
+
+      <div class="flex items-center gap-sm mb-md">
         <label for="nueva-categoria" class="sr-only">Nueva categoría</label>
         <input [(ngModel)]="nuevoCategoriaNombre" id="nueva-categoria" type="text" placeholder="Nueva categoría (ej. Leve)"
           class="flex-1 max-w-[240px] h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm">
@@ -125,9 +185,9 @@
       } @else {
         <div class="rounded-lg border border-outline-variant bg-white overflow-hidden divide-y divide-outline-variant">
           @for (tipo of tiposDano; track tipo.id) {
-            <div class="flex flex-wrap items-center gap-md p-md transition-colors" [ngClass]="editandoTipoDano?.id === tipo.id ? 'bg-primary-fixed/20' : 'hover:bg-surface-container-low/60'">
+            <div class="flex flex-wrap items-center gap-md p-md transition-colors" [ngClass]="editandoTipoDano?.id === tipo.id ? 'bg-primary/5' : 'hover:bg-surface-container-low/60'">
               @if (!editandoTipoDano || editandoTipoDano.id !== tipo.id) {
-                <div class="w-10 h-10 rounded-lg bg-secondary-container/30 flex items-center justify-center shrink-0">
+                <div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center shrink-0">
                   <span class="material-symbols-outlined text-[20px] text-on-surface">report_problem</span>
                 </div>
                 <div class="flex-1 min-w-[180px]">
@@ -150,7 +210,7 @@
                   </button>
                 </div>
               } @else {
-                <div class="w-10 h-10 rounded-lg bg-primary-fixed/30 flex items-center justify-center shrink-0">
+                <div class="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
                   <span class="material-symbols-outlined text-[20px] text-primary">edit</span>
                 </div>
                 <div class="flex-1 flex flex-wrap items-center gap-sm min-w-[200px]">
@@ -177,7 +237,7 @@
                 </div>
                 <div class="flex items-center gap-xs shrink-0">
                   <button type="button" (click)="guardarTipoDano()" aria-label="Guardar"
-                    class="w-9 h-9 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center bg-primary text-on-primary hover:bg-on-primary-fixed-variant transition-colors cursor-pointer">
+                    class="w-9 h-9 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center bg-primary text-on-primary hover:bg-primary/80 transition-colors cursor-pointer">
                     <span class="material-symbols-outlined text-[18px]">check</span>
                   </button>
                   <button type="button" (click)="cancelarEdicionTipoDano()" aria-label="Cancelar"
@@ -189,9 +249,8 @@
             </div>
           }
 
-          <!-- Fila para agregar nuevo -->
           <div class="flex flex-wrap items-center gap-sm p-md bg-surface-container-low/40">
-            <div class="w-10 h-10 rounded-lg bg-tertiary-container/30 flex items-center justify-center shrink-0">
+            <div class="w-10 h-10 rounded-lg bg-tertiary/10 flex items-center justify-center shrink-0">
               <span class="material-symbols-outlined text-[20px] text-on-surface">add_circle</span>
             </div>
             <div class="flex-1 flex flex-wrap items-center gap-sm min-w-[200px]">
@@ -217,14 +276,18 @@
             </div>
             <button type="button" (click)="agregarTipoDano()"
               [disabled]="!puedeAgregarTipoDano"
-              class="h-9 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center gap-xs hover:bg-on-primary-fixed-variant transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0">
+              class="h-9 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center gap-xs hover:bg-primary/80 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0">
               <span class="material-symbols-outlined text-[18px]">add</span>
               Agregar
             </button>
           </div>
         </div>
       }
-    </div>
+    }
+
+    @if (!cargando && errorMsg === '' && configuraciones.length === 0 && vista === 'root') {
+      <div class="text-center py-xl font-body-sm text-body-sm text-on-surface-variant">No hay parámetros de configuración</div>
+    }
 
     <div class="mt-xl rounded-lg bg-surface-container-low border border-outline-variant p-sm flex items-start gap-xs">
       <span class="material-symbols-outlined text-[16px] text-on-surface-variant mt-0.5">info</span>

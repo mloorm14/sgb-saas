@@ -8,13 +8,17 @@ import { TipoDano, CategoriaDano } from '../core/models/devoluciones.model';
 
 const VALOR_MAX_LENGTH = 200;
 
+type VistaConfig = 'root' | 'grid' | 'detalle';
+
 interface MetaParametro {
   titulo: string;
   descripcion: string;
   icono: string;
   grupo: string;
   sufijo?: string;
-  tipo?: 'texto' | 'numero' | 'lista';
+  tipo?: 'texto' | 'numero' | 'lista' | 'bool';
+  modulo?: string;
+  submodulo?: string;
 }
 
 const METADATOS: Record<string, MetaParametro> = {
@@ -24,7 +28,9 @@ const METADATOS: Record<string, MetaParametro> = {
     icono: 'calendar_month',
     grupo: 'Préstamos y reservas',
     sufijo: 'días',
-    tipo: 'numero'
+    tipo: 'numero',
+    modulo: 'sistema',
+    submodulo: 'prestamos'
   },
   max_renovaciones_default: {
     titulo: 'Máximo de renovaciones',
@@ -32,7 +38,9 @@ const METADATOS: Record<string, MetaParametro> = {
     icono: 'autorenew',
     grupo: 'Préstamos y reservas',
     sufijo: 'veces',
-    tipo: 'numero'
+    tipo: 'numero',
+    modulo: 'sistema',
+    submodulo: 'prestamos'
   },
   max_prestamos_usuario: {
     titulo: 'Máximo de préstamos simultáneos',
@@ -40,7 +48,9 @@ const METADATOS: Record<string, MetaParametro> = {
     icono: 'menu_book',
     grupo: 'Préstamos y reservas',
     sufijo: 'libros',
-    tipo: 'numero'
+    tipo: 'numero',
+    modulo: 'sistema',
+    submodulo: 'prestamos'
   },
   minutos_reserva: {
     titulo: 'Minutos para retirar una reserva',
@@ -48,7 +58,27 @@ const METADATOS: Record<string, MetaParametro> = {
     icono: 'event_busy',
     grupo: 'Préstamos y reservas',
     sufijo: 'min',
-    tipo: 'numero'
+    tipo: 'numero',
+    modulo: 'sistema',
+    submodulo: 'prestamos'
+  },
+  minutos_retirar_reserva: {
+    titulo: 'Minutos para retirar una reserva',
+    descripcion: 'Tiempo antes de que una reserva caduque automáticamente',
+    icono: 'event_busy',
+    grupo: 'Préstamos y reservas',
+    sufijo: 'min',
+    tipo: 'numero',
+    modulo: 'sistema',
+    submodulo: 'prestamos'
+  },
+  hora_limite_retiro_reserva: {
+    titulo: 'Horario límite de retiro de reserva',
+    descripcion: 'Reservas hechas después de esta hora caducan al siguiente día hábil',
+    icono: 'schedule',
+    grupo: 'Préstamos y reservas',
+    modulo: 'sistema',
+    submodulo: 'prestamos'
   },
   dias_anticipacion_vencimiento: {
     titulo: 'Días de anticipación para recordatorio',
@@ -56,7 +86,9 @@ const METADATOS: Record<string, MetaParametro> = {
     icono: 'notifications_active',
     grupo: 'Notificaciones',
     sufijo: 'días',
-    tipo: 'numero'
+    tipo: 'numero',
+    modulo: 'sistema',
+    submodulo: 'notificaciones'
   },
   monto_multa_diaria: {
     titulo: 'Monto de multa por día de atraso',
@@ -64,7 +96,38 @@ const METADATOS: Record<string, MetaParametro> = {
     icono: 'payments',
     grupo: 'Multas',
     sufijo: '$',
-    tipo: 'numero'
+    tipo: 'numero',
+    modulo: 'sistema',
+    submodulo: 'multas'
+  },
+  multa_maxima_por_prestamo: {
+    titulo: 'Multa máxima por préstamo',
+    descripcion: 'Tope: nunca se genera una multa mayor a este valor',
+    icono: 'money_off',
+    grupo: 'Multas',
+    sufijo: '$',
+    tipo: 'numero',
+    modulo: 'sistema',
+    submodulo: 'multas'
+  },
+  monto_maximo_deuda_bloqueo: {
+    titulo: 'Umbral de bloqueo por deuda',
+    descripcion: 'Por encima de este monto acumulado, el usuario queda BLOQUEADO_POR_MULTA',
+    icono: 'block',
+    grupo: 'Multas',
+    sufijo: '$',
+    tipo: 'numero',
+    modulo: 'sistema',
+    submodulo: 'multas'
+  },
+  metodos_pago_habilitados: {
+    titulo: 'Métodos de pago habilitados',
+    descripcion: 'Solo informativo — "pagar" sigue siendo marcar la multa como pagada manualmente',
+    icono: 'point_of_sale',
+    grupo: 'Multas',
+    tipo: 'texto',
+    modulo: 'sistema',
+    submodulo: 'multas'
   },
   max_tamano_portada_mb: {
     titulo: 'Tamaño máximo de portada',
@@ -72,14 +135,9 @@ const METADATOS: Record<string, MetaParametro> = {
     icono: 'image',
     grupo: 'Archivos',
     sufijo: 'MB',
-    tipo: 'numero'
-  },
-  correo_dominios_permitidos: {
-    titulo: 'Dominios de correo permitidos',
-    descripcion: 'Dominios separados por coma. Si está vacío, se aceptan todos.',
-    icono: 'mail_lock',
-    grupo: 'Registro',
-    tipo: 'texto'
+    tipo: 'numero',
+    modulo: 'sistema',
+    submodulo: 'archivos'
   },
   max_tamano_evidencia_mb: {
     titulo: 'Tamaño máximo de evidencia',
@@ -87,15 +145,91 @@ const METADATOS: Record<string, MetaParametro> = {
     icono: 'attach_file',
     grupo: 'Archivos',
     sufijo: 'MB',
-    tipo: 'numero'
+    tipo: 'numero',
+    modulo: 'sistema',
+    submodulo: 'archivos'
+  },
+  correo_dominios_permitidos: {
+    titulo: 'Dominios de correo permitidos',
+    descripcion: 'Dominios separados por coma. Si está vacío, se aceptan todos.',
+    icono: 'mail_lock',
+    grupo: 'Registro',
+    tipo: 'texto',
+    modulo: 'sistema',
+    submodulo: 'registro'
+  },
+  atrasos_para_suspension: {
+    titulo: 'Atrasos para suspensión',
+    descripcion: 'Cantidad de atrasos acumulados que activan la suspensión automática',
+    icono: 'person_off',
+    grupo: 'Usuarios y roles',
+    tipo: 'numero',
+    modulo: 'sistema',
+    submodulo: 'usuarios'
+  },
+  dias_suspension_reincidencia: {
+    titulo: 'Días de suspensión por reincidencia',
+    descripcion: 'Duración del estado SUSPENDIDO — no puede reservar ni pedir préstamo',
+    icono: 'timer_off',
+    grupo: 'Usuarios y roles',
+    sufijo: 'días',
+    tipo: 'numero',
+    modulo: 'sistema',
+    submodulo: 'usuarios'
+  },
+  chatbot_max_mensajes_por_minuto: {
+    titulo: 'Rate limit del chatbot',
+    descripcion: 'Mensajes máximos permitidos por usuario dentro de la ventana',
+    icono: 'smart_toy',
+    grupo: 'Sistema',
+    tipo: 'numero',
+    modulo: 'sistema',
+    submodulo: 'sistema_mant'
+  },
+  chatbot_ventana_segundos: {
+    titulo: 'Ventana de rate limit',
+    descripcion: 'Duración de la ventana de conteo para el límite anterior',
+    icono: 'timer',
+    grupo: 'Sistema',
+    sufijo: 'seg',
+    tipo: 'numero',
+    modulo: 'sistema',
+    submodulo: 'sistema_mant'
+  },
+  modo_mantenimiento: {
+    titulo: 'Modo mantenimiento',
+    descripcion: 'Bloquea SOLO nuevas reservas y préstamos con 503. Login, consultas y el resto de la app siguen funcionando.',
+    icono: 'construction',
+    grupo: 'Sistema',
+    tipo: 'bool',
+    modulo: 'sistema',
+    submodulo: 'sistema_mant'
   }
 };
 
-const ORDEN_GRUPOS = ['Préstamos y reservas', 'Notificaciones', 'Multas', 'Registro', 'Archivos', 'Otros'];
+interface ModuloConfig {
+  id: string;
+  codigo: string;
+  titulo: string;
+  descripcion: string;
+  icono: string;
+  color: string;
+}
 
-interface GrupoParametros {
-  nombre: string;
-  parametros: (ParametroConfiguracion & { meta: MetaParametro })[];
+interface SubmoduloConfig {
+  id: string;
+  codigo: string;
+  titulo: string;
+  descripcion: string;
+  icono: string;
+  color: string;
+  badge?: string;
+}
+
+interface BreadcrumbItem {
+  label: string;
+  vista: VistaConfig;
+  submoduloId?: string;
 }
 
 @Component({
@@ -109,7 +243,6 @@ export class ConfiguracionSistemaComponent implements OnInit {
   esAdmin: boolean = false;
 
   configuraciones: ParametroConfiguracion[] = [];
-  grupos: GrupoParametros[] = [];
   cargando: boolean = false;
   errorMsg: string = '';
 
@@ -127,6 +260,40 @@ export class ConfiguracionSistemaComponent implements OnInit {
   nuevoCategoriaNombre = '';
   errorMsgTiposDano = '';
 
+  vista: VistaConfig = 'root';
+  submoduloSeleccionado: string | null = null;
+  breadcrumbs: BreadcrumbItem[] = [];
+
+  modulos: ModuloConfig[] = [
+    {
+      id: 'sistema',
+      codigo: 'CFG-SIS',
+      titulo: 'Configuración del sistema',
+      descripcion: 'Préstamos, horarios, notificaciones, multas, usuarios, registro, archivos y mantenimiento.',
+      icono: 'tune',
+      color: 'bg-primary/10 text-primary'
+    },
+    {
+      id: 'danos',
+      codigo: 'CFG-DAN',
+      titulo: 'Tipos de daño',
+      descripcion: 'Categorías y costos por tipo de daño a un ejemplar: fijo ($) o porcentaje del precio del libro.',
+      icono: 'report_problem',
+      color: 'bg-secondary/10 text-secondary'
+    }
+  ];
+
+  submodulos: SubmoduloConfig[] = [
+    { id: 'prestamos', codigo: 'CFG-PRE', titulo: 'Préstamos y reservas', descripcion: 'Duración, renovaciones, límite de préstamos y horario de retiro de reservas.', icono: 'calendar_month', color: 'bg-primary/10 text-primary' },
+    { id: 'horarios', codigo: 'CFG-HOR', titulo: 'Horarios', descripcion: 'Horario de atención, días hábiles y calendario de feriados.', icono: 'schedule', color: 'bg-secondary/10 text-secondary', badge: 'NUEVO' },
+    { id: 'notificaciones', codigo: 'CFG-NOT', titulo: 'Notificaciones', descripcion: 'Recordatorios automáticos, plantillas de mensaje y avisos masivos.', icono: 'notifications_active', color: 'bg-tertiary/10 text-tertiary' },
+    { id: 'multas', codigo: 'CFG-MUL', titulo: 'Multas', descripcion: 'Monto diario, tope máximo, umbral de bloqueo y métodos de pago.', icono: 'payments', color: 'bg-error/10 text-error' },
+    { id: 'usuarios', codigo: 'CFG-USR', titulo: 'Usuarios y roles', descripcion: 'Reglas de suspensión por reincidencia y límites por tipo de usuario.', icono: 'manage_accounts', color: 'bg-primary/10 text-primary', badge: 'NUEVO' },
+    { id: 'registro', codigo: 'CFG-REG', titulo: 'Registro', descripcion: 'Dominios de correo permitidos para el autorregistro de usuarios.', icono: 'mail_lock', color: 'bg-primary/10 text-primary' },
+    { id: 'archivos', codigo: 'CFG-ARC', titulo: 'Archivos', descripcion: 'Tamaño máximo de portadas y evidencias subidas por el bibliotecario.', icono: 'attach_file', color: 'bg-primary/10 text-primary' },
+    { id: 'sistema_mant', codigo: 'CFG-SYS', titulo: 'Sistema / Mantenimiento', descripcion: 'Rate limit del chatbot y modo mantenimiento de la aplicación.', icono: 'dns', color: 'bg-error/10 text-error', badge: 'NUEVO' }
+  ];
+
   constructor(
     private configuracionService: ConfiguracionSistemaService,
     private devolucionService: DevolucionService,
@@ -142,13 +309,85 @@ export class ConfiguracionSistemaComponent implements OnInit {
     }
   }
 
+  abrirModulo(moduloId: string): void {
+    if (moduloId === 'danos') {
+      this.vista = 'detalle';
+      this.submoduloSeleccionado = 'danos';
+      this.breadcrumbs = [
+        { label: 'Configuración', vista: 'root' },
+        { label: 'Tipos de daño', vista: 'detalle', submoduloId: 'danos' }
+      ];
+    } else {
+      this.vista = 'grid';
+      this.submoduloSeleccionado = null;
+      this.breadcrumbs = [
+        { label: 'Configuración', vista: 'root' }
+      ];
+    }
+  }
+
+  abrirSubmodulo(submoduloId: string): void {
+    const sub = this.submodulos.find(s => s.id === submoduloId);
+    if (!sub) return;
+    this.vista = 'detalle';
+    this.submoduloSeleccionado = submoduloId;
+    this.breadcrumbs = [
+      { label: 'Configuración', vista: 'root' },
+      { label: 'Configuración del sistema', vista: 'grid' },
+      { label: sub.titulo, vista: 'detalle', submoduloId }
+    ];
+  }
+
+  volverARoot(): void {
+    this.vista = 'root';
+    this.submoduloSeleccionado = null;
+    this.breadcrumbs = [];
+    this.claveEditando = null;
+  }
+
+  volverAGrid(): void {
+    this.vista = 'grid';
+    this.submoduloSeleccionado = null;
+    this.breadcrumbs = [
+      { label: 'Configuración', vista: 'root' }
+    ];
+    this.claveEditando = null;
+  }
+
+  navegarBreadcrumb(item: BreadcrumbItem): void {
+    this.vista = item.vista;
+    this.claveEditando = null;
+    if (item.vista === 'root') {
+      this.submoduloSeleccionado = null;
+      this.breadcrumbs = [];
+    } else if (item.vista === 'grid') {
+      this.submoduloSeleccionado = null;
+      this.breadcrumbs = [
+        { label: 'Configuración', vista: 'root' }
+      ];
+    } else if (item.submoduloId) {
+      this.submoduloSeleccionado = item.submoduloId;
+      const sub = this.submodulos.find(s => s.id === item.submoduloId);
+      this.breadcrumbs = [
+        { label: 'Configuración', vista: 'root' },
+        { label: 'Configuración del sistema', vista: 'grid' },
+        { label: sub?.titulo ?? item.label, vista: 'detalle', submoduloId: item.submoduloId }
+      ];
+    }
+  }
+
+  configsPorSubmodulo(submoduloId: string): (ParametroConfiguracion & { meta: MetaParametro })[] {
+    return this.configuraciones
+      .map(c => ({ ...c, meta: METADATOS[c.clave] ?? { titulo: c.clave, descripcion: '', icono: 'settings', grupo: 'Otros' } }))
+      .filter(c => c.meta.submodulo === submoduloId);
+  }
+
   private cargarConfiguraciones(): void {
     this.cargando = true;
     this.errorMsg = '';
     this.configuracionService.listar().subscribe({
       next: (data) => {
         this.configuraciones = data;
-        this.armarGrupos();
         this.cargando = false;
       },
       error: () => {
@@ -156,29 +395,6 @@ export class ConfiguracionSistemaComponent implements OnInit {
         this.cargando = false;
       }
     });
-  }
-
-  private armarGrupos(): void {
-    const porGrupo = new Map<string, (ParametroConfiguracion & { meta: MetaParametro })[]>();
-    for (const config of this.configuraciones) {
-      const meta = METADATOS[config.clave] ?? {
-        titulo: config.clave,
-        descripcion: '',
-        icono: 'settings',
-        grupo: 'Otros'
-      };
-      const item = { ...config, meta };
-      const lista = porGrupo.get(meta.grupo) ?? [];
-      lista.push(item);
-      porGrupo.set(meta.grupo, lista);
-    }
-    this.grupos = [...porGrupo.entries()]
-      .map(([nombre, parametros]) => ({ nombre, parametros }))
-      .sort((a, b) => {
-        const ia = ORDEN_GRUPOS.indexOf(a.nombre);
-        const ib = ORDEN_GRUPOS.indexOf(b.nombre);
-        return (ia === -1 ? ORDEN_GRUPOS.length : ia) - (ib === -1 ? ORDEN_GRUPOS.length : ib);
-      });
   }
 
   iniciarEdicion(config: ParametroConfiguracion): void {
@@ -212,7 +428,6 @@ export class ConfiguracionSistemaComponent implements OnInit {
   guardarValor(): void {
     if (!this.claveEditando) return;
     const valor = (this.valorEditando ?? '').trim();
-    // correo_dominios_permitidos permite vacío = acepta todos los dominios
     const permiteVacio = this.claveEditando === 'correo_dominios_permitidos';
     if (!permiteVacio && (!valor || valor.length > VALOR_MAX_LENGTH)) return;
     if (permiteVacio && valor.length > VALOR_MAX_LENGTH) return;

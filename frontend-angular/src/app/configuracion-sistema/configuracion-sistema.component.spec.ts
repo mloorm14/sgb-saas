@@ -141,4 +141,66 @@ describe('ConfiguracionSistemaComponent', () => {
 
     expect(component.errorMsg).toBe('No tienes permisos para modificar la configuración del sistema');
   });
+
+  it('inicia en vista root con 2 módulos', async () => {
+    await configurar('ADMIN');
+    fixture.detectChanges();
+
+    httpMock.expectOne('http://localhost:8080/api/v1/configuracion').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
+
+    expect(component.vista).toBe('root');
+    expect(component.modulos.length).toBe(2);
+    expect(component.modulos[0].id).toBe('sistema');
+    expect(component.modulos[1].id).toBe('danos');
+  });
+
+  it('abrirModulo("sistema") navega a grid con 8 submódulos', async () => {
+    await configurar('ADMIN');
+    fixture.detectChanges();
+
+    httpMock.expectOne('http://localhost:8080/api/v1/configuracion').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
+
+    component.abrirModulo('sistema');
+
+    expect(component.vista).toBe('grid');
+    expect(component.submodulos.length).toBe(8);
+    expect(component.breadcrumbs.length).toBe(1);
+    expect(component.breadcrumbs[0].label).toBe('Configuración');
+  });
+
+  it('abrirSubmodulo navega a detalle con breadcrumb correcto', async () => {
+    await configurar('ADMIN');
+    fixture.detectChanges();
+
+    httpMock.expectOne('http://localhost:8080/api/v1/configuracion').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
+
+    component.abrirSubmodulo('multas');
+
+    expect(component.vista).toBe('detalle');
+    expect(component.submoduloSeleccionado).toBe('multas');
+    expect(component.breadcrumbs.length).toBe(3);
+    expect(component.breadcrumbs[2].label).toBe('Multas');
+  });
+
+  it('volverARoot regresa a la vista raíz', async () => {
+    await configurar('ADMIN');
+    fixture.detectChanges();
+
+    httpMock.expectOne('http://localhost:8080/api/v1/configuracion').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
+
+    component.abrirSubmodulo('multas');
+    component.volverARoot();
+
+    expect(component.vista).toBe('root');
+    expect(component.submoduloSeleccionado).toBeNull();
+    expect(component.breadcrumbs.length).toBe(0);
+  });
 });
