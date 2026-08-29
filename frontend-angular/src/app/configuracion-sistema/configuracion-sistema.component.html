@@ -5,9 +5,9 @@
       <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
         <span class="material-symbols-outlined text-[22px] text-primary">tune</span>
       </div>
-      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background">Configuración</h1>
+      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background">{{ tituloActual }}</h1>
     </div>
-    <p class="font-body-sm text-body-sm text-on-surface-variant sm:ml-[52px]">Elegí un módulo para ver y editar sus parámetros.</p>
+    <p class="font-body-sm text-body-sm text-on-surface-variant sm:ml-[52px]">{{ descripcionActual }}</p>
   </div>
 
   @if (!esAdmin) {
@@ -70,6 +70,10 @@
 
     <!-- ═══ VISTA GRID: submódulos de Configuración del sistema ═══ -->
     @if (vista === 'grid' && !cargando) {
+      <button (click)="volverARoot()"
+        class="inline-flex items-center gap-xs font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors cursor-pointer mb-md">
+        <span class="material-symbols-outlined text-[18px]">arrow_back</span> Volver
+      </button>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md">
         @for (sub of submodulos; track sub.id) {
           <button (click)="abrirSubmodulo(sub.id)"
@@ -95,6 +99,10 @@
 
     <!-- ═══ VISTA DETALLE: configuración de un submódulo ═══ -->
     @if (vista === 'detalle' && !cargando && submoduloSeleccionado !== 'danos') {
+      <button (click)="volverAGrid()"
+        class="inline-flex items-center gap-xs font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors cursor-pointer mb-md">
+        <span class="material-symbols-outlined text-[18px]">arrow_back</span> Volver a Configuración del sistema
+      </button>
       @let configs = configsPorSubmodulo(submoduloSeleccionado!);
       @if (configs.length > 0) {
         <div class="rounded-lg border border-outline-variant bg-white overflow-hidden divide-y divide-outline-variant">
@@ -156,6 +164,10 @@
 
     <!-- ═══ VISTA DETALLE: Tipos de daño ═══ -->
     @if (vista === 'detalle' && submoduloSeleccionado === 'danos') {
+      <button (click)="volverARoot()"
+        class="inline-flex items-center gap-xs font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors cursor-pointer mb-md">
+        <span class="material-symbols-outlined text-[18px]">arrow_back</span> Volver
+      </button>
       <div class="mb-md">
         <p class="font-body-sm text-body-sm text-on-surface-variant">Gestiona categorías y tipos de daño. Cada tipo tiene costo FIJO ($) o PORCENTAJE del precio del libro.</p>
       </div>

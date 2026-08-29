@@ -263,6 +263,8 @@ export class ConfiguracionSistemaComponent implements OnInit {
   vista: VistaConfig = 'root';
   submoduloSeleccionado: string | null = null;
   breadcrumbs: BreadcrumbItem[] = [];
+  tituloActual = 'Configuración';
+  descripcionActual = 'Elegí un módulo para ver y editar sus parámetros.';
 
   modulos: ModuloConfig[] = [
     {
@@ -313,6 +315,8 @@ export class ConfiguracionSistemaComponent implements OnInit {
     if (moduloId === 'danos') {
       this.vista = 'detalle';
       this.submoduloSeleccionado = 'danos';
+      this.tituloActual = 'Tipos de daño';
+      this.descripcionActual = 'Categorías y costos por tipo de daño a un ejemplar.';
       this.breadcrumbs = [
         { label: 'Configuración', vista: 'root' },
         { label: 'Tipos de daño', vista: 'detalle', submoduloId: 'danos' }
@@ -320,6 +324,8 @@ export class ConfiguracionSistemaComponent implements OnInit {
     } else {
       this.vista = 'grid';
       this.submoduloSeleccionado = null;
+      this.tituloActual = 'Configuración del sistema';
+      this.descripcionActual = 'Ocho submódulos, cada uno con sus propios parámetros.';
       this.breadcrumbs = [
         { label: 'Configuración', vista: 'root' }
       ];
@@ -331,6 +337,8 @@ export class ConfiguracionSistemaComponent implements OnInit {
     if (!sub) return;
     this.vista = 'detalle';
     this.submoduloSeleccionado = submoduloId;
+    this.tituloActual = sub.titulo;
+    this.descripcionActual = sub.descripcion;
     this.breadcrumbs = [
       { label: 'Configuración', vista: 'root' },
       { label: 'Configuración del sistema', vista: 'grid' },
@@ -342,6 +350,8 @@ export class ConfiguracionSistemaComponent implements OnInit {
     this.vista = 'root';
     this.submoduloSeleccionado = null;
     this.breadcrumbs = [];
+    this.tituloActual = 'Configuración';
+    this.descripcionActual = 'Elegí un módulo para ver y editar sus parámetros.';
     this.claveEditando = null;
   }
 
@@ -351,6 +361,8 @@ export class ConfiguracionSistemaComponent implements OnInit {
     this.breadcrumbs = [
       { label: 'Configuración', vista: 'root' }
     ];
+    this.tituloActual = 'Configuración del sistema';
+    this.descripcionActual = 'Ocho submódulos, cada uno con sus propios parámetros.';
     this.claveEditando = null;
   }
 
@@ -360,14 +372,20 @@ export class ConfiguracionSistemaComponent implements OnInit {
     if (item.vista === 'root') {
       this.submoduloSeleccionado = null;
       this.breadcrumbs = [];
+      this.tituloActual = 'Configuración';
+      this.descripcionActual = 'Elegí un módulo para ver y editar sus parámetros.';
     } else if (item.vista === 'grid') {
       this.submoduloSeleccionado = null;
       this.breadcrumbs = [
         { label: 'Configuración', vista: 'root' }
       ];
+      this.tituloActual = 'Configuración del sistema';
+      this.descripcionActual = 'Ocho submódulos, cada uno con sus propios parámetros.';
     } else if (item.submoduloId) {
       this.submoduloSeleccionado = item.submoduloId;
       const sub = this.submodulos.find(s => s.id === item.submoduloId);
+      this.tituloActual = sub?.titulo ?? item.label;
+      this.descripcionActual = sub?.descripcion ?? '';
       this.breadcrumbs = [
         { label: 'Configuración', vista: 'root' },
         { label: 'Configuración del sistema', vista: 'grid' },

@@ -203,4 +203,27 @@ describe('ConfiguracionSistemaComponent', () => {
     expect(component.submoduloSeleccionado).toBeNull();
     expect(component.breadcrumbs.length).toBe(0);
   });
+
+  it('tituloActual y descripcionActual cambian con la navegación', async () => {
+    await configurar('ADMIN');
+    fixture.detectChanges();
+
+    httpMock.expectOne('http://localhost:8080/api/v1/configuracion').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
+
+    expect(component.tituloActual).toBe('Configuración');
+
+    component.abrirModulo('sistema');
+    expect(component.tituloActual).toBe('Configuración del sistema');
+
+    component.abrirSubmodulo('multas');
+    expect(component.tituloActual).toBe('Multas');
+
+    component.volverAGrid();
+    expect(component.tituloActual).toBe('Configuración del sistema');
+
+    component.volverARoot();
+    expect(component.tituloActual).toBe('Configuración');
+  });
 });
