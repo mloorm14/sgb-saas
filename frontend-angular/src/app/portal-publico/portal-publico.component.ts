@@ -17,7 +17,8 @@ import { Categoria } from '../core/models/categoria.model';
   standalone: true,
   selector: 'app-portal-publico',
   imports: [CommonModule, FormsModule, RouterLink],
-  templateUrl: './portal-publico.component.html'
+  templateUrl: './portal-publico.component.html',
+  styles: [`:host { display: block; height: 100%; overflow-y: auto; }`]
 })
 export class PortalPublicoComponent implements OnInit, OnDestroy {
   libros: Libro[] = [];

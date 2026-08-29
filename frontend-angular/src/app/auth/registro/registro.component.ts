@@ -14,7 +14,8 @@ function passwordsIgualesValidator(control: AbstractControl): ValidationErrors |
   selector: 'app-registro',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule],
-  templateUrl: './registro.component.html'
+  templateUrl: './registro.component.html',
+  styles: [`:host { display: block; height: 100%; overflow-y: auto; }`]
 })
 export class RegistroComponent {
   paso: 'registro' | 'verificar' = 'registro';

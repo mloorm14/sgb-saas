@@ -8,7 +8,8 @@ import { AuthService } from '../../core/services/auth.service';
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule],
-  templateUrl: './login.component.html'
+  templateUrl: './login.component.html',
+  styles: [`:host { display: block; height: 100%; overflow-y: auto; }`]
 })
 export class LoginComponent implements OnInit {
   form: FormGroup;
