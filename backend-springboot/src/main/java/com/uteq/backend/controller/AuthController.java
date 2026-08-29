@@ -2,6 +2,7 @@ package com.uteq.backend.controller;
 
 import com.uteq.backend.dto.CodigoVerificacionRequestDTO;
 import com.uteq.backend.dto.LoginRequestDTO;
+import com.uteq.backend.dto.ReenviarCodigoRequestDTO;
 import com.uteq.backend.dto.RegistroRequestDTO;
 import com.uteq.backend.dto.TokenResponseDTO;
 import com.uteq.backend.dto.UsuarioResponseDTO;
@@ -38,6 +39,15 @@ public class AuthController {
     public ResponseEntity<UsuarioResponseDTO> registro(@Valid @RequestBody RegistroRequestDTO dto) {
         UsuarioResponseDTO usuario = authService.registrar(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(usuario);
+    }
+
+    // Sin JWT: el usuario aún no puede loguearse (PENDIENTE_VERIFICACION).
+    // Regenera el código de 6 dígitos en Redis cuando el anterior expiró
+    // (TTL 10 min) y el usuario quedó bloqueado sin intervención de ADMIN.
+    @PostMapping("/reenviar-codigo")
+    public ResponseEntity<Void> reenviarCodigo(@Valid @RequestBody ReenviarCodigoRequestDTO dto) {
+        authService.reenviarCodigo(dto.correo());
+        return ResponseEntity.noContent().build();
     }
 
     // Módulo 9.5: sin @PreAuthorize / sin JWT -- el usuario recién

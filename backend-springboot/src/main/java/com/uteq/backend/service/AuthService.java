@@ -112,6 +112,20 @@ public class AuthService {
         }
     }
 
+    // ── POST /api/auth/reenviar-codigo ────────────────────────
+    // Sin autenticación: el usuario todavía no puede loguearse
+    // (PENDIENTE_VERIFICACION) así que no hay JWT. Permite regenerar el
+    // código cuando el TTL de Redis (10 min) ya expiró y el usuario quedó
+    // sin forma de verificar su correo salvo intervención manual en Postgres.
+    public void reenviarCodigo(String correo) {
+        Usuario usuario = usuarioRepository.findByCorreo(correo)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Usuario no encontrado: " + correo));
+        if (usuario.isCorreoVerificado() || !ESTADO_INICIAL.equals(usuario.getEstado().getNombre())) {
+            throw new IllegalArgumentException("El correo ya está verificado o la cuenta no requiere verificación.");
+        }
+        verificacionCorreoService.generarYEnviarCodigo(usuario);
+    }
+
     // ── POST /api/auth/verificar-correo ───────────────────────
     // No requiere estar autenticado (el usuario todavía no puede loguearse
     // -- ver ESTADO_INICIAL): la identidad se comprueba con el código de un
