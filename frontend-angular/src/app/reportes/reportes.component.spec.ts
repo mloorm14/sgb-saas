@@ -34,21 +34,33 @@ describe('ReportesComponent', () => {
     fixture.detectChanges();
   });
 
-  it('carga los reportes al iniciar (libros y morosidad)', () => {
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+
+  it('carga libros al abrir el módulo de libros', () => {
+    component.abrirModulo('libros');
+
     expect(reporteService.librosMasPrestadosDetallado).toHaveBeenCalled();
-    expect(reporteService.morosidad).toHaveBeenCalled();
     expect(component.libros.length).toBe(1);
+  });
+
+  it('carga morosidad al abrir el módulo de morosidad', () => {
+    component.abrirModulo('morosidad');
+
+    expect(reporteService.morosidad).toHaveBeenCalled();
     expect(component.morosos.length).toBe(1);
   });
 
-  it('recarga el reporte al cambiar el limiteTop', () => {
+  it('recarga el reporte al cambiar el limiteTop y aplicar filtros', () => {
+    component.abrirModulo('libros');
     component.limiteTop = 5;
-    component.cambiarLimite();
+    component.aplicarFiltros();
 
     expect(reporteService.librosMasPrestadosDetallado).toHaveBeenCalledTimes(2);
   });
 
-  it('descarga el PDF de morosidad como Blob (los otros reportes no tienen PDF)', () => {
+  it('descarga el PDF de morosidad como Blob', () => {
     reporteService.morosidadPdf.and.returnValue(of(new Blob(['%PDF'], { type: 'application/pdf' })));
 
     component.descargarMorosidadPdf();
@@ -62,7 +74,7 @@ describe('ReportesComponent', () => {
       throwError(() => ({ error: { detail: 'Sin permisos para el reporte' } }))
     );
 
-    component.ngOnInit();
+    component.abrirModulo('libros');
 
     expect(component.errorMsg).toBe('Sin permisos para el reporte');
   });

@@ -37,9 +37,9 @@ describe('DashboardGerenteAdminComponent', () => {
       expect(compiled.textContent).toContain('Reportes');
     });
 
-    it('debería mostrar Auditoría en el sidebar para GERENTE', () => {
+    it('NO debería mostrar Auditoría en el sidebar para GERENTE (solo ADMIN)', () => {
       const compiled = fixture.nativeElement as HTMLElement;
-      expect(compiled.textContent).toContain('Auditoría');
+      expect(compiled.textContent).not.toContain('Auditoría');
     });
 
     it('debería mostrar nombre del rol como Gerente', () => {
