@@ -11,6 +11,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { Libro } from '../../core/models/libro.model';
 import { Reservacion } from '../../core/models/reservacion.model';
 import { PortadaLibroComponent } from '../../shared/portada-libro/portada-libro.component';
+import { toOffsetDateTime } from '../../core/utils/fecha';
 
 // Detalle de libro del consumidor (Rama B). El estado de favoritos se
 // resuelve con FavoritoService.listar al montar, igual que en el catálogo.
@@ -104,8 +105,7 @@ export class LibroDetalleComponent implements OnInit {
     if (!this.libro) return;
     this.mostrarModalReserva = false;
     const usuarioId = this.authService.getUserId();
-    const tzOffset = new Date().toISOString().slice(-6);
-    const fechaRetiroISO = this.fechaRetiro ? `${this.fechaRetiro}T00:00:00${tzOffset}` : undefined;
+    const fechaRetiroISO = this.fechaRetiro ? toOffsetDateTime(this.fechaRetiro) : undefined;
     this.reservacionService.crear({ usuarioId: usuarioId!, libroId: this.libro.id, fechaRetiro: fechaRetiroISO }).subscribe({
       next: (r) => {
         this.reservacionesPendientes.marcarReservada(this.libro!.id);

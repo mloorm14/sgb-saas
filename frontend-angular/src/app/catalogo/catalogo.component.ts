@@ -14,6 +14,7 @@ import { Libro, LibroSugerencia } from '../core/models/libro.model';
 import { Categoria } from '../core/models/categoria.model';
 import { Autor } from '../core/models/autor.model';
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
+import { toOffsetDateTime } from '../core/utils/fecha';
 
 // Catalogo del consumidor (Rama B del roadmap). El grid usa
 // LibroService.listar (Page<Libro>, sort por titulo), los filtros salen de
@@ -137,8 +138,7 @@ export class CatalogoComponent implements OnInit, OnDestroy {
     const libro = this.libroParaReservar;
     this.mostrarModalReserva = false;
     const usuarioId = this.authService.getUserId();
-    const tzOffset = new Date().toISOString().slice(-6);
-    const fechaRetiroISO = this.fechaRetiro ? `${this.fechaRetiro}T00:00:00${tzOffset}` : undefined;
+    const fechaRetiroISO = this.fechaRetiro ? toOffsetDateTime(this.fechaRetiro) : undefined;
     this.reservacionService.crear({ usuarioId: usuarioId!, libroId: libro.id, fechaRetiro: fechaRetiroISO }).subscribe({
       next: (r) => {
         this.reservacionesPendientes.marcarReservada(libro.id);

@@ -14,6 +14,7 @@ import { UsuarioSugerencia } from '../core/models/prestamos-gestion.model';
 import { Libro, LibroSugerencia } from '../core/models/libro.model';
 import { BuscadorLibroComponent } from '../shared/buscador-libro/buscador-libro.component';
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
+import { toOffsetDateTime } from '../core/utils/fecha';
 
 @Component({
   standalone: true,
@@ -398,14 +399,10 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
     this.exitoMsg = '';
     this.errorMsgAccion = '';
 
-    const tzOffset = -new Date().getTimezoneOffset();
-    const sign = tzOffset >= 0 ? '+' : '-';
-    const pad = (n: number) => String(Math.floor(Math.abs(n))).padStart(2, '0');
-    const tz = `${sign}${pad(tzOffset / 60)}:${pad(tzOffset % 60)}`;
     const request: ReservacionRequest = {
       usuarioId: this.usuario.id,
       libroId: this.libroSeleccionado.id,
-      fechaRetiro: `${this.fechaRetiro}T12:00:00${tz}`
+      fechaRetiro: toOffsetDateTime(this.fechaRetiro)
     };
 
     this.reservacionService.crear(request).subscribe({
