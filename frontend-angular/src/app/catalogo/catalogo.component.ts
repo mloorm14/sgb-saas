@@ -151,6 +151,15 @@ export class CatalogoComponent implements OnInit, OnDestroy {
 
   confirmarReserva(): void {
     if (!this.libroParaReservar) return;
+    const hoyStr = new Date().toISOString().split('T')[0];
+    if (this.fechaRetiro === hoyStr) {
+      const ahora = new Date();
+      if (ahora.getHours() >= 18) {
+        if (!confirm('Ya paso la hora limite (18:00). ¿Quieres retirarlo mañana hasta las 18:00?')) return;
+        const manana = new Date(ahora); manana.setDate(manana.getDate()+1);
+        this.fechaRetiro = manana.toISOString().split('T')[0];
+      }
+    }
     const libro = this.libroParaReservar;
     this.mostrarModalReserva = false;
     const usuarioId = this.authService.getUserId();

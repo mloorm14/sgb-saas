@@ -12,6 +12,7 @@ import { Libro } from '../../core/models/libro.model';
 import { Reservacion } from '../../core/models/reservacion.model';
 import { PortadaLibroComponent } from '../../shared/portada-libro/portada-libro.component';
 import { toOffsetDateTime } from '../../core/utils/fecha';
+import { SuscripcionDisponibilidadService } from '../../core/services/suscripcion-disponibilidad.service';
 
 // Detalle de libro del consumidor (Rama B). El estado de favoritos se
 // resuelve con FavoritoService.listar al montar, igual que en el catálogo.
@@ -37,6 +38,8 @@ export class LibroDetalleComponent implements OnInit {
   mostrarModalReserva = false;
   fechaRetiro: string = '';
   minFechaRetiro: string = '';
+  maxFechaRetiro: string = '';
+  notificarMsg: string | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -44,12 +47,15 @@ export class LibroDetalleComponent implements OnInit {
     private favoritoService: FavoritoService,
     private reservacionService: ReservacionService,
     private reservacionesPendientes: ReservacionPendienteService,
-    private authService: AuthService
+    private authService: AuthService,
+    private suscripcionService: SuscripcionDisponibilidadService
   ) {}
 
   ngOnInit(): void {
     const hoy = new Date();
     this.minFechaRetiro = hoy.toISOString().split('T')[0];
+    const max = new Date(hoy); max.setDate(max.getDate()+14);
+    this.maxFechaRetiro = max.toISOString().split('T')[0];
     this.fechaRetiro = this.minFechaRetiro;
 
     const id = Number(this.route.snapshot.paramMap.get('id'));
@@ -103,6 +109,16 @@ export class LibroDetalleComponent implements OnInit {
 
   confirmarReserva(): void {
     if (!this.libro) return;
+    // Si hoy ya paso 18:00, confirmar si quiere mañana
+    const hoyStr = new Date().toISOString().split('T')[0];
+    if (this.fechaRetiro === hoyStr) {
+      const ahora = new Date();
+      if (ahora.getHours() >= 18) {
+        if (!confirm('Ya paso la hora limite (18:00). ¿Quieres retirarlo mañana hasta las 18:00?')) return;
+        const manana = new Date(ahora); manana.setDate(manana.getDate()+1);
+        this.fechaRetiro = manana.toISOString().split('T')[0];
+      }
+    }
     this.mostrarModalReserva = false;
     const usuarioId = this.authService.getUserId();
     const fechaRetiroISO = this.fechaRetiro ? toOffsetDateTime(this.fechaRetiro) : undefined;
@@ -111,12 +127,30 @@ export class LibroDetalleComponent implements OnInit {
         this.reservacionesPendientes.marcarReservada(this.libro!.id);
         this.reservaCreada = r;
       },
-      error: () => (this.errorMsg = 'Error al reservar el libro')
+      error: (err: any) => {
+        const detail = (err?.error as { detail?: string })?.detail;
+        this.errorMsg = detail ?? 'No se pudo reservar el libro';
+      }
     });
   }
 
   reservarLibro(): void {
+    if (!this.libro) return;
+    if (this.libro.stockDisponible <= 0) {
+      this.notificarDisponibilidad();
+      return;
+    }
     this.abrirModalReserva();
+  }
+
+  notificarDisponibilidad(): void {
+    if (!this.libro) return;
+    const uid = this.authService.getUserId();
+    if (uid === null) { this.errorMsg = 'Inicia sesion para usar Notificarme'; return; }
+    this.suscripcionService.suscribir(this.libro.id).subscribe({
+      next: () => this.notificarMsg = `Te avisaremos cuando "${this.libro!.titulo}" este disponible — reservalo antes que otros.`,
+      error: (err: any) => this.errorMsg = (err?.error as any)?.detail ?? 'No se pudo suscribir'
+    });
   }
 
   alternarFavorito(): void {
