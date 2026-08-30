@@ -174,14 +174,46 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
     this.cargarPagina();
   }
 
+  cancelarReservacion(r: Reservacion): void {
+    if (this.accionandoId !== null || r.estadoReservacionId !== 1) return;
+    if (!confirm('¿Seguro que quieres cancelar esta reserva?')) return;
+    this.cambiarEstadoReservacion(r, 'CANCELADA');
+    if (this.esLector) {
+      setTimeout(() => this.cargarReservacionesLector(), 500);
+    }
+  }
+
+  cancelarHistorial(r: HistorialReservacion): void {
+    if (!confirm('¿Seguro que quieres cancelar esta reserva?')) return;
+    this.accionandoId = r.reservacionId;
+    this.reservacionService.cambiarEstado(r.reservacionId, { nuevoEstado: 'CANCELADA' }).subscribe({
+      next: () => {
+        this.toast.success('Cancelada', 'Reserva cancelada correctamente');
+        if (this.usuario) this.cargarHistorial(this.usuario.id);
+      },
+      error: (err: any) => {
+        const detail = (err?.error as { detail?: string })?.detail ?? 'No se pudo cancelar';
+        this.errorMsgAccion = detail;
+        this.toast.error('Error', detail);
+        this.accionandoId = null;
+      },
+      complete: () => { this.accionandoId = null; }
+    });
+  }
+
   cambiarEstadoReservacion(r: Reservacion, nuevoEstado: 'LISTA_PARA_RETIRO' | 'CANCELADA'): void {
     if (this.accionandoId !== null || r.estadoReservacionId !== 1) return;
     this.accionandoId = r.id;
     this.errorMsg = '';
     this.reservacionService.cambiarEstado(r.id, { nuevoEstado }).subscribe({
       next: () => {
-        this.cargarPagina();
-        this.toast.success('Actualizado', nuevoEstado === 'LISTA_PARA_RETIRO' ? 'Reserva marcada lista para retiro' : 'Reserva cancelada');
+        if (this.esLector) {
+          this.cargarReservacionesLector();
+          this.toast.success('Cancelada', 'Reserva cancelada correctamente');
+        } else {
+          this.cargarPagina();
+          this.toast.success('Actualizado', nuevoEstado === 'LISTA_PARA_RETIRO' ? 'Reserva marcada lista para retiro' : 'Reserva cancelada');
+        }
       },
       error: (err) => {
         this.errorMsg = (err as { error?: { detail?: string } })?.error?.detail

@@ -40,14 +40,21 @@
         <h2 class="font-headline-md text-headline-md text-on-background mb-sm">Pendientes de retiro</h2>
         <div class="grid gap-sm mb-xl">
           @for (r of pendientesDeRetiro; track r.id) {
-            <div class="rounded-lg border border-outline-variant bg-white p-md flex items-center justify-between">
+            <div class="rounded-lg border border-outline-variant bg-white p-md flex items-center justify-between gap-sm">
               <div>
                 <p class="font-label-md text-label-sm text-on-surface">{{ tituloLibro(r.libroId) }}</p>
                 <p class="font-body-sm text-[12px] text-on-surface-variant mt-1">Reservado el {{ r.fechaReserva | date:'dd/MM' }} - Retirar antes del <strong class="text-warning">{{ r.fechaLimiteRetiro | date:'dd/MM/yyyy' }}</strong></p>
+                <p class="font-body-sm text-[11px] text-on-surface-variant mt-1 flex items-center gap-xs"><span class="material-symbols-outlined text-[12px]">info</span> La reserva se cancelara automaticamente si no se retira en el dia pedido.</p>
               </div>
-              <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]" [class]="claseEstadoReservacion(r.estadoReservacionId)">
-                <span class="material-symbols-outlined text-[14px]">event_available</span> {{ estadosReservacion[r.estadoReservacionId] }}
-              </span>
+              <div class="flex items-center gap-sm">
+                <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px]" [class]="claseEstadoReservacion(r.estadoReservacionId)">
+                  <span class="material-symbols-outlined text-[14px]">event_available</span> {{ estadosReservacion[r.estadoReservacionId] }}
+                </span>
+                <button (click)="cancelarReservacion(r)" [disabled]="accionandoId === r.id"
+                  class="h-8 px-sm rounded border border-error text-error font-label-sm text-[11px] hover:bg-error-container disabled:opacity-50 cursor-pointer flex items-center gap-xs">
+                  <span class="material-symbols-outlined text-[14px]">cancel</span> Cancelar
+                </button>
+              </div>
             </div>
           }
         </div>
@@ -320,6 +327,11 @@
                       }
                     </div>
                   </div>
+                  @if (r.estadoId === 1) {
+                    <button (click)="cancelarHistorial(r)" class="mt-sm w-full h-8 rounded border border-error text-error font-label-sm text-[11px] hover:bg-error-container cursor-pointer flex items-center justify-center gap-xs">
+                      <span class="material-symbols-outlined text-[14px]">cancel</span> Cancelar reserva
+                    </button>
+                  }
                 </div>
               }
             </div>

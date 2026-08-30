@@ -52,7 +52,7 @@ public class ReservacionController {
     // manual que faltaba del RF-10: hasta ahora el LECTOR podía crear y el
     // sistema expirar, pero nadie podía marcar "listo para retirar".
     @PatchMapping("/{id}/estado")
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<ReservacionResponseDTO> cambiarEstado(
             @PathVariable Long id,
             @Valid @RequestBody CambioEstadoReservacionRequestDTO dto,

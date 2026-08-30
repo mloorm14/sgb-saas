@@ -129,6 +129,17 @@ public class ReservacionService {
         Reservacion reservacion = reservacionRepo.findById(reservacionId)
                 .orElseThrow(() -> new EntityNotFoundException(RESERVACION_NO_ENCONTRADA + reservacionId));
 
+        // LECTOR solo puede cancelar su propia reserva pendiente
+        if (esLector(authentication)) {
+            Long idPropio = resolverIdPorCorreo(authentication.getName());
+            if (!idPropio.equals(reservacion.getUsuarioId())) {
+                throw new AuthorizationDeniedException("Un LECTOR solo puede cancelar sus propias reservaciones.");
+            }
+            if (!"CANCELADA".equals(dto.nuevoEstado())) {
+                throw new AuthorizationDeniedException("Un LECTOR solo puede cancelar su reservacion.");
+            }
+        }
+
         // Transición válida solo desde PENDIENTE (aceptar o rechazar). Las
         // demás transiciones ya no son decisión del staff: RETIRADA/EXPIRADA
         // pertenecen al flujo de entrega/vencimiento y CANCELADA de una
