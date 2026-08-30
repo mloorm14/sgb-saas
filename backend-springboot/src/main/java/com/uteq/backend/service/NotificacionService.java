@@ -160,12 +160,19 @@ public class NotificacionService {
         crearYEnviar(usuarioId, null, idDelTipo(TIPO_COMPROBANTE_PAGO), html, asunto);
     }
 
+    // 2026-08-30: correos automáticos DESACTIVADOS por volumen en producción
+    // (~100k registros, ~1k+ reservas caducadas) — SMTP generaba 1k+ intentos
+    // por corrida (ReservacionScheduler cada 15 min + NotificacionVencimientoScheduler
+    // cada 60s) con Authentication failed en EmailService. Se mantiene solo el
+    // correo manual de verificación de cuenta (VerificacionCorreoService).
+    // La notificación in-app (tabla notificaciones) sigue creándose.
     private void crearYEnviar(Long usuarioId, Long prestamoId, Integer tipoNotificacionId, String mensaje, String asunto) {
         Usuario usuario = usuarioRepo.findById(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
 
         String cuerpoHtml = mensaje.startsWith("<") ? mensaje : "<p>" + mensaje + "</p>";
-        boolean enviado = emailService.enviarCorreo(usuario.getCorreo(), asunto, cuerpoHtml);
+        // DESACTIVADO: boolean enviado = emailService.enviarCorreo(usuario.getCorreo(), asunto, cuerpoHtml);
+        boolean enviado = false;
 
         Notificacion notificacion = new Notificacion();
         notificacion.setUsuarioId(usuarioId);
@@ -173,7 +180,7 @@ public class NotificacionService {
         notificacion.setTipoNotificacionId(tipoNotificacionId);
         notificacion.setMensaje(mensaje);
         notificacion.setEnviadoOk(enviado);
-        notificacion.setErrorEnvio(enviado ? null : "Fallo al enviar el correo (ver logs de EmailService)");
+        notificacion.setErrorEnvio(enviado ? null : "Correo automático desactivado (solo verificación activa) - ver NotificacionService.crearYEnviar");
         notificacion.setFechaEnvio(enviado ? OffsetDateTime.now() : null);
         notificacion.setCreadoEn(OffsetDateTime.now());
         notificacionRepo.save(notificacion);
