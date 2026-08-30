@@ -52,6 +52,16 @@ const METADATOS: Record<string, MetaParametro> = {
     modulo: 'sistema',
     submodulo: 'prestamos'
   },
+  max_reservas_por_usuario: {
+    titulo: 'Máximo de reservas activas',
+    descripcion: 'Cantidad máxima de reservas que un lector puede tener al mismo tiempo',
+    icono: 'event_available',
+    grupo: 'Préstamos y reservas',
+    sufijo: 'reservas',
+    tipo: 'numero',
+    modulo: 'sistema',
+    submodulo: 'prestamos'
+  },
   minutos_reserva: {
     titulo: 'Minutos para retirar una reserva',
     descripcion: 'Tiempo antes de que una reserva caduque automáticamente',

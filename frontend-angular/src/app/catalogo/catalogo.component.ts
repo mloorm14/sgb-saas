@@ -13,6 +13,7 @@ import { Libro, LibroSugerencia } from '../core/models/libro.model';
 import { Categoria } from '../core/models/categoria.model';
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
 import { toOffsetDateTime } from '../core/utils/fecha';
+import { SuscripcionDisponibilidadService } from '../core/services/suscripcion-disponibilidad.service';
 
 @Component({
   standalone: true,
@@ -57,7 +58,8 @@ export class CatalogoComponent implements OnInit, OnDestroy {
     private favoritoService: FavoritoService,
     private reservacionService: ReservacionService,
     private reservacionesPendientes: ReservacionPendienteService,
-    private authService: AuthService
+    private authService: AuthService,
+    private suscripcionService: SuscripcionDisponibilidadService
   ) {}
 
   ngOnInit(): void {
@@ -133,8 +135,13 @@ export class CatalogoComponent implements OnInit, OnDestroy {
       this.errorMsg = 'Inicia sesion para usar Notificarme';
       return;
     }
-    // TODO: llamar SuscripcionDisponibilidadService cuando backend este listo
-    this.mostrarToast(`Te avisaremos cuando "${libro.titulo}" este disponible — reservalo antes que otros.`);
+    this.suscripcionService.suscribir(libro.id).subscribe({
+      next: () => this.mostrarToast(`Te avisaremos cuando "${libro.titulo}" este disponible — reservalo antes que otros.`),
+      error: (err: any) => {
+        const detail = (err?.error as { detail?: string })?.detail;
+        this.errorMsg = detail ?? 'No se pudo suscribir. Intenta nuevamente.';
+      }
+    });
   }
 
   cancelarReserva(): void {

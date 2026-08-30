@@ -21,6 +21,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -41,15 +42,18 @@ public class ReservacionService {
     private final EstadoReservacionRepository estadoReservacionRepo;
     private final UsuarioRepository usuarioRepo;
     private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
+    private final ConfiguracionSistemaService configuracionSistemaService;
 
     public ReservacionService(ReservacionRepository reservacionRepo,
                               EstadoReservacionRepository estadoReservacionRepo,
                               UsuarioRepository usuarioRepo,
-                              BitacoraAuditoriaRepository bitacoraAuditoriaRepo) {
+                              BitacoraAuditoriaRepository bitacoraAuditoriaRepo,
+                              ConfiguracionSistemaService configuracionSistemaService) {
         this.reservacionRepo = reservacionRepo;
         this.estadoReservacionRepo = estadoReservacionRepo;
         this.usuarioRepo = usuarioRepo;
         this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
+        this.configuracionSistemaService = configuracionSistemaService;
     }
 
     @Transactional
@@ -61,7 +65,25 @@ public class ReservacionService {
                         "Un LECTOR solo puede reservar para sí mismo.");
             }
         }
+        validarLimiteReservas(dto.usuarioId());
+        validarDeudas(dto.usuarioId());
         return toDTO(reservacionRepo.save(fromDTO(dto)));
+    }
+
+    private void validarLimiteReservas(Long usuarioId) {
+        int max = 3;
+        try { max = configuracionSistemaService.obtenerValorEntero("max_reservas_por_usuario"); } catch (Exception ignored) {}
+        long activas = reservacionRepo.countByUsuarioIdAndEstadoReservacionIdIn(usuarioId, List.of(1, 2));
+        if (activas >= max) {
+            throw new IllegalStateException("Has alcanzado el máximo de " + max + " reservas activas. Cancela o retira una para reservar otra.");
+        }
+    }
+
+    private void validarDeudas(Long usuarioId) {
+        Usuario u = usuarioRepo.findById(usuarioId).orElse(null);
+        if (u != null && u.getEstado() != null && "BLOQUEADO_POR_MULTA".equals(u.getEstado().getNombre())) {
+            throw new IllegalStateException("Tienes multas pendientes. Regulariza tu situacion para poder reservar.");
+        }
     }
 
     private Reservacion fromDTO(ReservacionRequestDTO dto) {
@@ -81,17 +103,21 @@ public class ReservacionService {
         r.setEstadoReservacionId(estadoInicial.getId());
         r.setFechaReserva(ahora);
 
-        // Si el frontend provee fechaRetiro, se valida que no sea anterior
-        // a ahora y se usa como base para fechaLimiteRetiro.
-        // Si no se provee, se mantiene la lógica original (now + 1 día).
+        // Fecha limite: usa hora_limite_retiro_reserva (ej 18:00) del dia elegido
+        String horaLimiteStr = "18:00";
+        try { String v = configuracionSistemaService.obtenerValor("hora_limite_retiro_reserva"); if (v != null && !v.isBlank()) horaLimiteStr = v.trim(); } catch (Exception ignored) {}
+        LocalTime horaLimite = LocalTime.parse(horaLimiteStr.length()==5?horaLimiteStr+":00":horaLimiteStr);
         if (dto.fechaRetiro() != null) {
             if (dto.fechaRetiro().isBefore(ahora)) {
                 throw new IllegalArgumentException(
                         "La fecha de retiro no puede ser anterior a la fecha actual.");
             }
-            r.setFechaLimiteRetiro(dto.fechaRetiro().plusDays(DIAS_LIMITE_RETIRO));
+            OffsetDateTime limite = dto.fechaRetiro().withHour(horaLimite.getHour()).withMinute(horaLimite.getMinute()).withSecond(0).withNano(0);
+            r.setFechaLimiteRetiro(limite);
         } else {
-            r.setFechaLimiteRetiro(ahora.plusDays(DIAS_LIMITE_RETIRO));
+            OffsetDateTime limite = ahora.withHour(horaLimite.getHour()).withMinute(horaLimite.getMinute()).withSecond(0).withNano(0);
+            if (limite.isBefore(ahora)) limite = limite.plusDays(1);
+            r.setFechaLimiteRetiro(limite);
         }
 
         return r;

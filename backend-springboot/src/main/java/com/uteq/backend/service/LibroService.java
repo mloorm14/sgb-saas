@@ -69,6 +69,7 @@ public class LibroService {
     // PrestamoService con dias_prestamo_default/max_renovaciones_default.
     private final ConfiguracionSistemaService configuracionSistemaService;
     private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
+    private final SuscripcionDisponibilidadService suscripcionDisponibilidadService;
 
     public LibroService(LibroRepository libroRepo,
                         EditorialRepository editorialRepo,
@@ -77,7 +78,8 @@ public class LibroService {
                         CategoriaRepository categoriaRepo,
                         AutorRepository autorRepo,
                         ConfiguracionSistemaService configuracionSistemaService,
-                        BitacoraAuditoriaRepository bitacoraAuditoriaRepo) {
+                        BitacoraAuditoriaRepository bitacoraAuditoriaRepo,
+                        @org.springframework.beans.factory.annotation.Autowired(required = false) SuscripcionDisponibilidadService suscripcionDisponibilidadService) {
         this.libroRepo     = libroRepo;
         this.editorialRepo = editorialRepo;
         this.idiomaRepo    = idiomaRepo;
@@ -86,6 +88,7 @@ public class LibroService {
         this.autorRepo     = autorRepo;
         this.configuracionSistemaService = configuracionSistemaService;
         this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
+        this.suscripcionDisponibilidadService = suscripcionDisponibilidadService;
     }
 
     private void registrarAuditoria(Long usuarioId, String tipoOperacion, Long registroId, String detalles) {
@@ -288,6 +291,7 @@ public class LibroService {
         Libro libro = libroRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
                         LIBRO_NO_ENCONTRADO + id));
+        int stockAntes = libro.getStockDisponible() != null ? libro.getStockDisponible() : 0;
         if (libroRepo.existsByIsbnAndIdNot(dto.isbn(), id)) {
             throw new IllegalArgumentException(
                     "ISBN ya usado por otro libro: " + dto.isbn());
@@ -325,6 +329,9 @@ public class LibroService {
 
         LibroResponseDTO resultado = toDTO(libroRepo.save(libro));
         registrarAuditoria(null, "UPDATE", id, "Libro actualizado: " + dto.titulo());
+        if (stockAntes == 0 && dto.stockDisponible() != null && dto.stockDisponible() > 0 && suscripcionDisponibilidadService != null) {
+            try { suscripcionDisponibilidadService.notificarDisponibles(id); } catch (Exception ignored) {}
+        }
         return resultado;
     }
 

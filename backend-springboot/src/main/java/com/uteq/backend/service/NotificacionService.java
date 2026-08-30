@@ -38,6 +38,7 @@ public class NotificacionService {
     private static final String TIPO_MULTA = "MULTA";
     private static final String TIPO_RESERVA_CADUCADA = "RESERVA_CADUCADA";
     private static final String TIPO_COMPROBANTE_PAGO = "COMPROBANTE_PAGO";
+    private static final String TIPO_DISPONIBLE = "DISPONIBLE";
     private static final String ROL_LECTOR = "LECTOR";
     private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado: ";
     private static final String TIPO_NO_ENCONTRADO = "Catalogo tipos_notificacion sin fila '";
@@ -160,12 +161,44 @@ public class NotificacionService {
         crearYEnviar(usuarioId, null, idDelTipo(TIPO_COMPROBANTE_PAGO), html, asunto);
     }
 
+    @Transactional
+    public void notificarLibroDisponible(Long usuarioId, Long libroId, String titulo) {
+        String mensaje = "El libro \"" + titulo + "\" esta disponible ahora — reservalo antes que otros.";
+        Integer tipoId = idDelTipo(TIPO_DISPONIBLE);
+        // Notificacion manual: si permite envio, se intenta correo
+        crearYEnviarDisponible(usuarioId, null, tipoId, mensaje, "Libro disponible");
+    }
+
+    private void crearYEnviarDisponible(Long usuarioId, Long prestamoId, Integer tipoNotificacionId, String mensaje, String asunto) {
+        Usuario usuario = usuarioRepo.findById(usuarioId)
+                .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
+        String cuerpoHtml = mensaje.startsWith("<") ? mensaje : "<p>" + mensaje + "</p>";
+        boolean enviado = false;
+        String error = null;
+        try {
+            enviado = emailService.enviarCorreo(usuario.getCorreo(), asunto, cuerpoHtml);
+        } catch (Exception e) {
+            error = e.getMessage();
+        }
+        Notificacion notificacion = new Notificacion();
+        notificacion.setUsuarioId(usuarioId);
+        notificacion.setPrestamoId(prestamoId);
+        notificacion.setTipoNotificacionId(tipoNotificacionId);
+        notificacion.setMensaje(mensaje);
+        notificacion.setEnviadoOk(enviado);
+        notificacion.setErrorEnvio(enviado ? null : (error != null ? error : "Fallo envio correo disponible"));
+        notificacion.setFechaEnvio(enviado ? OffsetDateTime.now() : null);
+        notificacion.setCreadoEn(OffsetDateTime.now());
+        notificacionRepo.save(notificacion);
+    }
+
     // 2026-08-30: correos automáticos DESACTIVADOS por volumen en producción
     // (~100k registros, ~1k+ reservas caducadas) — SMTP generaba 1k+ intentos
     // por corrida (ReservacionScheduler cada 15 min + NotificacionVencimientoScheduler
     // cada 60s) con Authentication failed en EmailService. Se mantiene solo el
     // correo manual de verificación de cuenta (VerificacionCorreoService).
     // La notificación in-app (tabla notificaciones) sigue creándose.
+    // Para DISPONIBLE (manual Notificarme) se usa crearYEnviarDisponible con email activo.
     private void crearYEnviar(Long usuarioId, Long prestamoId, Integer tipoNotificacionId, String mensaje, String asunto) {
         Usuario usuario = usuarioRepo.findById(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
