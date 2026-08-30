@@ -31,6 +31,10 @@ import { DashboardLectorComponent } from './dashboard-lector/dashboard-lector.co
 import { MiCredencialComponent } from './mi-credencial/mi-credencial.component';
 import { DevolucionesComponent } from './devoluciones/devoluciones.component';
 import { LibrosPendientesComponent } from './libros-pendientes/libros-pendientes.component';
+import { catalogoResolver } from './core/resolvers/catalogo.resolver';
+import { libroDetalleResolver } from './core/resolvers/libro-detalle.resolver';
+import { loginResolver } from './core/resolvers/login.resolver';
+import { genericResolver } from './core/resolvers/generic.resolver';
 
 // Los roleGuard de abajo reflejan los @PreAuthorize reales de cada
 // controller en backend-springboot (verificado en el codigo, no asumido):
@@ -51,32 +55,33 @@ import { LibrosPendientesComponent } from './libros-pendientes/libros-pendientes
 // wildcard ya no redirige a /login sino al portal (nadie esta obligado a
 // iniciar sesion para navegar el catalogo).
 export const routes: Routes = [
-  { path: '', component: PortalPublicoComponent },
-  { path: 'portal/:id', component: DetallePublicoComponent },
-  { path: 'login', component: LoginComponent },
-  { path: 'registro', component: RegistroComponent },
-  { path: 'libros', component: LibrosComponent, canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE', 'ADMIN'])] },
-  { path: 'prestamos', component: PrestamosLectorComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
-  { path: 'prestamos/gestion', component: PrestamosGestionComponent, canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE'])] },
-  { path: 'reservaciones', component: ReservacionesComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
-  { path: 'multas', component: MultasComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
+  { path: '', component: PortalPublicoComponent, resolve: { preload: genericResolver } },
+  { path: 'portal/:id', component: DetallePublicoComponent, resolve: { data: libroDetalleResolver } },
+  { path: 'login', component: LoginComponent, resolve: { preload: loginResolver } },
+  { path: 'registro', component: RegistroComponent, resolve: { preload: loginResolver } },
+  { path: 'libros', component: LibrosComponent, canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE', 'ADMIN'])], resolve: { preload: genericResolver } },
+  { path: 'prestamos', component: PrestamosLectorComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])], resolve: { preload: genericResolver } },
+  { path: 'prestamos/gestion', component: PrestamosGestionComponent, canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE'])], resolve: { preload: genericResolver } },
+  { path: 'reservaciones', component: ReservacionesComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])], resolve: { preload: genericResolver } },
+  { path: 'multas', component: MultasComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])], resolve: { preload: genericResolver } },
   // Solo ADMIN (ver ConfiguracionSistemaController, @PreAuthorize a nivel
   // de clase) -- roleGuard evita que un GERENTE/BIBLIOTECARIO/LECTOR
   // navegue acá por URL y vea un componente vacío condenado a fallar.
-  { path: 'admin/configuracion', component: ConfiguracionSistemaComponent, canActivate: [authGuard, roleGuard(['ADMIN'])] },
+  { path: 'admin/configuracion', component: ConfiguracionSistemaComponent, canActivate: [authGuard, roleGuard(['ADMIN'])], resolve: { preload: genericResolver } },
   // Reportes gerenciales: BIBLIOTECARIO/GERENTE (PrestamoController; el
   // ADMIN no tiene acceso).
-  { path: 'reportes', component: ReportesComponent, canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])] },
+  { path: 'reportes', component: ReportesComponent, canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])], resolve: { preload: genericResolver } },
   // Dashboard del GERENTE (mockup 24): top 5 de libros más prestados vía
   // el mismo PrestamoController de reportes, por eso queda SOLO GERENTE
   // (el BIBLIOTECARIO tiene /reportes, no esta pantalla).
-  { path: 'dashboard-gerente', component: DashboardGerenteComponent, canActivate: [authGuard, roleGuard(['GERENTE'])] },
+  { path: 'dashboard-gerente', component: DashboardGerenteComponent, canActivate: [authGuard, roleGuard(['GERENTE'])], resolve: { preload: genericResolver } },
   // Dashboard del BIBLIOTECARIO (layout con sidebar): rutas hijas anidadas
   // bajo /dashboard-bibliotecario para mantener el sidebar visible al navegar.
   {
     path: 'dashboard-bibliotecario',
     component: DashboardBibliotecarioComponent,
     canActivate: [authGuard, roleGuard(['BIBLIOTECARIO'])],
+    resolve: { preload: genericResolver },
     children: [
       { path: '', component: DashboardBibliotecarioHomeComponent },
       { path: 'libros', component: LibrosComponent },
@@ -92,6 +97,7 @@ export const routes: Routes = [
     path: 'dashboard-admin',
     component: DashboardGerenteAdminComponent,
     canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])],
+    resolve: { preload: genericResolver },
     children: [
       { path: '', component: DashboardGerenteAdminHomeComponent },
       { path: 'libros', component: LibrosComponent },
@@ -111,40 +117,41 @@ export const routes: Routes = [
     path: 'dashboard-lector',
     component: DashboardLectorComponent,
     canActivate: [authGuard, roleGuard(['LECTOR'])],
+    resolve: { preload: genericResolver },
     children: [
       { path: '', redirectTo: 'catalogo', pathMatch: 'full' },
-      { path: 'catalogo', component: CatalogoComponent },
-      { path: 'catalogo/:id', component: LibroDetalleComponent },
-      { path: 'prestamos', component: PrestamosLectorComponent },
-      { path: 'reservaciones', component: ReservacionesComponent },
-      { path: 'multas', component: MultasComponent },
-      { path: 'favoritos', component: FavoritosComponent },
-      { path: 'sugerencias', component: MisSugerenciasComponent },
-      { path: 'sugerencias/nueva', component: SugerenciasFormComponent },
-      { path: 'notificaciones', component: NotificacionesComponent },
-      { path: 'mi-credencial', component: MiCredencialComponent },
+      { path: 'catalogo', component: CatalogoComponent, resolve: { data: catalogoResolver } },
+      { path: 'catalogo/:id', component: LibroDetalleComponent, resolve: { data: libroDetalleResolver } },
+      { path: 'prestamos', component: PrestamosLectorComponent, resolve: { preload: genericResolver } },
+      { path: 'reservaciones', component: ReservacionesComponent, resolve: { preload: genericResolver } },
+      { path: 'multas', component: MultasComponent, resolve: { preload: genericResolver } },
+      { path: 'favoritos', component: FavoritosComponent, resolve: { preload: genericResolver } },
+      { path: 'sugerencias', component: MisSugerenciasComponent, resolve: { preload: genericResolver } },
+      { path: 'sugerencias/nueva', component: SugerenciasFormComponent, resolve: { preload: genericResolver } },
+      { path: 'notificaciones', component: NotificacionesComponent, resolve: { preload: genericResolver } },
+      { path: 'mi-credencial', component: MiCredencialComponent, resolve: { preload: genericResolver } },
     ]
   },
   // consumidor son 100% LECTOR — verificado en FavoritoController.java y
   // SugerenciaAdquisicionController.java (los endpoints de favoritos y de
   // sugerencias/adquisicion son @PreAuthorize hasRole('LECTOR'); las
   // categorias y autores admiten cualquier rol autenticado).
-  { path: 'catalogo', component: CatalogoComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
-  { path: 'catalogo/:id', component: LibroDetalleComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
-  { path: 'favoritos', component: FavoritosComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
-  { path: 'sugerencias', component: MisSugerenciasComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
-  { path: 'sugerencias/nueva', component: SugerenciasFormComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
+  { path: 'catalogo', component: CatalogoComponent, canActivate: [authGuard, roleGuard(['LECTOR'])], resolve: { data: catalogoResolver } },
+  { path: 'catalogo/:id', component: LibroDetalleComponent, canActivate: [authGuard, roleGuard(['LECTOR'])], resolve: { data: libroDetalleResolver } },
+  { path: 'favoritos', component: FavoritosComponent, canActivate: [authGuard, roleGuard(['LECTOR'])], resolve: { preload: genericResolver } },
+  { path: 'sugerencias', component: MisSugerenciasComponent, canActivate: [authGuard, roleGuard(['LECTOR'])], resolve: { preload: genericResolver } },
+  { path: 'sugerencias/nueva', component: SugerenciasFormComponent, canActivate: [authGuard, roleGuard(['LECTOR'])], resolve: { preload: genericResolver } },
   // Revisión de sugerencias: GERENTE/ADMIN listan todas y cambian estado
   // a APROBADA/RECHAZADA (SugerenciaAdquisicionController real).
-  { path: 'sugerencias/gestion', component: GestionSugerenciasComponent, canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])] },
+  { path: 'sugerencias/gestion', component: GestionSugerenciasComponent, canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])], resolve: { preload: genericResolver } },
   // Rama F (panel administrativo): gestión de usuarios -- listado ADMIN/GERENTE,
   // PATCH de rol/estado solo ADMIN (UsuarioAdminController real).
-  { path: 'admin/usuarios', component: UsuariosComponent, canActivate: [authGuard, roleGuard(['ADMIN', 'GERENTE'])] },
+  { path: 'admin/usuarios', component: UsuariosComponent, canActivate: [authGuard, roleGuard(['ADMIN', 'GERENTE'])], resolve: { preload: genericResolver } },
   // Auditoría: bitácora de eventos, solo ADMIN.
-  { path: 'auditoria', component: AuditoriaComponent, canActivate: [authGuard, roleGuard(['ADMIN'])] },
+  { path: 'auditoria', component: AuditoriaComponent, canActivate: [authGuard, roleGuard(['ADMIN'])], resolve: { preload: genericResolver } },
   // Notificaciones: todas las roles autenticadas ven sus propias notificaciones
   // (el controller valida que solo veas las tuyas).
-  { path: 'notificaciones', component: NotificacionesComponent, canActivate: [authGuard] },
+  { path: 'notificaciones', component: NotificacionesComponent, canActivate: [authGuard], resolve: { preload: genericResolver } },
   { path: 'no-autorizado', component: NoAutorizadoComponent },
   { path: '**', redirectTo: '' }
 ];
