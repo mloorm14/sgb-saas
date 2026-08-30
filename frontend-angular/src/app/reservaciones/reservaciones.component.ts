@@ -16,6 +16,7 @@ import { BuscadorLibroComponent } from '../shared/buscador-libro/buscador-libro.
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
 import { toOffsetDateTime } from '../core/utils/fecha';
 import { ToastService } from '../shared/toast/toast.service';
+import { ConfirmDialogService } from '../shared/confirm-dialog/confirm-dialog.service';
 
 @Component({
   standalone: true,
@@ -88,7 +89,8 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
     private libroService: LibroService,
     private fb: FormBuilder,
     private authService: AuthService,
-    private toast: ToastService
+    private toast: ToastService,
+    private confirmDialog: ConfirmDialogService
   ) {
     this.formCrear = this.fb.group({
       usuarioId: ['', [Validators.required]],
@@ -176,28 +178,44 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
 
   cancelarReservacion(r: Reservacion): void {
     if (this.accionandoId !== null || r.estadoReservacionId !== 1) return;
-    if (!confirm('¿Seguro que quieres cancelar esta reserva?')) return;
-    this.cambiarEstadoReservacion(r, 'CANCELADA');
-    if (this.esLector) {
-      setTimeout(() => this.cargarReservacionesLector(), 500);
-    }
+    this.confirmDialog.confirm({
+      title: 'Cancelar reserva',
+      message: '¿Seguro que quieres cancelar esta reserva? Esta accion no se puede deshacer.',
+      confirmText: 'Si, cancelar',
+      cancelText: 'Volver',
+      variant: 'danger'
+    }).subscribe((ok: boolean) => {
+      if (!ok) return;
+      this.cambiarEstadoReservacion(r, 'CANCELADA');
+      if (this.esLector) {
+        setTimeout(() => this.cargarReservacionesLector(), 500);
+      }
+    });
   }
 
   cancelarHistorial(r: HistorialReservacion): void {
-    if (!confirm('¿Seguro que quieres cancelar esta reserva?')) return;
-    this.accionandoId = r.reservacionId;
-    this.reservacionService.cambiarEstado(r.reservacionId, { nuevoEstado: 'CANCELADA' }).subscribe({
-      next: () => {
-        this.toast.success('Cancelada', 'Reserva cancelada correctamente');
-        if (this.usuario) this.cargarHistorial(this.usuario.id);
-      },
-      error: (err: any) => {
-        const detail = (err?.error as { detail?: string })?.detail ?? 'No se pudo cancelar';
-        this.errorMsgAccion = detail;
-        this.toast.error('Error', detail);
-        this.accionandoId = null;
-      },
-      complete: () => { this.accionandoId = null; }
+    this.confirmDialog.confirm({
+      title: 'Cancelar reserva',
+      message: '¿Seguro que quieres cancelar esta reserva? Esta accion no se puede deshacer.',
+      confirmText: 'Si, cancelar',
+      cancelText: 'Volver',
+      variant: 'danger'
+    }).subscribe((ok: boolean) => {
+      if (!ok) return;
+      this.accionandoId = r.reservacionId;
+      this.reservacionService.cambiarEstado(r.reservacionId, { nuevoEstado: 'CANCELADA' }).subscribe({
+        next: () => {
+          this.toast.success('Cancelada', 'Reserva cancelada correctamente');
+          if (this.usuario) this.cargarHistorial(this.usuario.id);
+        },
+        error: (err: any) => {
+          const detail = (err?.error as { detail?: string })?.detail ?? 'No se pudo cancelar';
+          this.errorMsgAccion = detail;
+          this.toast.error('Error', detail);
+          this.accionandoId = null;
+        },
+        complete: () => { this.accionandoId = null; }
+      });
     });
   }
 

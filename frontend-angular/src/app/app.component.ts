@@ -4,6 +4,8 @@ import { AuthService } from './core/services/auth.service';
 import { filter } from 'rxjs/operators';
 import { ChatbotWidgetComponent } from './shared/chatbot-widget/chatbot-widget.component';
 import { LoaderComponent } from './shared/loader/loader.component';
+import { ConfirmDialogComponent } from './shared/confirm-dialog/confirm-dialog.component';
+import { NavigationBlockingService } from './core/services/navigation-blocking.service';
 
 interface EnlaceNav {
   ruta: string;
@@ -16,7 +18,7 @@ interface EnlaceNav {
 @Component({
   standalone: true,
     selector: 'app-root',
-    imports: [RouterOutlet, RouterLink, RouterLinkActive, ChatbotWidgetComponent, LoaderComponent],
+    imports: [RouterOutlet, RouterLink, RouterLinkActive, ChatbotWidgetComponent, LoaderComponent, ConfirmDialogComponent],
     templateUrl: './app.component.html',
     styleUrl: './app.component.scss'
 })
@@ -33,7 +35,8 @@ export class AppComponent {
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private navigationBlocking: NavigationBlockingService
   ) {
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)

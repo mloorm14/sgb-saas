@@ -14,6 +14,7 @@ import { PortadaLibroComponent } from '../../shared/portada-libro/portada-libro.
 import { toOffsetDateTime } from '../../core/utils/fecha';
 import { SuscripcionDisponibilidadService } from '../../core/services/suscripcion-disponibilidad.service';
 import { ToastService } from '../../shared/toast/toast.service';
+import { ConfirmDialogService } from '../../shared/confirm-dialog/confirm-dialog.service';
 
 // Detalle de libro del consumidor (Rama B). El estado de favoritos se
 // resuelve con FavoritoService.listar al montar, igual que en el catálogo.
@@ -50,7 +51,8 @@ export class LibroDetalleComponent implements OnInit {
     private reservacionesPendientes: ReservacionPendienteService,
     private authService: AuthService,
     private suscripcionService: SuscripcionDisponibilidadService,
-    private toast: ToastService
+    private toast: ToastService,
+    private confirmDialog: ConfirmDialogService
   ) {}
 
   ngOnInit(): void {
@@ -112,14 +114,26 @@ export class LibroDetalleComponent implements OnInit {
   confirmarReserva(): void {
     if (!this.libro) return;
     const hoyStr = new Date().toISOString().split('T')[0];
-    if (this.fechaRetiro === hoyStr) {
-      const ahora = new Date();
-      if (ahora.getHours() >= 18) {
-        if (!confirm('Ya paso la hora limite (18:00). ¿Quieres retirarlo mañana hasta las 18:00?')) return;
-        const manana = new Date(ahora); manana.setDate(manana.getDate()+1);
+    if (this.fechaRetiro === hoyStr && new Date().getHours() >= 18) {
+      this.confirmDialog.confirm({
+        title: 'Hora limite superada',
+        message: 'Ya paso la hora limite (18:00). ¿Quieres retirarlo mañana hasta las 18:00?',
+        confirmText: 'Retirar mañana',
+        cancelText: 'Cancelar',
+        variant: 'default'
+      }).subscribe((ok: boolean) => {
+        if (!ok) return;
+        const manana = new Date(); manana.setDate(manana.getDate()+1);
         this.fechaRetiro = manana.toISOString().split('T')[0];
-      }
+        this.ejecutarReserva();
+      });
+      return;
     }
+    this.ejecutarReserva();
+  }
+
+  private ejecutarReserva(): void {
+    if (!this.libro) return;
     this.mostrarModalReserva = false;
     const usuarioId = this.authService.getUserId();
     const fechaRetiroISO = this.fechaRetiro ? toOffsetDateTime(this.fechaRetiro) : undefined;
