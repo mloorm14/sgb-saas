@@ -14,6 +14,7 @@ export interface LibroListarParams {
   estadoLibroId?: number;
   categoriaId?: number;
   autorId?: number;
+  disponible?: boolean;
 }
 
 @Injectable({
@@ -34,6 +35,7 @@ export class LibroService {
     if (params.estadoLibroId !== undefined) httpParams = httpParams.set('estadoLibroId', params.estadoLibroId);
     if (params.categoriaId !== undefined) httpParams = httpParams.set('categoriaId', params.categoriaId);
     if (params.autorId !== undefined) httpParams = httpParams.set('autorId', params.autorId);
+    if (params.disponible !== undefined) httpParams = httpParams.set('disponible', String(params.disponible));
 
     return this.http.get<Page<Libro>>(this.apiUrl, { params: httpParams }).pipe(
       catchError(err => this.manejarError(err))

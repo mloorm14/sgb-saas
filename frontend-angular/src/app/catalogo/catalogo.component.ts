@@ -5,32 +5,15 @@ import { RouterLink } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { LibroService } from '../core/services/libro.service';
 import { CategoriaService } from '../core/services/categoria.service';
-import { AutorService } from '../core/services/autor.service';
 import { FavoritoService } from '../core/services/favorito.service';
 import { ReservacionService } from '../core/services/reservacion.service';
 import { ReservacionPendienteService } from '../core/services/reservacion-pendiente.service';
 import { AuthService } from '../core/services/auth.service';
 import { Libro, LibroSugerencia } from '../core/models/libro.model';
 import { Categoria } from '../core/models/categoria.model';
-import { Autor } from '../core/models/autor.model';
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
 import { toOffsetDateTime } from '../core/utils/fecha';
 
-// Catalogo del consumidor (Rama B del roadmap). El grid usa
-// LibroService.listar (Page<Libro>, sort por titulo), los filtros salen de
-// CategoriaService/AutorService y el buscador predictivo de
-// LibroService.sugerencias (el backend exige minimo 2 caracteres).
-// El estado de favoritos se resuelve con FavoritoService.listar al montar
-// (FavoritoResponseDTO no trae stock ni portada: para saber si una tarjeta
-// esta marcada hay que conocer el set completo).
-// Reservar (mockup 16): el boton "Reservar"/"Reservar en cola" llama a
-// ReservacionService.crear con el id del token (AuthService.getUserId) y
-// el estado "Ya reservado" sale de ReservacionPendienteService (un solo
-// listarPorUsuario compartido con el detalle). El backend NO valida stock
-// en ReservacionService.crear (verificado en backend-springboot): reservar
-// con stock 0 queda en cola, por eso el boton sigue habilitado.
-// TODO(frontend/estudiante-chatbot): la Rama D montara el widget de chatbot
-// flotante sobre este componente raiz del catalogo.
 @Component({
   standalone: true,
   selector: 'app-catalogo',
@@ -40,7 +23,6 @@ import { toOffsetDateTime } from '../core/utils/fecha';
 export class CatalogoComponent implements OnInit, OnDestroy {
   libros: Libro[] = [];
   categorias: Categoria[] = [];
-  autores: Autor[] = [];
   favoritosIds = new Set<number>();
   totalPages: number = 0;
   currentPage: number = 0;
@@ -56,17 +38,22 @@ export class CatalogoComponent implements OnInit, OnDestroy {
   private busqueda$ = new Subject<string>();
 
   categoriaId: number | null = null;
-  autorId: number | null = null;
+  textoCategoria: string = '';
+  categoriaSugerencias: Categoria[] = [];
+  mostrarSugerenciasCategoria: boolean = false;
+  private categoriaBusqueda$ = new Subject<string>();
+
+  estadoStock: '' | 'disponibles' | 'agotados' = '';
 
   mostrarModalReserva = false;
   libroParaReservar: Libro | null = null;
   fechaRetiro: string = '';
   minFechaRetiro: string = '';
+  maxFechaRetiro: string = '';
 
   constructor(
     private libroService: LibroService,
     private categoriaService: CategoriaService,
-    private autorService: AutorService,
     private favoritoService: FavoritoService,
     private reservacionService: ReservacionService,
     private reservacionesPendientes: ReservacionPendienteService,
@@ -76,10 +63,12 @@ export class CatalogoComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     const hoy = new Date();
     this.minFechaRetiro = hoy.toISOString().split('T')[0];
+    const max = new Date(hoy);
+    max.setDate(max.getDate() + 14);
+    this.maxFechaRetiro = max.toISOString().split('T')[0];
     this.fechaRetiro = this.minFechaRetiro;
 
     this.cargarCategorias();
-    this.cargarAutores();
     this.cargarFavoritos();
     this.cargarReservacionesPendientes();
     this.cargarPagina();
@@ -87,17 +76,27 @@ export class CatalogoComponent implements OnInit, OnDestroy {
     this.busqueda$.pipe(
       debounceTime(300),
       distinctUntilChanged()
-    ).subscribe(texto => this.buscarSugerencias(texto));
+    ).subscribe(texto => {
+      this.buscarSugerencias(texto);
+      this.currentPage = 0;
+      this.cargarPagina();
+    });
+
+    this.categoriaBusqueda$.pipe(
+      debounceTime(300),
+      distinctUntilChanged()
+    ).subscribe(texto => this.buscarCategorias(texto));
   }
 
   ngOnDestroy(): void {
     this.busqueda$.complete();
+    this.categoriaBusqueda$.complete();
     if (this.toastTimer) clearTimeout(this.toastTimer);
   }
 
   private cargarReservacionesPendientes(): void {
     this.reservacionesPendientes.cargar().subscribe({
-      error: () => {} // sin el set, el boton solo permite reservar
+      error: () => {}
     });
   }
 
@@ -105,10 +104,6 @@ export class CatalogoComponent implements OnInit, OnDestroy {
     return this.reservacionesPendientes.esPendiente(libroId);
   }
 
-  // Igual patron que estiloIconoFavorito: las clases del boton segun stock
-  // (relleno si hay stock, outline si queda en cola) sin condicionales
-  // complejos en el template. mt-auto ancla el boton abajo de la tarjeta
-  // (tarjeta flex-col) para que quede al mismo alto en todo el grid.
   clasesBotonReservar(libro: Libro): string {
     return libro.stockDisponible > 0
       ? 'w-full mt-auto h-8 rounded bg-primary text-on-primary font-label-sm text-[12px] flex items-center justify-center gap-1 hover:bg-on-primary-fixed-variant cursor-pointer'
@@ -118,14 +113,28 @@ export class CatalogoComponent implements OnInit, OnDestroy {
   reservarLibro(event: Event, libro: Libro): void {
     event.preventDefault();
     event.stopPropagation();
+    if (libro.stockDisponible <= 0) {
+      this.suscribirDisponibilidad(libro);
+      return;
+    }
     const usuarioId = this.authService.getUserId();
     if (usuarioId === null) {
-      this.errorMsg = 'Inicia sesión para reservar';
+      this.errorMsg = 'Inicia sesion para reservar';
       return;
     }
     this.libroParaReservar = libro;
     this.fechaRetiro = this.minFechaRetiro;
     this.mostrarModalReserva = true;
+  }
+
+  private suscribirDisponibilidad(libro: Libro): void {
+    const usuarioId = this.authService.getUserId();
+    if (usuarioId === null) {
+      this.errorMsg = 'Inicia sesion para usar Notificarme';
+      return;
+    }
+    // TODO: llamar SuscripcionDisponibilidadService cuando backend este listo
+    this.mostrarToast(`Te avisaremos cuando "${libro.titulo}" este disponible — reservalo antes que otros.`);
   }
 
   cancelarReserva(): void {
@@ -144,12 +153,23 @@ export class CatalogoComponent implements OnInit, OnDestroy {
         this.reservacionesPendientes.marcarReservada(libro.id);
         this.libroParaReservar = null;
         this.mostrarToast(
-          `Reservado. Tienes hasta el ${this.formatearFecha(r.fechaLimiteRetiro)} para retirarlo.`
+          `Reserva creada. Puedes retirarlo hasta el ${this.formatearFecha(r.fechaLimiteRetiro)}.`
         );
       },
-      error: () => {
+      error: (err: any) => {
         this.libroParaReservar = null;
-        this.errorMsg = 'Error al reservar el libro';
+        const detail = (err?.error as { detail?: string })?.detail ?? '';
+        if (detail.includes('máximo') || detail.includes('maximo')) {
+          this.errorMsg = detail;
+        } else if (detail.includes('multa') || detail.includes('deuda') || detail.includes('bloquead')) {
+          this.errorMsg = detail;
+        } else if (detail.includes('Sin stock') || detail.includes('stock')) {
+          this.errorMsg = detail;
+        } else if (detail) {
+          this.errorMsg = detail;
+        } else {
+          this.errorMsg = 'No se pudo reservar el libro';
+        }
       }
     });
   }
@@ -157,7 +177,7 @@ export class CatalogoComponent implements OnInit, OnDestroy {
   private mostrarToast(mensaje: string): void {
     this.toastMsg = mensaje;
     if (this.toastTimer) clearTimeout(this.toastTimer);
-    this.toastTimer = setTimeout(() => (this.toastMsg = null), 3000);
+    this.toastTimer = setTimeout(() => (this.toastMsg = null), 4000);
   }
 
   private formatearFecha(iso: string): string {
@@ -194,15 +214,63 @@ export class CatalogoComponent implements OnInit, OnDestroy {
   private cargarCategorias(): void {
     this.categoriaService.listar().subscribe({
       next: (c) => (this.categorias = c),
-      error: () => {} // el grid no se bloquea si los filtros fallan
+      error: () => {}
     });
   }
 
-  private cargarAutores(): void {
-    this.autorService.listar().subscribe({
-      next: (a) => (this.autores = a),
-      error: () => {}
+  onCategoriaInputChange(): void {
+    const texto = this.textoCategoria.trim();
+    if (texto.length === 0) {
+      this.categoriaSugerencias = this.categorias.slice(0, 5);
+      this.mostrarSugerenciasCategoria = this.categoriaSugerencias.length > 0;
+      return;
+    }
+    this.categoriaBusqueda$.next(texto);
+  }
+
+  private buscarCategorias(texto: string): void {
+    if (texto.length < 1) {
+      this.categoriaSugerencias = this.categorias.slice(0, 5);
+      this.mostrarSugerenciasCategoria = true;
+      return;
+    }
+    this.categoriaService.buscar(texto).subscribe({
+      next: (cats) => {
+        this.categoriaSugerencias = cats;
+        this.mostrarSugerenciasCategoria = cats.length > 0;
+      },
+      error: () => {
+        this.categoriaSugerencias = [];
+        this.mostrarSugerenciasCategoria = false;
+      }
     });
+  }
+
+  seleccionarCategoria(cat: Categoria): void {
+    this.categoriaId = cat.id;
+    this.textoCategoria = cat.nombre;
+    this.mostrarSugerenciasCategoria = false;
+    this.currentPage = 0;
+    this.cargarPagina();
+  }
+
+  limpiarFiltroCategoria(): void {
+    this.categoriaId = null;
+    this.textoCategoria = '';
+    this.mostrarSugerenciasCategoria = false;
+    this.currentPage = 0;
+    this.cargarPagina();
+  }
+
+  onCategoriaBlur(): void {
+    setTimeout(() => this.mostrarSugerenciasCategoria = false, 200);
+  }
+
+  onEstadoStockChange(event: Event): void {
+    const v = (event.target as HTMLSelectElement).value as '' | 'disponibles' | 'agotados';
+    this.estadoStock = v;
+    this.currentPage = 0;
+    this.cargarPagina();
   }
 
   private cargarFavoritos(): void {
@@ -210,7 +278,7 @@ export class CatalogoComponent implements OnInit, OnDestroy {
       next: (favoritos) => {
         this.favoritosIds = new Set(favoritos.map(f => f.libroId));
       },
-      error: () => {} // sin el set, el boton solo permite agregar
+      error: () => {}
     });
   }
 
@@ -218,9 +286,6 @@ export class CatalogoComponent implements OnInit, OnDestroy {
     return this.favoritosIds.has(libroId);
   }
 
-  // El icono Material star se rellena con font-variation-settings 'FILL' 1.
-  // Se devuelve desde el componente para no meter comillas internas en el
-  // binding de estilo del template (el parser HTML no las acepta).
   estiloIconoFavorito(libroId: number): string {
     return this.esFavorito(libroId) ? '"FILL" 1' : '"FILL" 0';
   }
@@ -241,32 +306,20 @@ export class CatalogoComponent implements OnInit, OnDestroy {
     }
   }
 
-  onCategoriaChange(event: Event): void {
-    const valor = (event.target as HTMLSelectElement).value;
-    this.categoriaId = valor ? Number(valor) : null;
-    this.currentPage = 0;
-    this.cargarPagina();
-  }
-
-  onAutorChange(event: Event): void {
-    const valor = (event.target as HTMLSelectElement).value;
-    this.autorId = valor ? Number(valor) : null;
-    this.currentPage = 0;
-    this.cargarPagina();
-  }
-
   autoresTexto(libro: Libro): string {
     return libro.autores && libro.autores.length ? libro.autores.join(', ') : '—';
   }
 
   cargarPagina(): void {
     this.cargando = true;
+    const disponible = this.estadoStock === 'disponibles' ? true : this.estadoStock === 'agotados' ? false : undefined;
     this.libroService.listar({
       page: this.currentPage,
       size: this.pageSize,
       sort: 'titulo,asc',
+      q: this.textoBusqueda.trim() || undefined,
       categoriaId: this.categoriaId ?? undefined,
-      autorId: this.autorId ?? undefined
+      disponible
     }).subscribe({
       next: (data) => {
         this.libros = data.content;
@@ -274,14 +327,12 @@ export class CatalogoComponent implements OnInit, OnDestroy {
         this.cargando = false;
       },
       error: () => {
-        this.errorMsg = 'Error al cargar el catálogo';
+        this.errorMsg = 'Error al cargar el catalogo';
         this.cargando = false;
       }
     });
   }
 
-  // Paginacion numerada como el mockup 04: rango de 5 paginas centrado en
-  // la actual (con menos de 5 paginas totales se muestran todas).
   get paginasVisibles(): number[] {
     if (this.totalPages <= 5) {
       return Array.from({ length: this.totalPages }, (_, i) => i);
@@ -309,5 +360,6 @@ export class CatalogoComponent implements OnInit, OnDestroy {
     if (this.mostrarModalReserva) {
       this.cancelarReserva();
     }
+    this.mostrarSugerenciasCategoria = false;
   }
 }

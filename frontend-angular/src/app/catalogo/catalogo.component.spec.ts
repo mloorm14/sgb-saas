@@ -36,7 +36,7 @@ describe('CatalogoComponent', () => {
 
     libroService.listar.and.returnValue(of({ content: [libro(1, 'Clean Code', 4)], totalPages: 1 } as any));
     categoriaService.listar.and.returnValue(of([{ id: 1, nombre: 'Ingeniería de Software' }]));
-    autorService.listar.and.returnValue(of([{ id: 1, nombre: 'Robert C. Martin' }]));
+    (categoriaService as any).buscar = jasmine.createSpy('buscar').and.returnValue(of([]));
     favoritoService.listar.and.returnValue(of([]));
     reservacionService.listarPorUsuario.and.returnValue(of({ content: [], totalPages: 0 } as any));
 
@@ -60,17 +60,15 @@ describe('CatalogoComponent', () => {
   it('carga el grid del catálogo con el sort por título', () => {
     fixture.detectChanges();
 
-    expect(libroService.listar).toHaveBeenCalledWith({
+    expect(libroService.listar).toHaveBeenCalledWith(jasmine.objectContaining({
       page: 0,
       size: 10,
       sort: 'titulo,asc',
-      categoriaId: undefined,
-      autorId: undefined
-    });
+      categoriaId: undefined
+    }));
     expect(component.libros.length).toBe(1);
     expect(component.totalPages).toBe(1);
     expect(component.categorias.length).toBe(1);
-    expect(component.autores.length).toBe(1);
   });
 
   it('muestra el estado de error sin romper la UI si el backend falla', () => {
@@ -134,17 +132,10 @@ describe('CatalogoComponent', () => {
   it('filtra por categoría y reinicia a la primera página', () => {
     fixture.detectChanges();
     component.currentPage = 2;
-    component.onCategoriaChange({ target: { value: '5' } } as any);
+    component.seleccionarCategoria({ id: 5, nombre: 'Test' } as any);
 
     expect(component.currentPage).toBe(0);
     expect(libroService.listar).toHaveBeenCalledWith(jasmine.objectContaining({ categoriaId: 5 }));
-  });
-
-  it('filtra por autor', () => {
-    fixture.detectChanges();
-    component.onAutorChange({ target: { value: '7' } } as any);
-
-    expect(libroService.listar).toHaveBeenCalledWith(jasmine.objectContaining({ autorId: 7 }));
   });
 
   it('pagina con la barra de navegación numerada', () => {

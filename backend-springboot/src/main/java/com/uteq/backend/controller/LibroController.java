@@ -48,8 +48,9 @@ public class LibroController {
             @RequestParam(required = false) Integer estadoLibroId,
             @RequestParam(required = false) Integer categoriaId,
             @RequestParam(required = false) Long autorId,
+            @RequestParam(required = false) Boolean disponible,
             @PageableDefault(size = 10, sort = "titulo") Pageable pageable) {
-        return ResponseEntity.ok(libroService.listarConFiltros(q, estadoLibroId, categoriaId, autorId, pageable));
+        return ResponseEntity.ok(libroService.listarConFiltros(q, estadoLibroId, categoriaId, autorId, disponible, pageable));
     }
 
     // ── GET /api/v1/libros/sugerencias?texto= ─────────────

@@ -10,7 +10,7 @@
 
   <div class="mb-lg">
     <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Catálogo</h1>
-    <p class="font-body-sm text-body-sm text-on-surface-variant">Busca por título, autor o categoría</p>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Busca y reserva tu próximo libro.</p>
   </div>
 
   <!-- Buscador predictivo (LibroService.sugerencias, minimo 2 caracteres) -->
@@ -18,7 +18,7 @@
     <div class="rounded border border-outline-variant bg-white flex items-center px-sm glass-panel">
       <span class="material-symbols-outlined text-outline text-[20px] mr-xs">search</span>
       <label for="busqueda-catalogo" class="sr-only">Buscar libros</label>
-      <input type="text" id="busqueda-catalogo" placeholder="Ej: estructuras de datos"
+      <input type="text" id="busqueda-catalogo" placeholder="Busca por nombre, ISBN"
         [(ngModel)]="textoBusqueda"
         (ngModelChange)="onBusquedaChange()"
         role="combobox"
@@ -48,23 +48,48 @@
     }
   </div>
 
-  <!-- Filtros por categoria/autor (CategoriaService/AutorService reales) -->
-  <div class="flex flex-wrap gap-sm mb-lg">
-    <label for="filtro-categoria" class="sr-only">Categoría</label>
-    <select id="filtro-categoria" (change)="onCategoriaChange($event)"
-      class="rounded border border-outline-variant bg-white text-body-sm text-on-surface pl-sm pr-lg py-xs cursor-pointer">
-      <option value="">Todas las categorías</option>
-      @for (categoria of categorias; track categoria.id) {
-        <option [value]="categoria.id">{{ categoria.nombre }}</option>
+  <!-- Filtros: categoría (combobox autocomplete) y estado stock -->
+  <div class="flex flex-wrap gap-sm mb-lg items-start">
+    <div class="relative">
+      <label for="filtro-categoria-input" class="sr-only">Categoría</label>
+      <div class="rounded border border-outline-variant bg-white flex items-center px-sm">
+        <span class="material-symbols-outlined text-outline text-[18px] mr-xs">category</span>
+        <input type="text" id="filtro-categoria-input" placeholder="Filtrar por categoría"
+          [(ngModel)]="textoCategoria"
+          (ngModelChange)="onCategoriaInputChange()"
+          (focus)="mostrarSugerenciasCategoria = categoriaSugerencias.length > 0"
+          (blur)="onCategoriaBlur()"
+          role="combobox"
+          [attr.aria-expanded]="mostrarSugerenciasCategoria"
+          aria-controls="categoria-listbox"
+          aria-autocomplete="list"
+          class="w-48 bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 py-xs font-body-sm text-body-sm text-on-surface placeholder-outline" />
+        @if (categoriaId !== null) {
+          <button (click)="limpiarFiltroCategoria()" title="Limpiar filtro" class="ml-xs text-outline hover:text-on-surface cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        }
+      </div>
+      @if (mostrarSugerenciasCategoria && categoriaSugerencias.length > 0) {
+        <ul id="categoria-listbox" role="listbox" aria-label="Sugerencias de categorías"
+          class="absolute mt-xs w-full bg-white rounded shadow-lg border border-outline-variant overflow-hidden z-10">
+          @for (cat of categoriaSugerencias; track cat.id) {
+            <li role="option" (mousedown)="seleccionarCategoria(cat)" class="px-md py-sm hover:bg-surface-container-low cursor-pointer font-body-sm text-body-sm text-on-surface flex justify-between">
+              <span>{{ cat.nombre }}</span>
+              @if (categoriaId === cat.id) {
+                <span class="material-symbols-outlined text-primary text-[16px]">check</span>
+              }
+            </li>
+          }
+        </ul>
       }
-    </select>
-    <label for="filtro-autor" class="sr-only">Autor</label>
-    <select id="filtro-autor" (change)="onAutorChange($event)"
-      class="rounded border border-outline-variant bg-white text-body-sm text-on-surface pl-sm pr-lg py-xs cursor-pointer">
-      <option value="">Todos los autores</option>
-      @for (autor of autores; track autor.id) {
-        <option [value]="autor.id">{{ autor.nombre }}</option>
-      }
+    </div>
+    <label for="filtro-estado" class="sr-only">Estado</label>
+    <select id="filtro-estado" (change)="onEstadoStockChange($event)"
+      class="rounded border border-outline-variant bg-white text-body-sm text-on-surface pl-sm pr-lg py-xs cursor-pointer h-9">
+      <option value="">Todos</option>
+      <option value="disponibles">Disponibles</option>
+      <option value="agotados">Agotados</option>
     </select>
   </div>
 
@@ -109,7 +134,7 @@
             <button (click)="reservarLibro($event, libro)"
               [class]="clasesBotonReservar(libro)">
               <span class="material-symbols-outlined text-[16px]">event_available</span>
-              {{ libro.stockDisponible > 0 ? 'Reservar' : 'Reservar en cola' }}
+              {{ libro.stockDisponible > 0 ? 'Reservar' : 'Notificarme' }}
             </button>
           }
         </div>
@@ -156,7 +181,7 @@
       <h3 id="titulo-reserva-fecha" class="font-headline-sm text-headline-sm text-on-background mb-2">¿Cuándo vas a retirarlo?</h3>
       <p class="font-body-sm text-body-sm text-on-surface-variant mb-4">Selecciona la fecha en que pretendes retirar el libro. Tendrás hasta 1 día después de esa fecha para recogerlo.</p>
       <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Fecha de retiro</label>
-      <input type="date" [(ngModel)]="fechaRetiro" [min]="minFechaRetiro"
+      <input type="date" [(ngModel)]="fechaRetiro" [min]="minFechaRetiro" [max]="maxFechaRetiro"
         class="w-full h-10 px-sm rounded-lg border border-outline-variant font-body-sm text-body-sm bg-white mb-5" />
       <div class="flex justify-end gap-sm">
         <button (click)="cancelarReserva()"

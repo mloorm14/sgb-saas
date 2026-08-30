@@ -108,17 +108,30 @@ public class LibroService {
     }
 
     @Transactional(readOnly = true)
-    public Page<LibroResponseDTO> listarConFiltros(String q, Integer estadoLibroId, Integer categoriaId, Long autorId, Pageable pageable) {
+    public Page<LibroResponseDTO> listarConFiltros(String q, Integer estadoLibroId, Integer categoriaId, Long autorId, Boolean disponible, Pageable pageable) {
         Integer estadoId = resolverEstadoId(estadoLibroId);
 
+        // Con disponible y/o q, usar queries nativas con filtro stock
         if (q != null && !q.isBlank()) {
             if (categoriaId != null) {
-                return libroRepo.buscarPorTextoOIsbnYCategoria(q, categoriaId, estadoId, pageable).map(this::toDTO);
+                return libroRepo.buscarPorTextoOIsbnYCategoria(q, categoriaId, estadoId, disponible, pageable).map(this::toDTO);
             }
-            if (autorId != null) {
-                return libroRepo.buscarPorTextoOIsbnYAutor(q, autorId, estadoId, pageable).map(this::toDTO);
+            return libroRepo.buscarPorTextoOIsbn(q, estadoId, disponible, pageable).map(this::toDTO);
+        }
+
+        if (disponible != null) {
+            if (categoriaId != null) {
+                if (disponible) {
+                    return libroRepo.findByCategorias_IdAndEstadoIdAndStockDisponibleGreaterThan(categoriaId, estadoId, 0, pageable).map(this::toDTO);
+                } else {
+                    return libroRepo.findByCategorias_IdAndEstadoIdAndStockDisponibleEquals(categoriaId, estadoId, 0, pageable).map(this::toDTO);
+                }
             }
-            return libroRepo.buscarPorTextoOIsbn(q, estadoId, pageable).map(this::toDTO);
+            if (disponible) {
+                return libroRepo.findByEstadoIdAndStockDisponibleGreaterThan(estadoId, 0, pageable).map(this::toDTO);
+            } else {
+                return libroRepo.findByEstadoIdAndStockDisponibleEquals(estadoId, 0, pageable).map(this::toDTO);
+            }
         }
 
         if (categoriaId != null && autorId != null) {
@@ -131,6 +144,11 @@ public class LibroService {
             return libroRepo.findByAutores_IdAndEstadoId(autorId, estadoId, pageable).map(this::toDTO);
         }
         return libroRepo.findByEstadoId(estadoId, pageable).map(this::toDTO);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<LibroResponseDTO> listarConFiltros(String q, Integer estadoLibroId, Integer categoriaId, Long autorId, Pageable pageable) {
+        return listarConFiltros(q, estadoLibroId, categoriaId, autorId, null, pageable);
     }
 
     private Integer resolverEstadoId(Integer estadoLibroId) {

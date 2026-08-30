@@ -52,8 +52,9 @@ public class PublicoLibroController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) Integer categoriaId,
             @RequestParam(required = false) Long autorId,
+            @RequestParam(required = false) Boolean disponible,
             @PageableDefault(size = 10, sort = "titulo") Pageable pageable) {
-        return libroService.listarConFiltros(q, null, categoriaId, autorId, pageable);
+        return libroService.listarConFiltros(q, null, categoriaId, autorId, disponible, pageable);
     }
 
     // ── GET /api/publico/libros/sugerencias?texto= ───────────────────
