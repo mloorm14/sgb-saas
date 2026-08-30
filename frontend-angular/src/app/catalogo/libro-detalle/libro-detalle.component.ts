@@ -13,6 +13,7 @@ import { Reservacion } from '../../core/models/reservacion.model';
 import { PortadaLibroComponent } from '../../shared/portada-libro/portada-libro.component';
 import { toOffsetDateTime } from '../../core/utils/fecha';
 import { SuscripcionDisponibilidadService } from '../../core/services/suscripcion-disponibilidad.service';
+import { ToastService } from '../../shared/toast/toast.service';
 
 // Detalle de libro del consumidor (Rama B). El estado de favoritos se
 // resuelve con FavoritoService.listar al montar, igual que en el catálogo.
@@ -48,7 +49,8 @@ export class LibroDetalleComponent implements OnInit {
     private reservacionService: ReservacionService,
     private reservacionesPendientes: ReservacionPendienteService,
     private authService: AuthService,
-    private suscripcionService: SuscripcionDisponibilidadService
+    private suscripcionService: SuscripcionDisponibilidadService,
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -109,7 +111,6 @@ export class LibroDetalleComponent implements OnInit {
 
   confirmarReserva(): void {
     if (!this.libro) return;
-    // Si hoy ya paso 18:00, confirmar si quiere mañana
     const hoyStr = new Date().toISOString().split('T')[0];
     if (this.fechaRetiro === hoyStr) {
       const ahora = new Date();
@@ -126,10 +127,14 @@ export class LibroDetalleComponent implements OnInit {
       next: (r) => {
         this.reservacionesPendientes.marcarReservada(this.libro!.id);
         this.reservaCreada = r;
+        this.toast.success('Reserva', 'Reserva creada correctamente');
       },
       error: (err: any) => {
         const detail = (err?.error as { detail?: string })?.detail;
         this.errorMsg = detail ?? 'No se pudo reservar el libro';
+        if (detail?.includes('máximo') || detail?.includes('maximo')) this.toast.warning('Limite alcanzado', this.errorMsg);
+        else if (detail?.includes('multa') || detail?.includes('deuda')) this.toast.warning('Aviso', this.errorMsg);
+        else this.toast.error('Error', this.errorMsg);
       }
     });
   }
@@ -146,10 +151,16 @@ export class LibroDetalleComponent implements OnInit {
   notificarDisponibilidad(): void {
     if (!this.libro) return;
     const uid = this.authService.getUserId();
-    if (uid === null) { this.errorMsg = 'Inicia sesion para usar Notificarme'; return; }
+    if (uid === null) { this.errorMsg = 'Inicia sesion para usar Notificarme'; this.toast.warning('Aviso', this.errorMsg); return; }
     this.suscripcionService.suscribir(this.libro.id).subscribe({
-      next: () => this.notificarMsg = `Te avisaremos cuando "${this.libro!.titulo}" este disponible — reservalo antes que otros.`,
-      error: (err: any) => this.errorMsg = (err?.error as any)?.detail ?? 'No se pudo suscribir'
+      next: () => {
+        this.notificarMsg = `Te avisaremos cuando "${this.libro!.titulo}" este disponible — reservalo antes que otros.`;
+        this.toast.success('Suscripcion', this.notificarMsg);
+      },
+      error: (err: any) => {
+        this.errorMsg = (err?.error as any)?.detail ?? 'No se pudo suscribir';
+        this.toast.error('Error', this.errorMsg);
+      }
     });
   }
 

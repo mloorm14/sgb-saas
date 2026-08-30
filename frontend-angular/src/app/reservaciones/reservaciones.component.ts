@@ -15,6 +15,7 @@ import { Libro, LibroSugerencia } from '../core/models/libro.model';
 import { BuscadorLibroComponent } from '../shared/buscador-libro/buscador-libro.component';
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
 import { toOffsetDateTime } from '../core/utils/fecha';
+import { ToastService } from '../shared/toast/toast.service';
 
 @Component({
   standalone: true,
@@ -86,7 +87,8 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
     private prestamoService: PrestamoService,
     private libroService: LibroService,
     private fb: FormBuilder,
-    private authService: AuthService
+    private authService: AuthService,
+    private toast: ToastService
   ) {
     this.formCrear = this.fb.group({
       usuarioId: ['', [Validators.required]],
@@ -177,10 +179,14 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
     this.accionandoId = r.id;
     this.errorMsg = '';
     this.reservacionService.cambiarEstado(r.id, { nuevoEstado }).subscribe({
-      next: () => this.cargarPagina(),
+      next: () => {
+        this.cargarPagina();
+        this.toast.success('Actualizado', nuevoEstado === 'LISTA_PARA_RETIRO' ? 'Reserva marcada lista para retiro' : 'Reserva cancelada');
+      },
       error: (err) => {
         this.errorMsg = (err as { error?: { detail?: string } })?.error?.detail
           ?? 'No se pudo cambiar el estado de la reservación';
+        this.toast.error('Error', this.errorMsg);
         this.accionandoId = null;
       },
       complete: () => { this.accionandoId = null; }
@@ -408,6 +414,7 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
     this.reservacionService.crear(request).subscribe({
       next: () => {
         this.exitoMsg = 'Reservacion creada exitosamente';
+        this.toast.success('Reserva', this.exitoMsg);
         this.creandoReservacion = false;
         this.libroSeleccionado = null;
         this.libroCompleto = null;
@@ -424,6 +431,9 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
         this.creandoReservacion = false;
         const problem = (err?.error as { detail?: string })?.detail;
         this.errorMsgAccion = problem ?? 'No se pudo crear la reservacion';
+        if (problem?.includes('máximo') || problem?.includes('maximo')) this.toast.warning('Limite alcanzado', this.errorMsgAccion);
+        else if (problem?.includes('multa') || problem?.includes('deuda') || problem?.includes('bloquead')) this.toast.warning('Aviso', this.errorMsgAccion);
+        else this.toast.error('Error', this.errorMsgAccion);
       }
     });
   }

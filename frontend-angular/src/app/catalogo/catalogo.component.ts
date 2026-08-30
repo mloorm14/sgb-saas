@@ -14,6 +14,7 @@ import { Categoria } from '../core/models/categoria.model';
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
 import { toOffsetDateTime } from '../core/utils/fecha';
 import { SuscripcionDisponibilidadService } from '../core/services/suscripcion-disponibilidad.service';
+import { ToastService } from '../shared/toast/toast.service';
 
 @Component({
   standalone: true,
@@ -59,7 +60,8 @@ export class CatalogoComponent implements OnInit, OnDestroy {
     private reservacionService: ReservacionService,
     private reservacionesPendientes: ReservacionPendienteService,
     private authService: AuthService,
-    private suscripcionService: SuscripcionDisponibilidadService
+    private suscripcionService: SuscripcionDisponibilidadService,
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -133,13 +135,19 @@ export class CatalogoComponent implements OnInit, OnDestroy {
     const usuarioId = this.authService.getUserId();
     if (usuarioId === null) {
       this.errorMsg = 'Inicia sesion para usar Notificarme';
+      this.toast.warning('Aviso', this.errorMsg);
       return;
     }
     this.suscripcionService.suscribir(libro.id).subscribe({
-      next: () => this.mostrarToast(`Te avisaremos cuando "${libro.titulo}" este disponible — reservalo antes que otros.`),
+      next: () => {
+        const msg = `Te avisaremos cuando "${libro.titulo}" este disponible — reservalo antes que otros.`;
+        this.mostrarToast(msg);
+        this.toast.success('Suscripcion', msg);
+      },
       error: (err: any) => {
         const detail = (err?.error as { detail?: string })?.detail;
         this.errorMsg = detail ?? 'No se pudo suscribir. Intenta nuevamente.';
+        this.toast.error('Error', this.errorMsg);
       }
     });
   }
@@ -168,23 +176,28 @@ export class CatalogoComponent implements OnInit, OnDestroy {
       next: (r) => {
         this.reservacionesPendientes.marcarReservada(libro.id);
         this.libroParaReservar = null;
-        this.mostrarToast(
-          `Reserva creada. Puedes retirarlo hasta el ${this.formatearFecha(r.fechaLimiteRetiro)}.`
-        );
+        const msg = `Reserva creada. Puedes retirarlo hasta el ${this.formatearFecha(r.fechaLimiteRetiro)}.`;
+        this.mostrarToast(msg);
+        this.toast.success('Reserva', msg);
       },
       error: (err: any) => {
         this.libroParaReservar = null;
         const detail = (err?.error as { detail?: string })?.detail ?? '';
         if (detail.includes('máximo') || detail.includes('maximo')) {
           this.errorMsg = detail;
+          this.toast.warning('Limite alcanzado', detail);
         } else if (detail.includes('multa') || detail.includes('deuda') || detail.includes('bloquead')) {
           this.errorMsg = detail;
+          this.toast.warning('Aviso', detail);
         } else if (detail.includes('Sin stock') || detail.includes('stock')) {
           this.errorMsg = detail;
+          this.toast.warning('Sin stock', detail);
         } else if (detail) {
           this.errorMsg = detail;
+          this.toast.error('Error', detail);
         } else {
           this.errorMsg = 'No se pudo reservar el libro';
+          this.toast.error('Error', this.errorMsg);
         }
       }
     });

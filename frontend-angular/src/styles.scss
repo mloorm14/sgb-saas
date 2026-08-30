@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import './app/shared/toast/toast.css';
 
 html, body {
   height: 100%;
