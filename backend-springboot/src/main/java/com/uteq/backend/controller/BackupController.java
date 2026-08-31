@@ -64,6 +64,17 @@ public class BackupController {
         return ResponseEntity.ok(progService.listarActivas());
     }
 
+    @PostMapping("/programacion")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BackupProgramacion> crearProgramacion(@RequestBody BackupProgramacion req) {
+        BackupProgramacion creada = progService.crear(req);
+        // Opcional: auto-programar al crear
+        if (Boolean.TRUE.equals(creada.getActivo())) {
+            progService.programarEjecucion(creada.getId());
+        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(creada);
+    }
+
     @PostMapping("/{id}/programar")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> programar(@PathVariable Long id) {

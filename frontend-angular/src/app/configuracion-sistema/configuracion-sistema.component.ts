@@ -759,8 +759,30 @@ export class ConfiguracionSistemaComponent implements OnInit {
   }
   generarBackupAutomatico(): void {
     if (!this.puedeProgramar) return;
-    this.generandoBackup = true; this.errorMsgBackup = '';
-    this.backupService.generar({ desde: this.backupDesde, hasta: this.backupHasta, tablas: this.tablasSeleccionadas, formato: this.backupFormato }).subscribe({ next: (entry) => { this.generandoBackup = false; this.toast.success('Respaldo generado', 'Backup generado con éxito'); this.cargarBackups(); }, error: (err) => { this.generandoBackup = false; const detail = err?.error?.detail ?? err?.message ?? 'Error al generar el respaldo'; this.errorMsgBackup = detail; this.toast.error('Error', detail); } });
+    this.generandoBackup = true; 
+    this.errorMsgBackup = '';
+    
+    const payload = {
+      tablas: this.tablasSeleccionadas,
+      formato: this.backupFormato,
+      cadaHoras: this.cadaHoras,
+      cadaDias: this.cadaDias,
+      activo: true
+    };
+
+    this.backupService.guardarProgramacion(payload).subscribe({ 
+      next: (prog) => { 
+        this.generandoBackup = false; 
+        this.toast.success('Programación guardada', 'Backup programado con éxito'); 
+        this.cargarProgramaciones(); 
+      }, 
+      error: (err) => { 
+        this.generandoBackup = false; 
+        const detail = err?.error?.detail ?? err?.message ?? 'Error al guardar la programación'; 
+        this.errorMsgBackup = detail; 
+        this.toast.error('Error', detail); 
+      } 
+    });
   }
   programarBackup(id: number): void {
     this.backupService.programar(id).subscribe({ next: (p) => { this.toast.success('Programado', 'Respaldo automático programado correctamente'); this.cargarProgramaciones(); }, error: (err) => { const detail = err?.error?.detail ?? err?.message ?? 'Error al programar'; this.toast.error('Error', detail); } });
