@@ -189,6 +189,7 @@ interface SubmoduloConfig {
   icono: string;
   color: string;
   badge?: string;
+  moduloId?: string;
 }
 
 interface BreadcrumbItem {
@@ -226,6 +227,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
   errorMsgTiposDano = '';
 
   vista: VistaConfig = 'root';
+  moduloSeleccionado: string | null = null;
   submoduloSeleccionado: string | null = null;
   breadcrumbs: BreadcrumbItem[] = [];
   tituloActual = 'Configuración';
@@ -259,12 +261,23 @@ export class ConfiguracionSistemaComponent implements OnInit {
   ];
 
   submodulos: SubmoduloConfig[] = [
-    { id: 'prestamos', codigo: 'CFG-PRE', titulo: 'Préstamos y reservas', descripcion: 'Duración, renovaciones, límite de préstamos y horario de retiro de reservas.', icono: 'calendar_month', color: 'bg-primary/10 text-primary' },
-    { id: 'notificaciones', codigo: 'CFG-NOT', titulo: 'Notificaciones', descripcion: 'Recordatorios automáticos, plantillas de mensaje y avisos masivos.', icono: 'notifications_active', color: 'bg-tertiary/10 text-tertiary' },
-    { id: 'multas', codigo: 'CFG-MUL', titulo: 'Multas', descripcion: 'Monto diario, tope máximo, umbral de bloqueo y métodos de pago.', icono: 'payments', color: 'bg-error/10 text-error' },
-    { id: 'registro', codigo: 'CFG-REG', titulo: 'Registro', descripcion: 'Dominios de correo permitidos para el autorregistro de usuarios.', icono: 'mail_lock', color: 'bg-primary/10 text-primary' },
-    { id: 'archivos', codigo: 'CFG-ARC', titulo: 'Archivos', descripcion: 'Tamaño máximo de portadas y evidencias subidas por el bibliotecario.', icono: 'attach_file', color: 'bg-primary/10 text-primary' }
+    { id: 'prestamos', moduloId: 'sistema', codigo: 'CFG-PRE', titulo: 'Préstamos y reservas', descripcion: 'Duración, renovaciones, límite de préstamos y horario de retiro de reservas.', icono: 'calendar_month', color: 'bg-primary/10 text-primary' },
+    { id: 'notificaciones', moduloId: 'sistema', codigo: 'CFG-NOT', titulo: 'Notificaciones', descripcion: 'Recordatorios automáticos, plantillas de mensaje y avisos masivos.', icono: 'notifications_active', color: 'bg-tertiary/10 text-tertiary' },
+    { id: 'multas', moduloId: 'sistema', codigo: 'CFG-MUL', titulo: 'Multas', descripcion: 'Monto diario, tope máximo, umbral de bloqueo y métodos de pago.', icono: 'payments', color: 'bg-error/10 text-error' },
+    { id: 'registro', moduloId: 'sistema', codigo: 'CFG-REG', titulo: 'Registro', descripcion: 'Dominios de correo permitidos para el autorregistro de usuarios.', icono: 'mail_lock', color: 'bg-primary/10 text-primary' },
+    { id: 'archivos', moduloId: 'sistema', codigo: 'CFG-ARC', titulo: 'Archivos', descripcion: 'Tamaño máximo de portadas y evidencias subidas por el bibliotecario.', icono: 'attach_file', color: 'bg-primary/10 text-primary' },
+    { id: 'respaldo-manual', moduloId: 'respaldos', codigo: 'CFG-RSM', titulo: 'Respaldo manual', descripcion: 'Genere respaldos inmediatos seleccionando tablas, formato y rango de fechas.', icono: 'hard_drive_2', color: 'bg-tertiary/10 text-tertiary' },
+    { id: 'respaldo-automatico', moduloId: 'respaldos', codigo: 'CFG-RSA', titulo: 'Respaldo automático', descripcion: 'Programe respaldos automáticos por horas o días y gestione las programaciones activas.', icono: 'schedule', color: 'bg-primary/10 text-primary' }
   ];
+
+  get submodulosFiltrados(): SubmoduloConfig[] {
+    if (this.moduloSeleccionado === 'sistema') {
+      return this.submodulos.filter(s => s.moduloId === 'sistema');
+    } else if (this.moduloSeleccionado === 'respaldos') {
+      return this.submodulos.filter(s => s.moduloId === 'respaldos');
+    }
+    return [];
+  }
 
   // --- Estado Respaldo de datos ---
   backupDesde = '';
@@ -318,6 +331,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
   }
 
   abrirModulo(moduloId: string): void {
+    this.moduloSeleccionado = moduloId;
     if (moduloId === 'danos') {
       this.vista = 'detalle';
       this.submoduloSeleccionado = 'danos';
@@ -328,15 +342,13 @@ export class ConfiguracionSistemaComponent implements OnInit {
         { label: 'Tipos de daño', vista: 'detalle', submoduloId: 'danos' }
       ];
     } else if (moduloId === 'respaldos') {
-      this.vista = 'detalle';
-      this.submoduloSeleccionado = 'respaldos';
+      this.vista = 'grid';
+      this.submoduloSeleccionado = null;
       this.tituloActual = 'Respaldo de datos';
-      this.descripcionActual = 'Genere respaldos con filtros de fecha, tablas y formato. El historial queda registrado para descarga o eliminación.';
+      this.descripcionActual = 'Genere respaldos manuales o configure programaciones automáticas de respaldo.';
       this.breadcrumbs = [
-        { label: 'Configuración', vista: 'root' },
-        { label: 'Respaldo de datos', vista: 'detalle', submoduloId: 'respaldos' }
+        { label: 'Configuración', vista: 'root' }
       ];
-      this.cargarBackups();
     } else {
       this.vista = 'grid';
       this.submoduloSeleccionado = null;
@@ -355,16 +367,29 @@ export class ConfiguracionSistemaComponent implements OnInit {
     this.submoduloSeleccionado = submoduloId;
     this.tituloActual = sub.titulo;
     this.descripcionActual = sub.descripcion;
-    this.breadcrumbs = [
-      { label: 'Configuración', vista: 'root' },
-      { label: 'Configuración del sistema', vista: 'grid' },
-      { label: sub.titulo, vista: 'detalle', submoduloId }
-    ];
+    if (sub.moduloId === 'respaldos') {
+      this.breadcrumbs = [
+        { label: 'Configuración', vista: 'root' },
+        { label: 'Respaldo de datos', vista: 'grid' },
+        { label: sub.titulo, vista: 'detalle', submoduloId }
+      ];
+      this.cargarBackups();
+      if (submoduloId === 'respaldo-automatico') {
+        this.cargarProgramaciones();
+      }
+    } else {
+      this.breadcrumbs = [
+        { label: 'Configuración', vista: 'root' },
+        { label: 'Configuración del sistema', vista: 'grid' },
+        { label: sub.titulo, vista: 'detalle', submoduloId }
+      ];
+    }
   }
 
   volverARoot(): void {
     this.vista = 'root';
     this.submoduloSeleccionado = null;
+    this.moduloSeleccionado = null;
     this.breadcrumbs = [];
     this.tituloActual = 'Configuración';
     this.descripcionActual = 'Seleccione un módulo para ver y editar sus parámetros.';
@@ -377,8 +402,13 @@ export class ConfiguracionSistemaComponent implements OnInit {
     this.breadcrumbs = [
       { label: 'Configuración', vista: 'root' }
     ];
-    this.tituloActual = 'Configuración del sistema';
-    this.descripcionActual = 'Ocho submódulos, cada uno con sus propios parámetros.';
+    if (this.moduloSeleccionado === 'respaldos') {
+      this.tituloActual = 'Respaldo de datos';
+      this.descripcionActual = 'Genere respaldos manuales o configure programaciones automáticas de respaldo.';
+    } else {
+      this.tituloActual = 'Configuración del sistema';
+      this.descripcionActual = 'Cinco submódulos, cada uno con sus propios parámetros.';
+    }
     this.claveEditando = null;
   }
 
@@ -387,6 +417,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
     this.claveEditando = null;
     if (item.vista === 'root') {
       this.submoduloSeleccionado = null;
+      this.moduloSeleccionado = null;
       this.breadcrumbs = [];
       this.tituloActual = 'Configuración';
       this.descripcionActual = 'Seleccione un módulo para ver y editar sus parámetros.';
@@ -395,18 +426,31 @@ export class ConfiguracionSistemaComponent implements OnInit {
       this.breadcrumbs = [
         { label: 'Configuración', vista: 'root' }
       ];
-      this.tituloActual = 'Configuración del sistema';
-      this.descripcionActual = 'Cinco submódulos, cada uno con sus propios parámetros.';
+      if (this.moduloSeleccionado === 'respaldos') {
+        this.tituloActual = 'Respaldo de datos';
+        this.descripcionActual = 'Genere respaldos manuales o configure programaciones automáticas de respaldo.';
+      } else {
+        this.tituloActual = 'Configuración del sistema';
+        this.descripcionActual = 'Cinco submódulos, cada uno con sus propios parámetros.';
+      }
     } else if (item.submoduloId) {
       this.submoduloSeleccionado = item.submoduloId;
       const sub = this.submodulos.find(s => s.id === item.submoduloId);
       this.tituloActual = sub?.titulo ?? item.label;
       this.descripcionActual = sub?.descripcion ?? '';
-      this.breadcrumbs = [
-        { label: 'Configuración', vista: 'root' },
-        { label: 'Configuración del sistema', vista: 'grid' },
-        { label: sub?.titulo ?? item.label, vista: 'detalle', submoduloId: item.submoduloId }
-      ];
+      if (sub?.moduloId === 'respaldos') {
+        this.breadcrumbs = [
+          { label: 'Configuración', vista: 'root' },
+          { label: 'Respaldo de datos', vista: 'grid' },
+          { label: sub?.titulo ?? item.label, vista: 'detalle', submoduloId: item.submoduloId }
+        ];
+      } else {
+        this.breadcrumbs = [
+          { label: 'Configuración', vista: 'root' },
+          { label: 'Configuración del sistema', vista: 'grid' },
+          { label: sub?.titulo ?? item.label, vista: 'detalle', submoduloId: item.submoduloId }
+        ];
+      }
     }
   }
 
