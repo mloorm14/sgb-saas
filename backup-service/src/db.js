@@ -1,39 +1,27 @@
 const { Pool } = require('pg');
 
+// Tomar la URL de conexión — prioridad: DATABASE_URL, luego DB_URL (quita 'jdbc:' de Java)
 let connectionString = process.env.DATABASE_URL;
 if (!connectionString && process.env.DB_URL) {
     connectionString = process.env.DB_URL.replace(/^jdbc:/, '');
 }
+
 if (!connectionString) {
-    connectionString = 'postgresql://sgb_user:changeme@localhost:5432/sgb_db';
+    throw new Error('No se encontró una variable de base de datos (DATABASE_URL o DB_URL). Configúrala en Render.');
 }
 
-// Para desarrollo local sin SSL
-const isProd = process.env.NODE_ENV === 'production' || connectionString.includes('neon.tech');
-
-const poolConfig = {
-    connectionString,
-    ssl: isProd ? { rejectUnauthorized: false } : false
-};
-
-if (process.env.DB_USER) {
-    poolConfig.user = process.env.DB_USER;
-}
-if (process.env.DB_PASSWORD) {
-    poolConfig.password = process.env.DB_PASSWORD;
+// Si la URL de Neon no trae sslmode, lo añadimos nosotros
+if (!connectionString.includes('sslmode') && connectionString.includes('neon.tech')) {
+    connectionString += (connectionString.includes('?') ? '&' : '?') + 'sslmode=require';
 }
 
-const pool = new Pool(poolConfig);
+// Pool simple — dejamos que pg parsee todo desde la URL, sin configuración extra que entre en conflicto
+const pool = new Pool({ connectionString });
 
-// Exponer las variables para que pg_dump las tome automáticamente
-if (process.env.DB_USER && !process.env.PGUSER) {
-    process.env.PGUSER = process.env.DB_USER;
-}
-if (process.env.DB_PASSWORD && !process.env.PGPASSWORD) {
-    process.env.PGPASSWORD = process.env.DB_PASSWORD;
+// Exponer la URL limpia para que pg_dump también pueda conectarse
+function getConnectionString() {
+    return connectionString;
 }
 
-module.exports = {
-    pool,
-    connectionString
-};
+module.exports = { pool, getConnectionString };
+
