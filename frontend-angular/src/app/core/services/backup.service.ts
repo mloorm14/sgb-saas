@@ -104,6 +104,10 @@ export class BackupService {
   listarProgramaciones(): Observable<BackupProgramacion[]> {
     return this.http.get<BackupProgramacion[]>(`${this.apiUrl}/programacion`).pipe(catchError(err => this.manejarError(err)));
   }
+
+  guardarProgramacion(prog: Partial<BackupProgramacion>): Observable<BackupProgramacion> {
+    return this.http.post<BackupProgramacion>(`${this.apiUrl}/programacion`, prog).pipe(catchError(err => this.manejarError(err)));
+  }
   ejecutarAhora(id: number): Observable<any> {
     return this.http.post(`${this.apiUrl}/${id}/ejecutar-ahora`, {}).pipe(catchError(err => this.manejarError(err)));
   }
