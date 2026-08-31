@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 public interface BackupProgramacionRepository extends JpaRepository<BackupProgramacion, Long> {
 
     // Listar programaciones activas ordenadas por última ejecución
-    java.util.List<BackupProgramacion> findByActivoOrderByUltimaEjecucionDesc();
+    java.util.List<BackupProgramacion> findByActivoTrueOrderByUltimaEjecucionDesc();
 
     // Buscar una programación por ID y activo
     BackupProgramacion findByIdAndActivoTrue(Long id);
