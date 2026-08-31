@@ -25,7 +25,6 @@ export const routes: Routes = [
   { path: 'prestamos/gestion', loadComponent: () => import('./prestamos-gestion/prestamos-gestion.component').then(m => m.PrestamosGestionComponent), canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE'])] },
   { path: 'reservaciones', loadComponent: () => import('./reservaciones/reservaciones.component').then(m => m.ReservacionesComponent), canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
   { path: 'multas', loadComponent: () => import('./multas/multas.component').then(m => m.MultasComponent), canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
-  { path: 'admin/configuracion', loadComponent: () => import('./configuracion-sistema/configuracion-sistema.component').then(m => m.ConfiguracionSistemaComponent), canActivate: [authGuard, roleGuard(['ADMIN'])] },
   { path: 'reportes', loadComponent: () => import('./reportes/reportes.component').then(m => m.ReportesComponent), canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])] },
   { path: 'dashboard-gerente', component: DashboardGerenteComponent, canActivate: [authGuard, roleGuard(['GERENTE'])] },
   {
