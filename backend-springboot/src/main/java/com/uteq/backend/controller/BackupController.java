@@ -43,9 +43,10 @@ public class BackupController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BackupResponseDTO> generar(@RequestBody BackupRequestDTO req) {
-        Backup b = backupService.generarBackup(req.desde, req.hasta, req.tablas, req.formato);
+        String tipo = req.tipo != null ? req.tipo : "manual";
+        Backup b = backupService.generarBackup(req.desde, req.hasta, req.tablas, req.formato, tipo);
         String url = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}/download").buildAndExpand(b.getId()).toUriString();
-        return ResponseEntity.status(HttpStatus.CREATED).body(new BackupResponseDTO(b.getId(), b.getCreadoEn(), b.getDesde(), b.getHasta(), b.getTablas(), b.getFormato(), b.getRuta(), b.getTamanoBytes(), b.getEstado(), url));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new BackupResponseDTO(b.getId(), b.getCreadoEn(), b.getDesde(), b.getHasta(), b.getTablas(), b.getFormato(), b.getRuta(), b.getTamanoBytes(), b.getEstado(), b.getTipo(), url));
     }
 
     @GetMapping
@@ -54,7 +55,7 @@ public class BackupController {
         OffsetDateTime d = desde != null ? parseFlexible(desde) : null;
         OffsetDateTime h = hasta != null ? parseFlexible(hasta) : null;
         List<Backup> lista = (d != null || h != null) ? backupService.listarPorRango(d != null ? d : OffsetDateTime.now().minusDays(30), h != null ? h : OffsetDateTime.now()) : backupService.listarTodos();
-        return ResponseEntity.ok(lista.stream().map(b -> new BackupResumenDTO(b.getId(), b.getCreadoEn(), b.getDesde(), b.getHasta(), b.getTablas(), b.getFormato(), b.getTamanoBytes(), b.getEstado())).toList());
+        return ResponseEntity.ok(lista.stream().map(b -> new BackupResumenDTO(b.getId(), b.getCreadoEn(), b.getDesde(), b.getHasta(), b.getTablas(), b.getFormato(), b.getTamanoBytes(), b.getEstado(), b.getTipo())).toList());
     }
 
     @GetMapping("/programacion")
@@ -92,7 +93,8 @@ public class BackupController {
             desde = ahora.minusDays(p.getCadaDias()).withHour(0).withMinute(0).withSecond(0).withNano(0);
             hasta = ahora.withHour(23).withMinute(59).withSecond(59);
         }
-        Backup backup = backupService.generarBackup(desde, hasta, Set.of(), p.getFormato());
+        Set<String> tablas = (p.getTablas() != null && !p.getTablas().isEmpty()) ? p.getTablas() : Set.of();
+        Backup backup = backupService.generarBackup(desde, hasta, tablas, p.getFormato(), "automatico");
         // Actualizar última ejecución en la programación (usa método interno del service)
         progService.actualizarUltimaEjecucion(id, backup.getCreadoEn());
         return ResponseEntity.ok().body("Backup ejecutado id=" + backup.getId());
@@ -104,14 +106,15 @@ public class BackupController {
         @NotNull @JsonDeserialize(using = FlexibleOffsetDateTimeDeserializer.class) OffsetDateTime hasta;
         @NotEmpty Set<String> tablas;
         @NotNull String formato;
+        String tipo; // "manual" o "automatico", default "manual"
     }
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class BackupResponseDTO {
-        Long id; OffsetDateTime creadoEn; OffsetDateTime desde; OffsetDateTime hasta; Set<String> tablas; String formato; String ruta; Long tamanoBytes; String estado; String urlDescarga;
+        Long id; OffsetDateTime creadoEn; OffsetDateTime desde; OffsetDateTime hasta; Set<String> tablas; String formato; String ruta; Long tamanoBytes; String estado; String tipo; String urlDescarga;
     }
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class BackupResumenDTO {
-        Long id; OffsetDateTime creadoEn; OffsetDateTime desde; OffsetDateTime hasta; Set<String> tablas; String formato; Long tamanoBytes; String estado;
+        Long id; OffsetDateTime creadoEn; OffsetDateTime desde; OffsetDateTime hasta; Set<String> tablas; String formato; Long tamanoBytes; String estado; String tipo;
     }
 
     private static OffsetDateTime parseFlexible(String text) {
