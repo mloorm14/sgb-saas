@@ -31,8 +31,16 @@ export class BackupService {
   private apiUrl = `${environment.apiUrl}/v1/admin/backups`;
   constructor(private http: HttpClient) {}
 
+  private toIsoOffset(local: string): string {
+    if (!local) return local;
+    let s = local.trim();
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)) s += ':00';
+    if (!/[Z+-]/.test(s.slice(10))) s += '-05:00';
+    return s;
+  }
   generar(dto: BackupRequest): Observable<BackupEntry> {
-    return this.http.post<BackupEntry>(this.apiUrl, dto).pipe(catchError(err => this.manejarError(err)));
+    const norm: BackupRequest = { ...dto, desde: this.toIsoOffset(dto.desde), hasta: this.toIsoOffset(dto.hasta) };
+    return this.http.post<BackupEntry>(this.apiUrl, norm).pipe(catchError(err => this.manejarError(err)));
   }
   listar(filtros?: { desde?: string; hasta?: string; formato?: string }): Observable<BackupEntry[]> {
     let params = new HttpParams();
