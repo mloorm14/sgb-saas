@@ -9,24 +9,45 @@ if (!rawUrl) {
     throw new Error('No se encontró DATABASE_URL ni DB_URL. Configúrala en Render.');
 }
 
-// Parsear la URL manualmente para extraer cada componente por separado.
-// Esto evita el error SCRAM cuando el password tiene caracteres especiales (@, #, !, %)
-// que no están URL-encodeados en la cadena de conexión.
+// Limpiar espacios, saltos de línea y comillas que puedan rodear la URL
+rawUrl = rawUrl.trim().replace(/^["']|["']$/g, '');
+
+// DIAGNÓSTICO — muestra los primeros 30 caracteres y si detecta el host esperado
+console.log('[db] URL detectada (primeros 30 chars):', rawUrl.substring(0, 30) + '...');
+console.log('[db] Contiene neon.tech:', rawUrl.includes('neon.tech'));
+
 let poolConfig;
 try {
     const parsed = new URL(rawUrl);
+
+    const host     = parsed.hostname;
+    const port     = parseInt(parsed.port) || 5432;
+    const database = parsed.pathname.replace(/^\//, '');
+    const user     = decodeURIComponent(parsed.username);
+    const password = decodeURIComponent(parsed.password);
+
+    // DIAGNÓSTICO — muestra los campos parseados (sin exponer la contraseña)
+    console.log('[db] host:', host);
+    console.log('[db] port:', port);
+    console.log('[db] database:', database);
+    console.log('[db] user:', user);
+    console.log('[db] password length:', password ? password.length : 'UNDEFINED/EMPTY');
+
+    if (!password || typeof password !== 'string' || password.length === 0) {
+        throw new Error('[db] La contraseña está vacía tras parsear la URL. Verifica DATABASE_URL en Render.');
+    }
+
     poolConfig = {
-        host:     parsed.hostname,
-        port:     parseInt(parsed.port) || 5432,
-        database: parsed.pathname.replace(/^\//, ''),
-        user:     decodeURIComponent(parsed.username),
-        password: decodeURIComponent(parsed.password),
-        ssl:      { rejectUnauthorized: false }
+        host,
+        port,
+        database,
+        user,
+        password,
+        ssl: { rejectUnauthorized: false }
     };
 } catch (e) {
-    // Si falla el parseo, intentar con connectionString directo
-    console.warn('No se pudo parsear la URL, usando connectionString directo:', e.message);
-    poolConfig = { connectionString: rawUrl, ssl: { rejectUnauthorized: false } };
+    console.error('[db] Error parseando URL:', e.message);
+    throw e;
 }
 
 const pool = new Pool(poolConfig);
