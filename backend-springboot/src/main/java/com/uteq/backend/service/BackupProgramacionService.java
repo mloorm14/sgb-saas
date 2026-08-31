@@ -207,13 +207,14 @@ public class BackupProgramacionService {
             return;
         }
 
-        // Determinar tablas y formato según la programación
-        // Por ahora usamos las mismas tablas por defecto del servicio principal
-        Set<String> tablasDefault = Set.of(
-                "prestamos", "reservas", "reservaciones", "multas", "libros", "usuarios",
-                "bitacora_auditoria", "auditoria", "configuracion_sistema",
-                "notificaciones", "favoritos", "sugerencias_adquisicion", "categorias", "autores"
-        );
+        // Usar tablas configuradas en la programación; si no hay, usar el set por defecto
+        Set<String> tablasDefault = (p.getTablas() != null && !p.getTablas().isEmpty())
+                ? p.getTablas()
+                : Set.of(
+                        "prestamos", "reservas", "reservaciones", "multas", "libros", "usuarios",
+                        "bitacora_auditoria", "auditoria", "configuracion_sistema",
+                        "notificaciones", "favoritos", "sugerencias_adquisicion", "categorias", "autores"
+                );
 
         try {
             // Usar horario fijo 00:00-23:59 del día calculado
@@ -233,7 +234,7 @@ public class BackupProgramacionService {
                 hasta = ahora.withHour(23).withMinute(59).withSecond(59);
             }
 
-            Backup backup = backupService.generarBackup(desde, hasta, tablasDefault, p.getFormato());
+            Backup backup = backupService.generarBackup(desde, hasta, tablasDefault, p.getFormato(), "automatico");
             // Registrar programación última ejecución
             p.setUltimaEjecucion(backup.getCreadoEn());
             progRepo.save(p);

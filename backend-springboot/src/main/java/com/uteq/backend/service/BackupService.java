@@ -75,7 +75,7 @@ public class BackupService {
     }
 
     @Transactional
-    public Backup generarBackup(OffsetDateTime desde, OffsetDateTime hasta, Set<String> tablas, String formato) {
+    public Backup generarBackup(OffsetDateTime desde, OffsetDateTime hasta, Set<String> tablas, String formato, String tipo) {
         validarRango(desde, hasta);
         validarTablas(tablas);
         String fmt = formato == null ? "sql" : formato.toLowerCase();
@@ -95,6 +95,7 @@ public class BackupService {
                 .ruta(key)
                 .tamanoBytes((long) zipBytes.length)
                 .estado("COMPLETADO")
+                .tipo(tipo)
                 .creadoEn(OffsetDateTime.now())
                 .build();
         return backupRepository.save(backup);
