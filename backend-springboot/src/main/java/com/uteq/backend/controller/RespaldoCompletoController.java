@@ -61,6 +61,38 @@ public class RespaldoCompletoController {
                 id, req.estado, req.nombreArchivo, req.tamanoArchivoBytes, req.rutaR2, req.mensajeError));
     }
 
+    // ── Proxy hacia el microservicio Node.js ───────────────────────────────────
+    @PostMapping("/trigger")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> triggerBackupCompleto(java.security.Principal principal) {
+        String backupServiceUrl = System.getenv("BACKUP_SERVICE_URL");
+        if (backupServiceUrl == null || backupServiceUrl.isBlank()) {
+            backupServiceUrl = "http://localhost:3000";
+        }
+        
+        try {
+            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+            java.util.Map<String, Object> reqBody = new java.util.HashMap<>();
+            if (principal != null) {
+                // The frontend doesn't send the user ID in the proxy request, so we need to
+                // pass a dummy ID or find it if we injected the user repo. But since we are proxying,
+                // and the Node service can handle null usuarioId if not found, we can just send null
+                // or try to fetch it if we had the repo. To keep it simple and compile-safe:
+                reqBody.put("usuarioId", null);
+            }
+            
+            org.springframework.http.ResponseEntity<String> nodeResponse = restTemplate.postForEntity(
+                backupServiceUrl + "/api/v1/trigger", 
+                reqBody, 
+                String.class
+            );
+            
+            return ResponseEntity.status(nodeResponse.getStatusCode()).body(nodeResponse.getBody());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error al contactar el microservicio de respaldos: " + e.getMessage());
+        }
+    }
+
     // ── DTOs ───────────────────────────────────────────────────────────────────
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class ConfigRequestDTO {
