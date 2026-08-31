@@ -192,10 +192,21 @@ interface SubmoduloConfig {
   moduloId?: string;
 }
 
+interface SubSubmoduloConfig {
+  id: string;
+  codigo: string;
+  titulo: string;
+  descripcion: string;
+  icono: string;
+  color: string;
+  submoduloId: string; // pertenece a qué submódulo de respaldos
+}
+
 interface BreadcrumbItem {
   label: string;
   vista: VistaConfig;
   submoduloId?: string;
+  subSubmoduloId?: string;
 }
 
 @Component({
@@ -229,6 +240,8 @@ export class ConfiguracionSistemaComponent implements OnInit {
   vista: VistaConfig = 'root';
   moduloSeleccionado: string | null = null;
   submoduloSeleccionado: string | null = null;
+  /** Nivel 3: 'manual-completo' | 'manual-personalizado' | 'auto-completo' | 'auto-personalizado' */
+  subSubmoduloSeleccionado: string | null = null;
   breadcrumbs: BreadcrumbItem[] = [];
   tituloActual = 'Configuración';
   descripcionActual = 'Seleccione un módulo para ver y editar sus parámetros.';
@@ -266,8 +279,16 @@ export class ConfiguracionSistemaComponent implements OnInit {
     { id: 'multas', moduloId: 'sistema', codigo: 'CFG-MUL', titulo: 'Multas', descripcion: 'Monto diario, tope máximo, umbral de bloqueo y métodos de pago.', icono: 'payments', color: 'bg-error/10 text-error' },
     { id: 'registro', moduloId: 'sistema', codigo: 'CFG-REG', titulo: 'Registro', descripcion: 'Dominios de correo permitidos para el autorregistro de usuarios.', icono: 'mail_lock', color: 'bg-primary/10 text-primary' },
     { id: 'archivos', moduloId: 'sistema', codigo: 'CFG-ARC', titulo: 'Archivos', descripcion: 'Tamaño máximo de portadas y evidencias subidas por el bibliotecario.', icono: 'attach_file', color: 'bg-primary/10 text-primary' },
-    { id: 'respaldo-manual', moduloId: 'respaldos', codigo: 'CFG-RSM', titulo: 'Respaldo manual', descripcion: 'Genere respaldos inmediatos seleccionando tablas, formato y rango de fechas.', icono: 'hard_drive_2', color: 'bg-tertiary/10 text-tertiary' },
-    { id: 'respaldo-automatico', moduloId: 'respaldos', codigo: 'CFG-RSA', titulo: 'Respaldo automático', descripcion: 'Programe respaldos automáticos por horas o días y gestione las programaciones activas.', icono: 'schedule', color: 'bg-primary/10 text-primary' }
+    { id: 'respaldo-manual', moduloId: 'respaldos', codigo: 'CFG-RSM', titulo: 'Respaldo manual', descripcion: 'Genere respaldos inmediatos seleccionando entre volcado completo o exportación de tablas específicas.', icono: 'hard_drive_2', color: 'bg-tertiary/10 text-tertiary' },
+    { id: 'respaldo-automatico', moduloId: 'respaldos', codigo: 'CFG-RSA', titulo: 'Respaldo automático', descripcion: 'Configure respaldos automáticos programados: completos (Disaster Recovery) o de tablas específicas.', icono: 'schedule', color: 'bg-primary/10 text-primary' }
+  ];
+
+  /** Nivel 3: sub-submódulos de respaldo-manual y respaldo-automatico */
+  subSubmodulos: SubSubmoduloConfig[] = [
+    { id: 'manual-completo', submoduloId: 'respaldo-manual', codigo: 'CFG-RSM-C', titulo: 'Completo', descripcion: 'Volcado completo de la base de datos (pg_dump). Recomendado para recuperación ante desastres.', icono: 'database', color: 'bg-primary/10 text-primary' },
+    { id: 'manual-personalizado', submoduloId: 'respaldo-manual', codigo: 'CFG-RSM-P', titulo: 'Personalizado', descripcion: 'Exporte tablas específicas con filtros de fecha y formato CSV o SQL.', icono: 'filter_alt', color: 'bg-tertiary/10 text-tertiary' },
+    { id: 'auto-completo', submoduloId: 'respaldo-automatico', codigo: 'CFG-RSA-C', titulo: 'Completo', descripcion: 'Programa volcados completos de base de datos cada cierta cantidad de horas.', icono: 'database', color: 'bg-primary/10 text-primary' },
+    { id: 'auto-personalizado', submoduloId: 'respaldo-automatico', codigo: 'CFG-RSA-P', titulo: 'Personalizado', descripcion: 'Programa exportaciones automáticas de tablas específicas en el formato elegido.', icono: 'filter_alt', color: 'bg-tertiary/10 text-tertiary' }
   ];
 
   get submodulosFiltrados(): SubmoduloConfig[] {
@@ -277,6 +298,11 @@ export class ConfiguracionSistemaComponent implements OnInit {
       return this.submodulos.filter(s => s.moduloId === 'respaldos');
     }
     return [];
+  }
+
+  get subSubmodulosFiltrados(): SubSubmoduloConfig[] {
+    if (!this.submoduloSeleccionado) return [];
+    return this.subSubmodulos.filter(s => s.submoduloId === this.submoduloSeleccionado);
   }
 
   // --- Estado Respaldo de datos ---
@@ -332,6 +358,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
 
   abrirModulo(moduloId: string): void {
     this.moduloSeleccionado = moduloId;
+    this.subSubmoduloSeleccionado = null;
     if (moduloId === 'danos') {
       this.vista = 'detalle';
       this.submoduloSeleccionado = 'danos';
@@ -345,7 +372,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
       this.vista = 'grid';
       this.submoduloSeleccionado = null;
       this.tituloActual = 'Respaldo de datos';
-      this.descripcionActual = 'Genere respaldos manuales o configure programaciones automáticas de respaldo.';
+      this.descripcionActual = 'Seleccione el tipo de respaldo que desea realizar o configurar.';
       this.breadcrumbs = [
         { label: 'Configuración', vista: 'root' }
       ];
@@ -363,21 +390,23 @@ export class ConfiguracionSistemaComponent implements OnInit {
   abrirSubmodulo(submoduloId: string): void {
     const sub = this.submodulos.find(s => s.id === submoduloId);
     if (!sub) return;
-    this.vista = 'detalle';
     this.submoduloSeleccionado = submoduloId;
-    this.tituloActual = sub.titulo;
-    this.descripcionActual = sub.descripcion;
+    this.subSubmoduloSeleccionado = null;
+
+    // Los submódulos de respaldos abren una cuadrícula de nivel 3 (Completo/Personalizado)
     if (sub.moduloId === 'respaldos') {
+      this.vista = 'grid';
+      this.tituloActual = sub.titulo;
+      this.descripcionActual = sub.descripcion;
       this.breadcrumbs = [
         { label: 'Configuración', vista: 'root' },
         { label: 'Respaldo de datos', vista: 'grid' },
         { label: sub.titulo, vista: 'detalle', submoduloId }
       ];
-      this.cargarBackups();
-      if (submoduloId === 'respaldo-automatico') {
-        this.cargarProgramaciones();
-      }
     } else {
+      this.vista = 'detalle';
+      this.tituloActual = sub.titulo;
+      this.descripcionActual = sub.descripcion;
       this.breadcrumbs = [
         { label: 'Configuración', vista: 'root' },
         { label: 'Configuración del sistema', vista: 'grid' },
@@ -386,10 +415,43 @@ export class ConfiguracionSistemaComponent implements OnInit {
     }
   }
 
+  abrirSubSubmodulo(subSubmoduloId: string): void {
+    const ss = this.subSubmodulos.find(s => s.id === subSubmoduloId);
+    if (!ss) return;
+    const sub = this.submodulos.find(s => s.id === ss.submoduloId);
+    this.subSubmoduloSeleccionado = subSubmoduloId;
+    this.vista = 'detalle';
+    this.tituloActual = ss.titulo;
+    this.descripcionActual = ss.descripcion;
+    // Limpiar historial propio de este sub-submódulo
+    this.backups = [];
+    this.programaciones = [];
+    this.errorMsgBackup = '';
+    this.breadcrumbs = [
+      { label: 'Configuración', vista: 'root' },
+      { label: 'Respaldo de datos', vista: 'grid' },
+      { label: sub?.titulo ?? ss.submoduloId, vista: 'grid', submoduloId: ss.submoduloId },
+      { label: ss.titulo, vista: 'detalle', subSubmoduloId }
+    ];
+    // Cargar historial exclusivo según el sub-submódulo
+    if (subSubmoduloId === 'manual-personalizado') {
+      this.cargarBackupsPorTipo('manual');
+    } else if (subSubmoduloId === 'auto-personalizado') {
+      this.cargarBackupsPorTipo('automatico');
+      this.cargarProgramaciones();
+    } else if (subSubmoduloId === 'manual-completo') {
+      this.cargarRegistrosRespaldo('manual');
+    } else if (subSubmoduloId === 'auto-completo') {
+      this.cargarRegistrosRespaldo('automatico');
+      this.cargarConfigDR();
+    }
+  }
+
   volverARoot(): void {
     this.vista = 'root';
     this.submoduloSeleccionado = null;
     this.moduloSeleccionado = null;
+    this.subSubmoduloSeleccionado = null;
     this.breadcrumbs = [];
     this.tituloActual = 'Configuración';
     this.descripcionActual = 'Seleccione un módulo para ver y editar sus parámetros.';
@@ -397,59 +459,67 @@ export class ConfiguracionSistemaComponent implements OnInit {
   }
 
   volverAGrid(): void {
-    this.vista = 'grid';
-    this.submoduloSeleccionado = null;
-    this.breadcrumbs = [
-      { label: 'Configuración', vista: 'root' }
-    ];
-    if (this.moduloSeleccionado === 'respaldos') {
-      this.tituloActual = 'Respaldo de datos';
-      this.descripcionActual = 'Genere respaldos manuales o configure programaciones automáticas de respaldo.';
+    this.claveEditando = null;
+    // Si estábamos en un sub-submódulo (nivel 3) volvemos al grid del submódulo (nivel 2)
+    if (this.subSubmoduloSeleccionado) {
+      this.subSubmoduloSeleccionado = null;
+      this.vista = 'grid';
+      const sub = this.submodulos.find(s => s.id === this.submoduloSeleccionado);
+      this.tituloActual = sub?.titulo ?? 'Respaldo de datos';
+      this.descripcionActual = sub?.descripcion ?? '';
+      this.breadcrumbs = [
+        { label: 'Configuración', vista: 'root' },
+        { label: 'Respaldo de datos', vista: 'grid' },
+        { label: sub?.titulo ?? '', vista: 'grid', submoduloId: this.submoduloSeleccionado ?? undefined }
+      ];
     } else {
-      this.tituloActual = 'Configuración del sistema';
-      this.descripcionActual = 'Cinco submódulos, cada uno con sus propios parámetros.';
-    }
-    this.claveEditando = null;
-  }
-
-  navegarBreadcrumb(item: BreadcrumbItem): void {
-    this.vista = item.vista;
-    this.claveEditando = null;
-    if (item.vista === 'root') {
+      // Volvemos al grid del módulo (nivel 1)
       this.submoduloSeleccionado = null;
-      this.moduloSeleccionado = null;
-      this.breadcrumbs = [];
-      this.tituloActual = 'Configuración';
-      this.descripcionActual = 'Seleccione un módulo para ver y editar sus parámetros.';
-    } else if (item.vista === 'grid') {
-      this.submoduloSeleccionado = null;
+      this.vista = 'grid';
       this.breadcrumbs = [
         { label: 'Configuración', vista: 'root' }
       ];
       if (this.moduloSeleccionado === 'respaldos') {
         this.tituloActual = 'Respaldo de datos';
-        this.descripcionActual = 'Genere respaldos manuales o configure programaciones automáticas de respaldo.';
+        this.descripcionActual = 'Seleccione el tipo de respaldo que desea realizar o configurar.';
       } else {
         this.tituloActual = 'Configuración del sistema';
         this.descripcionActual = 'Cinco submódulos, cada uno con sus propios parámetros.';
       }
+    }
+  }
+
+  navegarBreadcrumb(item: BreadcrumbItem): void {
+    this.claveEditando = null;
+    if (item.vista === 'root') {
+      this.volverARoot();
+    } else if (item.subSubmoduloId) {
+      this.abrirSubSubmodulo(item.subSubmoduloId);
     } else if (item.submoduloId) {
+      // Volver al grid del submódulo (nivel 2 de respaldos)
+      this.subSubmoduloSeleccionado = null;
       this.submoduloSeleccionado = item.submoduloId;
+      this.vista = 'grid';
       const sub = this.submodulos.find(s => s.id === item.submoduloId);
       this.tituloActual = sub?.titulo ?? item.label;
       this.descripcionActual = sub?.descripcion ?? '';
-      if (sub?.moduloId === 'respaldos') {
-        this.breadcrumbs = [
-          { label: 'Configuración', vista: 'root' },
-          { label: 'Respaldo de datos', vista: 'grid' },
-          { label: sub?.titulo ?? item.label, vista: 'detalle', submoduloId: item.submoduloId }
-        ];
+      this.breadcrumbs = [
+        { label: 'Configuración', vista: 'root' },
+        { label: 'Respaldo de datos', vista: 'grid' },
+        { label: sub?.titulo ?? item.label, vista: 'grid', submoduloId: item.submoduloId }
+      ];
+    } else if (item.vista === 'grid') {
+      // Grid de nivel 1 (respaldos o sistema)
+      this.subSubmoduloSeleccionado = null;
+      this.submoduloSeleccionado = null;
+      this.vista = 'grid';
+      this.breadcrumbs = [{ label: 'Configuración', vista: 'root' }];
+      if (this.moduloSeleccionado === 'respaldos') {
+        this.tituloActual = 'Respaldo de datos';
+        this.descripcionActual = 'Seleccione el tipo de respaldo que desea realizar o configurar.';
       } else {
-        this.breadcrumbs = [
-          { label: 'Configuración', vista: 'root' },
-          { label: 'Configuración del sistema', vista: 'grid' },
-          { label: sub?.titulo ?? item.label, vista: 'detalle', submoduloId: item.submoduloId }
-        ];
+        this.tituloActual = 'Configuración del sistema';
+        this.descripcionActual = 'Cinco submódulos, cada uno con sus propios parámetros.';
       }
     }
   }
@@ -620,10 +690,64 @@ export class ConfiguracionSistemaComponent implements OnInit {
     const seleccionar = !this.todasTablasSeleccionadas;
     this.backupTablasDisponibles.forEach(t => this.backupTablasSeleccionadas[t] = seleccionar);
   }
+  // Historial de exportaciones (Personalizado)
   cargarBackups(): void {
     this.cargandoBackup = true; this.errorMsgBackup = '';
     this.backupService.listar().subscribe({ next: (data) => { this.backups = data; this.cargandoBackup = false; }, error: (err) => { const detail = err?.error?.detail ?? err?.message ?? 'Error al cargar respaldos'; this.errorMsgBackup = detail; this.cargandoBackup = false; } });
   }
+  cargarBackupsPorTipo(tipo: string): void {
+    this.cargandoBackup = true; this.errorMsgBackup = '';
+    this.backupService.listar().subscribe({
+      next: (data) => { this.backups = data.filter((b: any) => b.tipo === tipo); this.cargandoBackup = false; },
+      error: (err) => { const detail = err?.error?.detail ?? err?.message ?? 'Error al cargar respaldos'; this.errorMsgBackup = detail; this.cargandoBackup = false; }
+    });
+  }
+
+  // Historial de Backups Completos (DR)
+  registrosRespaldo: any[] = [];
+  cargandoRegistros = false;
+  configDR: any = null;
+  cargandoConfigDR = false;
+  frecuenciaHoras: number = 6;
+  diasRetencion: number = 14;
+  drHabilitado: boolean = false;
+  guardandoConfigDR = false;
+
+  cargarRegistrosRespaldo(tipo: string): void {
+    this.cargandoRegistros = true;
+    this.backupService.listarRegistrosRespaldo(tipo).subscribe({
+      next: (data) => { this.registrosRespaldo = data; this.cargandoRegistros = false; },
+      error: () => { this.cargandoRegistros = false; }
+    });
+  }
+  cargarConfigDR(): void {
+    this.cargandoConfigDR = true;
+    this.backupService.obtenerConfigDR().subscribe({
+      next: (cfg) => {
+        this.configDR = cfg;
+        this.frecuenciaHoras = cfg.frecuenciaHoras ?? 6;
+        this.diasRetencion = cfg.diasRetencion ?? 14;
+        this.drHabilitado = cfg.habilitado ?? false;
+        this.cargandoConfigDR = false;
+      },
+      error: () => { this.cargandoConfigDR = false; }
+    });
+  }
+  guardarConfigDR(): void {
+    this.guardandoConfigDR = true;
+    this.backupService.actualizarConfigDR({ frecuenciaHoras: this.frecuenciaHoras, diasRetencion: this.diasRetencion, habilitado: this.drHabilitado }).subscribe({
+      next: (cfg) => { this.configDR = cfg; this.guardandoConfigDR = false; this.toast.success('Configuración guardada', 'Los cambios se aplicarán en el próximo ciclo del cron.'); },
+      error: (err) => { this.guardandoConfigDR = false; this.toast.error('Error', err?.error?.detail ?? 'Error al guardar la configuración'); }
+    });
+  }
+  dispararBackupCompleto(): void {
+    this.generandoBackup = true;
+    this.backupService.dispararBackupCompleto().subscribe({
+      next: () => { this.generandoBackup = false; this.toast.success('Backup iniciado', 'El volcado completo se está ejecutando.'); this.cargarRegistrosRespaldo(this.subSubmoduloSeleccionado?.includes('auto') ? 'automatico' : 'manual'); },
+      error: (err) => { this.generandoBackup = false; this.toast.error('Error', err?.error?.detail ?? 'Error al iniciar el backup'); }
+    });
+  }
+
   cargarProgramaciones(): void {
     this.cargandoProgramaciones = true;
     this.backupService.listarProgramaciones().subscribe({ next: (data) => { this.programaciones = data; this.cargandoProgramaciones = false; }, error: () => { this.cargandoProgramaciones = false; } });
