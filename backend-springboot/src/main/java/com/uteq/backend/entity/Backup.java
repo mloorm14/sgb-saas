@@ -44,6 +44,9 @@ public class Backup {
     @Column(name = "estado", nullable = false, length = 20)
     private String estado; // "COMPLETADO", "FALLIDO"
 
+    @Column(name = "tipo", nullable = false, length = 20)
+    private String tipo; // "manual", "automatico"
+
     @Column(name = "creado_en", nullable = false, updatable = false)
     private OffsetDateTime creadoEn;
 }
