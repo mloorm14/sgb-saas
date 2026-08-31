@@ -1,0 +1,24 @@
+                                                             QUERY PLAN                                                              
+-------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=9679.25..9680.42 rows=10 width=70) (actual time=161.671..164.460 rows=20 loops=1)
+   Buffers: shared hit=103 read=6046
+   ->  Gather Merge  (cost=9679.25..9680.42 rows=10 width=70) (actual time=161.670..164.457 rows=20 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=103 read=6046
+         ->  Sort  (cost=8679.22..8679.24 rows=5 width=70) (actual time=157.086..157.087 rows=8 loops=3)
+               Sort Key: id
+               Sort Method: quicksort  Memory: 26kB
+               Buffers: shared hit=103 read=6046
+               Worker 0:  Sort Method: quicksort  Memory: 25kB
+               Worker 1:  Sort Method: quicksort  Memory: 25kB
+               ->  Parallel Seq Scan on prestamos  (cost=0.00..8679.17 rows=5 width=70) (actual time=19.634..156.792 rows=9 loops=3)
+                     Filter: (usuario_id = 39468)
+                     Rows Removed by Filter: 166658
+                     Buffers: shared hit=29 read=6046
+ Planning:
+   Buffers: shared hit=130 dirtied=1
+ Planning Time: 1.740 ms
+ Execution Time: 164.666 ms
+(20 rows)
+

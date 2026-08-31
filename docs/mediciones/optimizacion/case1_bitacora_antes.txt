@@ -1,0 +1,24 @@
+                                                                                                                    QUERY PLAN                                                                                                                    
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=42860.24..42860.71 rows=4 width=127) (actual time=757.655..760.024 rows=3 loops=1)
+   Buffers: shared hit=99 read=29334
+   ->  Gather Merge  (cost=42860.24..42860.71 rows=4 width=127) (actual time=757.654..760.022 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=99 read=29334
+         ->  Sort  (cost=41860.22..41860.22 rows=2 width=127) (actual time=753.892..753.892 rows=1 loops=3)
+               Sort Key: fecha_hora DESC
+               Sort Method: quicksort  Memory: 25kB
+               Buffers: shared hit=99 read=29334
+               Worker 0:  Sort Method: quicksort  Memory: 25kB
+               Worker 1:  Sort Method: quicksort  Memory: 25kB
+               ->  Parallel Seq Scan on bitacora_auditoria  (cost=0.00..41860.21 rows=2 width=127) (actual time=420.446..753.670 rows=1 loops=3)
+                     Filter: ((fecha_hora >= '2025-02-01 00:00:00+00'::timestamp with time zone) AND (fecha_hora <= '2026-08-23 00:00:00+00'::timestamp with time zone) AND (usuario_id = 39468) AND ((tabla_afectada)::text = 'usuarios'::text))
+                     Rows Removed by Filter: 500047
+                     Buffers: shared hit=25 read=29334
+ Planning:
+   Buffers: shared hit=118 read=1
+ Planning Time: 0.989 ms
+ Execution Time: 760.118 ms
+(20 rows)
+
