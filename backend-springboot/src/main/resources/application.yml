@@ -67,6 +67,12 @@ spring:
           starttls:
             enable: true
             required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+  brevo:
+    api-key: ${BREVO_API_KEY:}
+    api-url: ${BREVO_API_URL:https://api.brevo.com/v3/smtp/email}
   # Módulo portada binaria (POST /api/v1/libros/{id}/portada). Límites del
   # contenedor de servlets para uploads multipart, SIEMPRE por encima del
   # límite de negocio (max_tamano_portada_mb, default 2 MB, en
