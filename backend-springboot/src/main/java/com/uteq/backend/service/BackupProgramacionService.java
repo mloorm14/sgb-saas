@@ -52,7 +52,7 @@ public class BackupProgramacionService {
     // ---------- CRUD simples ----------
 
     public List<BackupProgramacion> listarActivas() {
-        return progRepo.findByActivoOrderByUltimaEjecucionDesc();
+        return progRepo.findByActivoTrueOrderByUltimaEjecucionDesc();
     }
 
     public BackupProgramacion obtener(Long id) {
