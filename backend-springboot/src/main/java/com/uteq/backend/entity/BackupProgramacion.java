@@ -39,6 +39,11 @@ public class BackupProgramacion {
     @Column(name = "ultima_ejecucion")
     private OffsetDateTime ultimaEjecucion;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "backup_programacion_tablas", joinColumns = @JoinColumn(name = "programacion_id"))
+    @Column(name = "tabla")
+    private Set<String> tablas;
+
     // Getter explícito para boolean 'activo' (Lombok a veces genera getActivo en vez de isActivo)
     public boolean isActivo() { return activo; }
 
