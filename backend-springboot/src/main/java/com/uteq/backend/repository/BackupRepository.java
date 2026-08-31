@@ -20,6 +20,5 @@ public interface BackupRepository extends JpaRepository<Backup, Long> {
     @Query("SELECT b FROM Backup b WHERE b.estado = :estado ORDER BY b.creadoEn DESC")
     List<Backup> findByEstado(@Param("estado") String estado);
 
-    @Query("SELECT b FROM Backup b WHERE b.id = :id")
-    Backup findById(@Param("id") Long id);
+
 }

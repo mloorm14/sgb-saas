@@ -150,6 +150,15 @@ app:
     # (ChatbotRateLimiter), mismo criterio que app.security.login.
     rate-limit-max-mensajes: ${CHATBOT_RATE_LIMIT_MAX_MENSAJES:10}
     rate-limit-window-seconds: ${CHATBOT_RATE_LIMIT_WINDOW_SECONDS:60}
+  backup:
+    r2:
+      endpoint: ${R2_ENDPOINT:}
+      access-key: ${R2_ACCESS_KEY_ID:}
+      secret-key: ${R2_SECRET_ACCESS_KEY:}
+      bucket: ${R2_BUCKET_NAME:}
+      account-id: ${R2_ACCOUNT_ID:}
+    encryption-key: ${BACKUP_ENCRYPTION_KEY:}
+    storage-url: ${BACKUP_STORAGE_URL:}
 
 security:
   jwt:
