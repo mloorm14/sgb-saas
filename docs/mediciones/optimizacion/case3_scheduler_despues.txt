@@ -1,0 +1,11 @@
+                                                                                QUERY PLAN                                                                                
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Index Scan using idx_prestamos_estado_fecha_devolucion on prestamos  (cost=0.43..381.83 rows=109 width=70) (actual time=0.107..2.348 rows=142 loops=1)
+   Index Cond: ((estado_prestamo_id = ANY ('{1,2}'::integer[])) AND (fecha_devolucion_estimada >= now()) AND (fecha_devolucion_estimada <= (now() + '3 days'::interval)))
+   Buffers: shared hit=14 read=137
+ Planning:
+   Buffers: shared hit=177 read=1
+ Planning Time: 1.690 ms
+ Execution Time: 2.439 ms
+(7 rows)
+

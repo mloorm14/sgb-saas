@@ -1,0 +1,16 @@
+                                                                                 QUERY PLAN                                                                                 
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Gather  (cost=1000.00..12294.23 rows=109 width=70) (actual time=0.844..22.095 rows=142 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   Buffers: shared hit=189 read=5886
+   ->  Parallel Seq Scan on prestamos  (cost=0.00..11283.33 rows=45 width=70) (actual time=0.679..15.702 rows=47 loops=3)
+         Filter: ((estado_prestamo_id = ANY ('{1,2}'::integer[])) AND (fecha_devolucion_estimada >= now()) AND (fecha_devolucion_estimada <= (now() + '3 days'::interval)))
+         Rows Removed by Filter: 166619
+         Buffers: shared hit=189 read=5886
+ Planning:
+   Buffers: shared hit=149 read=2
+ Planning Time: 1.408 ms
+ Execution Time: 22.198 ms
+(12 rows)
+
