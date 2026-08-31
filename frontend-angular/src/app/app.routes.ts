@@ -3,35 +3,15 @@ import { authGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
 import { LoginComponent } from './auth/login/login.component';
 import { RegistroComponent } from './auth/registro/registro.component';
-import { LibrosComponent } from './libros/libros.component';
-import { PrestamosLectorComponent } from './prestamos-lector/prestamos-lector.component';
-import { PrestamosGestionComponent } from './prestamos-gestion/prestamos-gestion.component';
-import { ReservacionesComponent } from './reservaciones/reservaciones.component';
-import { MultasComponent } from './multas/multas.component';
-import { ReportesComponent } from './reportes/reportes.component';
 import { DashboardGerenteComponent } from './dashboard-gerente/dashboard-gerente.component';
 import { DashboardGerenteAdminHomeComponent } from './dashboard-gerente-admin/dashboard-gerente-admin-home.component';
 import { DashboardBibliotecarioComponent } from './dashboard/dashboard-bibliotecario.component';
 import { DashboardBibliotecarioHomeComponent } from './dashboard/dashboard-bibliotecario-home.component';
 import { NoAutorizadoComponent } from './shared/no-autorizado/no-autorizado.component';
-import { CatalogoComponent } from './catalogo/catalogo.component';
-import { LibroDetalleComponent } from './catalogo/libro-detalle/libro-detalle.component';
-import { FavoritosComponent } from './favoritos/favoritos.component';
-import { SugerenciasFormComponent } from './sugerencias/sugerencias-form/sugerencias-form.component';
-import { MisSugerenciasComponent } from './sugerencias/mis-sugerencias/mis-sugerencias.component';
-import { GestionSugerenciasComponent } from './sugerencias/gestion-sugerencias/gestion-sugerencias.component';
 import { PortalPublicoComponent } from './portal-publico/portal-publico.component';
 import { DetallePublicoComponent } from './portal-publico/detalle-publico/detalle-publico.component';
-import { ConfiguracionSistemaComponent } from './configuracion-sistema/configuracion-sistema.component';
-import { UsuariosComponent } from './admin/usuarios/usuarios.component';
-import { NotificacionesComponent } from './notificaciones/notificaciones.component';
-import { AuditoriaComponent } from './admin/auditoria/auditoria.component';
-import { BackupsComponent } from './admin/backups/backups.component';
 import { DashboardGerenteAdminComponent } from './dashboard-gerente-admin/dashboard-gerente-admin.component';
 import { DashboardLectorComponent } from './dashboard-lector/dashboard-lector.component';
-import { MiCredencialComponent } from './mi-credencial/mi-credencial.component';
-import { DevolucionesComponent } from './devoluciones/devoluciones.component';
-import { LibrosPendientesComponent } from './libros-pendientes/libros-pendientes.component';
 import { catalogoResolver } from './core/resolvers/catalogo.resolver';
 import { libroDetalleResolver } from './core/resolvers/libro-detalle.resolver';
 
@@ -40,13 +20,13 @@ export const routes: Routes = [
   { path: 'portal/:id', component: DetallePublicoComponent, resolve: { data: libroDetalleResolver } },
   { path: 'login', component: LoginComponent },
   { path: 'registro', component: RegistroComponent },
-  { path: 'libros', component: LibrosComponent, canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE', 'ADMIN'])] },
-  { path: 'prestamos', component: PrestamosLectorComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
-  { path: 'prestamos/gestion', component: PrestamosGestionComponent, canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE'])] },
-  { path: 'reservaciones', component: ReservacionesComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
-  { path: 'multas', component: MultasComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
-  { path: 'admin/configuracion', component: ConfiguracionSistemaComponent, canActivate: [authGuard, roleGuard(['ADMIN'])] },
-  { path: 'reportes', component: ReportesComponent, canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])] },
+  { path: 'libros', loadComponent: () => import('./libros/libros.component').then(m => m.LibrosComponent), canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE', 'ADMIN'])] },
+  { path: 'prestamos', loadComponent: () => import('./prestamos-lector/prestamos-lector.component').then(m => m.PrestamosLectorComponent), canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
+  { path: 'prestamos/gestion', loadComponent: () => import('./prestamos-gestion/prestamos-gestion.component').then(m => m.PrestamosGestionComponent), canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE'])] },
+  { path: 'reservaciones', loadComponent: () => import('./reservaciones/reservaciones.component').then(m => m.ReservacionesComponent), canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
+  { path: 'multas', loadComponent: () => import('./multas/multas.component').then(m => m.MultasComponent), canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
+  { path: 'admin/configuracion', loadComponent: () => import('./configuracion-sistema/configuracion-sistema.component').then(m => m.ConfiguracionSistemaComponent), canActivate: [authGuard, roleGuard(['ADMIN'])] },
+  { path: 'reportes', loadComponent: () => import('./reportes/reportes.component').then(m => m.ReportesComponent), canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])] },
   { path: 'dashboard-gerente', component: DashboardGerenteComponent, canActivate: [authGuard, roleGuard(['GERENTE'])] },
   {
     path: 'dashboard-bibliotecario',
@@ -54,12 +34,12 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard(['BIBLIOTECARIO'])],
     children: [
       { path: '', component: DashboardBibliotecarioHomeComponent },
-      { path: 'libros', component: LibrosComponent },
-      { path: 'libros-pendientes', component: LibrosPendientesComponent },
-      { path: 'prestamos/gestion', component: PrestamosGestionComponent },
-      { path: 'reservaciones', component: ReservacionesComponent },
-      { path: 'devoluciones', component: DevolucionesComponent },
-      { path: 'multas', component: MultasComponent },
+      { path: 'libros', loadComponent: () => import('./libros/libros.component').then(m => m.LibrosComponent) },
+      { path: 'libros-pendientes', loadComponent: () => import('./libros-pendientes/libros-pendientes.component').then(m => m.LibrosPendientesComponent) },
+      { path: 'prestamos/gestion', loadComponent: () => import('./prestamos-gestion/prestamos-gestion.component').then(m => m.PrestamosGestionComponent) },
+      { path: 'reservaciones', loadComponent: () => import('./reservaciones/reservaciones.component').then(m => m.ReservacionesComponent) },
+      { path: 'devoluciones', loadComponent: () => import('./devoluciones/devoluciones.component').then(m => m.DevolucionesComponent) },
+      { path: 'multas', loadComponent: () => import('./multas/multas.component').then(m => m.MultasComponent) },
     ]
   },
   {
@@ -68,16 +48,16 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])],
     children: [
       { path: '', component: DashboardGerenteAdminHomeComponent },
-      { path: 'libros', component: LibrosComponent },
-      { path: 'libros-pendientes', component: LibrosPendientesComponent },
-      { path: 'prestamos/gestion', component: PrestamosGestionComponent },
-      { path: 'reservaciones', component: ReservacionesComponent },
-      { path: 'multas', component: MultasComponent },
-      { path: 'sugerencias/gestion', component: GestionSugerenciasComponent },
-      { path: 'admin/usuarios', component: UsuariosComponent },
-      { path: 'auditoria', component: AuditoriaComponent },
-      { path: 'reportes', component: ReportesComponent, canActivate: [roleGuard(['GERENTE', 'ADMIN'])] },
-      { path: 'admin/configuracion', component: ConfiguracionSistemaComponent, canActivate: [roleGuard(['ADMIN'])] },
+      { path: 'libros', loadComponent: () => import('./libros/libros.component').then(m => m.LibrosComponent) },
+      { path: 'libros-pendientes', loadComponent: () => import('./libros-pendientes/libros-pendientes.component').then(m => m.LibrosPendientesComponent) },
+      { path: 'prestamos/gestion', loadComponent: () => import('./prestamos-gestion/prestamos-gestion.component').then(m => m.PrestamosGestionComponent) },
+      { path: 'reservaciones', loadComponent: () => import('./reservaciones/reservaciones.component').then(m => m.ReservacionesComponent) },
+      { path: 'multas', loadComponent: () => import('./multas/multas.component').then(m => m.MultasComponent) },
+      { path: 'sugerencias/gestion', loadComponent: () => import('./sugerencias/gestion-sugerencias/gestion-sugerencias.component').then(m => m.GestionSugerenciasComponent) },
+      { path: 'admin/usuarios', loadComponent: () => import('./admin/usuarios/usuarios.component').then(m => m.UsuariosComponent) },
+      { path: 'auditoria', loadComponent: () => import('./admin/auditoria/auditoria.component').then(m => m.AuditoriaComponent) },
+      { path: 'reportes', loadComponent: () => import('./reportes/reportes.component').then(m => m.ReportesComponent), canActivate: [roleGuard(['GERENTE', 'ADMIN'])] },
+      { path: 'admin/configuracion', loadComponent: () => import('./configuracion-sistema/configuracion-sistema.component').then(m => m.ConfiguracionSistemaComponent), canActivate: [roleGuard(['ADMIN'])] },
     ]
   },
   {
@@ -86,28 +66,28 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard(['LECTOR'])],
     children: [
       { path: '', redirectTo: 'catalogo', pathMatch: 'full' },
-      { path: 'catalogo', component: CatalogoComponent, resolve: { data: catalogoResolver } },
-      { path: 'catalogo/:id', component: LibroDetalleComponent, resolve: { data: libroDetalleResolver } },
-      { path: 'prestamos', component: PrestamosLectorComponent },
-      { path: 'reservaciones', component: ReservacionesComponent },
-      { path: 'multas', component: MultasComponent },
-      { path: 'favoritos', component: FavoritosComponent },
-      { path: 'sugerencias', component: MisSugerenciasComponent },
-      { path: 'sugerencias/nueva', component: SugerenciasFormComponent },
-      { path: 'notificaciones', component: NotificacionesComponent },
-      { path: 'mi-credencial', component: MiCredencialComponent },
+      { path: 'catalogo', loadComponent: () => import('./catalogo/catalogo.component').then(m => m.CatalogoComponent), resolve: { data: catalogoResolver } },
+      { path: 'catalogo/:id', loadComponent: () => import('./catalogo/libro-detalle/libro-detalle.component').then(m => m.LibroDetalleComponent), resolve: { data: libroDetalleResolver } },
+      { path: 'prestamos', loadComponent: () => import('./prestamos-lector/prestamos-lector.component').then(m => m.PrestamosLectorComponent) },
+      { path: 'reservaciones', loadComponent: () => import('./reservaciones/reservaciones.component').then(m => m.ReservacionesComponent) },
+      { path: 'multas', loadComponent: () => import('./multas/multas.component').then(m => m.MultasComponent) },
+      { path: 'favoritos', loadComponent: () => import('./favoritos/favoritos.component').then(m => m.FavoritosComponent) },
+      { path: 'sugerencias', loadComponent: () => import('./sugerencias/mis-sugerencias/mis-sugerencias.component').then(m => m.MisSugerenciasComponent) },
+      { path: 'sugerencias/nueva', loadComponent: () => import('./sugerencias/sugerencias-form/sugerencias-form.component').then(m => m.SugerenciasFormComponent) },
+      { path: 'notificaciones', loadComponent: () => import('./notificaciones/notificaciones.component').then(m => m.NotificacionesComponent) },
+      { path: 'mi-credencial', loadComponent: () => import('./mi-credencial/mi-credencial.component').then(m => m.MiCredencialComponent) },
     ]
   },
-  { path: 'catalogo', component: CatalogoComponent, canActivate: [authGuard, roleGuard(['LECTOR'])], resolve: { data: catalogoResolver } },
-  { path: 'catalogo/:id', component: LibroDetalleComponent, canActivate: [authGuard, roleGuard(['LECTOR'])], resolve: { data: libroDetalleResolver } },
-  { path: 'favoritos', component: FavoritosComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
-  { path: 'sugerencias', component: MisSugerenciasComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
-  { path: 'sugerencias/nueva', component: SugerenciasFormComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
-  { path: 'sugerencias/gestion', component: GestionSugerenciasComponent, canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])] },
-  { path: 'admin/usuarios', component: UsuariosComponent, canActivate: [authGuard, roleGuard(['ADMIN', 'GERENTE'])] },
-  { path: 'auditoria', component: AuditoriaComponent, canActivate: [authGuard, roleGuard(['ADMIN'])] },
-  { path: 'admin/backups', component: BackupsComponent, canActivate: [authGuard, roleGuard(['ADMIN'])] },
-  { path: 'notificaciones', component: NotificacionesComponent, canActivate: [authGuard] },
+  { path: 'catalogo', loadComponent: () => import('./catalogo/catalogo.component').then(m => m.CatalogoComponent), canActivate: [authGuard, roleGuard(['LECTOR'])], resolve: { data: catalogoResolver } },
+  { path: 'catalogo/:id', loadComponent: () => import('./catalogo/libro-detalle/libro-detalle.component').then(m => m.LibroDetalleComponent), canActivate: [authGuard, roleGuard(['LECTOR'])], resolve: { data: libroDetalleResolver } },
+  { path: 'favoritos', loadComponent: () => import('./favoritos/favoritos.component').then(m => m.FavoritosComponent), canActivate: [authGuard, roleGuard(['LECTOR'])] },
+  { path: 'sugerencias', loadComponent: () => import('./sugerencias/mis-sugerencias/mis-sugerencias.component').then(m => m.MisSugerenciasComponent), canActivate: [authGuard, roleGuard(['LECTOR'])] },
+  { path: 'sugerencias/nueva', loadComponent: () => import('./sugerencias/sugerencias-form/sugerencias-form.component').then(m => m.SugerenciasFormComponent), canActivate: [authGuard, roleGuard(['LECTOR'])] },
+  { path: 'sugerencias/gestion', loadComponent: () => import('./sugerencias/gestion-sugerencias/gestion-sugerencias.component').then(m => m.GestionSugerenciasComponent), canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])] },
+  { path: 'admin/usuarios', loadComponent: () => import('./admin/usuarios/usuarios.component').then(m => m.UsuariosComponent), canActivate: [authGuard, roleGuard(['ADMIN', 'GERENTE'])] },
+  { path: 'auditoria', loadComponent: () => import('./admin/auditoria/auditoria.component').then(m => m.AuditoriaComponent), canActivate: [authGuard, roleGuard(['ADMIN'])] },
+  { path: 'admin/backups', loadComponent: () => import('./admin/backups/backups.component').then(m => m.BackupsComponent), canActivate: [authGuard, roleGuard(['ADMIN'])] },
+  { path: 'notificaciones', loadComponent: () => import('./notificaciones/notificaciones.component').then(m => m.NotificacionesComponent), canActivate: [authGuard] },
   { path: 'no-autorizado', component: NoAutorizadoComponent },
   { path: '**', redirectTo: '' }
 ];
