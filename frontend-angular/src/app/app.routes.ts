@@ -14,10 +14,11 @@ import { DashboardGerenteAdminComponent } from './dashboard-gerente-admin/dashbo
 import { DashboardLectorComponent } from './dashboard-lector/dashboard-lector.component';
 import { catalogoResolver } from './core/resolvers/catalogo.resolver';
 import { libroDetalleResolver } from './core/resolvers/libro-detalle.resolver';
+import { libroPublicoDetalleResolver } from './core/resolvers/libro-publico-detalle.resolver';
 
 export const routes: Routes = [
   { path: '', component: PortalPublicoComponent },
-  { path: 'portal/:id', component: DetallePublicoComponent, resolve: { data: libroDetalleResolver } },
+  { path: 'portal/:id', component: DetallePublicoComponent, resolve: { libro: libroPublicoDetalleResolver } },
   { path: 'login', component: LoginComponent },
   { path: 'registro', component: RegistroComponent },
   { path: 'libros', loadComponent: () => import('./libros/libros.component').then(m => m.LibrosComponent), canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE', 'ADMIN'])] },

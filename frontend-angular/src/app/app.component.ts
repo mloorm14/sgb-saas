@@ -28,6 +28,7 @@ export class AppComponent {
   enRutaBibliotecario = false;
   enRutaAdmin = false;
   enRutaLector = false;
+  cargandoRuta = true;
   rutaAnnouncement = '';
   confirmacionVisible = false;
   confirmacionMensaje = '';
@@ -38,10 +39,6 @@ export class AppComponent {
     private router: Router,
     private navigationBlocking: NavigationBlockingService
   ) {
-    const initUrl = this.router.url || '';
-    this.enRutaBibliotecario = initUrl.startsWith('/dashboard-bibliotecario');
-    this.enRutaAdmin = initUrl.startsWith('/dashboard-admin');
-    this.enRutaLector = initUrl.startsWith('/dashboard-lector');
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe((event) => {
@@ -49,6 +46,7 @@ export class AppComponent {
       this.enRutaBibliotecario = url.startsWith('/dashboard-bibliotecario');
       this.enRutaAdmin = url.startsWith('/dashboard-admin');
       this.enRutaLector = url.startsWith('/dashboard-lector');
+      this.cargandoRuta = false;
       this.rutaAnnouncement = this.obtenerNombreRuta(url);
     });
   }
