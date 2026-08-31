@@ -23,11 +23,11 @@
     <p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl mx-auto">Buscá entre todos los libros disponibles. Para reservar, guardar favoritos o usar el asistente, creá una cuenta gratis.</p>
   </div>
 
-  <!-- Buscador predictivo + filtro por categoría -->
-  <div class="max-w-3xl mx-auto mb-xl">
-    <div class="flex gap-sm items-stretch flex-wrap">
-      <div class="flex-1 min-w-[200px] rounded border border-outline-variant bg-white flex items-center px-sm glass-panel">
-        <span class="material-symbols-outlined text-outline text-[20px] mr-xs">search</span>
+   <!-- Buscador solo por título — ocupa todo el ancho del grid -->
+  <div class="w-full mb-xl">
+    <div class="flex gap-sm items-stretch w-full">
+      <div class="flex-1 rounded border border-outline-variant bg-white flex items-center px-sm glass-panel min-w-0">
+        <span class="material-symbols-outlined text-outline text-[20px] mr-xs shrink-0">search</span>
         <label for="busqueda-portal" class="sr-only">Buscar por título</label>
         <input type="text" id="busqueda-portal" placeholder="Buscar por título..."
           [(ngModel)]="textoBusqueda"
@@ -35,16 +35,8 @@
           (keyup.enter)="buscarPorNombre()"
           class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 py-sm font-body-md text-body-md text-on-surface placeholder-outline" />
       </div>
-      <label for="filtro-categoria-portal" class="sr-only">Categoría</label>
-      <select id="filtro-categoria-portal" (change)="onCategoriaChange($any($event.target).value ? +$any($event.target).value : null)"
-        class="h-10 min-w-[220px] pl-sm pr-xl rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface cursor-pointer relative z-10">
-        <option [value]="''">Todas las categorías</option>
-        @for (cat of categorias; track cat.id) {
-          <option [value]="cat.id">{{ cat.nombre }}</option>
-        }
-      </select>
       <button (click)="buscarPorNombre()"
-        class="h-10 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center gap-xs cursor-pointer shrink-0">
+        class="h-10 px-lg rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center gap-xs cursor-pointer shrink-0">
         <span class="material-symbols-outlined text-[18px]">search</span> Buscar
       </button>
     </div>
