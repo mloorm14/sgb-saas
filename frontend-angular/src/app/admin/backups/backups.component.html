@@ -1,0 +1,98 @@
+<!-- Panel de header con formulario -->
+<div class="backups-header mb-4">
+  <h2>Generar Backup</h2>
+
+  <div class="backup-form-card">
+    <form>
+      <div class="form-group">
+        <label>Desde <span style="color: red">*</span></label>
+        <input type="datetime-local" [(ngModel)]="desde" name="desde" class="form-control">
+      </div>
+
+      <div class="form-group">
+        <label>Hasta <span style="color: red">*</span></label>
+        <input type="datetime-local" [(ngModel)]="hasta" name="hasta" class="form-control">
+      </div>
+
+      <div class="tablas-section">
+        <label>Tablas a incluir</label>
+        <div>
+          <label><input type="checkbox" [(ngModel)]="tablas.includes('prestamos') && tablas.push('prestamos') || tablas.includes('prestamos') ? true : false" [checked]="tablas.includes('prestamos')"> Préstamos</label><br>
+          <label><input type="checkbox" [(ngModel)]="tablas.includes('reservas') && tablas.push('reservas') || tablas.includes('reservas') ? true : false" [checked]="tablas.includes('reservas')"> Reservas</label><br>
+          <label><input type="checkbox" [(ngModel)]="tablas.includes('multas') && tablas.push('multas') || tablas.includes('multas') ? true : false" [checked]="tablas.includes('multas')"> Multas</label><br>
+          <label><input type="checkbox" [(ngModel)]="tablas.includes('libros') && tablas.push('libros') || tablas.includes('libros') ? true : false" [checked]="tablas.includes('libros')"> Libros</label><br>
+          <label><input type="checkbox" [(ngModel)]="tablas.includes('usuarios') && tablas.push('usuarios') || tablas.includes('usuarios') ? true : false" [checked]="tablas.includes('usuarios')"> Usuarios</label><br>
+          <label><input type="checkbox" [(ngModel)]="tablas.includes('bitacora_auditoria') && tablas.push('bitacora_auditoria') || tablas.includes('bitacora_auditoria') ? true : false" [checked]="tablas.includes('bitacora_auditoria')"> Bitácora auditoría</label><br>
+        </div>
+        <small class="chip-note">(Las tablas marcan qué datos se incluirán en el dump. Todas por defecto cubren el catálogo completo.)</small>
+      </div>
+
+      <div class="form-group">
+        <label>Formato de salida</label>
+        <div>
+          <label><input type="radio" [(ngModel)]="formato" value="sql"> SQL (INSERTs con schema - restaurable completo)</label><br>
+          <label><input type="radio" [(ngModel)]="formato" value="csv"> CSV (exportación para Excel/análisis - solo datos)</label>
+        </div>
+        <div class="hint">
+          <strong>SQL</strong> es el formato "real" de backup, restaurable de un solo golpe.<br>
+          <strong>CSV</strong> es una exportación para análisis en Excel; no sirve para restaurar el sistema<br>
+          (pierde tipos, FKs y puede corromperse con comas en texto libre).
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="action-buttons">
+    <button class="btn-primary" (click)="generarBackup()" [disabled]="loading">
+      <i *ngIf="!loading">↻</i>
+      <span *ngIf="!loading">Generar backup</span>
+      <span *ngIf="loading">Generando...</span>
+    </button>
+  </div>
+</div>
+
+<!-- Historial de backups generados -->
+<div class="backups-historial mt-4" *ngIf="!sinDatos()">
+  <div class="historial-card">
+    <h3>Historial de backups</h3>
+
+    <table class="mat-table" [dataSource]="dataSource">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Desde / Hasta</th>
+          <th>Tablas</th>
+          <th>Formato</th>
+          <th>Tamaño</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let element of backups">
+          <td>{{ element.creado_en | date:'short' }}</td>
+          <td>{{ element.desde | date:'yyyy-MM-dd HH:mm' }} - {{ element.hasta | date:'yyyy-MM-dd HH:mm' }}</td>
+          <td>
+            <span *ngFor="let t of element.tablas">{{ getNombreTabla(t) }}{% if !isLast %}, {% endif %}</span>
+          </td>
+          <td><span class="badge-format {{ element.formato }}">{{ element.formato.toUpperCase() }}</span></td>
+          <td>{{ element.tamano_bytes !== null && element.tamano_bytes > 0 ? (element.tamano_bytes / 1024 / 1024 | number:2) + ' MB' : 'N/A' }}</td>
+          <td>
+            <span class="badge-estado {{ element.estado }}">{{ element.estado }}</span>
+          </td>
+          <td>
+            <button title="Descargar" (click)="descargarBackup(element.id)">⬇</button>
+            <button title="Borrar" color="warn" (click)="borrarBackup(element.id)">🗑</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Mensaje cuándo no hay datos -->
+<div *ngIf="sinDatos()" class="empty-state">
+  <span>📦</span>
+  <h3>No hay backups registrados</h3>
+  <p>Genera tu primer backup usando el formulario de arriba.</p>
+</div>

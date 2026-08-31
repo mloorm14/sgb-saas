@@ -26,6 +26,7 @@ import { ConfiguracionSistemaComponent } from './configuracion-sistema/configura
 import { UsuariosComponent } from './admin/usuarios/usuarios.component';
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { AuditoriaComponent } from './admin/auditoria/auditoria.component';
+import { BackupsComponent } from './admin/backups/backups.component';
 import { DashboardGerenteAdminComponent } from './dashboard-gerente-admin/dashboard-gerente-admin.component';
 import { DashboardLectorComponent } from './dashboard-lector/dashboard-lector.component';
 import { MiCredencialComponent } from './mi-credencial/mi-credencial.component';
@@ -105,6 +106,7 @@ export const routes: Routes = [
   { path: 'sugerencias/gestion', component: GestionSugerenciasComponent, canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])] },
   { path: 'admin/usuarios', component: UsuariosComponent, canActivate: [authGuard, roleGuard(['ADMIN', 'GERENTE'])] },
   { path: 'auditoria', component: AuditoriaComponent, canActivate: [authGuard, roleGuard(['ADMIN'])] },
+  { path: 'admin/backups', component: BackupsComponent, canActivate: [authGuard, roleGuard(['ADMIN'])] },
   { path: 'notificaciones', component: NotificacionesComponent, canActivate: [authGuard] },
   { path: 'no-autorizado', component: NoAutorizadoComponent },
   { path: '**', redirectTo: '' }
