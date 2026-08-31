@@ -114,13 +114,21 @@ services:
         value: "900"
       - key: LOGIN_MAX_ATTEMPTS
         value: "5"
-      # NOTA: application.yml también referencia GEMINI_MODELO,
-      # GEMINI_TIMEOUT_MS, GEMINI_URL_BASE, CHATBOT_RATE_LIMIT_MAX_MENSAJES,
-      # CHATBOT_RATE_LIMIT_WINDOW_SECONDS, NOTIF_MINUTOS_ANTICIPACION_VENCIMIENTO
-      # y VERIFICACION_CORREO_TTL_MINUTES, todas con un valor por
-      # defecto seguro ya definido en application.yml -- no se declaran
-      # aquí a propósito (se deja que Spring use su default), ver
-      # docs/despliegue/DEPLOYMENT.md para el detalle completo.
+      # ── Módulo de respaldos (V2+)
+      # Variables para configurar dónde se guardan los dumps.
+      # - BACKUP_STORAGE_URL: 's3://<bucket>' para S3/R2, o dejar vacío para
+      #   almacenamiento local en ./backups/ (solo desarrollo, se pierde en redeploy).
+      # - BACKUP_ENCRYPTION_KEY: clave AES opcional para encriptar el dump (base64,
+      #   mínimo 16 bytes). Si se omite, el archivo queda sin encriptar.
+      # - DATABASE_URL: ya definida (Neon). Usada por el servicio para las consultas
+      #   de filtro COPY WHERE.
+      - key: BACKUP_STORAGE_URL
+        sync: false
+      - key: BACKUP_ENCRYPTION_KEY
+        sync: false
+      # ¡IMPORTANTE! La variable DATABASE_URL ya estaba definida arriba; no la
+      # repitamos aquí para evitar confusiones. Sigue estando disponible
+      # con su valor de producción (Neon).
 
   # ---- Frontend Angular / nginx ----
   - name: biblora-sgb
