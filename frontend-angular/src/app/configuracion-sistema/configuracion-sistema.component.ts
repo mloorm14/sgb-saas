@@ -229,7 +229,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
   submoduloSeleccionado: string | null = null;
   breadcrumbs: BreadcrumbItem[] = [];
   tituloActual = 'Configuración';
-  descripcionActual = 'Elegí un módulo para ver y editar sus parámetros.';
+  descripcionActual = 'Seleccione un módulo para ver y editar sus parámetros.';
 
   modulos: ModuloConfig[] = [
     {
@@ -252,7 +252,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
       id: 'respaldos',
       codigo: 'CFG-RES',
       titulo: 'Respaldo de datos',
-      descripcion: 'Generá respaldos filtrados por fecha, tablas y formato. Descargá y gestioná el historial.',
+      descripcion: 'Genere respaldos con filtros de fecha, tablas y formato. Descargue y gestione el historial.',
       icono: 'backup',
       color: 'bg-tertiary/10 text-tertiary'
     }
@@ -271,7 +271,21 @@ export class ConfiguracionSistemaComponent implements OnInit {
   backupHasta = '';
   backupFormato: 'sql' | 'csv' = 'sql';
   backupTablasSeleccionadas: Record<string, boolean> = {};
-  backupTablasDisponibles = ['usuarios', 'libros', 'prestamos', 'reservaciones', 'multas', 'auditoria', 'configuracion_sistema'];
+  backupTablasDisponibles = ['usuarios', 'libros', 'prestamos', 'reservaciones', 'multas', 'auditoria', 'configuracion_sistema', 'notificaciones', 'favoritos', 'sugerencias_adquisicion', 'categorias', 'autores'];
+  nombresTablas: Record<string, string> = {
+    usuarios: 'Usuarios',
+    libros: 'Libros',
+    prestamos: 'Préstamos',
+    reservaciones: 'Reservaciones',
+    multas: 'Multas',
+    auditoria: 'Auditoría',
+    configuracion_sistema: 'Configuración del sistema',
+    notificaciones: 'Notificaciones',
+    favoritos: 'Favoritos',
+    sugerencias_adquisicion: 'Sugerencias de adquisición',
+    categorias: 'Categorías',
+    autores: 'Autores'
+  };
   cargandoBackup = false;
   generandoBackup = false;
   backups: BackupEntry[] = [];
@@ -309,7 +323,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
       this.vista = 'detalle';
       this.submoduloSeleccionado = 'respaldos';
       this.tituloActual = 'Respaldo de datos';
-      this.descripcionActual = 'Generá respaldos con filtros de fecha, tablas y formato. El historial queda registrado para descarga o eliminación.';
+      this.descripcionActual = 'Genere respaldos con filtros de fecha, tablas y formato. El historial queda registrado para descarga o eliminación.';
       this.breadcrumbs = [
         { label: 'Configuración', vista: 'root' },
         { label: 'Respaldo de datos', vista: 'detalle', submoduloId: 'respaldos' }
@@ -345,7 +359,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
     this.submoduloSeleccionado = null;
     this.breadcrumbs = [];
     this.tituloActual = 'Configuración';
-    this.descripcionActual = 'Elegí un módulo para ver y editar sus parámetros.';
+    this.descripcionActual = 'Seleccione un módulo para ver y editar sus parámetros.';
     this.claveEditando = null;
   }
 
@@ -367,7 +381,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
       this.submoduloSeleccionado = null;
       this.breadcrumbs = [];
       this.tituloActual = 'Configuración';
-      this.descripcionActual = 'Elegí un módulo para ver y editar sus parámetros.';
+      this.descripcionActual = 'Seleccione un módulo para ver y editar sus parámetros.';
     } else if (item.vista === 'grid') {
       this.submoduloSeleccionado = null;
       this.breadcrumbs = [
@@ -536,6 +550,11 @@ export class ConfiguracionSistemaComponent implements OnInit {
     return this.backups.filter(b => b.formato === this.filtroBackupFormato);
   }
   toggleTabla(tabla: string): void { this.backupTablasSeleccionadas[tabla] = !this.backupTablasSeleccionadas[tabla]; }
+  get todasTablasSeleccionadas(): boolean { return this.backupTablasDisponibles.length > 0 && this.backupTablasDisponibles.every(t => !!this.backupTablasSeleccionadas[t]); }
+  toggleTodasTablas(): void {
+    const seleccionar = !this.todasTablasSeleccionadas;
+    this.backupTablasDisponibles.forEach(t => this.backupTablasSeleccionadas[t] = seleccionar);
+  }
   cargarBackups(): void {
     this.cargandoBackup = true; this.errorMsgBackup = '';
     this.backupService.listar().subscribe({ next: (data) => { this.backups = data; this.cargandoBackup = false; }, error: (err) => { const detail = err?.error?.detail ?? err?.message ?? 'Error al cargar respaldos'; this.errorMsgBackup = detail; this.cargandoBackup = false; } });

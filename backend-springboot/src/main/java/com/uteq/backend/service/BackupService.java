@@ -25,15 +25,25 @@ import java.util.zip.ZipOutputStream;
 public class BackupService {
 
     private static final int MAX_DIAS = 30;
-    private static final Set<String> TABLAS_PERMITIDAS = Set.of("prestamos", "reservas", "multas", "libros", "usuarios", "bitacora_auditoria");
+    private static final Set<String> TABLAS_PERMITIDAS = Set.of(
+            "prestamos", "reservas", "reservaciones", "multas", "libros", "usuarios",
+            "bitacora_auditoria", "auditoria", "configuracion_sistema",
+            "notificaciones", "favoritos", "sugerencias_adquisicion", "categorias", "autores"
+    );
 
-    private static final Map<String, String> TABLA_COL = Map.of(
-            "prestamos", "fecha_prestamo",
-            "reservas", "fecha_reserva",
-            "multas", "fecha_generada",
-            "bitacora_auditoria", "fecha_hora",
-            "libros", "fecha_registro",
-            "usuarios", "fecha_registro"
+    private static final Map<String, String> TABLA_COL = Map.ofEntries(
+            Map.entry("prestamos", "fecha_prestamo"),
+            Map.entry("reservas", "fecha_reserva"),
+            Map.entry("reservaciones", "fecha_reserva"),
+            Map.entry("multas", "fecha_generada"),
+            Map.entry("bitacora_auditoria", "fecha_hora"),
+            Map.entry("auditoria", "fecha_hora"),
+            Map.entry("libros", "fecha_registro"),
+            Map.entry("usuarios", "fecha_registro"),
+            Map.entry("notificaciones", "creado_en"),
+            Map.entry("favoritos", "agregado_en"),
+            Map.entry("sugerencias_adquisicion", "creado_en")
+            // categorias, autores, configuracion_sistema -> sin fecha, volcado completo
     );
 
     private final BackupRepository backupRepository;
@@ -94,17 +104,17 @@ public class BackupService {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); ZipOutputStream zos = new ZipOutputStream(baos, StandardCharsets.UTF_8)) {
             for (String tabla : tablas) {
                 String col = TABLA_COL.get(tabla);
+                String phys = physTable(tabla);
                 List<Map<String, Object>> rows;
                 if (col != null) {
-                    String phys = tabla.equals("bitacora_auditoria") ? "bitacora_auditoria" : tabla.equals("reservas") ? "reservaciones" : tabla;
-                    // whitelist ya validado
                     rows = jdbcTemplate.queryForList("SELECT * FROM " + phys + " WHERE " + col + " >= ? AND " + col + " <= ?", desde, hasta);
                 } else {
-                    rows = List.of();
+                    // sin columna de fecha (categorias, autores, configuracion_sistema) -> volcado completo
+                    rows = jdbcTemplate.queryForList("SELECT * FROM " + phys);
                 }
                 String ext = fmtExt(formato);
                 zos.putNextEntry(new ZipEntry(tabla + "." + ext));
-                String content = formato.equals("sql") ? toSql(physName(tabla), rows) : toCsv(rows);
+                String content = formato.equals("sql") ? toSql(physTable(tabla), rows) : toCsv(rows);
                 zos.write(content.getBytes(StandardCharsets.UTF_8));
                 zos.closeEntry();
             }
@@ -117,6 +127,12 @@ public class BackupService {
 
     private String physName(String logical) {
         if (logical.equals("reservas")) return "reservaciones";
+        if (logical.equals("auditoria")) return "bitacora_auditoria";
+        return logical;
+    }
+    private String physTable(String logical) {
+        if (logical.equals("reservas") || logical.equals("reservaciones")) return "reservaciones";
+        if (logical.equals("auditoria") || logical.equals("bitacora_auditoria")) return "bitacora_auditoria";
         return logical;
     }
     private String fmtExt(String f) { return f.equals("sql") ? "sql" : "csv"; }

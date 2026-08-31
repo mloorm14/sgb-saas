@@ -316,19 +316,27 @@
         <h3 class="font-headline-sm text-headline-sm text-on-background mb-xs flex items-center gap-sm">
           <span class="material-symbols-outlined text-[20px] text-primary">hard_drive_2</span> Generar respaldo
         </h3>
-        <p class="font-body-sm text-body-sm text-on-surface-variant mb-md">Elegí rango de fechas (máx. 30 días), tablas y formato. El backend genera un .zip filtrado.</p>
+        <p class="font-body-sm text-body-sm text-on-surface-variant mb-md">Seleccione un rango de fecha y hora (máx. 30 días), las tablas y el formato. Por ejemplo, 30/08/2026 12:00 → 30/08/2026 18:00. El sistema genera un archivo .zip filtrado.</p>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-md mb-md">
           <label class="flex flex-col gap-xs">
-            <span class="font-label-sm text-label-sm text-on-surface">Desde</span>
-            <input [(ngModel)]="backupDesde" type="datetime-local" class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface">
+            <span class="font-label-sm text-label-sm text-on-surface">Desde (fecha y hora)</span>
+            <input [(ngModel)]="backupDesde" type="datetime-local" step="60" class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface">
+            <span class="font-body-xs text-body-xs text-on-surface-variant">Incluye horas, ej. 30/08/2026 12:00</span>
           </label>
           <label class="flex flex-col gap-xs">
-            <span class="font-label-sm text-label-sm text-on-surface">Hasta</span>
-            <input [(ngModel)]="backupHasta" type="datetime-local" class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface">
+            <span class="font-label-sm text-label-sm text-on-surface">Hasta (fecha y hora)</span>
+            <input [(ngModel)]="backupHasta" type="datetime-local" step="60" class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface">
+            <span class="font-body-xs text-body-xs text-on-surface-variant">Ej. 30/08/2026 18:00</span>
           </label>
         </div>
         <div class="mb-md">
-          <p class="font-label-sm text-label-sm text-on-surface mb-sm">Tablas</p>
+          <div class="flex items-center justify-between mb-sm">
+            <p class="font-label-sm text-label-sm text-on-surface">Tablas</p>
+            <label class="inline-flex items-center gap-xs cursor-pointer select-none">
+              <input type="checkbox" [checked]="todasTablasSeleccionadas" (change)="toggleTodasTablas()" class="accent-primary w-4 h-4">
+              <span class="font-label-sm text-label-sm text-primary">{{ todasTablasSeleccionadas ? 'Deseleccionar todo' : 'Seleccionar todo' }}</span>
+            </label>
+          </div>
           <div class="flex flex-wrap gap-sm">
             @for (tabla of backupTablasDisponibles; track tabla) {
               <label class="inline-flex items-center gap-xs px-sm py-xs rounded-full border cursor-pointer transition-colors"
@@ -336,12 +344,12 @@
                 [class.border-primary]="backupTablasSeleccionadas[tabla]" [class.bg-surface-container-low]="!backupTablasSeleccionadas[tabla]"
                 [class.border-outline-variant]="!backupTablasSeleccionadas[tabla]">
                 <input type="checkbox" class="sr-only" [checked]="backupTablasSeleccionadas[tabla]" (change)="toggleTabla(tabla)">
-                <span class="font-label-sm text-[13px]">{{ tabla }}</span>
+                <span class="font-label-sm text-[13px]">{{ nombresTablas[tabla] ?? tabla }}</span>
               </label>
             }
           </div>
           @if (tablasSeleccionadas.length === 0) {
-            <p class="font-body-xs text-body-xs text-error mt-xs">Seleccioná al menos una tabla.</p>
+            <p class="font-body-xs text-body-xs text-error mt-xs">Seleccione al menos una tabla.</p>
           }
         </div>
         <div class="mb-lg">
@@ -374,7 +382,7 @@
           </h3>
           <div class="flex items-center gap-sm">
             <label for="filtro-formato" class="sr-only">Filtrar por formato</label>
-            <select [(ngModel)]="filtroBackupFormato" id="filtro-formato" class="h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm">
+            <select [(ngModel)]="filtroBackupFormato" id="filtro-formato" class="h-9 pl-sm pr-8 rounded border border-outline-variant bg-white font-body-sm text-body-sm">
               <option value="">Todos los formatos</option>
               <option value="sql">SQL</option>
               <option value="csv">CSV</option>
@@ -407,7 +415,7 @@
                   <tr class="font-body-sm text-body-sm text-on-surface hover:bg-surface-container-low/40">
                     <td class="px-md py-sm whitespace-nowrap">{{ b.creadoEn }}</td>
                     <td class="px-md py-sm whitespace-nowrap text-on-surface-variant">{{ b.desde }} → {{ b.hasta }}</td>
-                    <td class="px-md py-sm"><span class="font-body-xs text-body-xs">{{ b.tablas.join(', ') }}</span></td>
+                    <td class="px-md py-sm"><span class="font-body-xs text-body-xs">@for (t of b.tablas; track t) { {{ nombresTablas[t] ?? t }}@if (!$last) {, } }</span></td>
                     <td class="px-md py-sm"><span class="inline-flex px-2 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-[11px] uppercase">{{ b.formato }}</span></td>
                     <td class="px-md py-sm whitespace-nowrap">{{ formatearTamano(b) }}</td>
                     <td class="px-md py-sm"><span class="font-label-sm text-[12px]">{{ b.estado }}</span></td>
