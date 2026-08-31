@@ -289,6 +289,19 @@ public class GlobalExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor");
     }
 
+    // ResponseStatusException lanzada desde servicios con @Transactional (BackupService,
+    // RespaldoCompletoService, etc.) quedaba atrapada por handleGenerica -> 500
+    // porque el @ExceptionHandler(Exception.class) tiene prioridad sobre el
+    // ResponseStatusExceptionResolver de Spring MVC. Este handler lo intercepta primero
+    // y reenvía el status correcto (400, 404, etc.) que el servicio indicó.
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ProblemDetail handleResponseStatus(org.springframework.web.server.ResponseStatusException ex) {
+        return ProblemDetail.forStatusAndDetail(
+                HttpStatus.valueOf(ex.getStatusCode().value()),
+                ex.getReason() != null ? ex.getReason() : ex.getMessage()
+        );
+    }
+
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGenerica(Exception ex) {
         // Sin este log, un 500 no deja ningún rastro server-side: el cliente

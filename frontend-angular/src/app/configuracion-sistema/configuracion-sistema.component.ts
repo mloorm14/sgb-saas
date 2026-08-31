@@ -743,8 +743,18 @@ export class ConfiguracionSistemaComponent implements OnInit {
   dispararBackupCompleto(): void {
     this.generandoBackup = true;
     this.backupService.dispararBackupCompleto().subscribe({
-      next: () => { this.generandoBackup = false; this.toast.success('Backup iniciado', 'El volcado completo se está ejecutando.'); this.cargarRegistrosRespaldo(this.subSubmoduloSeleccionado?.includes('auto') ? 'automatico' : 'manual'); },
-      error: (err) => { this.generandoBackup = false; this.toast.error('Error', err?.error?.detail ?? 'Error al iniciar el backup'); }
+      next: () => { 
+        this.generandoBackup = false; 
+        this.toast.success('Backup iniciado', 'El volcado completo se está ejecutando.'); 
+        // Darle 1 segundo al microservicio de Node.js para que inserte el registro "EN_PROGRESO" en la BD
+        setTimeout(() => {
+          this.cargarRegistrosRespaldo(this.subSubmoduloSeleccionado?.includes('auto') ? 'automatico' : 'manual'); 
+        }, 1000);
+      },
+      error: (err) => { 
+        this.generandoBackup = false; 
+        this.toast.error('Error', err?.error?.detail ?? 'Error al iniciar el backup'); 
+      }
     });
   }
 

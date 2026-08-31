@@ -66,7 +66,11 @@ public class BackupService {
         if (desde.isAfter(hasta)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "desde debe ser anterior a hasta");
         long dias = ChronoUnit.DAYS.between(desde, hasta);
         if (dias > MAX_DIAS) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rango max 30 dias, solicitados: " + dias);
-        if (hasta.isAfter(OffsetDateTime.now())) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "hasta no puede ser futuro");
+        // No se valida "hasta no puede ser futuro" para evitar problemas de zona horaria:
+        // un usuario en -05:00 que selecciona "31 Aug 22:00" envía 2026-09-01T03:00Z,
+        // que el servidor en UTC ve como futuro aunque localmente no lo es.
+        // Si "hasta" está en el futuro, la consulta SQL simplemente devuelve todos los
+        // registros hasta "ahora", que es el comportamiento correcto.
     }
 
     private void validarTablas(Set<String> tablas) {
