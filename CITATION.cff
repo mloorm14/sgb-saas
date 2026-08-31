@@ -18,8 +18,8 @@ authors:
     given-names: "Moises Antonio"
     affiliation: "Universidad Técnica Estatal de Quevedo"
     orcid: "https://orcid.org/0009-0009-8113-242X"
-version: "1.0.0"
-date-released: "2026-08-17"
+version: "0.0.0-unreleased"
+# date-released: (no release yet)
 license: MIT
 repository-code: "https://github.com/mloorm14/sgb-saas"
 keywords:
