@@ -11,12 +11,19 @@ if (!connectionString) {
 // Para desarrollo local sin SSL
 const isProd = process.env.NODE_ENV === 'production' || connectionString.includes('neon.tech');
 
-const pool = new Pool({
+const poolConfig = {
     connectionString,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
     ssl: isProd ? { rejectUnauthorized: false } : false
-});
+};
+
+if (process.env.DB_USER) {
+    poolConfig.user = process.env.DB_USER;
+}
+if (process.env.DB_PASSWORD) {
+    poolConfig.password = process.env.DB_PASSWORD;
+}
+
+const pool = new Pool(poolConfig);
 
 // Exponer las variables para que pg_dump las tome automáticamente
 if (process.env.DB_USER && !process.env.PGUSER) {
