@@ -23,6 +23,18 @@ export interface BackupEntry {
   creadoEn: string;
   creadoPor?: string;
 }
+
+export interface BackupProgramacion {
+  id: number;
+  creadoPor: number;
+  cadaHoras: number | null;
+  cadaDias: number | null;
+  formato: string;
+  activo: boolean;
+  creadoEn: string;
+  ultimaEjecucion: string | null;
+}
+
 export type BackupResumen = BackupEntry;
 export type BackupDetalle = BackupEntry;
 
@@ -57,6 +69,15 @@ export class BackupService {
   }
   borrar(id: number | string): Observable<boolean> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(map(() => true), catchError(err => this.manejarError(err)));
+  }
+  programar(id: number): Observable<BackupProgramacion> {
+    return this.http.post<BackupProgramacion>(`${this.apiUrl}/${id}/programar`, {}).pipe(catchError(err => this.manejarError(err)));
+  }
+  listarProgramaciones(): Observable<BackupProgramacion[]> {
+    return this.http.get<BackupProgramacion[]>(`${this.apiUrl}/programacion`).pipe(catchError(err => this.manejarError(err)));
+  }
+  ejecutarAhora(id: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${id}/ejecutar-ahora`, {}).pipe(catchError(err => this.manejarError(err)));
   }
   private manejarError(err: unknown): Observable<never> {
     const problem = (err as { error?: ProblemDetail })?.error;
