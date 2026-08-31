@@ -9,7 +9,7 @@ La Entrega Final exige re-verificar la cobertura con una corrida real sobre el c
 1. **Testcontainers** añadido para las 2 clases de integración (`LibroPortadaIntegrationTest`, `PrestamoMultaProcedureIntegrationTest`) que fallaban por falta de Postgres real (commit `825ad34`).
 2. **Fix de SameSite** en la aserción del test `AuthControllerTest` (Strict → None, este mismo commit, no revertido en código fuente — el cambio de `SameSite=Strict` a `None` en `AuthController.java` ya estaba en `2884126`).
 
-Esta medición final se ejecuta con `mvnw clean verify` **sin** `-Dmaven.test.failure.ignore=true` y obtiene **BUILD SUCCESS** con 0 fallos y 0 errores. Es la cifra definitiva para el tag `v1.0.0`.
+Esta medición final se ejecuta con `mvnw clean verify` **sin** `-Dmaven.test.failure.ignore=true` y obtiene **BUILD SUCCESS** con 0 fallos y 0 errores. Es la cifra definitiva para el commit HEAD (`demo/interfaces-completas`).
 
 ## Cabecera de medición
 
@@ -127,4 +127,4 @@ XML crudo: `docs/mediciones/jacoco/2026-08-25-jacoco-final/jacoco.xml`.
    0 fallos, 0 errores, 2 skipped — **BUILD SUCCESS limpio**. La cobertura
    reportada refleja la ejecución completa de la suite.
 
-## Estado: GAP CONOCIDO — 61,50 % líneas / 38,98 % ramas / 48,15 % complejidad, **por debajo del objetivo de 70 % de la Entrega Final**. Medición final y definitiva para el tag `v1.0.0`.
+## Estado: GAP CONOCIDO — 61,50 % líneas / 38,98 % ramas / 48,15 % complejidad, **por debajo del objetivo de 70 % de la Entrega Final**. Medición final y definitiva para el commit HEAD (`demo/interfaces-completas`).

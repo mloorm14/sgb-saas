@@ -15,7 +15,7 @@ diferencia real entre ambos:
 
 - **Software** (el código fuente de SGB-SaaS): tiene un DOI de Zenodo ya
   asignado, aunque **desactualizado** -- corresponde al tag
-  `v0.9.0-rc` (Tercera Entrega), no al `v1.0.0` de esta Entrega Final.
+  `v0.9.0-rc` (Tercera Entrega), no al tag final (v1.0.0 pendiente -- sin tag creado).
   Este gap ya está documentado como `OBS-05` en
   `docs/observaciones/OBSERVACIONES.md` y como *placeholder* explícito en
   la portada del informe (`docs/capitulos/00-portada.tex`).
@@ -32,7 +32,7 @@ diferencia real entre ambos:
 
 | # | Ítem oficial (traducción fiel) | Estado | Evidencia / nota |
 |---|---|---|---|
-| F1 | (Meta)datos tienen asignado un identificador persistente y globalmente único | ⚠️ | **Software**: sí -- DOI `10.5281/zenodo.21712467`, pero apunta al tag `v0.9.0-rc`, no al `v1.0.0` de esta entrega (re-archivado pendiente, ya declarado en portada y en `docs/capitulos/13-declaraciones.tex` §13.1). **Datos**: no -- sin DOI propio (§13.2 del mismo capítulo, *placeholder* `<DOI-DATASET-V1.0.0-SI-APLICA>` explícito). |
+| F1 | (Meta)datos tienen asignado un identificador persistente y globalmente único | ⚠️ | **Software**: sí -- DOI `10.5281/zenodo.21712467`, pero apunta al tag `v0.9.0-rc`, no al tag final (v1.0.0 pendiente -- sin tag creado) (re-archivado pendiente, ya declarado en portada y en `docs/capitulos/13-declaraciones.tex` §13.1). **Datos**: no -- sin DOI propio (§13.2 del mismo capítulo, *placeholder* `<DOI-DATASET-V1.0.0-SI-APLICA>` explícito). |
 | F2 | Los datos están descritos con metadatos ricos | ✅ | `CITATION.cff` (formato Citation File Format 1.2.0, validado localmente con `cffconvert --validate` según su propio comentario de cabecera): autores con ORCID, afiliación, licencia, palabras clave, repositorio, DOI, versión. Cumple bien para el software; no existe un archivo de metadatos equivalente y dedicado para el paquete de datos de `docs/mediciones/` (cada archivo de medición documenta su propio contexto en prosa -- commit base, fecha, herramienta -- pero no en un formato de metadatos estructurado y agregado). |
 | F3 | Los metadatos incluyen clara y explícitamente el identificador de los datos que describen | ⚠️ | **Software**: `CITATION.cff` incluye su propio campo `doi:` apuntando al registro de Zenodo -- cumple, con la misma salvedad de desactualización de F1. **Datos**: no aplica todavía -- no existe un identificador de datos que un archivo de metadatos pueda referenciar (consecuencia directa de F1 para el dataset). |
 | F4 | (Meta)datos están registrados o indexados en un recurso de búsqueda | ⚠️ | **Software**: sí -- Zenodo indexa automáticamente los depósitos con DOI en agregadores como OpenAIRE y DataCite; el propio repositorio de GitHub es indexado por buscadores de código. **Datos**: solo indexados como parte del repositorio de GitHub general (búsqueda de código/archivos), no en un registro de datos de investigación dedicado (p. ej. un repositorio de datos institucional o un registro tipo re3data) -- indexación parcial, no la de un dataset publicado formalmente. |
@@ -78,13 +78,13 @@ diferencia real entre ambos:
 ausente -- pero **8 de los 15 son parciales**, y casi todos comparten la
 misma causa raíz, ya declarada en otras partes de este documento: (1) el
 DOI del software apunta a una versión desactualizada (`v0.9.0-rc`,
-`OBS-05`), pendiente de re-archivado a `v1.0.0`; y (2) el paquete de
+`OBS-05`), pendiente de re-archivado al tag final (v1.0.0 pendiente); y (2) el paquete de
 datos de mediciones empíricas todavía no tiene su propio DOI ni un
 archivo de metadatos agregado, aunque los datos en sí ya están
 versionados, en formato abierto, con licencia clara y con procedencia
 verificable vía Git. Ninguno de los dos gaps se oculta ni se resuelve de
 forma optimista aquí: el primero depende del cierre formal de esta
-entrega (creación del tag `v1.0.0` y re-archivado en Zenodo, ya
+entrega (creación del tag final (v1.0.0 pendiente) y re-archivado en Zenodo, ya
 protocolizado en `docs/VERSIONING.md`); el segundo depende de una
 decisión del equipo, ya señalada como pendiente en
 `docs/capitulos/13-declaraciones.tex` §13.2.

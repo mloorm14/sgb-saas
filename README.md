@@ -245,18 +245,16 @@ Para los 4 roles del sistema, el tribunal puede entrar con:
 - **BIBLIOTECARIO** — `bibliotecario.demo@sgb-saas.local`
 - **LECTOR** — `lector.demo@sgb-saas.local` o `u@uteq.edu.ec` (LECTOR).
 
-## 📦 Imágenes Docker publicadas (v1.0.0)
+## 📦 Imágenes Docker publicadas (tag `v1.0.0` retirado; ver `docs/observaciones/OBSERVACIONES.md` OBS-18)
 
 Las imágenes se publican en GitHub Container Registry (GHCR) por el
-workflow `publish-ghcr.yml`, que se dispara con el push del tag `v1.0.0`
-(no por push a rama ni por PR). Digests verificados con `docker pull` +
-`docker inspect` real contra el commit `8610ab0` (el mismo que main y
-demo/interfaces-completas, y el que está sirviendo en producción).
-
-| Servicio  | Imagen                                   | Digest sha256 |
-|-----------|------------------------------------------|---------------|
-| Backend   | `ghcr.io/mloorm14/sgb-saas-backend:v1.0.0`  | `sha256:2cb9f065d4c81cce11ab8b6d113fe20eb8603828ac2a087535280cb54d3f8598` |
-| Frontend  | `ghcr.io/mloorm14/sgb-saas-frontend:v1.0.0` | `sha256:ea3d681b322c06ea3d2657e46d712fadf080e0074575336f0aa27399bd6cd91f` |
+workflow `publish-ghcr.yml`, que se dispara con el push de un tag (no por
+push a rama ni por PR). El tag de git `v1.0.0` fue eliminado por ser
+prematuro (OBS-18: creado 418+ commits detrás de HEAD, antes de que el
+alcance de la Entrega Final estuviera cerrado); las imágenes ya publicadas
+en GHCR bajo ese tag siguen existiendo en el registro como artefacto
+histórico, pero no representan el estado final del proyecto. No se
+republican imágenes hasta que se cree el tag definitivo.
 
 ## 🔁 Reproducibilidad (D.1 / D.2)
 
