@@ -1,207 +1,183 @@
 package com.uteq.backend.service;
 
 import com.uteq.backend.entity.Backup;
-import com.uteq.backend.entity.Reserva;
-import com.uteq.backend.entity.Multa;
-import com.uteq.backend.entity.Usuario;
 import com.uteq.backend.repository.BackupRepository;
-import com.uteq.backend.repository.ReservaRepository;
-import com.uteq.backend.repository.MultaRepository;
 import com.uteq.backend.repository.UsuarioRepository;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.*;
-import java.time.*;
-import java.time.temporal.*;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Service
 public class BackupService {
 
     private static final int MAX_DIAS = 30;
+    private static final Set<String> TABLAS_PERMITIDAS = Set.of("prestamos", "reservas", "multas", "libros", "usuarios", "bitacora_auditoria");
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
-    @Value("${backup.storage.url:local}")
-    private String backupStorageUrl;
-
-    @Value("${backup.encryption.key:}")
-    private String backupEncryptionKey;
+    private static final Map<String, String> TABLA_COL = Map.of(
+            "prestamos", "fecha_prestamo",
+            "reservas", "fecha_reserva",
+            "multas", "fecha_generada",
+            "bitacora_auditoria", "fecha_hora",
+            "libros", "fecha_registro",
+            "usuarios", "fecha_registro"
+    );
 
     private final BackupRepository backupRepository;
-    private final ReservaRepository reservaRepository;
-    private final MultaRepository multaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final JdbcTemplate jdbcTemplate;
+    private final BackupStorageService storageService;
 
-    public BackupService(BackupRepository backupRepository,
-                         ReservaRepository reservaRepository,
-                         MultaRepository multaRepository,
-                         UsuarioRepository usuarioRepository) {
+    @Value("${app.backup.r2.bucket:}")
+    private String bucket;
+
+    public BackupService(BackupRepository backupRepository, UsuarioRepository usuarioRepository, JdbcTemplate jdbcTemplate, BackupStorageService storageService) {
         this.backupRepository = backupRepository;
-        this.reservaRepository = reservaRepository;
-        this.multaRepository = multaRepository;
         this.usuarioRepository = usuarioRepository;
+        this.jdbcTemplate = jdbcTemplate;
+        this.storageService = storageService;
     }
 
     private void validarRango(OffsetDateTime desde, OffsetDateTime hasta) {
-        if (desde == null || hasta == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Los parámetros 'desde' y 'hasta' son obligatorios");
-        }
-        if (desde.isAfter(hasta)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El parámetro 'desde' debe ser anterior a 'hasta'");
-        }
+        if (desde == null || hasta == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "desde y hasta son obligatorios");
+        if (desde.isAfter(hasta)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "desde debe ser anterior a hasta");
         long dias = ChronoUnit.DAYS.between(desde, hasta);
-        if (dias > MAX_DIAS) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El rango máximo de backup es de " + MAX_DIAS + " días. Solicitados: " + dias + " días");
-        }
-        if (hasta.isAfter(OffsetDateTime.now())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El parámetro 'hasta' no puede ser una fecha futura");
-        }
+        if (dias > MAX_DIAS) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rango max 30 dias, solicitados: " + dias);
+        if (hasta.isAfter(OffsetDateTime.now())) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "hasta no puede ser futuro");
     }
 
     private void validarTablas(Set<String> tablas) {
-        if (tablas == null || tablas.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debe seleccionar al menos una tabla para el backup");
-        }
-        Set<String> tablasPermitidas = Set.of("prestamos", "reservas", "multas", "libros", "usuarios", "bitacora_auditoria");
-        for (String tabla : tablas) {
-            if (!tablasPermitidas.contains(tabla)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tabla no permitida: " + tabla);
-            }
-        }
+        if (tablas == null || tablas.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debe seleccionar al menos una tabla");
+        for (String t : tablas) if (!TABLAS_PERMITIDAS.contains(t)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tabla no permitida: " + t);
     }
 
     @Transactional
-    public Backup generarBackup(BackupRequestDTO req) {
-        validarRango(req.getDesde(), req.getHasta());
-        validarTablas(req.getTablas());
+    public Backup generarBackup(OffsetDateTime desde, OffsetDateTime hasta, Set<String> tablas, String formato) {
+        validarRango(desde, hasta);
+        validarTablas(tablas);
+        String fmt = formato == null ? "sql" : formato.toLowerCase();
+        if (!fmt.equals("sql") && !fmt.equals("csv")) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "formato debe ser sql o csv");
 
-        OffsetDateTime desde = req.getDesde();
-        OffsetDateTime hasta = req.getHasta();
-        Set<String> tablas = req.getTablas();
-        String formato = req.getFormato();
-
-        String sqlContent = generarSqlBackup(tabla, formato, desde, hasta);
-
-        String rutaAlmacenamiento;
-        if ("s3://".equals(backupStorageUrl.substring(0, 5))) {
-            rutaAlmacenamiento = "s3://" + backupStorageUrl.replace("s3://", "") + "/backup_" + System.currentTimeMillis() + ".zip";
-        } else {
-            rutaAlmacenamiento = "./backups/backup_" + System.currentTimeMillis() + ".zip";
-            File dir = new File("./backups");
-            if (!dir.exists()) dir.mkdirs();
-            try (FileOutputStream fos = new FileOutputStream(rutaAlmacenamiento)) {
-                fos.write(sqlContent.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            } catch (IOException e) {
-                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error guardando backup local", e);
-            }
-        }
+        byte[] zipBytes = generarZip(desde, hasta, tablas, fmt);
+        String key = "backups/backup_" + System.currentTimeMillis() + ".zip";
+        if (storageService.isEncryptionEnabled()) key += ".enc";
+        storageService.upload(key, zipBytes);
 
         Backup backup = Backup.builder()
                 .creadoPor(obtenerUsuarioActualId())
                 .desde(desde)
                 .hasta(hasta)
-                .tablas(tablas)
-                .formato(formato)
-                .ruta(rutaAlmacenamiento)
-                .tamanoBytes(sqlContent.getBytes(java.nio.charset.StandardCharsets.UTF_8).length)
+                .tablas(new HashSet<>(tablas))
+                .formato(fmt)
+                .ruta(key)
+                .tamanoBytes((long) zipBytes.length)
                 .estado("COMPLETADO")
                 .creadoEn(OffsetDateTime.now())
                 .build();
-
         return backupRepository.save(backup);
     }
 
-    private String generarSqlBackup(String tabla, String formato, OffsetDateTime desde, OffsetDateTime hasta) {
-        StringBuilder sb = new StringBuilder();
-        if ("sql".equals(formato)) {
-            sb.append("-- Backup generado: ").append(formato).append(" rango ").append(desde).append(" - ").append(hasta).append("\n\n");
-            switch (tabla) {
-                case "prestamos":
-                    sb.append("-- Tabla: prestamos\n").append("COPY (SELECT * FROM prestamos WHERE fecha_devolucion_estimada BETWEEN '")
-                            .append(formatTimestamp(desde)).append("' AND '").append(formatTimestamp(hasta)).append("') TO STDOUT WITH (FORMAT text, HEADER);\n");
-                    break;
-                case "reservas":
-                    sb.append("-- Tabla: reservas\n").append("COPY (SELECT * FROM reservas WHERE fecha_reserva BETWEEN '")
-                            .append(formatTimestamp(desde)).append("' AND '").append(formatTimestamp(hasta)).append("') TO STDOUT WITH (FORMAT text, HEADER);\n");
-                    break;
-                case "multas":
-                    sb.append("-- Tabla: multas\n").append("COPY (SELECT * FROM multas WHERE fecha_multa BETWEEN '")
-                            .append(formatTimestamp(desde)).append("' AND '").append(formatTimestamp(hasta)).append("') TO STDOUT WITH (FORMAT text, HEADER);\n");
-                    break;
-                case "libros":
-                    sb.append("-- Tabla: libros (sin filtro de fecha - todo el registro)\n").append("COPY (SELECT id, titulo, isbn, autor, categoria FROM libros) TO STDOUT WITH (FORMAT text, HEADER);\n");
-                    break;
-                case "usuarios":
-                    sb.append("-- Tabla: usuarios (sin filtro de fecha - datos básicos)\n").append("COPY (SELECT id, nombre, email, rol FROM usuarios) TO STDOUT WITH (FORMAT text, HEADER);\n");
-                    break;
-                case "bitacora_auditoria":
-                    sb.append("-- Tabla: bitacora_auditoria\n").append("COPY (SELECT * FROM bitacora_auditoria WHERE created_en BETWEEN '")
-                            .append(formatTimestamp(desde)).append("' AND '").append(formatTimestamp(hasta)).append("') TO STDOUT WITH (FORMAT text, HEADER);\n");
-                    break;
-                default:
-                    sb.append("-- Tabla no reconocida: ").append(tabla).append("\n");
+    private byte[] generarZip(OffsetDateTime desde, OffsetDateTime hasta, Set<String> tablas, String formato) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); ZipOutputStream zos = new ZipOutputStream(baos, StandardCharsets.UTF_8)) {
+            for (String tabla : tablas) {
+                String col = TABLA_COL.get(tabla);
+                List<Map<String, Object>> rows;
+                if (col != null) {
+                    String phys = tabla.equals("bitacora_auditoria") ? "bitacora_auditoria" : tabla.equals("reservas") ? "reservaciones" : tabla;
+                    // whitelist ya validado
+                    rows = jdbcTemplate.queryForList("SELECT * FROM " + phys + " WHERE " + col + " >= ? AND " + col + " <= ?", desde, hasta);
+                } else {
+                    rows = List.of();
+                }
+                String ext = fmtExt(formato);
+                zos.putNextEntry(new ZipEntry(tabla + "." + ext));
+                String content = formato.equals("sql") ? toSql(physName(tabla), rows) : toCsv(rows);
+                zos.write(content.getBytes(StandardCharsets.UTF_8));
+                zos.closeEntry();
             }
-        } else if ("csv".equals(formato)) {
-            sb.append("-- Backup CSV: tabla ").append(tabla).append("\n").append("id,titulo,isbn,autor\n");
+            zos.finish();
+            return baos.toByteArray();
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error generando zip", e);
+        }
+    }
+
+    private String physName(String logical) {
+        if (logical.equals("reservas")) return "reservaciones";
+        return logical;
+    }
+    private String fmtExt(String f) { return f.equals("sql") ? "sql" : "csv"; }
+
+    private String toCsv(List<Map<String, Object>> rows) {
+        if (rows.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.join(",", rows.get(0).keySet())).append("\n");
+        for (Map<String, Object> r : rows) {
+            sb.append(r.values().stream().map(v -> {
+                if (v == null) return "";
+                String s = v.toString().replace("\"", "\"\"");
+                if (s.contains(",") || s.contains("\n") || s.contains("\"")) return "\"" + s + "\"";
+                return s;
+            }).collect(Collectors.joining(","))).append("\n");
         }
         return sb.toString();
     }
 
-    private String formatTimestamp(OffsetDateTime offsetDateTime) {
-        return offsetDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssxxx"));
+    private String toSql(String tabla, List<Map<String, Object>> rows) {
+        if (rows.isEmpty()) return "-- sin filas " + tabla + "\n";
+        StringBuilder sb = new StringBuilder("-- tabla " + tabla + "\n");
+        for (Map<String, Object> r : rows) {
+            String cols = String.join(", ", r.keySet());
+            String vals = r.values().stream().map(v -> {
+                if (v == null) return "NULL";
+                if (v instanceof Number) return v.toString();
+                if (v instanceof Boolean) return (Boolean) v ? "TRUE" : "FALSE";
+                return "'" + v.toString().replace("'", "''") + "'";
+            }).collect(Collectors.joining(", "));
+            sb.append("INSERT INTO ").append(tabla).append(" (").append(cols).append(") VALUES (").append(vals).append(");\n");
+        }
+        return sb.toString();
     }
 
-    public List<Backup> listarTodos() {
-        return backupRepository.findAllOrderByCreatedDesc();
+    public List<Backup> listarTodos() { return backupRepository.findAllOrderByCreatedDesc(); }
+    public List<Backup> listarPorRango(OffsetDateTime desde, OffsetDateTime hasta) { return backupRepository.findByFechaRange(desde, hasta); }
+    public Backup obtenerPorId(Long id) { return backupRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Backup no encontrado " + id)); }
+
+    @Transactional
+    public void eliminar(Long id) {
+        Backup b = obtenerPorId(id);
+        try { storageService.delete(b.getRuta()); } catch (Exception ignored) {}
+        backupRepository.delete(b);
     }
 
-    public Backup obtenerPorId(Long id) {
-        return backupRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Backup no encontrado con id: " + id));
-    }
-
-    public List<Backup> listarPorRango(OffsetDateTime desde, OffsetDateTime hasta) {
-        return backupRepository.findByFechaRange(desde, hasta);
+    public byte[] descargar(Long id) {
+        Backup b = obtenerPorId(id);
+        return storageService.download(b.getRuta());
     }
 
     private Long obtenerUsuarioActualId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null) return 1L;
-        Object principal = auth.getPrincipal();
-        if (principal instanceof Usuario usuario) {
-            return usuario.getId();
-        }
+        Object p = auth.getPrincipal();
         try {
-            return usuarioRepository.findByEmail((String) principal).getId();
+            var f = p.getClass().getDeclaredField("id");
+            f.setAccessible(true);
+            return (Long) f.get(p);
         } catch (Exception e) {
-            return 1L;
+            try { return usuarioRepository.findByCorreo(auth.getName()).map(u -> u.getId()).orElse(1L); } catch (Exception ex) { return 1L; }
         }
-    }
-
-    public static class BackupRequestDTO {
-        OffsetDateTimeDesde;
-        OffsetDateTimeHasta;
-        Set<String> tablas;
-        String formato;
-
-        OffsetDateTime getDesde() { return desde; }
-        void setDesde(OffsetDateTimeDesde desde) { this.desde = desde; }
-        OffsetDateTime getHasta() { return hasta; }
-        void setHasta(OffsetDateTimeHasta hasta) { this.hasta = hasta; }
-        Set<String> getTablas() { return tablas; }
-        void setTablas(Set<String> tablas) { this.tablas = tablas; }
-        String getFormato() { return formato; }
-        void setFormato(String formato) { this.formato = formato; }
     }
 }
