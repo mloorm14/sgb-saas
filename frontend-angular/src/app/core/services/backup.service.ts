@@ -9,6 +9,7 @@ export interface BackupRequest {
   hasta: string;
   tablas: string[];
   formato: 'sql' | 'csv';
+  tipo?: string;
 }
 
 export interface BackupEntry {
@@ -22,6 +23,7 @@ export interface BackupEntry {
   estado: string;
   creadoEn: string;
   creadoPor?: string;
+  tipo?: string;
 }
 
 export interface BackupProgramacion {
@@ -33,6 +35,31 @@ export interface BackupProgramacion {
   activo: boolean;
   creadoEn: string;
   ultimaEjecucion: string | null;
+  tablas?: string[];
+}
+
+export interface RegistroRespaldo {
+  id: number;
+  tipo: string;
+  estado: string;
+  nombreArchivo?: string;
+  tamanoArchivoBytes?: number;
+  rutaR2?: string;
+  mensajeError?: string;
+  ejecutadoPor?: number;
+  iniciadoEn: string;
+  finalizadoEn?: string;
+}
+
+export interface ConfiguracionRespaldo {
+  id: number;
+  habilitado: boolean;
+  frecuenciaHoras: number;
+  diasRetencion: number;
+  ultimaEjecucion?: string;
+  proximaEjecucion?: string;
+  actualizadoPor?: number;
+  actualizadoEn?: string;
 }
 
 export type BackupResumen = BackupEntry;
@@ -41,6 +68,7 @@ export type BackupDetalle = BackupEntry;
 @Injectable({ providedIn: 'root' })
 export class BackupService {
   private apiUrl = `${environment.apiUrl}/v1/admin/backups`;
+  private drUrl = `${environment.apiUrl}/v1/admin/respaldo-completo`;
   constructor(private http: HttpClient) {}
 
   private toIsoOffset(local: string): string {
@@ -79,6 +107,23 @@ export class BackupService {
   ejecutarAhora(id: number): Observable<any> {
     return this.http.post(`${this.apiUrl}/${id}/ejecutar-ahora`, {}).pipe(catchError(err => this.manejarError(err)));
   }
+
+  // ── Backups Completos (Disaster Recovery) ────────────────────────────────
+  obtenerConfigDR(): Observable<ConfiguracionRespaldo> {
+    return this.http.get<ConfiguracionRespaldo>(`${this.drUrl}/config`).pipe(catchError(err => this.manejarError(err)));
+  }
+  actualizarConfigDR(dto: { frecuenciaHoras?: number; diasRetencion?: number; habilitado?: boolean }): Observable<ConfiguracionRespaldo> {
+    return this.http.put<ConfiguracionRespaldo>(`${this.drUrl}/config`, dto).pipe(catchError(err => this.manejarError(err)));
+  }
+  listarRegistrosRespaldo(tipo?: string): Observable<RegistroRespaldo[]> {
+    let params = new HttpParams();
+    if (tipo) params = params.set('tipo', tipo);
+    return this.http.get<RegistroRespaldo[]>(`${this.drUrl}/registros`, { params }).pipe(catchError(err => this.manejarError(err)));
+  }
+  dispararBackupCompleto(): Observable<any> {
+    return this.http.post(`${this.drUrl}/trigger`, {}).pipe(catchError(err => this.manejarError(err)));
+  }
+
   private manejarError(err: unknown): Observable<never> {
     const problem = (err as { error?: ProblemDetail })?.error;
     if (problem?.status) console.warn(`[backup.service] ${problem.title} (${problem.status}): ${problem.detail}`);
