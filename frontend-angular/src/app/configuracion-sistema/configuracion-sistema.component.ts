@@ -5,7 +5,7 @@ import { ConfiguracionSistemaService, ParametroConfiguracion } from '../core/ser
 import { DevolucionService } from '../core/services/devolucion.service';
 import { AuthService } from '../core/services/auth.service';
 import { TipoDano, CategoriaDano } from '../core/models/devoluciones.model';
-import { BackupService, BackupEntry } from '../core/services/backup.service';
+import { BackupService, BackupEntry, BackupProgramacion } from '../core/services/backup.service';
 import { ToastService } from '../shared/toast/toast.service';
 
 const VALOR_MAX_LENGTH = 200;
@@ -291,6 +291,14 @@ export class ConfiguracionSistemaComponent implements OnInit {
   backups: BackupEntry[] = [];
   errorMsgBackup = '';
   filtroBackupFormato = '';
+  filtroBackupFecha = '';
+  filtroBackupDia = '';
+  filtroBackupHora = '';
+  cargandoProgramaciones = false;
+  programaciones: BackupProgramacion[] = [];
+  cadaHoras: number | null = null;
+  cadaDias: number | null = null;
+  backupModo: 'manual' | 'automatico' = 'manual';
 
   constructor(
     private configuracionService: ConfiguracionSistemaService,
@@ -546,9 +554,22 @@ export class ConfiguracionSistemaComponent implements OnInit {
     return true;
   }
   get backupsFiltrados(): BackupEntry[] {
-    if (!this.filtroBackupFormato) return this.backups;
-    return this.backups.filter(b => b.formato === this.filtroBackupFormato);
+    let resultado = this.backups;
+    if (this.filtroBackupFormato) resultado = resultado.filter(b => b.formato === this.filtroBackupFormato);
+    if (this.filtroBackupFecha) resultado = resultado.filter(b => b.creadoEn.startsWith(this.filtroBackupFecha));
+    if (this.filtroBackupDia) {
+      const dia = parseInt(this.filtroBackupDia, 10);
+      resultado = resultado.filter(b => new Date(b.creadoEn).getDate() === dia);
+    }
+    if (this.filtroBackupHora) {
+      const hora = parseInt(this.filtroBackupHora, 10);
+      resultado = resultado.filter(b => new Date(b.creadoEn).getHours() === hora);
+    }
+    return resultado;
   }
+  get cadaHorasHabilitado(): boolean { return this.cadaHoras !== null && this.cadaDias === null; }
+  get cadaDiasHabilitado(): boolean { return this.cadaDias !== null && this.cadaHoras === null; }
+  get puedeProgramar(): boolean { return (this.cadaHoras !== null || this.cadaDias !== null) && this.tablasSeleccionadas.length > 0; }
   toggleTabla(tabla: string): void { this.backupTablasSeleccionadas[tabla] = !this.backupTablasSeleccionadas[tabla]; }
   get todasTablasSeleccionadas(): boolean { return this.backupTablasDisponibles.length > 0 && this.backupTablasDisponibles.every(t => !!this.backupTablasSeleccionadas[t]); }
   toggleTodasTablas(): void {
@@ -559,10 +580,25 @@ export class ConfiguracionSistemaComponent implements OnInit {
     this.cargandoBackup = true; this.errorMsgBackup = '';
     this.backupService.listar().subscribe({ next: (data) => { this.backups = data; this.cargandoBackup = false; }, error: (err) => { const detail = err?.error?.detail ?? err?.message ?? 'Error al cargar respaldos'; this.errorMsgBackup = detail; this.cargandoBackup = false; } });
   }
+  cargarProgramaciones(): void {
+    this.cargandoProgramaciones = true;
+    this.backupService.listarProgramaciones().subscribe({ next: (data) => { this.programaciones = data; this.cargandoProgramaciones = false; }, error: () => { this.cargandoProgramaciones = false; } });
+  }
   generarBackup(): void {
     if (!this.puedeGenerarBackup) return;
     this.generandoBackup = true; this.errorMsgBackup = '';
     this.backupService.generar({ desde: this.backupDesde, hasta: this.backupHasta, tablas: this.tablasSeleccionadas, formato: this.backupFormato }).subscribe({ next: () => { this.generandoBackup = false; this.toast.success('Respaldo generado', 'El archivo .zip se generó correctamente'); this.cargarBackups(); }, error: (err) => { this.generandoBackup = false; const detail = err?.error?.detail ?? err?.message ?? 'Error al generar el respaldo'; this.errorMsgBackup = detail; this.toast.error('Error', detail); } });
+  }
+  generarBackupAutomatico(): void {
+    if (!this.puedeProgramar) return;
+    this.generandoBackup = true; this.errorMsgBackup = '';
+    this.backupService.generar({ desde: this.backupDesde, hasta: this.backupHasta, tablas: this.tablasSeleccionadas, formato: this.backupFormato }).subscribe({ next: (entry) => { this.generandoBackup = false; this.toast.success('Respaldo generado', 'Backup generado con éxito'); this.cargarBackups(); }, error: (err) => { this.generandoBackup = false; const detail = err?.error?.detail ?? err?.message ?? 'Error al generar el respaldo'; this.errorMsgBackup = detail; this.toast.error('Error', detail); } });
+  }
+  programarBackup(id: number): void {
+    this.backupService.programar(id).subscribe({ next: (p) => { this.toast.success('Programado', 'Respaldo automático programado correctamente'); this.cargarProgramaciones(); }, error: (err) => { const detail = err?.error?.detail ?? err?.message ?? 'Error al programar'; this.toast.error('Error', detail); } });
+  }
+  ejecutarAhora(id: number): void {
+    this.backupService.ejecutarAhora(id).subscribe({ next: () => { this.toast.success('Ejecutado', 'Backup ejecutado ahora mismo'); this.cargarProgramaciones(); }, error: (err) => { const detail = err?.error?.detail ?? err?.message ?? 'Error al ejecutar'; this.toast.error('Error', detail); } });
   }
   descargarBackup(entry: BackupEntry): void {
     this.backupService.descargar(entry.id).subscribe({ next: (blob) => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `backup-${entry.id}.zip`; a.click(); URL.revokeObjectURL(url); this.toast.success('Descarga iniciada', 'El respaldo se está descargando'); }, error: (err) => { const detail = err?.error?.detail ?? 'Error al descargar el respaldo'; this.toast.error('Error', detail); } });
@@ -575,4 +611,10 @@ export class ConfiguracionSistemaComponent implements OnInit {
     if (entry.tamanoBytes == null) return '—';
     const kb = entry.tamanoBytes / 1024; if (kb < 1024) return `${kb.toFixed(1)} KB`; return `${(kb / 1024).toFixed(2)} MB`;
   }
+  cambiarModo(modo: 'manual' | 'automatico'): void {
+    this.backupModo = modo;
+    if (modo === 'automatico') { this.cargarProgramaciones(); }
+  }
+  limpiarFiltros(): void { this.filtroBackupFecha = ''; this.filtroBackupDia = ''; this.filtroBackupHora = ''; }
+  get filtrosActivos(): boolean { return !!this.filtroBackupFecha || !!this.filtroBackupDia || !!this.filtroBackupHora; }
 }

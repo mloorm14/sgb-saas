@@ -312,81 +312,247 @@
           </button>
         </div>
       }
-      <div class="rounded-xl border border-outline-variant bg-white p-lg mb-lg">
-        <h3 class="font-headline-sm text-headline-sm text-on-background mb-xs flex items-center gap-sm">
-          <span class="material-symbols-outlined text-[20px] text-primary">hard_drive_2</span> Generar respaldo
-        </h3>
-        <p class="font-body-sm text-body-sm text-on-surface-variant mb-md">Seleccione un rango de fecha y hora (máx. 30 días), las tablas y el formato. Por ejemplo, 30/08/2026 12:00 → 30/08/2026 18:00. El sistema genera un archivo .zip filtrado.</p>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-md mb-md">
-          <label class="flex flex-col gap-xs">
-            <span class="font-label-sm text-label-sm text-on-surface">Desde (fecha y hora)</span>
-            <input [(ngModel)]="backupDesde" type="datetime-local" step="60" class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface">
-            <span class="font-body-xs text-body-xs text-on-surface-variant">Incluye horas, ej. 30/08/2026 12:00</span>
-          </label>
-          <label class="flex flex-col gap-xs">
-            <span class="font-label-sm text-label-sm text-on-surface">Hasta (fecha y hora)</span>
-            <input [(ngModel)]="backupHasta" type="datetime-local" step="60" class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface">
-            <span class="font-body-xs text-body-xs text-on-surface-variant">Ej. 30/08/2026 18:00</span>
-          </label>
-        </div>
-        <div class="mb-md">
-          <div class="flex items-center justify-between mb-sm">
-            <p class="font-label-sm text-label-sm text-on-surface">Tablas</p>
-            <label class="inline-flex items-center gap-xs cursor-pointer select-none">
-              <input type="checkbox" [checked]="todasTablasSeleccionadas" (change)="toggleTodasTablas()" class="accent-primary w-4 h-4">
-              <span class="font-label-sm text-label-sm text-primary">{{ todasTablasSeleccionadas ? 'Deseleccionar todo' : 'Seleccionar todo' }}</span>
+      <!-- Selector de modo: Manual / Automático -->
+      <div class="flex items-center gap-sm mb-lg">
+        <button type="button" (click)="cambiarModo('manual')"
+          [class]="backupModo === 'manual' ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-low/80'"
+          class="h-9 px-md rounded-full font-label-sm text-label-sm inline-flex items-center gap-xs transition-colors cursor-pointer">
+          <span class="material-symbols-outlined text-[16px]">hard_drive_2</span> Manual
+        </button>
+        <button type="button" (click)="cambiarModo('automatico')"
+          [class]="backupModo === 'automatico' ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-low/80'"
+          class="h-9 px-md rounded-full font-label-sm text-label-sm inline-flex items-center gap-xs transition-colors cursor-pointer">
+          <span class="material-symbols-outlined text-[16px]">schedule</span> Automático
+        </button>
+      </div>
+      @if (backupModo === 'manual') {
+        <!-- ═══ MODO MANUAL ═══ -->
+        <div class="rounded-xl border border-outline-variant bg-white p-lg mb-lg">
+          <h3 class="font-headline-sm text-headline-sm text-on-background mb-xs flex items-center gap-sm">
+            <span class="material-symbols-outlined text-[20px] text-primary">hard_drive_2</span> Generar respaldo manual
+          </h3>
+          <p class="font-body-sm text-body-sm text-on-surface-variant mb-md">Seleccione un rango de fecha y hora (máx. 30 días), las tablas y el formato. Por ejemplo, 30/08/2026 12:00 → 30/08/2026 18:00. El sistema genera un archivo .zip filtrado.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-md mb-md">
+            <label class="flex flex-col gap-xs">
+              <span class="font-label-sm text-label-sm text-on-surface">Desde (fecha y hora)</span>
+              <input [(ngModel)]="backupDesde" type="datetime-local" step="60" class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface">
+              <span class="font-body-xs text-body-xs text-on-surface-variant">Incluye horas, ej. 30/08/2026 12:00</span>
+            </label>
+            <label class="flex flex-col gap-xs">
+              <span class="font-label-sm text-label-sm text-on-surface">Hasta (fecha y hora)</span>
+              <input [(ngModel)]="backupHasta" type="datetime-local" step="60" class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface">
+              <span class="font-body-xs text-body-xs text-on-surface-variant">Ej. 30/08/2026 18:00</span>
             </label>
           </div>
-          <div class="flex flex-wrap gap-sm">
-            @for (tabla of backupTablasDisponibles; track tabla) {
-              <label class="inline-flex items-center gap-xs px-sm py-xs rounded-full border cursor-pointer transition-colors"
-                [class.bg-primary]="backupTablasSeleccionadas[tabla]" [class.text-on-primary]="backupTablasSeleccionadas[tabla]"
-                [class.border-primary]="backupTablasSeleccionadas[tabla]" [class.bg-surface-container-low]="!backupTablasSeleccionadas[tabla]"
-                [class.border-outline-variant]="!backupTablasSeleccionadas[tabla]">
-                <input type="checkbox" class="sr-only" [checked]="backupTablasSeleccionadas[tabla]" (change)="toggleTabla(tabla)">
-                <span class="font-label-sm text-[13px]">{{ nombresTablas[tabla] ?? tabla }}</span>
+          <div class="mb-md">
+            <div class="flex items-center justify-between mb-sm">
+              <p class="font-label-sm text-label-sm text-on-surface">Tablas</p>
+              <label class="inline-flex items-center gap-xs cursor-pointer select-none">
+                <input type="checkbox" [checked]="todasTablasSeleccionadas" (change)="toggleTodasTablas()" class="accent-primary w-4 h-4">
+                <span class="font-label-sm text-label-sm text-primary">{{ todasTablasSeleccionadas ? 'Deseleccionar todo' : 'Seleccionar todo' }}</span>
               </label>
+            </div>
+            <div class="flex flex-wrap gap-sm">
+              @for (tabla of backupTablasDisponibles; track tabla) {
+                <label class="inline-flex items-center gap-xs px-sm py-xs rounded-full border cursor-pointer transition-colors"
+                  [class.bg-primary]="backupTablasSeleccionadas[tabla]" [class.text-on-primary]="backupTablasSeleccionadas[tabla]"
+                  [class.border-primary]="backupTablasSeleccionadas[tabla]" [class.bg-surface-container-low]="!backupTablasSeleccionadas[tabla]"
+                  [class.border-outline-variant]="!backupTablasSeleccionadas[tabla]">
+                  <input type="checkbox" class="sr-only" [checked]="backupTablasSeleccionadas[tabla]" (change)="toggleTabla(tabla)">
+                  <span class="font-label-sm text-[13px]">{{ nombresTablas[tabla] ?? tabla }}</span>
+                </label>
+              }
+            </div>
+            @if (tablasSeleccionadas.length === 0) {
+              <p class="font-body-xs text-body-xs text-error mt-xs">Seleccione al menos una tabla.</p>
             }
           </div>
-          @if (tablasSeleccionadas.length === 0) {
-            <p class="font-body-xs text-body-xs text-error mt-xs">Seleccione al menos una tabla.</p>
-          }
+          <div class="mb-lg">
+            <p class="font-label-sm text-label-sm text-on-surface mb-sm">Formato</p>
+            <div class="flex items-center gap-md">
+              <label class="inline-flex items-center gap-xs cursor-pointer">
+                <input type="radio" name="formato" value="sql" [(ngModel)]="backupFormato" class="accent-primary">
+                <span class="font-body-sm text-body-sm text-on-surface">SQL</span>
+              </label>
+              <label class="inline-flex items-center gap-xs cursor-pointer">
+                <input type="radio" name="formato" value="csv" [(ngModel)]="backupFormato" class="accent-primary">
+                <span class="font-body-sm text-body-sm text-on-surface">CSV</span>
+              </label>
+            </div>
+          </div>
+          <button type="button" (click)="generarBackup()" [disabled]="!puedeGenerarBackup || generandoBackup"
+            class="h-11 px-lg rounded-full bg-primary text-on-primary font-label-sm text-label-sm inline-flex items-center gap-sm hover:bg-primary/80 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+            @if (generandoBackup) {
+              <span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span> Generando...
+            } @else {
+              <span class="material-symbols-outlined text-[18px]">backup</span> Generar backup
+            }
+          </button>
+          <p class="font-body-xs text-body-xs text-on-surface-variant mt-sm">El rango no puede superar 30 días y “desde” debe ser menor que “hasta”.</p>
         </div>
-        <div class="mb-lg">
-          <p class="font-label-sm text-label-sm text-on-surface mb-sm">Formato</p>
-          <div class="flex items-center gap-md">
-            <label class="inline-flex items-center gap-xs cursor-pointer">
-              <input type="radio" name="formato" value="sql" [(ngModel)]="backupFormato" class="accent-primary">
-              <span class="font-body-sm text-body-sm text-on-surface">SQL</span>
+      } @else {
+        <!-- ═══ MODO AUTOMÁTICO ═══ -->
+        <div class="rounded-xl border border-outline-variant bg-white p-lg mb-lg">
+          <h3 class="font-headline-sm text-headline-sm text-on-background mb-xs flex items-center gap-sm">
+            <span class="material-symbols-outlined text-[20px] text-primary">schedule</span> Configurar respaldo automático
+          </h3>
+          <p class="font-body-sm text-body-sm text-on-surface-variant mb-md">Seleccione las tablas y el formato. Defina la frecuencia: cada X horas (1-23) o cada X días (1-30). La ejecución inicia a las 00:00. Solo puede activarse uno de los dos campos.</p>
+          <div class="mb-md">
+            <div class="flex items-center justify-between mb-sm">
+              <p class="font-label-sm text-label-sm text-on-surface">Tablas</p>
+              <label class="inline-flex items-center gap-xs cursor-pointer select-none">
+                <input type="checkbox" [checked]="todasTablasSeleccionadas" (change)="toggleTodasTablas()" class="accent-primary w-4 h-4">
+                <span class="font-label-sm text-label-sm text-primary">{{ todasTablasSeleccionadas ? 'Deseleccionar todo' : 'Seleccionar todo' }}</span>
+              </label>
+            </div>
+            <div class="flex flex-wrap gap-sm">
+              @for (tabla of backupTablasDisponibles; track tabla) {
+                <label class="inline-flex items-center gap-xs px-sm py-xs rounded-full border cursor-pointer transition-colors"
+                  [class.bg-primary]="backupTablasSeleccionadas[tabla]" [class.text-on-primary]="backupTablasSeleccionadas[tabla]"
+                  [class.border-primary]="backupTablasSeleccionadas[tabla]" [class.bg-surface-container-low]="!backupTablasSeleccionadas[tabla]"
+                  [class.border-outline-variant]="!backupTablasSeleccionadas[tabla]">
+                  <input type="checkbox" class="sr-only" [checked]="backupTablasSeleccionadas[tabla]" (change)="toggleTabla(tabla)">
+                  <span class="font-label-sm text-[13px]">{{ nombresTablas[tabla] ?? tabla }}</span>
+                </label>
+              }
+            </div>
+            @if (tablasSeleccionadas.length === 0) {
+              <p class="font-body-xs text-body-xs text-error mt-xs">Seleccione al menos una tabla.</p>
+            }
+          </div>
+          <div class="mb-md">
+            <p class="font-label-sm text-label-sm text-on-surface mb-sm">Formato</p>
+            <div class="flex items-center gap-md">
+              <label class="inline-flex items-center gap-xs cursor-pointer">
+                <input type="radio" name="formatoAuto" value="sql" [(ngModel)]="backupFormato" class="accent-primary">
+                <span class="font-body-sm text-body-sm text-on-surface">SQL</span>
+              </label>
+              <label class="inline-flex items-center gap-xs cursor-pointer">
+                <input type="radio" name="formatoAuto" value="csv" [(ngModel)]="backupFormato" class="accent-primary">
+                <span class="font-body-sm text-body-sm text-on-surface">CSV</span>
+              </label>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-md mb-md">
+            <label class="flex flex-col gap-xs">
+              <span class="font-label-sm text-label-sm text-on-surface">Cada <strong>X horas</strong> (1-23)</span>
+              <input [(ngModel)]="cadaHoras" type="number" min="1" max="23" placeholder="Ej. 6"
+                [disabled]="cadaDias !== null"
+                class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface">
+              <span class="font-body-xs text-body-xs text-on-surface-variant">Deshabilitado si se seleccionó cada X días</span>
             </label>
-            <label class="inline-flex items-center gap-xs cursor-pointer">
-              <input type="radio" name="formato" value="csv" [(ngModel)]="backupFormato" class="accent-primary">
-              <span class="font-body-sm text-body-sm text-on-surface">CSV</span>
+            <label class="flex flex-col gap-xs">
+              <span class="font-label-sm text-label-sm text-on-surface">Cada <strong>X días</strong> (1-30)</span>
+              <select [(ngModel)]="cadaDias"
+                [disabled]="cadaHoras !== null"
+                class="h-10 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface">
+                <option [ngValue]="null">Seleccionar días...</option>
+                @for (d of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]; track d) {
+                  <option [ngValue]="d">Cada {{ d }} día{{ d > 1 ? 's' : '' }}</option>
+                }
+              </select>
+              <span class="font-body-xs text-body-xs text-on-surface-variant">Deshabilitado si se seleccionó cada X horas</span>
             </label>
           </div>
-        </div>
-        <button type="button" (click)="generarBackup()" [disabled]="!puedeGenerarBackup || generandoBackup"
-          class="h-11 px-lg rounded-full bg-primary text-on-primary font-label-sm text-label-sm inline-flex items-center gap-sm hover:bg-primary/80 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-          @if (generandoBackup) {
-            <span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span> Generando...
-          } @else {
-            <span class="material-symbols-outlined text-[18px]">backup</span> Generar backup
+          @if (cadaHoras !== null && cadaDias !== null) {
+            <p class="font-body-xs text-body-xs text-error mb-md">Solo puede activarse uno de los dos campos (horas o días).</p>
           }
-        </button>
-        <p class="font-body-xs text-body-xs text-on-surface-variant mt-sm">El rango no puede superar 30 días y “desde” debe ser menor que “hasta”.</p>
-      </div>
+          <button type="button" (click)="generarBackupAutomatico()" [disabled]="!puedeProgramar || generandoBackup"
+            class="h-11 px-lg rounded-full bg-primary text-on-primary font-label-sm text-label-sm inline-flex items-center gap-sm hover:bg-primary/80 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+            @if (generandoBackup) {
+              <span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span> Generando...
+            } @else {
+              <span class="material-symbols-outlined text-[18px]">play_arrow</span> Generar y programar
+            }
+          </button>
+          <p class="font-body-xs text-body-xs text-on-surface-variant mt-sm">La ejecución programada inicia a las 00:00 y se conserva tras redeploy.</p>
+        </div>
+        <!-- Lista de programaciones activas -->
+        <div class="rounded-xl border border-outline-variant bg-white p-lg mb-lg">
+          <h3 class="font-headline-sm text-headline-sm text-on-background mb-xs flex items-center gap-sm">
+            <span class="material-symbols-outlined text-[20px] text-secondary">auto_awesome</span> Programaciones activas
+          </h3>
+          @if (cargandoProgramaciones) {
+            <div class="text-center py-xl font-body-sm text-body-sm text-on-surface-variant">Cargando programaciones...</div>
+          } @else if (programaciones.length === 0) {
+            <div class="text-center py-xl font-body-sm text-body-sm text-on-surface-variant">Sin programaciones activas.</div>
+          } @else {
+            <div class="overflow-x-auto">
+              <table class="w-full text-left">
+                <thead class="bg-surface-container-low/60">
+                  <tr class="font-label-sm text-[12px] text-on-surface-variant uppercase tracking-wider">
+                    <th class="px-md py-sm">Frecuencia</th>
+                    <th class="px-md py-sm">Formato</th>
+                    <th class="px-md py-sm">Última ejecución</th>
+                    <th class="px-md py-sm">Estado</th>
+                    <th class="px-md py-sm text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-variant">
+                  @for (p of programaciones; track p.id) {
+                    <tr class="font-body-sm text-body-sm text-on-surface hover:bg-surface-container-low/40">
+                      <td class="px-md py-sm whitespace-nowrap">
+                        @if (p.cadaHoras !== null) {
+                          Cada {{ p.cadaHoras }}h
+                        } @else if (p.cadaDias !== null) {
+                          Cada {{ p.cadaDias }}d
+                        } @else {
+                          —
+                        }
+                      </td>
+                      <td class="px-md py-sm"><span class="inline-flex px-2 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-[11px] uppercase">{{ p.formato }}</span></td>
+                      <td class="px-md py-sm whitespace-nowrap text-on-surface-variant">{{ p.ultimaEjecucion ?? 'Nunca' }}</td>
+                      <td class="px-md py-sm"><span class="font-label-sm text-[12px]" [class.text-green-600]="p.activo" [class.text-error]="!p.activo">{{ p.activo ? 'Activo' : 'Inactivo' }}</span></td>
+                      <td class="px-md py-sm">
+                        <div class="flex items-center justify-end gap-xs">
+                          <button type="button" (click)="ejecutarAhora(p.id)" aria-label="Ejecutar ahora" title="Ejecutar ahora"
+                            class="w-8 h-8 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center hover:bg-primary/10 text-primary cursor-pointer">
+                            <span class="material-symbols-outlined text-[18px]">play_arrow</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      }
+      <!-- ═══ HISTORIAL CON FILTROS (ambos modos) ═══ -->
       <div class="rounded-xl border border-outline-variant bg-white overflow-hidden">
         <div class="flex flex-wrap items-center justify-between gap-sm p-md border-b border-outline-variant">
           <h3 class="font-headline-sm text-headline-sm text-on-background flex items-center gap-sm">
             <span class="material-symbols-outlined text-[20px] text-secondary">history</span> Historial
           </h3>
-          <div class="flex items-center gap-sm">
-            <label for="filtro-formato" class="sr-only">Filtrar por formato</label>
-            <select [(ngModel)]="filtroBackupFormato" id="filtro-formato" class="h-9 pl-sm pr-8 rounded border border-outline-variant bg-white font-body-sm text-body-sm">
+          <div class="flex items-center gap-sm flex-wrap">
+            <label for="filtro-fecha" class="sr-only">Filtrar por fecha</label>
+            <input id="filtro-fecha" [(ngModel)]="filtroBackupFecha" type="date"
+              class="h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface">
+            <label for="filtro-dia" class="sr-only">Filtrar por día</label>
+            <select id="filtro-dia" [(ngModel)]="filtroBackupDia" class="h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface">
+              <option [ngValue]="''">Todos los días</option>
+              @for (d of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]; track d) {
+                <option [ngValue]="d">{{ d }}</option>
+              }
+            </select>
+            <label for="filtro-hora" class="sr-only">Filtrar por hora</label>
+            <select id="filtro-hora" [(ngModel)]="filtroBackupHora" class="h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface">
+              <option [ngValue]="''">Todas las horas</option>
+              @for (h of [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]; track h) {
+                <option [ngValue]="h">{{ h }}h</option>
+              }
+            </select>
+            <select [(ngModel)]="filtroBackupFormato" class="h-9 px-sm rounded border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface">
               <option value="">Todos los formatos</option>
               <option value="sql">SQL</option>
               <option value="csv">CSV</option>
             </select>
+            @if (filtrosActivos) {
+              <button type="button" (click)="limpiarFiltros()" class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant cursor-pointer" aria-label="Limpiar filtros">
+                <span class="material-symbols-outlined text-[18px]">clear</span>
+              </button>
+            }
             <button type="button" (click)="cargarBackups()" class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant cursor-pointer" aria-label="Recargar">
               <span class="material-symbols-outlined text-[18px]">refresh</span>
             </button>
