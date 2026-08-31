@@ -661,7 +661,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
   }
   get puedeGenerarBackup(): boolean {
     if (!this.backupDesde || !this.backupHasta) return false;
-    if (new Date(this.backupDesde) >= new Date(this.backupHasta)) return false;
+    if (new Date(this.backupDesde) > new Date(this.backupHasta)) return false;
     const diffMs = new Date(this.backupHasta).getTime() - new Date(this.backupDesde).getTime();
     if (diffMs > 30 * 24 * 60 * 60 * 1000) return false;
     if (this.tablasSeleccionadas.length === 0) return false;
