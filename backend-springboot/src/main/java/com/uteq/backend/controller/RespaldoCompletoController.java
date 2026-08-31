@@ -81,9 +81,19 @@ public class RespaldoCompletoController {
                 reqBody.put("usuarioId", null);
             }
             
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+            
+            String internalApiKey = System.getenv("INTERNAL_API_KEY");
+            if (internalApiKey != null && !internalApiKey.isBlank()) {
+                headers.set("x-internal-api-key", internalApiKey);
+            }
+            
+            org.springframework.http.HttpEntity<java.util.Map<String, Object>> requestEntity = new org.springframework.http.HttpEntity<>(reqBody, headers);
+            
             org.springframework.http.ResponseEntity<String> nodeResponse = restTemplate.postForEntity(
                 backupServiceUrl + "/api/v1/trigger", 
-                reqBody, 
+                requestEntity, 
                 String.class
             );
             

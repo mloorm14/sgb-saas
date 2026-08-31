@@ -294,6 +294,10 @@ services:
         sync: false
       - key: BACKUP_SERVICE_URL
         value: "http://backup-service:3000"
+      - key: INTERNAL_API_KEY
+        sync: false
+
+  # ---- Frontend Angular ----
   - name: biblora-sgb
     type: web
     runtime: docker
@@ -359,4 +363,6 @@ services:
       - key: R2_SECRET_ACCESS_KEY
         sync: false
       - key: R2_BUCKET_NAME
+        sync: false
+      - key: INTERNAL_API_KEY
         sync: false

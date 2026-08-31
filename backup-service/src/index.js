@@ -9,6 +9,18 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// Middleware de seguridad para validar la API Key interna
+app.use('/api/v1/trigger', (req, res, next) => {
+    const expectedKey = process.env.INTERNAL_API_KEY;
+    if (expectedKey && expectedKey.trim() !== '') {
+        const providedKey = req.headers['x-internal-api-key'];
+        if (providedKey !== expectedKey) {
+            return res.status(401).json({ error: 'No autorizado: API Key interna inválida o faltante' });
+        }
+    }
+    next();
+});
+
 // Endpoint para disparar un backup manual (llamado por el proxy de Spring Boot)
 app.post('/api/v1/trigger', async (req, res) => {
     // Esto corre asíncrono para no bloquear la respuesta HTTP
