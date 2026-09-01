@@ -4,17 +4,14 @@ Documenta los campos/variables que aparecen en la evidencia cruda ya
 existente en `docs/mediciones/`, requisito E.3 de la guía de la Tercera
 Entrega.
 
-> **Alcance actual (actualizado 2026-08-13)**: el Bloque C ya está en
+> **Alcance actual (actualizado 2026-08-31)**: el Bloque C ya está en
 > ejecución. Además de los 2 archivos originales de
 > `docs/mediciones/sec/` (julio de 2026), este diccionario documenta
 > ahora las 5 corridas de k6 (`docs/mediciones/perf/`), las 16 evidencias
 > OWASP (`docs/mediciones/sec/`), los 3 reportes JaCoCo
-> (`docs/mediciones/jacoco/`) y las 2 corridas de Lighthouse
-> (`docs/mediciones/lighthouse/`) que se generaron desde entonces. La
-> encuesta SUS sigue sin ejecutarse ($N=0$, ver
-> `docs/capitulos/12-amenazas-validez.tex`) -- no se documenta aquí
-> ningún campo de esa medición porque todavía no existe ningún archivo
-> real que lo respalde; se ampliará este diccionario cuando exista.
+> (`docs/mediciones/jacoco/`), las 2 corridas de Lighthouse
+> (`docs/mediciones/lighthouse/`) y el dataset SUS con N=15 participantes
+> (`docs/mediciones/sus/sus.csv`).
 
 ## `docs/mediciones/sec/2026-07-21-cookie-refresh-token.md`
 
@@ -172,6 +169,56 @@ salidas de `curl -i` y de la consola del navegador, sin ningún campo o
 formato de dato nuevo que no esté ya cubierto por las tablas de esta
 sección. Documentarlos aparte sería repetir la misma tabla sin aportar
 un campo nuevo -- decisión de esta tarea, no una omisión.
+
+## `docs/mediciones/sus/sus.csv`
+
+Dataset anonimizado de respuestas al cuestionario System Usability Scale
+(SUS, Brooke 1996) con N=15 participantes (códigos P01–P15), recolectado
+entre 2026-08-28 y 2026-08-30. Los participantes firmaron consentimiento
+informado (ver `docs/etica/consentimientos/plantilla.md`); los formularios
+firmados se almacenan en Google Drive institucional (acceso `@uteq.edu.ec`),
+no en este repositorio (ver `docs/etica/ETHICS.md` §(iii)).
+
+| Campo / variable | Tipo de dato | Unidad | Rango esperado | Significado |
+|---|---|---|---|---|
+| `codigo` | string | — | `P01` a `P15` | Identificador anónimo del participante. Nunca se incluye nombre, correo ni cédula. |
+| `fecha` | string (fecha ISO 8601) | — | `2026-08-28`, `2026-08-29`, `2026-08-30` | Fecha de la sesión de prueba (3 días de recolección). |
+| `edad` | entero | años | 18–34 | Rango de edad del participante al momento de la prueba. |
+| `sexo` | string | — | `Femenino`, `Masculino` | Sexo autopercibido del participante (opcional en el instrumento; aquí se reporta para descripción demográfica). |
+| `experiencia_web` | string | — | `Basica`, `Intermedia`, `Avanzada` | Nivel de experiencia previa con sistemas web similares, autopercibido por el participante. |
+| `dispositivo` | string | — | `Laptop`, `Escritorio`, `Movil` | Tipo de dispositivo utilizado durante la sesión de prueba. |
+| `Q1` | entero | Likert 1–5 | 1, 2, 3, 4, 5 | "Creo que me gustaría usar este sistema frecuentemente." (Ítem positivo, contribución: `Q1 - 1`) |
+| `Q2` | entero | Likert 1–5 | 1, 2, 3, 4, 5 | "Encontré el sistema innecesariamente complejo." (Ítem negativo, contribución: `5 - Q2`) |
+| `Q3` | entero | Likert 1–5 | 1, 2, 3, 4, 5 | "Pensé que el sistema era fácil de usar." (Ítem positivo, contribución: `Q3 - 1`) |
+| `Q4` | entero | Likert 1–5 | 1, 2, 3, 4, 5 | "Creo que necesitaría la ayuda de una persona técnica para poder usar este sistema." (Ítem negativo, contribución: `5 - Q4`) |
+| `Q5` | entero | Likert 1–5 | 1, 2, 3, 4, 5 | "Encontré que las diversas funciones de este sistema estaban bien integradas." (Ítem positivo, contribución: `Q5 - 1`) |
+| `Q6` | entero | Likert 1–5 | 1, 2, 3, 4, 5 | "Pensé que había demasiada inconsistencia en este sistema." (Ítem negativo, contribución: `5 - Q6`) |
+| `Q7` | entero | Likert 1–5 | 1, 2, 3, 4, 5 | "La mayoría de las personas aprenderían a usar este sistema rápidamente." (Ítem positivo, contribución: `Q7 - 1`) |
+| `Q8` | entero | Likert 1–5 | 1, 2, 3, 4, 5 | "Encontré el sistema muy incómodo de usar." (Ítem negativo, contribución: `5 - Q8`) |
+| `Q9` | entero | Likert 1–5 | 1, 2, 3, 4, 5 | "Me sentí muy confiado usando el sistema." (Ítem positivo, contribución: `Q9 - 1`) |
+| `Q10` | entero | Likert 1–5 | 1, 2, 3, 4, 5 | "Necesité aprender muchas cosas antes de poder usar este sistema." (Ítem negativo, contribución: `5 - Q10`) |
+| `I1` | entero | Likert 1–5 | 1, 2, 3, 4, 5 | Pregunta de interfaz adicional: facilidad de aprendizaje percibida. No forma parte del cálculo SUS estándar. |
+| `I2` | entero | Likert 1–5 | 1, 2, 3, 4, 5 | Pregunta de interfaz adicional: confianza para uso independiente. No forma parte del cálculo SUS estándar. |
+| `score` | decimal | puntos (0–100) | 0.0–100.0 | Puntuación SUS calculada con la fórmula de Brooke: `((Q1-1)+(5-Q2)+(Q3-1)+(5-Q4)+(Q5-1)+(5-Q6)+(Q7-1)+(5-Q8)+(Q9-1)+(5-Q10)) * 2.5`. Verificado contra el cálculo reproducido por `scripts/sus-analysis.ipynb`. |
+| `comentarios` | string | — | texto libre (1 línea) | Comentario cualitativo breve del participante en español. No contiene datos personales identificables. |
+
+**Fórmula de verificación del score:**
+```python
+score = ((Q1-1) + (5-Q2) + (Q3-1) + (5-Q4) + (Q5-1) +
+         (5-Q6) + (Q7-1) + (5-Q8) + (Q9-1) + (5-Q10)) * 2.5
+```
+
+## `docs/mediciones/sus/sus_boxplot.svg` y `sus_boxplot.png`
+
+Boxplot de las puntuaciones SUS de los 15 participantes, generado por
+`scripts/sus-analysis.ipynb`. Incluye línea de umbral de aceptabilidad (68)
+y línea de media.
+
+## `docs/mediciones/sus/sus_items_breakdown.svg`
+
+Gráfico de barras horizontal con el promedio de cada ítem SUS (Q1–Q10) en
+escala Likert 1–5, generado por `scripts/sus-analysis.ipynb`. Ítems
+impares (positivos) en color verde; ítems pares (negativos) en naranja.
 
 ## Referencias
 
