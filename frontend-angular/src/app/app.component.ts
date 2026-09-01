@@ -49,7 +49,7 @@ export class AppComponent {
       this.enRutaBibliotecario = url.startsWith('/dashboard-bibliotecario');
       this.enRutaAdmin = url.startsWith('/dashboard-admin');
       this.enRutaLector = url.startsWith('/dashboard-lector');
-      this.enRutaPublica = url.startsWith('/login') || url.startsWith('/registro') || url.startsWith('/no-autorizado');
+      this.enRutaPublica = url.startsWith('/no-autorizado');
       this.enRutaCatalogoPublico = url === '/' || url.startsWith('/portal') || url.startsWith('/catalogo');
       this.cargandoRuta = false;
       this.rutaAnnouncement = this.obtenerNombreRuta(url);
