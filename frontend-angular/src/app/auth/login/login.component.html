@@ -22,6 +22,12 @@
 
   <!-- Lado derecho: formulario -->
   <div class="w-full md:w-1/2 lg:w-2/5 flex flex-col justify-center px-6 py-12 lg:px-16 xl:px-24 bg-surface relative min-h-screen overflow-y-auto max-h-screen">
+    <button type="button" (click)="themeService.toggle()"
+      [attr.aria-label]="themeService.oscuro() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
+      title="Cambiar tema"
+      class="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container-low transition-colors cursor-pointer text-on-surface-variant">
+      <span class="material-symbols-outlined text-[20px]">{{ themeService.oscuro() ? 'light_mode' : 'dark_mode' }}</span>
+    </button>
     <div class="w-full max-w-md mx-auto">
 
       <a routerLink="/" class="md:hidden flex items-center gap-3 text-primary mb-8">

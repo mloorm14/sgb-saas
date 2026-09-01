@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { ThemeService } from '../../core/services/theme.service';
 
 function passwordsIgualesValidator(control: AbstractControl): ValidationErrors | null {
   const pass = control.get('password')?.value;
@@ -33,7 +34,8 @@ export class RegistroComponent {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    public themeService: ThemeService
   ) {
     this.formRegistro = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(2)]],

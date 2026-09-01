@@ -26,6 +26,12 @@
     <!-- Columna derecha: tarjeta -->
     <div class="w-full md:w-2/3 rounded-xl shadow-lg p-xl relative overflow-hidden"
          style="background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3);">
+      <button type="button" (click)="themeService.toggle()"
+        [attr.aria-label]="themeService.oscuro() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
+        title="Cambiar tema"
+        class="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container-low transition-colors cursor-pointer text-on-surface-variant">
+        <span class="material-symbols-outlined text-[20px]">{{ themeService.oscuro() ? 'light_mode' : 'dark_mode' }}</span>
+      </button>
       <div class="absolute top-0 left-0 w-full h-2 bg-primary"></div>
 
       <a routerLink="/" class="md:hidden flex items-center gap-sm mb-lg">
