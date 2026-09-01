@@ -8,11 +8,12 @@ import { AuthService } from '../core/services/auth.service';
 import { MultaDetalle, PagoMultaResponse, MultaAccionResponse } from '../core/models/multa.model';
 import { UsuarioPrestamos, UsuarioSugerencia } from '../core/models/prestamos-gestion.model';
 import { BuscadorUsuarioComponent } from '../shared/buscador-usuario/buscador-usuario.component';
+import { FocusTrapDirective } from '../shared/focus-trap.directive';
 
 @Component({
   standalone: true,
   selector: 'app-multas',
-  imports: [CommonModule, FormsModule, BuscadorUsuarioComponent],
+  imports: [CommonModule, FormsModule, BuscadorUsuarioComponent, FocusTrapDirective],
   templateUrl: './multas.component.html'
 })
 export class MultasComponent implements OnInit {
@@ -152,12 +153,12 @@ export class MultasComponent implements OnInit {
   // ── Badges ────────────────────────────────────────────
   claseBadge(multa: MultaDetalle): string {
     if (multa.estadoMultaId === 2) {
-      return 'bg-green-100 text-green-700';
+      return 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300';
     }
     if (multa.montoPagado > 0) {
-      return 'bg-amber-100 text-amber-700';
+      return 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300';
     }
-    return 'bg-red-100 text-red-700';
+    return 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300';
   }
 
   etiquetaEstado(multa: MultaDetalle): string {
@@ -275,9 +276,9 @@ export class MultasComponent implements OnInit {
 
   claseEstado(estado: string): string {
     switch (estado) {
-      case 'ACTIVA': return 'bg-green-100 text-green-700';
-      case 'SUSPENDIDA': return 'bg-amber-100 text-amber-700';
-      case 'BLOQUEADA': return 'bg-red-100 text-red-700';
+      case 'ACTIVA': return 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300';
+      case 'SUSPENDIDA': return 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300';
+      case 'BLOQUEADA': return 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300';
       default: return 'bg-surface-container-low text-on-surface-variant';
     }
   }
