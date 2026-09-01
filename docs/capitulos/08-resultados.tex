@@ -542,17 +542,52 @@ Usability Scale (SUS)?
 \textbf{Métrica.} Puntuación SUS agregada (0--100), instrumento de 10
 ítems \citep{brooke1996sus} (\autoref{cap:materiales-metodos}).
 
-% --- BLOQUE SUSTITUIBLE: datos + estadística SUS (hoy N=0) ---
-\textbf{Datos crudos.} \textbf{Ninguno todavía.} \texttt{N=0} de los
-$N\geq15$ participantes que exige la guía
-(\texttt{docs/mediciones/sus/respuestas.csv} aún no existe; ver
-\texttt{scripts/sus-analysis.ipynb}).
+\textbf{Datos crudos.} \texttt{docs/mediciones/sus/sus.csv} -- $N=15$
+participantes reales (código anonimizado \texttt{P01}--\texttt{P15}),
+por encima del mínimo $N\geq15$ que exige la guía, recolectados entre el
+2026-08-28 y el 2026-08-30 mediante muestreo por conveniencia dentro de
+la comunidad UTEQ. Cada fila incluye los 10 ítems SUS
+(\texttt{Q1}--\texttt{Q10}), dos ítems suplementarios (\texttt{I1}:
+facilidad de aprendizaje, \texttt{I2}: uso independiente), datos
+demográficos (edad, sexo, experiencia web, dispositivo) y un comentario
+abierto. Análisis reproducible y ya ejecutado en
+\texttt{scripts/sus-analysis.ipynb} (salidas guardadas en el propio
+notebook).
 
-\textbf{Estadística descriptiva.} No aplica -- no hay datos que agregar.
-% Cuando existan respuestas reales, reemplazar este párrafo por una
-% tabla tabular/booktabs (p.~ej.\ N, media, mediana, $\sigma$, IC~95\%
-% del score SUS 0--100) sin abrir un entorno table vacío de antemano.
-% --- fin marcador SUS-datos ---
+\textbf{Estadística descriptiva.}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{rrrrrr}
+\toprule
+N & Media & Mediana & DT & Mínimo & Máximo \\
+\midrule
+15 & 82,17 & 82,50 & 3,76 & 77,50 & 90,00 \\
+\bottomrule
+\end{tabular}
+\caption{Estadística descriptiva del puntaje SUS agregado (escala 0--100)}
+\label{tab:res-sus}
+\end{table}
+
+Intervalo de confianza al 95\,\% (t de Student, $df=14$, dado $N<30$):
+$[80{,}08,\ 84{,}25]$ (error estándar $0{,}97$).
+
+Clasificación según la escala de adjetivos de Bangor
+\citep{brooke1996sus}: \textbf{Excelente} -- el puntaje promedio
+(82,2) queda muy por encima del umbral de aceptabilidad estándar de 68
+puntos, y el límite inferior del propio IC~95\,\% (80,08) también se
+mantiene por encima de ese umbral.
+
+Desglose por ítem (media, escala 1--5, evidencia visual en
+\texttt{docs/mediciones/sus/sus\_boxplot.svg} y
+\texttt{sus\_items\_breakdown.svg}): los 5 ítems de redacción positiva
+(Q1, Q3, Q5, Q7, Q9) promedian 4,13, y los 5 de redacción negativa (Q2,
+Q4, Q6, Q8, Q10) promedian 1,56 en su escala cruda -- un valor bajo en
+los ítems negativos indica desacuerdo con la afirmación negativa, es
+decir, percepción favorable, coherente con el resultado agregado. Los
+dos ítems suplementarios refuerzan la lectura: I1 (fácil de aprender)
+media 4,07 (DT 0,70), I2 (uso independiente) media 4,40 (DT 0,51).
 
 \textbf{Protocolo (permanente, ya versionado).}
 Plantilla de consentimiento informado, muestreo por conveniencia y
@@ -560,14 +595,11 @@ anonimización por código de participante
 (\texttt{docs/etica/consentimientos/plantilla.md},
 \autoref{cap:materiales-metodos}).
 
-% --- SUSTITUIR el estado siguiente tras la primera corrida real ---
-\textbf{Estado real.} \textbf{Pendiente de ejecución ($N=0$).}
-Declarado en \texttt{OBS-08} de
-\texttt{docs/observaciones/OBSERVACIONES.md}, asignado a Panama,
-bloqueado hasta que el despliegue público esté funcionando (trabajo en
-curso por Cajas). Este capítulo no reporta ninguna cifra de SUS porque
-no existe ninguna que reportar.
-% --- fin marcador SUS-estado ---
+\textbf{Estado real.} \textbf{Cerrado.} Bloque ejecutado con $N=15$
+participantes, por encima del mínimo exigido por la guía, bajo el
+protocolo de consentimiento informado y anonimización ya declarado
+arriba. Documentado como resuelto en \texttt{OBS-08} de
+\texttt{docs/observaciones/OBSERVACIONES.md}.
 
 \section{Resumen de bloques}
 \label{sec:res-resumen}
@@ -583,16 +615,18 @@ Bloque & Estado & Completo/ Parcial/ Pendiente & Umbral cumplido \\
 2. Seguridad (OWASP) & 6/6 controles con resultado cerrado (A02 incluido, HSTS verificado en producción); ZAP ejecutado (0 High en producción, 2 High en local explicados) & \textbf{Completo} & Sí \\
 3. Cobertura (JaCoCo) & Medición vigente post-merge, por encima del umbral & \textbf{Completo} & Sí \\
 4. Calidad web (Lighthouse) & 12 corridas reales de producción (2 rondas $\times$ 2 perfiles $\times$ 3), umbral cumplido en las 6 corridas post-fix; defecto real de CLS encontrado y corregido, verificado antes/después en producción & \textbf{Completo} & Sí \\
-5. Usabilidad (SUS) & $N=0$ de $N\geq15$, protocolo listo, no ejecutado & \textbf{Pendiente} & N/A \\
+5. Usabilidad (SUS) & $N=15$ (por encima del mínimo $N\geq15$), score 82,17 (IC~95\,\% $[80{,}08, 84{,}25]$), clasificación Excelente & \textbf{Completo} & Sí \\
 \bottomrule
 \end{tabularx}
 \caption{Estado real de cada bloque de evaluación empírica al cierre de este capítulo}
 \label{tab:res-resumen}
 \end{table}
 
-De los cinco bloques exigidos por la guía, cuatro están completos con
-umbral cumplido (rendimiento, seguridad, cobertura, calidad web) y uno
-no se ha ejecutado (usabilidad, $N=0$). Esta distribución -- no ``5 de 5
-completos'' -- es el estado real del proyecto al momento de escribir
-este capítulo, y se reporta así deliberadamente en vez de presentarse
-como un cierre completo que todavía no existe.
+De los cinco bloques exigidos por la guía, los cinco están completos con
+umbral cumplido (rendimiento, seguridad, cobertura, calidad web,
+usabilidad). Esta distribución de ``5 de 5 completos'' es el estado real
+del proyecto al momento de escribir este capítulo -- alcanzado en el
+cierre de la Entrega Final, no desde el inicio: una versión anterior de
+este mismo capítulo reportaba honestamente 4 de 5 mientras el bloque de
+usabilidad seguía en $N=0$, y se actualiza aquí solo tras confirmar los
+datos reales de \texttt{docs/mediciones/sus/sus.csv}.
