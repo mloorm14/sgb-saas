@@ -764,6 +764,7 @@ export class LibrosComponent implements OnInit, OnDestroy {
         if (dto.titulo) patch['titulo'] = dto.titulo;
         if (dto.resumen) patch['resumen'] = dto.resumen;
         if (dto.anioPublicacion != null) patch['anioPublicacion'] = dto.anioPublicacion;
+        if (dto.numeroPaginas != null) patch['numeroPaginas'] = dto.numeroPaginas;
         if (Object.keys(patch).length) this.form.patchValue(patch);
         if (dto.editorial) {
           const existente = this.editoriales.find(e => e.nombre.toLowerCase() === dto.editorial!.toLowerCase());
@@ -778,10 +779,40 @@ export class LibrosComponent implements OnInit, OnDestroy {
             setTimeout(() => this.editorialInputRef?.nativeElement?.focus(), 0);
           }
         }
-        if (!dto.titulo && !dto.resumen && dto.anioPublicacion == null && !dto.editorial) {
+        
+        if (dto.autor) {
+          const existente = this.autores.find(a => a.nombre.toLowerCase() === dto.autor!.toLowerCase());
+          if (existente) {
+            const ids = this.form.get('autorIds')?.value as number[];
+            if (!ids.includes(existente.id)) {
+              this.form.patchValue({ autorIds: [...ids, existente.id] });
+            }
+          } else {
+            this.textoAutor = dto.autor!;
+          }
+        }
+
+        if (!dto.titulo && !dto.resumen && dto.anioPublicacion == null && !dto.editorial && !dto.autor) {
           this.lookupError = 'No se encontraron datos para ese ISBN, completa manualmente';
         }
-        this.lookupCargando = false;
+
+        if (dto.portadaDisponible) {
+          this.libroService.portadaPorIsbn(isbn).subscribe({
+            next: (blob) => {
+              if (this.portadaPreviewUrl) URL.revokeObjectURL(this.portadaPreviewUrl);
+              this.portadaPreviewBlob = blob;
+              this.portadaPreviewTipo = blob.type;
+              this.portadaPreviewUrl = URL.createObjectURL(blob);
+              this.lookupCargando = false;
+            },
+            error: () => {
+              console.warn('No se pudo descargar la portada automáticamente');
+              this.lookupCargando = false;
+            }
+          });
+        } else {
+          this.lookupCargando = false;
+        }
       },
       error: (err) => {
         const detail = err?.error?.detail ?? err?.error?.title ?? '';
