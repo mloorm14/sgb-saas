@@ -1,4 +1,31 @@
 /** @type {import('tailwindcss').Config} */
+
+// Modo oscuro (Bloque UI/UX): los tokens de color de M3 de abajo NO son hex
+// fijos -- son funciones que leen variables CSS (--color-xxx: "R G B", sin
+// comas) definidas en src/styles.scss bajo :root (valores claros) y .dark
+// (valores oscuros, activados por la clase 'dark' en <html> que controla
+// ThemeService). Esto da cobertura de modo oscuro automática a CUALQUIER
+// componente que ya use estos tokens (bg-surface, text-on-surface, etc.)
+// sin tener que agregar variantes dark: una por una en cada plantilla --
+// solo los ~12 tokens "-fixed"/"-fixed-dim"/"on-*-fixed(-variant)" de abajo
+// se dejan como hex fijo a proposito: en M3 esos roles son "fixed", es
+// decir, deliberadamente IGUALES en ambos temas (ver comentario junto a
+// ellos). Paleta oscura derivada de la clara con HSL (hue conservado,
+// lightness invertida) y verificada con calculo de contraste WCAG real
+// (ver commit de este cambio para el script de verificacion) -- no es la
+// tonal palette exacta que generaria Material Theme Builder desde la
+// semilla original (esa herramienta no estaba disponible en esta sesion),
+// pero todas las combinaciones texto/fondo usadas en la app cumplen AA
+// (>=4.5:1) o mejor.
+function withOpacity(variableName) {
+  return ({ opacityValue }) => {
+    if (opacityValue !== undefined) {
+      return `rgba(var(${variableName}), ${opacityValue})`;
+    }
+    return `rgb(var(${variableName}))`;
+  };
+}
+
 module.exports = {
   content: [
     "./src/**/*.{html,ts}",
@@ -10,58 +37,62 @@ module.exports = {
         tablet: '840px',
       },
       colors: {
-        "secondary-container": "#76f4e0",
-        "surface": "#f8f9ff",
-        "surface-container-highest": "#d5e3fc",
-        "on-error": "#ffffff",
-        "error-container": "#ffdad6",
-        "surface-container": "#e6eeff",
+        "secondary-container": withOpacity("--color-secondary-container"),
+        "surface": withOpacity("--color-surface"),
+        "surface-container-highest": withOpacity("--color-surface-container-highest"),
+        "on-error": withOpacity("--color-on-error"),
+        "error-container": withOpacity("--color-error-container"),
+        "surface-container": withOpacity("--color-surface-container"),
+        // "-fixed"/"-fixed-variant" (aquí y las 9 líneas similares de abajo):
+        // roles M3 deliberadamente IGUALES en tema claro y oscuro (p.ej. el
+        // resaltado del enlace de navegación activo) -- se dejan como hex
+        // fijo a propósito, no leen variable CSS.
         "on-secondary-fixed": "#00201c",
-        "on-secondary-container": "#006f63",
-        "surface-bright": "#f8f9ff",
-        "tertiary": "#503a00",
-        "surface-variant": "#d5e3fc",
-        "outline-variant": "#c4c6d5",
-        "inverse-primary": "#b4c5ff",
-        "primary-container": "#1e4db7",
+        "on-secondary-container": withOpacity("--color-on-secondary-container"),
+        "surface-bright": withOpacity("--color-surface-bright"),
+        "tertiary": withOpacity("--color-tertiary"),
+        "surface-variant": withOpacity("--color-surface-variant"),
+        "outline-variant": withOpacity("--color-outline-variant"),
+        "inverse-primary": withOpacity("--color-inverse-primary"),
+        "primary-container": withOpacity("--color-primary-container"),
         "on-tertiary-fixed-variant": "#5b4300",
         "on-primary-fixed-variant": "#003ea8",
-        "inverse-on-surface": "#eaf1ff",
-        "surface-dim": "#ccdbf3",
-        "error": "#ba1a1a",
+        "inverse-on-surface": withOpacity("--color-inverse-on-surface"),
+        "surface-dim": withOpacity("--color-surface-dim"),
+        "error": withOpacity("--color-error"),
         "on-tertiary-fixed": "#261a00",
         "primary-fixed-dim": "#b4c5ff",
-        "on-tertiary": "#ffffff",
-        "on-surface-variant": "#434653",
+        "on-tertiary": withOpacity("--color-on-tertiary"),
+        "on-surface-variant": withOpacity("--color-on-surface-variant"),
         "secondary-fixed": "#79f7e3",
-        "background": "#f8f9ff",
-        "on-background": "#0d1c2e",
+        "background": withOpacity("--color-background"),
+        "on-background": withOpacity("--color-on-background"),
         "tertiary-fixed": "#ffdf9e",
-        "on-surface": "#0d1c2e",
+        "on-surface": withOpacity("--color-on-surface"),
         "primary-fixed": "#dbe1ff",
-        "surface-container-lowest": "#ffffff",
-        "on-tertiary-container": "#fec004",
-        "surface-container-high": "#dce9ff",
-        "surface-container-low": "#eff4ff",
-        "tertiary-container": "#6c5000",
-        "surface-tint": "#2c57c1",
-        "primary": "#003694",
-        "on-secondary": "#ffffff",
+        "surface-container-lowest": withOpacity("--color-surface-container-lowest"),
+        "on-tertiary-container": withOpacity("--color-on-tertiary-container"),
+        "surface-container-high": withOpacity("--color-surface-container-high"),
+        "surface-container-low": withOpacity("--color-surface-container-low"),
+        "tertiary-container": withOpacity("--color-tertiary-container"),
+        "surface-tint": withOpacity("--color-surface-tint"),
+        "primary": withOpacity("--color-primary"),
+        "on-secondary": withOpacity("--color-on-secondary"),
         "on-primary-fixed": "#00174b",
-        "outline": "#747684",
+        "outline": withOpacity("--color-outline"),
         "on-secondary-fixed-variant": "#005047",
-        "secondary": "#006b5f",
+        "secondary": withOpacity("--color-secondary"),
         "tertiary-fixed-dim": "#fabd00",
         "secondary-fixed-dim": "#59dbc7",
-        "on-primary-container": "#b8c8ff",
-        "on-error-container": "#93000a",
-        "on-primary": "#ffffff",
-        "inverse-surface": "#233144",
+        "on-primary-container": withOpacity("--color-on-primary-container"),
+        "on-error-container": withOpacity("--color-on-error-container"),
+        "on-primary": withOpacity("--color-on-primary"),
+        "inverse-surface": withOpacity("--color-inverse-surface"),
         // Tokens funcionales del mockup de "Mis préstamos" (semáforo de
         // días restantes: verde >3, amarillo 1-3, rojo vencido). Mismo
         // valor que en la paleta de los mockups de Rama B.
-        "success": "#1d9e75",
-        "warning": "#fec004"
+        "success": withOpacity("--color-success"),
+        "warning": withOpacity("--color-warning")
       },
       borderRadius: {
         DEFAULT: "0.125rem",
