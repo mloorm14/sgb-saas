@@ -9,5 +9,6 @@ public record LibroIsbnLookupDTO(
         String resumen,
         Integer anioPublicacion,
         Boolean portadaDisponible,
-        String editorial
+        String editorial,
+        Integer numeroPaginas
 ) {}
