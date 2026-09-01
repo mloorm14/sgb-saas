@@ -115,11 +115,20 @@ informado antes de iniciar la sesión de onboarding.
 
 **Protección de datos personales (PII):** Por cumplimiento estricto de
 normativas de protección de datos personales, los 15 consentimientos
-firmados (física o digitalmente) **no se conservan en este repositorio
-público**. Fueron eliminados del rastreo de Git mediante `git rm` y no
-existen en ninguna rama accesible públicamente. La única copia de estos
-documentos se almacena en un medio privado con acceso institucional
-restringido:
+firmados (física o digitalmente) **no deben conservarse en este repositorio
+público**. Fueron removidos del código actual de la rama mediante `git rm`
+en el commit `971e7f6`.
+
+**Estado real del historial de Git (trazabilidad):** Estos archivos aún
+existen en el historial de commits de Git (commits `5d404b6` y anteriores)
+y son recuperables por cualquier persona con acceso al repositorio mediante
+`git checkout <commit> -- docs/etica/consentimientos/`. Se requiere una
+limpieza profunda del historial de Git (`git filter-repo` o BFG
+Repo-Cleaner) seguida de un push forzado para eliminarlos definitivamente.
+Hasta que esa limpieza se ejecute, los archivos con PII permanecen
+técnicamente accesibles en el historial público del repositorio. La copia
+primaria segura de estos documentos se almacena en un medio privado con
+acceso institucional restringido:
 
 - **Almacenamiento privado (Google Drive institucional):**
   <https://drive.google.com/drive/folders/1uoGc6gQ7AJuVEayv09OSm84bS0WGB15y?usp=sharing>
@@ -149,12 +158,14 @@ como referencia pública del protocolo utilizado.
   existentes hoy en `docs/mediciones/sec/` ya cumplen este criterio —
   fueron generados contra el usuario de desarrollo `admin@sgb-saas.local`
   (no una persona real), como se documenta en cada uno de esos archivos.
-- **Los consentimientos firmados de participantes reales de SUS nunca se
-  committean a este repositorio.** `docs/etica/consentimientos/` contiene
+- **Los consentimientos firmados de participantes reales de SUS fueron
+  committeados por error** (commit `5d404b6`) y removidos del código actual
+  en el commit `971e7f6`. **Aún persisten en el historial de Git** y requieren
+  limpieza profunda (ver sección (iii)). `docs/etica/consentimientos/` contiene
   únicamente la plantilla en blanco (versionada, pública); los
-  formularios firmados (físicos o digitales) se archivan fuera del
-  control de versiones, en un medio que el equipo gestione de forma
-  separada — ver la nota de almacenamiento al final de la plantilla.
+  formularios firmados se almacenan en Google Drive institucional
+  (acceso `@uteq.edu.ec`) como respaldo seguro mientras se ejecuta la
+  limpieza del historial.
 - Este mismo criterio aplica a cualquier evidencia futura del Bloque C
   (k6, Lighthouse, JaCoCo): son mediciones técnicas sobre el sistema, no
   sobre personas, y no está previsto que requieran ningún dato personal.

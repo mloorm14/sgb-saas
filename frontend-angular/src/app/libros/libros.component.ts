@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -83,6 +83,8 @@ export class LibrosComponent implements OnInit, OnDestroy {
   confirmacionMensaje = '';
   confirmacionPendiente: (() => void) | null = null;
 
+  @ViewChild('editorialInput') editorialInputRef!: ElementRef<HTMLInputElement>;
+
   private busqueda$ = new Subject<string>();
   private destroy$ = new Subject<void>();
 
@@ -144,6 +146,18 @@ export class LibrosComponent implements OnInit, OnDestroy {
       distinctUntilChanged(),
       takeUntil(this.destroy$)
     ).subscribe(() => { this.currentPage = 0; this.cargarLibros(); });
+
+    // H3: debounce ISBN — auto-lookup al completar 13 dígitos
+    this.form.get('isbn')!.valueChanges.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(valor => {
+      const isbn = (valor ?? '').trim();
+      if (/^[0-9]{13}$/.test(isbn)) {
+        this.ejecutarLookupIsbn(isbn);
+      }
+    });
 
     // Soporte para modo revisión pendiente vía query param ?revision=ID
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
@@ -757,9 +771,11 @@ export class LibrosComponent implements OnInit, OnDestroy {
             this.form.patchValue({ editorialId: existente.id });
             this.editorialSeleccionadaNombre = existente.nombre;
           } else {
-            // Pre-llenar el buscador de editorial para que el usuario solo tenga que pulsar '+'
-            // No usar lookupError (era el mensaje rojo "Editorial sugerida...") — viene tal cual del API (Google Books/Open Library)
+            // H7: pre-llenar y abrir dropdown con opción "Crear" + focus
             this.textoEditorial = dto.editorial!;
+            this.sugerenciasEditorial = [];
+            this.mostrarSugerenciasEditorial = true;
+            setTimeout(() => this.editorialInputRef?.nativeElement?.focus(), 0);
           }
         }
         if (!dto.titulo && !dto.resumen && dto.anioPublicacion == null && !dto.editorial) {

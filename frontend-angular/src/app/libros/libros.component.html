@@ -330,7 +330,7 @@
               }
               <div class="relative flex items-center gap-1">
                 <label for="buscar-editorial" class="sr-only">Buscar editorial</label>
-                <input type="text" [(ngModel)]="textoEditorial" [ngModelOptions]="{standalone: true}" id="buscar-editorial"
+                <input type="text" #editorialInput [(ngModel)]="textoEditorial" [ngModelOptions]="{standalone: true}" id="buscar-editorial"
                   (keydown)="onKeydownEditorial($event)"
                   placeholder="Buscar editorial..."
                   role="combobox" [attr.aria-expanded]="mostrarSugerenciasEditorial"
