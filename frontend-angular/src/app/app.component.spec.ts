@@ -27,10 +27,10 @@ describe('AppComponent', () => {
     expect(app).toBeTruthy();
   });
 
-  it(`should have the 'SGB-SaaS' title`, () => {
+  it(`should have the 'Leibri' title`, () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
-    expect(app.title).toEqual('SGB-SaaS');
+    expect(app.title).toEqual('Leibri');
   });
 
   it('should render the router outlet', () => {
@@ -53,6 +53,7 @@ describe('AppComponent', () => {
     authService.getCorreo.and.returnValue('lector@uteq.edu.ec');
 
     const fixture = TestBed.createComponent(AppComponent);
+    fixture.componentInstance.cargandoRuta = false;
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
 
@@ -86,6 +87,7 @@ describe('AppComponent', () => {
     authService.hasRole.and.callFake((...roles: string[]) => roles.includes('BIBLIOTECARIO'));
 
     const fixture = TestBed.createComponent(AppComponent);
+    fixture.componentInstance.cargandoRuta = false;
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
 
@@ -98,6 +100,7 @@ describe('AppComponent', () => {
     authService.hasRole.and.callFake((...roles: string[]) => roles.includes('GERENTE'));
 
     const fixture = TestBed.createComponent(AppComponent);
+    fixture.componentInstance.cargandoRuta = false;
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
 
@@ -113,6 +116,7 @@ describe('AppComponent', () => {
     authService.hasRole.and.callFake((...roles: string[]) => roles.includes('ADMIN'));
 
     const fixture = TestBed.createComponent(AppComponent);
+    fixture.componentInstance.cargandoRuta = false;
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
 
