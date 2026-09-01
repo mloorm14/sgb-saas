@@ -6,6 +6,7 @@ import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { LibroPublicoService } from '../core/services/libro-publico.service';
 import { Libro, LibroSugerencia } from '../core/models/libro.model';
 import { Categoria } from '../core/models/categoria.model';
+import { ThemeService } from '../core/services/theme.service';
 
 // Portal público de catálogo (Rama C, mockup 12). Es la raíz de la app y NO
 // pide sesión: navega sin authGuard y usa LibroPublicoService (/api/publico).
@@ -57,7 +58,7 @@ export class PortalPublicoComponent implements OnInit, OnDestroy {
   // en el binding de estilo del template (igual que en catalogo.component).
   navIconoFilled: string = '"FILL" 1';
 
-  constructor(private libroPublicoService: LibroPublicoService) {}
+  constructor(private libroPublicoService: LibroPublicoService, public themeService: ThemeService) {}
 
   ngOnInit(): void {
     this.cargarPagina();

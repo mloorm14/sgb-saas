@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { LibroPublicoService } from '../../core/services/libro-publico.service';
 import { Libro } from '../../core/models/libro.model';
+import { ThemeService } from '../../core/services/theme.service';
 
 // Detalle de libro del portal público (Rama C, mockup 13). Sin sesión:
 // portada directa en <img>, y las acciones que requieren cuenta se
@@ -20,7 +21,8 @@ export class DetallePublicoComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private libroPublicoService: LibroPublicoService
+    private libroPublicoService: LibroPublicoService,
+    public themeService: ThemeService
   ) {}
 
   ngOnInit(): void {
