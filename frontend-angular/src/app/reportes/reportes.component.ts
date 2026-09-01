@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ReporteService, LibroMasPrestadoDetallado, ReporteMorosidad, ReporteInventario, ReporteVencidos, ReporteCategoriasDemandadas } from '../core/services/reporte-gerencial.service';
 import { Observable } from 'rxjs';
+import { ReporteService, LibroMasPrestadoDetallado, ReporteMorosidad, ReporteInventario, ReporteVencidos, ReporteCategoriasDemandadas, ReporteUsoPorPeriodo, ResumenFinancieroMultas } from '../core/services/reporte-gerencial.service';
 
-export type VistaReporte = 'tarjetas' | 'libros' | 'morosidad' | 'inventario' | 'vencidos' | 'categorias';
+export type VistaReporte = 'tarjetas' | 'libros' | 'morosidad' | 'inventario' | 'vencidos' | 'categorias' | 'uso' | 'financiero';
 
 export interface ModuloReporte {
   id: Exclude<VistaReporte, 'tarjetas'>;
@@ -64,6 +64,22 @@ export class ReportesComponent {
       descripcion: 'Categorías con mayor demanda de préstamos',
       icono: 'category',
       color: 'bg-success/10 text-success'
+    },
+    {
+      id: 'uso',
+      codigo: 'RPT-USO',
+      etiqueta: 'Uso por período',
+      descripcion: 'Préstamos y devoluciones por período',
+      icono: 'query_stats',
+      color: 'bg-primary/10 text-primary'
+    },
+    {
+      id: 'financiero',
+      codigo: 'RPT-FIN',
+      etiqueta: 'Resumen financiero',
+      descripcion: 'Recaudación, pendiente y pagos recientes',
+      icono: 'account_balance',
+      color: 'bg-tertiary/10 text-tertiary'
     }
   ];
 
@@ -72,6 +88,8 @@ export class ReportesComponent {
   inventario: ReporteInventario[] = [];
   vencidos: ReporteVencidos[] = [];
   categorias: ReporteCategoriasDemandadas[] = [];
+  usoPeriodo: ReporteUsoPorPeriodo[] = [];
+  resumenFinanciero: ResumenFinancieroMultas | null = null;
 
   private morososTodos: ReporteMorosidad[] = [];
   private vencidosTodos: ReporteVencidos[] = [];
@@ -86,10 +104,6 @@ export class ReportesComponent {
 
   // Morosidad
   morosidadCorreo = '';
-  morosidadDesde = '';
-  morosidadHasta = '';
-  morosidadDia = '';
-  morosidadTipoDias: number | null = null;
 
   // Inventario
   busquedaInventario = '';
@@ -101,20 +115,141 @@ export class ReportesComponent {
   vencidosCorreo = '';
   vencidosLibro = '';
   vencidosIsbn = '';
-  vencidosDesde = '';
-  vencidosHasta = '';
-  vencidosDia = '';
-  vencidosTipoDias: number | null = null;
 
   // Categorías
   categoriasBusqueda = '';
   limiteCategorias = 10;
 
+  // Uso por período
+  usoGranularidad: 'dia' | 'semana' | 'mes' = 'mes';
+  usoDesde = '';
+  usoHasta = '';
+
+  // Resumen financiero
+  finDesde = '';
+  finHasta = '';
+
   cargando = false;
   errorMsg = '';
   descargandoPdf: string | null = null;
 
+  ordenColumnaMor: string = '';
+  direccionAscMor: boolean = true;
+  ordenColumnaVen: string = '';
+  direccionAscVen: boolean = true;
+  ordenColumnaCat: string = '';
+  direccionAscCat: boolean = true;
+  ordenColumnaUso: string = '';
+  direccionAscUso: boolean = true;
+  ordenColumnaInv: string = '';
+  direccionAscInv: boolean = true;
+
   constructor(private reporteService: ReporteService) {}
+
+  ordenarPorMor(columna: string): void {
+    if (this.ordenColumnaMor === columna) {
+      this.direccionAscMor = !this.direccionAscMor;
+    } else {
+      this.ordenColumnaMor = columna;
+      this.direccionAscMor = true;
+    }
+  }
+
+  get morososOrdenados() {
+    const col = this.ordenColumnaMor;
+    const asc = this.direccionAscMor;
+    if (!col) return this.morosos;
+    return [...this.morosos].sort((a: any, b: any) => {
+      const va = a[col] ?? '';
+      const vb = b[col] ?? '';
+      const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es');
+      return asc ? cmp : -cmp;
+    });
+  }
+
+  ordenarPorVen(columna: string): void {
+    if (this.ordenColumnaVen === columna) {
+      this.direccionAscVen = !this.direccionAscVen;
+    } else {
+      this.ordenColumnaVen = columna;
+      this.direccionAscVen = true;
+    }
+  }
+
+  get vencidosOrdenados() {
+    const col = this.ordenColumnaVen;
+    const asc = this.direccionAscVen;
+    if (!col) return this.vencidos;
+    return [...this.vencidos].sort((a: any, b: any) => {
+      const va = a[col] ?? '';
+      const vb = b[col] ?? '';
+      const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es');
+      return asc ? cmp : -cmp;
+    });
+  }
+
+  ordenarPorCat(columna: string): void {
+    if (this.ordenColumnaCat === columna) {
+      this.direccionAscCat = !this.direccionAscCat;
+    } else {
+      this.ordenColumnaCat = columna;
+      this.direccionAscCat = true;
+    }
+  }
+
+  get categoriasOrdenadas() {
+    const col = this.ordenColumnaCat;
+    const asc = this.direccionAscCat;
+    if (!col) return this.categorias;
+    return [...this.categorias].sort((a: any, b: any) => {
+      const va = a[col] ?? '';
+      const vb = b[col] ?? '';
+      const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es');
+      return asc ? cmp : -cmp;
+    });
+  }
+
+  ordenarPorUso(columna: string): void {
+    if (this.ordenColumnaUso === columna) {
+      this.direccionAscUso = !this.direccionAscUso;
+    } else {
+      this.ordenColumnaUso = columna;
+      this.direccionAscUso = true;
+    }
+  }
+
+  get usoOrdenado() {
+    const col = this.ordenColumnaUso;
+    const asc = this.direccionAscUso;
+    if (!col) return this.usoPeriodo;
+    return [...this.usoPeriodo].sort((a: any, b: any) => {
+      const va = a[col] ?? '';
+      const vb = b[col] ?? '';
+      const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es');
+      return asc ? cmp : -cmp;
+    });
+  }
+
+  ordenarPorInv(columna: string): void {
+    if (this.ordenColumnaInv === columna) {
+      this.direccionAscInv = !this.direccionAscInv;
+    } else {
+      this.ordenColumnaInv = columna;
+      this.direccionAscInv = true;
+    }
+  }
+
+  get inventarioPaginadoOrdenado() {
+    const col = this.ordenColumnaInv;
+    const asc = this.direccionAscInv;
+    if (!col) return this.inventarioPaginado;
+    return [...this.inventarioPaginado].sort((a: any, b: any) => {
+      const va = a[col] ?? '';
+      const vb = b[col] ?? '';
+      const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es');
+      return asc ? cmp : -cmp;
+    });
+  }
 
   abrirModulo(id: Exclude<VistaReporte, 'tarjetas'>): void {
     this.vista = id;
@@ -146,10 +281,6 @@ export class ReportesComponent {
         break;
       case 'morosidad':
         this.morosidadCorreo = '';
-        this.morosidadDesde = '';
-        this.morosidadHasta = '';
-        this.morosidadDia = '';
-        this.morosidadTipoDias = null;
         break;
       case 'inventario':
         this.busquedaInventario = '';
@@ -160,14 +291,19 @@ export class ReportesComponent {
         this.vencidosCorreo = '';
         this.vencidosLibro = '';
         this.vencidosIsbn = '';
-        this.vencidosDesde = '';
-        this.vencidosHasta = '';
-        this.vencidosDia = '';
-        this.vencidosTipoDias = null;
         break;
       case 'categorias':
         this.categoriasBusqueda = '';
         this.limiteCategorias = 10;
+        break;
+      case 'uso':
+        this.usoGranularidad = 'mes';
+        this.usoDesde = '';
+        this.usoHasta = '';
+        break;
+      case 'financiero':
+        this.finDesde = '';
+        this.finHasta = '';
         break;
     }
     this.cargarModuloActual();
@@ -180,6 +316,8 @@ export class ReportesComponent {
       case 'inventario': this.cargarInventario(); break;
       case 'vencidos': this.cargarVencidos(); break;
       case 'categorias': this.cargarCategorias(); break;
+      case 'uso': this.cargarUso(); break;
+      case 'financiero': this.cargarFinanciero(); break;
     }
   }
 
@@ -211,15 +349,8 @@ export class ReportesComponent {
 
   private filtrarMorosidad(lista: ReporteMorosidad[]): ReporteMorosidad[] {
     const correo = this.morosidadCorreo.trim().toLowerCase();
-    const tipo = this.normalizarTipoDias(this.morosidadTipoDias);
-    return lista.filter(m => {
-      if (correo && !(m.correo ?? '').toLowerCase().includes(correo)) return false;
-      if (tipo != null) {
-        const dias = Number(m.diasAtrasoPromedio);
-        if (Number.isNaN(dias) || dias < 1 || dias > tipo) return false;
-      }
-      return true;
-    });
+    if (!correo) return lista;
+    return lista.filter(m => (m.correo ?? '').toLowerCase().includes(correo));
   }
 
   private cargarInventario(): void {
@@ -281,18 +412,10 @@ export class ReportesComponent {
     const correo = this.vencidosCorreo.trim().toLowerCase();
     const libro = this.vencidosLibro.trim().toLowerCase();
     const isbn = this.vencidosIsbn.trim().toLowerCase();
-    const tipo = this.normalizarTipoDias(this.vencidosTipoDias);
     return lista.filter(v => {
       if (correo && !(v.usuarioCorreo ?? '').toLowerCase().includes(correo)) return false;
       if (libro && !(v.libroTitulo ?? '').toLowerCase().includes(libro)) return false;
       if (isbn && !(v.libroIsbn ?? '').toLowerCase().includes(isbn)) return false;
-      if (tipo != null) {
-        const dias = Number(v.diasAtraso);
-        if (Number.isNaN(dias) || dias < 1 || dias > tipo) return false;
-      }
-      if (!this.enRangoFecha(v.fechaDevolucionEstimada, this.vencidosDia, this.vencidosDesde, this.vencidosHasta)) {
-        return false;
-      }
       return true;
     });
   }
@@ -314,6 +437,30 @@ export class ReportesComponent {
     const q = this.categoriasBusqueda.trim().toLowerCase();
     if (!q) return lista;
     return lista.filter(c => (c.categoriaNombre ?? '').toLowerCase().includes(q));
+  }
+
+  private cargarUso(): void {
+    this.cargando = true;
+    this.errorMsg = '';
+    this.reporteService.usoPorPeriodo(this.usoGranularidad, this.usoDesde || undefined, this.usoHasta || undefined).subscribe({
+      next: (datos) => {
+        this.usoPeriodo = datos;
+        this.cargando = false;
+      },
+      error: (err) => this.fallar(err)
+    });
+  }
+
+  private cargarFinanciero(): void {
+    this.cargando = true;
+    this.errorMsg = '';
+    this.reporteService.resumenFinanciero(this.finDesde || undefined, this.finHasta || undefined).subscribe({
+      next: (datos) => {
+        this.resumenFinanciero = datos;
+        this.cargando = false;
+      },
+      error: (err) => this.fallar(err)
+    });
   }
 
   private fallar(err: unknown): void {
@@ -347,18 +494,6 @@ export class ReportesComponent {
       desde: desde ? `${desde}T00:00:00.000Z` : undefined,
       hasta: hasta ? `${hasta}T23:59:59.999Z` : undefined
     };
-  }
-
-  private enRangoFecha(iso: string, dia: string, desde: string, hasta: string): boolean {
-    if (dia) {
-      if (!iso) return false;
-      const t = new Date(iso).getTime();
-      return t >= new Date(`${dia}T00:00:00.000Z`).getTime()
-        && t <= new Date(`${dia}T23:59:59.999Z`).getTime();
-    }
-    if (desde && iso && new Date(iso).getTime() < new Date(`${desde}T00:00:00.000Z`).getTime()) return false;
-    if (hasta && iso && new Date(iso).getTime() > new Date(`${hasta}T23:59:59.999Z`).getTime()) return false;
-    return true;
   }
 
   private descargarPdf(blob$: Observable<Blob>, nombre: string, clave: string): void {

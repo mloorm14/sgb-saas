@@ -40,12 +40,28 @@
       </div>
 
       @if (cargando) {
-        <p class="font-body-sm text-body-sm text-on-surface-variant mb-md">Cargando reporte…</p>
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest animate-pulse overflow-hidden">
+          <table class="w-full text-left">
+            <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">#</th><th class="px-md py-sm">Título</th><th class="px-md py-sm hidden md:table-cell">ISBN</th><th class="px-md py-sm hidden lg:table-cell">Autor</th><th class="px-md py-sm text-right">Préstamos</th><th class="px-md py-sm text-right">% del total</th></tr></thead>
+            <tbody class="divide-y divide-outline-variant">
+              @for (i of [1,2,3,4,5]; track i) {
+                <tr>
+                  <td class="px-md py-sm"><div class="h-4 bg-surface-container-high rounded w-8"></div></td>
+                  <td class="px-md py-sm"><div class="h-4 bg-surface-container-high rounded w-3/4"></div></td>
+                  <td class="px-md py-sm hidden md:table-cell"><div class="h-4 bg-surface-container-high rounded w-1/2"></div></td>
+                  <td class="px-md py-sm hidden lg:table-cell"><div class="h-4 bg-surface-container-high rounded w-2/3"></div></td>
+                  <td class="px-md py-sm"><div class="h-4 bg-surface-container-high rounded w-1/4 ml-auto"></div></td>
+                  <td class="px-md py-sm"><div class="h-4 bg-surface-container-high rounded w-1/4 ml-auto"></div></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       }
 
       <!-- 1) LIBROS MAS PRESTADOS -->
       @if (vista === 'libros') {
-        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest p-md mb-md">
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest shadow-sm p-md mb-md">
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
@@ -128,34 +144,12 @@
 
       <!-- 2) MOROSIDAD -->
       @if (vista === 'morosidad') {
-        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest p-md mb-md">
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest shadow-sm p-md mb-md">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-sm items-end">
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Correo</label>
               <input type="text" [(ngModel)]="morosidadCorreo" placeholder="Buscar por correo"
                 class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
-            </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
-              <input type="date" [(ngModel)]="morosidadDesde" [disabled]="!!morosidadDia"
-                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest disabled:opacity-40" />
-            </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hasta</label>
-              <input type="date" [(ngModel)]="morosidadHasta" [disabled]="!!morosidadDia"
-                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest disabled:opacity-40" />
-            </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Fecha (ej. 28-08-2026)</label>
-              <input type="date" [(ngModel)]="morosidadDia"
-                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
-            </div>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end mt-sm">
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Tipo de días (1-7)</label>
-              <input type="number" min="1" max="7" [(ngModel)]="morosidadTipoDias" [disabled]="!!morosidadDia" placeholder="1-7"
-                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest disabled:opacity-40" />
             </div>
             <div class="flex gap-sm">
               <button (click)="aplicarFiltros()" class="h-10 flex-1 rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer">
@@ -179,11 +173,32 @@
           <table class="w-full text-left">
             <thead class="bg-surface-container-low">
               <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
-                <th class="px-md py-sm">Usuario</th><th class="px-md py-sm hidden md:table-cell">Correo</th><th class="px-md py-sm text-right">Deuda</th><th class="px-md py-sm text-right hidden sm:table-cell">Multas</th><th class="px-md py-sm text-right hidden lg:table-cell">Días atraso (prom.)</th>
+                <th class="px-md py-sm cursor-pointer select-none" (click)="ordenarPorMor('nombre')">
+                  <span class="inline-flex items-center gap-xs">
+                    Usuario
+                    @if (ordenColumnaMor === 'nombre') {
+                      <span class="material-symbols-outlined text-[14px]">{{ direccionAscMor ? 'arrow_upward' : 'arrow_downward' }}</span>
+                    }
+                  </span>
+                </th><th class="px-md py-sm hidden md:table-cell">Correo</th><th class="px-md py-sm text-right cursor-pointer select-none" (click)="ordenarPorMor('montoTotalAdeudado')">
+                  <span class="inline-flex items-center gap-xs">
+                    Deuda
+                    @if (ordenColumnaMor === 'montoTotalAdeudado') {
+                      <span class="material-symbols-outlined text-[14px]">{{ direccionAscMor ? 'arrow_upward' : 'arrow_downward' }}</span>
+                    }
+                  </span>
+                </th><th class="px-md py-sm text-right hidden sm:table-cell">Multas</th><th class="px-md py-sm text-right hidden lg:table-cell cursor-pointer select-none" (click)="ordenarPorMor('diasAtrasoPromedio')">
+                  <span class="inline-flex items-center gap-xs">
+                    Días atraso (prom.)
+                    @if (ordenColumnaMor === 'diasAtrasoPromedio') {
+                      <span class="material-symbols-outlined text-[14px]">{{ direccionAscMor ? 'arrow_upward' : 'arrow_downward' }}</span>
+                    }
+                  </span>
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-              @for (m of morosos; track m.usuarioId) {
+              @for (m of morososOrdenados; track m.usuarioId) {
                 <tr><td class="px-md py-sm font-medium">{{ m.nombre }} {{ m.apellido }}</td><td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ m.correo }}</td><td class="px-md py-sm text-right font-medium text-error">$ {{ m.montoTotalAdeudado.toFixed(2) }}</td><td class="px-md py-sm text-right hidden sm:table-cell">{{ m.cantidadMultasPendientes }}</td><td class="px-md py-sm text-right hidden lg:table-cell">{{ m.diasAtrasoPromedio }} días</td></tr>
               } @empty {
                 @if (!cargando) { <tr><td colspan="5" class="px-md py-lg text-center text-on-surface-variant">Sin morosidad registrada</td></tr> }
@@ -195,8 +210,8 @@
 
       <!-- 3) INVENTARIO -->
       @if (vista === 'inventario') {
-        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest p-md mb-md">
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest shadow-sm p-md mb-md">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-sm items-end">
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Buscar (título, ISBN, autor)</label>
               <input type="text" [(ngModel)]="busquedaInventario" placeholder="Título, ISBN o autor"
@@ -207,14 +222,6 @@
               <select [(ngModel)]="estadoStock" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest cursor-pointer">
                 <option value="">Todos</option><option value="disponible">Disponibles</option><option value="baja">Baja disponibilidad</option><option value="agotado">Agotados</option>
               </select>
-            </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Fecha</label>
-              <input type="date" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest opacity-40 cursor-not-allowed" disabled title="Sin fecha en inventario — visual solo" />
-            </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Tipo días (1-7)</label>
-              <input type="number" min="1" max="7" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest opacity-40 cursor-not-allowed" disabled title="Sin fecha en inventario" />
             </div>
           </div>
           <div class="flex gap-sm mt-sm">
@@ -228,9 +235,30 @@
         </div>
         <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-x-auto overflow-y-hidden">
           <table class="w-full text-left">
-            <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">Título</th><th class="px-md py-sm hidden md:table-cell">ISBN</th><th class="px-md py-sm hidden lg:table-cell">Autor</th><th class="px-md py-sm hidden lg:table-cell">Categoría</th><th class="px-md py-sm text-right">Stock</th><th class="px-md py-sm text-right">Disponible</th><th class="px-md py-sm">Estado</th></tr></thead>
+            <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm cursor-pointer select-none" (click)="ordenarPorInv('titulo')">
+              <span class="inline-flex items-center gap-xs">
+                Título
+                @if (ordenColumnaInv === 'titulo') {
+                  <span class="material-symbols-outlined text-[14px]">{{ direccionAscInv ? 'arrow_upward' : 'arrow_downward' }}</span>
+                }
+              </span>
+            </th><th class="px-md py-sm hidden md:table-cell">ISBN</th><th class="px-md py-sm hidden lg:table-cell">Autor</th><th class="px-md py-sm hidden lg:table-cell">Categoría</th><th class="px-md py-sm text-right cursor-pointer select-none" (click)="ordenarPorInv('stockTotal')">
+              <span class="inline-flex items-center gap-xs">
+                Stock
+                @if (ordenColumnaInv === 'stockTotal') {
+                  <span class="material-symbols-outlined text-[14px]">{{ direccionAscInv ? 'arrow_upward' : 'arrow_downward' }}</span>
+                }
+              </span>
+            </th><th class="px-md py-sm text-right cursor-pointer select-none" (click)="ordenarPorInv('stockDisponible')">
+              <span class="inline-flex items-center gap-xs">
+                Disponible
+                @if (ordenColumnaInv === 'stockDisponible') {
+                  <span class="material-symbols-outlined text-[14px]">{{ direccionAscInv ? 'arrow_upward' : 'arrow_downward' }}</span>
+                }
+              </span>
+            </th><th class="px-md py-sm">Estado</th></tr></thead>
             <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-              @for (item of inventarioPaginado; track item.libroId) {
+              @for (item of inventarioPaginadoOrdenado; track item.libroId) {
                 <tr><td class="px-md py-sm font-medium">{{ item.titulo }}</td><td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ item.isbn || '—' }}</td><td class="px-md py-sm hidden lg:table-cell">{{ item.autorNombre }}</td><td class="px-md py-sm hidden lg:table-cell"><span class="inline-flex px-sm py-xs rounded-full font-label-sm text-[11px] bg-primary/10 text-primary">{{ item.categoriaNombre }}</span></td><td class="px-md py-sm text-right">{{ item.stockTotal }}</td><td class="px-md py-sm text-right font-medium">{{ item.stockDisponible }}</td><td class="px-md py-sm">@if (item.estadoDisponibilidad === 'Agotado') {<span class="inline-flex gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-error/15 text-error">Agotado</span>} @else if (item.estadoDisponibilidad === 'Baja disponibilidad') {<span class="inline-flex gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-warning/25 text-on-tertiary-container">Baja</span>} @else {<span class="inline-flex gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-success/15 text-success">OK</span>}</td></tr>
               } @empty { @if (!cargando) { <tr><td colspan="7" class="px-md py-lg text-center text-on-surface-variant">Sin resultados</td></tr> } }
             </tbody>
@@ -261,8 +289,8 @@
 
       <!-- 4) VENCIDOS -->
       @if (vista === 'vencidos') {
-        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest p-md mb-md">
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest shadow-sm p-md mb-md">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-sm items-end">
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Correo</label>
               <input type="text" [(ngModel)]="vencidosCorreo" placeholder="Buscar por correo" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
@@ -275,28 +303,10 @@
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">ISBN</label>
               <input type="text" [(ngModel)]="vencidosIsbn" placeholder="ISBN" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
             </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Fecha</label>
-              <input type="date" [(ngModel)]="vencidosDia" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
-            </div>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end mt-sm">
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
-              <input type="date" [(ngModel)]="vencidosDesde" [disabled]="!!vencidosDia" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest disabled:opacity-40" />
-            </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hasta</label>
-              <input type="date" [(ngModel)]="vencidosHasta" [disabled]="!!vencidosDia" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest disabled:opacity-40" />
-            </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Tipo días (1-7)</label>
-              <input type="number" min="1" max="7" [(ngModel)]="vencidosTipoDias" [disabled]="!!vencidosDia" placeholder="1-7" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest disabled:opacity-40" />
-            </div>
-            <div class="flex gap-sm">
-              <button (click)="aplicarFiltros()" class="h-10 flex-1 rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer"><span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar</button>
-              <button (click)="limpiarFiltros()" aria-label="Limpiar filtros" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low"><span class="material-symbols-outlined text-[18px]" aria-hidden="true">restart_alt</span></button>
-            </div>
+          <div class="flex gap-sm mt-sm">
+            <button (click)="aplicarFiltros()" class="h-10 px-lg rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer"><span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar</button>
+            <button (click)="limpiarFiltros()" aria-label="Limpiar filtros" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low"><span class="material-symbols-outlined text-[18px]" aria-hidden="true">restart_alt</span></button>
           </div>
         </div>
         <div class="flex items-center justify-end gap-xs mb-sm">
@@ -305,9 +315,30 @@
         </div>
         <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-x-auto overflow-y-hidden">
           <table class="w-full text-left">
-            <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">Usuario</th><th class="px-md py-sm hidden md:table-cell">Correo</th><th class="px-md py-sm">Libro</th><th class="px-md py-sm hidden md:table-cell">ISBN</th><th class="px-md py-sm">Vencimiento</th><th class="px-md py-sm text-right">Días</th><th class="px-md py-sm text-right">Multa est.</th></tr></thead>
+            <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm cursor-pointer select-none" (click)="ordenarPorVen('usuarioNombre')">
+              <span class="inline-flex items-center gap-xs">
+                Usuario
+                @if (ordenColumnaVen === 'usuarioNombre') {
+                  <span class="material-symbols-outlined text-[14px]">{{ direccionAscVen ? 'arrow_upward' : 'arrow_downward' }}</span>
+                }
+              </span>
+            </th><th class="px-md py-sm hidden md:table-cell">Correo</th><th class="px-md py-sm">Libro</th><th class="px-md py-sm hidden md:table-cell">ISBN</th><th class="px-md py-sm">Vencimiento</th><th class="px-md py-sm text-right cursor-pointer select-none" (click)="ordenarPorVen('diasAtraso')">
+              <span class="inline-flex items-center gap-xs">
+                Días
+                @if (ordenColumnaVen === 'diasAtraso') {
+                  <span class="material-symbols-outlined text-[14px]">{{ direccionAscVen ? 'arrow_upward' : 'arrow_downward' }}</span>
+                }
+              </span>
+            </th><th class="px-md py-sm text-right cursor-pointer select-none" (click)="ordenarPorVen('montoMultaEstimada')">
+              <span class="inline-flex items-center gap-xs">
+                Multa est.
+                @if (ordenColumnaVen === 'montoMultaEstimada') {
+                  <span class="material-symbols-outlined text-[14px]">{{ direccionAscVen ? 'arrow_upward' : 'arrow_downward' }}</span>
+                }
+              </span>
+            </th></tr></thead>
             <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-              @for (v of vencidos; track v.prestamoId) {
+              @for (v of vencidosOrdenados; track v.prestamoId) {
                 <tr><td class="px-md py-sm font-medium">{{ v.usuarioNombre }}</td><td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ v.usuarioCorreo }}</td><td class="px-md py-sm">{{ v.libroTitulo }}</td><td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ v.libroIsbn || '—' }}</td><td class="px-md py-sm text-on-surface-variant">{{ fechaCorta(v.fechaDevolucionEstimada) }}</td><td class="px-md py-sm text-right font-medium text-error">{{ v.diasAtraso }}</td><td class="px-md py-sm text-right font-medium text-error">$ {{ v.montoMultaEstimada.toFixed(2) }}</td></tr>
               } @empty { @if (!cargando) { <tr><td colspan="7" class="px-md py-lg text-center text-on-surface-variant">Sin préstamos vencidos</td></tr> } }
             </tbody>
@@ -317,7 +348,7 @@
 
       <!-- 5) CATEGORIAS -->
       @if (vista === 'categorias') {
-        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest p-md mb-md">
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest shadow-sm p-md mb-md">
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Buscar categoría</label>
@@ -339,14 +370,138 @@
         </div>
         <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-x-auto overflow-y-hidden">
           <table class="w-full text-left">
-            <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">#</th><th class="px-md py-sm">Categoría</th><th class="px-md py-sm text-right">Préstamos</th><th class="px-md py-sm text-right">% del total</th></tr></thead>
+            <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">#</th><th class="px-md py-sm cursor-pointer select-none" (click)="ordenarPorCat('categoriaNombre')">
+              <span class="inline-flex items-center gap-xs">
+                Categoría
+                @if (ordenColumnaCat === 'categoriaNombre') {
+                  <span class="material-symbols-outlined text-[14px]">{{ direccionAscCat ? 'arrow_upward' : 'arrow_downward' }}</span>
+                }
+              </span>
+            </th><th class="px-md py-sm text-right cursor-pointer select-none" (click)="ordenarPorCat('totalPrestamos')">
+              <span class="inline-flex items-center gap-xs">
+                Préstamos
+                @if (ordenColumnaCat === 'totalPrestamos') {
+                  <span class="material-symbols-outlined text-[14px]">{{ direccionAscCat ? 'arrow_upward' : 'arrow_downward' }}</span>
+                }
+              </span>
+            </th><th class="px-md py-sm text-right cursor-pointer select-none" (click)="ordenarPorCat('porcentaje')">
+              <span class="inline-flex items-center gap-xs">
+                % del total
+                @if (ordenColumnaCat === 'porcentaje') {
+                  <span class="material-symbols-outlined text-[14px]">{{ direccionAscCat ? 'arrow_upward' : 'arrow_downward' }}</span>
+                }
+              </span>
+            </th></tr></thead>
             <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-              @for (cat of categorias; track cat.categoriaId; let i = $index) {
+              @for (cat of categoriasOrdenadas; track cat.categoriaId; let i = $index) {
                 <tr><td class="px-md py-sm text-on-surface-variant">{{ i + 1 }}</td><td class="px-md py-sm font-medium"><span class="inline-flex px-sm py-xs rounded-full font-label-sm text-[11px] bg-primary/10 text-primary">{{ cat.categoriaNombre }}</span></td><td class="px-md py-sm text-right">{{ cat.totalPrestamos }}</td><td class="px-md py-sm text-right font-medium">{{ cat.porcentaje }}%</td></tr>
               } @empty { @if (!cargando) { <tr><td colspan="4" class="px-md py-lg text-center text-on-surface-variant">Sin datos de categorías</td></tr> } }
             </tbody>
           </table>
         </div>
+      }
+
+      <!-- 6) USO POR PERÍODO -->
+      @if (vista === 'uso') {
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest shadow-sm p-md mb-md">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-sm items-end">
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Granularidad</label>
+              <select [(ngModel)]="usoGranularidad" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest cursor-pointer">
+                <option value="dia">Día</option><option value="semana">Semana</option><option value="mes">Mes</option>
+              </select>
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
+              <input type="date" [(ngModel)]="usoDesde" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hasta</label>
+              <input type="date" [(ngModel)]="usoHasta" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
+            </div>
+          </div>
+          <div class="flex gap-sm mt-sm">
+            <button (click)="aplicarFiltros()" class="h-10 px-lg rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer"><span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar</button>
+            <button (click)="limpiarFiltros()" aria-label="Limpiar filtros" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low"><span class="material-symbols-outlined text-[18px]" aria-hidden="true">restart_alt</span></button>
+          </div>
+        </div>
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-x-auto overflow-y-hidden">
+          <table class="w-full text-left">
+            <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm cursor-pointer select-none" (click)="ordenarPorUso('periodo')">
+              <span class="inline-flex items-center gap-xs">
+                Período
+                @if (ordenColumnaUso === 'periodo') {
+                  <span class="material-symbols-outlined text-[14px]">{{ direccionAscUso ? 'arrow_upward' : 'arrow_downward' }}</span>
+                }
+              </span>
+            </th><th class="px-md py-sm text-right cursor-pointer select-none" (click)="ordenarPorUso('totalPrestamos')">
+              <span class="inline-flex items-center gap-xs">
+                Préstamos
+                @if (ordenColumnaUso === 'totalPrestamos') {
+                  <span class="material-symbols-outlined text-[14px]">{{ direccionAscUso ? 'arrow_upward' : 'arrow_downward' }}</span>
+                }
+              </span>
+            </th><th class="px-md py-sm text-right cursor-pointer select-none" (click)="ordenarPorUso('totalDevoluciones')">
+              <span class="inline-flex items-center gap-xs">
+                Devoluciones
+                @if (ordenColumnaUso === 'totalDevoluciones') {
+                  <span class="material-symbols-outlined text-[14px]">{{ direccionAscUso ? 'arrow_upward' : 'arrow_downward' }}</span>
+                }
+              </span>
+            </th></tr></thead>
+            <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+              @for (u of usoOrdenado; track u.periodo) {
+                <tr><td class="px-md py-sm font-medium">{{ u.periodo }}</td><td class="px-md py-sm text-right">{{ u.totalPrestamos }}</td><td class="px-md py-sm text-right">{{ u.totalDevoluciones }}</td></tr>
+              } @empty { @if (!cargando) { <tr><td colspan="3" class="px-md py-lg text-center text-on-surface-variant">Sin datos de uso</td></tr> } }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <!-- 7) RESUMEN FINANCIERO -->
+      @if (vista === 'financiero') {
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest shadow-sm p-md mb-md">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-sm items-end">
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
+              <input type="date" [(ngModel)]="finDesde" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hasta</label>
+              <input type="date" [(ngModel)]="finHasta" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
+            </div>
+          </div>
+          <div class="flex gap-sm mt-sm">
+            <button (click)="aplicarFiltros()" class="h-10 px-lg rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer"><span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar</button>
+            <button (click)="limpiarFiltros()" aria-label="Limpiar filtros" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low"><span class="material-symbols-outlined text-[18px]" aria-hidden="true">restart_alt</span></button>
+          </div>
+        </div>
+        @if (resumenFinanciero) {
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-md mb-md">
+            <div class="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm p-lg text-center">
+              <p class="font-label-sm text-label-sm text-on-surface-variant mb-xs">Recaudado</p>
+              <p class="font-headline-md text-headline-md text-success">$ {{ resumenFinanciero.totalRecaudado.toFixed(2) }}</p>
+            </div>
+            <div class="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm p-lg text-center">
+              <p class="font-label-sm text-label-sm text-on-surface-variant mb-xs">Pendiente</p>
+              <p class="font-headline-md text-headline-md text-error">$ {{ resumenFinanciero.totalPendiente.toFixed(2) }}</p>
+            </div>
+            <div class="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm p-lg text-center">
+              <p class="font-label-sm text-label-sm text-on-surface-variant mb-xs">Generado hoy</p>
+              <p class="font-headline-md text-headline-md text-primary">$ {{ resumenFinanciero.totalGeneradoHoy.toFixed(2) }}</p>
+            </div>
+          </div>
+          <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-x-auto overflow-y-hidden">
+            <table class="w-full text-left">
+              <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">Multa</th><th class="px-md py-sm">Monto</th><th class="px-md py-sm hidden md:table-cell">Fecha</th><th class="px-md py-sm">Usuario</th><th class="px-md py-sm hidden lg:table-cell">Libro</th></tr></thead>
+              <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+                @for (p of resumenFinanciero.pagosRecientes; track p.multaId) {
+                  <tr><td class="px-md py-sm font-medium">#{{ p.multaId }}</td><td class="px-md py-sm font-medium text-success">$ {{ p.montoPagado.toFixed(2) }}</td><td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ p.fechaPagada }}</td><td class="px-md py-sm">{{ p.usuarioNombre }}</td><td class="px-md py-sm hidden lg:table-cell text-on-surface-variant">{{ p.libroTitulo }}</td></tr>
+                } @empty { @if (!cargando) { <tr><td colspan="5" class="px-md py-lg text-center text-on-surface-variant">Sin pagos recientes</td></tr> } }
+              </tbody>
+            </table>
+          </div>
+        }
       }
     </div>
   }

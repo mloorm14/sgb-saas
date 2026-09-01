@@ -47,7 +47,7 @@ public class ReportePdfService {
     }
 
     private void agregarEncabezado(Document document, String titulo, PdfFont negrita) {
-        document.add(new Paragraph("Sistema de Gestión de Biblioteca — UTEQ")
+        document.add(new Paragraph("Leibri — Sistema de Gestión de Biblioteca")
                 .setFont(negrita).setFontSize(14));
         document.add(new Paragraph(titulo).setFontSize(12));
         document.add(new Paragraph("Generado: " + OffsetDateTime.now().format(FORMATO_FECHA_GENERACION))

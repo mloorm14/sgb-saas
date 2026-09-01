@@ -22,6 +22,9 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
   cargando = false;
   errorMsg = '';
 
+  ordenColumna: string = '';
+  direccionAsc: boolean = true;
+
   q: string = '';
   anioFiltro: string = '';
   estadoFiltro: number | null = null;
@@ -55,6 +58,27 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
     private estadoService: EstadoLibroService,
     private router: Router
   ) {}
+
+  ordenarPor(columna: string): void {
+    if (this.ordenColumna === columna) {
+      this.direccionAsc = !this.direccionAsc;
+    } else {
+      this.ordenColumna = columna;
+      this.direccionAsc = true;
+    }
+  }
+
+  get datosOrdenados() {
+    const col = this.ordenColumna;
+    const asc = this.direccionAsc;
+    if (!col) return this.libros;
+    return [...this.libros].sort((a: any, b: any) => {
+      const va = a[col] ?? '';
+      const vb = b[col] ?? '';
+      const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es');
+      return asc ? cmp : -cmp;
+    });
+  }
 
   ngOnInit(): void {
     this.estadoService.listar().subscribe({

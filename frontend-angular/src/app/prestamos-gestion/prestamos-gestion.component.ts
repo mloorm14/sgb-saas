@@ -50,6 +50,36 @@ export class PrestamosGestionComponent {
   historial: HistorialPrestamo[] = [];
   cargandoHistorial: boolean = false;
 
+  pagina = 0;
+  tamanoPagina = 10;
+
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.historial.length / this.tamanoPagina));
+  }
+  get datosPaginados() {
+    const start = this.pagina * this.tamanoPagina;
+    return this.historial.slice(start, start + this.tamanoPagina);
+  }
+  get paginasVisibles(): number[] {
+    const windowSize = 4;
+    let start = Math.max(0, this.pagina - 1);
+    let end = Math.min(this.totalPaginas, start + windowSize);
+    if (end - start < windowSize) start = Math.max(0, end - windowSize);
+    return Array.from({ length: end - start }, (_, i) => start + i);
+  }
+  get puedeAnterior(): boolean { return this.pagina > 0; }
+  get puedeSiguiente(): boolean { return this.pagina < this.totalPaginas - 1; }
+  irAPagina(p: number): void {
+    if (p < 0 || p >= this.totalPaginas || p === this.pagina) return;
+    this.pagina = p;
+  }
+  paginaAnterior(): void { if (this.puedeAnterior) this.pagina--; }
+  paginaSiguiente(): void { if (this.puedeSiguiente) this.pagina++; }
+  cambiarTamano(n: number): void {
+    this.tamanoPagina = Number(n);
+    this.pagina = 0;
+  }
+
   exitoMsg: string = '';
   errorMsgAccion: string = '';
 
@@ -277,6 +307,7 @@ export class PrestamosGestionComponent {
     this.prestamoService.historial(usuarioId).subscribe({
       next: (lista) => {
         this.historial = lista;
+        this.pagina = 0;
         this.cargandoHistorial = false;
       },
       error: () => {

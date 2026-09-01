@@ -60,6 +60,19 @@ export interface ReporteCategoriasDemandadas {
   porcentaje: number;
 }
 
+export interface ReporteUsoPorPeriodo {
+  periodo: string;
+  totalPrestamos: number;
+  totalDevoluciones: number;
+}
+
+export interface ResumenFinancieroMultas {
+  totalRecaudado: number;
+  totalPendiente: number;
+  totalGeneradoHoy: number;
+  pagosRecientes: { multaId: number; montoPagado: number; fechaPagada: string; usuarioCorreo: string; usuarioNombre: string; libroTitulo: string }[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -123,6 +136,24 @@ export class ReporteService {
     if (hasta) params['hasta'] = hasta;
     if (limite) params['limite'] = limite.toString();
     return this.http.get<ReporteCategoriasDemandadas[]>(`${this.apiUrl}/categorias-demandadas`, { params }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  usoPorPeriodo(granularidad: 'dia' | 'semana' | 'mes', desde?: string, hasta?: string): Observable<ReporteUsoPorPeriodo[]> {
+    const params: Record<string, string> = { granularidad };
+    if (desde) params['desde'] = desde;
+    if (hasta) params['hasta'] = hasta;
+    return this.http.get<ReporteUsoPorPeriodo[]>(`${environment.apiUrl}/v1/prestamos/reportes/uso`, { params }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  resumenFinanciero(desde?: string, hasta?: string): Observable<ResumenFinancieroMultas> {
+    const params: Record<string, string> = {};
+    if (desde) params['desde'] = desde;
+    if (hasta) params['hasta'] = hasta;
+    return this.http.get<ResumenFinancieroMultas>(`${environment.apiUrl}/v1/multas/reportes/resumen-financiero`, { params }).pipe(
       catchError(err => this.manejarError(err))
     );
   }

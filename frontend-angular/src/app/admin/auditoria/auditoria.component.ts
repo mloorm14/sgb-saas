@@ -57,6 +57,9 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
   cargando: boolean = false;
   errorMsg: string = '';
 
+  ordenColumna: string = '';
+  direccionAsc: boolean = true;
+
   // Modal de detalle
   modalVisible: boolean = false;
   eventoSeleccionado: EventoAuditoria | null = null;
@@ -102,6 +105,27 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
         this.resultadosBusqueda = [];
         this.buscandoUsuarios = false;
       }
+    });
+  }
+
+  ordenarPor(columna: string): void {
+    if (this.ordenColumna === columna) {
+      this.direccionAsc = !this.direccionAsc;
+    } else {
+      this.ordenColumna = columna;
+      this.direccionAsc = true;
+    }
+  }
+
+  get datosOrdenados() {
+    const col = this.ordenColumna;
+    const asc = this.direccionAsc;
+    if (!col) return this.eventos;
+    return [...this.eventos].sort((a: any, b: any) => {
+      const va = a[col] ?? '';
+      const vb = b[col] ?? '';
+      const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es');
+      return asc ? cmp : -cmp;
     });
   }
 
