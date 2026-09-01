@@ -42,34 +42,56 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
   errorMsg: string = '';
   accionandoId: number | null = null;
 
-  pagina = 0;
-  tamanoPagina = 10;
+  paginaPendientes = 0;
+  tamanoPaginaPendientes = 10;
 
-  get totalPaginas(): number {
-    return Math.max(1, Math.ceil(this.reservaciones.length / this.tamanoPagina));
+  paginaHistorial = 0;
+  tamanoPaginaHistorial = 10;
+
+  get totalPaginasPendientes(): number {
+    return Math.max(1, Math.ceil(this.pendientesDeRetiro.length / this.tamanoPaginaPendientes));
   }
-  get datosPaginados() {
-    const start = this.pagina * this.tamanoPagina;
-    return this.reservaciones.slice(start, start + this.tamanoPagina);
-  }
-  get paginasVisibles(): number[] {
+  get paginasVisiblesPendientes(): number[] {
     const windowSize = 4;
-    let start = Math.max(0, this.pagina - 1);
-    let end = Math.min(this.totalPaginas, start + windowSize);
+    let start = Math.max(0, this.paginaPendientes - 1);
+    let end = Math.min(this.totalPaginasPendientes, start + windowSize);
     if (end - start < windowSize) start = Math.max(0, end - windowSize);
     return Array.from({ length: end - start }, (_, i) => start + i);
   }
-  get puedeAnterior(): boolean { return this.pagina > 0; }
-  get puedeSiguiente(): boolean { return this.pagina < this.totalPaginas - 1; }
-  irAPagina(p: number): void {
-    if (p < 0 || p >= this.totalPaginas || p === this.pagina) return;
-    this.pagina = p;
+  get puedeAnteriorPendientes(): boolean { return this.paginaPendientes > 0; }
+  get puedeSiguientePendientes(): boolean { return this.paginaPendientes < this.totalPaginasPendientes - 1; }
+  irAPaginaPendientes(p: number): void {
+    if (p < 0 || p >= this.totalPaginasPendientes || p === this.paginaPendientes) return;
+    this.paginaPendientes = p;
   }
-  paginaAnterior(): void { if (this.puedeAnterior) this.pagina--; }
-  paginaSiguiente(): void { if (this.puedeSiguiente) this.pagina++; }
-  cambiarTamano(n: number): void {
-    this.tamanoPagina = Number(n);
-    this.pagina = 0;
+  paginaAnteriorPendientes(): void { if (this.puedeAnteriorPendientes) this.paginaPendientes--; }
+  paginaSiguientePendientes(): void { if (this.puedeSiguientePendientes) this.paginaPendientes++; }
+  cambiarTamanoPendientes(n: number): void {
+    this.tamanoPaginaPendientes = Number(n);
+    this.paginaPendientes = 0;
+  }
+
+  get totalPaginasHistorial(): number {
+    return Math.max(1, Math.ceil(this.historialLector.length / this.tamanoPaginaHistorial));
+  }
+  get paginasVisiblesHistorial(): number[] {
+    const windowSize = 4;
+    let start = Math.max(0, this.paginaHistorial - 1);
+    let end = Math.min(this.totalPaginasHistorial, start + windowSize);
+    if (end - start < windowSize) start = Math.max(0, end - windowSize);
+    return Array.from({ length: end - start }, (_, i) => start + i);
+  }
+  get puedeAnteriorHistorial(): boolean { return this.paginaHistorial > 0; }
+  get puedeSiguienteHistorial(): boolean { return this.paginaHistorial < this.totalPaginasHistorial - 1; }
+  irAPaginaHistorial(p: number): void {
+    if (p < 0 || p >= this.totalPaginasHistorial || p === this.paginaHistorial) return;
+    this.paginaHistorial = p;
+  }
+  paginaAnteriorHistorial(): void { if (this.puedeAnteriorHistorial) this.paginaHistorial--; }
+  paginaSiguienteHistorial(): void { if (this.puedeSiguienteHistorial) this.paginaHistorial++; }
+  cambiarTamanoHistorial(n: number): void {
+    this.tamanoPaginaHistorial = Number(n);
+    this.paginaHistorial = 0;
   }
 
   readonly estadosReservacion: Record<number, string> = {
@@ -160,7 +182,7 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
     this.reservacionService.listarPorUsuario(this.usuarioIdBusqueda, {
       page: 0, size: 100, sort: 'id,desc'
     }).subscribe({
-      next: (data) => { this.reservaciones = data.content; this.pagina = 0; this.cargando = false; },
+      next: (data) => { this.reservaciones = data.content; this.paginaPendientes = 0; this.paginaHistorial = 0; this.cargando = false; },
       error: () => { this.errorMsg = 'Error al buscar las reservaciones'; this.cargando = false; }
     });
   }
@@ -170,8 +192,8 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
   }
 
   get pendientesDeRetiroPaginados(): Reservacion[] {
-    const start = this.pagina * this.tamanoPagina;
-    return this.pendientesDeRetiro.slice(start, start + this.tamanoPagina);
+    const start = this.paginaPendientes * this.tamanoPaginaPendientes;
+    return this.pendientesDeRetiro.slice(start, start + this.tamanoPaginaPendientes);
   }
 
   get historialLector(): Reservacion[] {
@@ -179,8 +201,8 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
   }
 
   get historialLectorPaginados(): Reservacion[] {
-    const start = this.pagina * this.tamanoPagina;
-    return this.historialLector.slice(start, start + this.tamanoPagina);
+    const start = this.paginaHistorial * this.tamanoPaginaHistorial;
+    return this.historialLector.slice(start, start + this.tamanoPaginaHistorial);
   }
 
   tituloLibro(libroId: number): string {
@@ -289,7 +311,7 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
     this.reservacionService.listarPorUsuario(this.usuarioIdBusqueda!, {
       page: this.currentPage, size: this.pageSize, sort: 'id,desc'
     }).subscribe({
-      next: (data) => { this.reservaciones = data.content; this.totalPages = data.totalPages; this.pagina = 0; this.cargando = false; },
+      next: (data) => { this.reservaciones = data.content; this.totalPages = data.totalPages; this.paginaPendientes = 0; this.paginaHistorial = 0; this.cargando = false; },
       error: () => { this.errorMsg = 'Error al buscar las reservaciones'; this.cargando = false; }
     });
   }
