@@ -27,7 +27,7 @@ todavía; hoy solo puede registrarse o iniciar sesión).
 
 El propio \texttt{workspace.dsl} documenta, en su comentario de
 cabecera, una discrepancia real entre el diseño original de Entrega~1A y
-la implementación actual que vale la pena señalar aquí: Gemini~2.0~Flash
+la implementación actual que vale la pena señalar aquí: Gemini~3.5~Flash~Lite
 API y Google Books API aparecían como sistemas externos en el diseño
 original y se \textbf{retiraron} del diagrama actual porque no existe
 ninguna integración con Google Books en el código real (Gemini sí se
@@ -88,7 +88,7 @@ tener una entrada por cada una de las cerca de 30 clases reales:
     correo+IP) y \texttt{ChatbotRateLimiter} (límite de mensajes al
     asistente por usuario).
   \item \textbf{Integración externa} (1 componente): \texttt{GeminiClient}
-    -- cliente HTTP hacia la API de Gemini~2.0~Flash, con reintento
+    -- cliente HTTP hacia la API de Gemini~3.5~Flash~Lite, con reintento
     simple ante 429/timeout/5xx y sin exponer la URL con la API key en
     logs (ver ADR-016, \autoref{sec:adrs}).
 \end{itemize}
