@@ -61,4 +61,5 @@ export interface LibroIsbnLookup {
   anioPublicacion: number | null;
   portadaDisponible: boolean;
   editorial: string | null;
+  numeroPaginas: number | null;
 }
