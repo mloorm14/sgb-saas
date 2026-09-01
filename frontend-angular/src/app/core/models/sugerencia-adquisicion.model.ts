@@ -10,6 +10,7 @@ export interface SugerenciaAdquisicion {
   justificacion: string;
   estado: string;
   revisadoPor: number;
+  proveedorId?: number | null;
   creadoEn: string;
 }
 

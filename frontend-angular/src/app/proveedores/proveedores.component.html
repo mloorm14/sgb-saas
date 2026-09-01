@@ -1,0 +1,91 @@
+<div class="p-6 max-w-6xl mx-auto">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-on-surface">Proveedores</h1>
+    <button (click)="abrirCrear()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">Nuevo proveedor</button>
+  </div>
+
+  <div class="flex gap-3 mb-4 flex-wrap">
+    <input [(ngModel)]="busqueda" (ngModelChange)="aplicarFiltro()" placeholder="Buscar por nombre o RUC..." class="flex-1 min-w-[200px] px-3 py-2 border border-outline-variant rounded-lg bg-surface" />
+    <select [(ngModel)]="filtroActivo" (ngModelChange)="aplicarFiltro()" class="px-3 py-2 border border-outline-variant rounded-lg bg-surface">
+      <option value="todos">Todos</option>
+      <option value="activo">Activos</option>
+      <option value="inactivo">Inactivos</option>
+    </select>
+  </div>
+
+  @if (errorMsg) {
+    <div class="p-3 mb-4 bg-error/10 text-error rounded-lg">{{ errorMsg }}</div>
+  }
+
+  @if (cargando) {
+    <div class="space-y-2 animate-pulse">
+      <div class="h-10 bg-surface-container rounded"></div>
+      <div class="h-10 bg-surface-container rounded"></div>
+      <div class="h-10 bg-surface-container rounded"></div>
+    </div>
+  } @else {
+    @if (filtrados.length === 0) {
+      <div class="text-center py-12 text-on-surface-variant">
+        <p class="text-lg">No hay proveedores para mostrar.</p>
+        <p class="text-sm mt-1">Crea el primero con el botón "Nuevo proveedor".</p>
+      </div>
+    } @else {
+      <div class="bg-white rounded-xl border border-outline-variant overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-surface-container">
+            <tr>
+              <th class="text-left p-3">Nombre</th>
+              <th class="text-left p-3">RUC</th>
+              <th class="text-left p-3">Contacto</th>
+              <th class="text-left p-3">Email</th>
+              <th class="text-left p-3">Estado</th>
+              <th class="text-right p-3">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of filtrados; track p.id) {
+              <tr class="border-t border-outline-variant hover:bg-surface-container/50">
+                <td class="p-3 font-medium">{{ p.nombre }}</td>
+                <td class="p-3">{{ p.ruc || '—' }}</td>
+                <td class="p-3">{{ p.personaContacto || '—' }}</td>
+                <td class="p-3">{{ p.email || '—' }}</td>
+                <td class="p-3">
+                  <span class="px-2 py-1 rounded-full text-xs" [class.bg-green-100]="p.activo" [class.text-green-800]="p.activo" [class.bg-gray-100]="!p.activo" [class.text-gray-600]="!p.activo">
+                    {{ p.activo ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td class="p-3 text-right">
+                  <button (click)="abrirEditar(p)" class="text-primary hover:underline">Editar</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+
+  @if (mostrarForm) {
+    <div class="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50" (click)="cancelar()">
+      <div class="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-auto" (click)="$event.stopPropagation()">
+        <h2 class="text-lg font-bold mb-4">{{ editando ? 'Editar proveedor' : 'Nuevo proveedor' }}</h2>
+        @if (formError) { <div class="p-2 mb-3 bg-error/10 text-error rounded text-sm">{{ formError }}</div> }
+        <div class="space-y-3">
+          <label class="block"><span class="text-sm">Nombre *</span><input [(ngModel)]="form.nombre" class="w-full px-3 py-2 border rounded-lg" placeholder="Nombre del proveedor" /></label>
+          <label class="block"><span class="text-sm">RUC / Identificación fiscal</span><input [(ngModel)]="form.ruc" class="w-full px-3 py-2 border rounded-lg" placeholder="RUC" /></label>
+          <label class="block"><span class="text-sm">Dirección</span><input [(ngModel)]="form.direccion" class="w-full px-3 py-2 border rounded-lg" placeholder="Dirección" /></label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="block"><span class="text-sm">Teléfono</span><input [(ngModel)]="form.telefono" class="w-full px-3 py-2 border rounded-lg" placeholder="Teléfono" /></label>
+            <label class="block"><span class="text-sm">Email</span><input [(ngModel)]="form.email" type="email" class="w-full px-3 py-2 border rounded-lg" placeholder="email@ejemplo.com" /></label>
+          </div>
+          <label class="block"><span class="text-sm">Persona de contacto</span><input [(ngModel)]="form.personaContacto" class="w-full px-3 py-2 border rounded-lg" placeholder="Nombre contacto" /></label>
+          <label class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="form.activo" /> <span class="text-sm">Activo</span></label>
+        </div>
+        <div class="flex justify-end gap-2 mt-6">
+          <button (click)="cancelar()" class="px-4 py-2 border rounded-lg">Cancelar</button>
+          <button (click)="guardar()" [disabled]="guardando" class="px-4 py-2 bg-primary text-white rounded-lg disabled:opacity-50">{{ guardando ? 'Guardando...' : 'Guardar' }}</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
