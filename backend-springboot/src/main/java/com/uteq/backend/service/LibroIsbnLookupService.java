@@ -91,6 +91,7 @@ public class LibroIsbnLookupService {
             Integer anio = anioDesde(volumeInfo.path("publishedDate").asText(null));
             boolean portada = !volumeInfo.path("imageLinks").path("thumbnail").isMissingNode();
             String editorial = volumeInfo.path("publisher").asText(null);
+            Integer numeroPaginas = volumeInfo.has("pageCount") ? volumeInfo.path("pageCount").asInt() : null;
 
             // Solo titulo/resumen/anio son requeridos por el frontend; si Google trae alguno vacío,
             // se intenta complementar con IA (traducción/generación de resumen en español neutro).
@@ -99,7 +100,7 @@ public class LibroIsbnLookupService {
                 if (iaResumen != null && !iaResumen.isBlank()) resumen = iaResumen;
             }
 
-            return new LibroIsbnLookupDTO(titulo, autor, resumen, anio, portada, editorial);
+            return new LibroIsbnLookupDTO(titulo, autor, resumen, anio, portada, editorial, numeroPaginas);
         } catch (EntityNotFoundException ex) {
             // Google no encontró (o 429): fallback a Open Library (gratis, sin key, mejor para fondo español).
             LibroIsbnLookupDTO ol = buscarEnOpenLibrary(isbn);
@@ -108,7 +109,7 @@ public class LibroIsbnLookupService {
                 if ((ol.resumen() == null || ol.resumen().isBlank()) && geminiClient != null) {
                     String iaResumen = generarResumenViaIA(ol.titulo(), ol.autor(), isbn);
                     if (iaResumen != null && !iaResumen.isBlank()) {
-                        return new LibroIsbnLookupDTO(ol.titulo(), ol.autor(), iaResumen, ol.anioPublicacion(), ol.portadaDisponible(), ol.editorial());
+                        return new LibroIsbnLookupDTO(ol.titulo(), ol.autor(), iaResumen, ol.anioPublicacion(), ol.portadaDisponible(), ol.editorial(), ol.numeroPaginas());
                     }
                 }
                 return ol;
@@ -148,9 +149,10 @@ public class LibroIsbnLookupService {
             String editorial = null;
             JsonNode pubs = data.path("publishers");
             if (pubs.isArray() && pubs.size() > 0) editorial = pubs.get(0).path("name").asText(null);
+            Integer numeroPaginas = data.has("number_of_pages") ? data.path("number_of_pages").asInt() : null;
             if (titulo == null && resumen == null && anio == null) return null;
             log.info("Open Library fallback OK para ISBN {} -> {}", isbn, titulo);
-            return new LibroIsbnLookupDTO(titulo, autor, resumen, anio, portada, editorial);
+            return new LibroIsbnLookupDTO(titulo, autor, resumen, anio, portada, editorial, numeroPaginas);
         } catch (Exception e) {
             log.debug("Open Library fallback falló para ISBN {}", isbn, e);
             return null;
@@ -172,16 +174,44 @@ public class LibroIsbnLookupService {
     }
 
     public PortadaImagenDTO obtenerPortada(String isbn) {
-        JsonNode volume = buscarPrimerVolume(isbn);
-        String thumbnail = volume.path("volumeInfo").path("imageLinks").path("thumbnail").asText(null);
-        if (thumbnail == null) {
-            throw new EntityNotFoundException(NO_ENCONTRADO);
+        try {
+            JsonNode volume = buscarPrimerVolume(isbn);
+            String thumbnail = volume.path("volumeInfo").path("imageLinks").path("thumbnail").asText(null);
+            if (thumbnail != null) {
+                byte[] bytes = restClient.get()
+                        .uri(thumbnail)
+                        .retrieve()
+                        .body(byte[].class);
+                return new PortadaImagenDTO(bytes, "image/jpeg");
+            }
+        } catch (EntityNotFoundException ex) {
+            // Google no encontró o falló, se intenta el fallback
         }
-        byte[] bytes = restClient.get()
-                .uri(thumbnail)
-                .retrieve()
-                .body(byte[].class);
-        return new PortadaImagenDTO(bytes, "image/jpeg");
+
+        // Fallback Open Library
+        try {
+            String limpio = isbn.replace("-", "").replace(" ", "");
+            String url = openLibraryUrlBase + "/api/books?bibkeys=ISBN:" + limpio + "&format=json&jscmd=data";
+            String json = restClient.get().uri(url).retrieve().body(String.class);
+            if (json != null && !json.isBlank() && !json.trim().equals("{}")) {
+                JsonNode root = objectMapper.readTree(json);
+                JsonNode data = root.path("ISBN:" + limpio);
+                if (!data.isMissingNode() && !data.isEmpty()) {
+                    if (data.has("cover") && !data.path("cover").path("medium").isMissingNode()) {
+                        String coverUrl = data.path("cover").path("medium").asText();
+                        byte[] bytes = restClient.get()
+                                .uri(coverUrl)
+                                .retrieve()
+                                .body(byte[].class);
+                        return new PortadaImagenDTO(bytes, "image/jpeg");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Open Library fallback portada falló para ISBN {}", isbn, e);
+        }
+
+        throw new EntityNotFoundException(NO_ENCONTRADO);
     }
 
     // El ISBN guardado admite guiones (misma regex que LibroRequestDTO);
