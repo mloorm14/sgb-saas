@@ -5,6 +5,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { UsuarioAdminService } from '../../core/services/usuario-admin.service';
 import { UsuarioAdmin } from '../../core/models/usuario-admin.model';
 import { BuscadorUsuarioComponent } from '../../shared/buscador-usuario/buscador-usuario.component';
+import { FocusTrapDirective } from '../../shared/focus-trap.directive';
 
 // Catálogo real de roles y estados_usuario (db/seed.sql). El backend no
 // valida estos valores contra un enum en el DTO (el catálogo vive en las
@@ -23,7 +24,7 @@ const ESTADO_LABEL: Record<string, string> = {
 @Component({
   selector: 'app-usuarios',
   standalone: true,
-  imports: [CommonModule, FormsModule, BuscadorUsuarioComponent],
+  imports: [CommonModule, FormsModule, BuscadorUsuarioComponent, FocusTrapDirective],
   templateUrl: './usuarios.component.html'
 })
 export class UsuariosComponent implements OnInit {

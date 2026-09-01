@@ -21,11 +21,12 @@ export interface EvidenciaLocal {
 }
 import { BuscadorUsuarioComponent } from '../shared/buscador-usuario/buscador-usuario.component';
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
+import { FocusTrapDirective } from '../shared/focus-trap.directive';
 
 @Component({
   standalone: true,
   selector: 'app-devoluciones',
-  imports: [CommonModule, FormsModule, BuscadorUsuarioComponent, PortadaLibroComponent],
+  imports: [CommonModule, FormsModule, BuscadorUsuarioComponent, PortadaLibroComponent, FocusTrapDirective],
   templateUrl: './devoluciones.component.html'
 })
 export class DevolucionesComponent implements OnInit, OnDestroy {

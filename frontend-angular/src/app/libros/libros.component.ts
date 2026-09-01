@@ -10,6 +10,7 @@ import { IdiomaService } from '../core/services/idioma.service';
 import { EstadoLibroService } from '../core/services/estado-libro.service';
 import { AuthService } from '../core/services/auth.service';
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
+import { FocusTrapDirective } from '../shared/focus-trap.directive';
 import { Categoria } from '../core/models/categoria.model';
 import { Autor } from '../core/models/autor.model';
 import { Editorial } from '../core/models/editorial.model';
@@ -21,7 +22,7 @@ import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 @Component({
   standalone: true,
     selector: 'app-libros',
-    imports: [CommonModule, ReactiveFormsModule, FormsModule, PortadaLibroComponent],
+    imports: [CommonModule, ReactiveFormsModule, FormsModule, PortadaLibroComponent, FocusTrapDirective],
     templateUrl: './libros.component.html'
 })
 export class LibrosComponent implements OnInit, OnDestroy {

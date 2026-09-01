@@ -1,17 +1,19 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ConfirmDialogService, ConfirmOptions } from './confirm-dialog.service';
+import { FocusTrapDirective } from '../focus-trap.directive';
 
 @Component({
   selector: 'app-confirm-dialog',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FocusTrapDirective],
   template: `
     @if (visible) {
       <div class="fixed inset-0 z-[10000] flex items-center justify-center p-md" (click)="onCancel()">
         <div class="absolute inset-0 bg-black/50"></div>
-        <div role="dialog" aria-modal="true" [attr.aria-label]="options?.title ?? 'Confirmar'"
-          class="relative z-10 max-w-md w-full bg-white rounded-xl shadow-xl p-xl"
+        <div role="dialog" aria-modal="true" [attr.aria-label]="options?.title ?? 'Confirmar'" tabindex="-1"
+          appFocusTrap (cerrar)="onCancel()"
+          class="relative z-10 max-w-md w-full bg-surface-container-lowest rounded-xl shadow-xl p-xl"
           (click)="$event.stopPropagation()">
           @if (options?.title) {
             <h3 class="font-headline-md text-headline-md text-on-background mb-sm">{{ options?.title }}</h3>
