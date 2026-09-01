@@ -42,6 +42,36 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
   errorMsg: string = '';
   accionandoId: number | null = null;
 
+  pagina = 0;
+  tamanoPagina = 10;
+
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.reservaciones.length / this.tamanoPagina));
+  }
+  get datosPaginados() {
+    const start = this.pagina * this.tamanoPagina;
+    return this.reservaciones.slice(start, start + this.tamanoPagina);
+  }
+  get paginasVisibles(): number[] {
+    const windowSize = 4;
+    let start = Math.max(0, this.pagina - 1);
+    let end = Math.min(this.totalPaginas, start + windowSize);
+    if (end - start < windowSize) start = Math.max(0, end - windowSize);
+    return Array.from({ length: end - start }, (_, i) => start + i);
+  }
+  get puedeAnterior(): boolean { return this.pagina > 0; }
+  get puedeSiguiente(): boolean { return this.pagina < this.totalPaginas - 1; }
+  irAPagina(p: number): void {
+    if (p < 0 || p >= this.totalPaginas || p === this.pagina) return;
+    this.pagina = p;
+  }
+  paginaAnterior(): void { if (this.puedeAnterior) this.pagina--; }
+  paginaSiguiente(): void { if (this.puedeSiguiente) this.pagina++; }
+  cambiarTamano(n: number): void {
+    this.tamanoPagina = Number(n);
+    this.pagina = 0;
+  }
+
   readonly estadosReservacion: Record<number, string> = {
     1: 'Pendiente',
     2: 'Lista para retiro',
@@ -130,7 +160,7 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
     this.reservacionService.listarPorUsuario(this.usuarioIdBusqueda, {
       page: 0, size: 100, sort: 'id,desc'
     }).subscribe({
-      next: (data) => { this.reservaciones = data.content; this.cargando = false; },
+      next: (data) => { this.reservaciones = data.content; this.pagina = 0; this.cargando = false; },
       error: () => { this.errorMsg = 'Error al buscar las reservaciones'; this.cargando = false; }
     });
   }
@@ -139,8 +169,18 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
     return this.reservaciones.filter(r => r.estadoReservacionId === 1 || r.estadoReservacionId === 2);
   }
 
+  get pendientesDeRetiroPaginados(): Reservacion[] {
+    const start = this.pagina * this.tamanoPagina;
+    return this.pendientesDeRetiro.slice(start, start + this.tamanoPagina);
+  }
+
   get historialLector(): Reservacion[] {
     return this.reservaciones.filter(r => r.estadoReservacionId !== 1 && r.estadoReservacionId !== 2);
+  }
+
+  get historialLectorPaginados(): Reservacion[] {
+    const start = this.pagina * this.tamanoPagina;
+    return this.historialLector.slice(start, start + this.tamanoPagina);
   }
 
   tituloLibro(libroId: number): string {
@@ -249,17 +289,9 @@ export class ReservacionesComponent implements OnInit, OnDestroy {
     this.reservacionService.listarPorUsuario(this.usuarioIdBusqueda!, {
       page: this.currentPage, size: this.pageSize, sort: 'id,desc'
     }).subscribe({
-      next: (data) => { this.reservaciones = data.content; this.totalPages = data.totalPages; this.cargando = false; },
+      next: (data) => { this.reservaciones = data.content; this.totalPages = data.totalPages; this.pagina = 0; this.cargando = false; },
       error: () => { this.errorMsg = 'Error al buscar las reservaciones'; this.cargando = false; }
     });
-  }
-
-  paginaAnterior(): void {
-    if (this.currentPage > 0) { this.currentPage--; this.cargarPagina(); }
-  }
-
-  paginaSiguiente(): void {
-    if (this.currentPage < this.totalPages - 1) { this.currentPage++; this.cargarPagina(); }
   }
 
   onInputCorreo(): void {

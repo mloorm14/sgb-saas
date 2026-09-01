@@ -258,7 +258,7 @@
             <p class="text-on-surface-variant text-sm text-center py-4">Este usuario no tiene préstamos registrados</p>
           } @else {
             <div class="pl-2">
-              @for (item of historial; track item.prestamoId) {
+              @for (item of datosPaginados; track item.prestamoId) {
                 <div class="relative flex gap-6 pb-6">
                   <div class="w-10 h-10 rounded-full flex items-center justify-center z-10 shrink-0 border-2 border-white shadow-sm"
                     [ngClass]="{
@@ -281,6 +281,22 @@
                   </div>
                 </div>
               }
+            </div>
+            <div class="flex flex-wrap justify-between items-center mt-lg gap-sm">
+              <div class="flex items-center gap-xs font-body-sm text-body-sm">
+                <span class="text-on-surface-variant">Mostrar</span>
+                <label for="page-size-prestamos" class="sr-only">Elementos por página</label>
+                <select [ngModel]="tamanoPagina" (ngModelChange)="cambiarTamano($event)" id="page-size-prestamos" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-surface-container-lowest cursor-pointer appearance-none text-xs leading-tight py-1.5">
+                  <option [ngValue]="10">10</option><option [ngValue]="20">20</option><option [ngValue]="50">50</option>
+                </select>
+              </div>
+              <div class="flex items-center gap-xs">
+                <button (click)="paginaAnterior()" [disabled]="!puedeAnterior" class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs"><span class="material-symbols-outlined text-[18px]">chevron_left</span> Anterior</button>
+                @for (p of paginasVisibles; track p) {
+                  <button (click)="irAPagina(p)" class="w-8 h-8 min-w-[44px] min-h-[44px] rounded font-label-sm text-label-sm cursor-pointer" [class.bg-primary]="p===pagina" [class.text-on-primary]="p===pagina" [class.text-on-surface-variant]="p!==pagina" [class.border]="p!==pagina" [class.border-outline-variant]="p!==pagina" [class.hover:bg-surface-container-low]="p!==pagina">{{ p+1 }}</button>
+                }
+                <button (click)="paginaSiguiente()" [disabled]="!puedeSiguiente" class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">Siguiente <span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+              </div>
             </div>
           }
         </div>

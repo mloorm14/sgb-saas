@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ReporteService, LibroMasPrestado, ReporteMorosidad } from '../core/services/reporte-gerencial.service';
 import { AuthService } from '../core/services/auth.service';
+import { ThemeService } from '../core/services/theme.service';
 import { MultaService } from '../core/services/multa.service';
 import { ResumenFinancieroMultas } from '../core/models/multa.model';
 import { AuditoriaService } from '../core/services/auditoria.service';
@@ -56,6 +57,7 @@ export class DashboardGerenteComponent implements OnInit {
   constructor(
     private reporteService: ReporteService,
     private authService: AuthService,
+    public themeService: ThemeService,
     private multaService: MultaService,
     private auditoriaService: AuditoriaService
   ) {}

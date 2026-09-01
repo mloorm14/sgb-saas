@@ -92,7 +92,6 @@ describe('AppComponent', () => {
     const compiled = fixture.nativeElement as HTMLElement;
 
     expect(compiled.textContent).toContain('Libros');
-    expect(compiled.textContent).toContain('Reportes');
   });
 
   it('GERENTE ve reportes y sugerencias pero NO usuarios ni auditoría', () => {
@@ -111,7 +110,7 @@ describe('AppComponent', () => {
     expect(compiled.textContent).not.toContain('Mis Préstamos');
   });
 
-  it('ADMIN ve inventario, sugerencias, usuarios y auditoria pero NO reportes ni prestamos (backend)', () => {
+  it('ADMIN ve inventario, sugerencias, usuarios, auditoria y reportes pero NO prestamos (backend)', () => {
     authService.isLoggedIn.and.returnValue(true);
     authService.hasRole.and.callFake((...roles: string[]) => roles.includes('ADMIN'));
 
@@ -124,7 +123,7 @@ describe('AppComponent', () => {
     expect(compiled.textContent).toContain('Sugerencias');
     expect(compiled.textContent).toContain('Usuarios');
     expect(compiled.textContent).toContain('Auditoría');
-    expect(compiled.textContent).not.toContain('Reportes');
+    expect(compiled.textContent).toContain('Reportes');
     expect(compiled.textContent).not.toContain('Préstamos');
   });
 });

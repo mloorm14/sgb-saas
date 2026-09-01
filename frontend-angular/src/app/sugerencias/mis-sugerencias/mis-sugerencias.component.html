@@ -15,7 +15,21 @@
   }
 
   @if (cargando && sugerencias.length === 0) {
-    <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando solicitudes…</p>
+    <div class="rounded-lg border border-outline-variant bg-surface-container-lowest animate-pulse overflow-hidden">
+      <table class="w-full text-left">
+        <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">Título</th><th class="px-md py-sm hidden md:table-cell">Autor</th><th class="px-md py-sm">Estado</th><th class="px-md py-sm hidden sm:table-cell">Fecha</th></tr></thead>
+        <tbody class="divide-y divide-outline-variant">
+          @for (i of [1,2,3,4,5]; track i) {
+            <tr>
+              <td class="px-md py-sm"><div class="h-4 bg-surface-container-high rounded w-3/4"></div></td>
+              <td class="px-md py-sm hidden md:table-cell"><div class="h-4 bg-surface-container-high rounded w-1/2"></div></td>
+              <td class="px-md py-sm"><div class="h-4 bg-surface-container-high rounded w-1/3"></div></td>
+              <td class="px-md py-sm hidden sm:table-cell"><div class="h-4 bg-surface-container-high rounded w-1/2"></div></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   }
 
   @if (!cargando && sugerencias.length === 0 && !errorMsg) {

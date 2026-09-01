@@ -183,15 +183,36 @@
           <table class="w-full text-left">
             <thead class="bg-surface-container-low sticky top-0 z-10">
               <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
-                <th class="px-md py-sm">Fecha/hora</th>
-                <th class="px-md py-sm">Usuario</th>
-                <th class="px-md py-sm">Acción</th>
+                <th class="px-md py-sm cursor-pointer select-none" (click)="ordenarPor('fechaHora')">
+                  <span class="inline-flex items-center gap-xs">
+                    Fecha/hora
+                    @if (ordenColumna === 'fechaHora') {
+                      <span class="material-symbols-outlined text-[14px]">{{ direccionAsc ? 'arrow_upward' : 'arrow_downward' }}</span>
+                    }
+                  </span>
+                </th>
+                <th class="px-md py-sm cursor-pointer select-none" (click)="ordenarPor('usuario')">
+                  <span class="inline-flex items-center gap-xs">
+                    Usuario
+                    @if (ordenColumna === 'usuario') {
+                      <span class="material-symbols-outlined text-[14px]">{{ direccionAsc ? 'arrow_upward' : 'arrow_downward' }}</span>
+                    }
+                  </span>
+                </th>
+                <th class="px-md py-sm cursor-pointer select-none" (click)="ordenarPor('accion')">
+                  <span class="inline-flex items-center gap-xs">
+                    Acción
+                    @if (ordenColumna === 'accion') {
+                      <span class="material-symbols-outlined text-[14px]">{{ direccionAsc ? 'arrow_upward' : 'arrow_downward' }}</span>
+                    }
+                  </span>
+                </th>
                 <th class="px-md py-sm hidden md:table-cell">Módulo</th>
                 <th class="px-md py-sm text-right">Detalle</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-              @for (evento of eventos; track evento.id) {
+              @for (evento of datosOrdenados; track evento.id) {
                 <tr class="hover:bg-surface-container-low/50 transition-colors">
                   <td class="px-md py-sm text-on-surface-variant whitespace-nowrap">{{ formatoFecha(evento.fechaHora) }}</td>
                   <td class="px-md py-sm">

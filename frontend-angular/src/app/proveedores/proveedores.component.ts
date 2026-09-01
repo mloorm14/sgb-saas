@@ -18,6 +18,9 @@ export class ProveedoresComponent implements OnInit {
   busqueda = '';
   filtroActivo: 'todos' | 'activo' | 'inactivo' = 'todos';
 
+  pagina = 0;
+  tamanoPagina = 10;
+
   // form
   mostrarForm = false;
   editando: Proveedor | null = null;
@@ -48,6 +51,34 @@ export class ProveedoresComponent implements OnInit {
       r = r.filter(p => this.filtroActivo === 'activo' ? p.activo : !p.activo);
     }
     this.filtrados = r;
+    this.pagina = 0;
+  }
+
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.filtrados.length / this.tamanoPagina));
+  }
+  get datosPaginados() {
+    const start = this.pagina * this.tamanoPagina;
+    return this.filtrados.slice(start, start + this.tamanoPagina);
+  }
+  get paginasVisibles(): number[] {
+    const windowSize = 4;
+    let start = Math.max(0, this.pagina - 1);
+    let end = Math.min(this.totalPaginas, start + windowSize);
+    if (end - start < windowSize) start = Math.max(0, end - windowSize);
+    return Array.from({ length: end - start }, (_, i) => start + i);
+  }
+  get puedeAnterior(): boolean { return this.pagina > 0; }
+  get puedeSiguiente(): boolean { return this.pagina < this.totalPaginas - 1; }
+  irAPagina(p: number): void {
+    if (p < 0 || p >= this.totalPaginas || p === this.pagina) return;
+    this.pagina = p;
+  }
+  paginaAnterior(): void { if (this.puedeAnterior) this.pagina--; }
+  paginaSiguiente(): void { if (this.puedeSiguiente) this.pagina++; }
+  cambiarTamano(n: number): void {
+    this.tamanoPagina = Number(n);
+    this.pagina = 0;
   }
 
   abrirCrear(): void {

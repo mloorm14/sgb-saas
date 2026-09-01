@@ -85,7 +85,7 @@ export class AppComponent {
   // @PreAuthorize reales de cada controller:
   // - /prestamos/gestion, /reservaciones, /multas: BIBLIOTECARIO/GERENTE
   //   (ADMIN no tiene endpoints en esos controllers).
-  // - /reportes: BIBLIOTECARIO/GERENTE (el ADMIN no entra).
+  // - /reportes: GERENTE/ADMIN (PrestamoController).
   // - /sugerencias/gestion, /admin/usuarios: GERENTE/ADMIN.
   // - /auditoria: solo ADMIN.
   // - /admin/configuracion: solo ADMIN (ConfiguracionSistemaController,
@@ -105,7 +105,7 @@ export class AppComponent {
     { ruta: '/prestamos/gestion', etiqueta: 'Préstamos', icono: 'assignment_return', roles: ['BIBLIOTECARIO', 'GERENTE'] },
     { ruta: '/reservaciones', etiqueta: 'Reservaciones', icono: 'event_available', roles: ['BIBLIOTECARIO', 'GERENTE'] },
     { ruta: '/multas', etiqueta: 'Multas', icono: 'payments', roles: ['BIBLIOTECARIO', 'GERENTE'] },
-    { ruta: '/reportes', etiqueta: 'Reportes', icono: 'bar_chart', roles: ['BIBLIOTECARIO', 'GERENTE'] },
+    { ruta: '/dashboard-admin/reportes', etiqueta: 'Reportes', icono: 'bar_chart', roles: ['GERENTE', 'ADMIN'] },
     { ruta: '/sugerencias/gestion', etiqueta: 'Sugerencias', icono: 'lightbulb', roles: ['GERENTE', 'ADMIN'] },
     { ruta: '/dashboard-admin/admin/usuarios', etiqueta: 'Usuarios', icono: 'manage_accounts', roles: ['ADMIN'] },
     { ruta: '/dashboard-admin/auditoria', etiqueta: 'Auditoría', icono: 'receipt_long', roles: ['ADMIN'] },

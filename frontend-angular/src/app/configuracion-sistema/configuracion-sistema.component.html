@@ -43,7 +43,15 @@
     }
 
     @if (cargando) {
-      <div class="text-center py-xl font-body-sm text-body-sm text-on-surface-variant">Cargando configuración...</div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md animate-pulse">
+        @for (i of [1,2,3]; track i) {
+          <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-md">
+            <div class="h-4 bg-surface-container-high rounded w-3/4 mb-sm"></div>
+            <div class="h-3 bg-surface-container-high rounded w-1/2 mb-xs"></div>
+            <div class="h-3 bg-surface-container-high rounded w-2/3"></div>
+          </div>
+        }
+      </div>
     }
 
     <!-- ═══ VISTA ROOT: 2 módulos ═══ -->

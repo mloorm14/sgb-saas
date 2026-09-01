@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { FavoritoService } from '../core/services/favorito.service';
 import { Favorito } from '../core/models/favorito.model';
@@ -12,13 +13,43 @@ import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.com
 @Component({
   standalone: true,
   selector: 'app-favoritos',
-  imports: [CommonModule, RouterLink, PortadaLibroComponent],
+  imports: [CommonModule, FormsModule, RouterLink, PortadaLibroComponent],
   templateUrl: './favoritos.component.html'
 })
 export class FavoritosComponent implements OnInit {
   favoritos: Favorito[] = [];
   cargando: boolean = false;
   errorMsg: string = '';
+
+  pagina = 0;
+  tamanoPagina = 10;
+
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.favoritos.length / this.tamanoPagina));
+  }
+  get datosPaginados() {
+    const start = this.pagina * this.tamanoPagina;
+    return this.favoritos.slice(start, start + this.tamanoPagina);
+  }
+  get paginasVisibles(): number[] {
+    const windowSize = 4;
+    let start = Math.max(0, this.pagina - 1);
+    let end = Math.min(this.totalPaginas, start + windowSize);
+    if (end - start < windowSize) start = Math.max(0, end - windowSize);
+    return Array.from({ length: end - start }, (_, i) => start + i);
+  }
+  get puedeAnterior(): boolean { return this.pagina > 0; }
+  get puedeSiguiente(): boolean { return this.pagina < this.totalPaginas - 1; }
+  irAPagina(p: number): void {
+    if (p < 0 || p >= this.totalPaginas || p === this.pagina) return;
+    this.pagina = p;
+  }
+  paginaAnterior(): void { if (this.puedeAnterior) this.pagina--; }
+  paginaSiguiente(): void { if (this.puedeSiguiente) this.pagina++; }
+  cambiarTamano(n: number): void {
+    this.tamanoPagina = Number(n);
+    this.pagina = 0;
+  }
 
   constructor(private favoritoService: FavoritoService) {}
 
@@ -31,6 +62,7 @@ export class FavoritosComponent implements OnInit {
     this.favoritoService.listar().subscribe({
       next: (favoritos) => {
         this.favoritos = favoritos;
+        this.pagina = 0;
         this.cargando = false;
       },
       error: () => {

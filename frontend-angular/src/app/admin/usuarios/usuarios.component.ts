@@ -44,6 +44,9 @@ export class UsuariosComponent implements OnInit {
   errorMsg: string = '';
   mensajeOk: string = '';
 
+  ordenColumna: string = '';
+  direccionAsc: boolean = true;
+
   // Modal de motivo para cambio de estado (motivo @NotBlank del backend)
   mostrarModalEstado: boolean = false;
   usuarioAccion: UsuarioAdmin | null = null;
@@ -63,6 +66,27 @@ export class UsuariosComponent implements OnInit {
     if (this.puedeVer) {
       this.cargarPagina();
     }
+  }
+
+  ordenarPor(columna: string): void {
+    if (this.ordenColumna === columna) {
+      this.direccionAsc = !this.direccionAsc;
+    } else {
+      this.ordenColumna = columna;
+      this.direccionAsc = true;
+    }
+  }
+
+  get datosOrdenados() {
+    const col = this.ordenColumna;
+    const asc = this.direccionAsc;
+    if (!col) return this.usuarios;
+    return [...this.usuarios].sort((a: any, b: any) => {
+      const va = a[col] ?? '';
+      const vb = b[col] ?? '';
+      const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es');
+      return asc ? cmp : -cmp;
+    });
   }
 
   get paginasVisibles(): number[] {

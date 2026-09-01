@@ -39,7 +39,7 @@
       @if (pendientesDeRetiro.length > 0) {
         <h2 class="font-headline-md text-headline-md text-on-background mb-sm">Pendientes de retiro</h2>
         <div class="grid gap-sm mb-xl">
-          @for (r of pendientesDeRetiro; track r.id) {
+          @for (r of pendientesDeRetiroPaginados; track r.id) {
             <div class="rounded-lg border border-outline-variant bg-surface-container-lowest p-md flex items-center justify-between gap-sm">
               <div>
                 <p class="font-label-md text-label-sm text-on-surface">{{ tituloLibro(r.libroId) }}</p>
@@ -58,6 +58,22 @@
             </div>
           }
         </div>
+        <div class="flex flex-wrap justify-between items-center mt-lg gap-sm">
+          <div class="flex items-center gap-xs font-body-sm text-body-sm">
+            <span class="text-on-surface-variant">Mostrar</span>
+            <label for="page-size-reservaciones-pendientes" class="sr-only">Elementos por página</label>
+            <select [ngModel]="tamanoPagina" (ngModelChange)="cambiarTamano($event)" id="page-size-reservaciones-pendientes" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-surface-container-lowest cursor-pointer appearance-none text-xs leading-tight py-1.5">
+              <option [ngValue]="10">10</option><option [ngValue]="20">20</option><option [ngValue]="50">50</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-xs">
+            <button (click)="paginaAnterior()" [disabled]="!puedeAnterior" class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs"><span class="material-symbols-outlined text-[18px]">chevron_left</span> Anterior</button>
+            @for (p of paginasVisibles; track p) {
+              <button (click)="irAPagina(p)" class="w-8 h-8 min-w-[44px] min-h-[44px] rounded font-label-sm text-label-sm cursor-pointer" [class.bg-primary]="p===pagina" [class.text-on-primary]="p===pagina" [class.text-on-surface-variant]="p!==pagina" [class.border]="p!==pagina" [class.border-outline-variant]="p!==pagina" [class.hover:bg-surface-container-low]="p!==pagina">{{ p+1 }}</button>
+            }
+            <button (click)="paginaSiguiente()" [disabled]="!puedeSiguiente" class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">Siguiente <span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+          </div>
+        </div>
       }
 
       @if (historialLector.length > 0) {
@@ -72,7 +88,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-              @for (r of historialLector; track r.id) {
+              @for (r of historialLectorPaginados; track r.id) {
                 <tr>
                   <td class="px-md py-sm">{{ tituloLibro(r.libroId) }}</td>
                   <td class="px-md py-sm text-on-surface-variant">{{ r.fechaReserva | date:'dd MMM yyyy' }}</td>
@@ -85,6 +101,22 @@
               }
             </tbody>
           </table>
+        </div>
+        <div class="flex flex-wrap justify-between items-center mt-lg gap-sm">
+          <div class="flex items-center gap-xs font-body-sm text-body-sm">
+            <span class="text-on-surface-variant">Mostrar</span>
+            <label for="page-size-reservaciones" class="sr-only">Elementos por página</label>
+            <select [ngModel]="tamanoPagina" (ngModelChange)="cambiarTamano($event)" id="page-size-reservaciones" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-surface-container-lowest cursor-pointer appearance-none text-xs leading-tight py-1.5">
+              <option [ngValue]="10">10</option><option [ngValue]="20">20</option><option [ngValue]="50">50</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-xs">
+            <button (click)="paginaAnterior()" [disabled]="!puedeAnterior" class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs"><span class="material-symbols-outlined text-[18px]">chevron_left</span> Anterior</button>
+            @for (p of paginasVisibles; track p) {
+              <button (click)="irAPagina(p)" class="w-8 h-8 min-w-[44px] min-h-[44px] rounded font-label-sm text-label-sm cursor-pointer" [class.bg-primary]="p===pagina" [class.text-on-primary]="p===pagina" [class.text-on-surface-variant]="p!==pagina" [class.border]="p!==pagina" [class.border-outline-variant]="p!==pagina" [class.hover:bg-surface-container-low]="p!==pagina">{{ p+1 }}</button>
+            }
+            <button (click)="paginaSiguiente()" [disabled]="!puedeSiguiente" class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">Siguiente <span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+          </div>
         </div>
       }
     }

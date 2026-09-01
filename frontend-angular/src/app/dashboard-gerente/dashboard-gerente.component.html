@@ -1,14 +1,31 @@
 <main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
-  <div class="mb-lg">
-    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">{{ tituloBienvenida }}</h1>
-    <p class="font-body-sm text-body-sm text-on-surface-variant">Resumen del estado actual de la biblioteca</p>
+  <div class="flex items-center justify-between mb-lg">
+    <div>
+      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">{{ tituloBienvenida }}</h1>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">Resumen del estado actual de la biblioteca</p>
+    </div>
+    <button type="button" (click)="themeService.toggle()"
+      [attr.aria-label]="themeService.oscuro() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
+      [attr.aria-pressed]="themeService.oscuro()"
+      title="Cambiar tema"
+      class="shrink-0 flex items-center justify-center w-9 h-9 rounded-full hover:bg-surface-container-low transition-colors cursor-pointer text-on-surface-variant">
+      <span class="material-symbols-outlined text-[20px]">{{ themeService.oscuro() ? 'light_mode' : 'dark_mode' }}</span>
+    </button>
   </div>
 
   @if (error) {
     <p class="font-body-sm text-body-sm text-error mb-md">{{ error }}</p>
   }
   @if (cargando) {
-    <p class="font-body-sm text-body-sm text-on-surface-variant mb-md">Cargando dashboard…</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md animate-pulse">
+      @for (i of [1,2,3,4]; track i) {
+        <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-md">
+          <div class="h-4 bg-surface-container-high rounded w-3/4 mb-sm"></div>
+          <div class="h-3 bg-surface-container-high rounded w-1/2 mb-xs"></div>
+          <div class="h-3 bg-surface-container-high rounded w-2/3"></div>
+        </div>
+      }
+    </div>
   }
 
   <!-- Libros más prestados: datos reales de GET /api/v1/prestamos/reportes/libros-mas-prestados.
@@ -16,7 +33,7 @@
        hasAnyRole('BIBLIOTECARIO','GERENTE')). -->
   @if (esGerente) {
   <div class="grid lg:grid-cols-2 gap-lg mb-xl">
-    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm p-lg">
       <h2 class="font-headline-md text-headline-md text-on-background mb-md">Libros más prestados</h2>
       <div class="space-y-sm">
         @for (libro of librosMasPrestados; track libro.libroId; let i = $index) {
@@ -36,7 +53,7 @@
     </div>
 
     <!-- Accesos rápidos: routerLink a rutas reales del GERENTE (roleGuard en app.routes.ts) -->
-    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm p-lg">
       <h2 class="font-headline-md text-headline-md text-on-background mb-md">Accesos rápidos</h2>
       <div class="grid grid-cols-2 gap-sm">
         <a routerLink="/dashboard-admin/sugerencias/gestion" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
@@ -61,7 +78,7 @@
   <div class="grid lg:grid-cols-3 gap-lg mb-xl">
     <!-- Resumen financiero: GET /api/v1/multas/reportes/resumen-financiero
          GERENTE/ADMIN: admite ambos roles (MultaController). -->
-    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm p-lg">
       <h2 class="font-headline-md text-headline-md text-on-background mb-md">Resumen financiero</h2>
       @if (cargandoFinanciero) {
         <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando…</p>
@@ -110,7 +127,7 @@
          componente). Solo GERENTE: ADMIN no tiene acceso
          (@PreAuthorize hasAnyRole('BIBLIOTECARIO','GERENTE')). -->
     @if (esGerente) {
-    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm p-lg">
       <h2 class="font-headline-md text-headline-md text-on-background mb-md">Morosidad (top 10)</h2>
       @if (cargandoMorosidad) {
         <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando…</p>
@@ -133,7 +150,7 @@
 
     <!-- Actividad de auditoría reciente: GET /api/v1/auditoria?size=5 (lista
          compacta -- la tabla completa vive en /auditoria). -->
-    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm p-lg">
       <h2 class="font-headline-md text-headline-md text-on-background mb-md">Actividad reciente</h2>
       @if (cargandoAuditoria) {
         <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando…</p>
