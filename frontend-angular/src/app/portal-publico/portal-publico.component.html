@@ -42,7 +42,7 @@
     </div>
     @if (sugerencias.length > 0) {
       <div class="relative">
-        <div class="absolute mt-xs w-full bg-white rounded shadow-lg border border-outline-variant overflow-hidden z-10">
+        <div class="absolute mt-xs w-full bg-surface-container-lowest rounded shadow-lg border border-outline-variant overflow-hidden z-10">
           @for (sug of sugerencias; track sug.id) {
             <a [routerLink]="['/portal', sug.id]" (click)="textoBusqueda = ''; sugerencias = []"
               class="w-full block text-left px-md py-sm hover:bg-surface-container-low flex items-center justify-between border-b border-outline-variant">
@@ -75,7 +75,7 @@
   <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-md mb-xl">
     @if (cargando && libros.length === 0) {
       @for (slot of skeletonSlots; track slot) {
-        <div class="rounded-lg overflow-hidden bg-white border border-outline-variant animate-pulse" aria-hidden="true">
+        <div class="rounded-lg overflow-hidden bg-surface-container-lowest border border-outline-variant animate-pulse" aria-hidden="true">
           <div class="aspect-[3/4] bg-surface-container-low"></div>
           <div class="p-sm">
             <div class="h-3 bg-surface-container-low rounded mb-1"></div>
@@ -86,7 +86,7 @@
     } @else {
       @for (libro of libros; track libro.id) {
         <a [routerLink]="['/portal', libro.id]"
-          class="rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow">
+          class="rounded-lg overflow-hidden bg-surface-container-lowest border border-outline-variant hover:shadow-lg transition-shadow">
           <div class="aspect-[3/4] bg-surface-container-low overflow-hidden">
             @if (libro.tienePortada) {
               <img [src]="portadaUrl(libro.id)" [alt]="'Portada de ' + libro.titulo"

@@ -1,5 +1,5 @@
 <div class="relative max-w-md">
-  <div class="rounded border border-outline-variant bg-white flex items-center px-sm">
+  <div class="rounded border border-outline-variant bg-surface-container-lowest flex items-center px-sm">
     <span class="material-symbols-outlined text-outline text-[20px] mr-xs">search</span>
     <label for="buscador-libro" class="sr-only">Buscar libro</label>
     <input
@@ -22,7 +22,7 @@
   </div>
 
   @if (sugerencias.length > 0) {
-    <ul id="buscador-libro-listbox" role="listbox" aria-label="Sugerencias de libros" class="absolute mt-xs w-full bg-white rounded shadow-lg border border-outline-variant overflow-hidden z-10">
+    <ul id="buscador-libro-listbox" role="listbox" aria-label="Sugerencias de libros" class="absolute mt-xs w-full bg-surface-container-lowest rounded shadow-lg border border-outline-variant overflow-hidden z-10">
       @for (libro of sugerencias; track libro.id; let i = $index) {
         <li [id]="'buscador-libro-option-' + i" role="option" [attr.aria-selected]="i === indiceActivo">
           <button

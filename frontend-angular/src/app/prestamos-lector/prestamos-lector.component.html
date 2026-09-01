@@ -19,7 +19,7 @@
   @if (!cargandoActivos && prestamosActivos.length > 0) {
     <div class="grid md:grid-cols-2 gap-md mb-xl">
       @for (activo of prestamosActivos; track activo.prestamoId) {
-        <div class="rounded-lg border border-outline-variant bg-white p-md flex gap-md">
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest p-md flex gap-md">
           <div class="w-4 shrink-0 rounded-full" [class]="claseLinea(activo.diasRestantes)"></div>
           <div class="flex-1">
             <p class="font-label-md text-[14px] text-on-surface">{{ activo.libroTitulo }}</p>
@@ -47,7 +47,7 @@
     <div class="text-center py-md font-body-sm text-body-sm text-on-surface-variant">Cargando préstamos...</div>
   }
   @if (!cargando && prestamos.length > 0) {
-    <div class="rounded-lg border border-outline-variant bg-white overflow-hidden mb-lg">
+    <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-hidden mb-lg">
       <table class="w-full text-left">
         <thead class="bg-surface-container-low">
           <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">

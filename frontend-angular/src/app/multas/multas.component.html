@@ -21,15 +21,15 @@
 
   <!-- Mensajes -->
   @if (errorMsg) {
-    <div role="alert" class="rounded-lg bg-red-50 border border-red-200 p-md mb-md flex items-center gap-sm">
+    <div role="alert" class="rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 p-md mb-md flex items-center gap-sm">
       <span class="material-symbols-outlined text-red-500 text-[20px]">error</span>
-      <p class="font-body-sm text-body-sm text-red-700">{{ errorMsg }}</p>
+      <p class="font-body-sm text-body-sm text-red-700 dark:text-red-300">{{ errorMsg }}</p>
     </div>
   }
   @if (exitoMsg) {
-    <div role="status" class="rounded-lg bg-green-50 border border-green-200 p-md mb-md flex items-center gap-sm">
+    <div role="status" class="rounded-lg bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 p-md mb-md flex items-center gap-sm">
       <span class="material-symbols-outlined text-green-500 text-[20px]">check_circle</span>
-      <p class="font-body-sm text-body-sm text-green-700">{{ exitoMsg }}</p>
+      <p class="font-body-sm text-body-sm text-green-700 dark:text-green-300">{{ exitoMsg }}</p>
     </div>
   }
 
@@ -128,7 +128,7 @@
       </div>
     } @else {
       @for (multa of multasFiltradas; track multa.id) {
-        <div class="rounded-xl border bg-white p-md mb-sm"
+        <div class="rounded-xl border bg-surface-container-lowest p-md mb-sm"
           [class.border-red-200]="multa.estadoMultaId === 1 && multa.montoPagado === 0"
           [class.border-amber-200]="multa.montoPagado > 0 && multa.estadoMultaId === 1"
           [class.border-green-200]="multa.estadoMultaId === 2">
@@ -168,7 +168,7 @@
                   </button>
                   @if (puedeAnular()) {
                     <button (click)="abrirModalAnulacion(multa)"
-                      class="h-9 px-md rounded-lg border border-red-300 bg-red-50 text-red-700 font-label-sm text-label-sm hover:bg-red-100 cursor-pointer flex items-center gap-xs">
+                      class="h-9 px-md rounded-lg border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-label-sm text-label-sm hover:bg-red-100 dark:hover:bg-red-950/70 cursor-pointer flex items-center gap-xs">
                       <span class="material-symbols-outlined text-[16px]">block</span>
                       Anular
                     </button>
@@ -179,7 +179,7 @@
           </div>
         </div>
       } @empty {
-        <div class="rounded-xl border border-dashed border-outline-variant bg-white p-xl text-center">
+        <div class="rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest p-xl text-center">
           <span class="material-symbols-outlined text-[40px] text-outline">payments</span>
           <p class="font-body-md text-body-md text-on-surface-variant mt-sm">
             {{ filtroActivo === 'TODOS' ? 'No hay multas registradas' : 'No hay multas con este filtro' }}
@@ -190,9 +190,9 @@
       <!-- Paginación -->
       @if (totalPages > 1) {
         <div class="flex justify-center items-center gap-md font-body-sm text-body-sm mt-lg">
-          <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
+          <button (click)="paginaAnterior()" [disabled]="currentPage === 0" aria-label="Página anterior"
             class="w-8 h-8 min-w-[44px] min-h-[44px] rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
-            <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+            <span class="material-symbols-outlined text-[18px]" aria-hidden="true">chevron_left</span>
           </button>
           @for (pagina of paginasVisibles; track pagina) {
             <button (click)="irAPagina(pagina)"
@@ -204,9 +204,9 @@
               {{ pagina + 1 }}
             </button>
           }
-          <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
+          <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1" aria-label="Página siguiente"
             class="w-8 h-8 min-w-[44px] min-h-[44px] rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
-            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+            <span class="material-symbols-outlined text-[18px]" aria-hidden="true">chevron_right</span>
           </button>
         </div>
       }
@@ -219,7 +219,8 @@
       role="dialog" aria-modal="true" aria-labelledby="titulo-pago"
       (click)="cerrarModalPago()">
       <div class="absolute inset-0 bg-black/40"></div>
-      <div class="relative z-10 max-w-md w-full bg-white rounded-xl shadow-xl overflow-hidden"
+      <div class="relative z-10 max-w-md w-full bg-surface-container-lowest rounded-xl shadow-xl overflow-hidden"
+        tabindex="-1" appFocusTrap (cerrar)="cerrarModalPago()"
         (click)="$event.stopPropagation()">
         <div class="p-lg">
           <h2 id="titulo-pago" class="font-headline-md text-headline-md text-on-background mb-lg">Realizar pago</h2>
@@ -234,7 +235,7 @@
           <label for="monto-recibido" class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">Monto Recibido ($)</label>
           <input id="monto-recibido" type="number" [(ngModel)]="montoRecibido"
             min="0" step="0.01"
-            class="w-full h-12 px-md rounded-lg border border-outline-variant bg-white font-body-lg text-lg text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 mb-md" />
+            class="w-full h-12 px-md rounded-lg border border-outline-variant bg-surface-container-lowest font-body-lg text-lg text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 mb-md" />
 
           <!-- Botones rápidos -->
           <div class="flex gap-sm mb-md">
@@ -254,17 +255,17 @@
 
           <!-- Advertencia amarilla: pago parcial -->
           @if (esPagoParcial) {
-            <div class="bg-amber-50 border border-amber-300 rounded-lg p-md text-center mb-md">
-              <p class="font-semibold text-amber-700">Falta ${{ falta.toFixed(2) }}</p>
-              <p class="font-body-sm text-[12px] text-amber-600">El usuario aún debe esta cantidad</p>
+            <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-lg p-md text-center mb-md">
+              <p class="font-semibold text-amber-700 dark:text-amber-300">Falta ${{ falta.toFixed(2) }}</p>
+              <p class="font-body-sm text-[12px] text-amber-600 dark:text-amber-400">El usuario aún debe esta cantidad</p>
             </div>
           }
 
           <!-- Cambio a entregar -->
           @if (esExcedente) {
-            <div class="bg-green-50 border border-green-300 rounded-lg p-md text-center mb-md">
-              <p class="font-label-sm text-label-sm text-green-700 uppercase tracking-wider">Cambio a entregar</p>
-              <p class="font-bold text-2xl text-green-700">${{ cambio.toFixed(2) }}</p>
+            <div class="bg-green-50 dark:bg-green-950/40 border border-green-300 dark:border-green-800 rounded-lg p-md text-center mb-md">
+              <p class="font-label-sm text-label-sm text-green-700 dark:text-green-300 uppercase tracking-wider">Cambio a entregar</p>
+              <p class="font-bold text-2xl text-green-700 dark:text-green-300">${{ cambio.toFixed(2) }}</p>
             </div>
           }
 
@@ -291,7 +292,8 @@
       role="dialog" aria-modal="true" aria-labelledby="titulo-confirmacion-pago"
       (click)="cerrarConfirmacion()">
       <div class="absolute inset-0 bg-black/40"></div>
-      <div class="relative z-10 max-w-sm w-full bg-white rounded-xl shadow-xl p-lg text-center"
+      <div class="relative z-10 max-w-sm w-full bg-surface-container-lowest rounded-xl shadow-xl p-lg text-center"
+        tabindex="-1" appFocusTrap (cerrar)="cerrarConfirmacion()"
         (click)="$event.stopPropagation()">
         <span class="material-symbols-outlined text-amber-500 text-[48px] block mb-sm">help</span>
         <h3 id="titulo-confirmacion-pago" class="font-headline-sm text-headline-sm text-on-background mb-sm">¿Estás seguro de confirmar el pago?</h3>
@@ -319,7 +321,8 @@
       role="dialog" aria-modal="true" aria-labelledby="titulo-anulacion"
       (click)="cerrarModalAnulacion()">
       <div class="absolute inset-0 bg-black/40"></div>
-      <div class="relative z-10 max-w-md w-full bg-white rounded-xl shadow-xl overflow-hidden"
+      <div class="relative z-10 max-w-md w-full bg-surface-container-lowest rounded-xl shadow-xl overflow-hidden"
+        tabindex="-1" appFocusTrap (cerrar)="cerrarModalAnulacion()"
         (click)="$event.stopPropagation()">
         <div class="p-lg">
           <div class="flex items-center gap-sm mb-lg">
@@ -328,7 +331,7 @@
           </div>
 
           <!-- Info de la multa -->
-          <div class="bg-red-50 border border-red-200 rounded-lg p-md mb-lg">
+          <div class="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-lg p-md mb-lg">
             <p class="font-semibold text-on-surface mb-xs">{{ multaAnulacionActual.libroTitulo }}</p>
             <p class="font-body-sm text-[13px] text-on-surface-variant">Monto: <strong class="text-red-600">${{ multaAnulacionActual.saldo.toFixed(2) }}</strong></p>
             <p class="font-body-sm text-[12px] text-on-surface-variant">{{ multaAnulacionActual.diasAtraso }} días de atraso</p>
@@ -337,7 +340,7 @@
           <!-- Motivo -->
           <label for="motivo-anulacion" class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">Motivo de anulación *</label>
           <textarea id="motivo-anulacion" [(ngModel)]="motivoAnulacion" rows="4" placeholder="Describe el motivo de la anulación..."
-            class="w-full px-md py-sm rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface resize-y focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 mb-md"></textarea>
+            class="w-full px-md py-sm rounded-lg border border-outline-variant bg-surface-container-lowest font-body-sm text-body-sm text-on-surface resize-y focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 mb-md"></textarea>
 
           <!-- Botones -->
           <div class="flex justify-end gap-sm">
@@ -362,7 +365,8 @@
       role="dialog" aria-modal="true" aria-labelledby="titulo-confirmacion-anulacion"
       (click)="cerrarConfirmacionAnulacion()">
       <div class="absolute inset-0 bg-black/40"></div>
-      <div class="relative z-10 max-w-sm w-full bg-white rounded-xl shadow-xl p-lg text-center"
+      <div class="relative z-10 max-w-sm w-full bg-surface-container-lowest rounded-xl shadow-xl p-lg text-center"
+        tabindex="-1" appFocusTrap (cerrar)="cerrarConfirmacionAnulacion()"
         (click)="$event.stopPropagation()">
         <span class="material-symbols-outlined text-red-500 text-[48px] block mb-sm">warning</span>
         <h3 id="titulo-confirmacion-anulacion" class="font-headline-sm text-headline-sm text-on-background mb-sm">¿Anular esta multa?</h3>

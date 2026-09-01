@@ -7,10 +7,14 @@
     </div>
 
     @if (cargando) {
-      <div class="rounded-xl border border-outline-variant bg-white p-lg flex flex-col items-center gap-sm">
+      <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg flex flex-col items-center gap-sm">
         <span class="material-symbols-outlined animate-spin text-[32px] text-primary">progress_activity</span>
         <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando credencial…</p>
       </div>
+      <!-- El siguiente bloque (tarjeta con el QR) deliberadamente NO usa
+           dark:, se deja bg-white a proposito: el QR necesita contraste
+           alto real para ser escaneable y la tarjeta imita un carnet
+           fisico, invariante de tema por diseño. -->
     }
 
     @if (error) {

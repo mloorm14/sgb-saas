@@ -15,7 +15,7 @@
 
   <!-- Buscador predictivo (LibroService.sugerencias, minimo 2 caracteres) -->
   <div class="relative mb-md max-w-xl">
-    <div class="rounded border border-outline-variant bg-white flex items-center px-sm glass-panel">
+    <div class="rounded border border-outline-variant bg-surface-container-lowest flex items-center px-sm glass-panel">
       <span class="material-symbols-outlined text-outline text-[20px] mr-xs">search</span>
       <label for="busqueda-catalogo" class="sr-only">Buscar libros</label>
       <input type="text" id="busqueda-catalogo" placeholder="Busca por nombre, ISBN"
@@ -29,7 +29,7 @@
     </div>
     @if (sugerencias.length > 0) {
       <ul id="catalogo-search-listbox" role="listbox" aria-label="Sugerencias de libros"
-        class="absolute mt-xs w-full bg-white rounded shadow-lg border border-outline-variant overflow-hidden z-10">
+        class="absolute mt-xs w-full bg-surface-container-lowest rounded shadow-lg border border-outline-variant overflow-hidden z-10">
         @for (sug of sugerencias; track sug.id) {
           <li>
             <a [routerLink]="['/dashboard-lector/catalogo', sug.id]" (click)="textoBusqueda = ''; sugerencias = []"
@@ -52,7 +52,7 @@
   <div class="flex flex-wrap gap-sm mb-lg items-start">
     <div class="relative">
       <label for="filtro-categoria-input" class="sr-only">Categoría</label>
-      <div class="rounded border border-outline-variant bg-white flex items-center px-sm">
+      <div class="rounded border border-outline-variant bg-surface-container-lowest flex items-center px-sm">
         <span class="material-symbols-outlined text-outline text-[18px] mr-xs">category</span>
         <input type="text" id="filtro-categoria-input" placeholder="Filtrar por categoría"
           [(ngModel)]="textoCategoria"
@@ -65,14 +65,14 @@
           aria-autocomplete="list"
           class="w-48 bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 py-xs font-body-sm text-body-sm text-on-surface placeholder-outline" />
         @if (categoriaId !== null) {
-          <button (click)="limpiarFiltroCategoria()" title="Limpiar filtro" class="ml-xs text-outline hover:text-on-surface cursor-pointer">
-            <span class="material-symbols-outlined text-[18px]">close</span>
+          <button (click)="limpiarFiltroCategoria()" title="Limpiar filtro" aria-label="Limpiar filtro de categoría" class="ml-xs text-outline hover:text-on-surface cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]" aria-hidden="true">close</span>
           </button>
         }
       </div>
       @if (mostrarSugerenciasCategoria && categoriaSugerencias.length > 0) {
         <ul id="categoria-listbox" role="listbox" aria-label="Sugerencias de categorías"
-          class="absolute mt-xs w-full bg-white rounded shadow-lg border border-outline-variant overflow-hidden z-10">
+          class="absolute mt-xs w-full bg-surface-container-lowest rounded shadow-lg border border-outline-variant overflow-hidden z-10">
           @for (cat of categoriaSugerencias; track cat.id) {
             <li role="option" (mousedown)="seleccionarCategoria(cat)" class="px-md py-sm hover:bg-surface-container-low cursor-pointer font-body-sm text-body-sm text-on-surface flex justify-between">
               <span>{{ cat.nombre }}</span>
@@ -86,7 +86,7 @@
     </div>
     <label for="filtro-estado" class="sr-only">Estado</label>
     <select id="filtro-estado" (change)="onEstadoStockChange($event)"
-      class="rounded border border-outline-variant bg-white text-body-sm text-on-surface pl-sm pr-lg py-xs cursor-pointer h-9">
+      class="rounded border border-outline-variant bg-surface-container-lowest text-body-sm text-on-surface pl-sm pr-lg py-xs cursor-pointer h-9">
       <option value="">Todos</option>
       <option value="disponibles">Disponibles</option>
       <option value="agotados">Agotados</option>
@@ -100,7 +100,7 @@
   @if (cargando && libros.length === 0) {
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-md">
       @for (i of [1,2,3,4,5,6,7,8,9,10]; track i) {
-        <div class="rounded-lg overflow-hidden bg-white border border-outline-variant flex flex-col animate-pulse">
+        <div class="rounded-lg overflow-hidden bg-surface-container-lowest border border-outline-variant flex flex-col animate-pulse">
           <div class="aspect-[3/4] bg-surface-container-high"></div>
           <div class="p-sm flex flex-col gap-sm">
             <div class="h-4 bg-surface-container-high rounded w-3/4"></div>
@@ -117,13 +117,15 @@
   <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-md">
     @for (libro of libros; track libro.id) {
       <a [routerLink]="['/dashboard-lector/catalogo', libro.id]"
-        class="group rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow flex flex-col">
+        class="group rounded-lg overflow-hidden bg-surface-container-lowest border border-outline-variant hover:shadow-lg transition-shadow flex flex-col">
         <div class="relative aspect-[3/4] bg-surface-container-low overflow-hidden">
-          <app-portada-libro [libroId]="libro.id" [tienePortada]="libro.tienePortada" />
+          <app-portada-libro [libroId]="libro.id" [tienePortada]="libro.tienePortada" [titulo]="libro.titulo" />
           <button (click)="alternarFavorito($event, libro)"
             [title]="esFavorito(libro.id) ? 'Quitar de favoritos' : 'Agregar a favoritos'"
-            class="absolute top-xs right-xs w-8 h-8 min-w-[44px] min-h-[44px] rounded-full bg-white/90 flex items-center justify-center shadow z-10 cursor-pointer">
-            <span class="material-symbols-outlined text-[18px]"
+            [attr.aria-label]="esFavorito(libro.id) ? 'Quitar de favoritos' : 'Agregar a favoritos'"
+            [attr.aria-pressed]="esFavorito(libro.id)"
+            class="absolute top-xs right-xs w-8 h-8 min-w-[44px] min-h-[44px] rounded-full bg-surface-container-lowest/90 flex items-center justify-center shadow z-10 cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]" aria-hidden="true"
               [class.text-primary]="esFavorito(libro.id)"
               [class.text-outline]="!esFavorito(libro.id)"
               [style.font-variation-settings]="estiloIconoFavorito(libro.id)">star</span>
@@ -161,9 +163,9 @@
   <!-- Paginacion numerada (mockup 04) -->
   @if (totalPages > 1) {
     <div class="flex justify-center mt-lg gap-xs">
-      <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
+      <button (click)="paginaAnterior()" [disabled]="currentPage === 0" aria-label="Página anterior"
         class="w-8 h-8 min-w-[44px] min-h-[44px] rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
-        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+        <span class="material-symbols-outlined text-[18px]" aria-hidden="true">chevron_left</span>
       </button>
       @for (pagina of paginasVisibles; track pagina) {
         <button (click)="irAPagina(pagina)"
@@ -176,9 +178,9 @@
           {{ pagina + 1 }}
         </button>
       }
-      <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
+      <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1" aria-label="Página siguiente"
         class="w-8 h-8 min-w-[44px] min-h-[44px] rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
-        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+        <span class="material-symbols-outlined text-[18px]" aria-hidden="true">chevron_right</span>
       </button>
     </div>
   }
@@ -187,14 +189,15 @@
 @if (mostrarModalReserva) {
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
     (click)="cancelarReserva()">
-    <div role="dialog" aria-modal="true" aria-labelledby="titulo-reserva-fecha"
-      class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
+    <div role="dialog" aria-modal="true" aria-labelledby="titulo-reserva-fecha" tabindex="-1"
+      appFocusTrap (cerrar)="cancelarReserva()"
+      class="bg-surface-container-lowest rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
       (click)="$event.stopPropagation()">
       <h3 id="titulo-reserva-fecha" class="font-headline-sm text-headline-sm text-on-background mb-2">¿Cuándo vas a retirarlo?</h3>
       <p class="font-body-sm text-body-sm text-on-surface-variant mb-4">Selecciona la fecha en que pretendes retirar el libro. Podras retirarlo hasta las 18:00 de esa fecha.</p>
-      <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Fecha de retiro</label>
-      <input type="date" [(ngModel)]="fechaRetiro" [min]="minFechaRetiro" [max]="maxFechaRetiro"
-        class="w-full h-10 px-sm rounded-lg border border-outline-variant font-body-sm text-body-sm bg-white mb-5" />
+      <label for="fecha-retiro" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Fecha de retiro</label>
+      <input type="date" id="fecha-retiro" [(ngModel)]="fechaRetiro" [min]="minFechaRetiro" [max]="maxFechaRetiro"
+        class="w-full h-10 px-sm rounded-lg border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest mb-5" />
       <div class="flex justify-end gap-sm">
         <button (click)="cancelarReserva()"
           class="h-9 px-md rounded-lg border border-outline-variant font-label-sm text-label-sm hover:bg-surface-container-low cursor-pointer">

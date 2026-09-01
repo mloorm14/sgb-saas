@@ -43,7 +43,7 @@
 
   <!-- ═══ Lista de préstamos activos (sin selección) ═══ -->
   @if (!cargandoPrestamos && prestamosActivos.length > 0 && !prestamoSeleccionado) {
-    <div class="rounded-xl border border-outline-variant bg-white p-lg mb-lg">
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg mb-lg">
       <h2 class="font-headline-md text-headline-md text-on-background mb-md flex items-center gap-sm">
         <span class="material-symbols-outlined text-[22px] text-primary">receipt_long</span>
         Préstamos Activos ({{ prestamosActivos.length }})
@@ -108,7 +108,7 @@
     <div class="space-y-lg">
 
       <!-- ─── Detalles del Ejemplar ─── -->
-      <div class="rounded-xl border border-outline-variant bg-white p-lg">
+      <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
         <h2 class="font-headline-md text-headline-md text-on-background mb-md flex items-center gap-sm">
           <span class="material-symbols-outlined text-[22px] text-primary">menu_book</span>
           Detalles del Ejemplar
@@ -122,9 +122,9 @@
 
         <div class="flex gap-md">
           <!-- Portada del libro -->
-          <button type="button" (click)="abrirPortada(prestamoSeleccionado.libroId)"
+          <button type="button" (click)="abrirPortada(prestamoSeleccionado.libroId)" [attr.aria-label]="'Ver portada de ' + prestamoSeleccionado.libroTitulo"
             class="w-24 h-32 sm:w-28 sm:h-36 shrink-0 rounded-lg overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-low flex items-center justify-center">
-            <app-portada-libro [libroId]="prestamoSeleccionado.libroId" />
+            <app-portada-libro [libroId]="prestamoSeleccionado.libroId" [titulo]="prestamoSeleccionado.libroTitulo" />
           </button>
 
           <!-- Info del libro -->
@@ -170,7 +170,7 @@
       </div>
 
       <!-- ─── Estado de Devolución ─── -->
-      <div class="rounded-xl border border-outline-variant bg-white p-lg">
+      <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
         <h2 class="font-headline-md text-headline-md text-on-background mb-md flex items-center gap-sm">
           <span class="material-symbols-outlined text-[22px] text-primary">rate_review</span>
           Estado de Devolución
@@ -260,12 +260,12 @@
                       <label for="dano-custom" class="sr-only">Nombre del daño</label>
                       <input id="dano-custom" [(ngModel)]="dano.nombreCustom"
                         placeholder="Nombre del daño"
-                        class="flex-1 px-sm py-xs rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" />
+                        class="flex-1 px-sm py-xs rounded-lg border border-outline-variant bg-surface-container-lowest font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" />
                       <label for="precio-cobrado" class="sr-only">Precio cobrado</label>
                       <input id="precio-cobrado" type="number" [(ngModel)]="dano.precioCobrado"
                         min="0" step="0.01"
-                        class="w-20 px-sm py-xs rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface text-right focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" />
-                      <button type="button" (click)="eliminarDano(i)"
+                        class="w-20 px-sm py-xs rounded-lg border border-outline-variant bg-surface-container-lowest font-body-sm text-body-sm text-on-surface text-right focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" />
+                      <button type="button" (click)="eliminarDano(i)" aria-label="Eliminar daño"
                         class="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
                         title="Eliminar daño">
                         <span class="material-symbols-outlined text-[18px]">delete</span>
@@ -291,11 +291,11 @@
 
               <!-- Columna derecha: Descripción + Evidencia -->
               <div>
-                <label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">Descripción detallada</label>
+                <label for="descripcion-dano" class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">Descripción detallada</label>
                 <textarea id="descripcion-dano" [(ngModel)]="descripcionDano"
                   placeholder="Describa el estado del libro"
                   rows="6"
-                  class="w-full px-md py-sm rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 resize-none"></textarea>
+                  class="w-full px-md py-sm rounded-lg border border-outline-variant bg-surface-container-lowest font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 resize-none"></textarea>
 
                 <!-- Evidencia Fotográfica -->
                 <label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-md mb-sm">Evidencia Fotográfica</label>
@@ -329,9 +329,9 @@
                             <span class="material-symbols-outlined text-on-surface-variant">image</span>
                           </div>
                         }
-                        <button type="button" (click)="eliminarEvidencia(ev); $event.stopPropagation()"
+                        <button type="button" (click)="eliminarEvidencia(ev); $event.stopPropagation()" aria-label="Eliminar evidencia"
                           class="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center cursor-pointer hover:bg-red-700 transition-colors">
-                          <span class="material-symbols-outlined text-[12px]">close</span>
+                          <span class="material-symbols-outlined text-[12px]" aria-hidden="true">close</span>
                         </button>
                       </div>
                     }
@@ -357,7 +357,7 @@
       </div>
 
       <!-- ─── Resumen de Multa + Acción ─── -->
-      <div class="rounded-xl border border-outline-variant bg-white p-lg">
+      <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
         @if (estadoDevolucion === 'CON_DANO' || estadoDevolucion === 'PERDIDO' || estaVencido) {
           <div class="flex items-center justify-between mb-md">
             <h2 class="font-headline-md text-headline-md text-on-background flex items-center gap-sm">
@@ -426,7 +426,7 @@
 
       <!-- ─── Historial de devoluciones recientes ─── -->
       @if (historial.length > 0) {
-        <div class="rounded-xl border border-outline-variant bg-white p-lg">
+        <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
           <h2 class="font-headline-sm text-headline-sm text-on-background mb-md flex items-center gap-sm">
             <span class="material-symbols-outlined text-[18px] text-primary">history</span>
             Últimas devoluciones
@@ -457,8 +457,9 @@
   <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
     (click)="cerrarPortada()">
     <div class="absolute inset-0 bg-black/60"></div>
-    <div role="dialog" aria-modal="true" aria-label="Portada del libro"
-      class="relative z-10 max-w-lg w-full bg-white rounded-xl shadow-xl overflow-hidden"
+    <div role="dialog" aria-modal="true" aria-label="Portada del libro" tabindex="-1"
+      appFocusTrap (cerrar)="cerrarPortada()"
+      class="relative z-10 max-w-lg w-full bg-surface-container-lowest rounded-xl shadow-xl overflow-hidden"
       (click)="$event.stopPropagation()">
       <div class="relative bg-surface-container-low flex items-center justify-center"
         style="min-height: 300px; max-height: 70vh;">
@@ -471,9 +472,9 @@
           <span class="material-symbols-outlined text-[64px] text-outline-variant">menu_book</span>
         }
       </div>
-      <button type="button" (click)="cerrarPortada()"
+      <button type="button" (click)="cerrarPortada()" aria-label="Cerrar vista de portada"
         class="absolute top-sm right-sm w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 cursor-pointer">
-        <span class="material-symbols-outlined text-[20px]">close</span>
+        <span class="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
       </button>
     </div>
   </div>
@@ -483,14 +484,15 @@
   <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
     (click)="cerrarPreviewEvidencia()">
     <div class="absolute inset-0 bg-black/60"></div>
-    <div role="dialog" aria-modal="true" aria-labelledby="titulo-evidencia"
-      class="relative z-10 max-w-2xl w-full bg-white rounded-xl shadow-xl overflow-hidden"
+    <div role="dialog" aria-modal="true" aria-labelledby="titulo-evidencia" tabindex="-1"
+      appFocusTrap (cerrar)="cerrarPreviewEvidencia()"
+      class="relative z-10 max-w-2xl w-full bg-surface-container-lowest rounded-xl shadow-xl overflow-hidden"
       (click)="$event.stopPropagation()">
       <div class="flex items-center justify-between px-md py-sm border-b border-outline-variant/30">
         <span id="titulo-evidencia" class="font-body-sm text-body-sm text-on-surface truncate">{{ evidenciaPreviewNombre }}</span>
-        <button type="button" (click)="cerrarPreviewEvidencia()"
+        <button type="button" (click)="cerrarPreviewEvidencia()" aria-label="Cerrar vista de evidencia"
           class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-high cursor-pointer">
-          <span class="material-symbols-outlined text-[20px] text-on-surface-variant">close</span>
+          <span class="material-symbols-outlined text-[20px] text-on-surface-variant" aria-hidden="true">close</span>
         </button>
       </div>
       <div class="bg-black flex items-center justify-center" style="min-height: 300px; max-height: 80vh;">
