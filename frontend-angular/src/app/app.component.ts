@@ -30,6 +30,7 @@ export class AppComponent {
   enRutaBibliotecario = false;
   enRutaAdmin = false;
   enRutaLector = false;
+  enRutaPublica = true;
   cargandoRuta = true;
   rutaAnnouncement = '';
   confirmacionVisible = false;
@@ -49,6 +50,7 @@ export class AppComponent {
       this.enRutaBibliotecario = url.startsWith('/dashboard-bibliotecario');
       this.enRutaAdmin = url.startsWith('/dashboard-admin');
       this.enRutaLector = url.startsWith('/dashboard-lector');
+      this.enRutaPublica = url === '/' || url.startsWith('/portal') || url.startsWith('/login') || url.startsWith('/registro') || url.startsWith('/catalogo') || url.startsWith('/no-autorizado');
       this.cargandoRuta = false;
       this.rutaAnnouncement = this.obtenerNombreRuta(url);
     });

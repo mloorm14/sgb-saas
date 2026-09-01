@@ -5,8 +5,8 @@
 
 <div class="sr-only" aria-live="polite" aria-atomic="true">{{ rutaAnnouncement }}</div>
 
-@if (estaLogueado() && !cargandoRuta && !enRutaBibliotecario && !enRutaAdmin && !enRutaLector) {
-  <header class="sticky top-0 z-40 bg-surface/90 backdrop-blur border-b border-outline-variant">
+@if (!cargandoRuta && (!estaLogueado() || enRutaPublica)) {
+  <header class="sticky top-0 z-40 bg-surface/90 backdrop-blur border-b border-outline-variant shadow-sm">
     <div class="max-w-container-max mx-auto px-margin-mobile lg:px-xl flex items-center gap-lg h-16">
 
       <a routerLink="/prestamos" class="flex items-center gap-sm text-primary shrink-0">
