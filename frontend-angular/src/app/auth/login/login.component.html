@@ -7,7 +7,7 @@
     <div class="relative z-10 p-12 lg:p-24 flex flex-col justify-between h-full w-full">
       <a routerLink="/" class="flex items-center gap-3 text-on-primary">
         <span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">local_library</span>
-        <span class="font-headline-lg text-headline-lg text-on-primary tracking-tight">SGB UTEQ</span>
+        <span class="font-headline-lg text-headline-lg text-on-primary tracking-tight">Leibri</span>
       </a>
       <div class="max-w-lg mb-12">
         <h1 class="font-headline-xl text-headline-xl text-on-primary mb-6">
@@ -26,7 +26,7 @@
 
       <a routerLink="/" class="md:hidden flex items-center gap-3 text-primary mb-8">
         <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">local_library</span>
-        <span class="font-headline-md text-headline-lg-mobile text-primary tracking-tight">SGB UTEQ</span>
+        <span class="font-headline-md text-headline-lg-mobile text-primary tracking-tight">Leibri</span>
       </a>
 
       <div class="mb-10">
@@ -47,7 +47,7 @@
               formControlName="correo"
               id="correo"
               type="email"
-              placeholder="usuario@uteq.edu.ec"
+              placeholder="usuario@correo.com"
               aria-required="true"
               [attr.aria-invalid]="form.get('correo')?.invalid && form.get('correo')?.touched ? true : null"
               [attr.aria-describedby]="form.get('correo')?.invalid && form.get('correo')?.touched ? 'correo-error' : null"
@@ -146,7 +146,7 @@
           Sesión protegida con JWT (HS256) · Sin almacenamiento en localStorage
         </p>
         <p class="font-label-sm text-label-sm text-outline/80">
-          UTEQ · Facultad de Ciencias de la Computación · 2026
+          Leibri · 2026
         </p>
       </div>
     </div>
