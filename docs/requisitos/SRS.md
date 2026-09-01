@@ -198,8 +198,8 @@ A alto nivel (el detalle completo está en la sección 3):
   requerir un despliegue nuevo.
 - **Chatbot (asistente virtual)**: un LECTOR puede conversar con un
   asistente que responde con datos reales del catálogo/reservas
-  (grounding), respaldado por Gemini 2.0 Flash, con límite de mensajes por
-  usuario.
+   (grounding), respaldado por Gemini 3.5 Flash Lite, con límite de mensajes por
+   usuario.
 
 ### 2.3 Características de los usuarios
 
@@ -904,7 +904,7 @@ formato.
 - **Fuente**: **sin HU/CU dedicada** (matriz: `—`, `—`).
 - **Módulo/endpoint**: `ChatbotController`/`ChatbotService` (ADR-016) — `POST /api/v1/chatbot/mensajes`; `GET /api/v1/chatbot/sesiones/{id}/historial`
 - **Descripción**: un `LECTOR` (únicamente, restricción deliberada) puede
-  conversar con un asistente respaldado por Gemini 2.0 Flash; cada mensaje
+   conversar con un asistente respaldado por Gemini 3.5 Flash Lite; cada mensaje
   se persiste, la respuesta se genera con grounding real (consulta
   disponibilidad de libros y reservas del propio usuario antes de
   responder, para no inventar disponibilidad) y hay un límite de mensajes

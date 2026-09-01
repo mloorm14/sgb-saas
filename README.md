@@ -61,7 +61,7 @@ arquitectura desplegada en [docs/despliegue/DEPLOYMENT.md](docs/despliegue/DEPLO
 - **Caché y Auth:** Redis 7 (lista negra de tokens JWT)
 - **Migraciones:** Flyway 9
 - **Documentación API:** springdoc-openapi (Swagger UI)
-- **IA Integrada:** Gemini 2.0 Flash API (Entrega 2)
+- **IA Integrada:** Gemini 3.5 Flash Lite API (Entrega 2)
 
 ---
 ## 🔄 Flujo MVC — Ciclo de vida de una petición autenticada

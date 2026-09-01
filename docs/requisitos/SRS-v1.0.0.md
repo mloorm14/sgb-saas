@@ -198,8 +198,8 @@ A alto nivel (el detalle completo está en la sección 3):
   requerir un despliegue nuevo.
 - **Chatbot (asistente virtual)**: un LECTOR puede conversar con un
   asistente que responde con datos reales del catálogo/reservas
-  (grounding), respaldado por Gemini 2.0 Flash, con límite de mensajes por
-  usuario.
+   (grounding), respaldado por Gemini 3.5 Flash Lite, con límite de mensajes por
+   usuario.
 
 ### 2.3 Características de los usuarios
 
@@ -904,14 +904,14 @@ formato.
 - **Fuente**: **sin HU/CU dedicada** (matriz: `—`, `—`).
 - **Módulo/endpoint**: `ChatbotController`/`ChatbotService` (ADR-016) — `POST /api/v1/chatbot/mensajes`; `GET /api/v1/chatbot/sesiones/{id}/historial`
 - **Descripción**: un `LECTOR` (únicamente, restricción deliberada) puede
-  conversar con un asistente respaldado por Gemini 2.0 Flash; cada mensaje
-  se persiste, la respuesta se genera con grounding real (consulta
-  disponibilidad de libros y reservas del propio usuario antes de
-  responder, para no inventar disponibilidad) y hay un límite de mensajes
-  por usuario en una ventana de tiempo.
+   conversar con un asistente respaldado por Gemini 3.5 Flash Lite; cada mensaje
+   se persiste, la respuesta se genera con grounding real (consulta
+   disponibilidad de libros y reservas del propio usuario antes de
+   responder, para no inventar disponibilidad) y hay un límite de mensajes
+   por usuario en una ventana de tiempo.
 - **Rationale**: canal de autoservicio para preguntas frecuentes
-  (horarios, disponibilidad, multas) sin ocupar al personal de mostrador;
-  restringido a `LECTOR` porque es el actor descrito en el roadmap para
+   (horarios, disponibilidad, multas) sin ocupar al personal de mostrador;
+   restringido a `LECTOR` porque es el actor descrito en el roadmap para
   este módulo, y para no gastar cuota de la API externa en roles que no lo
   necesitan. El grounding real (no solo el conocimiento general del
   modelo) es la decisión central para que el asistente no invente

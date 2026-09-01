@@ -54,7 +54,7 @@ Integración con Gemini para el chatbot del proyecto. Soporta function calling (
 **Configuración (application.properties):**
 ```properties
 app.gemini.api-key=${GEMINI_API_KEY}
-app.gemini.modelo=gemini-2.0-flash
+app.gemini.modelo=gemini-3.5-flash-lite
 app.gemini.url-base=https://generativelanguage.googleapis.com/v1beta
 app.gemini.timeout-ms=30000
 ```
