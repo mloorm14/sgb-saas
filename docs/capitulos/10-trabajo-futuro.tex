@@ -10,28 +10,25 @@ sino los gaps reales ya identificados en el propio repositorio a lo largo
 de este documento. Cada una indica por qué quedó fuera de alcance y cómo
 se abordaría.
 
-\section{Completar la evidencia de usabilidad (SUS, $N\geq15$)}
+\section{Completar la evidencia de usabilidad (SUS, $N\geq15$) -- CERRADO}
 \label{sec:tf-sus}
 
-El Bloque~5 de evaluación empírica (\autoref{sec:res-usabilidad}) quedó
-con $N=0$ de los $N\geq15$ participantes que exige la guía. Quedó fuera
-de alcance de esta entrega porque su ejecución depende de una condición
-externa al propio código: un despliegue público funcional donde
-participantes reales puedan interactuar con el sistema bajo el protocolo
-ya definido (plantilla de consentimiento informado, técnica de muestreo
-por conveniencia dentro de la comunidad UTEQ, anonimización por código de
-participante). Ese despliegue está en curso (trabajo de Cajas); una vez
-disponible, la línea de trabajo es directa y ya está protocolizada: (i)
-reclutar $\geq15$ participantes con roles representativos del dominio
-(lector, bibliotecario), (ii) aplicar el instrumento SUS de 10 ítems
-\citep{brooke1996sus} bajo el protocolo de
-\texttt{docs/etica/consentimientos/plantilla.md}, (iii) calcular la
-puntuación agregada y aplicar el criterio de \citet{baltes2022sampling}
-sobre generalización de muestras pequeñas al interpretar el resultado, y
-(iv) actualizar el \autoref{cap:resultados} y el
-\autoref{cap:amenazas-validez} con el dato real obtenido -- ya asignada a
-Panama según el plan del equipo (\texttt{OBS-08} en
-\texttt{docs/observaciones/OBSERVACIONES.md}).
+Una versión anterior de este capítulo declaraba el Bloque~5 de
+evaluación empírica con $N=0$ de los $N\geq15$ participantes que exige
+la guía, bloqueado hasta contar con un despliegue público funcional
+donde participantes reales pudieran interactuar con el sistema.
+\textbf{Ese estado ya no es real:} el \autoref{cap:resultados}
+(\autoref{sec:res-usabilidad}) documenta hoy $N=15$ participantes
+reales, por encima del mínimo exigido, reclutados con el protocolo ya
+definido en su momento (plantilla de consentimiento informado, muestreo
+por conveniencia dentro de la comunidad UTEQ, anonimización por código
+de participante, \texttt{docs/etica/consentimientos/plantilla.md}) y
+analizados con el instrumento SUS de 10 ítems \citep{brooke1996sus}:
+puntuación media 82,17 (IC~95\,\% $[80{,}08, 84{,}25]$, $t$ de Student,
+$df=14$), clasificación \textbf{Excelente} según la escala de adjetivos
+de Bangor, muy por encima del umbral de aceptabilidad de 68. No queda
+trabajo pendiente en este bloque; documentado como resuelto en
+\texttt{OBS-08} de \texttt{docs/observaciones/OBSERVACIONES.md}.
 
 \section{Análisis estático de SQL dinámico -- CERRADO}
 \label{sec:tf-audit-sql}
