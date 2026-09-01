@@ -108,18 +108,34 @@ lectores y personal (tabla `usuarios`, `db/schema.sql`).
 
 ## (iii) Consentimiento informado para pruebas de usabilidad (SUS, Bloque C.3)
 
-Las pruebas de System Usability Scale (SUS) del Bloque C.3 **no se han
-ejecutado a la fecha de este documento** — son parte del Bloque C, que
-sigue pendiente. Este documento deja establecido el mecanismo de
-consentimiento *antes* de que la primera prueba se ejecute, no
-retroactivamente.
+Las pruebas de System Usability Scale (SUS) del Bloque C.3 **se ejecutaron
+con N=15 participantes** (códigos `P01` a `P15`) entre el 2026-08-28 y
+2026-08-30. Cada participante firmó la plantilla de consentimiento
+informado antes de iniciar la sesión de onboarding.
 
-La plantilla de consentimiento informado que todo participante deberá
-firmar antes de participar está en
+**Protección de datos personales (PII):** Por cumplimiento estricto de
+normativas de protección de datos personales, los 15 consentimientos
+firmados (física o digitalmente) **no se conservan en este repositorio
+público**. Fueron eliminados del rastreo de Git mediante `git rm` y no
+existen en ninguna rama accesible públicamente. La única copia de estos
+documentos se almacena en un medio privado con acceso institucional
+restringido:
+
+- **Almacenamiento privado (Google Drive institucional):**
+  <https://drive.google.com/drive/folders/1uoGc6gQ7AJuVEayv09OSm84bS0WGB15y?usp=sharing>
+- **Permisos:** Acceso restringido exclusivamente a cuentas con dominio
+  institucional `@uteq.edu.ec` (Docente director y Tribunal evaluador).
+- **Justificación de anonimización:** El repositorio del proyecto es
+  público (GitHub) y contiene código fuente, documentación y evidencia
+  técnica. Almacenar consentimientos firmados con nombres reales en un
+  repositorio público expondría PII (nombre completo, firma) en
+  violación del principio de minimización de datos y del consentimiento
+  informado otorgado por los participantes, quienes fueron informados de
+  que sus datos identificables no se publicarían.
+
+La plantilla en blanco (sin datos personales) se mantiene versionada en
 [`docs/etica/consentimientos/plantilla.md`](consentimientos/plantilla.md)
-(ver esa plantilla para el detalle completo: tarea de onboarding a
-realizar, datos recogidos, anonimización y declaración de
-voluntariedad/revocabilidad).
+como referencia pública del protocolo utilizado.
 
 ## (iv) Ausencia de datos identificables en el repositorio público
 
