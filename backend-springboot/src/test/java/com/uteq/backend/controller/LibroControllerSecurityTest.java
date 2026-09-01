@@ -203,7 +203,7 @@ class LibroControllerSecurityTest {
     @WithMockUser(roles = "ADMIN")
     void lookupIsbn_conRolAdmin_sePermite() throws Exception {
         when(libroIsbnLookupService.buscarPorIsbn("9780132350884"))
-                .thenReturn(new LibroIsbnLookupDTO("Clean Code", "Robert C. Martin", "resumen", 2008, true, null));
+                .thenReturn(new LibroIsbnLookupDTO("Clean Code", "Robert C. Martin", "resumen", 2008, true, null, 400));
 
         mockMvc.perform(get("/api/v1/libros/lookup-isbn").param("isbn", "9780132350884"))
                 .andExpect(status().isOk())
