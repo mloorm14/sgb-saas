@@ -311,7 +311,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
   backupFormato: 'sql' | 'csv' = 'sql';
   backupTablasSeleccionadas: Record<string, boolean> = {};
   backupTablasDisponibles = ['usuarios', 'libros', 'prestamos', 'reservaciones', 'multas', 'auditoria', 'configuracion_sistema', 'notificaciones', 'favoritos', 'sugerencias_adquisicion', 'categorias', 'autores'];
-  nombresTablas: Record<string, string> = {
+  nombresTablas: Record<string, string | undefined> = {
     usuarios: 'Usuarios',
     libros: 'Libros',
     prestamos: 'Préstamos',
