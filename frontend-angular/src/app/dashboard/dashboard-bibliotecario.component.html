@@ -1,7 +1,7 @@
 <div class="flex h-full overflow-hidden">
 
   <!-- Sidebar -->
-  <aside [class]="isCollapsed() ? 'w-[72px]' : 'w-64'" class="bg-white border-r border-outline-variant flex flex-col shrink-0 overflow-x-hidden transition-[width] duration-200 ease-in-out z-40">
+  <aside [class]="isCollapsed() ? 'w-[72px]' : 'w-64'" class="bg-surface-container-lowest border-r border-outline-variant flex flex-col shrink-0 overflow-x-hidden transition-[width] duration-200 ease-in-out z-40">
 
     <!-- Logo -->
     <div class="px-lg py-md border-b border-outline-variant flex items-center gap-sm">
@@ -39,7 +39,7 @@
           @if (estaExpandida(seccion.titulo) || isCollapsed()) {
             @for (enlace of seccion.enlaces; track enlace.ruta) {
               <a [routerLink]="enlace.ruta"
-                 routerLinkActive="bg-primary-fixed text-primary"
+                 routerLinkActive="bg-primary-fixed text-on-primary-fixed-variant"
                  [routerLinkActiveOptions]="{ exact: true }"
 class="flex items-center gap-sm py-sm mx-sm mb-sm rounded-lg font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap overflow-hidden"
                  [class.px-lg]="!isCollapsed()" [class.px-2]="isCollapsed()" [class.justify-center]="isCollapsed()">
@@ -80,7 +80,7 @@ class="flex items-center gap-sm py-sm mx-sm mb-sm rounded-lg font-body-sm text-b
 
       @if (mostrarMenuUsuario && !isCollapsed()) {
         <!-- Dropdown: absolute dentro del sidebar (overflow-x-hidden permite overflow vertical) -->
-        <div class="absolute bottom-full left-2 right-2 mb-xs bg-white rounded-xl border border-outline-variant shadow-lg overflow-hidden z-30">
+        <div class="absolute bottom-full left-2 right-2 mb-xs bg-surface-container-lowest rounded-xl border border-outline-variant shadow-lg overflow-hidden z-30">
           <button (click)="cerrarSesion()"
             class="w-full flex items-center gap-sm px-md py-sm text-left font-body-sm text-body-sm text-error hover:bg-error-container/40 transition-colors cursor-pointer whitespace-nowrap">
             <span class="material-symbols-outlined text-[18px]">logout</span>
