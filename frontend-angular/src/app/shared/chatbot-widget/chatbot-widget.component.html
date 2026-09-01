@@ -11,7 +11,7 @@
 
 <!-- Widget expandido: panel de chat -->
 @if (expandido) {
-  <div class="fixed bottom-lg right-lg z-50 w-80 rounded-2xl bg-white shadow-2xl border border-outline-variant overflow-hidden flex flex-col" style="height: 480px;">
+  <div class="fixed bottom-lg right-lg z-50 w-80 rounded-2xl bg-surface-container-lowest shadow-2xl border border-outline-variant overflow-hidden flex flex-col" style="height: 480px;">
 
     <!-- Header -->
     <div class="px-md py-sm flex items-center justify-between shrink-0" style="background: linear-gradient(135deg, #003694, #2c57c1);">
@@ -43,9 +43,9 @@
       @if (mensajes.length === 0) {
         <div class="flex gap-xs items-end">
           <div class="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-[14px] text-primary">smart_toy</span>
+            <span class="material-symbols-outlined text-[14px] text-on-primary-fixed-variant">smart_toy</span>
           </div>
-          <div class="bg-white border border-outline-variant rounded-2xl rounded-bl-sm px-md py-sm max-w-[80%]">
+          <div class="bg-surface-container-lowest border border-outline-variant rounded-2xl rounded-bl-sm px-md py-sm max-w-[80%]">
             <p class="font-body-sm text-body-sm text-on-surface">¡Hola! Soy el asistente de la biblioteca UTEQ. ¿En qué puedo ayudarte hoy?</p>
           </div>
         </div>
@@ -61,9 +61,9 @@
         } @else {
           <div class="flex gap-xs items-end">
             <div class="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
-              <span class="material-symbols-outlined text-[14px] text-primary">smart_toy</span>
+              <span class="material-symbols-outlined text-[14px] text-on-primary-fixed-variant">smart_toy</span>
             </div>
-            <div class="bg-white border border-outline-variant rounded-2xl rounded-bl-sm px-md py-sm max-w-[80%]">
+            <div class="bg-surface-container-lowest border border-outline-variant rounded-2xl rounded-bl-sm px-md py-sm max-w-[80%]">
               <p class="font-body-sm text-body-sm text-on-surface">{{ msg.texto }}</p>
             </div>
           </div>
@@ -73,9 +73,9 @@
       @if (cargando) {
         <div class="flex gap-xs items-end">
           <div class="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-[14px] text-primary">smart_toy</span>
+            <span class="material-symbols-outlined text-[14px] text-on-primary-fixed-variant">smart_toy</span>
           </div>
-          <div class="bg-white border border-outline-variant rounded-2xl rounded-bl-sm px-md py-sm flex items-center gap-1">
+          <div class="bg-surface-container-lowest border border-outline-variant rounded-2xl rounded-bl-sm px-md py-sm flex items-center gap-1">
             <span class="w-1.5 h-1.5 rounded-full bg-outline-variant animate-bounce" style="animation-delay:0ms"></span>
             <span class="w-1.5 h-1.5 rounded-full bg-outline-variant animate-bounce" style="animation-delay:150ms"></span>
             <span class="w-1.5 h-1.5 rounded-full bg-outline-variant animate-bounce" style="animation-delay:300ms"></span>
@@ -101,7 +101,7 @@
     }
 
     <!-- Input -->
-    <div class="p-sm border-t border-outline-variant flex items-center gap-xs shrink-0 bg-white">
+    <div class="p-sm border-t border-outline-variant flex items-center gap-xs shrink-0 bg-surface-container-lowest">
       <label for="chat-input" class="sr-only">Escribí tu mensaje</label>
       <input id="chat-input" type="text" [(ngModel)]="textoMensaje"
         (keyup.enter)="enviar()"

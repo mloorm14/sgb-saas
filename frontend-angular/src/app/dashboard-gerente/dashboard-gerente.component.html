@@ -16,7 +16,7 @@
        hasAnyRole('BIBLIOTECARIO','GERENTE')). -->
   @if (esGerente) {
   <div class="grid lg:grid-cols-2 gap-lg mb-xl">
-    <div class="rounded-xl border border-outline-variant bg-white p-lg">
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
       <h2 class="font-headline-md text-headline-md text-on-background mb-md">Libros más prestados</h2>
       <div class="space-y-sm">
         @for (libro of librosMasPrestados; track libro.libroId; let i = $index) {
@@ -36,7 +36,7 @@
     </div>
 
     <!-- Accesos rápidos: routerLink a rutas reales del GERENTE (roleGuard en app.routes.ts) -->
-    <div class="rounded-xl border border-outline-variant bg-white p-lg">
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
       <h2 class="font-headline-md text-headline-md text-on-background mb-md">Accesos rápidos</h2>
       <div class="grid grid-cols-2 gap-sm">
         <a routerLink="/dashboard-admin/sugerencias/gestion" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
@@ -61,7 +61,7 @@
   <div class="grid lg:grid-cols-3 gap-lg mb-xl">
     <!-- Resumen financiero: GET /api/v1/multas/reportes/resumen-financiero
          GERENTE/ADMIN: admite ambos roles (MultaController). -->
-    <div class="rounded-xl border border-outline-variant bg-white p-lg">
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
       <h2 class="font-headline-md text-headline-md text-on-background mb-md">Resumen financiero</h2>
       @if (cargandoFinanciero) {
         <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando…</p>
@@ -110,7 +110,7 @@
          componente). Solo GERENTE: ADMIN no tiene acceso
          (@PreAuthorize hasAnyRole('BIBLIOTECARIO','GERENTE')). -->
     @if (esGerente) {
-    <div class="rounded-xl border border-outline-variant bg-white p-lg">
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
       <h2 class="font-headline-md text-headline-md text-on-background mb-md">Morosidad (top 10)</h2>
       @if (cargandoMorosidad) {
         <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando…</p>
@@ -133,7 +133,7 @@
 
     <!-- Actividad de auditoría reciente: GET /api/v1/auditoria?size=5 (lista
          compacta -- la tabla completa vive en /auditoria). -->
-    <div class="rounded-xl border border-outline-variant bg-white p-lg">
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
       <h2 class="font-headline-md text-headline-md text-on-background mb-md">Actividad reciente</h2>
       @if (cargandoAuditoria) {
         <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando…</p>

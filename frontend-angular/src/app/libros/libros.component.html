@@ -52,12 +52,12 @@
           </div>
 
           <!-- Disponibilidad -->
-          <div class="rounded-xl border border-outline-variant bg-white p-md">
+          <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-md">
             <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">Disponibilidad</p>
             <div class="flex flex-col gap-md">
               <div>
-                <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Stock total *</label>
-                <input formControlName="stockTotal" type="number" min="0"
+                <label for="libro-stock-total" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Stock total *</label>
+                <input id="libro-stock-total" formControlName="stockTotal" type="number" min="0"
                   [attr.aria-invalid]="form.get('stockTotal')?.invalid && form.get('stockTotal')?.touched ? true : null"
                   [attr.aria-describedby]="form.get('stockTotal')?.invalid && form.get('stockTotal')?.touched ? 'stock-total-error' : null"
                   class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
@@ -66,8 +66,8 @@
                 }
               </div>
               <div>
-                <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Stock disponible *</label>
-                <input formControlName="stockDisponible" type="number" min="0"
+                <label for="libro-stock-disponible" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Stock disponible *</label>
+                <input id="libro-stock-disponible" formControlName="stockDisponible" type="number" min="0"
                   [attr.aria-invalid]="form.get('stockDisponible')?.invalid && form.get('stockDisponible')?.touched ? true : null"
                   [attr.aria-describedby]="form.get('stockDisponible')?.invalid && form.get('stockDisponible')?.touched ? 'stock-disponible-error' : null"
                   class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
@@ -76,8 +76,8 @@
                 }
               </div>
               <div>
-                <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Ubicación física</label>
-                <input formControlName="ubicacionFisica" type="text" maxlength="50" placeholder="Ej: Estante A-12"
+                <label for="libro-ubicacion-fisica" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Ubicación física</label>
+                <input id="libro-ubicacion-fisica" formControlName="ubicacionFisica" type="text" maxlength="50" placeholder="Ej: Estante A-12"
                   class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
               </div>
             </div>
@@ -89,8 +89,8 @@
 
           <!-- Título -->
           <div class="mb-md">
-            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Título *</label>
-            <input formControlName="titulo" type="text" maxlength="255" placeholder="Título del libro"
+            <label for="libro-titulo" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Título *</label>
+            <input id="libro-titulo" formControlName="titulo" type="text" maxlength="255" placeholder="Título del libro"
               [attr.aria-invalid]="form.get('titulo')?.invalid && form.get('titulo')?.touched ? true : null"
               [attr.aria-describedby]="form.get('titulo')?.invalid && form.get('titulo')?.touched ? 'titulo-error' : null"
               class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
@@ -103,9 +103,9 @@
           <!-- Fila: ISBN + Año + Nº páginas + Idioma + Precio -->
           <div class="grid grid-cols-12 gap-md mb-md">
             <div class="col-span-12 sm:col-span-3">
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">ISBN *</label>
+              <label for="libro-isbn" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">ISBN *</label>
               <div class="flex gap-xs">
-                <input formControlName="isbn" type="text" inputmode="numeric" maxlength="13" placeholder="978..."
+                <input id="libro-isbn" formControlName="isbn" type="text" inputmode="numeric" maxlength="13" placeholder="978..."
                   [attr.aria-invalid]="form.get('isbn')?.invalid && form.get('isbn')?.touched ? true : null"
                   [attr.aria-describedby]="form.get('isbn')?.invalid && form.get('isbn')?.touched ? 'isbn-error' : null"
                   class="flex-1 min-w-0 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
@@ -123,16 +123,16 @@
               }
             </div>
             <div class="col-span-6 sm:col-span-2">
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Año *</label>
-              <input formControlName="anioPublicacion" type="number" [min]="1950" [max]="anioMax" [placeholder]="anioMax.toString()"
+              <label for="libro-anio" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Año *</label>
+              <input id="libro-anio" formControlName="anioPublicacion" type="number" [min]="1950" [max]="anioMax" [placeholder]="anioMax.toString()"
                 class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
               @if (form.get('anioPublicacion')?.touched && form.get('anioPublicacion')?.invalid) {
                 <p class="text-[11px] text-error mt-1">Entre 1950 y {{anioMax}}</p>
               }
             </div>
             <div class="col-span-6 sm:col-span-2">
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Nº páginas</label>
-              <input formControlName="numeroPaginas" type="number" min="1" max="99999" placeholder="320"
+              <label for="libro-num-paginas" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Nº páginas</label>
+              <input id="libro-num-paginas" formControlName="numeroPaginas" type="number" min="1" max="99999" placeholder="320"
                 class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
             </div>
             <div class="col-span-6 sm:col-span-3" data-autocomplete-idioma>
@@ -141,7 +141,7 @@
                 <div class="flex items-center gap-xs mb-xs">
                   <span class="inline-flex items-center gap-1 px-sm py-xs rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-[11px]">
                     {{ nombreIdiomaSeleccionado() }}
-                    <button type="button" (click)="quitarIdioma()" class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-on-primary-fixed-variant/20 cursor-pointer">
+                    <button type="button" (click)="quitarIdioma()" aria-label="Quitar idioma seleccionado" class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-on-primary-fixed-variant/20 cursor-pointer">
                       <span class="material-symbols-outlined text-[12px]">close</span>
                     </button>
                   </span>
@@ -157,14 +157,14 @@
                   aria-controls="libro-idioma-listbox" aria-autocomplete="list"
                   [attr.aria-activedescendant]="indiceIdioma >= 0 ? 'libro-idioma-option-' + indiceIdioma : null"
                   class="flex-1 min-w-0 h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
-                <button type="button" (click)="buscarIdiomaManualmente()" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
+                <button type="button" (click)="buscarIdiomaManualmente()" aria-label="Buscar idioma" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
                   <span class="material-symbols-outlined text-[18px]">search</span>
                 </button>
-                <button type="button" (click)="agregarIdioma()" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Agregar">
+                <button type="button" (click)="agregarIdioma()" aria-label="Agregar idioma" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Agregar">
                   <span class="material-symbols-outlined text-[18px]">add</span>
                 </button>
                 @if (mostrarSugerenciasIdioma) {
-                  <ul id="libro-idioma-listbox" role="listbox" aria-label="Sugerencias de idiomas" class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                  <ul id="libro-idioma-listbox" role="listbox" aria-label="Sugerencias de idiomas" class="absolute left-0 right-0 top-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
                     @if (sugerenciasIdioma.length > 0) {
                       @for (s of sugerenciasIdioma; track s.id; let i = $index) {
                         <li (mousedown)="seleccionarIdioma(s)" role="option" [id]="'libro-idioma-option-' + i" [attr.aria-selected]="i===indiceIdioma" class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low" [class.bg-primary-container]="i===indiceIdioma">{{ s.nombre }}</li>
@@ -180,9 +180,9 @@
             </div>
             @if (esGerenteAdmin || modoRevisionPendiente) {
               <div class="col-span-6 sm:col-span-2">
-                <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Precio</label>
+                <label for="libro-precio" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Precio</label>
                 <div class="relative group">
-                  <input formControlName="precioBase" type="number" min="0" step="0.01" placeholder="199.99"
+                  <input id="libro-precio" formControlName="precioBase" type="number" min="0" step="0.01" placeholder="199.99"
                     class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm disabled:bg-surface-container-low disabled:opacity-60" />
                   @if (modoRevisionPendiente && !esGerenteAdmin) {
                     <span class="absolute right-2 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center justify-center w-6 h-6 rounded-full bg-error text-white">
@@ -196,8 +196,8 @@
 
           <!-- Resumen -->
           <div class="mb-md">
-            <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Resumen</label>
-            <textarea formControlName="resumen" rows="3" maxlength="2000" placeholder="Breve descripción del libro..."
+            <label for="libro-resumen" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Resumen</label>
+            <textarea id="libro-resumen" formControlName="resumen" rows="3" maxlength="2000" placeholder="Breve descripción del libro..."
               class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm resize-y"></textarea>
             <p class="text-[11px] text-on-surface-variant text-right mt-1">{{ form.get('resumen')?.value?.length || 0 }}/2000</p>
           </div>
@@ -209,12 +209,12 @@
             <!-- Autores -->
             <div data-autocomplete-autores>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Autores</label>
-              <div class="rounded-lg border border-outline-variant bg-white p-sm min-h-[80px]">
+              <div class="rounded-lg border border-outline-variant bg-surface-container-lowest p-sm min-h-[80px]">
                 <div class="flex flex-wrap gap-xs mb-xs">
                   @for (autorId of form.get('autorIds')?.value ?? []; track autorId) {
                     <span class="inline-flex items-center gap-1 px-sm py-xs rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-[11px]">
                       {{ nombreAutor(autorId) }}
-                      <button type="button" (click)="quitarAutor(autorId)"
+                      <button type="button" (click)="quitarAutor(autorId)" aria-label="Quitar autor"
                         class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-on-primary-fixed-variant/20 cursor-pointer">
                         <span class="material-symbols-outlined text-[12px]">close</span>
                       </button>
@@ -230,14 +230,14 @@
                     aria-controls="libro-autor-listbox" aria-autocomplete="list"
                     [attr.aria-activedescendant]="indiceAutor >= 0 ? 'libro-autor-option-' + indiceAutor : null"
                     class="flex-1 min-w-0 h-8 px-sm rounded font-body-sm text-body-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 border border-transparent" />
-                  <button type="button" (click)="buscarAutorManualmente()" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
+                  <button type="button" (click)="buscarAutorManualmente()" aria-label="Buscar autor" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
                     <span class="material-symbols-outlined text-[16px]">search</span>
                   </button>
-                  <button type="button" (click)="agregarAutor()" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Agregar">
+                  <button type="button" (click)="agregarAutor()" aria-label="Agregar autor" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Agregar">
                     <span class="material-symbols-outlined text-[16px]">add</span>
                   </button>
                   @if (mostrarSugerenciasAutor) {
-                    <ul id="libro-autor-listbox" role="listbox" aria-label="Sugerencias de autores" class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                    <ul id="libro-autor-listbox" role="listbox" aria-label="Sugerencias de autores" class="absolute left-0 right-0 top-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
                       @if (sugerenciasAutor.length > 0) {
                         @for (sugerencia of sugerenciasAutor; track sugerencia.id; let i = $index) {
                           <li (mousedown)="seleccionarAutor(sugerencia)"
@@ -262,12 +262,12 @@
             <!-- Categorías -->
             <div data-autocomplete-categorias>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Categorías</label>
-              <div class="rounded-lg border border-outline-variant bg-white p-sm min-h-[80px]">
+              <div class="rounded-lg border border-outline-variant bg-surface-container-lowest p-sm min-h-[80px]">
                 <div class="flex flex-wrap gap-xs mb-xs">
                   @for (catId of form.get('categoriaIds')?.value ?? []; track catId) {
                     <span class="inline-flex items-center gap-1 px-sm py-xs rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-[11px]">
                       {{ nombreCategoria(catId) }}
-                      <button type="button" (click)="quitarCategoria(catId)"
+                      <button type="button" (click)="quitarCategoria(catId)" aria-label="Quitar categoría"
                         class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-on-primary-fixed-variant/20 cursor-pointer">
                         <span class="material-symbols-outlined text-[12px]">close</span>
                       </button>
@@ -283,14 +283,14 @@
                     aria-controls="libro-categoria-listbox" aria-autocomplete="list"
                     [attr.aria-activedescendant]="indiceCategoria >= 0 ? 'libro-categoria-option-' + indiceCategoria : null"
                     class="flex-1 min-w-0 h-8 px-sm rounded font-body-sm text-body-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 border border-transparent" />
-                  <button type="button" (click)="buscarCategoriaManualmente()" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
+                  <button type="button" (click)="buscarCategoriaManualmente()" aria-label="Buscar categoría" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
                     <span class="material-symbols-outlined text-[16px]">search</span>
                   </button>
-                  <button type="button" (click)="agregarCategoria()" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Agregar">
+                  <button type="button" (click)="agregarCategoria()" aria-label="Agregar categoría" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Agregar">
                     <span class="material-symbols-outlined text-[16px]">add</span>
                   </button>
                   @if (mostrarSugerenciasCategoria) {
-                    <ul id="libro-categoria-listbox" role="listbox" aria-label="Sugerencias de categorías" class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                    <ul id="libro-categoria-listbox" role="listbox" aria-label="Sugerencias de categorías" class="absolute left-0 right-0 top-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
                       @if (sugerenciasCategoria.length > 0) {
                         @for (sugerencia of sugerenciasCategoria; track sugerencia.id; let i = $index) {
                           <li (mousedown)="seleccionarCategoria(sugerencia)"
@@ -322,7 +322,7 @@
                 <div class="flex items-center gap-xs mb-xs">
                   <span class="inline-flex items-center gap-1 px-sm py-xs rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-[11px]">
                     {{ nombreEditorialSeleccionada() }}
-                    <button type="button" (click)="quitarEditorial()" class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-on-primary-fixed-variant/20 cursor-pointer">
+                    <button type="button" (click)="quitarEditorial()" aria-label="Quitar editorial seleccionada" class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-on-primary-fixed-variant/20 cursor-pointer">
                       <span class="material-symbols-outlined text-[12px]">close</span>
                     </button>
                   </span>
@@ -337,14 +337,14 @@
                   aria-controls="libro-editorial-listbox" aria-autocomplete="list"
                   [attr.aria-activedescendant]="indiceEditorial >= 0 ? 'libro-editorial-option-' + indiceEditorial : null"
                   class="flex-1 min-w-0 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
-                <button type="button" (click)="buscarEditorialManualmente()" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
+                <button type="button" (click)="buscarEditorialManualmente()" aria-label="Buscar editorial" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
                   <span class="material-symbols-outlined text-[18px]">search</span>
                 </button>
-                <button type="button" (click)="agregarEditorial()" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Agregar">
+                <button type="button" (click)="agregarEditorial()" aria-label="Agregar editorial" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Agregar">
                   <span class="material-symbols-outlined text-[18px]">add</span>
                 </button>
                 @if (mostrarSugerenciasEditorial) {
-                  <ul id="libro-editorial-listbox" role="listbox" aria-label="Sugerencias de editoriales" class="absolute left-0 right-0 top-full mt-1 bg-white border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                  <ul id="libro-editorial-listbox" role="listbox" aria-label="Sugerencias de editoriales" class="absolute left-0 right-0 top-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
                     @if (sugerenciasEditorial.length>0) {
                       @for (s of sugerenciasEditorial; track s.id; let i=$index) {
                         <li (mousedown)="seleccionarEditorial(s)" role="option" [id]="'libro-editorial-option-' + i" [attr.aria-selected]="i===indiceEditorial" class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low" [class.bg-primary-container]="i===indiceEditorial">{{ s.nombre }}</li>
@@ -357,9 +357,9 @@
               </div>
             </div>
             <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Estado *</label>
-              <select formControlName="estadoId"
-                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white">
+              <label for="libro-estado" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Estado *</label>
+              <select id="libro-estado" formControlName="estadoId"
+                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest">
                 <option [ngValue]="null" disabled>Seleccioná un estado</option>
                 @for (item of estados; track item.id) {
                   <option [ngValue]="item.id">{{ formatarEstado(item.nombre) }}</option>
@@ -398,11 +398,11 @@
         <input type="text" [ngModel]="textoBusqueda" id="busqueda-libros"
           (ngModelChange)="onBusquedaTexto($event)"
           placeholder="Buscar por título o ISBN..."
-          class="w-full h-10 pl-[36px] pr-sm rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm focus:outline-none focus:border-primary" />
+          class="w-full h-10 pl-[36px] pr-sm rounded-lg border border-outline-variant bg-surface-container-lowest font-body-sm text-body-sm focus:outline-none focus:border-primary" />
       </div>
       <label for="filtro-cat-libros" class="sr-only">Categoría</label>
       <select (change)="filtrarPorCategoria()" [(ngModel)]="categoriaFiltro" id="filtro-cat-libros"
-        class="h-10 px-sm pr-8 rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer">
+        class="h-10 px-sm pr-8 rounded-lg border border-outline-variant bg-surface-container-lowest font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer">
         <option value="">Categorías</option>
         @for (categoria of categorias; track categoria.id) {
           <option [value]="categoria.id">{{ categoria.nombre }}</option>
@@ -410,7 +410,7 @@
       </select>
       <label for="filtro-estado-libros" class="sr-only">Estado</label>
       <select (change)="filtrarPorEstado()" [(ngModel)]="estadoLibroFiltro" id="filtro-estado-libros"
-        class="h-10 px-sm pr-8 rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer">
+        class="h-10 px-sm pr-8 rounded-lg border border-outline-variant bg-surface-container-lowest font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer">
         <option [ngValue]="null">Estados</option>
         @for (estado of estados; track estado.id) {
           <option [ngValue]="estado.id">{{ formatarEstado(estado.nombre) }}</option>
@@ -425,11 +425,11 @@
     <!-- Tarjetas de libros -->
     <div class="flex flex-col gap-sm font-body-sm text-body-sm text-on-surface">
       @for (libro of libros; track libro.id) {
-        <div class="flex items-center gap-md rounded-lg border border-outline-variant bg-white px-md py-sm hover:shadow-sm transition-shadow">
+        <div class="flex items-center gap-md rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm hover:shadow-sm transition-shadow">
           <!-- Portada clickable -->
-          <button type="button" (click)="abrirPortada(libro.id, libro.tienePortada)"
+          <button type="button" (click)="abrirPortada(libro.id, libro.tienePortada)" [attr.aria-label]="'Ver portada de ' + libro.titulo"
             class="w-16 h-20 sm:w-20 sm:h-28 shrink-0 rounded overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary">
-            <app-portada-libro [libroId]="libro.id" [tienePortada]="libro.tienePortada" />
+            <app-portada-libro [libroId]="libro.id" [tienePortada]="libro.tienePortada" [titulo]="libro.titulo" />
           </button>
           <!-- Info -->
           <div class="flex-1 min-w-0">
@@ -450,11 +450,11 @@
           </div>
           <!-- Acciones -->
           <div class="flex gap-xs shrink-0">
-            <button (click)="abrirFormularioEditar(libro)" title="Editar"
+            <button (click)="abrirFormularioEditar(libro)" title="Editar" [attr.aria-label]="'Editar ' + libro.titulo"
               class="w-8 h-8 min-w-[44px] min-h-[44px] rounded flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant cursor-pointer">
               <span class="material-symbols-outlined text-[18px]">edit</span>
             </button>
-            <button (click)="eliminarLibro(libro.id)" title="Eliminar"
+            <button (click)="eliminarLibro(libro.id)" title="Eliminar" [attr.aria-label]="'Eliminar ' + libro.titulo"
               class="w-8 h-8 min-w-[44px] min-h-[44px] rounded flex items-center justify-center hover:bg-error-container/40 text-error cursor-pointer">
               <span class="material-symbols-outlined text-[18px]">delete</span>
             </button>
@@ -472,7 +472,7 @@
       <div class="flex items-center gap-xs font-body-sm text-body-sm">
         <span class="text-on-surface-variant">Mostrar</span>
         <label for="page-size-libros" class="sr-only">Elementos por página</label>
-        <select [ngModel]="pageSize" (ngModelChange)="cambiarTamanoPage($event)" id="page-size-libros" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-white cursor-pointer appearance-none text-xs leading-tight py-1.5">
+        <select [ngModel]="pageSize" (ngModelChange)="cambiarTamanoPage($event)" id="page-size-libros" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-surface-container-lowest cursor-pointer appearance-none text-xs leading-tight py-1.5">
           <option [ngValue]="10">10</option>
           <option [ngValue]="20">20</option>
           <option [ngValue]="30">30</option>
@@ -509,7 +509,8 @@
   <!-- ─── MODAL CONFIRMACIÓN ─── -->
   @if (confirmacionVisible) {
     <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" (click)="cancelarConfirmacion()">
-      <div role="alertdialog" aria-modal="true" aria-labelledby="titulo-confirmacion"
+      <div role="alertdialog" aria-modal="true" aria-labelledby="titulo-confirmacion" tabindex="-1"
+           appFocusTrap (cerrar)="cancelarConfirmacion()"
            class="bg-surface rounded-xl shadow-xl p-xl max-w-sm w-full" (click)="$event.stopPropagation()">
         <h3 id="titulo-confirmacion" class="font-headline-md text-headline-md text-on-surface mb-md">{{ confirmacionMensaje }}</h3>
         <div class="flex gap-sm justify-end">
@@ -529,11 +530,12 @@
   <!-- ─── MODAL PORTADA ─── -->
   @if (portadaModalVisible) {
     <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
-      role="dialog" aria-modal="true" (click)="cerrarPortada()">
+      role="dialog" aria-modal="true" aria-label="Portada del libro" (click)="cerrarPortada()">
       <!-- Overlay -->
       <div class="absolute inset-0 bg-black/60"></div>
       <!-- Contenido -->
-      <div class="relative z-10 max-w-lg w-full bg-white rounded-xl shadow-xl overflow-hidden"
+      <div class="relative z-10 max-w-lg w-full bg-surface-container-lowest rounded-xl shadow-xl overflow-hidden"
+        tabindex="-1" appFocusTrap (cerrar)="cerrarPortada()"
         (click)="$event.stopPropagation()">
         <div class="relative bg-surface-container-low flex items-center justify-center"
           style="min-height: 300px; max-height: 70vh;">
@@ -546,9 +548,9 @@
             <span class="material-symbols-outlined text-[64px] text-outline-variant">menu_book</span>
           }
         </div>
-        <button type="button" (click)="cerrarPortada()"
+        <button type="button" (click)="cerrarPortada()" aria-label="Cerrar vista de portada"
           class="absolute top-sm right-sm w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 cursor-pointer">
-          <span class="material-symbols-outlined text-[20px]">close</span>
+          <span class="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
         </button>
       </div>
     </div>

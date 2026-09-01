@@ -15,9 +15,9 @@
   @if (!cargando && favoritos.length > 0) {
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-md">
       @for (favorito of favoritos; track favorito.libroId) {
-        <div class="rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow">
+        <div class="rounded-lg overflow-hidden bg-surface-container-lowest border border-outline-variant hover:shadow-lg transition-shadow">
           <a [routerLink]="['/dashboard-lector/catalogo', favorito.libroId]" class="block relative aspect-[3/4] bg-surface-container-low overflow-hidden">
-            <app-portada-libro [libroId]="favorito.libroId" />
+            <app-portada-libro [libroId]="favorito.libroId" [titulo]="favorito.tituloLibro" />
           </a>
           <div class="p-sm">
             <p class="font-label-md text-[13px] text-on-surface leading-tight line-clamp-2">{{ favorito.tituloLibro }}</p>

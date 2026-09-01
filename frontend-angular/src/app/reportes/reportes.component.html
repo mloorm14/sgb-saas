@@ -13,7 +13,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md">
       @for (m of modulos; track m.id) {
         <button (click)="abrirModulo(m.id)"
-          class="rounded-xl border border-outline-variant bg-white p-lg text-left hover:shadow-md transition-shadow cursor-pointer group">
+          class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg text-left hover:shadow-md transition-shadow cursor-pointer group">
           <div class="flex items-center gap-sm mb-md">
             <div class="w-10 h-10 rounded-lg flex items-center justify-center" [class]="m.color">
               <span class="material-symbols-outlined text-[20px]">{{ m.icono }}</span>
@@ -45,41 +45,41 @@
 
       <!-- 1) LIBROS MAS PRESTADOS -->
       @if (vista === 'libros') {
-        <div class="rounded-lg border border-outline-variant bg-white p-md mb-md">
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest p-md mb-md">
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
               <input type="date" [(ngModel)]="librosDesde" [disabled]="!!librosDia"
-                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white disabled:opacity-40 disabled:cursor-not-allowed" />
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest disabled:opacity-40 disabled:cursor-not-allowed" />
             </div>
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hasta</label>
               <input type="date" [(ngModel)]="librosHasta" [disabled]="!!librosDia"
-                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white disabled:opacity-40 disabled:cursor-not-allowed" />
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest disabled:opacity-40 disabled:cursor-not-allowed" />
             </div>
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Fecha (dd-mm-yyyy)</label>
               <input type="date" [(ngModel)]="librosDia"
-                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
             </div>
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Tipo de días (1-7)</label>
               <input type="number" min="1" max="7" [(ngModel)]="librosTipoDias" [disabled]="!!librosDia" placeholder="1-7"
-                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white disabled:opacity-40" />
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest disabled:opacity-40" />
             </div>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end mt-sm">
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Top (mejores)</label>
               <input type="number" min="1" max="100" [(ngModel)]="limiteTop"
-                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
             </div>
             <div class="flex gap-sm">
               <button (click)="aplicarFiltros()" class="h-10 flex-1 rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer">
                 <span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar
               </button>
-              <button (click)="limpiarFiltros()" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low">
-                <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+              <button (click)="limpiarFiltros()" aria-label="Limpiar filtros" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low">
+                <span class="material-symbols-outlined text-[18px]" aria-hidden="true">restart_alt</span>
               </button>
             </div>
           </div>
@@ -94,7 +94,7 @@
           </button>
         </div>
 
-        <div class="rounded-lg border border-outline-variant bg-white overflow-x-auto overflow-y-hidden">
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-x-auto overflow-y-hidden">
           <table class="w-full text-left">
             <thead class="bg-surface-container-low">
               <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
@@ -128,41 +128,41 @@
 
       <!-- 2) MOROSIDAD -->
       @if (vista === 'morosidad') {
-        <div class="rounded-lg border border-outline-variant bg-white p-md mb-md">
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest p-md mb-md">
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Correo</label>
               <input type="text" [(ngModel)]="morosidadCorreo" placeholder="Buscar por correo"
-                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
             </div>
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
               <input type="date" [(ngModel)]="morosidadDesde" [disabled]="!!morosidadDia"
-                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white disabled:opacity-40" />
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest disabled:opacity-40" />
             </div>
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hasta</label>
               <input type="date" [(ngModel)]="morosidadHasta" [disabled]="!!morosidadDia"
-                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white disabled:opacity-40" />
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest disabled:opacity-40" />
             </div>
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Fecha (ej. 28-08-2026)</label>
               <input type="date" [(ngModel)]="morosidadDia"
-                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
             </div>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end mt-sm">
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Tipo de días (1-7)</label>
               <input type="number" min="1" max="7" [(ngModel)]="morosidadTipoDias" [disabled]="!!morosidadDia" placeholder="1-7"
-                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white disabled:opacity-40" />
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest disabled:opacity-40" />
             </div>
             <div class="flex gap-sm">
               <button (click)="aplicarFiltros()" class="h-10 flex-1 rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer">
                 <span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar
               </button>
-              <button (click)="limpiarFiltros()" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low">
-                <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+              <button (click)="limpiarFiltros()" aria-label="Limpiar filtros" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low">
+                <span class="material-symbols-outlined text-[18px]" aria-hidden="true">restart_alt</span>
               </button>
             </div>
           </div>
@@ -175,7 +175,7 @@
             <span class="material-symbols-outlined text-[16px]">table_chart</span> Excel
           </button>
         </div>
-        <div class="rounded-lg border border-outline-variant bg-white overflow-x-auto overflow-y-hidden">
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-x-auto overflow-y-hidden">
           <table class="w-full text-left">
             <thead class="bg-surface-container-low">
               <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
@@ -195,26 +195,26 @@
 
       <!-- 3) INVENTARIO -->
       @if (vista === 'inventario') {
-        <div class="rounded-lg border border-outline-variant bg-white p-md mb-md">
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest p-md mb-md">
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Buscar (título, ISBN, autor)</label>
               <input type="text" [(ngModel)]="busquedaInventario" placeholder="Título, ISBN o autor"
-                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
             </div>
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Estado</label>
-              <select [(ngModel)]="estadoStock" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white cursor-pointer">
+              <select [(ngModel)]="estadoStock" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest cursor-pointer">
                 <option value="">Todos</option><option value="disponible">Disponibles</option><option value="baja">Baja disponibilidad</option><option value="agotado">Agotados</option>
               </select>
             </div>
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Fecha</label>
-              <input type="date" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white opacity-40 cursor-not-allowed" disabled title="Sin fecha en inventario — visual solo" />
+              <input type="date" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest opacity-40 cursor-not-allowed" disabled title="Sin fecha en inventario — visual solo" />
             </div>
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Tipo días (1-7)</label>
-              <input type="number" min="1" max="7" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white opacity-40 cursor-not-allowed" disabled title="Sin fecha en inventario" />
+              <input type="number" min="1" max="7" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest opacity-40 cursor-not-allowed" disabled title="Sin fecha en inventario" />
             </div>
           </div>
           <div class="flex gap-sm mt-sm">
@@ -226,7 +226,7 @@
           <button (click)="descargarInventarioPdf()" [disabled]="descargandoPdf === 'inventario-pdf'" class="h-8 px-sm rounded bg-error/10 text-error font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer"><span class="material-symbols-outlined text-[16px]">picture_as_pdf</span> {{ descargandoPdf === 'inventario-pdf' ? 'Generando…' : 'PDF' }}</button>
           <button (click)="excelInventario()" class="h-8 px-sm rounded bg-success/10 text-success font-label-sm text-label-sm flex items-center gap-xs cursor-pointer"><span class="material-symbols-outlined text-[16px]">table_chart</span> Excel</button>
         </div>
-        <div class="rounded-lg border border-outline-variant bg-white overflow-x-auto overflow-y-hidden">
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-x-auto overflow-y-hidden">
           <table class="w-full text-left">
             <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">Título</th><th class="px-md py-sm hidden md:table-cell">ISBN</th><th class="px-md py-sm hidden lg:table-cell">Autor</th><th class="px-md py-sm hidden lg:table-cell">Categoría</th><th class="px-md py-sm text-right">Stock</th><th class="px-md py-sm text-right">Disponible</th><th class="px-md py-sm">Estado</th></tr></thead>
             <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
@@ -240,7 +240,7 @@
           <div class="flex items-center gap-xs font-body-sm text-body-sm">
             <span class="text-on-surface-variant">Mostrar</span>
             <label for="page-size-inventario" class="sr-only">Elementos por página</label>
-            <select [ngModel]="inventarioPageSize" (ngModelChange)="cambiarTamanoInventario($event)" id="page-size-inventario" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-white cursor-pointer appearance-none text-xs leading-tight py-1.5">
+            <select [ngModel]="inventarioPageSize" (ngModelChange)="cambiarTamanoInventario($event)" id="page-size-inventario" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-surface-container-lowest cursor-pointer appearance-none text-xs leading-tight py-1.5">
               <option [ngValue]="10">10</option>
               <option [ngValue]="20">20</option>
               <option [ngValue]="30">30</option>
@@ -261,41 +261,41 @@
 
       <!-- 4) VENCIDOS -->
       @if (vista === 'vencidos') {
-        <div class="rounded-lg border border-outline-variant bg-white p-md mb-md">
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest p-md mb-md">
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Correo</label>
-              <input type="text" [(ngModel)]="vencidosCorreo" placeholder="Buscar por correo" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+              <input type="text" [(ngModel)]="vencidosCorreo" placeholder="Buscar por correo" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
             </div>
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Libro</label>
-              <input type="text" [(ngModel)]="vencidosLibro" placeholder="Título del libro" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+              <input type="text" [(ngModel)]="vencidosLibro" placeholder="Título del libro" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
             </div>
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">ISBN</label>
-              <input type="text" [(ngModel)]="vencidosIsbn" placeholder="ISBN" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+              <input type="text" [(ngModel)]="vencidosIsbn" placeholder="ISBN" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
             </div>
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Fecha</label>
-              <input type="date" [(ngModel)]="vencidosDia" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+              <input type="date" [(ngModel)]="vencidosDia" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
             </div>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end mt-sm">
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
-              <input type="date" [(ngModel)]="vencidosDesde" [disabled]="!!vencidosDia" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white disabled:opacity-40" />
+              <input type="date" [(ngModel)]="vencidosDesde" [disabled]="!!vencidosDia" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest disabled:opacity-40" />
             </div>
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Hasta</label>
-              <input type="date" [(ngModel)]="vencidosHasta" [disabled]="!!vencidosDia" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white disabled:opacity-40" />
+              <input type="date" [(ngModel)]="vencidosHasta" [disabled]="!!vencidosDia" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest disabled:opacity-40" />
             </div>
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Tipo días (1-7)</label>
-              <input type="number" min="1" max="7" [(ngModel)]="vencidosTipoDias" [disabled]="!!vencidosDia" placeholder="1-7" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white disabled:opacity-40" />
+              <input type="number" min="1" max="7" [(ngModel)]="vencidosTipoDias" [disabled]="!!vencidosDia" placeholder="1-7" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest disabled:opacity-40" />
             </div>
             <div class="flex gap-sm">
               <button (click)="aplicarFiltros()" class="h-10 flex-1 rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer"><span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar</button>
-              <button (click)="limpiarFiltros()" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low"><span class="material-symbols-outlined text-[18px]">restart_alt</span></button>
+              <button (click)="limpiarFiltros()" aria-label="Limpiar filtros" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low"><span class="material-symbols-outlined text-[18px]" aria-hidden="true">restart_alt</span></button>
             </div>
           </div>
         </div>
@@ -303,7 +303,7 @@
           <button (click)="descargarVencidosPdf()" [disabled]="descargandoPdf === 'vencidos-pdf'" class="h-8 px-sm rounded bg-error/10 text-error font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer"><span class="material-symbols-outlined text-[16px]">picture_as_pdf</span> {{ descargandoPdf === 'vencidos-pdf' ? 'Generando…' : 'PDF' }}</button>
           <button (click)="excelVencidos()" class="h-8 px-sm rounded bg-success/10 text-success font-label-sm text-label-sm flex items-center gap-xs cursor-pointer"><span class="material-symbols-outlined text-[16px]">table_chart</span> Excel</button>
         </div>
-        <div class="rounded-lg border border-outline-variant bg-white overflow-x-auto overflow-y-hidden">
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-x-auto overflow-y-hidden">
           <table class="w-full text-left">
             <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">Usuario</th><th class="px-md py-sm hidden md:table-cell">Correo</th><th class="px-md py-sm">Libro</th><th class="px-md py-sm hidden md:table-cell">ISBN</th><th class="px-md py-sm">Vencimiento</th><th class="px-md py-sm text-right">Días</th><th class="px-md py-sm text-right">Multa est.</th></tr></thead>
             <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
@@ -317,19 +317,19 @@
 
       <!-- 5) CATEGORIAS -->
       @if (vista === 'categorias') {
-        <div class="rounded-lg border border-outline-variant bg-white p-md mb-md">
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest p-md mb-md">
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Buscar categoría</label>
-              <input type="text" [(ngModel)]="categoriasBusqueda" placeholder="Nombre de categoría" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+              <input type="text" [(ngModel)]="categoriasBusqueda" placeholder="Nombre de categoría" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
             </div>
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Los mejores (Top)</label>
-              <input type="number" min="1" max="100" [(ngModel)]="limiteCategorias" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white" />
+              <input type="number" min="1" max="100" [(ngModel)]="limiteCategorias" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
             </div>
             <div class="flex gap-sm">
               <button (click)="aplicarFiltros()" class="h-10 flex-1 rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer"><span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar</button>
-              <button (click)="limpiarFiltros()" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low"><span class="material-symbols-outlined text-[18px]">restart_alt</span></button>
+              <button (click)="limpiarFiltros()" aria-label="Limpiar filtros" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low"><span class="material-symbols-outlined text-[18px]" aria-hidden="true">restart_alt</span></button>
             </div>
           </div>
         </div>
@@ -337,7 +337,7 @@
           <button (click)="descargarCategoriasPdf()" [disabled]="descargandoPdf === 'categorias-pdf'" class="h-8 px-sm rounded bg-error/10 text-error font-label-sm text-label-sm flex items-center gap-xs disabled:opacity-40 cursor-pointer"><span class="material-symbols-outlined text-[16px]">picture_as_pdf</span> {{ descargandoPdf === 'categorias-pdf' ? 'Generando…' : 'PDF' }}</button>
           <button (click)="excelCategorias()" class="h-8 px-sm rounded bg-success/10 text-success font-label-sm text-label-sm flex items-center gap-xs cursor-pointer"><span class="material-symbols-outlined text-[16px]">table_chart</span> Excel</button>
         </div>
-        <div class="rounded-lg border border-outline-variant bg-white overflow-x-auto overflow-y-hidden">
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-x-auto overflow-y-hidden">
           <table class="w-full text-left">
             <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">#</th><th class="px-md py-sm">Categoría</th><th class="px-md py-sm text-right">Préstamos</th><th class="px-md py-sm text-right">% del total</th></tr></thead>
             <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">

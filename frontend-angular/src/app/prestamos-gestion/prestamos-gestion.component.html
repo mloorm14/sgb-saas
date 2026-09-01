@@ -155,7 +155,7 @@
               <button type="button" (click)="abrirPortada(reserva.libroId, reserva.tienePortada)"
                 class="w-24 h-32 sm:w-28 sm:h-36 shrink-0 rounded-lg overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-low flex items-center justify-center">
                 @if (reserva.tienePortada) {
-                  <app-portada-libro [libroId]="reserva.libroId" [tienePortada]="reserva.tienePortada" />
+                  <app-portada-libro [libroId]="reserva.libroId" [tienePortada]="reserva.tienePortada" [titulo]="reserva.titulo" />
                 } @else {
                   <span class="material-symbols-outlined text-[48px] text-outline-variant">menu_book</span>
                 }
@@ -175,10 +175,10 @@
 
 @if (showSinPermisosModal) {
   <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-md" (click)="cerrarSinPermisosModal()">
-    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-lg relative" (click)="$event.stopPropagation()">
-      <button type="button" (click)="cerrarSinPermisosModal()"
+    <div class="bg-surface-container-lowest rounded-2xl shadow-xl max-w-md w-full p-lg relative" (click)="$event.stopPropagation()">
+      <button type="button" (click)="cerrarSinPermisosModal()" aria-label="Cerrar"
         class="absolute top-sm right-sm w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center hover:bg-surface-container-highest cursor-pointer">
-        <span class="material-symbols-outlined text-[20px]">close</span>
+        <span class="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
       </button>
       <div class="flex flex-col items-center text-center pt-sm">
         <div class="w-16 h-16 rounded-full bg-error-container flex items-center justify-center text-error mb-md">
@@ -216,9 +216,9 @@
 
             <div class="flex flex-wrap items-end gap-5">
               <div class="w-36">
-                <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Días de Préstamo</label>
-                <input [(ngModel)]="diasReserva" type="number" min="1" max="90"
-                  class="w-full border border-outline-variant/50 rounded-lg px-3 py-2 text-body-md bg-white focus:ring-primary focus:border-primary" />
+                <label for="dias-prestamo" class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Días de Préstamo</label>
+                <input id="dias-prestamo" [(ngModel)]="diasReserva" type="number" min="1" max="90"
+                  class="w-full border border-outline-variant/50 rounded-lg px-3 py-2 text-body-md bg-surface-container-lowest focus:ring-primary focus:border-primary" />
               </div>
               <p class="text-sm font-medium text-on-surface-variant pb-2.5">Devolución: <span class="font-semibold text-on-surface">{{ fechaDevolucionEstimada(diasReserva) }}</span></p>
               <button (click)="confirmarEntrega()"
@@ -295,7 +295,7 @@
   <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
     (click)="cerrarPortada()">
     <div class="absolute inset-0 bg-black/60"></div>
-    <div class="relative z-10 max-w-lg w-full bg-white rounded-xl shadow-xl overflow-hidden"
+    <div class="relative z-10 max-w-lg w-full bg-surface-container-lowest rounded-xl shadow-xl overflow-hidden"
       (click)="$event.stopPropagation()">
       <div class="relative bg-surface-container-low flex items-center justify-center"
         style="min-height: 300px; max-height: 70vh;">
@@ -308,9 +308,9 @@
           <span class="material-symbols-outlined text-[64px] text-outline-variant">menu_book</span>
         }
       </div>
-      <button type="button" (click)="cerrarPortada()"
+      <button type="button" (click)="cerrarPortada()" aria-label="Cerrar vista de portada"
         class="absolute top-sm right-sm w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 cursor-pointer">
-        <span class="material-symbols-outlined text-[20px]">close</span>
+        <span class="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
       </button>
     </div>
   </div>

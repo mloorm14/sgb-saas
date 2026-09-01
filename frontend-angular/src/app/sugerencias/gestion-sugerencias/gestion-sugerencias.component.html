@@ -57,7 +57,7 @@
     <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando sugerencias…</p>
   }
 
-  <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
+  <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-hidden overflow-x-auto">
     <table class="w-full text-left">
       <thead class="bg-surface-container-low">
         <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
@@ -126,9 +126,9 @@
 
   @if (totalPages > 1) {
     <div class="flex justify-center mt-lg gap-xs">
-      <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
+      <button (click)="paginaAnterior()" [disabled]="currentPage === 0" aria-label="Página anterior"
         class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
-        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+        <span class="material-symbols-outlined text-[18px]" aria-hidden="true">chevron_left</span>
       </button>
       @for (pagina of paginasVisibles; track pagina) {
         <button (click)="currentPage = pagina; cargarPagina()"
@@ -140,9 +140,9 @@
           {{ pagina + 1 }}
         </button>
       }
-      <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
+      <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1" aria-label="Página siguiente"
         class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
-        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+        <span class="material-symbols-outlined text-[18px]" aria-hidden="true">chevron_right</span>
       </button>
     </div>
   }

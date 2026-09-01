@@ -15,7 +15,7 @@
       @if (cargandoResumen) {
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
           @for (i of [1,2,3,4,5,6,7,8]; track i) {
-            <div class="rounded-xl border border-outline-variant bg-white p-lg animate-pulse">
+            <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg animate-pulse">
               <div class="flex items-center gap-sm mb-md">
                 <div class="w-10 h-10 rounded-lg bg-surface-container-high"></div>
                 <div class="h-4 w-16 bg-surface-container-high rounded"></div>
@@ -33,7 +33,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
           @for (cat of resumenCategorias; track cat.tablaAfectada) {
             <button (click)="abrirHistorial(cat.tablaAfectada)"
-              class="rounded-xl border border-outline-variant bg-white p-lg text-left hover:shadow-md transition-shadow cursor-pointer group">
+              class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg text-left hover:shadow-md transition-shadow cursor-pointer group">
               <div class="flex items-center justify-between mb-md">
                 <div class="flex items-center gap-sm">
                   <div class="w-10 h-10 rounded-lg flex items-center justify-center" [class]="colorCategoria(cat.tablaAfectada)">
@@ -86,15 +86,15 @@
       </div>
 
       <!-- Filtros -->
-      <div class="rounded-lg border border-outline-variant bg-white glass-panel p-md mb-md shrink-0">
+      <div class="rounded-lg border border-outline-variant bg-surface-container-lowest glass-panel p-md mb-md shrink-0">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
           <div>
             <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Usuario</label>
             @if (usuarioSeleccionado) {
-              <div class="h-10 px-sm rounded border border-outline-variant bg-white flex items-center gap-sm">
+              <div class="h-10 px-sm rounded border border-outline-variant bg-surface-container-lowest flex items-center gap-sm">
                 <span class="font-body-sm text-body-sm truncate flex-1">{{ usuarioSeleccionado.nombre }} {{ usuarioSeleccionado.apellido }}</span>
-                <button (click)="limpiarSeleccion()" class="text-on-surface-variant hover:text-error cursor-pointer">
-                  <span class="material-symbols-outlined text-[16px]">close</span>
+                <button (click)="limpiarSeleccion()" aria-label="Quitar usuario seleccionado" class="text-on-surface-variant hover:text-error cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px]" aria-hidden="true">close</span>
                 </button>
               </div>
             } @else {
@@ -106,7 +106,7 @@
                   (blur)="cerrarDropdown()"
                   class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
                 @if (mostrandoDropdown && resultadosBusqueda.length > 0) {
-                  <div class="absolute z-10 mt-1 w-full bg-white border border-outline-variant rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  <div class="absolute z-10 mt-1 w-full bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg max-h-60 overflow-y-auto">
                     @for (u of resultadosBusqueda; track u.id) {
                       <button (mousedown)="seleccionarUsuario(u)"
                         class="w-full text-left px-sm py-sm hover:bg-surface-container-low flex items-center gap-sm cursor-pointer">
@@ -120,7 +120,7 @@
                   </div>
                 }
                 @if (mostrandoDropdown && busquedaUsuario.trim() && resultadosBusqueda.length === 0 && !buscandoUsuarios) {
-                  <div class="absolute z-10 mt-1 w-full bg-white border border-outline-variant rounded-lg shadow-lg p-sm text-center font-body-sm text-[13px] text-on-surface-variant">
+                  <div class="absolute z-10 mt-1 w-full bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg p-sm text-center font-body-sm text-[13px] text-on-surface-variant">
                     Sin resultados
                   </div>
                 }
@@ -130,7 +130,7 @@
           <div>
             <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Módulo</label>
             <select [(ngModel)]="filtroModulo"
-              class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white cursor-pointer">
+              class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest cursor-pointer">
               <option value="">Todos</option>
               @for (modulo of modulos; track modulo.valor) {
                 <option [value]="modulo.valor">{{ modulo.etiqueta }}</option>
@@ -165,9 +165,9 @@
               class="h-10 flex-1 rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer">
               <span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar
             </button>
-            <button (click)="limpiarFiltros()"
+            <button (click)="limpiarFiltros()" aria-label="Limpiar filtros"
               class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer hover:bg-surface-container-low">
-              <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+              <span class="material-symbols-outlined text-[18px]" aria-hidden="true">restart_alt</span>
             </button>
           </div>
         </div>
@@ -179,7 +179,7 @@
           <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando bitácora…</p>
         }
 
-        <div class="rounded-lg border border-outline-variant bg-white overflow-x-auto">
+        <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-x-auto">
           <table class="w-full text-left">
             <thead class="bg-surface-container-low sticky top-0 z-10">
               <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
@@ -238,7 +238,7 @@
               <span class="text-on-surface-variant">Mostrar</span>
               <label for="page-size-auditoria" class="sr-only">Elementos por página</label>
               <select [ngModel]="pageSize" (ngModelChange)="cambiarTamanoPage($event)" id="page-size-auditoria"
-                class="h-10 px-sm pr-8 rounded border border-outline-variant bg-white cursor-pointer appearance-none text-xs leading-tight py-1.5">
+                class="h-10 px-sm pr-8 rounded border border-outline-variant bg-surface-container-lowest cursor-pointer appearance-none text-xs leading-tight py-1.5">
                 <option [ngValue]="10">10</option>
                 <option [ngValue]="20">20</option>
                 <option [ngValue]="50">50</option>
@@ -278,8 +278,9 @@
     <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
       (click)="cerrarDetalle()">
       <div class="absolute inset-0 bg-black/50"></div>
-      <div role="dialog" aria-modal="true" aria-labelledby="titulo-detalle-auditoria"
-        class="relative z-10 w-full max-w-[620px] max-h-[78vh] bg-white rounded-xl shadow-xl flex flex-col overflow-hidden"
+      <div role="dialog" aria-modal="true" aria-labelledby="titulo-detalle-auditoria" tabindex="-1"
+        appFocusTrap (cerrar)="cerrarDetalle()"
+        class="relative z-10 w-full max-w-[620px] max-h-[78vh] bg-surface-container-lowest rounded-xl shadow-xl flex flex-col overflow-hidden"
         (click)="$event.stopPropagation()">
 
         <!-- Encabezado -->

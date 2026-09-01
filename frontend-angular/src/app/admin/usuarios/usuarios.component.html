@@ -34,7 +34,7 @@
     <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando usuarios…</p>
   }
 
-  <div class="rounded-lg border border-outline-variant bg-white overflow-x-auto overflow-y-hidden">
+  <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-x-auto overflow-y-hidden">
     <table class="w-full text-left">
       <thead class="bg-surface-container-low">
         <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
@@ -57,7 +57,7 @@
               @if (puedeGestionar) {
                 <select [value]="usuario.roles[0]"
                   (change)="cambiarRol(usuario, $any($event.target).value)"
-                  class="h-9 px-sm rounded border border-outline-variant font-label-sm text-label-sm bg-white cursor-pointer">
+                  class="h-9 px-sm rounded border border-outline-variant font-label-sm text-label-sm bg-surface-container-lowest cursor-pointer">
                   @for (rol of rolesDisponibles; track rol) {
                     <option [value]="rol" [selected]="usuario.roles[0] === rol">{{ rol }}</option>
                   }
@@ -131,7 +131,7 @@
       <span class="text-on-surface-variant">Mostrar</span>
       <label for="page-size-usuarios" class="sr-only">Elementos por página</label>
       <select [ngModel]="pageSize" (ngModelChange)="cambiarTamanoPage($event)" id="page-size-usuarios"
-        class="h-10 px-sm pr-8 rounded border border-outline-variant bg-white cursor-pointer appearance-none text-xs leading-tight py-1.5">
+        class="h-10 px-sm pr-8 rounded border border-outline-variant bg-surface-container-lowest cursor-pointer appearance-none text-xs leading-tight py-1.5">
         <option [ngValue]="10">10</option>
         <option [ngValue]="20">20</option>
         <option [ngValue]="30">30</option>
@@ -168,13 +168,14 @@
   @if (mostrarModalEstado && usuarioAccion) {
     <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-md"
       role="dialog" aria-modal="true" aria-labelledby="titulo-estado-usuario">
-      <div class="bg-white rounded-xl glass-panel w-full max-w-md p-xl">
+      <div class="bg-surface-container-lowest rounded-xl glass-panel w-full max-w-md p-xl"
+        tabindex="-1" appFocusTrap (cerrar)="cerrarModalEstado()">
         <h2 id="titulo-estado-usuario" class="font-headline-md text-headline-md text-on-background mb-xs">
           {{ nuevoEstado === 'INACTIVO' ? 'Bloquear' : 'Activar' }} a {{ usuarioAccion.nombre }} {{ usuarioAccion.apellido }}
         </h2>
         <p class="font-body-sm text-body-sm text-on-surface-variant mb-md">El motivo queda registrado en la bitácora de auditoría — es obligatorio.</p>
-        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Motivo (máx. 255 caracteres)</label>
-        <textarea rows="3" maxlength="255" [(ngModel)]="motivoEstado"
+        <label for="motivo-estado-usuario" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Motivo (máx. 255 caracteres)</label>
+        <textarea id="motivo-estado-usuario" rows="3" maxlength="255" [(ngModel)]="motivoEstado"
           placeholder="Ej: solicitud del propio usuario, incumplimiento de política..."
           class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm resize-y"></textarea>
         @if (errorModal) {

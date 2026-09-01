@@ -10,14 +10,14 @@
       <span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
       <label for="busqueda-pendientes" class="sr-only">Buscar por título o ISBN</label>
       <input type="text" [(ngModel)]="q" (ngModelChange)="onFiltroChange()" placeholder="Buscar por título o ISBN..." id="busqueda-pendientes"
-        class="w-full h-10 pl-[36px] pr-sm rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:border-primary" />
+        class="w-full h-10 pl-[36px] pr-sm rounded-lg border border-outline-variant bg-surface-container-lowest font-body-sm text-body-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:border-primary" />
     </div>
     <label for="anio-pendientes" class="sr-only">Año</label>
     <input type="number" [(ngModel)]="anioFiltro" (ngModelChange)="onFiltroChange()" placeholder="Año" id="anio-pendientes"
-      class="w-28 h-10 px-sm rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:border-primary" [min]="1950" />
+      class="w-28 h-10 px-sm rounded-lg border border-outline-variant bg-surface-container-lowest font-body-sm text-body-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:border-primary" [min]="1950" />
     <label for="filtro-estado-pendientes" class="sr-only">Estado</label>
     <select [(ngModel)]="estadoFiltro" (ngModelChange)="onFiltroChange()" id="filtro-estado-pendientes"
-      class="h-10 px-sm pr-8 rounded-lg border border-outline-variant bg-white font-body-sm text-body-sm cursor-pointer appearance-none">
+      class="h-10 px-sm pr-8 rounded-lg border border-outline-variant bg-surface-container-lowest font-body-sm text-body-sm cursor-pointer appearance-none">
       <option [ngValue]="null">Todos (4 estados)</option>
       @for (e of estados; track e.id) {
         <option [ngValue]="e.id">{{ formatarEstado(e.nombre) }}</option>
@@ -30,7 +30,7 @@
 
   <div class="flex flex-col gap-sm">
     @for (libro of libros; track libro.id) {
-      <button type="button" (click)="abrirRevision(libro)" class="text-left flex items-center gap-md rounded-lg border border-outline-variant bg-white px-md py-sm hover:shadow-sm transition-shadow cursor-pointer">
+      <button type="button" (click)="abrirRevision(libro)" class="text-left flex items-center gap-md rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm hover:shadow-sm transition-shadow cursor-pointer">
         <div class="flex-1 min-w-0">
           <p class="text-on-surface font-semibold text-[15px] truncate">{{ libro.titulo }}</p>
           <p class="text-on-surface-variant text-[12px]">{{ libro.isbn }} · {{ libro.anioPublicacion }} · {{ formatarEstado(libro.estado) }}</p>
@@ -48,7 +48,7 @@
     <div class="flex items-center gap-xs font-body-sm text-body-sm">
       <span class="text-on-surface-variant">Mostrar</span>
       <label for="page-size-pendientes" class="sr-only">Elementos por página</label>
-      <select [ngModel]="pageSize" (ngModelChange)="cambiarTamano($event)" id="page-size-pendientes" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-white cursor-pointer appearance-none text-xs leading-tight py-1.5">
+      <select [ngModel]="pageSize" (ngModelChange)="cambiarTamano($event)" id="page-size-pendientes" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-surface-container-lowest cursor-pointer appearance-none text-xs leading-tight py-1.5">
         <option [ngValue]="10">10</option>
         <option [ngValue]="20">20</option>
         <option [ngValue]="30">30</option>
