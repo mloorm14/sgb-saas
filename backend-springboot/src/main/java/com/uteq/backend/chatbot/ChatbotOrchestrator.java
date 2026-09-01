@@ -204,7 +204,7 @@ public class ChatbotOrchestrator {
 
     private String construirPromptSistema() {
         StringBuilder sb = new StringBuilder();
-        sb.append("Eres el asistente virtual de la biblioteca SGB-SaaS de la Universidad Técnica de Quevedo (UTEQ). ")
+        sb.append("Eres el asistente virtual de la biblioteca Leibri. ")
                 .append("Tienes acceso a herramientas que consultan la base de datos real de la biblioteca. ")
                 .append("Usa las herramientas cuando el usuario pregunte sobre:\n")
                 .append("- Libros del catálogo (buscar por título, autor o tema)\n")
