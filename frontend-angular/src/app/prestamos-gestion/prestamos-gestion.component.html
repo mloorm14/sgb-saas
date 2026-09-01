@@ -68,10 +68,10 @@
 
     <!-- ─── Error de búsqueda ─── -->
     @if (errorBusqueda) {
-      <div class="mb-8 flex items-center gap-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl p-5 shadow-sm">
-        <span class="material-symbols-outlined text-red-500 dark:text-red-400 text-3xl">error</span>
+      <div class="mb-8 flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl p-5 shadow-sm">
+        <span class="material-symbols-outlined text-red-500 text-3xl">error</span>
         <div class="flex-1">
-          <p class="text-red-700 dark:text-red-300 font-medium">{{ errorBusqueda }}</p>
+          <p class="text-red-700 font-medium">{{ errorBusqueda }}</p>
     </div>
   </div>
 }
@@ -111,16 +111,16 @@
           </div>
         }
         @if (errorMsgAccion) {
-          <div class="flex items-center gap-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl p-5 shadow-sm">
-            <span class="material-symbols-outlined text-red-500 dark:text-red-400 text-3xl">error</span>
-            <p class="text-red-700 dark:text-red-300 font-medium flex-1">{{ errorMsgAccion }}</p>
+          <div class="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl p-5 shadow-sm">
+            <span class="material-symbols-outlined text-red-500 text-3xl">error</span>
+            <p class="text-red-700 font-medium flex-1">{{ errorMsgAccion }}</p>
           </div>
         }
 
         <!-- ═══ USUARIO BLOQUEADO ═══ -->
         @if (estaBloqueado) {
-          <div class="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl p-6 flex items-start gap-4">
-            <div class="p-3 bg-red-100 dark:bg-red-900/50 rounded-full text-red-600 dark:text-red-400 shrink-0">
+          <div class="bg-red-50 border border-red-200 rounded-2xl p-6 flex items-start gap-4">
+            <div class="p-3 bg-red-100 rounded-full text-red-600 shrink-0">
               <span class="material-symbols-outlined text-3xl">error</span>
             </div>
             <div class="flex-1">

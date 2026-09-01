@@ -1,7 +1,6 @@
 import { Component, HostListener, OnInit, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
-import { ThemeService } from '../core/services/theme.service';
 
 interface EnlaceSidebar {
   ruta: string;
@@ -64,7 +63,7 @@ export class DashboardGerenteAdminComponent implements OnInit {
     }
   ];
 
-  constructor(private authService: AuthService, public themeService: ThemeService) {}
+  constructor(private authService: AuthService) {}
 
   ngOnInit(): void {
     // Restaurar estado del sidebar desde localStorage

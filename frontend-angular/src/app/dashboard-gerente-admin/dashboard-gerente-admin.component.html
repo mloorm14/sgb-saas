@@ -83,13 +83,6 @@ class="flex items-center gap-sm py-sm mx-sm mb-sm rounded-lg font-body-sm text-b
       @if (mostrarMenuUsuario && !isCollapsed()) {
         <!-- Dropdown: absolute dentro del sidebar (overflow-x-hidden permite overflow vertical) -->
         <div class="absolute bottom-full left-2 right-2 mb-xs bg-surface-container-lowest rounded-xl border border-outline-variant shadow-lg overflow-hidden z-30">
-          <button type="button" (click)="themeService.toggle()"
-            [attr.aria-label]="themeService.oscuro() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
-            [attr.aria-pressed]="themeService.oscuro()"
-            class="w-full flex items-center gap-sm px-md py-sm text-left font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer whitespace-nowrap">
-            <span class="material-symbols-outlined text-[18px]">{{ themeService.oscuro() ? 'light_mode' : 'dark_mode' }}</span>
-            {{ themeService.oscuro() ? 'Tema claro' : 'Tema oscuro' }}
-          </button>
           <button (click)="cerrarSesion()"
             class="w-full flex items-center gap-sm px-md py-sm text-left font-body-sm text-body-sm text-error hover:bg-error-container/40 transition-colors cursor-pointer whitespace-nowrap">
             <span class="material-symbols-outlined text-[18px]">logout</span>
