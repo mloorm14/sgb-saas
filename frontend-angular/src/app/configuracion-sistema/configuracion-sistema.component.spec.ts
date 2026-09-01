@@ -142,7 +142,7 @@ describe('ConfiguracionSistemaComponent', () => {
     expect(component.errorMsg).toBe('No tienes permisos para modificar la configuración del sistema');
   });
 
-  it('inicia en vista root con 2 módulos', async () => {
+  it('inicia en vista root con 3 módulos', async () => {
     await configurar('ADMIN');
     fixture.detectChanges();
 
@@ -151,9 +151,10 @@ describe('ConfiguracionSistemaComponent', () => {
     httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
 
     expect(component.vista).toBe('root');
-    expect(component.modulos.length).toBe(2);
+    expect(component.modulos.length).toBe(3);
     expect(component.modulos[0].id).toBe('sistema');
     expect(component.modulos[1].id).toBe('danos');
+    expect(component.modulos[2].id).toBe('respaldos');
   });
 
   it('abrirModulo("sistema") navega a grid con 5 submódulos', async () => {
@@ -167,7 +168,7 @@ describe('ConfiguracionSistemaComponent', () => {
     component.abrirModulo('sistema');
 
     expect(component.vista).toBe('grid');
-    expect(component.submodulos.length).toBe(5);
+    expect(component.submodulosFiltrados.length).toBe(5);
     expect(component.breadcrumbs.length).toBe(1);
     expect(component.breadcrumbs[0].label).toBe('Configuración');
   });

@@ -137,7 +137,7 @@ describe('LibroDetalleComponent', () => {
 
     component.confirmarReserva();
 
-    expect(component.errorMsg).toBe('Error al reservar el libro');
+    expect(component.errorMsg).toBe('No se pudo reservar el libro');
     expect(component.reservaCreada).toBeNull();
   });
 

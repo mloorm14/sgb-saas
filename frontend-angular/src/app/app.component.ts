@@ -25,7 +25,7 @@ interface EnlaceNav {
     styleUrl: './app.component.scss'
 })
 export class AppComponent {
-  title = 'SGB-SaaS';
+  title = 'Leibri';
   mostrarMenuUsuario = false;
   enRutaBibliotecario = false;
   enRutaAdmin = false;
