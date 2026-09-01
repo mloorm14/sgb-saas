@@ -12,6 +12,7 @@ import { AuthService } from '../core/services/auth.service';
 import { Libro, LibroSugerencia } from '../core/models/libro.model';
 import { Categoria } from '../core/models/categoria.model';
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
+import { FocusTrapDirective } from '../shared/focus-trap.directive';
 import { toOffsetDateTime } from '../core/utils/fecha';
 import { SuscripcionDisponibilidadService } from '../core/services/suscripcion-disponibilidad.service';
 import { ToastService } from '../shared/toast/toast.service';
@@ -20,7 +21,7 @@ import { ConfirmDialogService } from '../shared/confirm-dialog/confirm-dialog.se
 @Component({
   standalone: true,
   selector: 'app-catalogo',
-  imports: [CommonModule, FormsModule, RouterLink, PortadaLibroComponent],
+  imports: [CommonModule, FormsModule, RouterLink, PortadaLibroComponent, FocusTrapDirective],
   templateUrl: './catalogo.component.html'
 })
 export class CatalogoComponent implements OnInit, OnDestroy {

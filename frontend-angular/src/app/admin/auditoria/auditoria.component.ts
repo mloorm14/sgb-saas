@@ -7,6 +7,7 @@ import { UsuarioAdminService } from '../../core/services/usuario-admin.service';
 import { EventoAuditoria } from '../../core/models/evento-auditoria.model';
 import { UsuarioAdmin } from '../../core/models/usuario-admin.model';
 import { ResumenCategoriaAuditoria } from '../../core/models/resumen-auditoria.model';
+import { FocusTrapDirective } from '../../shared/focus-trap.directive';
 
 export interface ModuloOpcion {
   valor: string;
@@ -28,7 +29,7 @@ const MODULOS: ModuloOpcion[] = [
 @Component({
   selector: 'app-auditoria',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FocusTrapDirective],
   templateUrl: './auditoria.component.html'
 })
 export class AuditoriaComponent implements OnInit, OnDestroy {

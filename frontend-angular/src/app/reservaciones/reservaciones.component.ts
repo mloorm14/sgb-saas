@@ -14,6 +14,7 @@ import { UsuarioSugerencia } from '../core/models/prestamos-gestion.model';
 import { Libro, LibroSugerencia } from '../core/models/libro.model';
 import { BuscadorLibroComponent } from '../shared/buscador-libro/buscador-libro.component';
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
+import { FocusTrapDirective } from '../shared/focus-trap.directive';
 import { toOffsetDateTime } from '../core/utils/fecha';
 import { ToastService } from '../shared/toast/toast.service';
 import { ConfirmDialogService } from '../shared/confirm-dialog/confirm-dialog.service';
@@ -23,7 +24,7 @@ import { ConfirmDialogService } from '../shared/confirm-dialog/confirm-dialog.se
   selector: 'app-reservaciones',
   imports: [
     CommonModule, ReactiveFormsModule, FormsModule, RouterLink,
-    BuscadorLibroComponent, PortadaLibroComponent
+    BuscadorLibroComponent, PortadaLibroComponent, FocusTrapDirective
   ],
   templateUrl: './reservaciones.component.html'
 })

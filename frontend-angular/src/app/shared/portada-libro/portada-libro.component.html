@@ -1,9 +1,9 @@
 <div class="relative w-full h-full flex items-center justify-center bg-surface-container-low overflow-hidden">
   @if (cargando) {
-    <span class="material-symbols-outlined text-[32px] text-outline-variant animate-pulse">image</span>
+    <span class="material-symbols-outlined text-[32px] text-outline-variant animate-pulse" aria-hidden="true">image</span>
   } @else if (imagenUrl) {
-    <img [src]="imagenUrl" alt="Portada" class="w-full h-full object-cover" />
+    <img [src]="imagenUrl" [attr.alt]="titulo ? 'Portada de ' + titulo : 'Portada del libro'" class="w-full h-full object-cover" />
   } @else {
-    <span class="material-symbols-outlined text-[48px] text-outline-variant">menu_book</span>
+    <span class="material-symbols-outlined text-[48px] text-outline-variant" aria-hidden="true">menu_book</span>
   }
 </div>
