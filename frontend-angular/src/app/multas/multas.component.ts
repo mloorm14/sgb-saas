@@ -153,12 +153,12 @@ export class MultasComponent implements OnInit {
   // ── Badges ────────────────────────────────────────────
   claseBadge(multa: MultaDetalle): string {
     if (multa.estadoMultaId === 2) {
-      return 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300';
+      return 'bg-green-100 text-green-700';
     }
     if (multa.montoPagado > 0) {
-      return 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300';
+      return 'bg-amber-100 text-amber-700';
     }
-    return 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300';
+    return 'bg-red-100 text-red-700';
   }
 
   etiquetaEstado(multa: MultaDetalle): string {
@@ -276,9 +276,9 @@ export class MultasComponent implements OnInit {
 
   claseEstado(estado: string): string {
     switch (estado) {
-      case 'ACTIVA': return 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300';
-      case 'SUSPENDIDA': return 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300';
-      case 'BLOQUEADA': return 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300';
+      case 'ACTIVA': return 'bg-green-100 text-green-700';
+      case 'SUSPENDIDA': return 'bg-amber-100 text-amber-700';
+      case 'BLOQUEADA': return 'bg-red-100 text-red-700';
       default: return 'bg-surface-container-low text-on-surface-variant';
     }
   }

@@ -117,9 +117,9 @@ describe('MultasComponent', () => {
     const multaPagada = { ...mockMulta2, estadoMultaId: 2, montoPagado: 10 };
     const multaParcial = { ...mockMulta1, estadoMultaId: 1, montoPagado: 2 };
 
-    expect(component.claseBadge(multaPendiente)).toBe('bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300');
-    expect(component.claseBadge(multaPagada)).toBe('bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300');
-    expect(component.claseBadge(multaParcial)).toBe('bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300');
+    expect(component.claseBadge(multaPendiente)).toBe('bg-red-100 text-red-700');
+    expect(component.claseBadge(multaPagada)).toBe('bg-green-100 text-green-700');
+    expect(component.claseBadge(multaParcial)).toBe('bg-amber-100 text-amber-700');
   });
 
   it('etiquetaEstado devuelve el texto correcto para cada estado', () => {

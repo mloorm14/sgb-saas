@@ -48,15 +48,6 @@
 
       </nav>
 
-      <!-- Toggle de tema claro/oscuro -->
-      <button type="button" (click)="themeService.toggle()"
-        [attr.aria-label]="themeService.oscuro() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
-        [attr.aria-pressed]="themeService.oscuro()"
-        title="Cambiar tema"
-        class="shrink-0 flex items-center justify-center w-9 h-9 rounded-full hover:bg-surface-container-low transition-colors cursor-pointer text-on-surface-variant">
-        <span class="material-symbols-outlined text-[20px]">{{ themeService.oscuro() ? 'light_mode' : 'dark_mode' }}</span>
-      </button>
-
       <!-- Menú de usuario: iniciales + correo, dropdown hacia arriba -->
       <div class="relative shrink-0" data-menu-usuario>
         <button (click)="mostrarMenuUsuario = !mostrarMenuUsuario"

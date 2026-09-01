@@ -21,15 +21,15 @@
 
   <!-- Mensajes -->
   @if (errorMsg) {
-    <div role="alert" class="rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 p-md mb-md flex items-center gap-sm">
+    <div role="alert" class="rounded-lg bg-red-50 border border-red-200 p-md mb-md flex items-center gap-sm">
       <span class="material-symbols-outlined text-red-500 text-[20px]">error</span>
-      <p class="font-body-sm text-body-sm text-red-700 dark:text-red-300">{{ errorMsg }}</p>
+      <p class="font-body-sm text-body-sm text-red-700">{{ errorMsg }}</p>
     </div>
   }
   @if (exitoMsg) {
-    <div role="status" class="rounded-lg bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 p-md mb-md flex items-center gap-sm">
+    <div role="status" class="rounded-lg bg-green-50 border border-green-200 p-md mb-md flex items-center gap-sm">
       <span class="material-symbols-outlined text-green-500 text-[20px]">check_circle</span>
-      <p class="font-body-sm text-body-sm text-green-700 dark:text-green-300">{{ exitoMsg }}</p>
+      <p class="font-body-sm text-body-sm text-green-700">{{ exitoMsg }}</p>
     </div>
   }
 
@@ -168,7 +168,7 @@
                   </button>
                   @if (puedeAnular()) {
                     <button (click)="abrirModalAnulacion(multa)"
-                      class="h-9 px-md rounded-lg border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-label-sm text-label-sm hover:bg-red-100 dark:hover:bg-red-950/70 cursor-pointer flex items-center gap-xs">
+                      class="h-9 px-md rounded-lg border border-red-300 bg-red-50 text-red-700 font-label-sm text-label-sm hover:bg-red-100 cursor-pointer flex items-center gap-xs">
                       <span class="material-symbols-outlined text-[16px]">block</span>
                       Anular
                     </button>
@@ -255,17 +255,17 @@
 
           <!-- Advertencia amarilla: pago parcial -->
           @if (esPagoParcial) {
-            <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-lg p-md text-center mb-md">
-              <p class="font-semibold text-amber-700 dark:text-amber-300">Falta ${{ falta.toFixed(2) }}</p>
-              <p class="font-body-sm text-[12px] text-amber-600 dark:text-amber-400">El usuario aún debe esta cantidad</p>
+            <div class="bg-amber-50 border border-amber-300 rounded-lg p-md text-center mb-md">
+              <p class="font-semibold text-amber-700">Falta ${{ falta.toFixed(2) }}</p>
+              <p class="font-body-sm text-[12px] text-amber-600">El usuario aún debe esta cantidad</p>
             </div>
           }
 
           <!-- Cambio a entregar -->
           @if (esExcedente) {
-            <div class="bg-green-50 dark:bg-green-950/40 border border-green-300 dark:border-green-800 rounded-lg p-md text-center mb-md">
-              <p class="font-label-sm text-label-sm text-green-700 dark:text-green-300 uppercase tracking-wider">Cambio a entregar</p>
-              <p class="font-bold text-2xl text-green-700 dark:text-green-300">${{ cambio.toFixed(2) }}</p>
+            <div class="bg-green-50 border border-green-300 rounded-lg p-md text-center mb-md">
+              <p class="font-label-sm text-label-sm text-green-700 uppercase tracking-wider">Cambio a entregar</p>
+              <p class="font-bold text-2xl text-green-700">${{ cambio.toFixed(2) }}</p>
             </div>
           }
 
@@ -331,7 +331,7 @@
           </div>
 
           <!-- Info de la multa -->
-          <div class="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-lg p-md mb-lg">
+          <div class="bg-red-50 border border-red-200 rounded-lg p-md mb-lg">
             <p class="font-semibold text-on-surface mb-xs">{{ multaAnulacionActual.libroTitulo }}</p>
             <p class="font-body-sm text-[13px] text-on-surface-variant">Monto: <strong class="text-red-600">${{ multaAnulacionActual.saldo.toFixed(2) }}</strong></p>
             <p class="font-body-sm text-[12px] text-on-surface-variant">{{ multaAnulacionActual.diasAtraso }} días de atraso</p>

@@ -6,7 +6,6 @@ import { ChatbotWidgetComponent } from './shared/chatbot-widget/chatbot-widget.c
 import { LoaderComponent } from './shared/loader/loader.component';
 import { ConfirmDialogComponent } from './shared/confirm-dialog/confirm-dialog.component';
 import { NavigationBlockingService } from './core/services/navigation-blocking.service';
-import { ThemeService } from './core/services/theme.service';
 import { FocusTrapDirective } from './shared/focus-trap.directive';
 
 interface EnlaceNav {
@@ -40,8 +39,7 @@ export class AppComponent {
   constructor(
     private authService: AuthService,
     private router: Router,
-    private navigationBlocking: NavigationBlockingService,
-    public themeService: ThemeService
+    private navigationBlocking: NavigationBlockingService
   ) {
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)

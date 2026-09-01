@@ -1,7 +1,6 @@
 import { Component, HostListener, OnInit, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
-import { ThemeService } from '../core/services/theme.service';
 import { ChatbotWidgetComponent } from '../shared/chatbot-widget/chatbot-widget.component';
 
 interface EnlaceSidebar {
@@ -51,7 +50,7 @@ export class DashboardLectorComponent implements OnInit {
     }
   ];
 
-  constructor(private authService: AuthService, public themeService: ThemeService) {}
+  constructor(private authService: AuthService) {}
 
   ngOnInit(): void {
     // Restaurar estado del sidebar desde localStorage
