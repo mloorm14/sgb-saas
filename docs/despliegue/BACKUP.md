@@ -165,7 +165,7 @@ Esta sección documenta una prueba **real ejecutada** de Point-in-Time Recovery 
 ### 5.2 Reemplazo (2026-08-31)
 
 **Branch creada:** `backup-recovery-demo-adb`, ID
-`<BRANCH_ID_PENDIENTE_CONFIRMAR_EN_DASHBOARD>`, parent `production`, tipo
+`br-late-band-ax2dz54h`, parent `production`, tipo
 **"Branch data and schema"** — una copia del estado **actual** de
 `production` en el momento de la creación, **no** una restauración a un
 punto en el tiempo anterior. Creada **2026-08-31** por **Marlon Loor**.
