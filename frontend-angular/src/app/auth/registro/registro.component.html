@@ -24,8 +24,7 @@
       </a>
 
     <!-- Columna derecha: tarjeta -->
-    <div class="w-full md:w-2/3 rounded-xl shadow-lg p-xl relative overflow-hidden"
-         style="background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3);">
+    <div class="w-full md:w-2/3 rounded-xl shadow-lg p-xl relative overflow-hidden glass-panel">
       <button type="button" (click)="themeService.toggle()"
         [attr.aria-label]="themeService.oscuro() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
         title="Cambiar tema"

@@ -184,6 +184,16 @@ main#contenido-principal + * {
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+.dark .glass-panel {
+  background: rgba(17, 24, 34, 0.85);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+// Transición suave al cambiar tema (tokens via CSS vars)
+html {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
 // El navegador (Edge/Chrome) agrega un ícono nativo de "revelar contraseña"
 // dentro de los inputs type=password que se superpone con el botón custom de
 // Material Symbols (visibility/visibility_off). Como el botón custom ya
