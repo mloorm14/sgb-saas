@@ -54,6 +54,9 @@ public class SugerenciaAdquisicion {
     @Column(name = "revisado_por")
     private Long revisadoPor;
 
+    @Column(name = "proveedor_id")
+    private Integer proveedorId;
+
     @Column(name = "creado_en", updatable = false)
     private OffsetDateTime creadoEn;
 
