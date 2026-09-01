@@ -68,30 +68,37 @@ penetración por un equipo externo.
 \section{Validez externa}
 \label{sec:validez-externa}
 
-La amenaza de validez externa más relevante y todavía sin resolver es el
-tamaño de muestra de la evidencia de usabilidad (System Usability Scale,
-SUS): la guía de esta entrega exige un mínimo de $N\geq15$ participantes,
-y esa evidencia sigue \textbf{pendiente} al momento de escribir este
-capítulo (\texttt{OBS-08} en
-\texttt{docs/observaciones/OBSERVACIONES.md}, ``en progreso, asignada a
-Panama'', sin commit real todavía). El protocolo completo -- plantilla de
+La amenaza de validez externa más relevante en este bloque es el tamaño
+y método de muestreo de la evidencia de usabilidad (System Usability
+Scale, SUS): la guía de esta entrega exige un mínimo de $N\geq15$
+participantes, y esa evidencia ya se ejecutó con $N=15$
+(\autoref{sec:res-usabilidad}: puntuación agregada 82,17, IC~95\,\%
+$[80{,}08, 84{,}25]$, clasificación ``Excelente''), documentado como
+cerrado en \texttt{OBS-08} de \texttt{docs/observaciones/OBSERVACIONES.md}
+(commit \texttt{a5bb914}). El protocolo completo -- plantilla de
 consentimiento informado, tarea de \emph{onboarding} de dos pasos,
-código de participante anónimo -- ya está definido y validado, pero no
-ejecutado; este capítulo no puede, por tanto, evaluar la validez externa
-del resultado SUS en sí (todavía no existe), solo señalar el riesgo de
-tamaño de muestra que enfrentará cuando se ejecute. Ese riesgo no es
-menor: \citet{baltes2022sampling} documentan, en su revisión crítica de
+código de participante anónimo -- se aplicó según lo definido, y el
+tamaño de muestra cumple con exactitud el mínimo exigido por la guía.
+Eso no elimina la amenaza de validez externa, solo la reformula: la
+muestra se reclutó \textbf{por conveniencia dentro de la comunidad
+UTEQ}, no de forma aleatoria ni fuera de ese contexto institucional.
+\citet{baltes2022sampling} documentan, en su revisión crítica de
 prácticas de muestreo en investigación de ingeniería de software, que
-muestras pequeñas y no aleatorizadas -- exactamente el perfil esperable
-de un estudio SUS de PFC con participantes reclutados por conveniencia
-dentro de la comunidad universitaria -- limitan severamente la
-generalización de cualquier conclusión más allá de la muestra concreta
-estudiada, y recomiendan reportar explícitamente el método de
-reclutamiento y sus límites en vez de presentar el resultado como
-representativo de una población más amplia sin justificarlo. Cuando la
-muestra SUS se ejecute, este capítulo deberá actualizarse citando el
-tamaño real obtenido, el método de reclutamiento, y aplicando ese mismo
-criterio de \citet{baltes2022sampling} a la interpretación del puntaje.
+muestras pequeñas y no aleatorizadas -- exactamente el perfil de este
+estudio SUS -- limitan severamente la generalización de cualquier
+conclusión más allá de la muestra concreta estudiada, y recomiendan
+reportar explícitamente el método de reclutamiento y sus límites en vez
+de presentar el resultado como representativo de una población más
+amplia sin justificarlo. Aplicando ese mismo criterio al resultado real
+obtenido aquí: que $N=15$ cumpla el mínimo de la guía y que la
+clasificación agregada sea ``Excelente'' no implica que ese resultado se
+generalice más allá de esta muestra concreta -- son participantes de una
+sola comunidad universitaria reclutados por conveniencia, no una muestra
+aleatoria de la población general de usuarios de bibliotecas; no se
+presenta la cifra de 82,17 como evidencia de que el sistema sería
+igualmente bien percibido por una población de usuarios más amplia o
+distinta a la de este contexto institucional.
+
 Una segunda amenaza de validez externa, más estructural: todos los
 hallazgos de este proyecto provienen de un único contexto (una biblioteca
 universitaria ecuatoriana de bajo volumen, con un equipo de 3 personas
