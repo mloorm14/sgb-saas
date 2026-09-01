@@ -28,7 +28,7 @@ describe('DetallePublicoComponent', () => {
       imports: [DetallePublicoComponent],
       providers: [
         { provide: LibroPublicoService, useValue: libroPublicoService },
-        { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => '1' } } } }
+        { provide: ActivatedRoute, useValue: { snapshot: { data: {}, paramMap: { get: () => '1' } } } }
       ]
     }).compileComponents();
 
@@ -48,7 +48,7 @@ describe('DetallePublicoComponent', () => {
       imports: [DetallePublicoComponent],
       providers: [
         { provide: LibroPublicoService, useValue: libroPublicoService },
-        { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => null } } } }
+        { provide: ActivatedRoute, useValue: { snapshot: { data: {}, paramMap: { get: () => null } } } }
       ]
     }).compileComponents();
 
