@@ -149,7 +149,7 @@ app:
     # ver .env.example y docker-compose.yml, ya declaraban GEMINI_API_KEY
     # desde la rama de infraestructura, a la espera de esta configuración.
     api-key: ${GEMINI_API_KEY:}
-    modelo: ${GEMINI_MODELO:gemini-2.5-flash-lite}
+    modelo: ${GEMINI_MODELO:gemini-3.5-flash-lite}
     url-base: ${GEMINI_URL_BASE:https://generativelanguage.googleapis.com/v1beta}
     timeout-ms: ${GEMINI_TIMEOUT_MS:8000}
     # Máximo de mensajes por usuario por minuto antes de responder 429
