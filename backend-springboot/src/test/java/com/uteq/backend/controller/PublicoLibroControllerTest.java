@@ -83,7 +83,7 @@ class PublicoLibroControllerTest {
 
     @Test
     void listar_sinToken_responde200() throws Exception {
-        when(libroService.listarConFiltros(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+        when(libroService.listarConFiltros(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new PageImpl<>(List.of(libroRespuesta())));
 
         mockMvc.perform(get("/api/publico/libros"))
@@ -93,24 +93,24 @@ class PublicoLibroControllerTest {
 
     @Test
     void listar_conFiltroCategoria_sinToken_responde200YDelega() throws Exception {
-        when(libroService.listarConFiltros(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(5), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+        when(libroService.listarConFiltros(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(5), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new PageImpl<>(List.of(libroRespuesta())));
 
         mockMvc.perform(get("/api/publico/libros").param("categoriaId", "5"))
                 .andExpect(status().isOk());
 
-        verify(libroService).listarConFiltros(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(5), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        verify(libroService).listarConFiltros(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(5), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
     void listar_conFiltroAutor_sinToken_responde200YDelega() throws Exception {
-        when(libroService.listarConFiltros(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(3L), org.mockito.ArgumentMatchers.any()))
+        when(libroService.listarConFiltros(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(3L), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new PageImpl<>(List.of(libroRespuesta())));
 
         mockMvc.perform(get("/api/publico/libros").param("autorId", "3"))
                 .andExpect(status().isOk());
 
-        verify(libroService).listarConFiltros(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(3L), org.mockito.ArgumentMatchers.any());
+        verify(libroService).listarConFiltros(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(3L), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
