@@ -55,6 +55,16 @@ INSERT INTO estados_reservacion (nombre) VALUES
     ('EXPIRADA'),
     ('CANCELADA');
 
+-- ===== tipos_notificacion =====
+-- Catalogo creado por V6__notificaciones.sql. Solo se agrega 'COMPROBANTE_PAGO'
+-- (V16__multas_pago_parcial.sql) porque es el unico valor que bloquea CI hoy
+-- (fn_pagos_recientes.sql asume que existe). El catalogo completo tiene
+-- ademas 'VENCIMIENTO'/'MULTA'/'RESERVA_CADUCADA' (V6) y 'DISPONIBLE' (V27),
+-- ausentes de este snapshot -- deuda tecnica conocida, fuera de alcance de
+-- este fix puntual.
+INSERT INTO tipos_notificacion (nombre) VALUES
+    ('COMPROBANTE_PAGO');
+
 -- ===== configuracion_sistema =====
 -- 'monto_multa_diaria' es requerido por db/procs/sp_registrar_devolucion.sql
 -- (calcula multas.monto = dias_atraso * este valor). Placeholder razonable

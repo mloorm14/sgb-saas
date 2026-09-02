@@ -274,6 +274,7 @@ CREATE TABLE public.multas (
     id bigint NOT NULL,
     prestamo_id bigint NOT NULL,
     monto numeric(8,2) NOT NULL,
+    monto_pagado numeric(8,2) NOT NULL DEFAULT 0,
     estado_multa_id integer NOT NULL,
     fecha_generada timestamp with time zone DEFAULT now() NOT NULL,
     fecha_pagada timestamp with time zone,
