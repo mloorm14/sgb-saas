@@ -2,7 +2,10 @@ package com.uteq.backend.exception;
 
 import com.uteq.backend.service.ChatbotRateLimitExcedidoException;
 import com.uteq.backend.service.CodigoVerificacionInvalidoException;
+import com.uteq.backend.service.CorreoDominioNoPermitidoException;
 import com.uteq.backend.service.CorreoYaRegistradoException;
+import com.uteq.backend.service.EstadoReservacionInicialNoConfiguradoException;
+import com.uteq.backend.service.LimitePrestamosExcedidoException;
 import com.uteq.backend.service.LimiteRenovacionesExcedidoException;
 import com.uteq.backend.service.LoginRateLimitExcedidoException;
 import com.uteq.backend.service.MaterialReservadoException;
@@ -15,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
@@ -26,6 +30,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.dao.UncategorizedDataAccessException;
 import org.springframework.jdbc.UncategorizedSQLException;
@@ -48,6 +53,22 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CorreoYaRegistradoException.class)
     public ProblemDetail handleCorreoYaRegistrado(CorreoYaRegistradoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(CorreoDominioNoPermitidoException.class)
+    public ProblemDetail handleCorreoDominioNoPermitido(CorreoDominioNoPermitidoException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    @ExceptionHandler(LimitePrestamosExcedidoException.class)
+    public ProblemDetail handleLimitePrestamosExcedido(LimitePrestamosExcedidoException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(EstadoReservacionInicialNoConfiguradoException.class)
+    public ProblemDetail handleEstadoReservacionInicialNoConfigurado(EstadoReservacionInicialNoConfiguradoException ex) {
+        // 503: es un error de configuración del sistema (falta seed), no del cliente
+        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
     }
 
     @ExceptionHandler(BadCredentialsException.class)
@@ -136,6 +157,14 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ProblemDetail handleBodyMalformed(HttpMessageNotReadableException ex) {
+        String detalle = ex.getMostSpecificCause() != null
+                ? ex.getMostSpecificCause().getMessage()
+                : "El cuerpo de la solicitud no es válido";
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detalle);
+    }
+
     @ExceptionHandler(EntityNotFoundException.class)
     public ProblemDetail handleNotFound(EntityNotFoundException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
@@ -199,6 +228,13 @@ public class GlobalExceptionHandler {
     // Antes de este handler, ambas caían en handleStoredProcedureError -> 500
     // con el mensaje engañoso "Error no controlado en procedimiento
     // almacenado" (ver docs/mediciones/sec/2026-08-14-incidente-500-auth-redis-produccion.md).
+    @ExceptionHandler(InvalidDataAccessApiUsageException.class)
+    public ProblemDetail handleSortInvalido(InvalidDataAccessApiUsageException ex) {
+        log.warn("Parámetro de ordenamiento inválido", ex);
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                "Parámetro de ordenamiento inválido: " + ex.getMessage());
+    }
+
     @ExceptionHandler({DataAccessResourceFailureException.class, UncategorizedDataAccessException.class})
     public ProblemDetail handleDataAccessResourceFailure(DataAccessException ex) {
         log.error("Fallo de acceso a dependencia de datos (Redis/BD)", ex);
@@ -209,6 +245,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ProblemDetail handleIllegalState(IllegalStateException ex) {
+        log.warn("Estado ilegal de negocio", ex);
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     // Los SPs con efectos secundarios (sp_crear_prestamo, sp_registrar_devolucion,
@@ -235,6 +277,7 @@ public class GlobalExceptionHandler {
                 case "LB404" -> HttpStatus.NOT_FOUND;
                 case "LB409" -> HttpStatus.CONFLICT;
                 case "LB422" -> HttpStatus.UNPROCESSABLE_ENTITY;
+                case "23503" -> HttpStatus.BAD_REQUEST;
                 default -> null;
             };
             if (status != null) {
@@ -244,6 +287,19 @@ public class GlobalExceptionHandler {
 
         log.error("Error no controlado en procedimiento almacenado", ex);
         return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor");
+    }
+
+    // ResponseStatusException lanzada desde servicios con @Transactional (BackupService,
+    // RespaldoCompletoService, etc.) quedaba atrapada por handleGenerica -> 500
+    // porque el @ExceptionHandler(Exception.class) tiene prioridad sobre el
+    // ResponseStatusExceptionResolver de Spring MVC. Este handler lo intercepta primero
+    // y reenvía el status correcto (400, 404, etc.) que el servicio indicó.
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ProblemDetail handleResponseStatus(org.springframework.web.server.ResponseStatusException ex) {
+        return ProblemDetail.forStatusAndDetail(
+                HttpStatus.valueOf(ex.getStatusCode().value()),
+                ex.getReason() != null ? ex.getReason() : ex.getMessage()
+        );
     }
 
     @ExceptionHandler(Exception.class)

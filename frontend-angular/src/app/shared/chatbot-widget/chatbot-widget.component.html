@@ -1,0 +1,118 @@
+<!-- Widget colapsado: burbuja flotante -->
+@if (!expandido) {
+  <div class="fixed bottom-lg right-lg z-50">
+    <button (click)="toggle()"
+      class="w-14 h-14 rounded-full text-white shadow-lg flex items-center justify-center hover:scale-105 transition-transform cursor-pointer"
+      style="background: linear-gradient(135deg, #003694, #2c57c1);">
+      <span class="material-symbols-outlined text-[26px]">chat</span>
+    </button>
+  </div>
+}
+
+<!-- Widget expandido: panel de chat -->
+@if (expandido) {
+  <div class="fixed bottom-lg right-lg z-50 w-80 rounded-2xl bg-surface-container-lowest shadow-2xl border border-outline-variant overflow-hidden flex flex-col" style="height: 480px;">
+
+    <!-- Header -->
+    <div class="px-md py-sm flex items-center justify-between shrink-0" style="background: linear-gradient(135deg, #003694, #2c57c1);">
+      <div class="flex items-center gap-sm">
+        <div class="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center">
+          <span class="material-symbols-outlined text-white text-[20px]">smart_toy</span>
+        </div>
+        <div>
+          <p class="font-label-md text-[14px] text-white font-semibold">Asistente SGB</p>
+          <p class="font-label-sm text-[11px] text-white/70 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span> En línea
+          </p>
+        </div>
+      </div>
+      <button (click)="toggle()" class="text-white/80 hover:text-white cursor-pointer">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <!-- Aviso de sesión temporal -->
+    <div class="px-md py-xs bg-surface-container-low border-b border-outline-variant shrink-0">
+      <p class="font-label-sm text-[11px] text-on-surface-variant flex items-center gap-xs">
+        <span class="material-symbols-outlined text-[13px]">info</span> Esta conversación es temporal, se pierde al recargar
+      </p>
+    </div>
+
+    <!-- Mensajes -->
+    <div role="log" aria-live="polite" class="flex-1 overflow-y-auto p-md space-y-sm bg-surface">
+      @if (mensajes.length === 0) {
+        <div class="flex gap-xs items-end">
+          <div class="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-[14px] text-on-primary-fixed-variant">smart_toy</span>
+          </div>
+          <div class="bg-surface-container-lowest border border-outline-variant rounded-2xl rounded-bl-sm px-md py-sm max-w-[80%]">
+            <p class="font-body-sm text-body-sm text-on-surface">¡Hola! Soy el asistente de la biblioteca Leibri. ¿En qué puedo ayudarte hoy?</p>
+          </div>
+        </div>
+      }
+
+      @for (msg of mensajes; track msg.timestamp) {
+        @if (msg.rol === 'usuario') {
+          <div class="flex justify-end">
+            <div class="bg-primary text-on-primary rounded-2xl rounded-br-sm px-md py-sm max-w-[80%]">
+              <p class="font-body-sm text-body-sm">{{ msg.texto }}</p>
+            </div>
+          </div>
+        } @else {
+          <div class="flex gap-xs items-end">
+            <div class="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined text-[14px] text-on-primary-fixed-variant">smart_toy</span>
+            </div>
+            <div class="bg-surface-container-lowest border border-outline-variant rounded-2xl rounded-bl-sm px-md py-sm max-w-[80%]">
+              <p class="font-body-sm text-body-sm text-on-surface">{{ msg.texto }}</p>
+            </div>
+          </div>
+        }
+      }
+
+      @if (cargando) {
+        <div class="flex gap-xs items-end">
+          <div class="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-[14px] text-on-primary-fixed-variant">smart_toy</span>
+          </div>
+          <div class="bg-surface-container-lowest border border-outline-variant rounded-2xl rounded-bl-sm px-md py-sm flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-outline-variant animate-bounce" style="animation-delay:0ms"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-outline-variant animate-bounce" style="animation-delay:150ms"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-outline-variant animate-bounce" style="animation-delay:300ms"></span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Errores -->
+    @if (errorRateLimit) {
+      <div class="px-md py-xs bg-tertiary-fixed/30 border-t border-outline-variant shrink-0">
+        <p class="font-label-sm text-[11px] text-tertiary flex items-center gap-xs">
+          <span class="material-symbols-outlined text-[13px]">warning</span> Esperá un momento antes de enviar otro mensaje
+        </p>
+      </div>
+    }
+    @if (errorGeneral) {
+      <div class="px-md py-xs bg-surface-container-low border-t border-outline-variant shrink-0">
+        <p class="font-label-sm text-[11px] text-on-surface-variant flex items-center gap-xs">
+          <span class="material-symbols-outlined text-[13px]">info</span> {{ errorGeneral }}
+        </p>
+      </div>
+    }
+
+    <!-- Input -->
+    <div class="p-sm border-t border-outline-variant flex items-center gap-xs shrink-0 bg-surface-container-lowest">
+      <label for="chat-input" class="sr-only">Escribí tu mensaje</label>
+      <input id="chat-input" type="text" [(ngModel)]="textoMensaje"
+        (keyup.enter)="enviar()"
+        [disabled]="cargando"
+        placeholder="Escribí tu mensaje..."
+        class="flex-1 h-10 px-sm rounded-full bg-surface-container-low border-none text-body-sm text-on-surface focus:ring-2 focus:ring-primary/20 disabled:opacity-50" />
+      <button (click)="enviar()"
+        [disabled]="!textoMensaje.trim() || cargando"
+        class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0 hover:bg-on-primary-fixed-variant transition-colors disabled:opacity-50 cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">send</span>
+      </button>
+    </div>
+  </div>
+}

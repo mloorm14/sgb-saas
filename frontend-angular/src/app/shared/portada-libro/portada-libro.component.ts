@@ -13,6 +13,7 @@ import { LibroService } from '../../core/services/libro.service';
 //    trae el flag), se intenta cargar igual y se cae al placeholder ante
 //    404 (libro sin portada binaria).
 @Component({
+  standalone: true,
   selector: 'app-portada-libro',
   imports: [],
   templateUrl: './portada-libro.component.html'
@@ -20,6 +21,11 @@ import { LibroService } from '../../core/services/libro.service';
 export class PortadaLibroComponent implements OnChanges, OnDestroy {
   @Input() libroId!: number;
   @Input() tienePortada?: boolean;
+  // Opcional: cuando el llamador ya tiene el título a mano, se usa para un
+  // alt descriptivo ("Portada de <título>") en vez del genérico "Portada
+  // del libro" -- útil para lectores de pantalla en grillas con muchas
+  // portadas, donde "Portada" repetido sin distinción no sirve de nada.
+  @Input() titulo?: string;
 
   imagenUrl: string | null = null;
   cargando: boolean = false;

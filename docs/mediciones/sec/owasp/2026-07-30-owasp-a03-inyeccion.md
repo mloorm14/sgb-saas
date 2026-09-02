@@ -118,7 +118,7 @@ antes de escribir esta evidencia); todos los métodos de acceso a datos
 usan métodos derivados de Spring Data JPA (parametrizados
 automáticamente) o los 7 procedimientos de `db/procs/` invocados con
 parámetros nombrados (`@Procedure`/`@Query(nativeQuery)` con `:p_...`,
-nunca concatenación — ver `docs/adr/adr-013-acceso-datos-orm-sp.md` y
+nunca concatenación — ver `docs/adr/adr-006-acceso-datos-orm-sp.md` y
 el requisito A.2.3 de la guía). Esta es la razón de fondo por la que
 A03 no tiene un endpoint "vulnerable" que probar: la arquitectura no
 tiene ninguna ruta de SQL dinámico/concatenado expuesta al cliente, no

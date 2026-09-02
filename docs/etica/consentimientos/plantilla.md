@@ -28,8 +28,8 @@ equipo salvo si queda completamente bloqueado/a:
 
 1. Iniciar sesión con una cuenta de prueba que se le proporcionará.
 2. Registrarse como usuario nuevo (crear una cuenta).
-3. Editar los datos de esa cuenta recién creada.
-4. Eliminar (dar de baja) esa cuenta de prueba.
+3. Ingresar en el apartado de Libros y reservar un libro.
+4. Ir al apartado de reservaciones y borrar la reserva.
 5. Cerrar sesión (logout).
 
 Al finalizar, se le pedirá responder el cuestionario estándar **System

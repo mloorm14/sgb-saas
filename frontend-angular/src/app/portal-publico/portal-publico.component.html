@@ -23,18 +23,26 @@
     <p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl mx-auto">Buscá entre todos los libros disponibles. Para reservar, guardar favoritos o usar el asistente, creá una cuenta gratis.</p>
   </div>
 
-  <!-- Buscador predictivo (LibroPublicoService.sugerencias, minimo 2 caracteres) -->
-  <div class="max-w-xl mx-auto mb-xl">
-    <div class="rounded border border-outline-variant bg-white flex items-center px-sm glass-panel">
-      <span class="material-symbols-outlined text-outline text-[20px] mr-xs">search</span>
-      <input type="text" placeholder="Buscar por título, autor o categoría..."
-        [(ngModel)]="textoBusqueda"
-        (ngModelChange)="onBusquedaChange()"
-        class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-md text-body-md text-on-surface placeholder-outline" />
+   <!-- Buscador solo por título — ocupa todo el ancho del grid -->
+  <div class="w-full mb-xl">
+    <div class="flex gap-sm items-stretch w-full">
+      <div class="flex-1 rounded border border-outline bg-surface-container-low flex items-center px-sm min-w-0">
+        <span class="material-symbols-outlined text-outline text-[20px] mr-xs shrink-0">search</span>
+        <label for="busqueda-portal" class="sr-only">Buscar por título</label>
+        <input type="text" id="busqueda-portal" placeholder="Buscar por título..."
+          [(ngModel)]="textoBusqueda"
+          (ngModelChange)="onBusquedaChange()"
+          (keyup.enter)="buscarPorNombre()"
+          class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 py-sm font-body-md text-body-md text-on-surface placeholder-outline" />
+      </div>
+      <button (click)="buscarPorNombre()"
+        class="h-10 px-lg rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center gap-xs cursor-pointer shrink-0">
+        <span class="material-symbols-outlined text-[18px]">search</span> Buscar
+      </button>
     </div>
     @if (sugerencias.length > 0) {
       <div class="relative">
-        <div class="absolute mt-xs w-full bg-white rounded shadow-lg border border-outline-variant overflow-hidden z-10">
+        <div class="absolute mt-xs w-full bg-surface-container-lowest rounded shadow-lg border border-outline-variant overflow-hidden z-10">
           @for (sug of sugerencias; track sug.id) {
             <a [routerLink]="['/portal', sug.id]" (click)="textoBusqueda = ''; sugerencias = []"
               class="w-full block text-left px-md py-sm hover:bg-surface-container-low flex items-center justify-between border-b border-outline-variant">
@@ -55,32 +63,50 @@
     <p class="font-body-sm text-body-sm text-error mb-md text-center">{{ errorMsg }}</p>
   }
 
-  @if (cargando && libros.length === 0) {
-    <p class="font-body-sm text-body-sm text-on-surface-variant text-center mb-xl">Cargando catálogo…</p>
-  }
-
-  <!-- Grid: SIN boton de favorito, SIN boton de reservar (mockup 12) -->
+  <!-- Grid: SIN boton de favorito, SIN boton de reservar (mockup 12).
+       Mientras carga la primera página (cargando && libros vacío) se
+       rinden skeletonSlots.length tarjetas esqueleto con la misma
+       estructura (aspect-[3/4] + 2 líneas de texto) para reservar el
+       alto real del grid -- antes, una sola línea de texto ("Cargando
+       catálogo…") ocupaba ese lugar y el grid completo aparecía de
+       golpe al llegar los datos, el layout shift dominante medido en
+       producción (CLS ~0.23 de 0.231 total, ver
+       docs/mediciones/lighthouse/REPORT.md). -->
   <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-md mb-xl">
-    @for (libro of libros; track libro.id) {
-      <a [routerLink]="['/portal', libro.id]"
-        class="rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow">
-        <div class="aspect-[3/4] bg-surface-container-low overflow-hidden">
-          @if (libro.tienePortada) {
-            <img [src]="portadaUrl(libro.id)" [alt]="'Portada de ' + libro.titulo" class="w-full h-full object-cover" />
-          } @else {
-            <div class="w-full h-full flex items-center justify-center">
-              <span class="material-symbols-outlined text-outline-variant text-[48px]">menu_book</span>
-            </div>
-          }
+    @if (cargando && libros.length === 0) {
+      @for (slot of skeletonSlots; track slot) {
+        <div class="rounded-lg overflow-hidden bg-surface-container-lowest border border-outline-variant animate-pulse" aria-hidden="true">
+          <div class="aspect-[3/4] bg-surface-container-low"></div>
+          <div class="p-sm">
+            <div class="h-3 bg-surface-container-low rounded mb-1"></div>
+            <div class="h-2 bg-surface-container-low rounded w-2/3"></div>
+          </div>
         </div>
-        <div class="p-sm">
-          <p class="font-label-md text-[13px] text-on-surface leading-tight line-clamp-2">{{ libro.titulo }}</p>
-          <p class="font-label-sm text-[11px] text-on-surface-variant mt-1">{{ autoresTexto(libro) }}</p>
-        </div>
-      </a>
-    } @empty {
-      @if (!cargando) {
-        <p class="font-body-sm text-body-sm text-on-surface-variant col-span-full">No hay libros para mostrar.</p>
+      }
+    } @else {
+      @for (libro of libros; track libro.id) {
+        <a [routerLink]="['/portal', libro.id]"
+          class="rounded-lg overflow-hidden bg-surface-container-lowest border border-outline-variant hover:shadow-lg transition-shadow">
+          <div class="aspect-[3/4] bg-surface-container-low overflow-hidden">
+            @if (libro.tienePortada) {
+              <img [src]="portadaUrl(libro.id)" [alt]="'Portada de ' + libro.titulo"
+                (error)="libro.tienePortada = false"
+                class="w-full h-full object-cover" />
+            } @else {
+              <div class="w-full h-full flex items-center justify-center">
+                <span class="material-symbols-outlined text-outline-variant text-[48px]">menu_book</span>
+              </div>
+            }
+          </div>
+          <div class="p-sm">
+            <p class="font-label-md text-[13px] text-on-surface leading-tight line-clamp-2">{{ libro.titulo }}</p>
+            <p class="font-label-sm text-[11px] text-on-surface-variant mt-1">{{ autoresTexto(libro) }}</p>
+          </div>
+        </a>
+      } @empty {
+        @if (!cargando) {
+          <p class="font-body-sm text-body-sm text-on-surface-variant col-span-full">No hay libros para mostrar.</p>
+        }
       }
     }
   </div>

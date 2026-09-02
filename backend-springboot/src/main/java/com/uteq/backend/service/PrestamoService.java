@@ -1,26 +1,37 @@
 package com.uteq.backend.service;
 
 import com.uteq.backend.dto.DevolucionResponseDTO;
+import com.uteq.backend.dto.LibroMasPrestadoDetalladoResponseDTO;
 import com.uteq.backend.dto.LibroMasPrestadoResponseDTO;
 import com.uteq.backend.dto.PrestamoActivoResponseDTO;
 import com.uteq.backend.dto.PrestamoRequestDTO;
 import com.uteq.backend.dto.PrestamoResponseDTO;
 import com.uteq.backend.dto.RenovacionResponseDTO;
+import com.uteq.backend.dto.ReporteCategoriasDemandadasResponseDTO;
+import com.uteq.backend.dto.ReporteInventarioResponseDTO;
 import com.uteq.backend.dto.ReporteMorosidadResponseDTO;
 import com.uteq.backend.dto.ReporteUsoPorPeriodoResponseDTO;
+import com.uteq.backend.dto.ReporteVencidosResponseDTO;
+import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.EstadoPrestamo;
 import com.uteq.backend.entity.Prestamo;
+import com.uteq.backend.entity.Reservacion;
 import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.EstadoPrestamoRepository;
 import com.uteq.backend.repository.EstadoReservacionRepository;
 import com.uteq.backend.repository.PrestamoProcedureRepository;
 import com.uteq.backend.repository.PrestamoRepository;
 import com.uteq.backend.repository.ReservacionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.repository.projection.LibroMasPrestadoDetalladoProjection;
 import com.uteq.backend.repository.projection.LibroMasPrestadoProjection;
 import com.uteq.backend.repository.projection.PrestamoActivoProjection;
+import com.uteq.backend.repository.projection.ReporteCategoriasDemandadasProjection;
+import com.uteq.backend.repository.projection.ReporteInventarioProjection;
 import com.uteq.backend.repository.projection.ReporteMorosidadProjection;
 import com.uteq.backend.repository.projection.ReporteUsoPorPeriodoProjection;
+import com.uteq.backend.repository.projection.ReporteVencidosProjection;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,12 +43,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 
 @Service
 public class PrestamoService {
 
+    private static final String TABLA_PRESTAMOS = "prestamos";
     private static final String PRESTAMO_NO_ENCONTRADO = "Préstamo no encontrado con id: ";
     private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado: ";
     private static final String ROL_LECTOR = "LECTOR";
@@ -50,6 +63,7 @@ public class PrestamoService {
     // CANCELADA). No existe un estado literal "ACTIVA" en estados_reservacion
     // (ver db/seed.sql) -- son estos dos los que cuentan como "en curso".
     private static final List<String> ESTADOS_RESERVA_VIGENTE = List.of("PENDIENTE", "LISTA_PARA_RETIRO");
+    private static final String ESTADO_RESERVA_RETIRADA = "RETIRADA";
     private static final String CLAVE_DIAS_PRESTAMO_DEFAULT = "dias_prestamo_default";
     private static final String CLAVE_MAX_RENOVACIONES_DEFAULT = "max_renovaciones_default";
 
@@ -62,6 +76,7 @@ public class PrestamoService {
     private final ConfiguracionSistemaService configuracionSistemaService;
     private final CredencialQrService credencialQrService;
     private final NotificacionService notificacionService;
+    private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     public PrestamoService(PrestamoRepository prestamoRepo,
                            PrestamoProcedureRepository prestamoProcRepo,
@@ -71,7 +86,8 @@ public class PrestamoService {
                            EstadoReservacionRepository estadoReservacionRepo,
                            ConfiguracionSistemaService configuracionSistemaService,
                            CredencialQrService credencialQrService,
-                           NotificacionService notificacionService) {
+                           NotificacionService notificacionService,
+                           BitacoraAuditoriaRepository bitacoraAuditoriaRepo) {
         this.prestamoRepo = prestamoRepo;
         this.prestamoProcRepo = prestamoProcRepo;
         this.usuarioRepo = usuarioRepo;
@@ -81,17 +97,69 @@ public class PrestamoService {
         this.configuracionSistemaService = configuracionSistemaService;
         this.credencialQrService = credencialQrService;
         this.notificacionService = notificacionService;
+        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
     }
 
     @Transactional
     public PrestamoResponseDTO crear(PrestamoRequestDTO dto, Authentication authentication) {
         Long usuarioId = resolverUsuarioId(dto);
         Long bibliotecarioId = resolverIdPorCorreo(authentication.getName());
+
+        validarLimitePrestamos(usuarioId);
+
+        // Ventanilla: si el préstamo nace de una reserva, se valida ANTES de
+        // tocar stock (falla rápido, sin efectos secundarios) y se vincula
+        // DESPUÉS del SP -- sp_crear_prestamo no conoce reservaciones (no
+        // acepta ese parámetro) y la conversión reserva->préstamo son dos
+        // UPDATEs simples sobre filas ya cargadas, sin la atomicidad multi-
+        // tabla que sí justifica un procedimiento.
+        Reservacion reservaOrigen = validarReservaSiAplica(dto, usuarioId);
         Long prestamoId = prestamoProcRepo.spCrearPrestamo(
                 usuarioId, dto.libroId(), bibliotecarioId, dto.diasPrestamo());
         Prestamo prestamo = prestamoRepo.findById(prestamoId)
                 .orElseThrow(() -> new EntityNotFoundException(PRESTAMO_NO_ENCONTRADO + prestamoId));
+        if (reservaOrigen != null) {
+            prestamo.setReservacionId(reservaOrigen.getId());
+            prestamoRepo.save(prestamo);
+            reservaOrigen.setEstadoReservacionId(idEstadoReservacion(ESTADO_RESERVA_RETIRADA));
+            reservacionRepo.save(reservaOrigen);
+        }
+        registrarAuditoria(bibliotecarioId, prestamoId, "Creación de préstamo " + prestamoId + " para usuario " + usuarioId);
         return toDTO(prestamo);
+    }
+
+    // Valida que la reservacionId del body sea una reserva VIGENTE del mismo
+    // usuario y sobre el MISMO libro del préstamo. Devuelve la entidad para
+    // reutilizarla en crear() (vincular + marcar RETIRADA), o null cuando el
+    // préstamo es directo (sin reservacionId).
+    private Reservacion validarReservaSiAplica(PrestamoRequestDTO dto, Long usuarioId) {
+        if (dto.reservacionId() == null) {
+            return null;
+        }
+        Reservacion reservacion = reservacionRepo.findById(dto.reservacionId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Reservación no encontrada: " + dto.reservacionId()));
+        if (!usuarioId.equals(reservacion.getUsuarioId())) {
+            throw new IllegalArgumentException(
+                    "La reservación " + dto.reservacionId() + " no pertenece al usuario del préstamo.");
+        }
+        if (!dto.libroId().equals(reservacion.getLibroId())) {
+            throw new IllegalArgumentException(
+                    "El libro del préstamo no coincide con el de la reservación "
+                            + dto.reservacionId() + ".");
+        }
+        List<Integer> idsVigentes = ESTADOS_RESERVA_VIGENTE.stream()
+                .map(nombre -> estadoReservacionRepo.findByNombre(nombre)
+                        .orElseThrow(() -> new IllegalStateException(
+                                "Catálogo estados_reservacion sin fila '" + nombre + "'"))
+                        .getId())
+                .toList();
+        if (!idsVigentes.contains(reservacion.getEstadoReservacionId())) {
+            throw new IllegalStateException(
+                    "La reservación " + dto.reservacionId()
+                            + " ya no está vigente (pendiente o lista para retiro).");
+        }
+        return reservacion;
     }
 
     // Módulo 8 (credencial QR): resuelve el usuario del préstamo por
@@ -127,6 +195,8 @@ public class PrestamoService {
                     .orElseThrow(() -> new EntityNotFoundException(PRESTAMO_NO_ENCONTRADO + prestamoId));
             notificacionService.notificarMulta(prestamo.getUsuarioId(), prestamoId, montoMulta);
         }
+
+        registrarAuditoria(null, prestamoId, "Devolución registrada del préstamo " + prestamoId);
 
         return new DevolucionResponseDTO(
                 (Long) resultado.get("o_prestamo_id"), huboMulta, montoMulta);
@@ -187,6 +257,8 @@ public class PrestamoService {
         prestamo.setEstadoPrestamoId(idEstadoPrestamo(ESTADO_RENOVADO));
         prestamoRepo.save(prestamo);
 
+        registrarAuditoria(resolverIdPorCorreo(authentication.getName()), prestamoId, "Renovación del préstamo " + prestamoId + " (renovación " + prestamo.getRenovacionesRealizadas() + "/" + maxRenovaciones + ")");
+
         return new RenovacionResponseDTO(
                 prestamo.getId(),
                 prestamo.getFechaDevolucionEstimada(),
@@ -222,6 +294,15 @@ public class PrestamoService {
                 .getId();
     }
 
+    // Ventanilla: conversión de reserva en préstamo (crear() marca la
+    // reserva origen como RETIRADA para que no quede pendiente).
+    private Integer idEstadoReservacion(String nombre) {
+        return estadoReservacionRepo.findByNombre(nombre)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Catálogo estados_reservacion sin fila '" + nombre + "'"))
+                .getId();
+    }
+
     @Transactional(readOnly = true)
     public Page<PrestamoResponseDTO> listarPorUsuario(Long usuarioId, Authentication authentication, Pageable pageable) {
         validarAccesoUsuario(usuarioId, authentication);
@@ -231,7 +312,7 @@ public class PrestamoService {
     @Transactional(readOnly = true)
     public List<PrestamoActivoResponseDTO> listarActivosPorUsuario(Long usuarioId, Authentication authentication) {
         validarAccesoUsuario(usuarioId, authentication);
-        return prestamoProcRepo.fnListarPrestamosActivosPorUsuario(usuarioId).stream()
+        return prestamoRepo.findActivosByUsuarioId(usuarioId).stream()
                 .map(this::toDTO)
                 .toList();
     }
@@ -332,8 +413,8 @@ public class PrestamoService {
                 p.getPrestamoId(),
                 p.getLibroTitulo(),
                 p.getLibroIsbn(),
-                p.getFechaPrestamo(),
-                p.getFechaDevolucionEstimada(),
+                p.getFechaPrestamo() != null ? p.getFechaPrestamo().atOffset(ZoneOffset.UTC) : null,
+                p.getFechaDevolucionEstimada() != null ? p.getFechaDevolucionEstimada().atOffset(ZoneOffset.UTC) : null,
                 p.getDiasRestantes(),
                 p.getEstadoNombre());
     }
@@ -344,6 +425,66 @@ public class PrestamoService {
                 p.getTitulo(),
                 p.getIsbn(),
                 p.getTotalPrestamos());
+    }
+
+    @Transactional(readOnly = true)
+    public List<LibroMasPrestadoDetalladoResponseDTO> reporteLibrosMasPrestadosDetallado(
+            Integer limite, OffsetDateTime desde, OffsetDateTime hasta, Integer categoriaId) {
+        Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
+        return prestamoProcRepo.fnReporteLibrosMasPrestadosDetallado(limiteEfectivo, desde, hasta, categoriaId).stream()
+                .map(p -> new LibroMasPrestadoDetalladoResponseDTO(
+                        p.getLibroId(),
+                        p.getTitulo(),
+                        p.getIsbn(),
+                        p.getAutorNombre(),
+                        p.getCategoriaNombre(),
+                        p.getTotalPrestamos(),
+                        p.getPorcentaje()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReporteInventarioResponseDTO> reporteInventario(
+            Integer categoriaId, String estadoStock, String busqueda) {
+        return prestamoProcRepo.fnReporteInventario(categoriaId, estadoStock, busqueda).stream()
+                .map(p -> new ReporteInventarioResponseDTO(
+                        p.getLibroId(),
+                        p.getTitulo(),
+                        p.getIsbn(),
+                        p.getAutorNombre(),
+                        p.getCategoriaNombre(),
+                        p.getStockTotal(),
+                        p.getStockDisponible(),
+                        p.getEstadoDisponibilidad()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReporteVencidosResponseDTO> reportePrestamosVencidos(Integer diasAtrasoMin, String busqueda) {
+        return prestamoProcRepo.fnReportePrestamosVencidos(diasAtrasoMin, busqueda).stream()
+                .map(p -> new ReporteVencidosResponseDTO(
+                        p.getPrestamoId(),
+                        p.getUsuarioNombre(),
+                        p.getUsuarioCorreo(),
+                        p.getLibroTitulo(),
+                        p.getLibroIsbn(),
+                        p.getFechaDevolucionEstimada() != null ? p.getFechaDevolucionEstimada().atOffset(ZoneOffset.UTC) : null,
+                        p.getDiasAtraso(),
+                        p.getMontoMultaEstimada()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReporteCategoriasDemandadasResponseDTO> reporteCategoriasDemandadas(
+            Integer limite, OffsetDateTime desde, OffsetDateTime hasta) {
+        Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
+        return prestamoProcRepo.fnReporteCategoriasDemandadas(limiteEfectivo, desde, hasta).stream()
+                .map(p -> new ReporteCategoriasDemandadasResponseDTO(
+                        p.getCategoriaId(),
+                        p.getCategoriaNombre(),
+                        p.getTotalPrestamos(),
+                        p.getPorcentaje()))
+                .toList();
     }
 
     private ReporteMorosidadResponseDTO toDTO(ReporteMorosidadProjection p) {
@@ -359,8 +500,29 @@ public class PrestamoService {
 
     private ReporteUsoPorPeriodoResponseDTO toDTO(ReporteUsoPorPeriodoProjection p) {
         return new ReporteUsoPorPeriodoResponseDTO(
-                p.getPeriodo(),
+                p.getPeriodo() != null ? p.getPeriodo().atOffset(ZoneOffset.UTC) : null,
                 p.getTotalPrestamos(),
                 p.getTotalDevoluciones());
+    }
+
+    private void registrarAuditoria(Long ejecutorId, Long registroId, String detalles) {
+        BitacoraAuditoria evento = BitacoraAuditoria.builder()
+                .usuarioId(ejecutorId)
+                .tipoOperacion("UPDATE")
+                .tablaAfectada(TABLA_PRESTAMOS)
+                .registroId(registroId)
+                .detalles(detalles)
+                .fechaHora(OffsetDateTime.now())
+                .build();
+        bitacoraAuditoriaRepo.save(evento);
+    }
+
+    private void validarLimitePrestamos(Long usuarioId) {
+        int maxPrestamos = configuracionSistemaService.obtenerValorEntero("max_prestamos_usuario");
+        List<PrestamoActivoProjection> activos = prestamoProcRepo.fnListarPrestamosActivosPorUsuario(usuarioId);
+        if (activos.size() >= maxPrestamos) {
+            throw new LimitePrestamosExcedidoException(
+                    "El usuario ya tiene " + activos.size() + " préstamos activos. El máximo permitido es " + maxPrestamos + ".");
+        }
     }
 }

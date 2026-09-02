@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SGB · Auditoría (resumen por categoría)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          "secondary-container": "#76f4e0","surface": "#f8f9ff","surface-container-highest": "#d5e3fc",
+          "on-error": "#ffffff","error-container": "#ffdad6","surface-container": "#e6eeff",
+          "on-secondary-fixed": "#00201c","on-secondary-container": "#006f63","surface-bright": "#f8f9ff",
+          "tertiary": "#503a00","surface-variant": "#d5e3fc","outline-variant": "#c4c6d5",
+          "inverse-primary": "#b4c5ff","primary-container": "#1e4db7","on-tertiary-fixed-variant": "#5b4300",
+          "on-primary-fixed-variant": "#003ea8","inverse-on-surface": "#eaf1ff","surface-dim": "#ccdbf3",
+          "error": "#ba1a1a","on-tertiary-fixed": "#261a00","primary-fixed-dim": "#b4c5ff",
+          "on-tertiary": "#ffffff","on-surface-variant": "#434653","secondary-fixed": "#79f7e3",
+          "background": "#f8f9ff","on-background": "#0d1c2e","tertiary-fixed": "#ffdf9e",
+          "on-surface": "#0d1c2e","primary-fixed": "#dbe1ff","surface-container-lowest": "#ffffff",
+          "on-tertiary-container": "#fec004","surface-container-high": "#dce9ff","surface-container-low": "#eff4ff",
+          "tertiary-container": "#6c5000","surface-tint": "#2c57c1","primary": "#003694",
+          "on-secondary": "#ffffff","on-primary-fixed": "#00174b","outline": "#747684",
+          "on-secondary-fixed-variant": "#005047","secondary": "#006b5f","tertiary-fixed-dim": "#fabd00",
+          "secondary-fixed-dim": "#59dbc7","on-primary-container": "#b8c8ff","on-error-container": "#93000a",
+          "on-primary": "#ffffff","inverse-surface": "#233144",
+          "success": "#1d9e75","warning": "#fec004"
+        },
+        borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" },
+        spacing: { gutter: "24px", xl: "40px", lg: "24px", md: "16px", "container-max": "1280px", sm: "8px", xs: "4px", "margin-mobile": "16px", base: "4px" },
+        fontFamily: {
+          "headline-lg": ["Plus Jakarta Sans"], "body-md": ["Inter"], "label-md": ["Inter"],
+          "headline-lg-mobile": ["Plus Jakarta Sans"], "headline-xl": ["Plus Jakarta Sans"],
+          "label-sm": ["Inter"], "body-lg": ["Inter"], "body-sm": ["Inter"], "headline-md": ["Plus Jakarta Sans"]
+        },
+        fontSize: {
+          "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+          "label-md": ["14px", { lineHeight: "20px", letterSpacing: "0.05em", fontWeight: "600" }],
+          "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+          "headline-xl": ["40px", { lineHeight: "48px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "label-sm": ["12px", { lineHeight: "16px", fontWeight: "500" }],
+          "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+          "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+          "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Inter', sans-serif; background:#f8f9ff; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align:middle; }
+</style>
+</head>
+<body>
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
+
+  <div class="mb-lg">
+    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Auditoría</h1>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Resumen de actividad por categoría — entrá a una tarjeta para ver el historial completo</p>
+  </div>
+
+  <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-md">
+
+    <!-- Tarjeta tipo: repetir esta estructura por cada categoria real -->
+    <a href="#" class="rounded-xl border border-outline-variant bg-white p-lg hover:shadow-lg transition-shadow flex flex-col">
+      <div class="flex items-start justify-between mb-md">
+        <div class="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+          <span class="material-symbols-outlined text-[22px]">group</span>
+        </div>
+        <span class="font-label-sm text-[10px] text-on-surface-variant bg-surface-container-low px-sm py-1 rounded-full">AUD-USR</span>
+      </div>
+      <h2 class="font-headline-md text-[16px] text-on-background mb-1">Usuarios</h2>
+      <p class="font-body-sm text-[12px] text-on-surface-variant mb-md flex-1">Cambios de rol y de estado realizados por administración.</p>
+      <div class="flex items-center gap-lg mb-sm">
+        <div><p class="font-headline-md text-[20px] text-on-background leading-none">142</p><p class="font-label-sm text-[10px] text-on-surface-variant uppercase mt-1">Registros</p></div>
+        <div><p class="font-headline-md text-[20px] text-on-background leading-none">3</p><p class="font-label-sm text-[10px] text-on-surface-variant uppercase mt-1">Hoy</p></div>
+      </div>
+      <div class="flex items-center justify-between pt-sm border-t border-outline-variant">
+        <span class="inline-flex items-center px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-[10px] font-semibold">NORMAL</span>
+        <span class="font-label-sm text-[11px] text-on-surface-variant">hace 22 min</span>
+      </div>
+    </a>
+
+    <a href="#" class="rounded-xl border border-outline-variant bg-white p-lg hover:shadow-lg transition-shadow flex flex-col">
+      <div class="flex items-start justify-between mb-md">
+        <div class="w-11 h-11 rounded-lg bg-error/10 flex items-center justify-center text-error">
+          <span class="material-symbols-outlined text-[22px]">lock_open</span>
+        </div>
+        <span class="font-label-sm text-[10px] text-on-surface-variant bg-surface-container-low px-sm py-1 rounded-full">AUD-ACC</span>
+      </div>
+      <h2 class="font-headline-md text-[16px] text-on-background mb-1">Accesos al sistema</h2>
+      <p class="font-body-sm text-[12px] text-on-surface-variant mb-md flex-1">Inicios de sesión, cierres e intentos fallidos.</p>
+      <div class="flex items-center gap-lg mb-sm">
+        <div><p class="font-headline-md text-[20px] text-on-background leading-none">37</p><p class="font-label-sm text-[10px] text-on-surface-variant uppercase mt-1">Sesiones</p></div>
+        <div><p class="font-headline-md text-[20px] text-error leading-none">4</p><p class="font-label-sm text-[10px] text-on-surface-variant uppercase mt-1">Fallidos</p></div>
+      </div>
+      <div class="flex items-center justify-between pt-sm border-t border-outline-variant">
+        <span class="inline-flex items-center px-sm py-1 rounded-full bg-error-container text-on-error-container font-label-sm text-[10px] font-semibold">REVISAR</span>
+        <span class="font-label-sm text-[11px] text-on-surface-variant">hace 3 min</span>
+      </div>
+    </a>
+
+    <a href="#" class="rounded-xl border border-outline-variant bg-white p-lg hover:shadow-lg transition-shadow flex flex-col">
+      <div class="flex items-start justify-between mb-md">
+        <div class="w-11 h-11 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+          <span class="material-symbols-outlined text-[22px]">event_available</span>
+        </div>
+        <span class="font-label-sm text-[10px] text-on-surface-variant bg-surface-container-low px-sm py-1 rounded-full">AUD-RES</span>
+      </div>
+      <h2 class="font-headline-md text-[16px] text-on-background mb-1">Reservaciones</h2>
+      <p class="font-body-sm text-[12px] text-on-surface-variant mb-md flex-1">Reservas creadas y su seguimiento.</p>
+      <div class="flex items-center gap-lg mb-sm">
+        <div><p class="font-headline-md text-[20px] text-on-background leading-none">89</p><p class="font-label-sm text-[10px] text-on-surface-variant uppercase mt-1">Registros</p></div>
+        <div><p class="font-headline-md text-[20px] text-on-background leading-none">6</p><p class="font-label-sm text-[10px] text-on-surface-variant uppercase mt-1">Hoy</p></div>
+      </div>
+      <div class="flex items-center justify-between pt-sm border-t border-outline-variant">
+        <span class="inline-flex items-center px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-[10px] font-semibold">NORMAL</span>
+        <span class="font-label-sm text-[11px] text-on-surface-variant">hace 34 min</span>
+      </div>
+    </a>
+
+    <a href="#" class="rounded-xl border border-outline-variant bg-white p-lg hover:shadow-lg transition-shadow flex flex-col">
+      <div class="flex items-start justify-between mb-md">
+        <div class="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+          <span class="material-symbols-outlined text-[22px]">menu_book</span>
+        </div>
+        <span class="font-label-sm text-[10px] text-on-surface-variant bg-surface-container-low px-sm py-1 rounded-full">AUD-PRE</span>
+      </div>
+      <h2 class="font-headline-md text-[16px] text-on-background mb-1">Préstamos</h2>
+      <p class="font-body-sm text-[12px] text-on-surface-variant mb-md flex-1">Préstamos, devoluciones y renovaciones.</p>
+      <div class="flex items-center gap-lg mb-sm">
+        <div><p class="font-headline-md text-[20px] text-on-background leading-none">211</p><p class="font-label-sm text-[10px] text-on-surface-variant uppercase mt-1">Registros</p></div>
+        <div><p class="font-headline-md text-[20px] text-on-background leading-none">9</p><p class="font-label-sm text-[10px] text-on-surface-variant uppercase mt-1">Hoy</p></div>
+      </div>
+      <div class="flex items-center justify-between pt-sm border-t border-outline-variant">
+        <span class="inline-flex items-center px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-[10px] font-semibold">NORMAL</span>
+        <span class="font-label-sm text-[11px] text-on-surface-variant">hace 11 min</span>
+      </div>
+    </a>
+
+    <a href="#" class="rounded-xl border border-outline-variant bg-white p-lg hover:shadow-lg transition-shadow flex flex-col">
+      <div class="flex items-start justify-between mb-md">
+        <div class="w-11 h-11 rounded-lg bg-warning/10 flex items-center justify-center" style="color:#b8860b;">
+          <span class="material-symbols-outlined text-[22px]">payments</span>
+        </div>
+        <span class="font-label-sm text-[10px] text-on-surface-variant bg-surface-container-low px-sm py-1 rounded-full">AUD-MUL</span>
+      </div>
+      <h2 class="font-headline-md text-[16px] text-on-background mb-1">Multas y sanciones</h2>
+      <p class="font-body-sm text-[12px] text-on-surface-variant mb-md flex-1">Cargos por retraso, pagos y anulaciones registradas.</p>
+      <div class="flex items-center gap-lg mb-sm">
+        <div><p class="font-headline-md text-[20px] text-on-background leading-none">56</p><p class="font-label-sm text-[10px] text-on-surface-variant uppercase mt-1">Registros</p></div>
+        <div><p class="font-headline-md text-[20px] text-on-background leading-none">7</p><p class="font-label-sm text-[10px] text-on-surface-variant uppercase mt-1">Condonadas</p></div>
+      </div>
+      <div class="flex items-center justify-between pt-sm border-t border-outline-variant">
+        <span class="inline-flex items-center px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-[10px] font-semibold">NORMAL</span>
+        <span class="font-label-sm text-[11px] text-on-surface-variant">hace 22 min</span>
+      </div>
+    </a>
+
+    <a href="#" class="rounded-xl border border-outline-variant bg-white p-lg hover:shadow-lg transition-shadow flex flex-col">
+      <div class="flex items-start justify-between mb-md">
+        <div class="w-11 h-11 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+          <span class="material-symbols-outlined text-[22px]">inventory_2</span>
+        </div>
+        <span class="font-label-sm text-[10px] text-on-surface-variant bg-surface-container-low px-sm py-1 rounded-full">AUD-CAT</span>
+      </div>
+      <h2 class="font-headline-md text-[16px] text-on-background mb-1">Catálogo e inventario</h2>
+      <p class="font-body-sm text-[12px] text-on-surface-variant mb-md flex-1">Alta, edición y baja de libros del catálogo.</p>
+      <div class="flex items-center gap-lg mb-sm">
+        <div><p class="font-headline-md text-[20px] text-on-background leading-none">9,204</p><p class="font-label-sm text-[10px] text-on-surface-variant uppercase mt-1">Ejemplares</p></div>
+        <div><p class="font-headline-md text-[20px] text-on-background leading-none">11</p><p class="font-label-sm text-[10px] text-on-surface-variant uppercase mt-1">Hoy</p></div>
+      </div>
+      <div class="flex items-center justify-between pt-sm border-t border-outline-variant">
+        <span class="inline-flex items-center px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-[10px] font-semibold">NORMAL</span>
+        <span class="font-label-sm text-[11px] text-on-surface-variant">hace 34 min</span>
+      </div>
+    </a>
+
+    <a href="#" class="rounded-xl border border-outline-variant bg-white p-lg hover:shadow-lg transition-shadow flex flex-col">
+      <div class="flex items-start justify-between mb-md">
+        <div class="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+          <span class="material-symbols-outlined text-[22px]">rate_review</span>
+        </div>
+        <span class="font-label-sm text-[10px] text-on-surface-variant bg-surface-container-low px-sm py-1 rounded-full">AUD-SUG</span>
+      </div>
+      <h2 class="font-headline-md text-[16px] text-on-background mb-1">Sugerencias de adquisición</h2>
+      <p class="font-body-sm text-[12px] text-on-surface-variant mb-md flex-1">Aprobaciones y rechazos de solicitudes.</p>
+      <div class="flex items-center gap-lg mb-sm">
+        <div><p class="font-headline-md text-[20px] text-on-background leading-none">18</p><p class="font-label-sm text-[10px] text-on-surface-variant uppercase mt-1">Registros</p></div>
+        <div><p class="font-headline-md text-[20px] text-on-background leading-none">1</p><p class="font-label-sm text-[10px] text-on-surface-variant uppercase mt-1">Hoy</p></div>
+      </div>
+      <div class="flex items-center justify-between pt-sm border-t border-outline-variant">
+        <span class="inline-flex items-center px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-[10px] font-semibold">NORMAL</span>
+        <span class="font-label-sm text-[11px] text-on-surface-variant">hace 2 h</span>
+      </div>
+    </a>
+
+    <a href="#" class="rounded-xl border border-outline-variant bg-white p-lg hover:shadow-lg transition-shadow flex flex-col">
+      <div class="flex items-start justify-between mb-md">
+        <div class="w-11 h-11 rounded-lg bg-tertiary/10 flex items-center justify-center" style="color:#6c5000;">
+          <span class="material-symbols-outlined text-[22px]">tune</span>
+        </div>
+        <span class="font-label-sm text-[10px] text-on-surface-variant bg-surface-container-low px-sm py-1 rounded-full">AUD-CFG</span>
+      </div>
+      <h2 class="font-headline-md text-[16px] text-on-background mb-1">Cambios del sistema</h2>
+      <p class="font-body-sm text-[12px] text-on-surface-variant mb-md flex-1">Ajustes de configuración realizados por administración.</p>
+      <div class="flex items-center gap-lg mb-sm">
+        <div><p class="font-headline-md text-[20px] text-on-background leading-none">5</p><p class="font-label-sm text-[10px] text-on-surface-variant uppercase mt-1">Registros</p></div>
+        <div><p class="font-headline-md text-[20px] text-on-background leading-none">0</p><p class="font-label-sm text-[10px] text-on-surface-variant uppercase mt-1">Hoy</p></div>
+      </div>
+      <div class="flex items-center justify-between pt-sm border-t border-outline-variant">
+        <span class="inline-flex items-center px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-[10px] font-semibold">NORMAL</span>
+        <span class="font-label-sm text-[11px] text-on-surface-variant">hace 5 días</span>
+      </div>
+    </a>
+
+  </div>
+</main>
+
+<!-- ═══ Vista de historial filtrado (al hacer click en una tarjeta) ═══
+     Esto NO es una tabla nueva: es la tabla que YA EXISTE en
+     auditoria.component.html (con sus filtros, paginación, etc.),
+     solo con un breadcrumb arriba y el filtro de categoría pre-aplicado.
+     No se mockea acá porque ya existe funcionando, ver auditoria.component.html -->
+</body>
+</html>

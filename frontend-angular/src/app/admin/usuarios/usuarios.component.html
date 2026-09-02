@@ -1,7 +1,8 @@
-<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
+<div class="max-w-container-max mx-auto px-md md:px-lg py-lg">
   <div class="mb-lg">
     <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Gestión de usuarios</h1>
-    <p class="font-body-sm text-body-sm text-on-surface-variant">GET /api/v1/admin/usuarios — ADMIN y GERENTE ven el listado; solo ADMIN puede cambiar rol o estado</p>
+    <!-- Ref. técnica: GET /api/v1/admin/usuarios — ADMIN y GERENTE ven el listado; solo ADMIN puede cambiar rol o estado -->
+<p class="font-body-sm text-body-sm text-on-surface-variant">Consultá y gestioná las cuentas de usuarios del sistema.</p>
   </div>
 
   <!-- Nota de modo solo-lectura para GERENTE (mockup 20) -->
@@ -22,34 +23,69 @@
     <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
   }
 
-  <div class="rounded border border-outline-variant bg-white flex items-center px-sm mb-md glass-panel">
-    <span class="material-symbols-outlined text-on-surface-variant text-[20px]">search</span>
-    <input type="text" placeholder="Buscar por nombre o correo..." [(ngModel)]="filtro"
-      (keyup.enter)="buscarUsuarios()"
-      class="flex-1 h-11 px-sm bg-transparent outline-none font-body-sm text-body-sm" />
-    <button (click)="buscarUsuarios()"
-      class="h-9 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center gap-xs cursor-pointer">
-      <span class="material-symbols-outlined text-[18px]">filter_alt</span> Buscar
-    </button>
+  <div class="mb-lg">
+    <app-buscador-usuario
+      (buscarAhora)="onBuscarAhora($event)"
+      (correoSeleccionado)="onBuscarAhora($event)">
+    </app-buscador-usuario>
   </div>
 
   @if (cargando && usuarios.length === 0) {
-    <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando usuarios…</p>
+    <div class="rounded-lg border border-outline-variant bg-surface-container-lowest animate-pulse overflow-hidden">
+      <table class="w-full text-left">
+        <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">Usuario</th><th class="px-md py-sm hidden md:table-cell">Correo</th><th class="px-md py-sm">Rol</th><th class="px-md py-sm">Estado</th><th class="px-md py-sm">Acciones</th></tr></thead>
+        <tbody class="divide-y divide-outline-variant">
+          @for (i of [1,2,3,4,5]; track i) {
+            <tr>
+              <td class="px-md py-sm"><div class="h-4 bg-surface-container-high rounded w-3/4"></div></td>
+              <td class="px-md py-sm hidden md:table-cell"><div class="h-4 bg-surface-container-high rounded w-1/2"></div></td>
+              <td class="px-md py-sm"><div class="h-4 bg-surface-container-high rounded w-2/3"></div></td>
+              <td class="px-md py-sm"><div class="h-4 bg-surface-container-high rounded w-1/2"></div></td>
+              <td class="px-md py-sm"><div class="h-4 bg-surface-container-high rounded w-1/3"></div></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   }
 
-  <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
+  <div class="rounded-lg border border-outline-variant bg-surface-container-lowest shadow-sm overflow-x-auto overflow-y-hidden">
     <table class="w-full text-left">
       <thead class="bg-surface-container-low">
         <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
-          <th class="px-md py-sm">Usuario</th>
-          <th class="px-md py-sm hidden md:table-cell">Correo</th>
-          <th class="px-md py-sm">Rol</th>
+          <th class="px-md py-sm cursor-pointer select-none" (click)="ordenarPor('nombre')">
+            <span class="inline-flex items-center gap-xs">
+              Usuario
+              @if (ordenColumna === 'nombre') {
+                <span class="material-symbols-outlined text-[14px]">{{ direccionAsc ? 'arrow_upward' : 'arrow_downward' }}</span>
+              }
+            </span>
+          </th>
+          <th class="px-md py-sm hidden md:table-cell cursor-pointer select-none" (click)="ordenarPor('correo')">
+            <span class="inline-flex items-center gap-xs">
+              Correo
+              @if (ordenColumna === 'correo') {
+                <span class="material-symbols-outlined text-[14px]">{{ direccionAsc ? 'arrow_upward' : 'arrow_downward' }}</span>
+              }
+            </span>
+          </th>
+          <th class="px-md py-sm cursor-pointer select-none" (click)="ordenarPor('roles')">
+            <span class="inline-flex items-center gap-xs">
+              Rol
+              @if (ordenColumna === 'roles') {
+                <span class="material-symbols-outlined text-[14px]">{{ direccionAsc ? 'arrow_upward' : 'arrow_downward' }}</span>
+              }
+            </span>
+          </th>
           <th class="px-md py-sm">Estado</th>
-          <th class="px-md py-sm">Acciones</th>
+          <th class="px-md py-sm hidden md:table-cell">Multas pend.</th>
+          @if (puedeGestionar) {
+            <th class="px-md py-sm">Acciones</th>
+          }
         </tr>
       </thead>
       <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-        @for (usuario of usuarios; track usuario.id) {
+        @for (usuario of datosOrdenados; track usuario.id) {
           <tr>
             <td class="px-md py-sm font-medium">{{ usuario.nombre }} {{ usuario.apellido }}</td>
             <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ usuario.correo }}</td>
@@ -57,7 +93,7 @@
               @if (puedeGestionar) {
                 <select [value]="usuario.roles[0]"
                   (change)="cambiarRol(usuario, $any($event.target).value)"
-                  class="h-9 px-sm rounded border border-outline-variant font-label-sm text-label-sm bg-white cursor-pointer">
+                  class="h-9 px-sm rounded border border-outline-variant font-label-sm text-label-sm bg-surface-container-lowest cursor-pointer">
                   @for (rol of rolesDisponibles; track rol) {
                     <option [value]="rol" [selected]="usuario.roles[0] === rol">{{ rol }}</option>
                   }
@@ -85,8 +121,17 @@
                 </span>
               }
             </td>
-            <td class="px-md py-sm">
-              @if (puedeGestionar) {
+            <td class="px-md py-sm hidden md:table-cell text-center">
+              @if (usuario.multasPendientes) {
+                <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-warning/25 text-on-tertiary-container">
+                  <span class="material-symbols-outlined text-[14px]">warning</span> Con multas pendientes
+                </span>
+              } @else {
+                <span class="text-on-surface-variant text-[12px]">—</span>
+              }
+            </td>
+            @if (puedeGestionar) {
+              <td class="px-md py-sm">
                 @if (esBloqueable(usuario)) {
                   <button (click)="abrirModalEstado(usuario, 'INACTIVO')"
                     class="h-8 px-sm rounded border border-error text-error font-label-sm text-label-sm hover:bg-error-container/40 flex items-center gap-xs cursor-pointer">
@@ -103,15 +148,13 @@
                     <span class="material-symbols-outlined text-[16px]">info</span> Bloqueo automático
                   </button>
                 }
-              } @else {
-                <span class="text-on-surface-variant">—</span>
-              }
-            </td>
+              </td>
+            }
           </tr>
         } @empty {
           @if (!cargando) {
             <tr>
-              <td colspan="5" class="px-md py-lg text-center text-on-surface-variant">No hay usuarios para mostrar</td>
+              <td [attr.colspan]="puedeGestionar ? 6 : 5" class="px-md py-lg text-center text-on-surface-variant">No hay usuarios para mostrar</td>
             </tr>
           }
         }
@@ -119,39 +162,56 @@
     </table>
   </div>
 
-  @if (totalPages > 1) {
-    <div class="flex justify-center mt-lg gap-xs">
-      <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
-        class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
-        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
-      </button>
-      @for (pagina of paginasVisibles; track pagina) {
-        <button (click)="currentPage = pagina; cargarPagina()"
-          class="w-8 h-8 rounded font-label-sm text-label-sm cursor-pointer"
-          [class.bg-primary]="pagina === currentPage"
-          [class.text-on-primary]="pagina === currentPage"
-          [class.hover:bg-surface-container-low]="pagina !== currentPage"
-          [class.text-on-surface-variant]="pagina !== currentPage">
-          {{ pagina + 1 }}
-        </button>
-      }
-      <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
-        class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
-        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
-      </button>
+  <div class="flex flex-wrap justify-between items-center mt-lg gap-sm">
+    <div class="flex items-center gap-xs font-body-sm text-body-sm">
+      <span class="text-on-surface-variant">Mostrar</span>
+      <label for="page-size-usuarios" class="sr-only">Elementos por página</label>
+      <select [ngModel]="pageSize" (ngModelChange)="cambiarTamanoPage($event)" id="page-size-usuarios"
+        class="h-10 px-sm pr-8 rounded border border-outline-variant bg-surface-container-lowest cursor-pointer appearance-none text-xs leading-tight py-1.5">
+        <option [ngValue]="10">10</option>
+        <option [ngValue]="20">20</option>
+        <option [ngValue]="30">30</option>
+      </select>
+      <span class="text-on-surface-variant">por página</span>
     </div>
-  }
+    @if (totalPages > 1) {
+      <div class="flex items-center gap-xs">
+        <button (click)="paginaAnterior()" [disabled]="!puedeAnterior"
+          class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">
+          <span class="material-symbols-outlined text-[18px]">chevron_left</span> Anterior
+        </button>
+        @for (pagina of paginasVisibles; track pagina) {
+          <button (click)="irAPagina(pagina)"
+            class="w-8 h-8 min-w-[44px] min-h-[44px] rounded font-label-sm text-label-sm cursor-pointer"
+            [class.bg-primary]="pagina === currentPage"
+            [class.text-on-primary]="pagina === currentPage"
+            [class.text-on-surface-variant]="pagina !== currentPage"
+            [class.border]="pagina !== currentPage"
+            [class.border-outline-variant]="pagina !== currentPage"
+            [class.hover:bg-surface-container-low]="pagina !== currentPage">
+            {{ pagina + 1 }}
+          </button>
+        }
+        <button (click)="paginaSiguiente()" [disabled]="!puedeSiguiente"
+          class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">
+          Siguiente <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+        </button>
+      </div>
+    }
+  </div>
 
   <!-- Modal: motivo obligatorio para cambio de estado -->
   @if (mostrarModalEstado && usuarioAccion) {
-    <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-md">
-      <div class="bg-white rounded-xl glass-panel w-full max-w-md p-xl">
-        <h2 class="font-headline-md text-headline-md text-on-background mb-xs">
+    <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-md"
+      role="dialog" aria-modal="true" aria-labelledby="titulo-estado-usuario">
+      <div class="bg-surface-container-lowest rounded-xl glass-panel w-full max-w-md p-xl"
+        tabindex="-1" appFocusTrap (cerrar)="cerrarModalEstado()">
+        <h2 id="titulo-estado-usuario" class="font-headline-md text-headline-md text-on-background mb-xs">
           {{ nuevoEstado === 'INACTIVO' ? 'Bloquear' : 'Activar' }} a {{ usuarioAccion.nombre }} {{ usuarioAccion.apellido }}
         </h2>
         <p class="font-body-sm text-body-sm text-on-surface-variant mb-md">El motivo queda registrado en la bitácora de auditoría — es obligatorio.</p>
-        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Motivo (máx. 255 caracteres)</label>
-        <textarea rows="3" maxlength="255" [(ngModel)]="motivoEstado"
+        <label for="motivo-estado-usuario" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Motivo (máx. 255 caracteres)</label>
+        <textarea id="motivo-estado-usuario" rows="3" maxlength="255" [(ngModel)]="motivoEstado"
           placeholder="Ej: solicitud del propio usuario, incumplimiento de política..."
           class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm resize-y"></textarea>
         @if (errorModal) {
@@ -174,4 +234,4 @@
       </div>
     </div>
   }
-</main>
+</div>

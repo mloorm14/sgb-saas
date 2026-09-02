@@ -11,12 +11,12 @@ El sistema requiere persistencia para un dominio con relaciones estrictas
 (usuarios, roles, libros, préstamos, reservas, multas, auditoría — 26
 tablas en `db/schema.sql`), la estrategia híbrida CRUD-ORM + stored
 procedures obligatoria para esta entrega (ver
-`docs/basedatos/CATALOGO-SP.md` y `adr-013-acceso-datos-orm-sp.md`), y
+`docs/basedatos/CATALOGO-SP.md` y `adr-006-acceso-datos-orm-sp.md`), y
 aislamiento de datos por rol a nivel de fila diseñado para los propios
 lectores del sistema (`db/roles-privilegios.sql`).
 
 `ADR-001-tecnologia.md` ya asume PostgreSQL como elegido y
-`adr-006-estrategia-schema-reproducible.md` asume el esquema ya definido
+`adr-013-estrategia-schema-reproducible.md` asume el esquema ya definido
 sobre Postgres; ninguno de los dos documenta la comparación contra
 alternativas de gestor de base de datos. Este ADR llena ese hueco.
 
@@ -91,7 +91,7 @@ pinado).
   implícita por invocación.
 - Ecosistema Docker de primera clase (imagen oficial `postgres:16-alpine`,
   pinada por digest) y soporte nativo de Flyway para versionado de
-  esquema (`adr-006-estrategia-schema-reproducible.md`).
+  esquema (`adr-013-estrategia-schema-reproducible.md`).
 
 **Negativas:**
 
@@ -109,7 +109,7 @@ pinado).
 ## Referencias
 
 - [[ADR-001-tecnologia]] (elección de la pila principal; remite aquí para el detalle)
-- [[adr-013-acceso-datos-orm-sp]] (estrategia CRUD-ORM + stored procedures que PostgreSQL hace posible)
-- [[adr-006-estrategia-schema-reproducible]] (versionado de esquema sobre este motor)
+- [[adr-006-acceso-datos-orm-sp]] (estrategia CRUD-ORM + stored procedures que PostgreSQL hace posible)
+- [[adr-013-estrategia-schema-reproducible]] (versionado de esquema sobre este motor)
 - `db/roles-privilegios.sql` (sección 7, Row Level Security)
 - `docs/basedatos/CATALOGO-SP.md` (catálogo de los 7 procedimientos/funciones)

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserDetailsServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.security</a> &gt; <span class="el_source">UserDetailsServiceImpl.java</span></div><h1>UserDetailsServiceImpl.java</h1><pre class="source lang-java linenums">package com.uteq.backend.security;
+
+import com.uteq.backend.entity.Rol;
+import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.UsuarioRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+import java.util.Set;
+
+@Service
+@RequiredArgsConstructor
+public class UserDetailsServiceImpl implements UserDetailsService {
+
+    // estados_usuario.nombre que restringen el login. BLOQUEADO_POR_MULTA
+    // se modela como cuenta bloqueada (accountLocked=true -&gt; isAccountNonLocked()
+    // = false, el hook de Spring Security pensado para restricciones
+    // reversibles/temporales); INACTIVO y PENDIENTE_VERIFICACION como
+    // cuenta deshabilitada (disabled=true -&gt; isEnabled()=false). Con esto
+    // Spring Security ya rechaza el login (LockedException / DisabledException)
+    // sin necesidad de lógica custom en AuthService.
+    private static final String ESTADO_BLOQUEADO_POR_MULTA = &quot;BLOQUEADO_POR_MULTA&quot;;
+<span class="fc" id="L27">    private static final Set&lt;String&gt; ESTADOS_DESHABILITADOS = Set.of(&quot;INACTIVO&quot;, &quot;PENDIENTE_VERIFICACION&quot;);</span>
+
+    private final UsuarioRepository usuarioRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String correo) throws UsernameNotFoundException {
+<span class="fc" id="L33">        Usuario usuario = usuarioRepository.findByCorreo(correo)</span>
+<span class="fc" id="L34">                .orElseThrow(() -&gt; new UsernameNotFoundException(&quot;Usuario no encontrado con correo: &quot; + correo));</span>
+
+<span class="fc" id="L36">        String estadoNombre = usuario.getEstado().getNombre();</span>
+
+        // roles.nombre en la BD no lleva prefijo (&quot;LECTOR&quot;, no &quot;ROLE_LECTOR&quot;).
+        // User.builder().roles(...) de Spring Security antepone &quot;ROLE_&quot;
+        // automáticamente -- justo lo que esperan los @PreAuthorize
+        // (&quot;hasAnyRole('LECTOR', ...)&quot;) ya existentes en LibroController,
+        // que también comparan anteponiendo &quot;ROLE_&quot; a lo que reciben.
+        // Ambos lados deben coincidir en anteponer el prefijo una sola vez.
+<span class="fc" id="L44">        String[] roles = usuario.getRoles().stream()</span>
+<span class="fc" id="L45">                .map(Rol::getNombre)</span>
+<span class="fc" id="L46">                .toArray(String[]::new);</span>
+
+<span class="fc" id="L48">        return User.builder()</span>
+<span class="fc" id="L49">                .username(usuario.getCorreo())</span>
+<span class="fc" id="L50">                .password(usuario.getPasswordHash())</span>
+<span class="fc" id="L51">                .roles(roles)</span>
+<span class="fc" id="L52">                .accountLocked(ESTADO_BLOQUEADO_POR_MULTA.equals(estadoNombre))</span>
+<span class="fc" id="L53">                .disabled(ESTADOS_DESHABILITADOS.contains(estadoNombre))</span>
+<span class="fc" id="L54">                .build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

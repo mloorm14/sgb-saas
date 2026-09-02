@@ -9,7 +9,9 @@ import com.uteq.backend.dto.ReporteUsoPorPeriodoResponseDTO;
 import com.uteq.backend.entity.EstadoPrestamo;
 import com.uteq.backend.entity.EstadoReservacion;
 import com.uteq.backend.entity.Prestamo;
+import com.uteq.backend.entity.Reservacion;
 import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.EstadoPrestamoRepository;
 import com.uteq.backend.repository.EstadoReservacionRepository;
 import com.uteq.backend.repository.PrestamoProcedureRepository;
@@ -29,7 +31,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +42,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -55,12 +60,14 @@ class PrestamoServiceTest {
     @Mock ConfiguracionSistemaService configuracionSistemaService;
     @Mock CredencialQrService credencialQrService;
     @Mock NotificacionService notificacionService;
+    @Mock BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     @InjectMocks PrestamoService prestamoService;
 
     // ── Test 1: creación exitosa (usuarioId directo) ───────
     @Test
     void crear_conDatosValidos_invocaProcedimientoYRetornaDTO() {
+        permitirCrearPrestamo();
         Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
         given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec"))
                 .willReturn(Optional.of(usuarioConId(5L)));
@@ -68,7 +75,7 @@ class PrestamoServiceTest {
         given(prestamoRepo.findById(99L)).willReturn(Optional.of(prestamoConId(99L)));
 
         PrestamoResponseDTO resultado = prestamoService.crear(
-                new PrestamoRequestDTO(1L, null, 2L, 7), auth);
+                new PrestamoRequestDTO(1L, null, 2L, 7, null), auth);
 
         assertThat(resultado.id()).isEqualTo(99L);
         assertThat(resultado.usuarioId()).isEqualTo(1L);
@@ -170,6 +177,7 @@ class PrestamoServiceTest {
                 .willReturn(false);
         given(configuracionSistemaService.obtenerValorEntero("dias_prestamo_default")).willReturn(15);
         given(estadoPrestamoRepo.findByNombre("RENOVADO")).willReturn(Optional.of(estadoPrestamo(2, "RENOVADO")));
+        given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec")).willReturn(Optional.of(usuarioConId(5L)));
 
         RenovacionResponseDTO resultado = prestamoService.renovar(50L, auth);
 
@@ -256,6 +264,7 @@ class PrestamoServiceTest {
     // ── Test 12: creación con credencial QR válida ──────────
     @Test
     void crear_conCredencialQrValida_resuelveUsuarioCorrecto() {
+        permitirCrearPrestamo();
         Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
         UUID token = UUID.randomUUID();
         given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec"))
@@ -265,7 +274,7 @@ class PrestamoServiceTest {
         given(prestamoRepo.findById(100L)).willReturn(Optional.of(prestamoConId(100L)));
 
         PrestamoResponseDTO resultado = prestamoService.crear(
-                new PrestamoRequestDTO(null, token, 2L, 7), auth);
+                new PrestamoRequestDTO(null, token, 2L, 7, null), auth);
 
         assertThat(resultado.id()).isEqualTo(100L);
         verify(prestamoProcRepo).spCrearPrestamo(3L, 2L, 5L, 7);
@@ -280,7 +289,7 @@ class PrestamoServiceTest {
                 .willThrow(new EntityNotFoundException("Credencial QR no reconocida o usuario inactivo."));
 
         assertThatThrownBy(() -> prestamoService.crear(
-                new PrestamoRequestDTO(null, token, 2L, 7), auth))
+                new PrestamoRequestDTO(null, token, 2L, 7, null), auth))
                 .isInstanceOf(EntityNotFoundException.class);
     }
 
@@ -290,7 +299,7 @@ class PrestamoServiceTest {
         Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
 
         assertThatThrownBy(() -> prestamoService.crear(
-                new PrestamoRequestDTO(1L, UUID.randomUUID(), 2L, 7), auth))
+                new PrestamoRequestDTO(1L, UUID.randomUUID(), 2L, 7, null), auth))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -300,8 +309,90 @@ class PrestamoServiceTest {
         Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
 
         assertThatThrownBy(() -> prestamoService.crear(
-                new PrestamoRequestDTO(null, null, 2L, 7), auth))
+                new PrestamoRequestDTO(null, null, 2L, 7, null), auth))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    // ── Test 15b: préstamo nacido de una reserva vigente ─────
+    // Ventanilla: el préstamo queda vinculado a la reservación
+    // (prestamos.reservacion_id) y la reserva se marca RETIRADA para que no
+    // quede pendiente tras la entrega.
+    @Test
+    void crear_conReservacionVigente_vinculaPrestamoYMarcaRetirada() {
+        permitirCrearPrestamo();
+        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Reservacion reserva = reservacionVigente(77L, 1L, 2L, 1); // PENDIENTE
+        Prestamo prestamoCreado = prestamoConId(99L);
+        given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec"))
+                .willReturn(Optional.of(usuarioConId(5L)));
+        given(reservacionRepo.findById(77L)).willReturn(Optional.of(reserva));
+        given(estadoReservacionRepo.findByNombre("PENDIENTE"))
+                .willReturn(Optional.of(estadoReservacion(1, "PENDIENTE")));
+        given(estadoReservacionRepo.findByNombre("LISTA_PARA_RETIRO"))
+                .willReturn(Optional.of(estadoReservacion(2, "LISTA_PARA_RETIRO")));
+        given(estadoReservacionRepo.findByNombre("RETIRADA"))
+                .willReturn(Optional.of(estadoReservacion(3, "RETIRADA")));
+        given(prestamoProcRepo.spCrearPrestamo(1L, 2L, 5L, 7)).willReturn(99L);
+        given(prestamoRepo.findById(99L)).willReturn(Optional.of(prestamoCreado));
+
+        PrestamoResponseDTO resultado = prestamoService.crear(
+                new PrestamoRequestDTO(1L, null, 2L, 7, 77L), auth);
+
+        assertThat(resultado.id()).isEqualTo(99L);
+        assertThat(resultado.reservacionId()).isEqualTo(77L);
+        assertThat(prestamoCreado.getReservacionId()).isEqualTo(77L);
+        assertThat(reserva.getEstadoReservacionId()).isEqualTo(3);
+        verify(prestamoRepo).save(prestamoCreado);
+        verify(reservacionRepo).save(reserva);
+    }
+
+    // ── Test 15c: la reservación pertenece a otro usuario ────
+    @Test
+    void crear_conReservacionDeOtroUsuario_lanzaExcepcion() {
+        permitirCrearPrestamo();
+        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec"))
+                .willReturn(Optional.of(usuarioConId(5L)));
+        given(reservacionRepo.findById(78L))
+                .willReturn(Optional.of(reservacionVigente(78L, 999L, 2L, 1)));
+
+        assertThatThrownBy(() -> prestamoService.crear(
+                new PrestamoRequestDTO(1L, null, 2L, 7, 78L), auth))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    // ── Test 15d: libro distinto al de la reservación ────────
+    @Test
+    void crear_conLibroDistintoAlDeLaReservacion_lanzaExcepcion() {
+        permitirCrearPrestamo();
+        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec"))
+                .willReturn(Optional.of(usuarioConId(5L)));
+        given(reservacionRepo.findById(79L))
+                .willReturn(Optional.of(reservacionVigente(79L, 1L, 2L, 1)));
+
+        assertThatThrownBy(() -> prestamoService.crear(
+                new PrestamoRequestDTO(1L, null, 8L, 7, 79L), auth))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    // ── Test 15e: la reservación ya no está vigente ──────────
+    @Test
+    void crear_conReservacionYaRetirada_lanzaExcepcion() {
+        permitirCrearPrestamo();
+        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec"))
+                .willReturn(Optional.of(usuarioConId(5L)));
+        given(reservacionRepo.findById(80L))
+                .willReturn(Optional.of(reservacionVigente(80L, 1L, 2L, 3))); // RETIRADA
+        given(estadoReservacionRepo.findByNombre("PENDIENTE"))
+                .willReturn(Optional.of(estadoReservacion(1, "PENDIENTE")));
+        given(estadoReservacionRepo.findByNombre("LISTA_PARA_RETIRO"))
+                .willReturn(Optional.of(estadoReservacion(2, "LISTA_PARA_RETIRO")));
+
+        assertThatThrownBy(() -> prestamoService.crear(
+                new PrestamoRequestDTO(1L, null, 2L, 7, 80L), auth))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     // ── Test 16: reporte de morosidad aplica default de limite=10 ──
@@ -342,7 +433,7 @@ class PrestamoServiceTest {
     @Test
     void reporteUsoPorPeriodo_conGranularidadValida_invocaRepositorioConValorNormalizado() {
         ReporteUsoPorPeriodoProjection fila = mock(ReporteUsoPorPeriodoProjection.class);
-        given(fila.getPeriodo()).willReturn(OffsetDateTime.now());
+        given(fila.getPeriodo()).willReturn(Instant.now());
         given(fila.getTotalPrestamos()).willReturn(4L);
         given(fila.getTotalDevoluciones()).willReturn(2L);
         given(prestamoProcRepo.fnReporteUsoPorPeriodo("semana", null, null))
@@ -418,5 +509,20 @@ class PrestamoServiceTest {
         estado.setId(id);
         estado.setNombre(nombre);
         return estado;
+    }
+
+    private Reservacion reservacionVigente(Long id, Long usuarioId, Long libroId, Integer estadoId) {
+        Reservacion reserva = new Reservacion();
+        reserva.setId(id);
+        reserva.setUsuarioId(usuarioId);
+        reserva.setLibroId(libroId);
+        reserva.setEstadoReservacionId(estadoId);
+        reserva.setFechaReserva(OffsetDateTime.now());
+        return reserva;
+    }
+
+    private void permitirCrearPrestamo() {
+        lenient().when(configuracionSistemaService.obtenerValorEntero("max_prestamos_usuario")).thenReturn(5);
+        lenient().when(prestamoProcRepo.fnListarPrestamosActivosPorUsuario(any())).thenReturn(List.of());
     }
 }

@@ -5,10 +5,10 @@
        style="background-image: url('/assets/login/library-hero.jpg')">
     <div class="absolute inset-0 bg-primary/80 bg-gradient-to-br from-primary/90 to-primary-container/70 mix-blend-multiply"></div>
     <div class="relative z-10 p-12 lg:p-24 flex flex-col justify-between h-full w-full">
-      <div class="flex items-center gap-3 text-on-primary">
+      <a routerLink="/" class="flex items-center gap-3 text-on-primary">
         <span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">local_library</span>
-        <span class="font-headline-lg text-headline-lg text-on-primary tracking-tight">SGB UTEQ</span>
-      </div>
+        <span class="font-headline-lg text-headline-lg text-on-primary tracking-tight">Leibri</span>
+      </a>
       <div class="max-w-lg mb-12">
         <h1 class="font-headline-xl text-headline-xl text-on-primary mb-6">
           Sistema de Gestión Bibliotecaria
@@ -24,10 +24,10 @@
   <div class="w-full md:w-1/2 lg:w-2/5 flex flex-col justify-center px-6 py-12 lg:px-16 xl:px-24 bg-surface relative min-h-screen">
     <div class="w-full max-w-md mx-auto">
 
-      <div class="md:hidden flex items-center gap-3 text-primary mb-8">
+      <a routerLink="/" class="md:hidden flex items-center gap-3 text-primary mb-8">
         <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">local_library</span>
-        <span class="font-headline-md text-headline-lg-mobile text-primary tracking-tight">SGB UTEQ</span>
-      </div>
+        <span class="font-headline-md text-headline-lg-mobile text-primary tracking-tight">Leibri</span>
+      </a>
 
       <div class="mb-10">
         <h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-2">Bienvenido de vuelta</h2>
@@ -47,13 +47,18 @@
               formControlName="correo"
               id="correo"
               type="email"
-              placeholder="usuario@uteq.edu.ec"
-              class="block w-full pl-10 pr-3 py-3 border border-outline-variant rounded-lg bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-colors placeholder:text-outline"
+              placeholder="usuario@correo.com"
+              aria-required="true"
+              [attr.aria-invalid]="form.get('correo')?.invalid && form.get('correo')?.touched ? true : null"
+              [attr.aria-describedby]="form.get('correo')?.invalid && form.get('correo')?.touched ? 'correo-error' : null"
+              class="block w-full pl-10 pr-3 py-3 border border-outline-variant rounded-lg bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:border-primary transition-colors placeholder:text-outline"
             />
           </div>
-          <small class="text-error" *ngIf="form.get('correo')?.invalid && form.get('correo')?.touched">
-            Ingrese un correo válido
-          </small>
+          @if (form.get('correo')?.invalid && form.get('correo')?.touched) {
+            <small id="correo-error" class="text-error" role="alert">
+              Ingrese un correo válido
+            </small>
+          }
         </div>
 
         <!-- Contraseña -->
@@ -69,24 +74,30 @@
               formControlName="password"
               id="password"
               [type]="mostrarPassword ? 'text' : 'password'"
-              placeholder="Mínimo 6 caracteres"
-              class="block w-full pl-10 pr-10 py-3 border border-outline-variant rounded-lg bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-colors placeholder:text-outline"
+              placeholder="Mínimo 8 caracteres"
+              aria-required="true"
+              [attr.aria-invalid]="form.get('password')?.invalid && form.get('password')?.touched ? true : null"
+              [attr.aria-describedby]="form.get('password')?.invalid && form.get('password')?.touched ? 'password-error' : null"
+              class="block w-full pl-10 pr-10 py-3 border border-outline-variant rounded-lg bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:border-primary transition-colors placeholder:text-outline"
             />
             <button type="button" (click)="togglePassword()"
               class="absolute inset-y-0 right-0 pr-3 flex items-center text-outline hover:text-on-surface transition-colors">
               <span class="material-symbols-outlined text-[20px]">{{ mostrarPassword ? 'visibility' : 'visibility_off' }}</span>
             </button>
           </div>
-          <small class="text-error" *ngIf="form.get('password')?.invalid && form.get('password')?.touched">
-            La contraseña debe tener al menos 6 caracteres
-          </small>
+          @if (form.get('password')?.invalid && form.get('password')?.touched) {
+            <small id="password-error" class="text-error" role="alert">
+              La contraseña debe tener al menos 8 caracteres
+            </small>
+          }
         </div>
 
         <!-- Consentimiento LOPDP -->
         <div class="flex items-start gap-3 p-4 bg-surface-container-low rounded-lg border border-outline-variant/30">
           <div class="flex items-center h-5 mt-0.5">
             <input formControlName="compliance" id="compliance" type="checkbox"
-              class="h-4 w-4 text-primary border-outline-variant rounded focus:ring-primary focus:ring-offset-surface" />
+              aria-required="true"
+              class="h-4 w-4 text-primary border-outline-variant rounded focus:ring-2 focus:ring-primary focus:ring-offset-2" />
           </div>
           <div class="flex-1 flex items-start gap-2">
             <span class="material-symbols-outlined text-primary text-[20px] flex-shrink-0 mt-0.5">shield</span>
@@ -96,9 +107,11 @@
           </div>
         </div>
 
-        <div class="text-error text-body-sm" *ngIf="errorMsg">
-          {{ errorMsg }}
-        </div>
+        @if (errorMsg) {
+          <div class="text-error text-body-sm" role="alert">
+            {{ errorMsg }}
+          </div>
+        }
 
         <!-- Acciones -->
         <div class="pt-2 space-y-4">
@@ -120,13 +133,20 @@
         </div>
       </form>
 
-      <div class="mt-12 pt-6 border-t border-outline-variant/50 flex flex-col items-center gap-2">
+      <div class="mt-6 pt-6 border-t border-outline-variant/50 flex flex-col items-center gap-3">
+        <a routerLink="/" class="inline-flex items-center gap-xs font-label-md text-label-sm text-on-surface-variant hover:text-primary transition-colors">
+          <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+          Volver al catálogo
+        </a>
+      </div>
+
+      <div class="mt-6 pt-6 border-t border-outline-variant/50 flex flex-col items-center gap-2">
         <p class="flex items-center gap-1.5 font-label-sm text-label-sm text-outline">
           <span class="material-symbols-outlined text-[16px]">verified_user</span>
           Sesión protegida con JWT (HS256) · Sin almacenamiento en localStorage
         </p>
         <p class="font-label-sm text-label-sm text-outline/80">
-          UTEQ · Facultad de Ciencias de la Computación · 2026
+          Leibri · 2026
         </p>
       </div>
     </div>

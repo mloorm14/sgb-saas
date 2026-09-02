@@ -9,6 +9,7 @@ import { Libro } from '../../core/models/libro.model';
 // portada directa en <img>, y las acciones que requieren cuenta se
 // bloquean con el cartel "requieren una cuenta" + Crear cuenta.
 @Component({
+  standalone: true,
   selector: 'app-detalle-publico',
   imports: [CommonModule, RouterLink],
   templateUrl: './detalle-publico.component.html'
@@ -23,6 +24,17 @@ export class DetallePublicoComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    const resuelto = this.route.snapshot.data['libro'] as Libro | null;
+    if (resuelto) {
+      this.libro = resuelto;
+      return;
+    }
+    // Fallback si el resolver devolvió null (404/timeout) o no se usó
+    if (this.route.snapshot.data['libro'] === null && this.route.snapshot.paramMap.get('id')) {
+      // El resolver ya mostró toast y redirigió en 404; si quedó en la ruta, mostrar error
+      if (!this.libro) this.errorMsg = 'Libro no encontrado';
+      return;
+    }
     const id = Number(this.route.snapshot.paramMap.get('id'));
     if (!id) {
       this.errorMsg = 'Libro no encontrado';

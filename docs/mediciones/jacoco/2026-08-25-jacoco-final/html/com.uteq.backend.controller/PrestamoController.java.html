@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PrestamoController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.controller</a> &gt; <span class="el_source">PrestamoController.java</span></div><h1>PrestamoController.java</h1><pre class="source lang-java linenums">package com.uteq.backend.controller;
+
+import com.uteq.backend.dto.DevolucionResponseDTO;
+import com.uteq.backend.dto.LibroMasPrestadoDetalladoResponseDTO;
+import com.uteq.backend.dto.LibroMasPrestadoResponseDTO;
+import com.uteq.backend.dto.PrestamoActivoResponseDTO;
+import com.uteq.backend.dto.PrestamoRequestDTO;
+import com.uteq.backend.dto.PrestamoResponseDTO;
+import com.uteq.backend.dto.RenovacionResponseDTO;
+import com.uteq.backend.dto.ReporteCategoriasDemandadasResponseDTO;
+import com.uteq.backend.dto.ReporteInventarioResponseDTO;
+import com.uteq.backend.dto.ReporteMorosidadResponseDTO;
+import com.uteq.backend.dto.ReporteUsoPorPeriodoResponseDTO;
+import com.uteq.backend.dto.ReporteVencidosResponseDTO;
+import com.uteq.backend.service.PrestamoService;
+import com.uteq.backend.service.ReportePdfService;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+
+@RestController
+@RequestMapping(&quot;/api/v1/prestamos&quot;)
+public class PrestamoController {
+
+    private final PrestamoService prestamoService;
+    private final ReportePdfService reportePdfService;
+
+<span class="fc" id="L40">    public PrestamoController(PrestamoService prestamoService, ReportePdfService reportePdfService) {</span>
+<span class="fc" id="L41">        this.prestamoService = prestamoService;</span>
+<span class="fc" id="L42">        this.reportePdfService = reportePdfService;</span>
+<span class="fc" id="L43">    }</span>
+
+    // ── POST /api/v1/prestamos ────────────────────────────
+    @PostMapping
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;PrestamoResponseDTO&gt; crear(
+            @Valid @RequestBody PrestamoRequestDTO dto,
+            Authentication authentication) {
+<span class="nc" id="L51">        return ResponseEntity.status(HttpStatus.CREATED)</span>
+<span class="nc" id="L52">                .body(prestamoService.crear(dto, authentication));</span>
+    }
+
+    // ── POST /api/v1/prestamos/{id}/devolucion ────────────
+    @PostMapping(&quot;/{id}/devolucion&quot;)
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;DevolucionResponseDTO&gt; registrarDevolucion(@PathVariable Long id) {
+<span class="nc" id="L59">        return ResponseEntity.ok(prestamoService.registrarDevolucion(id));</span>
+    }
+
+    // ── POST /api/v1/prestamos/{id}/renovacion ────────────
+    // LECTOR solo su propio préstamo (verificado dentro de
+    // PrestamoService.renovar()); BIBLIOTECARIO/GERENTE/ADMIN, cualquiera.
+    @PostMapping(&quot;/{id}/renovacion&quot;)
+    @PreAuthorize(&quot;hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;RenovacionResponseDTO&gt; renovar(
+            @PathVariable Long id, Authentication authentication) {
+<span class="nc" id="L69">        return ResponseEntity.ok(prestamoService.renovar(id, authentication));</span>
+    }
+
+    // ── GET /api/v1/prestamos/usuario/{usuarioId}?page=0&amp;size=10 ──
+    @GetMapping(&quot;/usuario/{usuarioId}&quot;)
+    @PreAuthorize(&quot;hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE')&quot;)
+    public ResponseEntity&lt;Page&lt;PrestamoResponseDTO&gt;&gt; listarPorUsuario(
+            @PathVariable Long usuarioId,
+            Authentication authentication,
+            @PageableDefault(size = 10, sort = &quot;fechaPrestamo&quot;) Pageable pageable) {
+<span class="nc" id="L79">        return ResponseEntity.ok(</span>
+<span class="nc" id="L80">                prestamoService.listarPorUsuario(usuarioId, authentication, pageable));</span>
+    }
+
+    // ── GET /api/v1/prestamos/usuario/{usuarioId}/activos ─
+    @GetMapping(&quot;/usuario/{usuarioId}/activos&quot;)
+    @PreAuthorize(&quot;hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE')&quot;)
+    public ResponseEntity&lt;List&lt;PrestamoActivoResponseDTO&gt;&gt; listarActivosPorUsuario(
+            @PathVariable Long usuarioId,
+            Authentication authentication) {
+<span class="nc" id="L89">        return ResponseEntity.ok(</span>
+<span class="nc" id="L90">                prestamoService.listarActivosPorUsuario(usuarioId, authentication));</span>
+    }
+
+    // ── GET /api/v1/prestamos/reportes/libros-mas-prestados ──
+    @GetMapping(&quot;/reportes/libros-mas-prestados&quot;)
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;List&lt;LibroMasPrestadoResponseDTO&gt;&gt; reporteLibrosMasPrestados(
+            @RequestParam(required = false) Integer limite,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta) {
+<span class="fc" id="L102">        return ResponseEntity.ok(</span>
+<span class="fc" id="L103">                prestamoService.reporteLibrosMasPrestados(limite, desde, hasta));</span>
+    }
+
+    // ── GET /api/v1/prestamos/reportes/libros-mas-prestados-detallado ──
+    @GetMapping(&quot;/reportes/libros-mas-prestados-detallado&quot;)
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;List&lt;LibroMasPrestadoDetalladoResponseDTO&gt;&gt; reporteLibrosMasPrestadosDetallado(
+            @RequestParam(required = false) Integer limite,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta,
+            @RequestParam(required = false) Integer categoriaId) {
+<span class="nc" id="L116">        return ResponseEntity.ok(</span>
+<span class="nc" id="L117">                prestamoService.reporteLibrosMasPrestadosDetallado(limite, desde, hasta, categoriaId));</span>
+    }
+
+    // ── GET /api/v1/prestamos/reportes/morosidad ──────────
+    // Mismo criterio de acceso que reporteLibrosMasPrestados (arriba):
+    // BIBLIOTECARIO/GERENTE, no GERENTE/ADMIN -- se sigue el patrón que ya
+    // existe en este controller en vez del roadmap original del Módulo 7
+    // (que sugería GERENTE/ADMIN sin haber revisado el código real).
+    @GetMapping(&quot;/reportes/morosidad&quot;)
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;List&lt;ReporteMorosidadResponseDTO&gt;&gt; reporteMorosidad(
+            @RequestParam(required = false) Integer limite) {
+<span class="fc" id="L129">        return ResponseEntity.ok(prestamoService.reporteMorosidad(limite));</span>
+    }
+
+    // ── GET /api/v1/prestamos/reportes/uso?granularidad=dia|semana|mes ──
+    @GetMapping(&quot;/reportes/uso&quot;)
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;List&lt;ReporteUsoPorPeriodoResponseDTO&gt;&gt; reporteUsoPorPeriodo(
+            @RequestParam(required = false, defaultValue = &quot;dia&quot;) String granularidad,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta) {
+<span class="fc" id="L141">        return ResponseEntity.ok(</span>
+<span class="fc" id="L142">                prestamoService.reporteUsoPorPeriodo(granularidad, desde, hasta));</span>
+    }
+
+    // ── GET /api/v1/prestamos/reportes/morosidad/pdf ──────
+    @GetMapping(value = &quot;/reportes/morosidad/pdf&quot;, produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;byte[]&gt; reporteMorosidadPdf(
+            @RequestParam(required = false) Integer limite) {
+<span class="nc" id="L150">        List&lt;ReporteMorosidadResponseDTO&gt; reporte = prestamoService.reporteMorosidad(limite);</span>
+<span class="nc" id="L151">        byte[] pdf = reportePdfService.generarReporteMorosidad(reporte);</span>
+<span class="nc" id="L152">        return ResponseEntity.ok()</span>
+<span class="nc" id="L153">                .header(HttpHeaders.CONTENT_DISPOSITION, &quot;attachment; filename=reporte-morosidad.pdf&quot;)</span>
+<span class="nc" id="L154">                .contentType(MediaType.APPLICATION_PDF)</span>
+<span class="nc" id="L155">                .body(pdf);</span>
+    }
+
+    // ── GET /api/v1/prestamos/reportes/libros-mas-prestados/pdf ──
+    @GetMapping(value = &quot;/reportes/libros-mas-prestados/pdf&quot;, produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;byte[]&gt; reporteLibrosMasPrestadosPdf(
+            @RequestParam(required = false) Integer limite,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta,
+            @RequestParam(required = false) Integer categoriaId) {
+<span class="nc" id="L168">        List&lt;LibroMasPrestadoDetalladoResponseDTO&gt; reporte =</span>
+<span class="nc" id="L169">                prestamoService.reporteLibrosMasPrestadosDetallado(limite, desde, hasta, categoriaId);</span>
+<span class="nc" id="L170">        byte[] pdf = reportePdfService.generarReporteLibrosMasPrestados(reporte);</span>
+<span class="nc" id="L171">        return ResponseEntity.ok()</span>
+<span class="nc" id="L172">                .header(HttpHeaders.CONTENT_DISPOSITION, &quot;attachment; filename=reporte-libros-prestados.pdf&quot;)</span>
+<span class="nc" id="L173">                .contentType(MediaType.APPLICATION_PDF)</span>
+<span class="nc" id="L174">                .body(pdf);</span>
+    }
+
+    // ── GET /api/v1/prestamos/reportes/inventario/pdf ─────
+    @GetMapping(value = &quot;/reportes/inventario/pdf&quot;, produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;byte[]&gt; reporteInventarioPdf(
+            @RequestParam(required = false) Integer categoriaId,
+            @RequestParam(required = false) String estadoStock,
+            @RequestParam(required = false) String busqueda) {
+<span class="nc" id="L184">        List&lt;ReporteInventarioResponseDTO&gt; reporte =</span>
+<span class="nc" id="L185">                prestamoService.reporteInventario(categoriaId, estadoStock, busqueda);</span>
+<span class="nc" id="L186">        byte[] pdf = reportePdfService.generarReporteInventario(reporte);</span>
+<span class="nc" id="L187">        return ResponseEntity.ok()</span>
+<span class="nc" id="L188">                .header(HttpHeaders.CONTENT_DISPOSITION, &quot;attachment; filename=reporte-inventario.pdf&quot;)</span>
+<span class="nc" id="L189">                .contentType(MediaType.APPLICATION_PDF)</span>
+<span class="nc" id="L190">                .body(pdf);</span>
+    }
+
+    // ── GET /api/v1/prestamos/reportes/vencidos/pdf ───────
+    @GetMapping(value = &quot;/reportes/vencidos/pdf&quot;, produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;byte[]&gt; reporteVencidosPdf(
+            @RequestParam(required = false) Integer diasAtrasoMin,
+            @RequestParam(required = false) String busqueda) {
+<span class="nc" id="L199">        List&lt;ReporteVencidosResponseDTO&gt; reporte =</span>
+<span class="nc" id="L200">                prestamoService.reportePrestamosVencidos(diasAtrasoMin, busqueda);</span>
+<span class="nc" id="L201">        byte[] pdf = reportePdfService.generarReporteVencidos(reporte);</span>
+<span class="nc" id="L202">        return ResponseEntity.ok()</span>
+<span class="nc" id="L203">                .header(HttpHeaders.CONTENT_DISPOSITION, &quot;attachment; filename=reporte-vencidos.pdf&quot;)</span>
+<span class="nc" id="L204">                .contentType(MediaType.APPLICATION_PDF)</span>
+<span class="nc" id="L205">                .body(pdf);</span>
+    }
+
+    // ── GET /api/v1/prestamos/reportes/categorias-demandadas/pdf ──
+    @GetMapping(value = &quot;/reportes/categorias-demandadas/pdf&quot;, produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;byte[]&gt; reporteCategoriasDemandadasPdf(
+            @RequestParam(required = false) Integer limite,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta) {
+<span class="nc" id="L217">        List&lt;ReporteCategoriasDemandadasResponseDTO&gt; reporte =</span>
+<span class="nc" id="L218">                prestamoService.reporteCategoriasDemandadas(limite, desde, hasta);</span>
+<span class="nc" id="L219">        byte[] pdf = reportePdfService.generarReporteCategoriasDemandadas(reporte);</span>
+<span class="nc" id="L220">        return ResponseEntity.ok()</span>
+<span class="nc" id="L221">                .header(HttpHeaders.CONTENT_DISPOSITION, &quot;attachment; filename=reporte-categorias.pdf&quot;)</span>
+<span class="nc" id="L222">                .contentType(MediaType.APPLICATION_PDF)</span>
+<span class="nc" id="L223">                .body(pdf);</span>
+    }
+
+    // ── GET /api/v1/prestamos/reportes/inventario ─────────
+    @GetMapping(&quot;/reportes/inventario&quot;)
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;List&lt;ReporteInventarioResponseDTO&gt;&gt; reporteInventario(
+            @RequestParam(required = false) Integer categoriaId,
+            @RequestParam(required = false) String estadoStock,
+            @RequestParam(required = false) String busqueda) {
+<span class="fc" id="L233">        return ResponseEntity.ok(</span>
+<span class="fc" id="L234">                prestamoService.reporteInventario(categoriaId, estadoStock, busqueda));</span>
+    }
+
+    // ── GET /api/v1/prestamos/reportes/vencidos ───────────
+    @GetMapping(&quot;/reportes/vencidos&quot;)
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;List&lt;ReporteVencidosResponseDTO&gt;&gt; reportePrestamosVencidos(
+            @RequestParam(required = false) Integer diasAtrasoMin,
+            @RequestParam(required = false) String busqueda) {
+<span class="fc" id="L243">        return ResponseEntity.ok(</span>
+<span class="fc" id="L244">                prestamoService.reportePrestamosVencidos(diasAtrasoMin, busqueda));</span>
+    }
+
+    // ── GET /api/v1/prestamos/reportes/categorias-demandadas ──
+    @GetMapping(&quot;/reportes/categorias-demandadas&quot;)
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;List&lt;ReporteCategoriasDemandadasResponseDTO&gt;&gt; reporteCategoriasDemandadas(
+            @RequestParam(required = false) Integer limite,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta) {
+<span class="fc" id="L256">        return ResponseEntity.ok(</span>
+<span class="fc" id="L257">                prestamoService.reporteCategoriasDemandadas(limite, desde, hasta));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

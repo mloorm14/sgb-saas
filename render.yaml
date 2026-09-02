@@ -85,6 +85,10 @@ services:
         sync: false
       - key: SMTP_PASS
         sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
       - key: GEMINI_API_KEY
         sync: false
       # ── No sensibles, con valor explícito coherente con producción
@@ -114,20 +118,8 @@ services:
         value: "900"
       - key: LOGIN_MAX_ATTEMPTS
         value: "5"
-      # NOTA: application.yml también referencia GEMINI_MODELO,
-      # GEMINI_TIMEOUT_MS, GEMINI_URL_BASE, CHATBOT_RATE_LIMIT_MAX_MENSAJES,
-      # CHATBOT_RATE_LIMIT_WINDOW_SECONDS, NOTIF_MINUTOS_ANTICIPACION_VENCIMIENTO
-      # y VERIFICACION_CORREO_TTL_MINUTES, todas con un valor por
-      # defecto seguro ya definido en application.yml -- no se declaran
-      # aquí a propósito (se deja que Spring use su default), ver
-      # docs/despliegue/DEPLOYMENT.md para el detalle completo.
-
-  # ---- Frontend Angular / nginx ----
-  - name: biblora-sgb
-    type: web
-    runtime: docker
-    plan: free
-    # Contexto = frontend-angular/, igual que docker-compose.yml
+      # ── Módulo de respaldos (V2+)
+      # Variables para configurar dónde se guardan los dumps.
     # (build: ./frontend-angular).
     dockerfilePath: ./frontend-angular/Dockerfile
     dockerContext: ./frontend-angular
@@ -161,3 +153,216 @@ services:
     # referencia): si cambia la URL del backend en producción, hace
     # falta recompilar y volver a desplegar el frontend -- no alcanza
     # con cambiar una variable de entorno en el dashboard de Render.
+
+  # ---- Microservicio Node.js para Backup Completo ----
+  - name: backup-service
+    type: pserv
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backup-service/Dockerfile
+    dockerContext: ./backup-service
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_URL
+        sync: false
+# ============================================================
+# render.yaml — Blueprint de despliegue en Render (Bloque A.4.2)
+#
+# CONTEXTO (verificado contra el repo real, no asumido): el 404 en
+# rutas SPA del frontend (ej. /login) en el despliegue actual
+# (https://biblora-sgb.onrender.com) es consistente con que el servicio
+# esté creado en Render como "Static Site" -- ese tipo de servicio sirve
+# los archivos del build directamente y AGREGA POR SU CUENTA cabeceras
+# HTTP propias (se observó un header `Content-Security-Policy` real en
+# producción que NO existe en frontend-angular/nginx.conf -- ese archivo
+# solo define X-Frame-Options/X-Content-Type-Options), lo cual ignora el
+# Dockerfile/nginx.conf versionados en este repo (que sí tienen el
+# fallback SPA correcto: `try_files $uri $uri/ /index.html;`) y no
+# aplica ningún fallback de ruta por defecto.
+#
+# Este archivo fuerza explícitamente `runtime: docker` para AMBOS
+# servicios, para que Render use el Dockerfile real de cada uno (y por
+# lo tanto el nginx.conf con el fallback SPA ya correcto) en vez de
+# tratar al frontend como un Static Site.
+#
+# NOTA DE MIGRACIÓN (para quien aplique este Blueprint en el dashboard
+# de Render): los servicios ya existen hoy con los nombres
+# "biblora-sgb" (frontend) y "sgb-backend-b058" (backend, el sufijo
+# "-b058" lo agregó Render automáticamente). Este archivo usa el nombre
+# "biblora-sgb" para el frontend (coincide, Render debería reconocerlo
+# como el mismo servicio al sincronizar el Blueprint) y "sgb-backend"
+# para el backend (SIN el sufijo -b058, porque ese sufijo no se puede
+# fijar desde este archivo). Si se aplica este Blueprint contra el
+# proyecto de Render ya existente y el backend no se reconcilia
+# automáticamente con el servicio "sgb-backend-b058" actual, la
+# alternativa documentada en docs/despliegue/DEPLOYMENT.md es recrear el
+# servicio del backend como Web Service (Docker) y actualizar la URL
+# pública -- Render no permite cambiar el tipo de un servicio ya creado
+# (Static Site -> Web Service) después de creado, según el
+# comportamiento conocido de la plataforma (no verificado contra este
+# repo, es conocimiento general de Render, se señala así explícitamente).
+# ============================================================
+
+services:
+  # ---- Backend Spring Boot ----
+  - name: sgb-backend
+    type: web
+    runtime: docker
+    plan: free
+    # Contexto = raíz del repo, igual que docker-compose.yml
+    # (build.context: ., dockerfile: backend-springboot/Dockerfile) --
+    # el Dockerfile necesita copiar tambien database/migrations/ desde
+    # la raiz, no solo backend-springboot/.
+    dockerfilePath: ./backend-springboot/Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health
+    envVars:
+      # ── Secretos / específicos del entorno de producción — el equipo
+      # los completa manualmente en el dashboard de Render
+      # (sync: false), nunca hardcodeados aquí. Nombres tomados de
+      # .env.example y de los placeholders ${...} reales en
+      # backend-springboot/src/main/resources/application.yml.
+      - key: JWT_SECRET
+        sync: false
+      - key: DB_URL
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PORT
+        sync: false
+      # Upstash (Redis gestionado usado en este despliegue, ver sección 2
+      # de docs/despliegue/DEPLOYMENT.md) exige autenticación por
+      # password y conexión TLS -- sin estas dos variables,
+      # application.yml cae en sus defaults de desarrollo local
+      # (REDIS_PASSWORD vacío, REDIS_SSL false) y la conexión a Upstash
+      # falla. REDIS_PASSWORD es secreto (sync: false); REDIS_SSL no es
+      # sensible y su valor correcto para este proveedor es siempre
+      # "true", así que se fija acá igual que SPRING_PROFILES_ACTIVE.
+      - key: REDIS_PASSWORD
+        sync: false
+      - key: REDIS_SSL
+        value: "true"
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      # ── No sensibles, con valor explícito coherente con producción
+      # (ver docs/adr/adr-015-tls-transporte.md, REQ-NF-014: 'prod'
+      # deshabilita Swagger UI/OpenAPI y oculta stacktraces en /error).
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      # Mismo límite ya verificado en docker-compose.yml: el plan free
+      # de Render da 512MB. Sin este límite, Spring Boot + springdoc/
+      # Hibernate llenan el metaspace por defecto y el proceso muere con
+      # OutOfMemoryError: Metaspace al arrancar. JAVA_TOOL_OPTIONS lo lee
+      # la JVM directamente al iniciar, no pasa por application.yml.
+      - key: JAVA_TOOL_OPTIONS
+        value: "-Xmx300m -Xms128m -XX:MaxMetaspaceSize=224m -XX:+UseSerialGC -XX:MaxRAM=450m"
+      # Igual al override ya usado en docker-compose.yml -- dentro del
+      # contenedor el cwd es /app y el Dockerfile copia
+      # database/migrations a /app/database/migrations.
+      - key: SPRING_FLYWAY_LOCATIONS
+        value: filesystem:database/migrations
+      - key: SMTP_PORT
+        value: "587"
+      - key: CACHE_LIBROS_TTL_SECONDS
+        value: "300"
+      - key: CACHE_SUGERENCIAS_TTL_SECONDS
+        value: "8"
+      - key: LOGIN_RATE_LIMIT_WINDOW_SECONDS
+        value: "900"
+      - key: LOGIN_MAX_ATTEMPTS
+        value: "5"
+      # ── Módulo de respaldos (V2+)
+      # Variables para configurar dónde se guardan los dumps.
+      - key: BACKUP_STORAGE_URL
+        sync: false
+      - key: BACKUP_ENCRYPTION_KEY
+        sync: false
+      - key: BACKUP_SERVICE_URL
+        value: "http://backup-service:3000"
+      - key: INTERNAL_API_KEY
+        sync: false
+
+  # ---- Frontend Angular ----
+  - name: biblora-sgb
+    type: web
+    runtime: docker
+    plan: free
+    # (build: ./frontend-angular).
+    dockerfilePath: ./frontend-angular/Dockerfile
+    dockerContext: ./frontend-angular
+    healthCheckPath: /
+    # SIN envVars (actualizado tras el commit b89df9d -- el estado
+    # anterior de este comentario, escrito en bcb3baf, decía que el
+    # proyecto no tenía environment.ts y que la URL del backend estaba
+    # hardcodeada; eso ya no es así, se corrigió en b89df9d y este
+    # comentario quedaba contradiciendo el código real). Verificado de
+    # nuevo contra el repo: frontend-angular/src/environments/environment.ts
+    # (desarrollo, apiUrl 'http://localhost:8080/api') y
+    # environment.prod.ts (producción, apiUrl
+    # 'https://sgb-backend-b058.onrender.com/api') ya existen, y
+    # frontend-angular/angular.json tiene fileReplacements configurado
+    # en architect.build.configurations.production para intercambiarlos.
+    # Los 6 archivos que antes tenían la URL hardcodeada (auth.service.ts,
+    # libros.component.ts, multas.component.ts,
+    # prestamos-gestion.component.ts, prestamos-lector.component.ts,
+    # reservaciones.component.ts) ahora usan environment.apiUrl.
+    #
+    # Este servicio sigue sin necesitar envVars, pero la razón ya no es
+    # "el código no lee ninguna" -- es que apiUrl se resuelve en TIEMPO
+    # DE BUILD (fileReplacements de Angular, ejecutado dentro del
+    # Dockerfile al correr `npm run build`), no en tiempo de arranque
+    # del contenedor. Una variable de entorno de Render nunca sería
+    # leída de todas formas, porque para cuando el contenedor arranca el
+    # bundle JavaScript ya quedó compilado con la URL fija adentro.
+    #
+    # Limitación real (ya documentada en docs/despliegue/DEPLOYMENT.md,
+    # sección 8 -- no se repite con una redacción distinta aquí, se
+    # referencia): si cambia la URL del backend en producción, hace
+    # falta recompilar y volver a desplegar el frontend -- no alcanza
+    # con cambiar una variable de entorno en el dashboard de Render.
+
+  # ---- Microservicio Node.js para Backup Completo ----
+  - name: backup-service
+    type: pserv
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backup-service/Dockerfile
+    dockerContext: ./backup-service
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_URL
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: BACKUP_STORAGE_URL
+        sync: false
+      - key: BACKUP_ENCRYPTION_KEY
+        sync: false
+      - key: R2_ENDPOINT
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        sync: false
+      - key: INTERNAL_API_KEY
+        sync: false

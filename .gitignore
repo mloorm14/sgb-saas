@@ -34,3 +34,6 @@ db/init/
 
 # Artefactos temporales de notebooks Jupyter (los .ipynb con sus outputs si se versionan)
 .ipynb_checkpoints/
+
+# Scratch files de verificación de bundle (temporales, no versionar)
+live-bundle*.js

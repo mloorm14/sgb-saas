@@ -10,6 +10,7 @@ import { SugerenciaAdquisicionService } from '../../core/services/sugerencia-adq
 // autor opcional max 150, isbn opcional con patrón ^[0-9\-]{10,17}$ max 13,
 // justificacion opcional max 1000.
 @Component({
+  standalone: true,
   selector: 'app-sugerencias-form',
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './sugerencias-form.component.html'

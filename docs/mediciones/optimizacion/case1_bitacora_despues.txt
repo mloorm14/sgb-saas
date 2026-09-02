@@ -1,0 +1,78 @@
+                                                                                                                    QUERY PLAN                                                                                                                    
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=42860.24..42860.71 rows=4 width=127) (actual time=50.232..53.061 rows=3 loops=1)
+   Buffers: shared hit=355 read=29078
+   ->  Gather Merge  (cost=42860.24..42860.71 rows=4 width=127) (actual time=50.231..53.057 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=355 read=29078
+         ->  Sort  (cost=41860.22..41860.22 rows=2 width=127) (actual time=45.789..45.789 rows=1 loops=3)
+               Sort Key: fecha_hora DESC
+               Sort Method: quicksort  Memory: 25kB
+               Buffers: shared hit=355 read=29078
+               Worker 0:  Sort Method: quicksort  Memory: 25kB
+               Worker 1:  Sort Method: quicksort  Memory: 25kB
+               ->  Parallel Seq Scan on bitacora_auditoria  (cost=0.00..41860.21 rows=2 width=127) (actual time=29.181..45.486 rows=1 loops=3)
+                     Filter: ((fecha_hora >= '2025-02-01 00:00:00+00'::timestamp with time zone) AND (fecha_hora <= '2026-08-23 00:00:00+00'::timestamp with time zone) AND (usuario_id = 39468) AND ((tabla_afectada)::text = 'usuarios'::text))
+                     Rows Removed by Filter: 500047
+                     Buffers: shared hit=281 read=29078
+ Planning:
+   Buffers: shared hit=140
+ Planning Time: 1.482 ms
+ Execution Time: 53.172 ms
+(20 rows)
+
+
+-- ============================================================================
+-- NOTA HONESTA (no es parte de la salida cruda de psql, agregada a mano):
+--
+-- Para esta combinacion EXACTA de parametros (usuario_id=39468 AND
+-- tabla_afectada='usuarios' AND rango de fecha ~31%), el plan NO cambio de
+-- Parallel Seq Scan a Index Scan tras crear idx_bitacora_fecha_hora, y el
+-- tiempo de ejecucion se mantuvo del mismo orden de magnitud (antes y
+-- despues, ambos alrededor de 50-760ms segun el estado de cache del SO en
+-- el momento de la medicion -- ver mas abajo sobre la variabilidad
+-- observada). Esto es correcto por parte del planner, no una falla del
+-- indice: el filtro combinado usuario_id+tabla es tan selectivo (solo 3
+-- filas de 1,500,145 cumplen TODO el WHERE) que un Index Scan sobre
+-- fecha_hora igual tendria que recorrer casi toda la ventana de fecha
+-- (~466,000 filas) en orden para encontrar esas 3 filas y confirmar que no
+-- hay 20, mientras que un Seq Scan paralelo (2 workers) recorre la tabla
+-- completa mas rapido gracias al paralelismo.
+--
+-- DIFERENCIA CON db/optimizacion-consultas.sql: el comentario de ese
+-- archivo (escrito el 2026-08-23) cita "cost=42860 con indice vs cost=34793
+-- sin el, ambos Seq Scan" como evidencia de que el planner SI considero el
+-- Index Scan y lo descarto. En esta remedicion (2026-08-31, misma base de
+-- datos, mismos parametros), el costo estimado fue IDENTICO
+-- (cost=42860.24..42860.71) tanto con el indice recien creado como con el
+-- indice recien eliminado -- no se reprodujo la diferencia 42860/34793
+-- especifica. La conclusion de fondo (el plan sigue siendo Parallel Seq
+-- Scan en ambos casos, sin mejora real para este filtro combinado
+-- ultra-selectivo) SI se reprodujo exactamente. El tiempo de ejecucion
+-- tambien vario mucho mas de lo esperado entre corridas (49.9ms a 760.1ms
+-- para variantes de esencialmente la misma consulta durante esta sesion),
+-- consistente con el estado de cache de paginas del contenedor Docker
+-- recien iniciado (cache frio en la primera corrida tras `docker compose
+-- up`, mas caliente en corridas subsiguientes) y no con un cambio real de
+-- plan o de datos. No se oculta esta discrepancia con el texto original:
+-- se documenta aqui tal cual se observo.
+--
+-- Se verifico por separado que el mismo indice SI cambia el plan a Index
+-- Scan puro y baja el tiempo drasticamente cuando la busqueda es SOLO por
+-- rango de fecha (usuario_id y tabla_afectada en NULL) -- el patron de uso
+-- mas comun en la pantalla real de auditoria (admin navega el log sin
+-- filtrar, o filtra solo por fecha). Evidencia archivada en
+-- docs/mediciones/optimizacion/case1_bitacora_solo_fecha.txt (re-verificada
+-- en esta misma sesion, 2026-08-31: Index Scan puro, Execution Time 8.166
+-- ms, coincide en plan y estimaciones de costo con la version ya
+-- committeada de ese archivo -- solo el tiempo real difiere por cache,
+-- igual que arriba). idx_bitacora_fecha_hora sigue siendo la mejor eleccion
+-- de indice UNICO para esta forma de query (ORDER BY fecha_hora DESC LIMIT
+-- 20 con filtros opcionales OR/IS NULL): ayuda mucho en el caso comun (sin
+-- filtrar o filtrado solo por fecha) y es neutral (no perjudica, el planner
+-- sigue eligiendo Seq Scan cuando conviene) en el caso extremo de filtro
+-- combinado ultra-selectivo. Ver db/optimizacion-consultas.sql para el
+-- analisis completo (con la salvedad de la cifra 42860/34793 anotada
+-- arriba).
+-- ============================================================================

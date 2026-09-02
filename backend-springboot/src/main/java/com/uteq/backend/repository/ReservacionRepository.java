@@ -1,13 +1,16 @@
 package com.uteq.backend.repository;
 
 import com.uteq.backend.entity.Reservacion;
+import com.uteq.backend.repository.projection.ReservacionHoyProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * CRUD elemental sobre {@code reservaciones}. La expiración masiva vive
@@ -34,4 +37,40 @@ public interface ReservacionRepository extends JpaRepository<Reservacion, Long> 
     // individualmente antes de que el UPDATE masivo las marque EXPIRADA.
     List<Reservacion> findByEstadoReservacionIdInAndFechaLimiteRetiroBefore(
             List<Integer> estadosReservacionIds, OffsetDateTime ahora);
+
+    // Módulo de préstamos (ventanilla): reserva vigente más reciente del
+    // usuario (PENDIENTE o LISTA_PARA_RETIRO -- ids resueltos por el
+    // llamador desde EstadoReservacionRepository, mismo criterio que
+    // PrestamoService.existeReservaVigenteDeOtroUsuario). Es la reserva que
+    // la tarjeta "Reserva Encontrada" convierte en préstamo.
+    Optional<Reservacion> findFirstByUsuarioIdAndEstadoReservacionIdInOrderByFechaReservaDesc(
+            Long usuarioId, List<Integer> estadosReservacionIds);
+
+    // Módulo de reservaciones (ventanilla): contar reservas activas del
+    // usuario para el badge "X/3 Reservas activas". "Vigente" = PENDIENTE
+    // o LISTA_PARA_RETIRO, mismo criterio que findFirst...YEstadoReservacionIdIn.
+    long countByUsuarioIdAndEstadoReservacionIdIn(
+            Long usuarioId, List<Integer> estadosReservacionIds);
+
+    // Dashboard del bibliotecario: reservaciones cuya fecha límite de
+    // retiro cae HOY, con libro/usuario ya resueltos (evita el N+1 que
+    // tendría el frontend pidiendo cada libro/usuario por separado para
+    // un widget que se carga en cada visita al dashboard).
+    @Query(value = """
+        SELECT r.id AS reservacionId,
+               u.nombre || ' ' || u.apellido AS usuarioNombre,
+               u.correo AS usuarioCorreo,
+               l.titulo AS libroTitulo,
+               er.nombre AS estadoNombre,
+               r.fecha_limite_retiro AS fechaLimiteRetiro
+        FROM reservaciones r
+        JOIN usuarios u ON u.id = r.usuario_id
+        JOIN libros l ON l.id = r.libro_id
+        JOIN estados_reservacion er ON er.id = r.estado_reservacion_id
+        WHERE r.fecha_limite_retiro >= CURRENT_DATE
+          AND r.fecha_limite_retiro < CURRENT_DATE + INTERVAL '1 day'
+          AND er.nombre IN ('PENDIENTE', 'LISTA_PARA_RETIRO')
+        ORDER BY r.fecha_limite_retiro ASC
+        """, nativeQuery = true)
+    List<ReservacionHoyProjection> buscarReservacionesDeHoy();
 }

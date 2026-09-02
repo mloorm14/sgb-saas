@@ -5,6 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import { LibroService } from '../../core/services/libro.service';
 import { FavoritoService } from '../../core/services/favorito.service';
 import { ReservacionService } from '../../core/services/reservacion.service';
+import { ReservacionPendienteService } from '../../core/services/reservacion-pendiente.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Libro } from '../../core/models/libro.model';
 
@@ -14,11 +15,15 @@ describe('LibroDetalleComponent', () => {
   let libroService: jasmine.SpyObj<LibroService>;
   let favoritoService: jasmine.SpyObj<FavoritoService>;
   let reservacionService: jasmine.SpyObj<ReservacionService>;
+  let reservacionesPendientes: jasmine.SpyObj<ReservacionPendienteService>;
+  let authService: jasmine.SpyObj<AuthService>;
 
   beforeEach(async () => {
     libroService = jasmine.createSpyObj('LibroService', ['obtener', 'obtenerPortada']);
     favoritoService = jasmine.createSpyObj('FavoritoService', ['listar', 'agregar', 'quitar']);
     reservacionService = jasmine.createSpyObj('ReservacionService', ['crear', 'listarPorUsuario']);
+    reservacionesPendientes = jasmine.createSpyObj('ReservacionPendienteService', ['cargar', 'esPendiente', 'marcarReservada']);
+    authService = jasmine.createSpyObj('AuthService', ['getUserId', 'hasRole']);
 
     libroService.obtenerPortada.and.returnValue(throwError(() => ({ status: 404 })));
 
@@ -47,6 +52,10 @@ describe('LibroDetalleComponent', () => {
     } as Libro));
     favoritoService.listar.and.returnValue(of([]));
     reservacionService.listarPorUsuario.and.returnValue(of({ content: [], totalPages: 0 } as any));
+    reservacionesPendientes.cargar.and.returnValue(of(undefined));
+    reservacionesPendientes.esPendiente.and.returnValue(false);
+    authService.getUserId.and.returnValue(2);
+    authService.hasRole.and.returnValue(false);
 
     await TestBed.configureTestingModule({
       imports: [LibroDetalleComponent],
@@ -58,7 +67,8 @@ describe('LibroDetalleComponent', () => {
         { provide: LibroService, useValue: libroService },
         { provide: FavoritoService, useValue: favoritoService },
         { provide: ReservacionService, useValue: reservacionService },
-        { provide: AuthService, useValue: { getUserId: () => 2, hasRole: () => false } }
+        { provide: ReservacionPendienteService, useValue: reservacionesPendientes },
+        { provide: AuthService, useValue: authService }
       ]
     }).compileComponents();
 
@@ -100,9 +110,7 @@ describe('LibroDetalleComponent', () => {
   });
 
   it('carga las reservaciones pendientes del lector y bloquea el botón', () => {
-    reservacionService.listarPorUsuario.and.returnValue(
-      of({ content: [{ id: 1, libroId: 5, estadoReservacionId: 2 }], totalPages: 1 } as any)
-    );
+    reservacionesPendientes.esPendiente.and.returnValue(true);
 
     fixture.detectChanges();
 
@@ -116,21 +124,30 @@ describe('LibroDetalleComponent', () => {
       fechaReserva: '2026-08-16T00:00:00Z', fechaLimiteRetiro: '2026-08-18T00:00:00Z'
     } as any));
 
-    component.reservarLibro();
+    component.confirmarReserva();
 
-    expect(reservacionService.crear).toHaveBeenCalledWith({ usuarioId: 2, libroId: 5 });
+    expect(reservacionService.crear).toHaveBeenCalledWith(jasmine.objectContaining({ usuarioId: 2, libroId: 5 }));
     expect(component.reservaCreada?.fechaLimiteRetiro).toBe('2026-08-18T00:00:00Z');
-    expect(component.estaReservado()).toBeTrue();
+    expect(reservacionesPendientes.marcarReservada).toHaveBeenCalledWith(5);
   });
 
   it('no rompe el detalle si la reserva falla', () => {
     fixture.detectChanges();
     reservacionService.crear.and.returnValue(throwError(() => ({ status: 500 })));
 
-    component.reservarLibro();
+    component.confirmarReserva();
 
-    expect(component.errorMsg).toBe('Error al reservar el libro');
+    expect(component.errorMsg).toBe('No se pudo reservar el libro');
     expect(component.reservaCreada).toBeNull();
-    expect(component.estaReservado()).toBeFalse();
+  });
+
+  it('requiere inicio de sesión para abrir el modal de reserva', () => {
+    fixture.detectChanges();
+    authService.getUserId.and.returnValue(null);
+
+    component.abrirModalReserva();
+
+    expect(component.errorMsg).toBe('Inicia sesión para reservar');
+    expect(component.mostrarModalReserva).toBeFalse();
   });
 });

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SGB · Auditoría</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          "secondary-container": "#76f4e0","surface": "#f8f9ff","surface-container-highest": "#d5e3fc",
+          "on-error": "#ffffff","error-container": "#ffdad6","surface-container": "#e6eeff",
+          "on-secondary-fixed": "#00201c","on-secondary-container": "#006f63","surface-bright": "#f8f9ff",
+          "tertiary": "#503a00","surface-variant": "#d5e3fc","outline-variant": "#c4c6d5",
+          "inverse-primary": "#b4c5ff","primary-container": "#1e4db7","on-tertiary-fixed-variant": "#5b4300",
+          "on-primary-fixed-variant": "#003ea8","inverse-on-surface": "#eaf1ff","surface-dim": "#ccdbf3",
+          "error": "#ba1a1a","on-tertiary-fixed": "#261a00","primary-fixed-dim": "#b4c5ff",
+          "on-tertiary": "#ffffff","on-surface-variant": "#434653","secondary-fixed": "#79f7e3",
+          "background": "#f8f9ff","on-background": "#0d1c2e","tertiary-fixed": "#ffdf9e",
+          "on-surface": "#0d1c2e","primary-fixed": "#dbe1ff","surface-container-lowest": "#ffffff",
+          "on-tertiary-container": "#fec004","surface-container-high": "#dce9ff","surface-container-low": "#eff4ff",
+          "tertiary-container": "#6c5000","surface-tint": "#2c57c1","primary": "#003694",
+          "on-secondary": "#ffffff","on-primary-fixed": "#00174b","outline": "#747684",
+          "on-secondary-fixed-variant": "#005047","secondary": "#006b5f","tertiary-fixed-dim": "#fabd00",
+          "secondary-fixed-dim": "#59dbc7","on-primary-container": "#b8c8ff","on-error-container": "#93000a",
+          "on-primary": "#ffffff","inverse-surface": "#233144",
+          "success": "#1d9e75","warning": "#fec004"
+        },
+        borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" },
+        spacing: { gutter: "24px", xl: "40px", lg: "24px", md: "16px", "container-max": "1280px", sm: "8px", xs: "4px", "margin-mobile": "16px", base: "4px" },
+        fontFamily: {
+          "headline-lg": ["Plus Jakarta Sans"], "body-md": ["Inter"], "label-md": ["Inter"],
+          "headline-lg-mobile": ["Plus Jakarta Sans"], "headline-xl": ["Plus Jakarta Sans"],
+          "label-sm": ["Inter"], "body-lg": ["Inter"], "body-sm": ["Inter"], "headline-md": ["Plus Jakarta Sans"]
+        },
+        fontSize: {
+          "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+          "label-md": ["14px", { lineHeight: "20px", letterSpacing: "0.05em", fontWeight: "600" }],
+          "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+          "headline-xl": ["40px", { lineHeight: "48px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "label-sm": ["12px", { lineHeight: "16px", fontWeight: "500" }],
+          "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+          "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+          "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Inter', sans-serif; background:#f8f9ff; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align:middle; }
+  .glass-panel { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
+</style>
+</head>
+<body class="bg-surface min-h-screen p-lg">
+<main class="max-w-4xl mx-auto">
+
+  <div class="mb-lg">
+    <h1 class="font-headline-lg text-headline-lg text-on-background mb-xs">Auditoría</h1>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Bitácora de acciones realizadas en el sistema</p>
+  </div>
+
+  <div class="rounded-xl border border-outline-variant bg-white p-md mb-lg">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
+
+      <!-- Antes: input numerico "Usuario (ID)". Ahora: buscador real por nombre/correo -->
+      <div class="relative lg:col-span-2">
+        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Usuario</label>
+        <div class="rounded border border-outline-variant flex items-center px-sm h-10">
+          <span class="material-symbols-outlined text-outline text-[18px] mr-xs">search</span>
+          <input type="text" placeholder="Buscar por nombre o correo..."
+            class="w-full bg-transparent border-none focus:ring-0 font-body-sm text-body-sm text-on-surface placeholder-outline" />
+        </div>
+        <!-- dropdown de resultados, reusa UsuarioAdminService.listar() que ya existe -->
+        <div class="absolute mt-xs w-full bg-white rounded-lg shadow-lg border border-outline-variant overflow-hidden z-10">
+          <button class="w-full text-left px-sm py-xs hover:bg-surface-container-low flex items-center gap-xs border-b border-outline-variant">
+            <div class="w-7 h-7 rounded-full bg-primary-fixed flex items-center justify-center font-label-sm text-[11px] text-on-primary-fixed-variant shrink-0">AT</div>
+            <div class="min-w-0">
+              <p class="font-body-sm text-[13px] text-on-surface truncate">Ana Torres</p>
+              <p class="font-label-sm text-[11px] text-on-surface-variant truncate">ana.torres@uteq.edu.ec</p>
+            </div>
+          </button>
+          <button class="w-full text-left px-sm py-xs hover:bg-surface-container-low flex items-center gap-xs">
+            <div class="w-7 h-7 rounded-full bg-primary-fixed flex items-center justify-center font-label-sm text-[11px] text-on-primary-fixed-variant shrink-0">CR</div>
+            <div class="min-w-0">
+              <p class="font-body-sm text-[13px] text-on-surface truncate">Carlos Ruiz</p>
+              <p class="font-label-sm text-[11px] text-on-surface-variant truncate">carlos.ruiz@uteq.edu.ec</p>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Módulo</label>
+        <select class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white">
+          <option>Todos</option>
+          <option>usuarios</option>
+          <option>prestamos</option>
+        </select>
+      </div>
+      <div class="flex gap-xs">
+        <div class="flex-1">
+          <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Desde</label>
+          <input type="date" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Chip del usuario ya seleccionado (una vez que eligió uno del dropdown) -->
+    <div class="flex items-center gap-xs mt-sm">
+      <span class="inline-flex items-center gap-xs px-sm py-1 rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-[12px]">
+        Ana Torres <span class="material-symbols-outlined text-[14px] cursor-pointer">close</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="rounded-xl border border-outline-variant bg-white overflow-hidden">
+    <table class="w-full text-left">
+      <thead class="bg-surface-container-low">
+        <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
+          <th class="px-md py-sm">Fecha/hora</th>
+          <th class="px-md py-sm">Usuario</th>
+          <th class="px-md py-sm">Acción</th>
+          <th class="px-md py-sm">Módulo</th>
+          <th class="px-md py-sm">Detalle</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
+        <tr>
+          <td class="px-md py-sm text-on-surface-variant">20 ago 2026, 14:32</td>
+          <td class="px-md py-sm">Ana Torres</td>
+          <td class="px-md py-sm">
+            <span class="inline-flex items-center px-sm py-0.5 rounded-full font-label-sm text-[11px]" style="background:#dff7ee;color:#0f6e56;">LOGIN_OK</span>
+          </td>
+          <td class="px-md py-sm text-on-surface-variant">usuarios</td>
+          <td class="px-md py-sm text-on-surface-variant">Inicio de sesión exitoso</td>
+        </tr>
+        <tr>
+          <td class="px-md py-sm text-on-surface-variant">20 ago 2026, 11:10</td>
+          <td class="px-md py-sm">Ana Torres</td>
+          <td class="px-md py-sm">
+            <span class="inline-flex items-center px-sm py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-[11px]">DELETE</span>
+          </td>
+          <td class="px-md py-sm text-on-surface-variant">libros</td>
+          <td class="px-md py-sm text-on-surface-variant">Eliminó el libro #221</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="font-label-sm text-[11px] text-on-surface-variant mt-sm">Filtro real: el usuario elegido manda su <code>id</code> real al backend (GET /api/v1/auditoria?usuarioId=), pero quien lo busca escribe un nombre, no adivina un número.</p>
+</main>
+</body>
+</html>

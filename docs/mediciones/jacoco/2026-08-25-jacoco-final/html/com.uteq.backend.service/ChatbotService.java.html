@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ChatbotService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.service</a> &gt; <span class="el_source">ChatbotService.java</span></div><h1>ChatbotService.java</h1><pre class="source lang-java linenums">package com.uteq.backend.service;
+
+import com.uteq.backend.dto.LibroSugerenciaDTO;
+import com.uteq.backend.dto.MensajeChatHistorialDTO;
+import com.uteq.backend.dto.MensajeChatRequestDTO;
+import com.uteq.backend.dto.MensajeChatResponseDTO;
+import com.uteq.backend.entity.BaseConocimiento;
+import com.uteq.backend.entity.MensajeChat;
+import com.uteq.backend.entity.SesionChat;
+import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.integration.GeminiClient;
+import com.uteq.backend.repository.BaseConocimientoRepository;
+import com.uteq.backend.repository.MensajeChatRepository;
+import com.uteq.backend.repository.SesionChatRepository;
+import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.security.ChatbotRateLimiter;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+
+/**
+ * Módulo H: orquesta el chatbot asistente virtual (solo LECTOR, ver
+ * ChatbotController). Flujo de {@code enviarMensaje}: resuelve el usuario
+ * desde el {@code Authentication} (mismo patrón que
+ * {@code PrestamoService}/{@code ReservacionService}: {@code findByCorreo}),
+ * valida el rate limit, resuelve/valida la sesión, persiste el mensaje del
+ * usuario, arma el prompt de sistema con grounding real (base_conocimiento
+ * + resultados de {@code LibroService.sugerir} si el texto sugiere
+ * disponibilidad), pide la respuesta a {@link GeminiClient}, la persiste y
+ * actualiza la sesión.
+ * &lt;p&gt;
+ * DECISIÓN (reservas desde el chat): {@code ReservacionService} se inyecta
+ * como punto de integración previsto, pero {@code reservacionService.crear()}
+ * NO se ejecuta desde el chat en esta primera versión. El modelo no tiene
+ * forma confiable de mapear &quot;ese libro&quot; a un {@code libroId} real sin
+ * riesgo de inventarlo, y el grounding solo garantiza disponibilidad, no
+ * identidad exacta del título. Un &quot;reservar&quot; desde el chat se atiende con
+ * instrucciones de cómo hacerlo (catálogo/ventanilla) y pedido de
+ * confirmación; la ejecución directa queda para una versión 2 con un paso
+ * de confirmación explícita y selección del libro por id.
+ */
+@Service
+@RequiredArgsConstructor
+public class ChatbotService {
+
+    private static final String USUARIO_NO_ENCONTRADO = &quot;Usuario no encontrado: &quot;;
+    private static final String ROL_USUARIO = &quot;USUARIO&quot;;
+    private static final String ROL_ASISTENTE = &quot;ASISTENTE&quot;;
+
+<span class="fc" id="L57">    private static final List&lt;String&gt; PALABRAS_DISPONIBILIDAD =</span>
+<span class="fc" id="L58">            List.of(&quot;disponible&quot;, &quot;hay&quot;, &quot;tienen&quot;, &quot;existe&quot;);</span>
+<span class="fc" id="L59">    private static final List&lt;String&gt; PALABRAS_RESERVA =</span>
+<span class="fc" id="L60">            List.of(&quot;reservar&quot;, &quot;apartar&quot;, &quot;reserva&quot;);</span>
+
+    private final SesionChatRepository sesionChatRepo;
+    private final MensajeChatRepository mensajeChatRepo;
+    private final BaseConocimientoRepository baseConocimientoRepo;
+    private final UsuarioRepository usuarioRepo;
+    private final LibroService libroService;
+    // Punto de integración reservado para v2 (reservas confirmadas desde el
+    // chat) -- ver la DECISIÓN en el Javadoc de la clase. No se invoca aún.
+    private final ReservacionService reservacionService;
+    private final GeminiClient geminiClient;
+    private final ChatbotRateLimiter chatbotRateLimiter;
+
+    @Transactional
+    public MensajeChatResponseDTO enviarMensaje(MensajeChatRequestDTO dto, Authentication authentication) {
+<span class="fc" id="L75">        Long usuarioId = resolverIdPorCorreo(authentication.getName());</span>
+
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (chatbotRateLimiter.estaBloqueado(usuarioId)) {</span>
+<span class="fc" id="L78">            throw new ChatbotRateLimitExcedidoException(</span>
+                    &quot;Has alcanzado el límite de mensajes al asistente. Intenta de nuevo en un momento.&quot;);
+        }
+
+<span class="fc" id="L82">        SesionChat sesion = resolverSesion(dto.sesionId(), usuarioId);</span>
+
+        // El mensaje del usuario se persiste ANTES de llamar a Gemini: si la
+        // API falla o responde el mensaje amigable, el intento del usuario
+        // queda registrado en el historial igualmente.
+<span class="fc" id="L87">        MensajeChat msgUsuario = new MensajeChat();</span>
+<span class="fc" id="L88">        msgUsuario.setSesionId(sesion.getId());</span>
+<span class="fc" id="L89">        msgUsuario.setRol(ROL_USUARIO);</span>
+<span class="fc" id="L90">        msgUsuario.setContenido(dto.texto());</span>
+<span class="fc" id="L91">        msgUsuario.setCreadoEn(OffsetDateTime.now());</span>
+<span class="fc" id="L92">        mensajeChatRepo.save(msgUsuario);</span>
+
+<span class="fc" id="L94">        String promptSistema = construirPromptSistema(dto.texto());</span>
+<span class="fc" id="L95">        List&lt;MensajeChat&gt; historial =</span>
+<span class="fc" id="L96">                mensajeChatRepo.findBySesionIdOrderByCreadoEnAsc(sesion.getId());</span>
+
+<span class="fc" id="L98">        String respuesta = geminiClient.generarRespuesta(promptSistema, historial, dto.texto());</span>
+
+<span class="fc" id="L100">        MensajeChat msgAsistente = new MensajeChat();</span>
+<span class="fc" id="L101">        msgAsistente.setSesionId(sesion.getId());</span>
+<span class="fc" id="L102">        msgAsistente.setRol(ROL_ASISTENTE);</span>
+<span class="fc" id="L103">        msgAsistente.setContenido(respuesta);</span>
+<span class="fc" id="L104">        msgAsistente.setCreadoEn(OffsetDateTime.now());</span>
+<span class="fc" id="L105">        mensajeChatRepo.save(msgAsistente);</span>
+
+<span class="fc" id="L107">        sesion.setUltimaActividad(OffsetDateTime.now());</span>
+<span class="fc" id="L108">        sesionChatRepo.save(sesion);</span>
+
+<span class="fc" id="L110">        chatbotRateLimiter.registrarMensaje(usuarioId);</span>
+
+<span class="fc" id="L112">        return new MensajeChatResponseDTO(sesion.getId(), respuesta, msgAsistente.getCreadoEn());</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;MensajeChatHistorialDTO&gt; obtenerHistorial(UUID sesionId, Authentication authentication) {
+<span class="fc" id="L117">        Long usuarioId = resolverIdPorCorreo(authentication.getName());</span>
+<span class="fc" id="L118">        SesionChat sesion = validarPropiedadSesion(sesionId, usuarioId);</span>
+<span class="fc" id="L119">        return mensajeChatRepo.findBySesionIdOrderByCreadoEnAsc(sesion.getId()).stream()</span>
+<span class="fc" id="L120">                .map(m -&gt; new MensajeChatHistorialDTO(m.getRol(), m.getContenido(), m.getCreadoEn()))</span>
+<span class="fc" id="L121">                .toList();</span>
+    }
+
+    // ── Prompt de sistema con grounding real ────────────────────────────────
+    // Instruye al modelo a responder SOLO con el contexto que se le pasa y a
+    // nunca inventar disponibilidad de libros (ver GeminiClient).
+    private String construirPromptSistema(String textoUsuario) {
+<span class="fc" id="L128">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L129">        sb.append(&quot;Eres el asistente virtual de la biblioteca SGB-SaaS. &quot;)</span>
+<span class="fc" id="L130">                .append(&quot;Responde SOLO con la información real provista abajo (base de conocimiento y, &quot;)</span>
+<span class="fc" id="L131">                .append(&quot;si aplica, resultados de búsqueda de libros). &quot;)</span>
+<span class="fc" id="L132">                .append(&quot;NUNCA inventes datos, horarios, multas ni afirmes que un libro está o no &quot;)</span>
+<span class="fc" id="L133">                .append(&quot;disponible si no aparece en los resultados reales. &quot;)</span>
+<span class="fc" id="L134">                .append(&quot;Si no tienes contexto suficiente, dilo y sugiere consultar en ventanilla o en la app. &quot;)</span>
+<span class="fc" id="L135">                .append(&quot;Responde en español, breve y útil.\n\n&quot;);</span>
+
+<span class="fc" id="L137">        sb.append(&quot;### Base de conocimiento:\n&quot;);</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">        for (BaseConocimiento bc : baseConocimientoRepo.findByActivoTrue()) {</span>
+<span class="nc" id="L139">            sb.append(&quot;- [&quot;).append(bc.getCategoria()).append(&quot;] &quot;)</span>
+<span class="nc" id="L140">                    .append(bc.getPreguntaEjemplo()).append(&quot; =&gt; &quot;).append(bc.getRespuesta())</span>
+<span class="nc" id="L141">                    .append(&quot;\n&quot;);</span>
+<span class="nc" id="L142">        }</span>
+
+<span class="fc bfc" id="L144" title="All 2 branches covered.">        if (tieneIntencionDisponibilidad(textoUsuario)) {</span>
+<span class="fc" id="L145">            List&lt;LibroSugerenciaDTO&gt; sugerencias = libroService.sugerir(textoUsuario);</span>
+<span class="fc" id="L146">            sb.append(&quot;\n### Disponibilidad real de libros (única fuente veraz):\n&quot;);</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">            if (sugerencias.isEmpty()) {</span>
+<span class="fc" id="L148">                sb.append(&quot;(sin coincidencias en el catálogo para esta búsqueda)\n&quot;);</span>
+            }
+<span class="fc bfc" id="L150" title="All 2 branches covered.">            for (LibroSugerenciaDTO s : sugerencias) {</span>
+<span class="fc" id="L151">                sb.append(&quot;- &quot;).append(s.titulo())</span>
+<span class="fc" id="L152">                        .append(&quot; [id=&quot;).append(s.id())</span>
+<span class="fc" id="L153">                        .append(&quot;, disponible=&quot;).append(s.disponible()).append(&quot;]\n&quot;);</span>
+<span class="fc" id="L154">            }</span>
+        }
+
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">        if (tieneIntencionReserva(textoUsuario)) {</span>
+<span class="nc" id="L158">            sb.append(&quot;\n### Si el usuario pide reservar o apartar un libro: NO ejecutes la reserva. &quot;)</span>
+<span class="nc" id="L159">                    .append(&quot;Indícale que confirme el título exacto y que puede reservar desde el &quot;)</span>
+<span class="nc" id="L160">                    .append(&quot;catálogo o en ventanilla. Pide confirmación antes de dar por hecho nada.\n&quot;);</span>
+        }
+<span class="fc" id="L162">        return sb.toString();</span>
+    }
+
+    private boolean tieneIntencionDisponibilidad(String texto) {
+<span class="fc" id="L166">        String t = texto.toLowerCase(Locale.ROOT);</span>
+<span class="fc" id="L167">        return PALABRAS_DISPONIBILIDAD.stream().anyMatch(t::contains);</span>
+    }
+
+    private boolean tieneIntencionReserva(String texto) {
+<span class="fc" id="L171">        String t = texto.toLowerCase(Locale.ROOT);</span>
+<span class="fc" id="L172">        return PALABRAS_RESERVA.stream().anyMatch(t::contains);</span>
+    }
+
+    private SesionChat resolverSesion(UUID sesionId, Long usuarioId) {
+<span class="fc bfc" id="L176" title="All 2 branches covered.">        if (sesionId == null) {</span>
+<span class="fc" id="L177">            OffsetDateTime ahora = OffsetDateTime.now();</span>
+<span class="fc" id="L178">            SesionChat nueva = new SesionChat();</span>
+<span class="fc" id="L179">            nueva.setUsuarioId(usuarioId);</span>
+<span class="fc" id="L180">            nueva.setCreadoEn(ahora);</span>
+<span class="fc" id="L181">            nueva.setUltimaActividad(ahora);</span>
+<span class="fc" id="L182">            return sesionChatRepo.save(nueva);</span>
+        }
+<span class="fc" id="L184">        return validarPropiedadSesion(sesionId, usuarioId);</span>
+    }
+
+    private SesionChat validarPropiedadSesion(UUID sesionId, Long usuarioId) {
+<span class="fc" id="L188">        SesionChat sesion = sesionChatRepo.findById(sesionId)</span>
+<span class="pc" id="L189">                .orElseThrow(() -&gt; new SesionChatNoEncontradaException(</span>
+                        &quot;Sesión de chat no encontrada: &quot; + sesionId));
+        // Un LECTOR solo puede escribir/leer en sus propias sesiones. Mismo
+        // criterio de no filtrar existencia que el resto del repo: una sesión
+        // ajena se reporta igual que una inexistente (404 genérico).
+<span class="fc bfc" id="L194" title="All 2 branches covered.">        if (!sesion.getUsuarioId().equals(usuarioId)) {</span>
+<span class="fc" id="L195">            throw new SesionChatNoEncontradaException(</span>
+                    &quot;Sesión de chat no encontrada: &quot; + sesionId);
+        }
+<span class="fc" id="L198">        return sesion;</span>
+    }
+
+    private Long resolverIdPorCorreo(String correo) {
+<span class="fc" id="L202">        Usuario usuario = usuarioRepo.findByCorreo(correo)</span>
+<span class="pc" id="L203">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo));</span>
+<span class="fc" id="L204">        return usuario.getId();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

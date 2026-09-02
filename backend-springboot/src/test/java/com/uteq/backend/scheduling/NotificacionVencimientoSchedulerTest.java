@@ -4,13 +4,13 @@ import com.uteq.backend.entity.EstadoPrestamo;
 import com.uteq.backend.entity.Prestamo;
 import com.uteq.backend.repository.EstadoPrestamoRepository;
 import com.uteq.backend.repository.PrestamoRepository;
+import com.uteq.backend.service.ConfiguracionSistemaService;
 import com.uteq.backend.service.NotificacionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -30,14 +30,15 @@ class NotificacionVencimientoSchedulerTest {
     @Mock private PrestamoRepository prestamoRepo;
     @Mock private EstadoPrestamoRepository estadoPrestamoRepo;
     @Mock private NotificacionService notificacionService;
+    @Mock private ConfiguracionSistemaService configuracionSistemaService;
 
     private NotificacionVencimientoScheduler scheduler;
 
     @BeforeEach
     void setUp() {
-        scheduler = new NotificacionVencimientoScheduler(prestamoRepo, estadoPrestamoRepo, notificacionService);
-        ReflectionTestUtils.setField(scheduler, "minutosAnticipacion", 15);
+        scheduler = new NotificacionVencimientoScheduler(prestamoRepo, estadoPrestamoRepo, notificacionService, configuracionSistemaService);
 
+        given(configuracionSistemaService.obtenerValorEntero("dias_anticipacion_vencimiento")).willReturn(1);
         given(estadoPrestamoRepo.findByNombre("ACTIVO")).willReturn(Optional.of(estado(1, "ACTIVO")));
         given(estadoPrestamoRepo.findByNombre("RENOVADO")).willReturn(Optional.of(estado(2, "RENOVADO")));
     }

@@ -10,6 +10,8 @@ export interface Libro {
   portadaNombre: string;
   portadaTipo: string;
   anioPublicacion: number;
+  numeroPaginas?: number | null;
+  precioBase?: number | null;
   editorialId: number;
   editorial: string;
   idiomaId: number;
@@ -28,6 +30,8 @@ export interface LibroRequest {
   titulo: string;
   isbn: string;
   anioPublicacion: number;
+  numeroPaginas?: number | null;
+  precioBase?: number | null;
   resumen?: string;
   ubicacionFisica?: string;
   portadaUrl?: string;
@@ -56,4 +60,6 @@ export interface LibroIsbnLookup {
   resumen: string;
   anioPublicacion: number | null;
   portadaDisponible: boolean;
+  editorial: string | null;
+  numeroPaginas: number | null;
 }

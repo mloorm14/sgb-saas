@@ -37,6 +37,8 @@ public class NotificacionService {
     private static final String TIPO_VENCIMIENTO = "VENCIMIENTO";
     private static final String TIPO_MULTA = "MULTA";
     private static final String TIPO_RESERVA_CADUCADA = "RESERVA_CADUCADA";
+    private static final String TIPO_COMPROBANTE_PAGO = "COMPROBANTE_PAGO";
+    private static final String TIPO_DISPONIBLE = "DISPONIBLE";
     private static final String ROL_LECTOR = "LECTOR";
     private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado: ";
     private static final String TIPO_NO_ENCONTRADO = "Catalogo tipos_notificacion sin fila '";
@@ -117,11 +119,93 @@ public class NotificacionService {
         return notificacionRepo.findByUsuarioId(usuarioId, pageable).map(this::toDTO);
     }
 
+    /**
+     * Envía comprobante de pago de multa por correo al usuario dueño.
+     * Incluye formato profesional: nombre del sistema, fecha/hora, datos
+     * del usuario, detalle del pago con monto pagado y saldo.
+     */
+    @Transactional
+    public void notificarComprobantePago(Long usuarioId, Long multaId, BigDecimal montoPagado) {
+        Usuario usuario = usuarioRepo.findById(usuarioId)
+                .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
+
+        String asunto = "Comprobante de pago de multa - SGB";
+        String fechaHora = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd 'de' MMMM 'de' yyyy, HH:mm:ss"));
+
+        String html = "<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;\">"
+                + "<div style=\"background:#1a237e;color:white;padding:24px;text-align:center;\">"
+                + "<h1 style=\"margin:0;font-size:22px;\">Sistema de Gestion Bibliotecaria</h1>"
+                + "<p style=\"margin:8px 0 0;font-size:14px;opacity:0.9;\">Comprobante de Pago de Multa</p>"
+                + "</div>"
+                + "<div style=\"padding:24px;\">"
+                + "<p style=\"color:#555;font-size:13px;margin:0 0 16px;\">Fecha: <strong>" + fechaHora + "</strong></p>"
+                + "<p style=\"color:#555;font-size:13px;margin:0 0 4px;\">Cliente: <strong>"
+                + usuario.getNombre() + " " + usuario.getApellido() + "</strong></p>"
+                + "<p style=\"color:#555;font-size:13px;margin:0 0 20px;\">" + usuario.getCorreo() + "</p>"
+                + "<hr style=\"border:none;border-top:1px solid #e0e0e0;margin:0 0 20px;\">"
+                + "<table style=\"width:100%;font-size:14px;\">"
+                + "<tr><td style=\"padding:6px 0;color:#555;\">Multa #</td><td style=\"padding:6px 0;text-align:right;font-weight:bold;\">" + multaId + "</td></tr>"
+                + "<tr><td style=\"padding:6px 0;color:#555;\">Monto pagado</td><td style=\"padding:6px 0;text-align:right;font-weight:bold;color:#1565c0;\">$" + montoPagado + "</td></tr>"
+                + "</table>"
+                + "<div style=\"background:#e8f5e9;border-radius:8px;padding:16px;text-align:center;margin-top:20px;\">"
+                + "<p style=\"margin:0;color:#2e7d32;font-size:13px;\">Estado del pago</p>"
+                + "<p style=\"margin:4px 0 0;color:#1b5e20;font-size:18px;font-weight:bold;\">REGISTRADO</p>"
+                + "</div>"
+                + "</div>"
+                + "<div style=\"background:#f5f5f5;padding:16px;text-align:center;font-size:11px;color:#999;\">"
+                + "Sistema de Gestion Bibliotecaria &copy; " + java.time.Year.now().getValue()
+                + "</div>"
+                + "</div>";
+
+        crearYEnviar(usuarioId, null, idDelTipo(TIPO_COMPROBANTE_PAGO), html, asunto);
+    }
+
+    @Transactional
+    public void notificarLibroDisponible(Long usuarioId, Long libroId, String titulo) {
+        String mensaje = "El libro \"" + titulo + "\" esta disponible ahora — reservalo antes que otros.";
+        Integer tipoId = idDelTipo(TIPO_DISPONIBLE);
+        // Notificacion manual: si permite envio, se intenta correo
+        crearYEnviarDisponible(usuarioId, null, tipoId, mensaje, "Libro disponible");
+    }
+
+    private void crearYEnviarDisponible(Long usuarioId, Long prestamoId, Integer tipoNotificacionId, String mensaje, String asunto) {
+        Usuario usuario = usuarioRepo.findById(usuarioId)
+                .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
+        String cuerpoHtml = mensaje.startsWith("<") ? mensaje : "<p>" + mensaje + "</p>";
+        boolean enviado = false;
+        String error = null;
+        try {
+            enviado = emailService.enviarCorreo(usuario.getCorreo(), asunto, cuerpoHtml);
+        } catch (Exception e) {
+            error = e.getMessage();
+        }
+        Notificacion notificacion = new Notificacion();
+        notificacion.setUsuarioId(usuarioId);
+        notificacion.setPrestamoId(prestamoId);
+        notificacion.setTipoNotificacionId(tipoNotificacionId);
+        notificacion.setMensaje(mensaje);
+        notificacion.setEnviadoOk(enviado);
+        notificacion.setErrorEnvio(enviado ? null : (error != null ? error : "Fallo envio correo disponible"));
+        notificacion.setFechaEnvio(enviado ? OffsetDateTime.now() : null);
+        notificacion.setCreadoEn(OffsetDateTime.now());
+        notificacionRepo.save(notificacion);
+    }
+
+    // 2026-08-30: correos automáticos DESACTIVADOS por volumen en producción
+    // (~100k registros, ~1k+ reservas caducadas) — SMTP generaba 1k+ intentos
+    // por corrida (ReservacionScheduler cada 15 min + NotificacionVencimientoScheduler
+    // cada 60s) con Authentication failed en EmailService. Se mantiene solo el
+    // correo manual de verificación de cuenta (VerificacionCorreoService).
+    // La notificación in-app (tabla notificaciones) sigue creándose.
+    // Para DISPONIBLE (manual Notificarme) se usa crearYEnviarDisponible con email activo.
     private void crearYEnviar(Long usuarioId, Long prestamoId, Integer tipoNotificacionId, String mensaje, String asunto) {
         Usuario usuario = usuarioRepo.findById(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
 
-        boolean enviado = emailService.enviarCorreo(usuario.getCorreo(), asunto, "<p>" + mensaje + "</p>");
+        String cuerpoHtml = mensaje.startsWith("<") ? mensaje : "<p>" + mensaje + "</p>";
+        // DESACTIVADO: boolean enviado = emailService.enviarCorreo(usuario.getCorreo(), asunto, cuerpoHtml);
+        boolean enviado = false;
 
         Notificacion notificacion = new Notificacion();
         notificacion.setUsuarioId(usuarioId);
@@ -129,7 +213,7 @@ public class NotificacionService {
         notificacion.setTipoNotificacionId(tipoNotificacionId);
         notificacion.setMensaje(mensaje);
         notificacion.setEnviadoOk(enviado);
-        notificacion.setErrorEnvio(enviado ? null : "Fallo al enviar el correo (ver logs de EmailService)");
+        notificacion.setErrorEnvio(enviado ? null : "Correo automático desactivado (solo verificación activa) - ver NotificacionService.crearYEnviar");
         notificacion.setFechaEnvio(enviado ? OffsetDateTime.now() : null);
         notificacion.setCreadoEn(OffsetDateTime.now());
         notificacionRepo.save(notificacion);

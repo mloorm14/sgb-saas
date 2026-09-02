@@ -59,7 +59,7 @@
  *     normalizado (roles/usuario_roles) en la Tercera Entrega.
  *   - Se agrega el contenedor Redis (blacklist de JWT + cache del
  *     catálogo), ausente del diagrama de contenedores de Entrega 1A.
- *   - Gemini 2.0 Flash API y Google Books API, presentes en el diseño
+ *   - Gemini 3.5 Flash Lite API y Google Books API, presentes en el diseño
  *     original de Entrega 1A como sistemas externos, se RETIRAN de este
  *     diagrama: no existe ninguna integración con ellos en el código real
  *     del backend ni del frontend hoy (verificado por búsqueda en el
@@ -126,7 +126,7 @@ workspace "SGB-SaaS" "Sistema de Gestión Bibliotecaria Web — plataforma de ca
                 chatbotRateLimiter = component "ChatbotRateLimiter" "Límite de mensajes al chatbot por usuario en la ventana vigente." "Spring Component"
 
                 // Integraciones externas.
-                geminiClient = component "GeminiClient" "Cliente HTTP hacia la API REST externa de Gemini 2.0 Flash: reintento simple ante 429/timeout/5xx, sin exponer la URL con la API key en logs." "Spring Component"
+                geminiClient = component "GeminiClient" "Cliente HTTP hacia la API REST externa de Gemini 3.5 Flash Lite: reintento simple ante 429/timeout/5xx, sin exponer la URL con la API key en logs." "Spring Component"
             }
 
             postgres = container "PostgreSQL" "Usuarios, roles/permisos, catálogo, préstamos, reservas, multas y bitácora de auditoría (26 tablas)." "PostgreSQL 16" "Database"

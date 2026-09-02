@@ -6,7 +6,9 @@ import com.uteq.backend.entity.EstadoUsuario;
 import com.uteq.backend.entity.Rol;
 import com.uteq.backend.entity.Usuario;
 import com.uteq.backend.repository.BitacoraAuditoriaRepository;
+import com.uteq.backend.repository.EstadoMultaRepository;
 import com.uteq.backend.repository.EstadoUsuarioRepository;
+import com.uteq.backend.repository.MultaRepository;
 import com.uteq.backend.repository.RolRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -50,23 +52,41 @@ public class UsuarioAdminService {
     private final RolRepository rolRepo;
     private final EstadoUsuarioRepository estadoUsuarioRepo;
     private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
+    private final MultaRepository multaRepo;
+    private final EstadoMultaRepository estadoMultaRepo;
 
     public UsuarioAdminService(UsuarioRepository usuarioRepo,
                                 RolRepository rolRepo,
                                 EstadoUsuarioRepository estadoUsuarioRepo,
-                                BitacoraAuditoriaRepository bitacoraAuditoriaRepo) {
+                                BitacoraAuditoriaRepository bitacoraAuditoriaRepo,
+                                MultaRepository multaRepo,
+                                EstadoMultaRepository estadoMultaRepo) {
         this.usuarioRepo = usuarioRepo;
         this.rolRepo = rolRepo;
         this.estadoUsuarioRepo = estadoUsuarioRepo;
         this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
+        this.multaRepo = multaRepo;
+        this.estadoMultaRepo = estadoMultaRepo;
     }
 
     @Transactional(readOnly = true)
     public Page<UsuarioListadoResponseDTO> listar(String filtro, Pageable pageable) {
         String texto = filtro == null ? "" : filtro.trim();
-        return usuarioRepo
-                .findByNombreContainingIgnoreCaseOrCorreoContainingIgnoreCase(texto, texto, pageable)
-                .map(this::toListadoDTO);
+        Page<Usuario> pagina = usuarioRepo
+                .findByNombreContainingIgnoreCaseOrCorreoContainingIgnoreCase(texto, texto, pageable);
+
+        // Batch query: una sola consulta para saber qué usuarios de la
+        // página tienen multas pendientes (evita N+1).
+        List<Long> ids = pagina.getContent().stream().map(Usuario::getId).toList();
+        Integer estadoPendienteId = estadoMultaRepo.findByNombre("PENDIENTE")
+                .map(e -> e.getId())
+                .orElse(null);
+        Set<Long> idsConMultas = Set.copyOf(
+                (estadoPendienteId != null && !ids.isEmpty())
+                        ? multaRepo.findUsuarioIdsConMultasPendientes(ids, estadoPendienteId)
+                        : List.of());
+
+        return pagina.map(u -> toListadoDTO(u, idsConMultas.contains(u.getId())));
     }
 
     /**
@@ -147,11 +167,10 @@ public class UsuarioAdminService {
         bitacoraAuditoriaRepo.save(evento);
     }
 
-    private UsuarioListadoResponseDTO toListadoDTO(Usuario usuario) {
+    private UsuarioListadoResponseDTO toListadoDTO(Usuario usuario, boolean multasPendientes) {
         List<String> roles = usuario.getRoles().stream()
                 .map(Rol::getNombre)
                 .toList();
-        boolean multasPendientes = "BLOQUEADO_POR_MULTA".equals(usuario.getEstado().getNombre());
         return new UsuarioListadoResponseDTO(
                 usuario.getId(),
                 usuario.getNombre(),

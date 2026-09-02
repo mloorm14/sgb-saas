@@ -1,0 +1,60 @@
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
+
+  <div class="mb-lg">
+    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">
+      Bienvenido, Bibliotecario
+    </h1>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">
+      Reservaciones que vencen hoy
+    </p>
+  </div>
+
+  <!-- Reservaciones de hoy -->
+  <div class="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm p-lg">
+    <div class="flex items-center justify-between mb-md">
+      <h2 class="font-headline-md text-headline-md text-on-background flex items-center gap-xs">
+        <span class="material-symbols-outlined text-[22px] text-primary">event_available</span>
+        Reservaciones de hoy
+      </h2>
+      @if (!cargandoReservacionesHoy && !errorReservacionesHoy) {
+        <span class="font-label-sm text-[11px] text-on-surface-variant px-sm py-1 rounded-full bg-surface-container-low">
+          {{ reservacionesHoy.length }} pendiente{{ reservacionesHoy.length === 1 ? '' : 's' }}
+        </span>
+      }
+    </div>
+
+    @if (cargandoReservacionesHoy) {
+      <div class="space-y-sm">
+        @for (i of [1,2,3]; track i) {
+          <div class="h-12 bg-surface-container-high rounded animate-pulse"></div>
+        }
+      </div>
+    } @else if (errorReservacionesHoy) {
+      <p class="font-body-sm text-body-sm text-on-surface-variant text-center py-md">{{ errorReservacionesHoy }}</p>
+    } @else if (reservacionesHoy.length === 0) {
+      <p class="font-body-sm text-body-sm text-on-surface-variant text-center py-md">No hay reservaciones para hoy</p>
+    } @else {
+      <div class="space-y-sm">
+        @for (r of reservacionesHoy; track r.reservacionId) {
+          <div class="flex items-center gap-md p-sm rounded-lg border border-outline-variant">
+            <div class="flex-1 min-w-0">
+              <p class="font-body-sm text-[13px] text-on-surface truncate">{{ r.libroTitulo }}</p>
+              <p class="font-label-sm text-[11px] text-on-surface-variant truncate">{{ r.usuarioNombre }} · {{ r.usuarioCorreo }}</p>
+            </div>
+            <span class="font-label-sm text-[11px] px-sm py-0.5 rounded-full shrink-0"
+              [class]="r.estadoNombre === 'LISTA_PARA_RETIRO' ? 'bg-secondary-container/30 text-secondary' : 'bg-warning/20 text-tertiary'">
+              {{ r.estadoNombre === 'LISTA_PARA_RETIRO' ? 'Lista para retiro' : 'Pendiente' }}
+            </span>
+            @if (r.estadoNombre === 'PENDIENTE') {
+              <button (click)="marcarListaParaRetiro(r.reservacionId)"
+                class="shrink-0 h-8 px-sm rounded-lg bg-primary text-on-primary font-label-sm text-[12px] hover:opacity-90 transition-opacity">
+                Marcar lista
+              </button>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+</main>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SGB · Dashboard Bibliotecario</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          "secondary-container": "#76f4e0","surface": "#f8f9ff","surface-container-highest": "#d5e3fc",
+          "on-error": "#ffffff","error-container": "#ffdad6","surface-container": "#e6eeff",
+          "on-secondary-fixed": "#00201c","on-secondary-container": "#006f63","surface-bright": "#f8f9ff",
+          "tertiary": "#503a00","surface-variant": "#d5e3fc","outline-variant": "#c4c6d5",
+          "inverse-primary": "#b4c5ff","primary-container": "#1e4db7","on-tertiary-fixed-variant": "#5b4300",
+          "on-primary-fixed-variant": "#003ea8","inverse-on-surface": "#eaf1ff","surface-dim": "#ccdbf3",
+          "error": "#ba1a1a","on-tertiary-fixed": "#261a00","primary-fixed-dim": "#b4c5ff",
+          "on-tertiary": "#ffffff","on-surface-variant": "#434653","secondary-fixed": "#79f7e3",
+          "background": "#f8f9ff","on-background": "#0d1c2e","tertiary-fixed": "#ffdf9e",
+          "on-surface": "#0d1c2e","primary-fixed": "#dbe1ff","surface-container-lowest": "#ffffff",
+          "on-tertiary-container": "#fec004","surface-container-high": "#dce9ff","surface-container-low": "#eff4ff",
+          "tertiary-container": "#6c5000","surface-tint": "#2c57c1","primary": "#003694",
+          "on-secondary": "#ffffff","on-primary-fixed": "#00174b","outline": "#747684",
+          "on-secondary-fixed-variant": "#005047","secondary": "#006b5f","tertiary-fixed-dim": "#fabd00",
+          "secondary-fixed-dim": "#59dbc7","on-primary-container": "#b8c8ff","on-error-container": "#93000a",
+          "on-primary": "#ffffff","inverse-surface": "#233144",
+          "success": "#1d9e75","warning": "#fec004"
+        },
+        borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" },
+        spacing: { gutter: "24px", xl: "40px", lg: "24px", md: "16px", "container-max": "1280px", sm: "8px", xs: "4px", "margin-mobile": "16px", base: "4px" },
+        fontFamily: {
+          "headline-lg": ["Plus Jakarta Sans"], "body-md": ["Inter"], "label-md": ["Inter"],
+          "headline-lg-mobile": ["Plus Jakarta Sans"], "headline-xl": ["Plus Jakarta Sans"],
+          "label-sm": ["Inter"], "body-lg": ["Inter"], "body-sm": ["Inter"], "headline-md": ["Plus Jakarta Sans"]
+        },
+        fontSize: {
+          "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+          "label-md": ["14px", { lineHeight: "20px", letterSpacing: "0.05em", fontWeight: "600" }],
+          "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+          "headline-xl": ["40px", { lineHeight: "48px", letterSpacing: "-0.02em", fontWeight: "700" }],
+          "label-sm": ["12px", { lineHeight: "16px", fontWeight: "500" }],
+          "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+          "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+          "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Inter', sans-serif; background:#f8f9ff; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align:middle; }
+  .kpi-card { background: linear-gradient(135deg, rgba(0,54,148,0.04), rgba(0,54,148,0)); }
+</style>
+</head>
+<body>
+
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
+
+  <div class="mb-lg">
+    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Bienvenido, Bibliotecario</h1>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Resumen del estado actual de la biblioteca — datos en vivo</p>
+  </div>
+
+  <!-- ═══ KPIs (derivados de los mismos datos reales de los 2 reportes, sin inventar campos) ═══ -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-md mb-lg">
+
+    <div class="kpi-card rounded-xl border border-outline-variant p-lg">
+      <div class="flex items-center justify-between mb-sm">
+        <span class="material-symbols-outlined text-[26px] text-primary">star</span>
+      </div>
+      <p class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider mb-1">Libro más prestado</p>
+      <p class="font-headline-md text-[17px] text-on-background leading-tight truncate">Clean Code</p>
+      <p class="font-body-sm text-[12px] text-on-surface-variant mt-1">14 préstamos</p>
+    </div>
+
+    <div class="kpi-card rounded-xl border border-outline-variant p-lg">
+      <div class="flex items-center justify-between mb-sm">
+        <span class="material-symbols-outlined text-[26px] text-secondary">menu_book</span>
+      </div>
+      <p class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider mb-1">Préstamos (Top 5)</p>
+      <p class="font-headline-lg text-[28px] text-on-background leading-tight">48</p>
+      <p class="font-body-sm text-[12px] text-on-surface-variant mt-1">últimos 30 días</p>
+    </div>
+
+    <div class="rounded-xl border border-outline-variant bg-white p-lg">
+      <div class="flex items-center justify-between mb-sm">
+        <span class="material-symbols-outlined text-[26px] text-warning">group</span>
+      </div>
+      <p class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider mb-1">Usuarios en mora</p>
+      <p class="font-headline-lg text-[28px] text-on-background leading-tight">6</p>
+      <p class="font-body-sm text-[12px] text-on-surface-variant mt-1">con multas pendientes</p>
+    </div>
+
+    <div class="rounded-xl border border-outline-variant bg-white p-lg">
+      <div class="flex items-center justify-between mb-sm">
+        <span class="material-symbols-outlined text-[26px] text-error">payments</span>
+      </div>
+      <p class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider mb-1">Monto adeudado</p>
+      <p class="font-headline-lg text-[28px] text-error leading-tight">$48.00</p>
+      <p class="font-body-sm text-[12px] text-on-surface-variant mt-1">pendiente de cobro</p>
+    </div>
+  </div>
+
+  <!-- ═══ Fila de gráficas ═══ -->
+  <div class="grid lg:grid-cols-5 gap-lg mb-lg">
+
+    <!-- Gráfica de barras: Top 5 libros más prestados (GET /prestamos/reportes/libros-mas-prestados) -->
+    <div class="lg:col-span-3 rounded-xl border border-outline-variant bg-white p-lg">
+      <div class="flex items-center justify-between mb-lg">
+        <h2 class="font-headline-md text-headline-md text-on-background">Libros más prestados</h2>
+        <span class="font-label-sm text-[11px] text-on-surface-variant px-sm py-1 rounded-full bg-surface-container-low">Top 5</span>
+      </div>
+
+      <svg viewBox="0 0 500 220" class="w-full h-auto" role="img" aria-label="Gráfico de barras de libros más prestados">
+        <!-- barra 1 -->
+        <text x="0" y="16" class="fill-on-surface" font-size="12" font-family="Inter">Clean Code</text>
+        <rect x="0" y="22" width="460" height="20" rx="4" fill="#003694"/>
+        <text x="466" y="37" font-size="12" font-family="Inter" font-weight="600" fill="#003694">14</text>
+
+        <text x="0" y="60" class="fill-on-surface" font-size="12" font-family="Inter">Estructuras de Datos y Algoritmos</text>
+        <rect x="0" y="66" width="361" height="20" rx="4" fill="#2c57c1"/>
+        <text x="367" y="81" font-size="12" font-family="Inter" font-weight="600" fill="#2c57c1">11</text>
+
+        <text x="0" y="104" class="fill-on-surface" font-size="12" font-family="Inter">Refactoring</text>
+        <rect x="0" y="110" width="295" height="20" rx="4" fill="#1e4db7"/>
+        <text x="301" y="125" font-size="12" font-family="Inter" font-weight="600" fill="#1e4db7">9</text>
+
+        <text x="0" y="148" class="fill-on-surface" font-size="12" font-family="Inter">Clean Architecture</text>
+        <rect x="0" y="154" width="230" height="20" rx="4" fill="#59dbc7"/>
+        <text x="236" y="169" font-size="12" font-family="Inter" font-weight="600" fill="#006b5f">7</text>
+
+        <text x="0" y="192" class="fill-on-surface" font-size="12" font-family="Inter">Design Patterns</text>
+        <rect x="0" y="198" width="230" height="20" rx="4" fill="#76f4e0"/>
+        <text x="236" y="213" font-size="12" font-family="Inter" font-weight="600" fill="#006b5f">7</text>
+      </svg>
+
+      <a href="#" class="inline-flex items-center gap-xs mt-md font-label-sm text-label-sm text-primary hover:underline">
+        Ver reporte completo <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+      </a>
+    </div>
+
+    <!-- Donut: distribucion del monto adeudado por usuario en mora (a partir de
+         ReporteMorosidadResponseDTO.montoTotalAdeudado de cada fila real) -->
+    <div class="lg:col-span-2 rounded-xl border border-outline-variant bg-white p-lg flex flex-col">
+      <h2 class="font-headline-md text-headline-md text-on-background mb-md">Deuda por usuario</h2>
+
+      <div class="flex items-center justify-center flex-1">
+        <svg viewBox="0 0 120 120" class="w-40 h-40 -rotate-90">
+          <circle cx="60" cy="60" r="50" fill="none" stroke="#e6eeff" stroke-width="16"/>
+          <!-- circunferencia = 2*pi*50 = ~314. Segmentos proporcionales a montos reales de ejemplo -->
+          <circle cx="60" cy="60" r="50" fill="none" stroke="#ba1a1a" stroke-width="16"
+            stroke-dasharray="98 314" stroke-dashoffset="0" stroke-linecap="round"/>
+          <circle cx="60" cy="60" r="50" fill="none" stroke="#fec004" stroke-width="16"
+            stroke-dasharray="63 314" stroke-dashoffset="-98" stroke-linecap="round"/>
+          <circle cx="60" cy="60" r="50" fill="none" stroke="#2c57c1" stroke-width="16"
+            stroke-dasharray="153 314" stroke-dashoffset="-161" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <div class="space-y-xs mt-md">
+        <div class="flex items-center justify-between">
+          <span class="flex items-center gap-xs font-body-sm text-[12px] text-on-surface"><span class="w-2.5 h-2.5 rounded-full bg-error inline-block"></span> maria.lopez&#64;uteq.edu.ec</span>
+          <span class="font-label-sm text-[12px] font-semibold text-on-surface">$15.00</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="flex items-center gap-xs font-body-sm text-[12px] text-on-surface"><span class="w-2.5 h-2.5 rounded-full bg-warning inline-block"></span> jose.ramirez&#64;uteq.edu.ec</span>
+          <span class="font-label-sm text-[12px] font-semibold text-on-surface">$9.50</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="flex items-center gap-xs font-body-sm text-[12px] text-on-surface"><span class="w-2.5 h-2.5 rounded-full bg-primary inline-block"></span> otros (4)</span>
+          <span class="font-label-sm text-[12px] font-semibold text-on-surface">$23.50</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Tabla: usuarios en mora, con severidad por dias de atraso promedio ═══ -->
+  <div class="rounded-xl border border-outline-variant bg-white p-lg">
+    <h2 class="font-headline-md text-headline-md text-on-background mb-md">Usuarios en mora</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left">
+        <thead>
+          <tr class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider border-b border-outline-variant">
+            <th class="pb-sm pr-md">Usuario</th>
+            <th class="pb-sm pr-md">Multas pendientes</th>
+            <th class="pb-sm pr-md">Días de atraso (prom.)</th>
+            <th class="pb-sm">Monto adeudado</th>
+          </tr>
+        </thead>
+        <tbody class="font-body-sm text-body-sm text-on-surface">
+          <tr class="border-b border-outline-variant/50">
+            <td class="py-sm pr-md">
+              <div class="flex items-center gap-sm">
+                <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[12px]">ML</div>
+                <div>
+                  <p class="font-medium">María López</p>
+                  <p class="font-body-sm text-[11px] text-on-surface-variant">maria.lopez&#64;uteq.edu.ec</p>
+                </div>
+              </div>
+            </td>
+            <td class="py-sm pr-md">2</td>
+            <td class="py-sm pr-md">
+              <span class="inline-flex items-center px-sm py-1 rounded-full bg-error-container text-on-error-container font-label-sm text-[11px] font-semibold">18 días</span>
+            </td>
+            <td class="py-sm font-semibold text-error">$15.00</td>
+          </tr>
+          <tr class="border-b border-outline-variant/50">
+            <td class="py-sm pr-md">
+              <div class="flex items-center gap-sm">
+                <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[12px]">JR</div>
+                <div>
+                  <p class="font-medium">José Ramírez</p>
+                  <p class="font-body-sm text-[11px] text-on-surface-variant">jose.ramirez&#64;uteq.edu.ec</p>
+                </div>
+              </div>
+            </td>
+            <td class="py-sm pr-md">1</td>
+            <td class="py-sm pr-md">
+              <span class="inline-flex items-center px-sm py-1 rounded-full text-tertiary font-label-sm text-[11px] font-semibold" style="background:#fff3cd;">9 días</span>
+            </td>
+            <td class="py-sm font-semibold text-error">$9.50</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <a href="#" class="inline-flex items-center gap-xs mt-md font-label-sm text-label-sm text-primary hover:underline">
+      Ver reporte de morosidad completo <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+    </a>
+  </div>
+
+</main>
+</body>
+</html>

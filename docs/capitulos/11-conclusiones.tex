@@ -15,10 +15,12 @@ declarada -- el umbral se cumple, la atribución causal exacta queda
 matizada.
 
 \textbf{RQ2 (seguridad).} De 6 controles OWASP auditados, 4 presentaron
-un hallazgo real corregido dentro del mismo ciclo ($66{,}7$\,\%), 1 se
-verificó limpio sin hallazgo, y 1 quedó parcialmente cerrado a la espera
-de un despliegue público con TLS real -- la auditoría encontró y forzó a
-corregir defectos concretos, no fue un ejercicio cosmético.
+un hallazgo real corregido dentro del mismo ciclo ($66{,}7$\,\%), y 2 se
+verificaron sin hallazgo real de código (A03 desde la corrida original;
+A02 tras completarse la verificación de TLS/HSTS contra el despliegue
+público real, 18-ago-2026) -- los 6 controles quedan con resultado
+cerrado; la auditoría encontró y forzó a corregir defectos concretos, no
+fue un ejercicio cosmético.
 
 \textbf{RQ3 (usabilidad).} Sin respuesta todavía: $N=0$ de los
 $N\geq15$ participantes exigidos por la guía. Queda como trabajo en
@@ -76,8 +78,7 @@ reunida, se sostienen así:
 \section{Estado del proyecto al cierre de esta entrega}
 \label{sec:concl-estado}
 
-SGB-SaaS cierra esta Entrega Final como el software etiquetado
-\texttt{v1.0.0} (portada de este documento), producto de 8 ramas de
+SGB-SaaS cierra esta Entrega Final como el software (portada de este documento; sin tag v1.0.0 todavía), producto de 8 ramas de
 módulos de dominio mergeadas a \texttt{main} durante el ciclo de esta
 entrega (configuración paramétrica, préstamos avanzado, notificaciones y
 verificación, catálogo avanzado, panel de administración, seguridad de
@@ -87,10 +88,9 @@ los requisitos \texttt{Must} verificados
 (\autoref{cap:ingenieria-requisitos}) y $82{,}97$\,\% de cobertura de
 línea en 247 pruebas automatizadas del backend
 (\autoref{sec:res-cobertura}). De los cinco bloques de evaluación
-empírica exigidos por la guía, dos están completos con umbral cumplido
-(rendimiento, cobertura), dos están parcialmente cerrados con el
-componente faltante explícitamente identificado (seguridad, calidad web),
-y uno -- usabilidad -- no se ha ejecutado todavía
+empírica exigidos por la guía, cuatro están completos con umbral
+cumplido (rendimiento, seguridad, cobertura, calidad web), y uno --
+usabilidad -- no se ha ejecutado todavía
 (\autoref{tab:res-resumen}). El \autoref{cap:trabajo-futuro} deja
 protocolizadas las cinco líneas concretas que cerrarían esos gaps, incluida
 una vulnerabilidad de auto-degradación del rol \texttt{ADMIN} detectada

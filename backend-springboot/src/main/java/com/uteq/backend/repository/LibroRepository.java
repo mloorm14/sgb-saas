@@ -36,6 +36,76 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
 
     Page<Libro> findByAutores_IdAndEstado_Nombre(Long autorId, String estadoNombre, Pageable pageable);
 
+    // Filtros de libros (título/ISBN + categoría + autor + estado)
+    Page<Libro> findByEstadoId(Integer estadoId, Pageable pageable);
+
+    Page<Libro> findByEstadoIdAndStockDisponibleGreaterThan(Integer estadoId, int stock, Pageable pageable);
+
+    Page<Libro> findByEstadoIdAndStockDisponibleEquals(Integer estadoId, int stock, Pageable pageable);
+
+    Page<Libro> findByCategorias_IdAndEstadoId(Integer categoriaId, Integer estadoId, Pageable pageable);
+
+    Page<Libro> findByCategorias_IdAndEstadoIdAndStockDisponibleGreaterThan(Integer categoriaId, Integer estadoId, int stock, Pageable pageable);
+
+    Page<Libro> findByCategorias_IdAndEstadoIdAndStockDisponibleEquals(Integer categoriaId, Integer estadoId, int stock, Pageable pageable);
+
+    Page<Libro> findByAutores_IdAndEstadoId(Long autorId, Integer estadoId, Pageable pageable);
+
+    Page<Libro> findByCategorias_IdAndAutores_IdAndEstadoId(Integer categoriaId, Long autorId, Integer estadoId, Pageable pageable);
+
+    // --- Queries nativas: isbn puede ser bytea o varchar en BD real ---
+    // Todas usan isbn::text para兼容 ambos tipos (bytea y varchar).
+    // Las queries anteriores eran JPQL con LOWER(l.isbn) que fallaba si
+    // isbn es bytea ("function lower(bytea) does not exist").
+
+    // Búsqueda por título O ISBN con estado específico + filtro opcional disponible
+    @Query(value = "SELECT l.* FROM libros l "
+            + "WHERE l.estado_id = :estadoId "
+            + "AND (LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) "
+            + "OR LOWER(l.isbn::text) LIKE LOWER(CONCAT('%', :q, '%')))"
+            + "AND (:disponible IS NULL OR (:disponible = true AND l.stock_disponible > 0) OR (:disponible = false AND l.stock_disponible = 0))",
+            countQuery = "SELECT count(*) FROM libros l "
+            + "WHERE l.estado_id = :estadoId "
+            + "AND (LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) "
+            + "OR LOWER(l.isbn::text) LIKE LOWER(CONCAT('%', :q, '%')))"
+            + "AND (:disponible IS NULL OR (:disponible = true AND l.stock_disponible > 0) OR (:disponible = false AND l.stock_disponible = 0))",
+            nativeQuery = true)
+    Page<Libro> buscarPorTextoOIsbn(@Param("q") String q, @Param("estadoId") Integer estadoId, @Param("disponible") Boolean disponible, Pageable pageable);
+
+    // Búsqueda por título O ISBN + categoría (+ disponible)
+    @Query(value = "SELECT l.* FROM libros l "
+            + "INNER JOIN libro_categorias lc ON lc.libro_id = l.id "
+            + "WHERE l.estado_id = :estadoId "
+            + "AND lc.categoria_id = :categoriaId "
+            + "AND (LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) "
+            + "OR LOWER(l.isbn::text) LIKE LOWER(CONCAT('%', :q, '%')))"
+            + "AND (:disponible IS NULL OR (:disponible = true AND l.stock_disponible > 0) OR (:disponible = false AND l.stock_disponible = 0))",
+            countQuery = "SELECT count(*) FROM libros l "
+            + "INNER JOIN libro_categorias lc ON lc.libro_id = l.id "
+            + "WHERE l.estado_id = :estadoId "
+            + "AND lc.categoria_id = :categoriaId "
+            + "AND (LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) "
+            + "OR LOWER(l.isbn::text) LIKE LOWER(CONCAT('%', :q, '%')))"
+            + "AND (:disponible IS NULL OR (:disponible = true AND l.stock_disponible > 0) OR (:disponible = false AND l.stock_disponible = 0))",
+            nativeQuery = true)
+    Page<Libro> buscarPorTextoOIsbnYCategoria(@Param("q") String q, @Param("categoriaId") Integer categoriaId, @Param("estadoId") Integer estadoId, @Param("disponible") Boolean disponible, Pageable pageable);
+
+    // Búsqueda por título O ISBN + autor
+    @Query(value = "SELECT l.* FROM libros l "
+            + "INNER JOIN libro_autores la ON la.libro_id = l.id "
+            + "WHERE l.estado_id = :estadoId "
+            + "AND la.autor_id = :autorId "
+            + "AND (LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) "
+            + "OR LOWER(l.isbn::text) LIKE LOWER(CONCAT('%', :q, '%')))",
+            countQuery = "SELECT count(*) FROM libros l "
+            + "INNER JOIN libro_autores la ON la.libro_id = l.id "
+            + "WHERE l.estado_id = :estadoId "
+            + "AND la.autor_id = :autorId "
+            + "AND (LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) "
+            + "OR LOWER(l.isbn::text) LIKE LOWER(CONCAT('%', :q, '%')))",
+            nativeQuery = true)
+    Page<Libro> buscarPorTextoOIsbnYAutor(@Param("q") String q, @Param("autorId") Long autorId, @Param("estadoId") Integer estadoId, Pageable pageable);
+
     // Módulo 3 (búsqueda predictiva, RF-09/CU-08): similarity(...) es una
     // función de la extensión pg_trgm (ver
     // database/migrations/V6__busqueda_predictiva.sql), sin equivalente en
@@ -50,4 +120,39 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
             + "ORDER BY similarity(titulo, :p_texto) DESC "
             + "LIMIT 10", nativeQuery = true)
     List<Libro> sugerirPorTitulo(@Param("p_texto") String texto, @Param("p_estado_id") Integer estadoId);
+
+    // buscarPendientes y buscarPorEstados: nativas con isbn::text.
+    // Antes usaban @EntityGraph pero eso no funciona con nativeQuery.
+    // Hibernate crea proxies para las relaciones lazy (editorial, idioma,
+    // estado, categorias, autores) que se resuelven bajo la transacción
+    // @Transactional del service que llama.
+    @Query(value = "SELECT l.* FROM libros l "
+            + "WHERE l.estado_id = :estadoId "
+            + "AND ( :q IS NULL "
+            + "      OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) "
+            + "      OR LOWER(l.isbn::text) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) ) "
+            + "AND ( :anio IS NULL OR l.anio_publicacion = :anio )",
+            countQuery = "SELECT count(*) FROM libros l "
+                    + "WHERE l.estado_id = :estadoId "
+                    + "AND ( :q IS NULL "
+                    + "      OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) "
+                    + "      OR LOWER(l.isbn::text) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) ) "
+                    + "AND ( :anio IS NULL OR l.anio_publicacion = :anio )",
+            nativeQuery = true)
+    Page<Libro> buscarPendientes(@Param("q") String q, @Param("anio") Short anio, @Param("estadoId") Integer estadoId, Pageable pageable);
+
+    @Query(value = "SELECT l.* FROM libros l "
+            + "WHERE l.estado_id IN :estadoIds "
+            + "AND ( :q IS NULL "
+            + "      OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) "
+            + "      OR LOWER(l.isbn::text) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) ) "
+            + "AND ( :anio IS NULL OR l.anio_publicacion = :anio )",
+            countQuery = "SELECT count(*) FROM libros l "
+                    + "WHERE l.estado_id IN :estadoIds "
+                    + "AND ( :q IS NULL "
+                    + "      OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) "
+                    + "      OR LOWER(l.isbn::text) LIKE LOWER(CONCAT('%', CONCAT(:q, '%'))) ) "
+                    + "AND ( :anio IS NULL OR l.anio_publicacion = :anio )",
+            nativeQuery = true)
+    Page<Libro> buscarPorEstados(@Param("estadoIds") List<Integer> estadoIds, @Param("q") String q, @Param("anio") Short anio, Pageable pageable);
 }

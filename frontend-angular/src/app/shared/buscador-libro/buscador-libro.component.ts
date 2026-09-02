@@ -12,6 +12,7 @@ import { LibroSugerencia } from '../../core/models/libro.model';
 // selección (el libroId ya no corresponde). Rama E lo reutilizará en
 // prestamos-gestion para elegir el libro al crear un préstamo.
 @Component({
+  standalone: true,
   selector: 'app-buscador-libro',
   imports: [CommonModule, FormsModule],
   templateUrl: './buscador-libro.component.html'
@@ -21,6 +22,7 @@ export class BuscadorLibroComponent implements OnInit, OnDestroy {
   sugerencias: LibroSugerencia[] = [];
   buscando: boolean = false;
   seleccionado: LibroSugerencia | null = null;
+  indiceActivo: number = -1;
 
   @Output() libroSeleccionado = new EventEmitter<LibroSugerencia | null>();
 
@@ -40,6 +42,7 @@ export class BuscadorLibroComponent implements OnInit, OnDestroy {
   }
 
   onBusquedaChange(): void {
+    this.indiceActivo = -1;
     const texto = this.texto.trim();
     // Si ya había un libro elegido y el texto cambió, la selección queda
     // inválida: se avisa al padre para que descarte el libroId.
@@ -70,10 +73,45 @@ export class BuscadorLibroComponent implements OnInit, OnDestroy {
   }
 
   seleccionar(libro: LibroSugerencia): void {
+    this.indiceActivo = -1;
     this.seleccionado = libro;
     this.texto = libro.titulo;
     this.sugerencias = [];
     this.libroSeleccionado.emit(libro);
+  }
+
+  onKeydown(event: KeyboardEvent): void {
+    if (this.sugerencias.length === 0) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+      }
+      return;
+    }
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        this.indiceActivo = Math.min(this.indiceActivo + 1, this.sugerencias.length - 1);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.indiceActivo = Math.max(this.indiceActivo - 1, -1);
+        break;
+      case 'Enter':
+        event.preventDefault();
+        if (this.indiceActivo >= 0 && this.indiceActivo < this.sugerencias.length) {
+          this.seleccionar(this.sugerencias[this.indiceActivo]);
+        }
+        break;
+      case 'Escape':
+        this.sugerencias = [];
+        this.indiceActivo = -1;
+        break;
+      case 'Tab':
+        if (this.indiceActivo >= 0 && this.indiceActivo < this.sugerencias.length) {
+          this.seleccionar(this.sugerencias[this.indiceActivo]);
+        }
+        break;
+    }
   }
 
   // Lo llama el padre tras guardar, para dejar el buscador listo.

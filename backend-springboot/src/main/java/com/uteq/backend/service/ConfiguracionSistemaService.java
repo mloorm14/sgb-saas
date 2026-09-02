@@ -1,13 +1,16 @@
 package com.uteq.backend.service;
 
 import com.uteq.backend.dto.ConfiguracionSistemaResponseDTO;
+import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.ConfiguracionSistema;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.ConfiguracionSistemaRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,12 +34,16 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ConfiguracionSistemaService {
 
     private static final String CLAVE_NO_ENCONTRADA = "Clave de configuración no encontrada: ";
+    private static final String TABLA_CONFIG = "configuracion_sistema";
 
     private final ConfiguracionSistemaRepository repo;
+    private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
     private final ConcurrentHashMap<String, String> cache = new ConcurrentHashMap<>();
 
-    public ConfiguracionSistemaService(ConfiguracionSistemaRepository repo) {
+    public ConfiguracionSistemaService(ConfiguracionSistemaRepository repo,
+                                        BitacoraAuditoriaRepository bitacoraAuditoriaRepo) {
         this.repo = repo;
+        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
     }
 
     @Transactional(readOnly = true)
@@ -60,7 +67,20 @@ public class ConfiguracionSistemaService {
         config.setValor(nuevoValor);
         repo.save(config);
         cache.remove(clave);
+        registrarAuditoria(null, null, "Actualización de configuración: " + clave + " = " + nuevoValor);
         return new ConfiguracionSistemaResponseDTO(config.getClave(), config.getValor());
+    }
+
+    private void registrarAuditoria(Long ejecutorId, Long registroId, String detalles) {
+        BitacoraAuditoria evento = BitacoraAuditoria.builder()
+                .usuarioId(ejecutorId)
+                .tipoOperacion("UPDATE")
+                .tablaAfectada(TABLA_CONFIG)
+                .registroId(registroId)
+                .detalles(detalles)
+                .fechaHora(OffsetDateTime.now())
+                .build();
+        bitacoraAuditoriaRepo.save(evento);
     }
 
     @Transactional(readOnly = true)

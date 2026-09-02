@@ -10,8 +10,11 @@ export interface LibroListarParams {
   page?: number;
   size?: number;
   sort?: string;
+  q?: string;
+  estadoLibroId?: number;
   categoriaId?: number;
   autorId?: number;
+  disponible?: boolean;
 }
 
 @Injectable({
@@ -28,10 +31,27 @@ export class LibroService {
     if (params.page !== undefined) httpParams = httpParams.set('page', params.page);
     if (params.size !== undefined) httpParams = httpParams.set('size', params.size);
     if (params.sort) httpParams = httpParams.set('sort', params.sort);
+    if (params.q) httpParams = httpParams.set('q', params.q);
+    if (params.estadoLibroId !== undefined) httpParams = httpParams.set('estadoLibroId', params.estadoLibroId);
     if (params.categoriaId !== undefined) httpParams = httpParams.set('categoriaId', params.categoriaId);
     if (params.autorId !== undefined) httpParams = httpParams.set('autorId', params.autorId);
+    if (params.disponible !== undefined) httpParams = httpParams.set('disponible', String(params.disponible));
 
     return this.http.get<Page<Libro>>(this.apiUrl, { params: httpParams }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  listarPendientes(params: { q?: string; anioPublicacion?: number; page?: number; size?: number; estadoIds?: number[] } = {}): Observable<Page<Libro>> {
+    let httpParams = new HttpParams();
+    if (params.q) httpParams = httpParams.set('q', params.q);
+    if (params.anioPublicacion !== undefined) httpParams = httpParams.set('anioPublicacion', params.anioPublicacion);
+    if (params.page !== undefined) httpParams = httpParams.set('page', params.page);
+    if (params.size !== undefined) httpParams = httpParams.set('size', params.size);
+    if (params.estadoIds && params.estadoIds.length > 0) {
+      params.estadoIds.forEach(id => httpParams = httpParams.append('estadoIds', id));
+    }
+    return this.http.get<Page<Libro>>(`${this.apiUrl}/pendientes`, { params: httpParams }).pipe(
       catchError(err => this.manejarError(err))
     );
   }

@@ -32,7 +32,7 @@ ambigüedad.
 - **Un cambio de contrato de la API REST que un cliente existente no
   puede ignorar**: por ejemplo, si se migrara el `accessToken` a cookie
   HttpOnly (cambio ya identificado como pendiente en
-  `docs/adr/adr-007-cookies-jwt.md`) — cualquier cliente que hoy dependa
+  `docs/adr/adr-012-cookies-jwt.md`) — cualquier cliente que hoy dependa
   de leer el `accessToken` del cuerpo JSON dejaría de funcionar sin
   cambios de su parte.
 - **Retirar un endpoint o un rol** que un cliente externo ya usa.
@@ -71,7 +71,7 @@ ambigüedad.
   mire — en este proyecto se trató como parte del ciclo de la Tercera
   Entrega (pre-1.0, ver más abajo) porque ningún cliente real dependía
   del comportamiento anterior (verificado por grep antes del cambio, ver
-  `docs/adr/adr-007-cookies-jwt.md`).
+  `docs/adr/adr-012-cookies-jwt.md`).
 - **Correcciones de configuración/infraestructura que no afectan el
   contrato de la aplicación**: ej. pinning de imágenes Docker por digest
   (`b747ef0`), fixes de Dockerfile/healthcheck.

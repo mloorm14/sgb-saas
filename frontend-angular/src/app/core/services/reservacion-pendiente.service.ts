@@ -17,6 +17,7 @@ export class ReservacionPendienteService {
 
   private pendientesIds = new Set<number>();
   private cargado = false;
+  private usuarioIdCache: number | null = null;
 
   constructor(
     private reservacionService: ReservacionService,
@@ -27,9 +28,17 @@ export class ReservacionPendienteService {
   // y el detalle comparten el Set sin repetir requests.
   cargar(): Observable<void> {
     const usuarioId = this.authService.getUserId();
-    if (this.cargado || usuarioId === null) {
+    if (usuarioId === null) {
+      this.limpiar();
       return of(undefined);
     }
+    if (usuarioId !== this.usuarioIdCache) {
+      this.limpiar();
+    }
+    if (this.cargado) {
+      return of(undefined);
+    }
+    this.usuarioIdCache = usuarioId;
     return new Observable<void>((subscriber) => {
       this.reservacionService.listarPorUsuario(usuarioId, {
         page: 0,
@@ -51,6 +60,12 @@ export class ReservacionPendienteService {
     });
   }
 
+  limpiar(): void {
+    this.pendientesIds.clear();
+    this.cargado = false;
+    this.usuarioIdCache = null;
+  }
+
   esPendiente(libroId: number): boolean {
     return this.pendientesIds.has(libroId);
   }
@@ -58,6 +73,11 @@ export class ReservacionPendienteService {
   // Se llama tras crear una reservación con éxito: el libro pasa a
   // "Ya reservado" sin re-consultar el backend.
   marcarReservada(libroId: number): void {
+    const uid = this.authService.getUserId();
+    if (uid !== null && uid !== this.usuarioIdCache) {
+      this.limpiar();
+      this.usuarioIdCache = uid;
+    }
     this.pendientesIds.add(libroId);
   }
 }

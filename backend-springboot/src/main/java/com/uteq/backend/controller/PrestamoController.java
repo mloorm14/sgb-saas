@@ -1,13 +1,17 @@
 package com.uteq.backend.controller;
 
 import com.uteq.backend.dto.DevolucionResponseDTO;
+import com.uteq.backend.dto.LibroMasPrestadoDetalladoResponseDTO;
 import com.uteq.backend.dto.LibroMasPrestadoResponseDTO;
 import com.uteq.backend.dto.PrestamoActivoResponseDTO;
 import com.uteq.backend.dto.PrestamoRequestDTO;
 import com.uteq.backend.dto.PrestamoResponseDTO;
 import com.uteq.backend.dto.RenovacionResponseDTO;
+import com.uteq.backend.dto.ReporteCategoriasDemandadasResponseDTO;
+import com.uteq.backend.dto.ReporteInventarioResponseDTO;
 import com.uteq.backend.dto.ReporteMorosidadResponseDTO;
 import com.uteq.backend.dto.ReporteUsoPorPeriodoResponseDTO;
+import com.uteq.backend.dto.ReporteVencidosResponseDTO;
 import com.uteq.backend.service.PrestamoService;
 import com.uteq.backend.service.ReportePdfService;
 import jakarta.validation.Valid;
@@ -40,7 +44,7 @@ public class PrestamoController {
 
     // ── POST /api/v1/prestamos ────────────────────────────
     @PostMapping
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<PrestamoResponseDTO> crear(
             @Valid @RequestBody PrestamoRequestDTO dto,
             Authentication authentication) {
@@ -50,7 +54,7 @@ public class PrestamoController {
 
     // ── POST /api/v1/prestamos/{id}/devolucion ────────────
     @PostMapping("/{id}/devolucion")
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<DevolucionResponseDTO> registrarDevolucion(@PathVariable Long id) {
         return ResponseEntity.ok(prestamoService.registrarDevolucion(id));
     }
@@ -88,7 +92,7 @@ public class PrestamoController {
 
     // ── GET /api/v1/prestamos/reportes/libros-mas-prestados ──
     @GetMapping("/reportes/libros-mas-prestados")
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<List<LibroMasPrestadoResponseDTO>> reporteLibrosMasPrestados(
             @RequestParam(required = false) Integer limite,
             @RequestParam(required = false)
@@ -99,13 +103,27 @@ public class PrestamoController {
                 prestamoService.reporteLibrosMasPrestados(limite, desde, hasta));
     }
 
+    // ── GET /api/v1/prestamos/reportes/libros-mas-prestados-detallado ──
+    @GetMapping("/reportes/libros-mas-prestados-detallado")
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    public ResponseEntity<List<LibroMasPrestadoDetalladoResponseDTO>> reporteLibrosMasPrestadosDetallado(
+            @RequestParam(required = false) Integer limite,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta,
+            @RequestParam(required = false) Integer categoriaId) {
+        return ResponseEntity.ok(
+                prestamoService.reporteLibrosMasPrestadosDetallado(limite, desde, hasta, categoriaId));
+    }
+
     // ── GET /api/v1/prestamos/reportes/morosidad ──────────
     // Mismo criterio de acceso que reporteLibrosMasPrestados (arriba):
     // BIBLIOTECARIO/GERENTE, no GERENTE/ADMIN -- se sigue el patrón que ya
     // existe en este controller en vez del roadmap original del Módulo 7
     // (que sugería GERENTE/ADMIN sin haber revisado el código real).
     @GetMapping("/reportes/morosidad")
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<List<ReporteMorosidadResponseDTO>> reporteMorosidad(
             @RequestParam(required = false) Integer limite) {
         return ResponseEntity.ok(prestamoService.reporteMorosidad(limite));
@@ -113,7 +131,7 @@ public class PrestamoController {
 
     // ── GET /api/v1/prestamos/reportes/uso?granularidad=dia|semana|mes ──
     @GetMapping("/reportes/uso")
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<List<ReporteUsoPorPeriodoResponseDTO>> reporteUsoPorPeriodo(
             @RequestParam(required = false, defaultValue = "dia") String granularidad,
             @RequestParam(required = false)
@@ -125,11 +143,8 @@ public class PrestamoController {
     }
 
     // ── GET /api/v1/prestamos/reportes/morosidad/pdf ──────
-    // Exportación a PDF del mismo reporte de arriba (ReportePdfService),
-    // transmitida directo en el cuerpo de la respuesta -- nunca se guarda
-    // en disco del servidor (ver Javadoc de ReportePdfService).
     @GetMapping(value = "/reportes/morosidad/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
-    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE')")
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<byte[]> reporteMorosidadPdf(
             @RequestParam(required = false) Integer limite) {
         List<ReporteMorosidadResponseDTO> reporte = prestamoService.reporteMorosidad(limite);
@@ -138,5 +153,107 @@ public class PrestamoController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte-morosidad.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdf);
+    }
+
+    // ── GET /api/v1/prestamos/reportes/libros-mas-prestados/pdf ──
+    @GetMapping(value = "/reportes/libros-mas-prestados/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    public ResponseEntity<byte[]> reporteLibrosMasPrestadosPdf(
+            @RequestParam(required = false) Integer limite,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta,
+            @RequestParam(required = false) Integer categoriaId) {
+        List<LibroMasPrestadoDetalladoResponseDTO> reporte =
+                prestamoService.reporteLibrosMasPrestadosDetallado(limite, desde, hasta, categoriaId);
+        byte[] pdf = reportePdfService.generarReporteLibrosMasPrestados(reporte);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte-libros-prestados.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
+
+    // ── GET /api/v1/prestamos/reportes/inventario/pdf ─────
+    @GetMapping(value = "/reportes/inventario/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    public ResponseEntity<byte[]> reporteInventarioPdf(
+            @RequestParam(required = false) Integer categoriaId,
+            @RequestParam(required = false) String estadoStock,
+            @RequestParam(required = false) String busqueda) {
+        List<ReporteInventarioResponseDTO> reporte =
+                prestamoService.reporteInventario(categoriaId, estadoStock, busqueda);
+        byte[] pdf = reportePdfService.generarReporteInventario(reporte);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte-inventario.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
+
+    // ── GET /api/v1/prestamos/reportes/vencidos/pdf ───────
+    @GetMapping(value = "/reportes/vencidos/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    public ResponseEntity<byte[]> reporteVencidosPdf(
+            @RequestParam(required = false) Integer diasAtrasoMin,
+            @RequestParam(required = false) String busqueda) {
+        List<ReporteVencidosResponseDTO> reporte =
+                prestamoService.reportePrestamosVencidos(diasAtrasoMin, busqueda);
+        byte[] pdf = reportePdfService.generarReporteVencidos(reporte);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte-vencidos.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
+
+    // ── GET /api/v1/prestamos/reportes/categorias-demandadas/pdf ──
+    @GetMapping(value = "/reportes/categorias-demandadas/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    public ResponseEntity<byte[]> reporteCategoriasDemandadasPdf(
+            @RequestParam(required = false) Integer limite,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta) {
+        List<ReporteCategoriasDemandadasResponseDTO> reporte =
+                prestamoService.reporteCategoriasDemandadas(limite, desde, hasta);
+        byte[] pdf = reportePdfService.generarReporteCategoriasDemandadas(reporte);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte-categorias.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
+
+    // ── GET /api/v1/prestamos/reportes/inventario ─────────
+    @GetMapping("/reportes/inventario")
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    public ResponseEntity<List<ReporteInventarioResponseDTO>> reporteInventario(
+            @RequestParam(required = false) Integer categoriaId,
+            @RequestParam(required = false) String estadoStock,
+            @RequestParam(required = false) String busqueda) {
+        return ResponseEntity.ok(
+                prestamoService.reporteInventario(categoriaId, estadoStock, busqueda));
+    }
+
+    // ── GET /api/v1/prestamos/reportes/vencidos ───────────
+    @GetMapping("/reportes/vencidos")
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    public ResponseEntity<List<ReporteVencidosResponseDTO>> reportePrestamosVencidos(
+            @RequestParam(required = false) Integer diasAtrasoMin,
+            @RequestParam(required = false) String busqueda) {
+        return ResponseEntity.ok(
+                prestamoService.reportePrestamosVencidos(diasAtrasoMin, busqueda));
+    }
+
+    // ── GET /api/v1/prestamos/reportes/categorias-demandadas ──
+    @GetMapping("/reportes/categorias-demandadas")
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    public ResponseEntity<List<ReporteCategoriasDemandadasResponseDTO>> reporteCategoriasDemandadas(
+            @RequestParam(required = false) Integer limite,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta) {
+        return ResponseEntity.ok(
+                prestamoService.reporteCategoriasDemandadas(limite, desde, hasta));
     }
 }

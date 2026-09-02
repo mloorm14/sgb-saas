@@ -6,6 +6,7 @@ import { LibroService } from '../core/services/libro.service';
 import { Prestamo, PrestamoActivo } from '../core/models/prestamo.model';
 
 @Component({
+  standalone: true,
   selector: 'app-prestamos-lector',
   imports: [CommonModule],
   templateUrl: './prestamos-lector.component.html'

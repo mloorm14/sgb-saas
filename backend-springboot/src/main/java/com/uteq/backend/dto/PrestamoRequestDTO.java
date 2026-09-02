@@ -19,6 +19,12 @@ import java.util.UUID;
 // simplifica para un caso tan puntual. El ingreso manual (usuarioId) se
 // mantiene siempre disponible como contingencia obligatoria para cuando el
 // dispositivo del estudiante falla.
+//
+// reservacionId es OPCIONAL (ventanilla de préstamos): cuando viene, el
+// préstamo nace de una reserva vigente del usuario (PENDIENTE o
+// LISTA_PARA_RETIRO) y, además de crearse vinculado a ella
+// (prestamos.reservacion_id), la marca RETIRADA para que no quede colgada
+// como pendiente. Cuando no viene, es un préstamo directo de siempre.
 public record PrestamoRequestDTO(
 
         Long usuarioId,
@@ -30,5 +36,7 @@ public record PrestamoRequestDTO(
 
         @NotNull(message = "Los días de préstamo son obligatorios")
         @Min(value = 1, message = "Los días de préstamo deben ser al menos 1")
-        Integer diasPrestamo
+        Integer diasPrestamo,
+
+        Long reservacionId
 ) {}

@@ -100,7 +100,7 @@ describe('jwtInterceptor', () => {
     TestBed.runInInjectionContext(() => jwtInterceptor(req, next))
       .subscribe({ error: (e) => { errorPropagado = e; } });
 
-    expect(authService.logout).toHaveBeenCalled();
+    expect(authService.logout).toHaveBeenCalledWith('/login');
     expect(navigateSpy).toHaveBeenCalledWith(['/login']);
     expect((errorPropagado as { status: number }).status).toBe(401);
   });

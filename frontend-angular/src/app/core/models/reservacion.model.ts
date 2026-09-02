@@ -12,10 +12,20 @@ export interface Reservacion {
 export interface ReservacionRequest {
   usuarioId: number;
   libroId: number;
+  fechaRetiro?: string;
 }
 
 // Body de PATCH /api/v1/reservaciones/{id}/estado (CambioEstadoReservacionRequestDTO).
 // El patrón del backend restringe a LISTA_PARA_RETIRO (aceptar) o CANCELADA (rechazar).
 export interface CambioEstadoReservacionRequest {
   nuevoEstado: 'LISTA_PARA_RETIRO' | 'CANCELADA';
+}
+
+export interface ReservacionHoy {
+  reservacionId: number;
+  usuarioNombre: string;
+  usuarioCorreo: string;
+  libroTitulo: string;
+  estadoNombre: string;
+  fechaLimiteRetiro: string;
 }

@@ -151,10 +151,19 @@ Flujo ante borrado/corrupción de datos:
 > plan Free de Neon no expone un backup "descargable" como producto; la
 > recuperación se apoya 100 % en la infraestructura gestionada de Neon.
 
-## 5. Referencias
+## 5. Notificaciones vía correo — desactivación temporal (2026-08-30)
+
+Desde el 2026-08-30 los correos automáticos de negocio están **desactivados con comentario** en `NotificacionService.java:crearYEnviar()` por volumen en producción (~100k registros, ~1k+ reservas caducadas). Cada corrida de `ReservacionScheduler` (15 min) y `NotificacionVencimientoScheduler` (60s) generaba 1k+ intentos SMTP con `EmailService: Authentication failed` y saturaba logs/límite Upstash sin valor.
+
+- **Desactivados:** `VENCIMIENTO` (próximo a vencer), `MULTA` (atraso devolución), `RESERVA_CADUCADA` (expiración), `COMPROBANTE_PAGO` (pago multa).
+- **Activo:** solo `VerificacionCorreoService` (`Verifica tu correo - SGB-SaaS`) — registro de cuenta sigue enviando correo.
+- **Campana in-app intacta:** `notificaciones` se siguen creando en BD (`notificacionRepo.save()`), solo `enviadoOk=false` y `errorEnvio="Correo automático desactivado..."`.
+- **Reactivación:** descomentar `emailService.enviarCorreo(...)` en `NotificacionService.java:168` y redeploy. Corregir antes `SMTP_*`/`MAIL_FROM` en Render y validar con `swaks`.
+
+## 6. Referencias
 
 - [DEPLOYMENT.md](DEPLOYMENT.md) — topología, límites y despliegue desde cero.
 - [BACKUP.md](BACKUP.md) — retención, fechas críticas y prueba de restauración.
-- `docs/adr/adr-012-estrategia-despliegue.md` — decisión arquitectónica.
+- `docs/adr/adr-007-estrategia-despliegue.md` — decisión arquitectónica.
 - Documentación oficial: `render.com/docs/free`, `render.com/docs/deploys`,
   `neon.com/docs/guides/branch-restore`, `upstash.com/docs`.

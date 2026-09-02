@@ -14,7 +14,8 @@ function passwordsIgualesValidator(control: AbstractControl): ValidationErrors |
   selector: 'app-registro',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule],
-  templateUrl: './registro.component.html'
+  templateUrl: './registro.component.html',
+  styles: [`:host { display: block; height: 100%; overflow-y: auto; }`]
 })
 export class RegistroComponent {
   paso: 'registro' | 'verificar' = 'registro';
@@ -67,6 +68,7 @@ export class RegistroComponent {
   togglePassword2() { this.mostrarPassword2 = !this.mostrarPassword2; }
 
   submitRegistro() {
+    this.formRegistro.markAllAsTouched();
     if (this.formRegistro.invalid) return;
     this.cargando = true;
     this.errorMsg = '';

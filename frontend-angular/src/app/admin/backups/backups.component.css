@@ -1,0 +1,22 @@
+/* Componentes de backup - admin */
+
+/* Estilos para las badges de formato */
+.badge-format.sql { background-color: #e3f2fd; color: #1565c0; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+.badge-format.csv { background-color: #fff3e0; color: #ef6c00; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+
+/* Estilos para las badges de estado */
+.badge-estado.COMPLETADO { background-color: #e8f5e9; color: #2e7d32; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+.badge-estado.FALLIDO { background-color: #ffebee; color: #c62828; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+
+/* Estilo para el note de chips */
+.chip-note { font-size: 12px; color: #666; margin-top: 4px; }
+
+/* Tarjeta del formulario */
+.backups-header .backup-form-card { max-width: 600px; margin: 0 auto; }
+
+/* Estado sin datos */
+.empty-state { padding: 40px; text-align: center; }
+.empty-state mat-icon { font-size: 48px; color: #ccc; margin-bottom: 12px; }
+
+/* Acciones en la tabla */
+.backups-historial .mat-header-row { font-weight: 500; }

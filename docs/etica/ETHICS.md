@@ -108,18 +108,43 @@ lectores y personal (tabla `usuarios`, `db/schema.sql`).
 
 ## (iii) Consentimiento informado para pruebas de usabilidad (SUS, Bloque C.3)
 
-Las pruebas de System Usability Scale (SUS) del Bloque C.3 **no se han
-ejecutado a la fecha de este documento** — son parte del Bloque C, que
-sigue pendiente. Este documento deja establecido el mecanismo de
-consentimiento *antes* de que la primera prueba se ejecute, no
-retroactivamente.
+Las pruebas de System Usability Scale (SUS) del Bloque C.3 **se ejecutaron
+con N=15 participantes** (códigos `P01` a `P15`) entre el 2026-08-28 y
+2026-08-30. Cada participante firmó la plantilla de consentimiento
+informado antes de iniciar la sesión de onboarding.
 
-La plantilla de consentimiento informado que todo participante deberá
-firmar antes de participar está en
+**Protección de datos personales (PII):** Por cumplimiento estricto de
+normativas de protección de datos personales, los 15 consentimientos
+firmados (física o digitalmente) **no deben conservarse en este repositorio
+público**. Fueron removidos del código actual de la rama mediante `git rm`
+en el commit `971e7f6`.
+
+**Estado real del historial de Git (trazabilidad):** Estos archivos aún
+existen en el historial de commits de Git (commits `5d404b6` y anteriores)
+y son recuperables por cualquier persona con acceso al repositorio mediante
+`git checkout <commit> -- docs/etica/consentimientos/`. Se requiere una
+limpieza profunda del historial de Git (`git filter-repo` o BFG
+Repo-Cleaner) seguida de un push forzado para eliminarlos definitivamente.
+Hasta que esa limpieza se ejecute, los archivos con PII permanecen
+técnicamente accesibles en el historial público del repositorio. La copia
+primaria segura de estos documentos se almacena en un medio privado con
+acceso institucional restringido:
+
+- **Almacenamiento privado (Google Drive institucional):**
+  <https://drive.google.com/drive/folders/1uoGc6gQ7AJuVEayv09OSm84bS0WGB15y?usp=sharing>
+- **Permisos:** Acceso restringido exclusivamente a cuentas con dominio
+  institucional `@uteq.edu.ec` (Docente director y Tribunal evaluador).
+- **Justificación de anonimización:** El repositorio del proyecto es
+  público (GitHub) y contiene código fuente, documentación y evidencia
+  técnica. Almacenar consentimientos firmados con nombres reales en un
+  repositorio público expondría PII (nombre completo, firma) en
+  violación del principio de minimización de datos y del consentimiento
+  informado otorgado por los participantes, quienes fueron informados de
+  que sus datos identificables no se publicarían.
+
+La plantilla en blanco (sin datos personales) se mantiene versionada en
 [`docs/etica/consentimientos/plantilla.md`](consentimientos/plantilla.md)
-(ver esa plantilla para el detalle completo: tarea de onboarding a
-realizar, datos recogidos, anonimización y declaración de
-voluntariedad/revocabilidad).
+como referencia pública del protocolo utilizado.
 
 ## (iv) Ausencia de datos identificables en el repositorio público
 
@@ -133,12 +158,14 @@ voluntariedad/revocabilidad).
   existentes hoy en `docs/mediciones/sec/` ya cumplen este criterio —
   fueron generados contra el usuario de desarrollo `admin@sgb-saas.local`
   (no una persona real), como se documenta en cada uno de esos archivos.
-- **Los consentimientos firmados de participantes reales de SUS nunca se
-  committean a este repositorio.** `docs/etica/consentimientos/` contiene
+- **Los consentimientos firmados de participantes reales de SUS fueron
+  committeados por error** (commit `5d404b6`) y removidos del código actual
+  en el commit `971e7f6`. **Aún persisten en el historial de Git** y requieren
+  limpieza profunda (ver sección (iii)). `docs/etica/consentimientos/` contiene
   únicamente la plantilla en blanco (versionada, pública); los
-  formularios firmados (físicos o digitales) se archivan fuera del
-  control de versiones, en un medio que el equipo gestione de forma
-  separada — ver la nota de almacenamiento al final de la plantilla.
+  formularios firmados se almacenan en Google Drive institucional
+  (acceso `@uteq.edu.ec`) como respaldo seguro mientras se ejecuta la
+  limpieza del historial.
 - Este mismo criterio aplica a cualquier evidencia futura del Bloque C
   (k6, Lighthouse, JaCoCo): son mediciones técnicas sobre el sistema, no
   sobre personas, y no está previsto que requieran ningún dato personal.

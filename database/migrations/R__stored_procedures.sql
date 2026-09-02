@@ -487,6 +487,34 @@ AS $$
 $$;
 
 -- ----------------------------------------------------------------------------
+-- fn_reporte_resumen_financiero_multas
+-- REPORTE financiero de multas: total recaudado (multas PAGADAs) y total
+-- pendiente de cobro (multas PENDIENTEs). Parámetros opcionales:
+-- p_desde TIMESTAMPTZ, p_hasta TIMESTAMPTZ. Retorno TABLE (1 fila).
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION fn_reporte_resumen_financiero_multas(
+    p_desde TIMESTAMPTZ DEFAULT NULL,
+    p_hasta TIMESTAMPTZ DEFAULT NULL
+)
+RETURNS TABLE (
+    total_recaudado NUMERIC(12,2),
+    total_pendiente NUMERIC(12,2)
+)
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT
+        COALESCE(SUM(m.monto) FILTER (WHERE em.nombre = 'PAGADA'), 0)::NUMERIC(12,2)
+            AS total_recaudado,
+        COALESCE(SUM(m.monto) FILTER (WHERE em.nombre = 'PENDIENTE'), 0)::NUMERIC(12,2)
+            AS total_pendiente
+    FROM multas m
+    JOIN estados_multa em ON em.id = m.estado_multa_id
+    WHERE (p_desde IS NULL OR m.fecha_generada >= p_desde)
+      AND (p_hasta IS NULL OR m.fecha_generada <= p_hasta);
+$$;
+
+-- ----------------------------------------------------------------------------
 -- fn_listar_prestamos_activos_por_usuario
 -- Proyección heterogénea (préstamo + libro + estado) de los préstamos
 -- "activos" (todo estado ≠ 'DEVUELTO') de un usuario. Parámetros:

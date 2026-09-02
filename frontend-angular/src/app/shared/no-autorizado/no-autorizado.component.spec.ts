@@ -24,14 +24,14 @@ describe('NoAutorizadoComponent', () => {
     fixture.detectChanges();
   });
 
-  it('redirige a /login si no hay sesion activa', () => {
+  it('redirige a / si no hay sesion activa', () => {
     const router = TestBed.inject(Router);
     const navigateSpy = spyOn(router, 'navigate');
     authService.isLoggedIn.and.returnValue(false);
 
     component.volverAlHome();
 
-    expect(navigateSpy).toHaveBeenCalledWith(['/login']);
+    expect(navigateSpy).toHaveBeenCalledWith(['/']);
   });
 
   it('redirige al home de LECTOR (/prestamos)', () => {

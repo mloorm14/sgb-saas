@@ -1,4 +1,4 @@
-<div class="min-h-screen flex items-center justify-center p-md md:p-lg bg-surface relative overflow-hidden">
+<div class="min-h-screen flex items-center justify-center p-md md:p-lg bg-surface relative">
 
   <!-- Fondo -->
   <div class="fixed inset-0 -z-10 bg-cover bg-center" style="background-image: url('/assets/login/library-hero.jpg')">
@@ -8,32 +8,32 @@
   <main class="w-full max-w-2xl mx-auto flex flex-col md:flex-row gap-xl">
 
     <!-- Columna izquierda: branding -->
-    <div class="hidden md:flex flex-col justify-center w-1/3 text-on-background">
-      <div class="flex items-center gap-sm mb-md">
-        <div class="w-12 h-12 rounded bg-primary flex items-center justify-center text-on-primary">
-          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+      <a routerLink="/" class="hidden md:flex flex-col justify-center w-1/3 text-on-background">
+        <div class="flex items-center gap-sm mb-md">
+          <div class="w-12 h-12 rounded bg-primary flex items-center justify-center text-on-primary">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+          </div>
+          <div>
+            <h1 class="font-headline-lg text-headline-lg text-primary">Leibri</h1>
+            <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Sistema de Gestión Bibliotecaria</p>
+          </div>
         </div>
-        <div>
-          <h1 class="font-headline-lg text-headline-lg text-primary">SGB</h1>
-          <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Sistema de Gestión Bibliotecaria</p>
-        </div>
-      </div>
-      <p class="font-body-md text-body-md text-on-surface-variant">
-        Accede a miles de recursos académicos y gestiona tu historial de lectura en un entorno seguro y profesional.
-      </p>
-    </div>
+        <p class="font-body-md text-body-md text-on-surface-variant">
+          Accede a miles de recursos académicos y gestiona tu historial de lectura en un entorno seguro y profesional.
+        </p>
+      </a>
 
     <!-- Columna derecha: tarjeta -->
     <div class="w-full md:w-2/3 rounded-xl shadow-lg p-xl relative overflow-hidden"
          style="background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3);">
       <div class="absolute top-0 left-0 w-full h-2 bg-primary"></div>
 
-      <div class="md:hidden flex items-center gap-sm mb-lg">
+      <a routerLink="/" class="md:hidden flex items-center gap-sm mb-lg">
         <div class="w-10 h-10 rounded bg-primary flex items-center justify-center text-on-primary">
           <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">menu_book</span>
         </div>
-        <h1 class="font-headline-md text-headline-md text-primary">SGB</h1>
-      </div>
+        <h1 class="font-headline-md text-headline-md text-primary">Leibri</h1>
+      </a>
 
       <!-- ===== PASO 1: REGISTRO ===== -->
       @if (paso === 'registro') {
@@ -48,20 +48,26 @@
               <label class="font-label-sm text-label-sm text-on-surface" for="nombre">Nombre</label>
               <div class="rounded border border-outline-variant bg-surface">
                 <input formControlName="nombre" id="nombre" type="text" placeholder="Ej: Marlon"
-                  class="w-full bg-transparent border-none focus:ring-0 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+                  [attr.aria-invalid]="formRegistro.get('nombre')?.invalid && formRegistro.get('nombre')?.touched ? true : null"
+                  [attr.aria-describedby]="formRegistro.get('nombre')?.invalid && formRegistro.get('nombre')?.touched ? 'nombre-error' : null"
+                  aria-required="true"
+                  class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
               </div>
               @if (formRegistro.get('nombre')?.invalid && formRegistro.get('nombre')?.touched) {
-                <p class="font-label-sm text-[11px] text-error">Ingresa tu nombre</p>
+                <p id="nombre-error" class="font-label-sm text-[11px] text-error">Ingresa tu nombre</p>
               }
             </div>
             <div class="flex-1 space-y-xs">
               <label class="font-label-sm text-label-sm text-on-surface" for="apellido">Apellido</label>
               <div class="rounded border border-outline-variant bg-surface">
                 <input formControlName="apellido" id="apellido" type="text" placeholder="Ej: Loor"
-                  class="w-full bg-transparent border-none focus:ring-0 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+                  [attr.aria-invalid]="formRegistro.get('apellido')?.invalid && formRegistro.get('apellido')?.touched ? true : null"
+                  [attr.aria-describedby]="formRegistro.get('apellido')?.invalid && formRegistro.get('apellido')?.touched ? 'apellido-error' : null"
+                  aria-required="true"
+                  class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
               </div>
               @if (formRegistro.get('apellido')?.invalid && formRegistro.get('apellido')?.touched) {
-                <p class="font-label-sm text-[11px] text-error">Ingresa tu apellido</p>
+                <p id="apellido-error" class="font-label-sm text-[11px] text-error">Ingresa tu apellido</p>
               }
             </div>
           </div>
@@ -71,10 +77,13 @@
             <div class="rounded border border-outline-variant bg-surface flex items-center px-sm">
               <span class="material-symbols-outlined text-outline text-[20px] mr-xs">mail</span>
               <input formControlName="correo" id="correo" type="email" placeholder="ejemplo@correo.com"
-                class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+                [attr.aria-invalid]="formRegistro.get('correo')?.invalid && formRegistro.get('correo')?.touched ? true : null"
+                [attr.aria-describedby]="formRegistro.get('correo')?.invalid && formRegistro.get('correo')?.touched ? 'correo-error' : null"
+                aria-required="true"
+                class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
             </div>
             @if (formRegistro.get('correo')?.invalid && formRegistro.get('correo')?.touched) {
-              <p class="font-label-sm text-[11px] text-error">Ingresa un correo válido</p>
+              <p id="correo-error" class="font-label-sm text-[11px] text-error">Ingresa un correo válido</p>
             }
           </div>
 
@@ -83,7 +92,8 @@
             <div class="rounded border border-outline-variant bg-surface flex items-center px-sm">
               <span class="material-symbols-outlined text-outline text-[20px] mr-xs">lock</span>
               <input formControlName="password" id="pass" [type]="mostrarPassword ? 'text' : 'password'" placeholder="Mínimo 8 caracteres"
-                class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+                aria-required="true"
+                class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
               <button type="button" (click)="togglePassword()" class="focus:outline-none ml-xs flex items-center">
                 <span class="material-symbols-outlined text-outline hover:text-on-surface transition-colors text-[20px]">{{ mostrarPassword ? 'visibility_off' : 'visibility' }}</span>
               </button>
@@ -101,13 +111,16 @@
             <div class="rounded border border-outline-variant bg-surface flex items-center px-sm">
               <span class="material-symbols-outlined text-outline text-[20px] mr-xs">lock</span>
               <input formControlName="confirmarPassword" id="pass2" [type]="mostrarPassword2 ? 'text' : 'password'" placeholder="Repite tu contraseña"
-                class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
+                [attr.aria-invalid]="formRegistro.hasError('passwordsDistintas') && formRegistro.get('confirmarPassword')?.touched ? true : null"
+                [attr.aria-describedby]="formRegistro.hasError('passwordsDistintas') && formRegistro.get('confirmarPassword')?.touched ? 'confirmarPassword-error' : null"
+                aria-required="true"
+                class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
               <button type="button" (click)="togglePassword2()" class="focus:outline-none ml-xs flex items-center">
                 <span class="material-symbols-outlined text-outline hover:text-on-surface transition-colors text-[20px]">{{ mostrarPassword2 ? 'visibility_off' : 'visibility' }}</span>
               </button>
             </div>
             @if (formRegistro.hasError('passwordsDistintas') && formRegistro.get('confirmarPassword')?.touched) {
-              <p class="font-label-sm text-[11px] text-error">Las contraseñas no coinciden</p>
+              <p id="confirmarPassword-error" class="font-label-sm text-[11px] text-error">Las contraseñas no coinciden</p>
             }
           </div>
 
@@ -119,7 +132,7 @@
           </div>
 
           @if (errorMsg) {
-            <div class="text-error text-body-sm">{{ errorMsg }}</div>
+            <div role="alert" class="text-error text-body-sm">{{ errorMsg }}</div>
           }
 
           <button type="submit" [disabled]="formRegistro.invalid || cargando"
@@ -131,6 +144,13 @@
           <p class="text-center font-body-sm text-body-sm text-on-surface-variant mt-sm">
             ¿Ya tienes cuenta? <a routerLink="/login" class="text-primary font-medium hover:underline">Iniciar sesión</a>
           </p>
+
+          <div class="flex justify-center pt-md">
+            <a routerLink="/" class="inline-flex items-center gap-xs font-label-md text-label-sm text-on-surface-variant hover:text-primary transition-colors">
+              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+              Volver al catálogo
+            </a>
+          </div>
         </form>
       }
 
@@ -149,15 +169,18 @@
             <div class="rounded border border-outline-variant bg-surface flex items-center px-sm">
               <span class="material-symbols-outlined text-outline text-[20px] mr-xs">pin</span>
               <input formControlName="codigo" id="codigo" type="text" inputmode="numeric" maxlength="6" placeholder="000000"
-                class="w-full bg-transparent border-none focus:ring-0 py-sm font-body-md text-body-md text-on-surface placeholder-outline tracking-[0.3em] text-center" />
+                [attr.aria-invalid]="formVerificar.get('codigo')?.invalid && formVerificar.get('codigo')?.touched ? true : null"
+                [attr.aria-describedby]="formVerificar.get('codigo')?.invalid && formVerificar.get('codigo')?.touched ? 'codigo-error' : null"
+                aria-required="true"
+                class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 py-sm font-body-md text-body-md text-on-surface placeholder-outline tracking-[0.3em] text-center" />
             </div>
             @if (formVerificar.get('codigo')?.invalid && formVerificar.get('codigo')?.touched) {
-              <p class="font-label-sm text-[11px] text-error">Debe ser un código de 6 dígitos</p>
+              <p id="codigo-error" class="font-label-sm text-[11px] text-error">Debe ser un código de 6 dígitos</p>
             }
           </div>
 
           @if (errorMsgVerificar) {
-            <div class="text-error text-body-sm">{{ errorMsgVerificar }}</div>
+            <div role="alert" class="text-error text-body-sm">{{ errorMsgVerificar }}</div>
           }
 
           <button type="submit" [disabled]="formVerificar.invalid || cargando"

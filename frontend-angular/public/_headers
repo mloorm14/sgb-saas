@@ -2,4 +2,4 @@
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=31536000; includeSubDomains
-  Content-Security-Policy: default-src 'self'; script-src 'self'; script-src-elem 'self'; script-src-attr 'unsafe-inline'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; img-src 'self' data: https://sgb-backend-b058.onrender.com; font-src 'self'; connect-src 'self' https://sgb-backend-b058.onrender.com; frame-ancestors 'none'; form-action 'none'; base-uri 'self'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; script-src-elem 'self'; script-src-attr 'unsafe-inline'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https://sgb-backend-b058.onrender.com; font-src 'self'; connect-src 'self' https://sgb-backend-b058.onrender.com; frame-ancestors 'none'; form-action 'none'; base-uri 'self'; object-src 'none'

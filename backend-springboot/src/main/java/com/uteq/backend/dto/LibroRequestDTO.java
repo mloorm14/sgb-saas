@@ -11,15 +11,22 @@ public record LibroRequestDTO(
         String titulo,
 
         @NotBlank(message = "El ISBN es obligatorio")
-        @Pattern(regexp = "^[0-9\\-]{10,17}$", message = "ISBN inválido")
-        @Size(max = 13, message = "El ISBN no puede superar 13 caracteres")
+        @Pattern(regexp = "^[0-9]{10,13}$", message = "ISBN debe tener 10 a 13 dígitos numéricos")
+        @Size(min = 10, max = 13, message = "El ISBN debe tener entre 10 y 13 caracteres")
         String isbn,
 
         @NotNull(message = "El año de publicación es obligatorio")
-        @Min(value = 1000, message = "Año inválido")
-        @Max(value = 2100, message = "Año inválido")
+        @Min(value = 1950, message = "El año no puede ser menor a 1950")
         Integer anioPublicacion,
 
+        @Min(value = 1, message = "El número de páginas debe ser mayor a 0")
+        Integer numeroPaginas,
+
+        @Digits(integer = 8, fraction = 2, message = "Precio base inválido")
+        @DecimalMin(value = "0.00", message = "El precio base debe ser mayor o igual a 0")
+        java.math.BigDecimal precioBase,
+
+        @Size(max = 2000, message = "El resumen no puede superar 2000 caracteres")
         String resumen,
 
         // Ubicación física (ej. "Estante A-12"). Opcional: un libro puede
@@ -54,5 +61,5 @@ public record LibroRequestDTO(
         // obligatorios.
         Set<Integer> categoriaIds,
 
-        Set<Long> autorIds
+        Set<Integer> autorIds
 ) {}

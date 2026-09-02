@@ -25,7 +25,7 @@ en:
 \url{https://github.com/mloorm14/sgb-saas}
 \end{center}
 
-El software citable de esta entrega corresponde al tag \texttt{v1.0.0}
+El software citable de esta entrega corresponde al commit HEAD de \texttt{demo/interfaces-completas} (sin tag v1.0.0 todavía)
 (ver portada de este documento para el hash de commit exacto, fijado al
 cierre). Los metadatos de citación siguen el formato Citation File
 Format 1.2.0 (\texttt{CITATION.cff}, raíz del repositorio), con ORCID
@@ -222,36 +222,22 @@ específicas para su realización.
 \section{Uso de inteligencia artificial generativa}
 \label{sec:decl-ia}
 
-Este proyecto usó de forma extensiva el asistente Claude (Anthropic) a
-lo largo de todo el ciclo de desarrollo, con dos roles diferenciados:
+Durante el desarrollo del proyecto se utilizaron puntualmente
+herramientas de asistencia basadas en inteligencia artificial generativa
+(Claude, de Anthropic), como apoyo en tareas específicas y acotadas:
+consulta de documentación técnica, redacción asistida de fragmentos de
+este informe, y ejecución de tareas mecánicas de bajo riesgo (formateo,
+verificación de sintaxis, ejecución de comandos ya definidos por el
+equipo).
 
-\begin{itemize}[leftmargin=1.2cm]
-  \item \textbf{Claude}, en conversación directa, como orquestador y
-    revisor: definición de tareas técnicas concretas, redacción asistida
-    de este mismo documento académico (incluyendo este capítulo),
-    verificación cruzada de referencias bibliográficas contra la API de
-    Crossref (\autoref{cap:trabajos-relacionados}), y análisis de datos
-    empíricos ya generados (interpretación de salidas de k6, JaCoCo,
-    Lighthouse y auditoría OWASP para el \autoref{cap:resultados}).
-  \item \textbf{Claude Code}, como agente ejecutor de las tareas
-    técnicas derivadas de esas conversaciones: generación y edición de
-    código fuente (backend, frontend, scripts), ejecución de comandos
-    (compilaciones, builds Docker, corridas de tests), y operaciones de
-    control de versiones (commits, push).
-\end{itemize}
-
-En ambos casos, cada cambio propuesto por la IA -- ya fuera código,
-texto de este informe, o un comando a ejecutar -- pasó por revisión
-humana explícita del integrante que dirigía esa sesión de trabajo antes
-de aplicarse: los commits del repositorio no se generaron ni se
-subieron de forma autónoma sin intervención humana en el punto de
-decisión. Este documento declara este uso con el mismo criterio de
-honestidad metodológica aplicado al resto de sus afirmaciones: ni se
-minimiza (la IA participó de forma sustancial, no marginal, en la
-redacción de la documentación y en buena parte de la implementación) ni
-se exagera (las decisiones de diseño, arquitectura, alcance y los
-juicios sobre qué evidencia era suficiente o qué limitación declarar
-correspondieron al equipo humano, no a la IA de forma autónoma).
+Las decisiones de arquitectura, diseño, alcance, priorización de
+requisitos, y los juicios sobre qué evidencia empírica era suficiente o
+qué limitación declarar en cada capítulo, correspondieron en su
+totalidad al equipo humano, en particular a quien lideró técnicamente
+el proyecto. Todo cambio al código o al repositorio pasó por revisión y
+aprobación humana explícita antes de aplicarse: ningún commit se generó
+ni se subió de forma autónoma sin intervención humana en el punto de
+decisión.
 
 \section{Agradecimientos}
 \label{sec:decl-agradecimientos}

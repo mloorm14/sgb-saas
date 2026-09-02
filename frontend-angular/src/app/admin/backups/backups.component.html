@@ -1,0 +1,61 @@
+<div class="backups-header mb-4">
+  <h2>Generar Backup</h2>
+  <div class="backup-form-card">
+    <div class="form-group">
+      <label>Desde <span style="color: red">*</span></label>
+      <input type="datetime-local" [(ngModel)]="desde" name="desde" class="form-control">
+    </div>
+    <div class="form-group">
+      <label>Hasta <span style="color: red">*</span></label>
+      <input type="datetime-local" [(ngModel)]="hasta" name="hasta" class="form-control">
+    </div>
+    <div class="tablas-section">
+      <label>Tablas a incluir</label>
+      <div class="flex flex-wrap gap-sm">
+        @for (t of ['prestamos','reservas','multas','libros','usuarios','bitacora_auditoria']; track t) {
+          <label class="inline-flex items-center gap-xs">
+            <input type="checkbox" [checked]="tablas.includes(t)" (change)="tablas.includes(t) ? tablas = tablas.filter(x=>x!==t) : tablas.push(t)"> {{ getNombreTabla(t) }}
+          </label>
+        }
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Formato</label>
+      <label><input type="radio" [(ngModel)]="formato" value="sql" name="formato"> SQL</label>
+      <label><input type="radio" [(ngModel)]="formato" value="csv" name="formato"> CSV</label>
+    </div>
+  </div>
+  <div class="action-buttons">
+    <button class="btn-primary" (click)="generarBackup()" [disabled]="loading">
+      @if (!loading) { Generar backup } @else { Generando... }
+    </button>
+  </div>
+</div>
+
+@if (!sinDatos()) {
+  <div class="backups-historial mt-4">
+    <h3>Historial de backups</h3>
+    <table>
+      <thead><tr><th>Fecha</th><th>Desde / Hasta</th><th>Tablas</th><th>Formato</th><th>Tamaño</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody>
+        @for (element of backups; track element.id) {
+          <tr>
+            <td>{{ element.creadoEn | date:'short' }}</td>
+            <td>{{ element.desde }} - {{ element.hasta }}</td>
+            <td>@for (t of element.tablas; track t) { {{ getNombreTabla(t) }} } </td>
+            <td>{{ element.formato.toUpperCase() }}</td>
+            <td>{{ element.tamanoBytes ? (element.tamanoBytes / 1024 / 1024 | number:'1.2-2') + ' MB' : 'N/A' }}</td>
+            <td>{{ element.estado }}</td>
+            <td>
+              <button title="Descargar" (click)="descargarBackup(element.id)">⬇</button>
+              <button title="Borrar" (click)="borrarBackup(element.id)">🗑</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+@if (sinDatos()) {
+  <div class="empty-state"><span>📦</span><h3>No hay backups registrados</h3><p>Genera tu primer backup usando el formulario de arriba.</p></div>
+}

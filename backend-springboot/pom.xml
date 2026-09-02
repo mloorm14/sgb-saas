@@ -71,6 +71,7 @@
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
+			<version>42.7.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
@@ -155,6 +156,35 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- H2 en memoria: reemplaza PostgreSQL en tests para que todos los
+		     JpaRepository se creen automaticamente sin necesidad de mockear
+		     cada repositorio en BackendApplicationTests. -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- Testcontainers PostgreSQL: SOLO para los tests de integracion que
+		     requieren Postgres real (PL/pgSQL stored procedures). El resto de la
+		     suite usa H2 en memoria. No usar @AutoConfigureTestDatabase en estas
+		     clases; Testcontainers gestiona el datasource via @ServiceConnection. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-testcontainers</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<version>1.20.5</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>1.20.5</version>
+			<scope>test</scope>
+		</dependency>
 		<!-- @WithMockUser / SecurityMockMvcRequestPostProcessors: necesario
 		     para testear @PreAuthorize a nivel de controller sin tener que
 		     generar un JWT real (ver LibroControllerSecurityTest). Version
@@ -171,6 +201,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-webmvc-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
+			<version>2.25.27</version>
 		</dependency>
 	</dependencies>
 

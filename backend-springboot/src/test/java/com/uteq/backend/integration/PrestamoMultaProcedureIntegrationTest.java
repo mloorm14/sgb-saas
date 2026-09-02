@@ -9,9 +9,15 @@ import com.uteq.backend.repository.PrestamoProcedureRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -27,10 +33,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * "compilan pero nunca se ejecutaron en runtime": sp_registrar_devolucion,
  * sp_pagar_multa, sp_anular_multa.
  * <p>
- * Requiere el stack Docker Compose levantado ({@code docker compose up -d
- * postgres redis} desde la raíz del repo) — application.yml por defecto ya
- * apunta a localhost:5432/sgb_db, así que un @SpringBootTest normal (sin
- * perfil especial) se conecta directo a esa base real.
+ * Usa Testcontainers para levantar un PostgreSQL 16 real y aislado por
+ * test class -- no requiere stack Docker Compose externo. Flyway aplica
+ * las migraciones (incluyendo R__stored_procedures.sql con los 4 SP
+ * multi-OUT) automaticamente contra el container.
  * <p>
  * @Transactional en la clase: cada @Test corre en su propia transacción,
  * revertida automáticamente al terminar -- no ensucia la base real entre
@@ -39,15 +45,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * ningún service todavía (password_hash, editorial_id, idioma_id).
  * <p>
  * No hay infraestructura de test de integración previa en el proyecto
- * (verificado: pom.xml no tiene testcontainers). Este test usa Surefire
+ * (verificado: pom.xml no tenia testcontainers). Este test usa Surefire
  * (mvnw test) porque no hay Failsafe configurado -- si el equipo quiere
  * separar unit tests de integración en fases de build distintas, hace
  * falta agregar maven-failsafe-plugin y renombrar esta clase a *IT, una
  * decisión de build que no tomé unilateralmente.
  */
+@Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest
 @Transactional
 class PrestamoMultaProcedureIntegrationTest {
+
+    @Container
+    @ServiceConnection
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
     @Autowired JdbcTemplate jdbcTemplate;
     @Autowired PrestamoProcedureRepository prestamoProcRepo;

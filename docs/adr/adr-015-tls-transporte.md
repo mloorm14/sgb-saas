@@ -21,7 +21,7 @@ Lo que sí corresponde a esta rama (Módulo 10.1 del roadmap) es dejar
 para que, cuando el certificado llegue, no haga falta tocar código: el
 mismo criterio que ya se usó con el atributo `Secure` de la cookie de
 refresh token (declarado en código desde antes de tener TLS activo, ver
-ADR-007 / el propio hallazgo de A02).
+ADR-012 / el propio hallazgo de A02).
 
 Existen dos formas habituales de resolver dónde termina TLS en un stack
 como este:
@@ -50,7 +50,7 @@ Razones:
   meterlo en `server.ssl.*` acopla la aplicación a un detalle de
   despliegue que cambia según el entorno (autofirmado en desarrollo,
   Let's Encrypt o el del proveedor cloud en producción).
-- Coincide con `adr-012-estrategia-despliegue.md`, que ya trata a Nginx
+- Coincide con `adr-007-estrategia-despliegue.md`, que ya trata a Nginx
   como el punto de entrada HTTP del stack.
 
 Por lo tanto: **no se activa `server.ssl.enabled` en el backend**. En su

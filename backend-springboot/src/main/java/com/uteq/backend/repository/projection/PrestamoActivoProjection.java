@@ -1,6 +1,6 @@
 package com.uteq.backend.repository.projection;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 /**
  * Proyección de una fila retornada por la función SQL
@@ -16,9 +16,9 @@ public interface PrestamoActivoProjection {
 
     String getLibroIsbn();
 
-    OffsetDateTime getFechaPrestamo();
+    Instant getFechaPrestamo();
 
-    OffsetDateTime getFechaDevolucionEstimada();
+    Instant getFechaDevolucionEstimada();
 
     Integer getDiasRestantes();
 

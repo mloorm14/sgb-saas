@@ -28,7 +28,7 @@ afectados de `@Procedure`/`@NamedStoredProcedureQuery` a
 `MultaProcedureRepository`, `ReservacionProcedureRepository` (commits
 `bce5ef9`, `16ec788`, `ba35f7a`, `dfdce0f`, `2133bbd`). Esta evidencia
 documenta la corrida que confirma que, tras el fix, los 3 procedimientos
-se invocan correctamente de punta a punta. Relacionado con `ADR-013`.
+se invocan correctamente de punta a punta. Relacionado con `ADR-006`.
 
 ## Metodología / comando ejecutado
 

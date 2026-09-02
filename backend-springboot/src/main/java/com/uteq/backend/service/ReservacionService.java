@@ -1,6 +1,7 @@
 package com.uteq.backend.service;
 
 import com.uteq.backend.dto.CambioEstadoReservacionRequestDTO;
+import com.uteq.backend.dto.ReservacionHoyResponseDTO;
 import com.uteq.backend.dto.ReservacionRequestDTO;
 import com.uteq.backend.dto.ReservacionResponseDTO;
 import com.uteq.backend.entity.BitacoraAuditoria;
@@ -20,7 +21,9 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 @Service
 public class ReservacionService {
@@ -39,15 +42,18 @@ public class ReservacionService {
     private final EstadoReservacionRepository estadoReservacionRepo;
     private final UsuarioRepository usuarioRepo;
     private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
+    private final ConfiguracionSistemaService configuracionSistemaService;
 
     public ReservacionService(ReservacionRepository reservacionRepo,
                               EstadoReservacionRepository estadoReservacionRepo,
                               UsuarioRepository usuarioRepo,
-                              BitacoraAuditoriaRepository bitacoraAuditoriaRepo) {
+                              BitacoraAuditoriaRepository bitacoraAuditoriaRepo,
+                              ConfiguracionSistemaService configuracionSistemaService) {
         this.reservacionRepo = reservacionRepo;
         this.estadoReservacionRepo = estadoReservacionRepo;
         this.usuarioRepo = usuarioRepo;
         this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
+        this.configuracionSistemaService = configuracionSistemaService;
     }
 
     @Transactional
@@ -59,16 +65,34 @@ public class ReservacionService {
                         "Un LECTOR solo puede reservar para sí mismo.");
             }
         }
+        validarLimiteReservas(dto.usuarioId());
+        validarDeudas(dto.usuarioId());
         return toDTO(reservacionRepo.save(fromDTO(dto)));
     }
 
+    private void validarLimiteReservas(Long usuarioId) {
+        int max = 3;
+        try { max = configuracionSistemaService.obtenerValorEntero("max_reservas_por_usuario"); } catch (Exception ignored) {}
+        long activas = reservacionRepo.countByUsuarioIdAndEstadoReservacionIdIn(usuarioId, List.of(1, 2));
+        if (activas >= max) {
+            throw new IllegalStateException("Has alcanzado el máximo de " + max + " reservas activas. Cancela o retira una para reservar otra.");
+        }
+    }
+
+    private void validarDeudas(Long usuarioId) {
+        Usuario u = usuarioRepo.findById(usuarioId).orElse(null);
+        if (u != null && u.getEstado() != null && "BLOQUEADO_POR_MULTA".equals(u.getEstado().getNombre())) {
+            throw new IllegalStateException("Tienes multas pendientes. Regulariza tu situacion para poder reservar.");
+        }
+    }
+
     private Reservacion fromDTO(ReservacionRequestDTO dto) {
-        // Se usa IllegalStateException: si falta la fila
+        // Se usa EstadoReservacionInicialNoConfiguradoException: si falta la fila
         // PENDIENTE en estados_reservacion es un problema de seed/configuración
         // del sistema, no un error del cliente -- mismo criterio que
         // LibroService.eliminar() con el catálogo estados_libro.
         EstadoReservacion estadoInicial = estadoReservacionRepo.findByNombre(ESTADO_INICIAL)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new EstadoReservacionInicialNoConfiguradoException(
                         "Catálogo estados_reservacion sin fila '" + ESTADO_INICIAL + "'"));
 
         OffsetDateTime ahora = OffsetDateTime.now();
@@ -78,7 +102,24 @@ public class ReservacionService {
         r.setLibroId(dto.libroId());
         r.setEstadoReservacionId(estadoInicial.getId());
         r.setFechaReserva(ahora);
-        r.setFechaLimiteRetiro(ahora.plusDays(DIAS_LIMITE_RETIRO));
+
+        // Fecha limite: usa hora_limite_retiro_reserva (ej 18:00) del dia elegido
+        String horaLimiteStr = "18:00";
+        try { String v = configuracionSistemaService.obtenerValor("hora_limite_retiro_reserva"); if (v != null && !v.isBlank()) horaLimiteStr = v.trim(); } catch (Exception ignored) {}
+        LocalTime horaLimite = LocalTime.parse(horaLimiteStr.length()==5?horaLimiteStr+":00":horaLimiteStr);
+        if (dto.fechaRetiro() != null) {
+            if (dto.fechaRetiro().isBefore(ahora)) {
+                throw new IllegalArgumentException(
+                        "La fecha de retiro no puede ser anterior a la fecha actual.");
+            }
+            OffsetDateTime limite = dto.fechaRetiro().withHour(horaLimite.getHour()).withMinute(horaLimite.getMinute()).withSecond(0).withNano(0);
+            r.setFechaLimiteRetiro(limite);
+        } else {
+            OffsetDateTime limite = ahora.withHour(horaLimite.getHour()).withMinute(horaLimite.getMinute()).withSecond(0).withNano(0);
+            if (limite.isBefore(ahora)) limite = limite.plusDays(1);
+            r.setFechaLimiteRetiro(limite);
+        }
+
         return r;
     }
 
@@ -88,13 +129,24 @@ public class ReservacionService {
         Reservacion reservacion = reservacionRepo.findById(reservacionId)
                 .orElseThrow(() -> new EntityNotFoundException(RESERVACION_NO_ENCONTRADA + reservacionId));
 
+        // LECTOR solo puede cancelar su propia reserva pendiente
+        if (esLector(authentication)) {
+            Long idPropio = resolverIdPorCorreo(authentication.getName());
+            if (!idPropio.equals(reservacion.getUsuarioId())) {
+                throw new AuthorizationDeniedException("Un LECTOR solo puede cancelar sus propias reservaciones.");
+            }
+            if (!"CANCELADA".equals(dto.nuevoEstado())) {
+                throw new AuthorizationDeniedException("Un LECTOR solo puede cancelar su reservacion.");
+            }
+        }
+
         // Transición válida solo desde PENDIENTE (aceptar o rechazar). Las
         // demás transiciones ya no son decisión del staff: RETIRADA/EXPIRADA
         // pertenecen al flujo de entrega/vencimiento y CANCELADA de una
         // reservación ya aceptada no tiene endpoint (fuera del alcance del
         // RF-10, documentado en el resumen de la rama).
         EstadoReservacion estadoInicial = estadoReservacionRepo.findByNombre(ESTADO_INICIAL)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new EstadoReservacionInicialNoConfiguradoException(
                         "Catálogo estados_reservacion sin fila '" + ESTADO_INICIAL + "'"));
         if (!estadoInicial.getId().equals(reservacion.getEstadoReservacionId())) {
             throw new IllegalStateException(
@@ -139,6 +191,19 @@ public class ReservacionService {
             Long usuarioId, Authentication authentication, Pageable pageable) {
         validarAccesoUsuario(usuarioId, authentication);
         return reservacionRepo.findByUsuarioId(usuarioId, pageable).map(this::toDTO);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReservacionHoyResponseDTO> buscarReservacionesDeHoy() {
+        return reservacionRepo.buscarReservacionesDeHoy().stream()
+                .map(p -> new ReservacionHoyResponseDTO(
+                        p.getReservacionId(),
+                        p.getUsuarioNombre(),
+                        p.getUsuarioCorreo(),
+                        p.getLibroTitulo(),
+                        p.getEstadoNombre(),
+                        p.getFechaLimiteRetiro()))
+                .toList();
     }
 
     // ── "Propio vs cualquiera", mismo patrón que PrestamoService. ──

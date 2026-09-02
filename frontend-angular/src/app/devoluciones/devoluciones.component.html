@@ -1,0 +1,508 @@
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
+
+  <!-- Encabezado -->
+  <div class="mb-lg">
+    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">
+      Devolución de Libros
+    </h1>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">
+      Registra la devolución de ejemplares y documenta daños o pérdidas.
+    </p>
+  </div>
+
+  <!-- ─── Buscar Préstamo Activo ─── -->
+  <div class="mb-lg">
+    <app-buscador-usuario
+      (correoSeleccionado)="onCorreoSeleccionado($event)"
+      (buscarAhora)="onBuscarAhora($event)" />
+  </div>
+
+  <!-- ─── Loading ─── -->
+  @if (cargandoPrestamos) {
+    <div class="text-center py-xl">
+      <span class="material-symbols-outlined text-4xl text-primary animate-spin block mb-sm">progress_activity</span>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">Buscando préstamos activos...</p>
+    </div>
+  }
+
+  <!-- ─── Error ─── -->
+  @if (errorMsg) {
+    <div class="rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 p-md mb-md flex items-center gap-sm">
+      <span class="material-symbols-outlined text-red-500 dark:text-red-400 text-[20px]">error</span>
+      <p class="font-body-sm text-body-sm text-red-700 dark:text-red-300">{{ errorMsg }}</p>
+    </div>
+  }
+
+  <!-- ─── Éxito ─── -->
+  @if (exitoMsg) {
+    <div class="rounded-lg bg-green-50 border border-green-200 p-md mb-md flex items-center gap-sm">
+      <span class="material-symbols-outlined text-green-500 text-[20px]">check_circle</span>
+      <p class="font-body-sm text-body-sm text-green-700">{{ exitoMsg }}</p>
+    </div>
+  }
+
+  <!-- ═══ Lista de préstamos activos (sin selección) ═══ -->
+  @if (!cargandoPrestamos && prestamosActivos.length > 0 && !prestamoSeleccionado) {
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg mb-lg">
+      <h2 class="font-headline-md text-headline-md text-on-background mb-md flex items-center gap-sm">
+        <span class="material-symbols-outlined text-[22px] text-primary">receipt_long</span>
+        Préstamos Activos ({{ prestamosActivos.length }})
+      </h2>
+      <div class="space-y-sm">
+        @for (prestamo of prestamosActivos; track prestamo.prestamoId) {
+          <button (click)="seleccionarPrestamo(prestamo)"
+            class="w-full text-left rounded-lg border border-outline-variant p-md hover:border-primary hover:shadow-sm transition-all cursor-pointer flex items-center justify-between">
+            <div>
+              <p class="font-label-md text-label-sm text-on-surface font-semibold">{{ prestamo.libroTitulo }}</p>
+              <p class="font-body-sm text-[12px] text-on-surface-variant mt-xs">
+                Préstamo: {{ prestamo.fechaPrestamo | date:'dd/MM/yyyy' }} —
+                Vence: {{ prestamo.fechaDevolucionEstimada | date:'dd/MM/yyyy' }}
+              </p>
+            </div>
+            <span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ═══ Sin préstamos ═══ -->
+  @if (!cargandoPrestamos && prestamosActivos.length === 0 && !errorMsg && !exitoMsg) {
+    <div class="rounded-xl border border-dashed border-outline-variant bg-surface-container-low p-xl text-center">
+      <span class="material-symbols-outlined text-[64px] text-on-surface-variant/40 block mb-sm">assignment_return</span>
+      <p class="font-body-md text-body-md text-on-surface-variant">
+        Busca un usuario por correo para ver sus préstamos activos.
+      </p>
+    </div>
+  }
+
+  <!-- ═══ Resultado de devolución exitosa ═══ -->
+  @if (resultadoDevolucion) {
+    <div class="rounded-xl border border-green-200 bg-green-50 p-lg mb-lg">
+      <div class="flex items-center gap-3 mb-md">
+        <span class="material-symbols-outlined text-green-600 text-3xl">check_circle</span>
+        <div>
+          <p class="font-semibold text-green-700 font-body-md text-body-md">Devolución registrada</p>
+          <p class="font-body-sm text-[12px] text-green-600">Préstamo #{{ resultadoDevolucion.prestamoId }}</p>
+        </div>
+      </div>
+      @if (resultadoDevolucion.huboMultaAtraso) {
+        <p class="font-body-sm text-body-sm text-green-600 mb-xs">Multa por atraso: ${{ resultadoDevolucion.montoMultaAtraso }}</p>
+      }
+      @if (resultadoDevolucion.huboMultaDano) {
+        <p class="font-body-sm text-body-sm text-green-600 mb-xs">Multa por daño: ${{ resultadoDevolucion.montoMultaDano }}</p>
+      }
+      <p class="font-semibold text-green-700 mt-sm">Total: ${{ resultadoDevolucion.montoTotal }}</p>
+      @if (resultadoDevolucion.danosRegistrados.length > 0) {
+        <div class="mt-sm space-y-xs">
+          @for (dano of resultadoDevolucion.danosRegistrados; track $index) {
+            <p class="font-body-sm text-[12px] text-green-600">• {{ dano.tipoDanoNombre }}: ${{ dano.precioCobrado }}</p>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ═══ Formulario de devolución (préstamo seleccionado) ═══ -->
+  @if (prestamoSeleccionado) {
+    <div class="space-y-lg">
+
+      <!-- ─── Detalles del Ejemplar ─── -->
+      <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
+        <h2 class="font-headline-md text-headline-md text-on-background mb-md flex items-center gap-sm">
+          <span class="material-symbols-outlined text-[22px] text-primary">menu_book</span>
+          Detalles del Ejemplar
+          @if (estaVencido) {
+            <span class="ml-auto inline-flex items-center gap-xs px-sm py-xs rounded-full bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 font-label-sm text-[11px] font-semibold">
+              <span class="material-symbols-outlined text-[14px]">warning</span>
+              Vencido ({{ diasRetraso }} día{{ diasRetraso > 1 ? 's' : '' }})
+            </span>
+          }
+        </h2>
+
+        <div class="flex gap-md">
+          <!-- Portada del libro -->
+          <button type="button" (click)="abrirPortada(prestamoSeleccionado.libroId)" [attr.aria-label]="'Ver portada de ' + prestamoSeleccionado.libroTitulo"
+            class="w-24 h-32 sm:w-28 sm:h-36 shrink-0 rounded-lg overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-low flex items-center justify-center">
+            <app-portada-libro [libroId]="prestamoSeleccionado.libroId" [titulo]="prestamoSeleccionado.libroTitulo" />
+          </button>
+
+          <!-- Info del libro -->
+          <div class="flex-1 min-w-0">
+            <h3 class="font-bold text-on-surface text-lg mb-xs">{{ prestamoSeleccionado.libroTitulo }}</h3>
+            <p class="font-body-sm text-body-sm text-on-surface-variant mb-xs">
+              {{ prestamoSeleccionado.autores && prestamoSeleccionado.autores.length > 0 ? prestamoSeleccionado.autores.join(', ') : 'Autor desconocido' }}
+            </p>
+            <p class="font-body-sm text-[12px] text-on-surface-variant mb-xs">ISBN: {{ prestamoSeleccionado.libroIsbn || 'N/D' }}</p>
+            @if (prestamoSeleccionado.categorias && prestamoSeleccionado.categorias.length > 0) {
+              <div class="flex flex-wrap gap-1.5 mt-xs">
+                @for (cat of prestamoSeleccionado.categorias; track cat) {
+                  <span class="px-2 py-0.5 bg-surface-container border border-outline-variant/50 rounded text-xs font-medium text-on-surface-variant">{{ cat }}</span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Prestatario y fechas -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-md mt-md">
+          <div class="rounded-lg border border-outline-variant/50 p-md">
+            <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">Prestatario</p>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm border-2 border-white shadow-sm">
+                {{ iniciales(prestamoSeleccionado.usuarioNombre) }}
+              </div>
+              <div>
+                <p class="font-semibold text-on-surface">{{ prestamoSeleccionado.usuarioNombre }}</p>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">{{ prestamoSeleccionado.usuarioCorreo }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="rounded-lg border border-outline-variant/50 p-md">
+            <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs">Fechas</p>
+            <p class="font-body-sm text-body-sm text-on-surface">Préstamo: {{ prestamoSeleccionado.fechaPrestamo | date:'dd/MM/yyyy' }}</p>
+            <p class="font-body-sm text-body-sm"
+              [class]="estaVencido ? 'text-red-600 font-semibold' : 'text-on-surface'">
+              Vence: {{ prestamoSeleccionado.fechaDevolucionEstimada | date:'dd/MM/yyyy' }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Estado de Devolución ─── -->
+      <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
+        <h2 class="font-headline-md text-headline-md text-on-background mb-md flex items-center gap-sm">
+          <span class="material-symbols-outlined text-[22px] text-primary">rate_review</span>
+          Estado de Devolución
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-md mb-lg">
+          <!-- Buen estado -->
+          <button type="button" (click)="estadoDevolucion = 'BUEN_ESTADO'; onCambioEstado()"
+            class="flex flex-col items-center gap-sm p-lg rounded-xl border-2 transition-all cursor-pointer"
+            [class.border-green-500]="estadoDevolucion === 'BUEN_ESTADO'"
+            [class.bg-green-50]="estadoDevolucion === 'BUEN_ESTADO'"
+            [class.border-outline-variant]="estadoDevolucion !== 'BUEN_ESTADO'"
+            [class.hover:border-green-300]="estadoDevolucion !== 'BUEN_ESTADO'">
+            <span class="material-symbols-outlined text-[28px]"
+              [class]="estadoDevolucion === 'BUEN_ESTADO' ? 'text-green-600' : 'text-outline-variant'">check_circle</span>
+            <span class="font-label-md text-label-sm"
+              [class]="estadoDevolucion === 'BUEN_ESTADO' ? 'text-green-700 font-semibold' : 'text-on-surface-variant'">
+              Buen estado
+            </span>
+          </button>
+
+          <!-- Con daño -->
+          <button type="button" (click)="estadoDevolucion = 'CON_DANO'; onCambioEstado()"
+            class="flex flex-col items-center gap-sm p-lg rounded-xl border-2 transition-all cursor-pointer"
+            [class.border-orange-500]="estadoDevolucion === 'CON_DANO'"
+            [class.bg-orange-50]="estadoDevolucion === 'CON_DANO'"
+            [class.border-outline-variant]="estadoDevolucion !== 'CON_DANO'"
+            [class.hover:border-orange-300]="estadoDevolucion !== 'CON_DANO'">
+            <span class="material-symbols-outlined text-[28px]"
+              [class]="estadoDevolucion === 'CON_DANO' ? 'text-orange-600' : 'text-outline-variant'">handyman</span>
+            <span class="font-label-md text-label-sm"
+              [class]="estadoDevolucion === 'CON_DANO' ? 'text-orange-700 font-semibold' : 'text-on-surface-variant'">
+              Con daño
+            </span>
+          </button>
+
+          <!-- Perdido / No devuelto -->
+          <button type="button" (click)="estadoDevolucion = 'PERDIDO'; onCambioEstado()"
+            class="flex flex-col items-center gap-sm p-lg rounded-xl border-2 transition-all cursor-pointer"
+            [class.border-red-500]="estadoDevolucion === 'PERDIDO'"
+            [class.bg-red-50]="estadoDevolucion === 'PERDIDO'"
+            [class.border-outline-variant]="estadoDevolucion !== 'PERDIDO'"
+            [class.hover:border-red-300]="estadoDevolucion !== 'PERDIDO'">
+            <span class="material-symbols-outlined text-[28px]"
+              [class]="estadoDevolucion === 'PERDIDO' ? 'text-red-600' : 'text-outline-variant'">help</span>
+            <span class="font-label-md text-label-sm"
+              [class]="estadoDevolucion === 'PERDIDO' ? 'text-red-700 font-semibold' : 'text-on-surface-variant'">
+              Perdido / No devuelto
+            </span>
+          </button>
+        </div>
+
+        <!-- ═══ Registro de Daños (solo si CON_DANO) ═══ -->
+        @if (estadoDevolucion === 'CON_DANO') {
+          <div class="rounded-xl border border-orange-200 bg-orange-50/30 p-lg">
+            <h3 class="font-headline-sm text-headline-sm text-on-background mb-sm flex items-center gap-sm">
+              <span class="material-symbols-outlined text-[20px] text-orange-600">broken_image</span>
+              Registro de Daños
+            </h3>
+            <p class="font-body-sm text-[12px] text-on-surface-variant mb-md">
+              Documente la condición del ejemplar al momento de la recepción.
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-lg">
+              <!-- Columna izquierda: Tipos de daño -->
+              <div>
+                <label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">Tipos de daño</label>
+                <div class="space-y-0 divide-y divide-outline-variant/50">
+                  @for (tipo of tiposDano; track tipo.id) {
+                    <label class="flex items-center justify-between py-sm cursor-pointer hover:bg-orange-50/50 px-xs rounded transition-colors">
+                      <div class="flex items-center gap-sm">
+                        <input type="checkbox"
+                          [checked]="isDanoSeleccionado(tipo.id)"
+                          (change)="toggleDano(tipo, $event)"
+                          class="w-4 h-4 rounded text-orange-600 focus:ring-orange-500" />
+                        <span class="font-body-sm text-body-sm text-on-surface">{{ tipo.nombre }}</span>
+                      </div>
+                      <span class="font-body-sm text-body-sm text-on-surface-variant">{{ tipo.tipoCosto === 'PORCENTAJE' ? tipo.valor + '%' : '$' + tipo.valor.toFixed(2) }}</span>
+                    </label>
+                  }
+                </div>
+
+                <!-- Daños custom -->
+                @for (dano of danosSeleccionados; track dano; let i = $index) {
+                  @if (dano.tipoDanoId === null) {
+                    <div class="flex items-center gap-sm mt-sm py-sm border-b border-outline-variant/50">
+                      <label for="dano-custom" class="sr-only">Nombre del daño</label>
+                      <input id="dano-custom" [(ngModel)]="dano.nombreCustom"
+                        placeholder="Nombre del daño"
+                        class="flex-1 px-sm py-xs rounded-lg border border-outline-variant bg-surface-container-lowest font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" />
+                      <label for="precio-cobrado" class="sr-only">Precio cobrado</label>
+                      <input id="precio-cobrado" type="number" [(ngModel)]="dano.precioCobrado"
+                        min="0" step="0.01"
+                        class="w-20 px-sm py-xs rounded-lg border border-outline-variant bg-surface-container-lowest font-body-sm text-body-sm text-on-surface text-right focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" />
+                      <button type="button" (click)="eliminarDano(i)" aria-label="Eliminar daño"
+                        class="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                        title="Eliminar daño">
+                        <span class="material-symbols-outlined text-[18px]">delete</span>
+                      </button>
+                    </div>
+                  }
+                }
+
+                <button type="button" (click)="agregarDanoCustom()"
+                  class="mt-sm flex items-center gap-xs text-orange-600 hover:text-orange-700 font-label-sm text-label-sm font-semibold cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px]">add_circle</span>
+                  Agregar otro daño
+                </button>
+
+                <!-- Total sugerido -->
+                @if (totalDano > 0) {
+                  <div class="mt-md flex justify-between items-center pt-sm border-t border-outline-variant/50">
+                    <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Total sugerido</span>
+                    <span class="font-semibold text-orange-700 text-lg">${{ totalDano.toFixed(2) }}</span>
+                  </div>
+                }
+              </div>
+
+              <!-- Columna derecha: Descripción + Evidencia -->
+              <div>
+                <label for="descripcion-dano" class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">Descripción detallada</label>
+                <textarea id="descripcion-dano" [(ngModel)]="descripcionDano"
+                  placeholder="Describa el estado del libro"
+                  rows="6"
+                  class="w-full px-md py-sm rounded-lg border border-outline-variant bg-surface-container-lowest font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 resize-none"></textarea>
+
+                <!-- Evidencia Fotográfica -->
+                <label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-md mb-sm">Evidencia Fotográfica</label>
+                <p class="font-body-sm text-[11px] text-amber-600 mb-sm">
+                  <span class="material-symbols-outlined text-[14px] align-middle">warning</span>
+                  Las imágenes que excedan los {{ maxTamanoEvidenciaMb }}MB no serán aceptadas.
+                </p>
+                <label for="evidencia-upload" class="sr-only">Evidencia fotográfica</label>
+                <label class="block border-2 border-dashed border-outline-variant rounded-lg p-lg text-center cursor-pointer hover:border-primary/50 hover:bg-surface-container-low transition-colors">
+                  <input id="evidencia-upload" type="file" multiple
+                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    (change)="onFileSelected($event)"
+                    class="hidden" />
+                  <span class="material-symbols-outlined text-[32px] text-on-surface-variant block mb-xs">cloud_upload</span>
+                  <p class="font-body-sm text-body-sm text-on-surface-variant">
+                    Subir imágenes (JPG, JPEG, PNG, WebP, AVIF hasta {{ maxTamanoEvidenciaMb }}MB)
+                  </p>
+                </label>
+
+                <!-- Thumbnails de evidencia -->
+                @if (evidencias.length > 0) {
+                  <div class="flex flex-wrap gap-sm mt-sm">
+                    @for (ev of evidencias; track ev.id) {
+                      <div class="relative w-20 h-20 rounded-lg overflow-hidden border border-outline-variant/50 cursor-pointer shrink-0"
+                        (click)="abrirPreviewEvidencia(ev)">
+                        @if (ev.archivo.type.startsWith('image/')) {
+                          <img [src]="ev.previewUrl" alt="Evidencia"
+                            class="w-full h-full object-cover" />
+                        } @else {
+                          <div class="w-full h-full flex items-center justify-center bg-surface-container-low">
+                            <span class="material-symbols-outlined text-on-surface-variant">image</span>
+                          </div>
+                        }
+                        <button type="button" (click)="eliminarEvidencia(ev); $event.stopPropagation()" aria-label="Eliminar evidencia"
+                          class="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center cursor-pointer hover:bg-red-700 transition-colors">
+                          <span class="material-symbols-outlined text-[12px]" aria-hidden="true">close</span>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ═══ Aviso: Libro perdido ═══ -->
+        @if (estadoDevolucion === 'PERDIDO') {
+          <div class="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-md mt-md">
+            <div class="flex items-center gap-sm mb-xs">
+              <span class="material-symbols-outlined text-red-500 dark:text-red-400 text-[20px]">warning</span>
+              <p class="font-semibold text-red-700 font-body-sm text-body-sm">Libro perdido</p>
+            </div>
+            <p class="font-body-sm text-[12px] text-red-600">
+              Se generará una multa automática de <strong>$15.00</strong> por el valor del libro.
+            </p>
+          </div>
+        }
+      </div>
+
+      <!-- ─── Resumen de Multa + Acción ─── -->
+      <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
+        @if (estadoDevolucion === 'CON_DANO' || estadoDevolucion === 'PERDIDO' || estaVencido) {
+          <div class="flex items-center justify-between mb-md">
+            <h2 class="font-headline-md text-headline-md text-on-background flex items-center gap-sm">
+              <span class="material-symbols-outlined text-[22px] text-amber-600">payments</span>
+              Resumen de Multa
+            </h2>
+            <button type="button" (click)="prestamoSeleccionado = null"
+              class="px-sm py-xs rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 cursor-pointer">
+              Cancelar
+            </button>
+          </div>
+
+          <div class="space-y-0 divide-y divide-outline-variant/50 mb-md">
+            @if (estaVencido) {
+              <div class="flex justify-between items-center py-sm">
+                <span class="font-body-sm text-body-sm text-on-surface">
+                  Días de retraso ({{ diasRetraso }} x $2.00)
+                </span>
+                <span class="font-semibold text-on-surface">${{ (diasRetraso * 2).toFixed(2) }}</span>
+              </div>
+            }
+            @if (estadoDevolucion === 'CON_DANO' && totalDano > 0) {
+              @for (dano of danosSeleccionados; track dano) {
+                <div class="flex justify-between items-center py-sm">
+                  <span class="font-body-sm text-body-sm text-on-surface">
+                    Penalidad por daño
+                    @if (dano.tipoDanoId !== null) {
+                      {{ getNombreDano(dano) }}
+                    } @else {
+                      {{ dano.nombreCustom || 'Personalizado' }}
+                    }
+                  </span>
+                  <span class="font-semibold text-on-surface">${{ dano.precioCobrado.toFixed(2) }}</span>
+                </div>
+              }
+            }
+            @if (estadoDevolucion === 'PERDIDO') {
+              <div class="flex justify-between items-center py-sm">
+                <span class="font-body-sm text-body-sm text-on-surface">Valor del libro</span>
+                <span class="font-semibold text-on-surface">$15.00</span>
+              </div>
+            }
+          </div>
+
+          <div class="flex justify-between items-center pt-sm border-t border-outline-variant">
+            <span class="font-semibold text-on-surface text-lg">Total</span>
+            <span class="font-bold text-on-surface text-xl">
+              ${{ ((estaVencido ? diasRetraso * 2 : 0) + (estadoDevolucion === 'PERDIDO' ? 15 : totalDano)).toFixed(2) }}
+            </span>
+          </div>
+        }
+
+        <!-- Botón registrar -->
+        <button (click)="registrarDevolucion()"
+          [disabled]="procesando"
+          class="mt-md w-full h-12 rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:bg-on-primary-fixed-variant disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-sm shadow-sm">
+          @if (procesando) {
+            <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+            Procesando...
+          } @else {
+            <span class="material-symbols-outlined text-[18px]">check_circle</span>
+            Registrar devolución
+          }
+        </button>
+      </div>
+
+      <!-- ─── Historial de devoluciones recientes ─── -->
+      @if (historial.length > 0) {
+        <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-lg">
+          <h2 class="font-headline-sm text-headline-sm text-on-background mb-md flex items-center gap-sm">
+            <span class="material-symbols-outlined text-[18px] text-primary">history</span>
+            Últimas devoluciones
+          </h2>
+          <div class="space-y-sm">
+            @for (dev of historial.slice(0, 5); track dev.prestamoId) {
+              <div class="flex items-center justify-between py-sm border-b border-outline-variant/50 last:border-0">
+                <div class="min-w-0">
+                  <p class="font-body-sm text-[13px] text-on-surface truncate">{{ dev.libroTitulo }}</p>
+                  <p class="font-body-sm text-[11px] text-on-surface-variant">{{ dev.usuarioNombre }}</p>
+                </div>
+                <span class="shrink-0 font-label-sm text-[11px] font-semibold" [class]="claseEstadoHistorial(dev.estadoDevolucion)">
+                  {{ etiquetaEstadoDevolucion(dev.estadoDevolucion) }}
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+    </div>
+  }
+
+</main>
+
+<!-- ═══ Modal portada del libro ═══ -->
+@if (portadaModalVisible) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
+    (click)="cerrarPortada()">
+    <div class="absolute inset-0 bg-black/60"></div>
+    <div role="dialog" aria-modal="true" aria-label="Portada del libro" tabindex="-1"
+      appFocusTrap (cerrar)="cerrarPortada()"
+      class="relative z-10 max-w-lg w-full bg-surface-container-lowest rounded-xl shadow-xl overflow-hidden"
+      (click)="$event.stopPropagation()">
+      <div class="relative bg-surface-container-low flex items-center justify-center"
+        style="min-height: 300px; max-height: 70vh;">
+        @if (portadaModalCargando) {
+          <span class="material-symbols-outlined text-[48px] text-outline-variant animate-pulse">image</span>
+        } @else if (portadaModalUrl) {
+          <img [src]="portadaModalUrl" alt="Portada del libro"
+            class="max-w-full max-h-[70vh] object-contain" />
+        } @else {
+          <span class="material-symbols-outlined text-[64px] text-outline-variant">menu_book</span>
+        }
+      </div>
+      <button type="button" (click)="cerrarPortada()" aria-label="Cerrar vista de portada"
+        class="absolute top-sm right-sm w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 cursor-pointer">
+        <span class="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
+      </button>
+    </div>
+  </div>
+}
+
+@if (evidenciaPreviewVisible) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
+    (click)="cerrarPreviewEvidencia()">
+    <div class="absolute inset-0 bg-black/60"></div>
+    <div role="dialog" aria-modal="true" aria-labelledby="titulo-evidencia" tabindex="-1"
+      appFocusTrap (cerrar)="cerrarPreviewEvidencia()"
+      class="relative z-10 max-w-2xl w-full bg-surface-container-lowest rounded-xl shadow-xl overflow-hidden"
+      (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between px-md py-sm border-b border-outline-variant/30">
+        <span id="titulo-evidencia" class="font-body-sm text-body-sm text-on-surface truncate">{{ evidenciaPreviewNombre }}</span>
+        <button type="button" (click)="cerrarPreviewEvidencia()" aria-label="Cerrar vista de evidencia"
+          class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-high cursor-pointer">
+          <span class="material-symbols-outlined text-[20px] text-on-surface-variant" aria-hidden="true">close</span>
+        </button>
+      </div>
+      <div class="bg-black flex items-center justify-center" style="min-height: 300px; max-height: 80vh;">
+        @if (evidenciaPreviewUrl) {
+          <img [src]="evidenciaPreviewUrl" alt="Evidencia"
+            class="max-w-full max-h-[80vh] object-contain" />
+        } @else {
+          <span class="material-symbols-outlined text-[48px] text-outline-variant animate-pulse">image</span>
+        }
+      </div>
+    </div>
+  </div>
+}

@@ -1,22 +1,23 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
+import { map, catchError, of } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
 export const authGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  if (authService.isLoggedIn()) {
-    // Hallazgo epsilon/lambda: un accessToken vencido no debe esperar el
-    // 403 del backend para invalidar la sesion. tokenExpirado() reusa la
-    // decodificacion del JWT que ya vive en AuthService.
-    if (authService.tokenExpirado()) {
-      authService.logout(); // limpia sesion y navega a /login
-      return false;
-    }
+  if (authService.isLoggedIn() && !authService.tokenExpirado()) {
     return true;
   }
 
-  router.navigate(['/login']);
-  return false;
+  // Sin accessToken (F5) o con JWT vencido: la cookie de refresh sigue
+  // viva. Pedir uno nuevo en vez de logout, que borraría esa cookie.
+  return authService.refresh().pipe(
+    map(() => true),
+    catchError(() => {
+      router.navigate(['/login']);
+      return of(false);
+    })
+  );
 };

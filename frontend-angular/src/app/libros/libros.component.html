@@ -1,252 +1,567 @@
-<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
+<div class="max-w-container-max mx-auto px-md md:px-lg py-lg">
 
-  <div class="mb-lg flex items-center justify-between flex-wrap gap-sm">
-    <div>
-      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Inventario de libros</h1>
-      <p class="font-body-sm text-body-sm text-on-surface-variant">LibroService.listar / crear / actualizar / eliminar — BIBLIOTECARIO y GERENTE</p>
+  <!-- ─── ENCABEZADO ─── -->
+  @if (!mostrarFormulario) {
+    <div class="mb-lg flex items-center justify-between flex-wrap gap-sm">
+      <div>
+        <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Inventario de libros</h1>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Gestión y control de inventario</p>
+      </div>
+      <button (click)="abrirFormularioCrear()"
+        class="h-10 px-md rounded bg-primary text-on-primary font-label-md text-label-sm flex items-center gap-xs hover:bg-on-primary-fixed-variant cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">add</span> Nuevo libro
+      </button>
     </div>
-    <button (click)="abrirFormularioCrear()"
-      class="h-10 px-md rounded bg-primary text-on-primary font-label-md text-label-sm flex items-center gap-xs hover:bg-on-primary-fixed-variant cursor-pointer">
-      <span class="material-symbols-outlined text-[18px]">add</span> Nuevo libro
-    </button>
-  </div>
+  }
 
   @if (errorMsg) {
     <p class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
   }
 
-  <!-- Filtro por categoría (contrato real de LibroController: ?categoriaId=).
-       El backend no expone búsqueda por texto en el listado de inventario,
-       así que el buscador del mockup 19 no se implementa. -->
-  <div class="rounded border border-outline-variant bg-white flex items-center px-sm mb-md glass-panel">
-    <span class="material-symbols-outlined text-on-surface-variant text-[20px]">filter_list</span>
-    <select (change)="filtrarPorCategoria()" [(ngModel)]="categoriaFiltro"
-      class="flex-1 h-11 px-sm bg-transparent outline-none font-body-sm text-body-sm text-on-surface-variant cursor-pointer">
-      <option value="">Todas las categorías</option>
-      @for (categoria of categorias; track categoria.id) {
-        <option [value]="categoria.id">{{ categoria.nombre }}</option>
-      }
-    </select>
-  </div>
-
-  @if (cargando && libros.length === 0) {
-    <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando inventario…</p>
-  }
-
-  <div class="rounded-lg border border-outline-variant bg-white overflow-hidden overflow-x-auto">
-    <table class="w-full text-left">
-      <thead class="bg-surface-container-low">
-        <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
-          <th class="px-md py-sm">Portada</th>
-          <th class="px-md py-sm">ISBN</th>
-          <th class="px-md py-sm">Título</th>
-          <th class="px-md py-sm hidden md:table-cell">Categorías</th>
-          <th class="px-md py-sm hidden sm:table-cell">Año</th>
-          <th class="px-md py-sm">Stock</th>
-          <th class="px-md py-sm">Acciones</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
-        @for (libro of libros; track libro.id) {
-          <tr>
-            <td class="px-md py-sm">
-              <app-portada-libro [libroId]="libro.id" [tienePortada]="libro.tienePortada" />
-            </td>
-            <td class="px-md py-sm text-on-surface-variant">{{ libro.isbn }}</td>
-            <td class="px-md py-sm font-medium">{{ libro.titulo }}</td>
-            <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">
-              {{ libro.categorias.length ? libro.categorias.join(', ') : '—' }}
-            </td>
-            <td class="px-md py-sm hidden sm:table-cell text-on-surface-variant">{{ libro.anioPublicacion }}</td>
-            <td class="px-md py-sm">
-              <span class="inline-flex items-center px-sm py-xs rounded-full font-label-sm text-[11px]"
-                [class]="libro.stockDisponible > 0 ? 'bg-success/15 text-success' : 'bg-warning/25 text-on-tertiary-container'">
-                {{ libro.stockDisponible }}/{{ libro.stockTotal }}
-              </span>
-            </td>
-            <td class="px-md py-sm">
-              <div class="flex gap-xs">
-                <button (click)="abrirFormularioEditar(libro)" title="Editar"
-                  class="w-8 h-8 rounded flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant cursor-pointer">
-                  <span class="material-symbols-outlined text-[18px]">edit</span>
-                </button>
-                <button (click)="eliminarLibro(libro.id)" title="Eliminar"
-                  class="w-8 h-8 rounded flex items-center justify-center hover:bg-error-container/40 text-error cursor-pointer">
-                  <span class="material-symbols-outlined text-[18px]">delete</span>
-                </button>
-              </div>
-            </td>
-          </tr>
-        } @empty {
-          @if (!cargando) {
-            <tr>
-              <td colspan="7" class="px-md py-lg text-center text-on-surface-variant">No hay libros registrados</td>
-            </tr>
-          }
-        }
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Paginación numerada -->
-  @if (totalPages > 1) {
-    <div class="flex justify-center mt-lg gap-xs">
-      <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
-        class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
-        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
-      </button>
-      @for (pagina of paginasVisibles; track pagina) {
-        <button (click)="currentPage = pagina; cargarLibros()"
-          class="w-8 h-8 rounded font-label-sm text-label-sm cursor-pointer"
-          [class.bg-primary]="$index === currentPage"
-          [class.text-on-primary]="$index === currentPage"
-          [class.hover:bg-surface-container-low]="$index !== currentPage"
-          [class.text-on-surface-variant]="$index !== currentPage">
-          {{ $index + 1 }}
-        </button>
-      }
-      <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
-        class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
-        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
-      </button>
-    </div>
-  }
-
-  <!-- Modal crear/editar (mockup 19) -->
+  <!-- ─── FORMULARIO INLINE ─── -->
   @if (mostrarFormulario) {
-    <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-md">
-      <div class="bg-white rounded-xl glass-panel w-full max-w-xl p-xl max-h-[90vh] overflow-y-auto">
-        <h2 class="font-headline-md text-headline-md text-on-background mb-md">
-          {{ modoEdicion ? 'Editar libro' : 'Nuevo libro' }}
-        </h2>
-        <form [formGroup]="form" (ngSubmit)="guardarLibro()">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-md">
-            <div class="sm:col-span-2">
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">ISBN</label>
-              <div class="flex gap-xs">
-                <input formControlName="isbn" type="text" placeholder="978..."
-                  class="flex-1 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
-                <button type="button" (click)="autocompletar()"
-                  [disabled]="!esIsbnAutocompletable() || buscandoIsbn"
-                  class="h-11 px-md rounded border border-primary text-primary font-label-sm text-label-sm hover:bg-primary/5 disabled:opacity-40 cursor-pointer">
-                  {{ buscandoIsbn ? 'Buscando…' : 'Autocompletar' }}
-                </button>
+    <div class="mb-md">
+      <h2 id="titulo-form-libro" class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">
+        {{ modoEdicion ? 'Editar libro' : 'Nuevo libro' }}
+      </h2>
+      <p class="font-body-sm text-body-sm text-on-surface-variant mb-lg">Completá los datos para agregarlo al catálogo</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="guardarLibro()" role="dialog" aria-modal="true" aria-labelledby="titulo-form-libro">
+      <div class="flex flex-col xl:flex-row gap-xl">
+
+        <!-- ══ COLUMNA IZQUIERDA: Portada + Stock ══ -->
+        <div class="w-full xl:w-56 shrink-0 flex flex-col gap-lg">
+
+          <!-- Portada -->
+          <div>
+            @if (portadaPreviewUrl) {
+              <img [src]="portadaPreviewUrl" alt="Portada del libro"
+                class="w-full aspect-[3/4] object-cover rounded-xl border border-outline-variant" />
+            } @else {
+              <div class="w-full aspect-[3/4] rounded-xl border-2 border-dashed border-outline-variant bg-surface-container-low flex flex-col items-center justify-center gap-xs">
+                <span class="material-symbols-outlined text-[40px] text-on-surface-variant/40">image</span>
+                <span class="font-body-sm text-body-sm text-on-surface-variant/60 text-center px-sm">Portada del libro</span>
               </div>
-              @if (autocompletarAutor) {
-                <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Autor sugerido: {{ autocompletarAutor }}</p>
-              }
-              @if (lookupMensaje) {
-                <p class="font-body-sm text-body-sm text-secondary mt-xs">{{ lookupMensaje }}</p>
-              }
-              @if (lookupError) {
-                <p class="font-body-sm text-body-sm text-error mt-xs">{{ lookupError }}</p>
-              }
-            </div>
-            <div class="sm:col-span-2">
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Título</label>
-              <input formControlName="titulo" type="text"
-                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
-            </div>
-            <div class="sm:col-span-2">
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Resumen</label>
-              <textarea formControlName="resumen" rows="3"
-                class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm resize-y"></textarea>
-            </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Año de publicación</label>
-              <input formControlName="anioPublicacion" type="number" min="1000" max="2100"
-                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
-            </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Ubicación física <span class="opacity-60">(opcional)</span></label>
-              <input formControlName="ubicacionFisica" type="text" maxlength="50" placeholder="Ej: Estante A-12"
-                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
-            </div>
-            <div class="sm:col-span-2">
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Portada <span class="opacity-60">(opcional)</span></label>
-              <input type="file" accept="image/png,image/jpeg,image/webp"
-                (change)="onArchivoPortadaSeleccionado($event)"
-                class="w-full text-body-sm text-on-surface-variant file:mr-sm file:h-9 file:px-sm file:rounded file:border-0 file:bg-primary-fixed file:text-on-primary-fixed-variant file:cursor-pointer" />
-              @if (portadaPreviewUrl) {
-                <img [src]="portadaPreviewUrl" alt="Portada"
-                  class="mt-xs w-16 h-20 object-cover rounded border border-outline-variant" />
-              }
-            </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Categorías</label>
-              <select multiple formControlName="categoriaIds"
-                class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm h-24 bg-white">
-                @for (categoria of categorias; track categoria.id) {
-                  <option [ngValue]="categoria.id">{{ categoria.nombre }}</option>
+            }
+            <label for="portada-upload" class="sr-only">Subir portada</label>
+            <input type="file" accept="image/png,image/jpeg,image/webp,image/avif" id="portada-upload"
+              (change)="onArchivoPortadaSeleccionado($event)"
+              class="mt-sm w-full text-body-sm text-on-surface-variant file:mr-sm file:h-9 file:px-sm file:rounded file:border-0 file:bg-primary-fixed file:text-on-primary-fixed-variant file:cursor-pointer" />
+            <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">JPG / JPEG / PNG / WebP / AVIF</p>
+          </div>
+
+          <!-- Disponibilidad -->
+          <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-md">
+            <p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">Disponibilidad</p>
+            <div class="flex flex-col gap-md">
+              <div>
+                <label for="libro-stock-total" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Stock total *</label>
+                <input id="libro-stock-total" formControlName="stockTotal" type="number" min="0"
+                  [attr.aria-invalid]="form.get('stockTotal')?.invalid && form.get('stockTotal')?.touched ? true : null"
+                  [attr.aria-describedby]="form.get('stockTotal')?.invalid && form.get('stockTotal')?.touched ? 'stock-total-error' : null"
+                  class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+                @if (form.get('stockTotal')?.touched && form.get('stockTotal')?.invalid) {
+                  <p id="stock-total-error" class="text-[12px] text-error mt-1">Requerido</p>
                 }
-              </select>
-            </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Autores</label>
-              <select multiple formControlName="autorIds"
-                class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm h-24 bg-white">
-                @for (autor of autores; track autor.id) {
-                  <option [ngValue]="autor.id">{{ autor.nombre }}</option>
+              </div>
+              <div>
+                <label for="libro-stock-disponible" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Stock disponible *</label>
+                <input id="libro-stock-disponible" formControlName="stockDisponible" type="number" min="0"
+                  [attr.aria-invalid]="form.get('stockDisponible')?.invalid && form.get('stockDisponible')?.touched ? true : null"
+                  [attr.aria-describedby]="form.get('stockDisponible')?.invalid && form.get('stockDisponible')?.touched ? 'stock-disponible-error' : null"
+                  class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+                @if (form.get('stockDisponible')?.touched && form.get('stockDisponible')?.invalid) {
+                  <p id="stock-disponible-error" class="text-[12px] text-error mt-1">Requerido</p>
                 }
-              </select>
-            </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Editorial</label>
-              <select formControlName="editorialId"
-                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white">
-                <option [ngValue]="null" disabled>Seleccioná una editorial</option>
-                @for (item of editoriales; track item.id) {
-                  <option [ngValue]="item.id">{{ item.nombre }}</option>
-                }
-              </select>
-            </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Idioma</label>
-              <select formControlName="idiomaId"
-                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white">
-                <option [ngValue]="null" disabled>Seleccioná un idioma</option>
-                @for (item of idiomas; track item.id) {
-                  <option [ngValue]="item.id">{{ item.nombre }}</option>
-                }
-              </select>
-            </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Estado</label>
-              <select formControlName="estadoId"
-                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-white">
-                <option [ngValue]="null" disabled>Seleccioná un estado</option>
-                @for (item of estados; track item.id) {
-                  <option [ngValue]="item.id">{{ item.nombre }}</option>
-                }
-              </select>
-            </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Stock total</label>
-              <input formControlName="stockTotal" type="number"
-                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
-            </div>
-            <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Stock disponible</label>
-              <input formControlName="stockDisponible" type="number"
-                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+              </div>
+              <div>
+                <label for="libro-ubicacion-fisica" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Ubicación física</label>
+                <input id="libro-ubicacion-fisica" formControlName="ubicacionFisica" type="text" maxlength="50" placeholder="Ej: Estante A-12"
+                  class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+              </div>
             </div>
           </div>
+        </div>
+
+        <!-- ══ COLUMNA DERECHA: Datos del libro ══ -->
+        <div class="flex-1 min-w-0">
+
+          <!-- Título -->
+          <div class="mb-md">
+            <label for="libro-titulo" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Título *</label>
+            <input id="libro-titulo" formControlName="titulo" type="text" maxlength="255" placeholder="Título del libro"
+              [attr.aria-invalid]="form.get('titulo')?.invalid && form.get('titulo')?.touched ? true : null"
+              [attr.aria-describedby]="form.get('titulo')?.invalid && form.get('titulo')?.touched ? 'titulo-error' : null"
+              class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+            <p class="text-[11px] text-on-surface-variant text-right mt-1">{{ form.get('titulo')?.value?.length || 0 }}/255</p>
+            @if (form.get('titulo')?.touched && form.get('titulo')?.invalid) {
+              <p id="titulo-error" class="text-[12px] text-error mt-1">Título requerido (máx 255)</p>
+            }
+          </div>
+
+          <!-- Fila: ISBN + Año + Nº páginas + Idioma + Precio -->
+          <div class="grid grid-cols-12 gap-md mb-md">
+            <div class="col-span-12 sm:col-span-3">
+              <label for="libro-isbn" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">ISBN *</label>
+              <div class="flex gap-xs">
+                <input id="libro-isbn" formControlName="isbn" type="text" inputmode="numeric" maxlength="13" placeholder="978..."
+                  [attr.aria-invalid]="form.get('isbn')?.invalid && form.get('isbn')?.touched ? true : null"
+                  [attr.aria-describedby]="form.get('isbn')?.invalid && form.get('isbn')?.touched ? 'isbn-error' : null"
+                  class="flex-1 min-w-0 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+                <button type="button" (click)="buscarPorIsbn()" [disabled]="lookupCargando"
+                  class="h-11 px-sm rounded bg-primary text-on-primary font-label-sm text-[13px] flex items-center gap-xs hover:bg-on-primary-fixed-variant disabled:opacity-40 shrink-0 cursor-pointer">
+                  <span class="material-symbols-outlined text-[18px]">{{ lookupCargando ? 'progress_activity' : 'search' }}</span>
+                  {{ lookupCargando ? 'Buscando...' : 'Buscar' }}
+                </button>
+              </div>
+              @if (lookupError) {
+                <p class="font-body-sm text-[12px] text-error mt-xs">{{ lookupError }}</p>
+              }
+              @if (form.get('isbn')?.touched && form.get('isbn')?.invalid) {
+                <p id="isbn-error" class="text-[12px] text-error mt-1">ISBN 10 a 13 dígitos numéricos</p>
+              }
+            </div>
+            <div class="col-span-6 sm:col-span-2">
+              <label for="libro-anio" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Año *</label>
+              <input id="libro-anio" formControlName="anioPublicacion" type="number" [min]="1950" [max]="anioMax" [placeholder]="anioMax.toString()"
+                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+              @if (form.get('anioPublicacion')?.touched && form.get('anioPublicacion')?.invalid) {
+                <p class="text-[11px] text-error mt-1">Entre 1950 y {{anioMax}}</p>
+              }
+            </div>
+            <div class="col-span-6 sm:col-span-2">
+              <label for="libro-num-paginas" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Nº páginas</label>
+              <input id="libro-num-paginas" formControlName="numeroPaginas" type="number" min="1" max="99999" placeholder="320"
+                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+            </div>
+            <div class="col-span-6 sm:col-span-3" data-autocomplete-idioma>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Idioma *</label>
+              @if (form.get('idiomaId')?.value) {
+                <div class="flex items-center gap-xs mb-xs">
+                  <span class="inline-flex items-center gap-1 px-sm py-xs rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-[11px]">
+                    {{ nombreIdiomaSeleccionado() }}
+                    <button type="button" (click)="quitarIdioma()" aria-label="Quitar idioma seleccionado" class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-on-primary-fixed-variant/20 cursor-pointer">
+                      <span class="material-symbols-outlined text-[12px]">close</span>
+                    </button>
+                  </span>
+                </div>
+              }
+              <div class="relative flex items-center gap-1">
+                <label for="buscar-idioma" class="sr-only">Buscar idioma</label>
+                <input type="text" [(ngModel)]="textoIdioma" [ngModelOptions]="{standalone: true}" id="buscar-idioma"
+                  (keydown)="onKeydownIdioma($event)"
+                  (focus)="textoIdioma.trim().length >=1 && (mostrarSugerenciasIdioma = true)"
+                  placeholder="Buscar idioma..."
+                  role="combobox" [attr.aria-expanded]="mostrarSugerenciasIdioma"
+                  aria-controls="libro-idioma-listbox" aria-autocomplete="list"
+                  [attr.aria-activedescendant]="indiceIdioma >= 0 ? 'libro-idioma-option-' + indiceIdioma : null"
+                  class="flex-1 min-w-0 h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+                <button type="button" (click)="buscarIdiomaManualmente()" aria-label="Buscar idioma" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
+                  <span class="material-symbols-outlined text-[18px]">search</span>
+                </button>
+                <button type="button" (click)="agregarIdioma()" aria-label="Agregar idioma" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Agregar">
+                  <span class="material-symbols-outlined text-[18px]">add</span>
+                </button>
+                @if (mostrarSugerenciasIdioma) {
+                  <ul id="libro-idioma-listbox" role="listbox" aria-label="Sugerencias de idiomas" class="absolute left-0 right-0 top-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                    @if (sugerenciasIdioma.length > 0) {
+                      @for (s of sugerenciasIdioma; track s.id; let i = $index) {
+                        <li (mousedown)="seleccionarIdioma(s)" role="option" [id]="'libro-idioma-option-' + i" [attr.aria-selected]="i===indiceIdioma" class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low" [class.bg-primary-container]="i===indiceIdioma">{{ s.nombre }}</li>
+                      }
+                    } @else if (textoIdioma.trim().length >=1) {
+                      <li (mousedown)="agregarIdioma($event)" class="px-sm py-xs cursor-pointer font-body-sm text-body-sm text-primary hover:bg-primary-container flex items-center gap-xs">
+                        <span class="material-symbols-outlined text-[16px]">add</span> Crear "{{ textoIdioma.trim() }}"
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
+            </div>
+            @if (esGerenteAdmin || modoRevisionPendiente) {
+              <div class="col-span-6 sm:col-span-2">
+                <label for="libro-precio" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Precio</label>
+                <div class="relative group">
+                  <input id="libro-precio" formControlName="precioBase" type="number" min="0" step="0.01" placeholder="199.99"
+                    class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm disabled:bg-surface-container-low disabled:opacity-60" />
+                  @if (modoRevisionPendiente && !esGerenteAdmin) {
+                    <span class="absolute right-2 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center justify-center w-6 h-6 rounded-full bg-error text-white">
+                      <span class="material-symbols-outlined text-[16px]">close</span>
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Resumen -->
+          <div class="mb-md">
+            <label for="libro-resumen" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Resumen</label>
+            <textarea id="libro-resumen" formControlName="resumen" rows="3" maxlength="2000" placeholder="Breve descripción del libro..."
+              class="w-full px-sm py-xs rounded border border-outline-variant font-body-sm text-body-sm resize-y"></textarea>
+            <p class="text-[11px] text-on-surface-variant text-right mt-1">{{ form.get('resumen')?.value?.length || 0 }}/2000</p>
+          </div>
+
+
+
+          <!-- Fila: Autores + Categorías (autocomplete manual) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-md mb-md">
+            <!-- Autores -->
+            <div data-autocomplete-autores>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Autores</label>
+              <div class="rounded-lg border border-outline-variant bg-surface-container-lowest p-sm min-h-[80px]">
+                <div class="flex flex-wrap gap-xs mb-xs">
+                  @for (autorId of form.get('autorIds')?.value ?? []; track autorId) {
+                    <span class="inline-flex items-center gap-1 px-sm py-xs rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-[11px]">
+                      {{ nombreAutor(autorId) }}
+                      <button type="button" (click)="quitarAutor(autorId)" aria-label="Quitar autor"
+                        class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-on-primary-fixed-variant/20 cursor-pointer">
+                        <span class="material-symbols-outlined text-[12px]">close</span>
+                      </button>
+                    </span>
+                  }
+                </div>
+                <div class="relative flex items-center gap-1">
+                  <label for="buscar-autor" class="sr-only">Buscar autor</label>
+                  <input type="text" [(ngModel)]="textoAutor" [ngModelOptions]="{standalone: true}" id="buscar-autor"
+                    (keydown)="onKeydownAutor($event)"
+                    placeholder="Buscar autor..."
+                    role="combobox" [attr.aria-expanded]="mostrarSugerenciasAutor"
+                    aria-controls="libro-autor-listbox" aria-autocomplete="list"
+                    [attr.aria-activedescendant]="indiceAutor >= 0 ? 'libro-autor-option-' + indiceAutor : null"
+                    class="flex-1 min-w-0 h-8 px-sm rounded font-body-sm text-body-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 border border-transparent" />
+                  <button type="button" (click)="buscarAutorManualmente()" aria-label="Buscar autor" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
+                    <span class="material-symbols-outlined text-[16px]">search</span>
+                  </button>
+                  <button type="button" (click)="agregarAutor()" aria-label="Agregar autor" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Agregar">
+                    <span class="material-symbols-outlined text-[16px]">add</span>
+                  </button>
+                  @if (mostrarSugerenciasAutor) {
+                    <ul id="libro-autor-listbox" role="listbox" aria-label="Sugerencias de autores" class="absolute left-0 right-0 top-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                      @if (sugerenciasAutor.length > 0) {
+                        @for (sugerencia of sugerenciasAutor; track sugerencia.id; let i = $index) {
+                          <li (mousedown)="seleccionarAutor(sugerencia)"
+                            role="option" [id]="'libro-autor-option-' + i" [attr.aria-selected]="i === indiceAutor"
+                            class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low"
+                            [class.bg-primary-container]="i === indiceAutor">
+                            {{ sugerencia.nombre }}
+                          </li>
+                        }
+                      } @else if (textoAutor.trim().length >= 1) {
+                        <li (mousedown)="agregarAutor($event)"
+                          class="px-sm py-xs cursor-pointer font-body-sm text-body-sm text-primary hover:bg-primary-container flex items-center gap-xs">
+                          <span class="material-symbols-outlined text-[16px]">add</span>
+                          Crear "{{ textoAutor.trim() }}"
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+              </div>
+            </div>
+            <!-- Categorías -->
+            <div data-autocomplete-categorias>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Categorías</label>
+              <div class="rounded-lg border border-outline-variant bg-surface-container-lowest p-sm min-h-[80px]">
+                <div class="flex flex-wrap gap-xs mb-xs">
+                  @for (catId of form.get('categoriaIds')?.value ?? []; track catId) {
+                    <span class="inline-flex items-center gap-1 px-sm py-xs rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-[11px]">
+                      {{ nombreCategoria(catId) }}
+                      <button type="button" (click)="quitarCategoria(catId)" aria-label="Quitar categoría"
+                        class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-on-primary-fixed-variant/20 cursor-pointer">
+                        <span class="material-symbols-outlined text-[12px]">close</span>
+                      </button>
+                    </span>
+                  }
+                </div>
+                <div class="relative flex items-center gap-1">
+                  <label for="buscar-categoria" class="sr-only">Buscar categoría</label>
+                  <input type="text" [(ngModel)]="textoCategoria" [ngModelOptions]="{standalone: true}" id="buscar-categoria"
+                    (keydown)="onKeydownCategoria($event)"
+                    placeholder="Buscar categoría..."
+                    role="combobox" [attr.aria-expanded]="mostrarSugerenciasCategoria"
+                    aria-controls="libro-categoria-listbox" aria-autocomplete="list"
+                    [attr.aria-activedescendant]="indiceCategoria >= 0 ? 'libro-categoria-option-' + indiceCategoria : null"
+                    class="flex-1 min-w-0 h-8 px-sm rounded font-body-sm text-body-sm focus:ring-2 focus:ring-primary focus:ring-offset-2 border border-transparent" />
+                  <button type="button" (click)="buscarCategoriaManualmente()" aria-label="Buscar categoría" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
+                    <span class="material-symbols-outlined text-[16px]">search</span>
+                  </button>
+                  <button type="button" (click)="agregarCategoria()" aria-label="Agregar categoría" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Agregar">
+                    <span class="material-symbols-outlined text-[16px]">add</span>
+                  </button>
+                  @if (mostrarSugerenciasCategoria) {
+                    <ul id="libro-categoria-listbox" role="listbox" aria-label="Sugerencias de categorías" class="absolute left-0 right-0 top-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                      @if (sugerenciasCategoria.length > 0) {
+                        @for (sugerencia of sugerenciasCategoria; track sugerencia.id; let i = $index) {
+                          <li (mousedown)="seleccionarCategoria(sugerencia)"
+                            role="option" [id]="'libro-categoria-option-' + i" [attr.aria-selected]="i === indiceCategoria"
+                            class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low"
+                            [class.bg-primary-container]="i === indiceCategoria">
+                            {{ sugerencia.nombre }}
+                          </li>
+                        }
+                      } @else if (textoCategoria.trim().length >= 1) {
+                        <li (mousedown)="agregarCategoria($event)"
+                          class="px-sm py-xs cursor-pointer font-body-sm text-body-sm text-primary hover:bg-primary-container flex items-center gap-xs">
+                          <span class="material-symbols-outlined text-[16px]">add</span>
+                          Crear "{{ textoCategoria.trim() }}"
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fila: Editorial + Estado -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-md mb-lg">
+            <div data-autocomplete-editorial>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Editorial *</label>
+              @if (form.get('editorialId')?.value) {
+                <div class="flex items-center gap-xs mb-xs">
+                  <span class="inline-flex items-center gap-1 px-sm py-xs rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-[11px]">
+                    {{ nombreEditorialSeleccionada() }}
+                    <button type="button" (click)="quitarEditorial()" aria-label="Quitar editorial seleccionada" class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-on-primary-fixed-variant/20 cursor-pointer">
+                      <span class="material-symbols-outlined text-[12px]">close</span>
+                    </button>
+                  </span>
+                </div>
+              }
+              <div class="relative flex items-center gap-1">
+                <label for="buscar-editorial" class="sr-only">Buscar editorial</label>
+                <input type="text" #editorialInput [(ngModel)]="textoEditorial" [ngModelOptions]="{standalone: true}" id="buscar-editorial"
+                  (keydown)="onKeydownEditorial($event)"
+                  placeholder="Buscar editorial..."
+                  role="combobox" [attr.aria-expanded]="mostrarSugerenciasEditorial"
+                  aria-controls="libro-editorial-listbox" aria-autocomplete="list"
+                  [attr.aria-activedescendant]="indiceEditorial >= 0 ? 'libro-editorial-option-' + indiceEditorial : null"
+                  class="flex-1 min-w-0 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+                <button type="button" (click)="buscarEditorialManualmente()" aria-label="Buscar editorial" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
+                  <span class="material-symbols-outlined text-[18px]">search</span>
+                </button>
+                <button type="button" (click)="agregarEditorial()" aria-label="Agregar editorial" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Agregar">
+                  <span class="material-symbols-outlined text-[18px]">add</span>
+                </button>
+                @if (mostrarSugerenciasEditorial) {
+                  <ul id="libro-editorial-listbox" role="listbox" aria-label="Sugerencias de editoriales" class="absolute left-0 right-0 top-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                    @if (sugerenciasEditorial.length>0) {
+                      @for (s of sugerenciasEditorial; track s.id; let i=$index) {
+                        <li (mousedown)="seleccionarEditorial(s)" role="option" [id]="'libro-editorial-option-' + i" [attr.aria-selected]="i===indiceEditorial" class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low" [class.bg-primary-container]="i===indiceEditorial">{{ s.nombre }}</li>
+                      }
+                    } @else if (textoEditorial.trim().length>=1) {
+                      <li (mousedown)="agregarEditorial($event)" class="px-sm py-xs cursor-pointer font-body-sm text-body-sm text-primary hover:bg-primary-container flex items-center gap-xs"><span class="material-symbols-outlined text-[16px]">add</span>Crear "{{ textoEditorial.trim() }}"</li>
+                    }
+                  </ul>
+                }
+              </div>
+            </div>
+            <div>
+              <label for="libro-estado" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Estado *</label>
+              <select id="libro-estado" formControlName="estadoId"
+                class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest">
+                <option [ngValue]="null" disabled>Seleccioná un estado</option>
+                @for (item of estados; track item.id) {
+                  <option [ngValue]="item.id">{{ formatarEstado(item.nombre) }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
           @if (errorCatalogo) {
-            <p class="font-body-sm text-body-sm text-warning mt-sm">{{ errorCatalogo }}</p>
+            <p class="font-body-sm text-body-sm text-warning mb-md">{{ errorCatalogo }}</p>
           }
-          <div class="flex justify-end gap-sm mt-lg">
+
+          <!-- Botones -->
+          <div class="flex justify-end gap-sm">
             <button type="button" (click)="cerrarFormulario()"
-              class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm hover:bg-surface-container-low cursor-pointer">
+              class="h-10 px-md rounded-lg border border-outline-variant font-label-sm text-label-sm hover:bg-surface-container-low cursor-pointer">
               Cancelar
             </button>
             <button type="submit" [disabled]="form.invalid"
-              class="h-10 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm disabled:opacity-40 cursor-pointer">
+              class="h-10 px-lg rounded-lg bg-primary text-on-primary font-label-sm text-label-sm disabled:opacity-40 cursor-pointer">
               {{ modoEdicion ? 'Actualizar' : 'Guardar' }}
             </button>
           </div>
-        </form>
+        </div>
+      </div>
+    </form>
+  }
+
+  <!-- ─── TABLA DE INVENTARIO ─── -->
+  @if (!mostrarFormulario) {
+    <!-- Filtros -->
+    <div class="flex flex-wrap items-center gap-sm mb-md">
+      <div class="relative flex-1 min-w-[200px]">
+        <span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+        <label for="busqueda-libros" class="sr-only">Buscar por título o ISBN</label>
+        <input type="text" [ngModel]="textoBusqueda" id="busqueda-libros"
+          (ngModelChange)="onBusquedaTexto($event)"
+          placeholder="Buscar por título o ISBN..."
+          class="w-full h-10 pl-[36px] pr-sm rounded-lg border border-outline-variant bg-surface-container-lowest font-body-sm text-body-sm focus:outline-none focus:border-primary" />
+      </div>
+      <label for="filtro-cat-libros" class="sr-only">Categoría</label>
+      <select (change)="filtrarPorCategoria()" [(ngModel)]="categoriaFiltro" id="filtro-cat-libros"
+        class="h-10 px-sm pr-8 rounded-lg border border-outline-variant bg-surface-container-lowest font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer">
+        <option value="">Categorías</option>
+        @for (categoria of categorias; track categoria.id) {
+          <option [value]="categoria.id">{{ categoria.nombre }}</option>
+        }
+      </select>
+      <label for="filtro-estado-libros" class="sr-only">Estado</label>
+      <select (change)="filtrarPorEstado()" [(ngModel)]="estadoLibroFiltro" id="filtro-estado-libros"
+        class="h-10 px-sm pr-8 rounded-lg border border-outline-variant bg-surface-container-lowest font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary cursor-pointer">
+        <option [ngValue]="null">Estados</option>
+        @for (estado of estados; track estado.id) {
+          <option [ngValue]="estado.id">{{ formatarEstado(estado.nombre) }}</option>
+        }
+      </select>
+    </div>
+
+    @if (cargando && libros.length === 0) {
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md animate-pulse">
+        @for (i of [1,2,3,4,5,6]; track i) {
+          <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-md">
+            <div class="h-4 bg-surface-container-high rounded w-3/4 mb-sm"></div>
+            <div class="h-3 bg-surface-container-high rounded w-1/2 mb-xs"></div>
+            <div class="h-3 bg-surface-container-high rounded w-2/3"></div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Tarjetas de libros -->
+    <div class="flex flex-col gap-sm font-body-sm text-body-sm text-on-surface">
+      @for (libro of libros; track libro.id) {
+        <div class="flex items-center gap-md rounded-lg border border-outline-variant bg-surface-container-lowest px-md py-sm hover:shadow-sm transition-shadow">
+          <!-- Portada clickable -->
+          <button type="button" (click)="abrirPortada(libro.id, libro.tienePortada)" [attr.aria-label]="'Ver portada de ' + libro.titulo"
+            class="w-16 h-20 sm:w-20 sm:h-28 shrink-0 rounded overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary">
+            <app-portada-libro [libroId]="libro.id" [tienePortada]="libro.tienePortada" [titulo]="libro.titulo" />
+          </button>
+          <!-- Info -->
+          <div class="flex-1 min-w-0">
+            <p class="text-on-surface-variant text-[12px] truncate">{{ libro.autores.length ? libro.autores.join(', ') : 'Sin autor' }}</p>
+            <p class="text-on-surface font-semibold text-[15px] leading-snug truncate">{{ libro.titulo }}</p>
+            <p class="text-on-surface-variant text-[12px] mt-xxs">{{ libro.isbn }}</p>
+            <div class="flex items-center gap-sm mt-xxs flex-wrap">
+              @for (cat of libro.categorias.slice(0, 1); track cat) {
+                <span class="inline-block px-xs py-xxs rounded bg-primary-fixed text-[11px] font-label-sm text-on-primary-fixed-variant">{{ cat }}</span>
+              }
+              @if (libro.categorias.length > 1) {
+                <span class="text-on-surface-variant text-[11px]">+{{ libro.categorias.length - 1 }}</span>
+              }
+              <span class="text-on-surface-variant text-[11px]">{{ libro.anioPublicacion }}</span>
+              <span class="text-on-surface-variant text-[11px]">·</span>
+              <span class="text-on-surface-variant text-[11px]">Stock: {{ libro.stockDisponible }} disponibles</span>
+            </div>
+          </div>
+          <!-- Acciones -->
+          <div class="flex gap-xs shrink-0">
+            <button (click)="abrirFormularioEditar(libro)" title="Editar" [attr.aria-label]="'Editar ' + libro.titulo"
+              class="w-8 h-8 min-w-[44px] min-h-[44px] rounded flex items-center justify-center hover:bg-surface-container-low text-on-surface-variant cursor-pointer">
+              <span class="material-symbols-outlined text-[18px]">edit</span>
+            </button>
+            <button (click)="eliminarLibro(libro.id)" title="Eliminar" [attr.aria-label]="'Eliminar ' + libro.titulo"
+              class="w-8 h-8 min-w-[44px] min-h-[44px] rounded flex items-center justify-center hover:bg-error-container/40 text-error cursor-pointer">
+              <span class="material-symbols-outlined text-[18px]">delete</span>
+            </button>
+          </div>
+        </div>
+      } @empty {
+        @if (!cargando) {
+          <p class="text-center text-on-surface-variant py-lg">No hay libros registrados</p>
+        }
+      }
+    </div>
+
+    <!-- Paginación -->
+    <div class="flex flex-wrap justify-between items-center mt-lg gap-sm">
+      <div class="flex items-center gap-xs font-body-sm text-body-sm">
+        <span class="text-on-surface-variant">Mostrar</span>
+        <label for="page-size-libros" class="sr-only">Elementos por página</label>
+        <select [ngModel]="pageSize" (ngModelChange)="cambiarTamanoPage($event)" id="page-size-libros" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-surface-container-lowest cursor-pointer appearance-none text-xs leading-tight py-1.5">
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="20">20</option>
+          <option [ngValue]="30">30</option>
+        </select>
+        <span class="text-on-surface-variant">por página</span>
+      </div>
+      @if (totalPages > 1) {
+        <div class="flex items-center gap-xs">
+          <button (click)="paginaAnterior()" [disabled]="!puedeAnterior"
+            class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">
+            <span class="material-symbols-outlined text-[18px]">chevron_left</span> Anterior
+          </button>
+          @for (p of paginasVisibles; track p) {
+            <button (click)="currentPage = p; cargarLibros()"
+              class="w-8 h-8 min-w-[44px] min-h-[44px] rounded font-label-sm text-label-sm cursor-pointer"
+              [class.bg-primary]="p===currentPage"
+              [class.text-on-primary]="p===currentPage"
+              [class.text-on-surface-variant]="p!==currentPage"
+              [class.border]="p!==currentPage"
+              [class.border-outline-variant]="p!==currentPage"
+              [class.hover:bg-surface-container-low]="p!==currentPage">
+              {{ p+1 }}
+            </button>
+          }
+          <button (click)="paginaSiguiente()" [disabled]="!puedeSiguiente"
+            class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">
+            Siguiente <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+          </button>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ─── MODAL CONFIRMACIÓN ─── -->
+  @if (confirmacionVisible) {
+    <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" (click)="cancelarConfirmacion()">
+      <div role="alertdialog" aria-modal="true" aria-labelledby="titulo-confirmacion" tabindex="-1"
+           appFocusTrap (cerrar)="cancelarConfirmacion()"
+           class="bg-surface rounded-xl shadow-xl p-xl max-w-sm w-full" (click)="$event.stopPropagation()">
+        <h3 id="titulo-confirmacion" class="font-headline-md text-headline-md text-on-surface mb-md">{{ confirmacionMensaje }}</h3>
+        <div class="flex gap-sm justify-end">
+          <button (click)="cancelarConfirmacion()"
+                  class="px-4 py-2 rounded-full font-label-lg text-label-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer">
+            Cancelar
+          </button>
+          <button (click)="confirmarAccion()"
+                  class="px-4 py-2 rounded-full font-label-lg text-label-lg bg-error text-white hover:bg-error/80 transition-colors cursor-pointer">
+            Confirmar
+          </button>
+        </div>
       </div>
     </div>
   }
 
-</main>
+  <!-- ─── MODAL PORTADA ─── -->
+  @if (portadaModalVisible) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
+      role="dialog" aria-modal="true" aria-label="Portada del libro" (click)="cerrarPortada()">
+      <!-- Overlay -->
+      <div class="absolute inset-0 bg-black/60"></div>
+      <!-- Contenido -->
+      <div class="relative z-10 max-w-lg w-full bg-surface-container-lowest rounded-xl shadow-xl overflow-hidden"
+        tabindex="-1" appFocusTrap (cerrar)="cerrarPortada()"
+        (click)="$event.stopPropagation()">
+        <div class="relative bg-surface-container-low flex items-center justify-center"
+          style="min-height: 300px; max-height: 70vh;">
+          @if (portadaModalCargando) {
+            <span class="material-symbols-outlined text-[48px] text-outline-variant animate-pulse">image</span>
+          } @else if (portadaModalUrl) {
+            <img [src]="portadaModalUrl" alt="Portada del libro"
+              class="max-w-full max-h-[70vh] object-contain" />
+          } @else {
+            <span class="material-symbols-outlined text-[64px] text-outline-variant">menu_book</span>
+          }
+        </div>
+        <button type="button" (click)="cerrarPortada()" aria-label="Cerrar vista de portada"
+          class="absolute top-sm right-sm w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 cursor-pointer">
+          <span class="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
+        </button>
+      </div>
+    </div>
+  }
+
+</div>

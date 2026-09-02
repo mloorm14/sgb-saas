@@ -8,7 +8,8 @@ import { AuthService } from '../../core/services/auth.service';
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule],
-  templateUrl: './login.component.html'
+  templateUrl: './login.component.html',
+  styles: [`:host { display: block; height: 100%; overflow-y: auto; }`]
 })
 export class LoginComponent implements OnInit {
   form: FormGroup;
@@ -26,14 +27,14 @@ export class LoginComponent implements OnInit {
   ) {
     this.form = this.fb.group({
       correo: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
+      password: ['', [Validators.required, Validators.minLength(8)]],
       compliance: [false, [Validators.requiredTrue]]
     });
   }
 
   ngOnInit(): void {
     if (this.route.snapshot.queryParamMap.get('verificado') === '1') {
-      this.exitoMsg = 'Cuenta verificada correctamente. Ya podés iniciar sesión.';
+      this.exitoMsg = 'Cuenta verificada correctamente. Ya puedes iniciar sesión.';
     }
   }
 
@@ -41,27 +42,24 @@ export class LoginComponent implements OnInit {
     this.mostrarPassword = !this.mostrarPassword;
   }
 
-  // Hallazgo lambda: la redireccion post-login ya no es un /libros fijo,
-  // depende del rol real (misma tabla que roleGuard en app.routes.ts).
-  // Rama B: LECTOR -> /catalogo (la pantalla inicial del consumidor).
-  // GERENTE -> /dashboard-gerente (rama fix/sincronizar-despliegue-y-dashboard-gerente);
-  // BIBLIOTECARIO -> /prestamos/gestion (fallback hasta que exista su dashboard).
-  // TODO(frontend/gerente-panel-administrativo): ADMIN -> /admin cuando
-  // exista la rama F; hoy /libros (el backend excluye a ADMIN de la
-  // operacion diaria en prestamos/reservaciones/multas).
+  // Redirección post-login hacia los paneles con sidebar:
+  // - ADMIN/GERENTE → /dashboard-admin (panel con sidebar).
+  // - LECTOR → /dashboard-lector (panel consumidor con sidebar).
+  // - BIBLIOTECARIO → /dashboard-bibliotecario (panel Cajas con sidebar).
   private redirigirSegunRol(): void {
-    if (this.authService.hasRole('GERENTE')) {
-      this.router.navigate(['/dashboard-gerente']);
+    if (this.authService.hasRole('ADMIN') || this.authService.hasRole('GERENTE')) {
+      this.router.navigate(['/dashboard-admin']);
     } else if (this.authService.hasRole('LECTOR')) {
-      this.router.navigate(['/catalogo']);
+      this.router.navigate(['/dashboard-lector']);
     } else if (this.authService.hasRole('BIBLIOTECARIO')) {
-      this.router.navigate(['/prestamos/gestion']);
+      this.router.navigate(['/dashboard-bibliotecario']);
     } else {
-      this.router.navigate(['/libros']);
+      this.router.navigate(['/login']);
     }
   }
 
   submit() {
+    this.form.markAllAsTouched();
     if (this.form.invalid) return;
     this.cargando = true;
     this.errorMsg = '';
@@ -95,7 +93,7 @@ export class LoginComponent implements OnInit {
             this.errorMsg = detail || 'Tu cuenta está bloqueada por una multa pendiente';
             break;
           case 429:
-            this.errorMsg = detail || 'Demasiados intentos. Esperá un momento antes de volver a intentar';
+            this.errorMsg = detail || 'Demasiados intentos. Espera un momento antes de volver a intentar';
             break;
           default:
             this.errorMsg = detail || 'Error al iniciar sesión, intente de nuevo';

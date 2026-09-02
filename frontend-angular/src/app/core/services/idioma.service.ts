@@ -22,6 +22,18 @@ export class IdiomaService {
     );
   }
 
+  buscar(q: string): Observable<Idioma[]> {
+    return this.http.get<Idioma[]>(`${this.apiUrl}/buscar`, { params: { q } }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  crear(nombre: string): Observable<Idioma> {
+    return this.http.post<Idioma>(this.apiUrl, { nombre }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
   // RFC 7807: el backend responde ProblemDetail. El error se re-lanza
   // intacto (status + error.detail siguen disponibles en el componente).
   private manejarError(err: unknown): Observable<never> {

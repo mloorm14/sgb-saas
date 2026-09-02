@@ -1,28 +1,54 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs';
 import { AuditoriaService } from '../../core/services/auditoria.service';
+import { UsuarioAdminService } from '../../core/services/usuario-admin.service';
 import { EventoAuditoria } from '../../core/models/evento-auditoria.model';
+import { UsuarioAdmin } from '../../core/models/usuario-admin.model';
+import { ResumenCategoriaAuditoria } from '../../core/models/resumen-auditoria.model';
+import { FocusTrapDirective } from '../../shared/focus-trap.directive';
 
-// Valores posibles de tablaAfectada (bitacora_auditoria). Hoy solo
-// "usuarios" se escribe de verdad (AuthService y UsuarioAdminService);
-// el resto son valores que el filtro ?modulo= del backend acepta
-// (String libre) y que el mockup 21 lista para la operación diaria.
-const MODULOS = ['usuarios', 'prestamos', 'libros', 'multas', 'sugerencias_adquisicion'];
+export interface ModuloOpcion {
+  valor: string;
+  etiqueta: string;
+}
+
+const MODULOS: ModuloOpcion[] = [
+  { valor: 'usuarios', etiqueta: 'Usuarios' },
+  { valor: 'sesiones', etiqueta: 'Accesos al sistema' },
+  { valor: 'prestamos', etiqueta: 'Préstamos' },
+  { valor: 'libros', etiqueta: 'Libros' },
+  { valor: 'multas', etiqueta: 'Multas' },
+  { valor: 'reservaciones', etiqueta: 'Reservaciones' },
+  { valor: 'registro_danos', etiqueta: 'Registro de daños' },
+  { valor: 'sugerencias_adquisicion', etiqueta: 'Sugerencias de adquisición' },
+  { valor: 'configuracion_sistema', etiqueta: 'Configuración del sistema' }
+];
 
 @Component({
   selector: 'app-auditoria',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FocusTrapDirective],
   templateUrl: './auditoria.component.html'
 })
-export class AuditoriaComponent implements OnInit {
+export class AuditoriaComponent implements OnInit, OnDestroy {
   modulos = MODULOS;
 
+  // Vista actual: 'tarjetas' (default) o 'historial'
+  vista: 'tarjetas' | 'historial' = 'tarjetas';
+
+  // Datos del resumen por categoría
+  resumenCategorias: ResumenCategoriaAuditoria[] = [];
+  cargandoResumen: boolean = false;
+
+  // Filtros del historial
   filtroUsuarioId: string = '';
   filtroModulo: string = '';
   filtroDesde: string = '';
   filtroHasta: string = '';
+  filtroDia: string = '';
+  filtroHora: string = '';
 
   eventos: EventoAuditoria[] = [];
   totalPages: number = 0;
@@ -31,14 +57,185 @@ export class AuditoriaComponent implements OnInit {
   cargando: boolean = false;
   errorMsg: string = '';
 
-  constructor(private auditoriaService: AuditoriaService) {}
+  ordenColumna: string = '';
+  direccionAsc: boolean = true;
+
+  // Modal de detalle
+  modalVisible: boolean = false;
+  eventoSeleccionado: EventoAuditoria | null = null;
+  jsonCopiado: boolean = false;
+
+  // Autocomplete de usuarios
+  busquedaUsuario: string = '';
+  usuarioSeleccionado: UsuarioAdmin | null = null;
+  resultadosBusqueda: UsuarioAdmin[] = [];
+  mostrandoDropdown: boolean = false;
+  buscandoUsuarios: boolean = false;
+  private busquedaSubject = new Subject<string>();
+  private destroy$ = new Subject<void>();
+
+  constructor(
+    private auditoriaService: AuditoriaService,
+    private usuarioAdminService: UsuarioAdminService
+  ) {}
 
   ngOnInit(): void {
+    this.cargarResumen();
+
+    // Suscripción al autocomplete de usuarios
+    this.busquedaSubject.pipe(
+      debounceTime(1300),
+      distinctUntilChanged(),
+      switchMap(texto => {
+        if (!texto.trim()) {
+          this.resultadosBusqueda = [];
+          this.buscandoUsuarios = false;
+          return [];
+        }
+        this.buscandoUsuarios = true;
+        return this.usuarioAdminService.listar(texto, 0, 5);
+      }),
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (page) => {
+        this.resultadosBusqueda = page.content ?? [];
+        this.buscandoUsuarios = false;
+      },
+      error: () => {
+        this.resultadosBusqueda = [];
+        this.buscandoUsuarios = false;
+      }
+    });
+  }
+
+  ordenarPor(columna: string): void {
+    if (this.ordenColumna === columna) {
+      this.direccionAsc = !this.direccionAsc;
+    } else {
+      this.ordenColumna = columna;
+      this.direccionAsc = true;
+    }
+  }
+
+  get datosOrdenados() {
+    const col = this.ordenColumna;
+    const asc = this.direccionAsc;
+    if (!col) return this.eventos;
+    return [...this.eventos].sort((a: any, b: any) => {
+      const va = a[col] ?? '';
+      const vb = b[col] ?? '';
+      const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es');
+      return asc ? cmp : -cmp;
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  cargarResumen(): void {
+    this.cargandoResumen = true;
+    this.auditoriaService.resumen().subscribe({
+      next: (data) => {
+        this.resumenCategorias = data;
+        this.cargandoResumen = false;
+      },
+      error: () => {
+        this.cargandoResumen = false;
+      }
+    });
+  }
+
+  abrirHistorial(modulo: string): void {
+    this.filtroModulo = modulo;
+    this.currentPage = 0;
+    this.vista = 'historial';
     this.cargarPagina();
   }
 
+  volverATarjetas(): void {
+    this.vista = 'tarjetas';
+    this.filtroModulo = '';
+    this.filtroUsuarioId = '';
+    this.filtroDesde = '';
+    this.filtroHasta = '';
+    this.filtroDia = '';
+    this.filtroHora = '';
+    this.eventos = [];
+    this.usuarioSeleccionado = null;
+    this.cargarResumen();
+  }
+
+  onBusquedaUsuario(texto: string): void {
+    this.busquedaSubject.next(texto);
+  }
+
+  seleccionarUsuario(usuario: UsuarioAdmin): void {
+    this.usuarioSeleccionado = usuario;
+    this.filtroUsuarioId = String(usuario.id);
+    this.mostrandoDropdown = false;
+    this.busquedaUsuario = '';
+    this.resultadosBusqueda = [];
+  }
+
+  limpiarSeleccion(): void {
+    this.usuarioSeleccionado = null;
+    this.filtroUsuarioId = '';
+    this.busquedaUsuario = '';
+  }
+
+  cerrarDropdown(): void {
+    setTimeout(() => { this.mostrandoDropdown = false; }, 200);
+  }
+
   get paginasVisibles(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i);
+    const windowSize = 4;
+    let start = Math.max(0, this.currentPage - 1);
+    let end = Math.min(this.totalPages, start + windowSize);
+    if (end - start < windowSize) {
+      start = Math.max(0, end - windowSize);
+    }
+    return Array.from({ length: end - start }, (_, i) => start + i);
+  }
+
+  get puedeAnterior(): boolean {
+    return this.currentPage > 0;
+  }
+
+  get puedeSiguiente(): boolean {
+    return this.currentPage < this.totalPages - 1;
+  }
+
+  cambiarTamanoPage(nuevo: number): void {
+    this.pageSize = Number(nuevo);
+    this.currentPage = 0;
+    this.cargarPagina();
+  }
+
+  // Combina filtroDia + filtroHora para generar desde/hasta precisos.
+  // Si se proporciona dia pero no hora: rango completo de ese día.
+  // Si se proporciona dia + hora: ventana de 1 minuto exacta.
+  // Si NO se proporciona dia: usa los filtros Desde/Hasta tradicionales.
+  private construirRangoFechas(): { desde?: string; hasta?: string } {
+    if (this.filtroDia) {
+      const hora = this.filtroHora || '00:00';
+      const [h, m] = hora.split(':');
+      const desde = `${this.filtroDia}T${h}:${m}:00.000Z`;
+      let hasta: string;
+      if (this.filtroHora) {
+        // Ventana de 1 minuto: de HH:MM a HH:MM:59.999
+        hasta = `${this.filtroDia}T${h}:${m}:59.999Z`;
+      } else {
+        // Día completo
+        hasta = `${this.filtroDia}T23:59:59.999Z`;
+      }
+      return { desde, hasta };
+    }
+    return {
+      desde: this.fechaInicio(this.filtroDesde),
+      hasta: this.fechaFin(this.filtroHasta)
+    };
   }
 
   // type="date" da "yyyy-MM-dd"; el backend pide OffsetDateTime ISO, así
@@ -63,15 +260,29 @@ export class AuditoriaComponent implements OnInit {
     this.cargarPagina();
   }
 
+  limpiarFiltros(): void {
+    this.filtroUsuarioId = '';
+    this.filtroModulo = '';
+    this.filtroDesde = '';
+    this.filtroHasta = '';
+    this.filtroDia = '';
+    this.filtroHora = '';
+    this.usuarioSeleccionado = null;
+    this.busquedaUsuario = '';
+    this.currentPage = 0;
+    this.cargarPagina();
+  }
+
   // Se llama desde el template (paginacion numerada) -> no private.
   cargarPagina(): void {
     this.cargando = true;
     this.errorMsg = '';
+    const rango = this.construirRangoFechas();
     this.auditoriaService.listar({
       usuarioId: this.usuarioId(),
       modulo: this.filtroModulo || undefined,
-      desde: this.fechaInicio(this.filtroDesde),
-      hasta: this.fechaFin(this.filtroHasta),
+      desde: rango.desde,
+      hasta: rango.hasta,
       page: this.currentPage,
       size: this.pageSize
     }).subscribe({
@@ -103,16 +314,83 @@ export class AuditoriaComponent implements OnInit {
   }
 
   // El DTO puede traer usuario null (EventoAuditoriaResponseDTO) -- la
-  // vista lo muestra como "—", no como texto vacío ni como error.
+  // vista lo muestra como ícono + "Sistema", nunca como texto vacío.
+  esSistema(evento: EventoAuditoria): boolean {
+    return !evento.usuario || evento.usuario.trim() === '';
+  }
+
   usuarioLabel(evento: EventoAuditoria): string {
-    return evento.usuario ?? '—';
+    return evento.usuario ?? '';
+  }
+
+  moduloLabel(modulo: string): string {
+    const encontrado = this.modulos.find(m => m.valor === modulo);
+    if (encontrado) return encontrado.etiqueta;
+    return modulo ? modulo.replace(/_/g, ' ') : '—';
   }
 
   formatoFecha(iso: string): string {
     const fecha = new Date(iso);
     return fecha.toLocaleString('es-ES', {
-      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
     });
+  }
+
+  // ── Modal de detalle ──────────────────────────────────────
+  abrirDetalle(evento: EventoAuditoria): void {
+    this.eventoSeleccionado = evento;
+    this.modalVisible = true;
+    this.jsonCopiado = false;
+  }
+
+  cerrarDetalle(): void {
+    this.modalVisible = false;
+    this.eventoSeleccionado = null;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.modalVisible) {
+      this.cerrarDetalle();
+    }
+  }
+
+  detalleFormateado(): string {
+    if (!this.eventoSeleccionado?.detalle) return '';
+    try {
+      return JSON.stringify(JSON.parse(this.eventoSeleccionado.detalle), null, 2);
+    } catch {
+      return this.eventoSeleccionado.detalle;
+    }
+  }
+
+  resaltarJson(json: string): string {
+    if (!json) return '';
+    return json
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      // Claves: "nombre":
+      .replace(/"([^"]+)"(?=\s*:)/g, '<span class="text-primary">"$1"</span>')
+      // Strings values: ": "valor"
+      .replace(/:\s*"([^"]*)"/g, ': <span class="text-success">"$1"</span>')
+      // Numbers
+      .replace(/:\s*(\d+\.?\d*)/g, ': <span class="text-tertiary">$1</span>')
+      // Booleans
+      .replace(/:\s*(true|false)/g, ': <span class="text-error">$1</span>')
+      // Null
+      .replace(/:\s*(null)/g, ': <span class="text-on-surface-variant">$1</span>');
+  }
+
+  copiarJson(): void {
+    const json = this.detalleFormateado();
+    if (json) {
+      navigator.clipboard.writeText(json).then(() => {
+        this.jsonCopiado = true;
+        setTimeout(() => { this.jsonCopiado = false; }, 2000);
+      });
+    }
   }
 
   // Semáforo de acciones del mockup 21: INSERT/LOGIN_OK en verde,
@@ -143,5 +421,70 @@ export class AuditoriaComponent implements OnInit {
       case 'CORREO_VERIFICADO': return 'verified';
       default: return 'event_note';
     }
+  }
+
+  // ── Helpers para tarjetas ─────────────────────────────────
+  iconoCategoria(tabla: string): string {
+    const iconos: Record<string, string> = {
+      'usuarios': 'manage_accounts',
+      'sesiones': 'shield',
+      'prestamos': 'menu_book',
+      'libros': 'inventory_2',
+      'multas': 'payments',
+      'reservaciones': 'event_available',
+      'registro_danos': 'report_problem',
+      'sugerencias_adquisicion': 'lightbulb',
+      'configuracion_sistema': 'settings'
+    };
+    return iconos[tabla] || 'folder';
+  }
+
+  codigoCategoria(tabla: string): string {
+    const codigos: Record<string, string> = {
+      'usuarios': 'AUD-USR',
+      'sesiones': 'AUD-SES',
+      'prestamos': 'AUD-PRE',
+      'libros': 'AUD-LIB',
+      'multas': 'AUD-MUL',
+      'reservaciones': 'AUD-RES',
+      'registro_danos': 'AUD-DAN',
+      'sugerencias_adquisicion': 'AUD-SUG',
+      'configuracion_sistema': 'AUD-CFG'
+    };
+    return codigos[tabla] || tabla.toUpperCase().substring(0, 7);
+  }
+
+  descripcionCategoria(tabla: string): string {
+    const descripciones: Record<string, string> = {
+      'usuarios': 'Gestión de cuentas y permisos',
+      'sesiones': 'Login, logout y intentos de acceso',
+      'prestamos': 'Creación, devolución y renovación',
+      'libros': 'Alta, edición y baja del catálogo',
+      'multas': 'Pago y anulación de sanciones',
+      'reservaciones': 'Aceptación y rechazo de reservas',
+      'registro_danos': 'Devoluciones con daños reportados',
+      'sugerencias_adquisicion': 'Evaluación de propuestas',
+      'configuracion_sistema': 'Cambios de parámetros globales'
+    };
+    return descripciones[tabla] || tabla;
+  }
+
+  colorCategoria(tabla: string): string {
+    const colores: Record<string, string> = {
+      'usuarios': 'bg-primary/10 text-primary',
+      'sesiones': 'bg-secondary/10 text-secondary',
+      'prestamos': 'bg-tertiary/10 text-tertiary',
+      'libros': 'bg-primary-container/30 text-primary',
+      'multas': 'bg-error/10 text-error',
+      'reservaciones': 'bg-success/10 text-success',
+      'registro_danos': 'bg-error/10 text-error',
+      'sugerencias_adquisicion': 'bg-warning/20 text-tertiary',
+      'configuracion_sistema': 'bg-surface-variant/50 text-on-surface-variant'
+    };
+    return colores[tabla] || 'bg-surface-variant/50 text-on-surface-variant';
+  }
+
+  etiquetaModulo(valor: string): string {
+    return this.modulos.find(m => m.valor === valor)?.etiqueta || valor;
   }
 }

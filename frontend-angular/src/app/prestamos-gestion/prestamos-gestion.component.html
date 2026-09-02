@@ -1,110 +1,333 @@
-<div style="padding:2rem;max-width:1100px;margin:0 auto">
+<main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
 
-  <h2 style="color:#005c2f;margin:0 0 1.5rem 0">Gestión de préstamos</h2>
+    <!-- Encabezado -->
+    <div class="mb-lg">
+      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Gestión de Préstamos</h1>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">Administra préstamos, devoluciones y reservas de forma rápida.</p>
+    </div>
 
-  <!-- FORMULARIO CREAR -->
-  <div style="background:#f9f9f9;padding:1.5rem;border-radius:8px;margin-bottom:2rem">
-    <h3 style="margin-top:0;font-size:16px">Registrar nuevo préstamo</h3>
-    @if (errorMsgCrear) {
-      <div style="color:red;margin-bottom:1rem">{{ errorMsgCrear }}</div>
+    <!-- ─── Búsqueda Principal ─── -->
+    <div class="relative mb-10 rounded-2xl max-w-4xl">
+      <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+        <span class="material-symbols-outlined text-primary text-3xl">search</span>
+      </div>
+      <input [(ngModel)]="correoBusqueda"
+        (ngModelChange)="onInputCorreo()"
+        (keydown)="onKeydownCorreo($event)"
+        (focus)="onFocusCorreo()"
+        (blur)="onBlurCorreo()"
+        autocomplete="off"
+        class="block w-full pl-14 pr-28 py-5 bg-surface-container-lowest border border-outline-variant/50 rounded-2xl text-body-lg text-on-surface placeholder-on-surface-variant focus:ring-primary focus:border-primary shadow-sm transition-all"
+        placeholder="Ingresa el correo del usuario"
+        type="text" />
+      <button (click)="buscarUsuario()" [disabled]="correoBusqueda.trim().length < 2 || buscando"
+        class="absolute inset-y-2 right-2 flex items-center gap-1.5 px-5 py-2 bg-primary hover:bg-on-primary-fixed-variant text-white font-semibold rounded-xl transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">{{ buscando ? 'progress_activity' : 'search' }}</span>
+        {{ buscando ? 'Buscando...' : 'Buscar' }}
+      </button>
+    </div>
+
+    <!-- Dropdown sugerencias de correo -->
+    @if (mostrarSugerenciasCorreo && sugerenciasCorreo.length > 0) {
+      <div class="mt-1 mb-8 relative z-20 max-w-4xl">
+        <ul class="bg-surface-container-lowest border border-outline-variant/50 rounded-2xl shadow-lg overflow-hidden">
+          @for (sugerencia of sugerenciasCorreo; track sugerencia.id; let i = $index) {
+            <li>
+              <button type="button"
+                (mousedown)="$event.preventDefault()"
+                (click)="seleccionarSugerenciaCorreo(sugerencia)"
+                class="w-full text-left px-6 py-4 hover:bg-surface-container-low flex items-center justify-between gap-3 transition-colors"
+                [class.bg-surface-container-low]="i === indiceActivoCorreo">
+                <div class="flex items-center gap-4">
+                  <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                    {{ iniciales(sugerencia.nombreCompleto) }}
+                  </div>
+                  <div>
+                    <p class="font-semibold text-on-surface">{{ sugerencia.nombreCompleto }}</p>
+                    <p class="text-sm text-on-surface-variant">{{ sugerencia.correo }}</p>
+                  </div>
+                </div>
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                  [class]="claseEstadoCuenta(sugerencia.estadoCuenta)">
+                  {{ etiquetaEstadoCuenta(sugerencia.estadoCuenta) }}
+                </span>
+              </button>
+            </li>
+          }
+        </ul>
+      </div>
     }
 
-    <form [formGroup]="formCrear" (ngSubmit)="crearPrestamo()" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
-      <div>
-        <label style="display:block;font-size:13px;margin-bottom:4px">Usuario ID</label>
-        <input formControlName="usuarioId" type="number"
-          style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
-        </div>
-        <div>
-          <label style="display:block;font-size:13px;margin-bottom:4px">Libro ID</label>
-          <input formControlName="libroId" type="number"
-            style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
-          </div>
-          <div>
-            <label style="display:block;font-size:13px;margin-bottom:4px">Días de préstamo</label>
-            <input formControlName="diasPrestamo" type="number"
-              style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
+    <!-- ─── Estado Vacío ─── -->
+    @if (!usuario && !buscando && !errorBusqueda) {
+      <div class="text-center py-20">
+        <span class="material-symbols-outlined text-6xl text-outline-variant mb-4 block">person_search</span>
+        <h3 class="text-xl font-medium text-on-surface-variant mb-2">Busca una persona por su correo electrónico</h3>
+      </div>
+    }
+
+    <!-- ─── Error de búsqueda ─── -->
+    @if (errorBusqueda) {
+      <div class="mb-8 flex items-center gap-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl p-5 shadow-sm">
+        <span class="material-symbols-outlined text-red-500 dark:text-red-400 text-3xl">error</span>
+        <div class="flex-1">
+          <p class="text-red-700 dark:text-red-300 font-medium">{{ errorBusqueda }}</p>
+    </div>
+  </div>
+}
+
+    <!-- ─── Loading ─── -->
+    @if (buscando) {
+      <div class="text-center py-10">
+        <span class="material-symbols-outlined text-4xl text-primary animate-spin block mb-3">progress_activity</span>
+        <p class="text-on-surface-variant">Buscando usuario...</p>
+      </div>
+    }
+
+    <!-- ═══ CONTENIDO DINÁMICO ═══ -->
+    @if (usuario) {
+      <div class="space-y-6">
+
+        <!-- Perfil del Usuario -->
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-5 flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-lg border-2 border-white shadow-sm">
+              {{ iniciales(usuario.nombreCompleto) }}
             </div>
-            <button type="submit" [disabled]="formCrear.invalid"
-              style="padding:8px 16px;background:#005c2f;color:white;border:none;border-radius:4px;cursor:pointer">
-              Crear préstamo
-            </button>
-          </form>
+            <h2 class="font-headline-md text-on-surface text-xl font-bold">{{ usuario.nombreCompleto }}</h2>
+          </div>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold"
+            [class]="claseEstadoCuenta(usuario.estadoCuenta)">
+            <span class="material-symbols-outlined text-sm">{{ iconoEstadoCuenta(usuario.estadoCuenta) }}</span>
+            {{ etiquetaEstadoCuenta(usuario.estadoCuenta) }}
+          </span>
         </div>
 
-        <!-- BUSQUEDA POR USUARIO -->
-        <div style="display:flex;gap:12px;align-items:flex-end;margin-bottom:1.5rem">
-          <div>
-            <label style="display:block;font-size:13px;margin-bottom:4px">Ver préstamos del usuario ID</label>
-            <input [(ngModel)]="usuarioIdBusqueda" [ngModelOptions]="{standalone: true}" type="number"
-              style="padding:8px;border:1px solid #ccc;border-radius:4px"/>
-            </div>
-            <button (click)="buscarPrestamos()"
-              style="padding:8px 16px;background:#2980b9;color:white;border:none;border-radius:4px;cursor:pointer">
-              Buscar
-            </button>
+        <!-- Mensajes de acciones -->
+        @if (exitoMsg) {
+          <div class="flex items-center gap-3 bg-green-50 border border-green-200 rounded-2xl p-5 shadow-sm">
+            <span class="material-symbols-outlined text-green-600 text-3xl">check_circle</span>
+            <p class="text-green-700 font-medium flex-1">{{ exitoMsg }}</p>
           </div>
+        }
+        @if (errorMsgAccion) {
+          <div class="flex items-center gap-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl p-5 shadow-sm">
+            <span class="material-symbols-outlined text-red-500 dark:text-red-400 text-3xl">error</span>
+            <p class="text-red-700 dark:text-red-300 font-medium flex-1">{{ errorMsgAccion }}</p>
+          </div>
+        }
 
-          @if (errorMsg) {
-            <div style="color:red;margin-bottom:1rem">{{ errorMsg }}</div>
-          }
-          @if (cargando) {
-            <div style="text-align:center;padding:2rem">Cargando préstamos...</div>
-          }
+        <!-- ═══ USUARIO BLOQUEADO ═══ -->
+        @if (estaBloqueado) {
+          <div class="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl p-6 flex items-start gap-4">
+            <div class="p-3 bg-red-100 dark:bg-red-900/50 rounded-full text-red-600 dark:text-red-400 shrink-0">
+              <span class="material-symbols-outlined text-3xl">error</span>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-xl font-bold text-red-800 mb-2">Usuario Bloqueado</h3>
+              <p class="text-red-700 mb-4">{{ motivoBloqueo }}</p>
+              <button (click)="gestionarMultas()"
+                class="bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 px-6 rounded-lg transition-colors shadow-sm cursor-pointer">
+                Gestionar Multas
+              </button>
+            </div>
+          </div>
+        }
 
-          @if (!cargando && prestamos.length > 0) {
-            <table style="width:100%;border-collapse:collapse;font-size:14px">
-              <thead>
-                <tr style="background:#005c2f;color:white">
-                  <th style="padding:10px;text-align:left">ID</th>
-                  <th style="padding:10px;text-align:left">Usuario</th>
-                  <th style="padding:10px;text-align:left">Libro</th>
-                  <th style="padding:10px;text-align:left">Devolución estimada</th>
-                  <th style="padding:10px;text-align:left">Devolución real</th>
-                  <th style="padding:10px;text-align:left">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (prestamo of prestamos; track prestamo; let i = $index) {
-                  <tr
-                    [style.background]="i % 2 === 0 ? '#f9f9f9' : 'white'">
-                    <td style="padding:10px">{{ prestamo.id }}</td>
-                    <td style="padding:10px">{{ prestamo.usuarioId }}</td>
-                    <td style="padding:10px">{{ prestamo.libroId }}</td>
-                    <td style="padding:10px">{{ prestamo.fechaDevolucionEstimada | date:'short' }}</td>
-                    <td style="padding:10px">{{ prestamo.fechaDevolucionReal ? (prestamo.fechaDevolucionReal | date:'short') : '—' }}</td>
-                    <td style="padding:10px">
-                      @if (!prestamo.fechaDevolucionReal) {
-                        <button (click)="registrarDevolucion(prestamo.id)"
-                          style="padding:4px 10px;background:#2980b9;color:white;border:none;border-radius:4px;cursor:pointer">
-                          Registrar devolución
-                        </button>
-                      }
-                    </td>
-                  </tr>
+        <!-- ═══ RESERVA ACTIVA ═══ -->
+        @if (!estaBloqueado && cargandoReserva) {
+          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-6">
+            <p class="text-on-surface-variant flex items-center gap-2">
+              <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+              Consultando reservas vigentes...
+            </p>
+          </div>
+        }
+
+        @if (!estaBloqueado && reserva) {
+          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-6">
+            <h3 class="font-headline-sm text-on-surface mb-4 flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary">bookmark_added</span>
+              Nuevo Préstamo
+            </h3>
+
+            <div class="flex gap-5 p-4 bg-surface-container-low rounded-xl border border-outline-variant/30 mb-5">
+              <button type="button" (click)="abrirPortada(reserva.libroId, reserva.tienePortada)"
+                class="w-24 h-32 sm:w-28 sm:h-36 shrink-0 rounded-lg overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-low flex items-center justify-center">
+                @if (reserva.tienePortada) {
+                  <app-portada-libro [libroId]="reserva.libroId" [tienePortada]="reserva.tienePortada" [titulo]="reserva.titulo" />
+                } @else {
+                  <span class="material-symbols-outlined text-[48px] text-outline-variant">menu_book</span>
                 }
-              </tbody>
-            </table>
-          }
-
-          @if (!cargando && usuarioIdBusqueda && prestamos.length === 0) {
-            <div style="text-align:center;padding:2rem;color:#888">
-              Ese usuario no tiene préstamos registrados
-            </div>
-          }
-
-          @if (prestamos.length > 0) {
-            <div style="display:flex;justify-content:center;align-items:center;gap:16px;margin-top:1rem">
-              <button (click)="paginaAnterior()" [disabled]="currentPage === 0"
-                style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
-                ← Anterior
               </button>
-              <span style="font-size:14px">Página {{ currentPage + 1 }} de {{ totalPages }}</span>
-              <button (click)="paginaSiguiente()" [disabled]="currentPage >= totalPages - 1"
-                style="padding:6px 14px;border:1px solid #ccc;border-radius:4px;cursor:pointer">
-                Siguiente →
-              </button>
-            </div>
-          }
 
+              <div class="flex-1 min-w-0">
+                <h4 class="font-bold text-on-surface text-lg mb-1">{{ reserva.titulo }}</h4>
+                <p class="text-sm text-on-surface-variant mb-1">ISBN • {{ reserva.isbn }}</p>
+                <p class="text-sm text-on-surface-variant mb-2">{{ reserva.autores.length > 0 ? reserva.autores.join(', ') : 'Autor desconocido' }}</p>
+                @if (reserva.categorias.length > 0) {
+                  <div class="flex flex-wrap gap-1.5 mb-2">
+                    @for (cat of reserva.categorias; track cat) {
+                      <span class="px-2 py-0.5 bg-surface-container border border-outline-variant/50 rounded text-xs font-medium text-on-surface-variant">{{ cat }}</span>
+                    }
+  </div>
+}
+
+@if (showSinPermisosModal) {
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-md" (click)="cerrarSinPermisosModal()">
+    <div class="bg-surface-container-lowest rounded-2xl shadow-xl max-w-md w-full p-lg relative" (click)="$event.stopPropagation()">
+      <button type="button" (click)="cerrarSinPermisosModal()" aria-label="Cerrar"
+        class="absolute top-sm right-sm w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center hover:bg-surface-container-highest cursor-pointer">
+        <span class="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
+      </button>
+      <div class="flex flex-col items-center text-center pt-sm">
+        <div class="w-16 h-16 rounded-full bg-error-container flex items-center justify-center text-error mb-md">
+          <span class="material-symbols-outlined text-4xl">gpp_bad</span>
         </div>
+        <h2 class="font-headline-md text-headline-md text-on-background mb-sm">No tienes permiso</h2>
+        <p class="font-body-sm text-body-sm text-on-surface-variant mb-lg">
+          Tu rol de Administrador no tiene acceso a la gestión de multas.
+          Contactá a un bibliotecario o gerente para realizar esta acción.
+        </p>
+        <button type="button" (click)="cerrarSinPermisosModal()"
+          class="h-10 px-lg rounded-lg bg-primary text-on-primary font-label-sm text-label-sm hover:opacity-90 transition-opacity">
+          Entendido
+        </button>
+      </div>
+    </div>
+  </div>
+}
+                <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-on-surface-variant">
+                  <span>Año • {{ reserva.anioPublicacion }}</span>
+                  <span>Stock • {{ reserva.stockDisponible }} disponibles</span>
+                  @if (reserva.ubicacionFisica) {
+                    <span>Lugar • {{ reserva.ubicacionFisica }}</span>
+                  }
+                </div>
+              </div>
+
+              <div class="shrink-0 text-right">
+                <p class="text-xs text-on-surface-variant flex items-center gap-1 justify-end">
+                  <span class="material-symbols-outlined text-[14px]">schedule</span>
+                  Reservado: {{ formatearFechaHora(reserva.fechaReserva) }}
+                </p>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-end gap-5">
+              <div class="w-36">
+                <label for="dias-prestamo" class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1">Días de Préstamo</label>
+                <input id="dias-prestamo" [(ngModel)]="diasReserva" type="number" min="1" max="90"
+                  class="w-full border border-outline-variant/50 rounded-lg px-3 py-2 text-body-md bg-surface-container-lowest focus:ring-primary focus:border-primary" />
+              </div>
+              <p class="text-sm font-medium text-on-surface-variant pb-2.5">Devolución: <span class="font-semibold text-on-surface">{{ fechaDevolucionEstimada(diasReserva) }}</span></p>
+              <button (click)="confirmarEntrega()"
+                [disabled]="!diasReserva || diasReserva < 1 || confirmandoEntrega"
+                class="bg-primary hover:bg-on-primary-fixed-variant text-white font-medium py-3 px-6 rounded-xl transition-colors shadow-sm text-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ml-auto">
+                <span class="material-symbols-outlined">how_to_reg</span>
+                {{ confirmandoEntrega ? 'Confirmando...' : 'Confirmar Entrega' }}
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- ═══ SIN RESERVA ═══ -->
+        @if (!estaBloqueado && !cargandoReserva && !reserva) {
+          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-6">
+            <h3 class="font-headline-sm text-on-surface mb-4 flex items-center gap-2">
+              <span class="material-symbols-outlined text-on-surface-variant">bookmark_border</span>
+              Sin Reserva Activa
+            </h3>
+            <p class="text-on-surface-variant text-sm text-center py-4">Este usuario no tiene ninguna reserva pendiente de retiro.</p>
+          </div>
+        }
+
+        <!-- ═══ HISTORIAL RECIENTE ═══ -->
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/50 p-6">
+          <h3 class="font-headline-sm text-on-surface mb-6 flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">history</span>
+            Historial Reciente
+          </h3>
+
+          @if (cargandoHistorial) {
+            <p class="text-on-surface-variant flex items-center gap-2">
+              <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+              Cargando historial...
+            </p>
+          } @else if (historial.length === 0) {
+            <p class="text-on-surface-variant text-sm text-center py-4">Este usuario no tiene préstamos registrados</p>
+          } @else {
+            <div class="pl-2">
+              @for (item of datosPaginados; track item.prestamoId) {
+                <div class="relative flex gap-6 pb-6">
+                  <div class="w-10 h-10 rounded-full flex items-center justify-center z-10 shrink-0 border-2 border-white shadow-sm"
+                    [ngClass]="{
+                      'bg-green-100': !item.multaPendiente && item.fechaDevolucionReal,
+                      'bg-red-100': item.multaPendiente || estaVencido(item),
+                      'bg-blue-100': !item.fechaDevolucionReal && !item.multaPendiente && !estaVencido(item)
+                    }">
+                    <span class="material-symbols-outlined text-[20px]"
+                      [ngClass]="{
+                        'text-green-600': !item.multaPendiente && item.fechaDevolucionReal,
+                        'text-red-600': item.multaPendiente || estaVencido(item),
+                        'text-blue-600': !item.fechaDevolucionReal && !item.multaPendiente && !estaVencido(item)
+                      }">
+                      {{ iconoHistorial(item) }}
+                    </span>
+                  </div>
+                  <div class="pt-2">
+                    <h4 class="font-semibold text-on-surface text-lg">{{ item.libroTitulo }}</h4>
+                    <p class="text-sm text-on-surface-variant mt-1">{{ textoSecundarioHistorial(item) }}</p>
+                  </div>
+                </div>
+              }
+            </div>
+            <div class="flex flex-wrap justify-between items-center mt-lg gap-sm">
+              <div class="flex items-center gap-xs font-body-sm text-body-sm">
+                <span class="text-on-surface-variant">Mostrar</span>
+                <label for="page-size-prestamos" class="sr-only">Elementos por página</label>
+                <select [ngModel]="tamanoPagina" (ngModelChange)="cambiarTamano($event)" id="page-size-prestamos" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-surface-container-lowest cursor-pointer appearance-none text-xs leading-tight py-1.5">
+                  <option [ngValue]="10">10</option><option [ngValue]="20">20</option><option [ngValue]="50">50</option>
+                </select>
+              </div>
+              <div class="flex items-center gap-xs">
+                <button (click)="paginaAnterior()" [disabled]="!puedeAnterior" class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs"><span class="material-symbols-outlined text-[18px]">chevron_left</span> Anterior</button>
+                @for (p of paginasVisibles; track p) {
+                  <button (click)="irAPagina(p)" class="w-8 h-8 min-w-[44px] min-h-[44px] rounded font-label-sm text-label-sm cursor-pointer" [class.bg-primary]="p===pagina" [class.text-on-primary]="p===pagina" [class.text-on-surface-variant]="p!==pagina" [class.border]="p!==pagina" [class.border-outline-variant]="p!==pagina" [class.hover:bg-surface-container-low]="p!==pagina">{{ p+1 }}</button>
+                }
+                <button (click)="paginaSiguiente()" [disabled]="!puedeSiguiente" class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">Siguiente <span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+              </div>
+            </div>
+          }
+        </div>
+
+      </div>
+    }
+
+</main>
+
+<!-- ═══ MODAL PORTADA DEL LIBRO ═══ -->
+@if (portadaModalVisible) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-md"
+    (click)="cerrarPortada()">
+    <div class="absolute inset-0 bg-black/60"></div>
+    <div class="relative z-10 max-w-lg w-full bg-surface-container-lowest rounded-xl shadow-xl overflow-hidden"
+      (click)="$event.stopPropagation()">
+      <div class="relative bg-surface-container-low flex items-center justify-center"
+        style="min-height: 300px; max-height: 70vh;">
+        @if (portadaModalCargando) {
+          <span class="material-symbols-outlined text-[48px] text-outline-variant animate-pulse">image</span>
+        } @else if (portadaModalUrl) {
+          <img [src]="portadaModalUrl" alt="Portada del libro"
+            class="max-w-full max-h-[70vh] object-contain" />
+        } @else {
+          <span class="material-symbols-outlined text-[64px] text-outline-variant">menu_book</span>
+        }
+      </div>
+      <button type="button" (click)="cerrarPortada()" aria-label="Cerrar vista de portada"
+        class="absolute top-sm right-sm w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 cursor-pointer">
+        <span class="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
+      </button>
+    </div>
+  </div>
+}

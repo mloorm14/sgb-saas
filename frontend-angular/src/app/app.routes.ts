@@ -3,87 +3,78 @@ import { authGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
 import { LoginComponent } from './auth/login/login.component';
 import { RegistroComponent } from './auth/registro/registro.component';
-import { LibrosComponent } from './libros/libros.component';
-import { PrestamosLectorComponent } from './prestamos-lector/prestamos-lector.component';
-import { PrestamosGestionComponent } from './prestamos-gestion/prestamos-gestion.component';
-import { ReservacionesComponent } from './reservaciones/reservaciones.component';
-import { MultasComponent } from './multas/multas.component';
-import { ReportesComponent } from './reportes/reportes.component';
 import { DashboardGerenteComponent } from './dashboard-gerente/dashboard-gerente.component';
+import { DashboardGerenteAdminHomeComponent } from './dashboard-gerente-admin/dashboard-gerente-admin-home.component';
+import { DashboardBibliotecarioComponent } from './dashboard/dashboard-bibliotecario.component';
+import { DashboardBibliotecarioHomeComponent } from './dashboard/dashboard-bibliotecario-home.component';
 import { NoAutorizadoComponent } from './shared/no-autorizado/no-autorizado.component';
-import { CatalogoComponent } from './catalogo/catalogo.component';
-import { LibroDetalleComponent } from './catalogo/libro-detalle/libro-detalle.component';
-import { FavoritosComponent } from './favoritos/favoritos.component';
-import { SugerenciasFormComponent } from './sugerencias/sugerencias-form/sugerencias-form.component';
-import { MisSugerenciasComponent } from './sugerencias/mis-sugerencias/mis-sugerencias.component';
-import { GestionSugerenciasComponent } from './sugerencias/gestion-sugerencias/gestion-sugerencias.component';
 import { PortalPublicoComponent } from './portal-publico/portal-publico.component';
 import { DetallePublicoComponent } from './portal-publico/detalle-publico/detalle-publico.component';
-import { ConfiguracionSistemaComponent } from './configuracion-sistema/configuracion-sistema.component';
-import { UsuariosComponent } from './admin/usuarios/usuarios.component';
-import { NotificacionesComponent } from './notificaciones/notificaciones.component';
-import { AuditoriaComponent } from './admin/auditoria/auditoria.component';
+import { DashboardGerenteAdminComponent } from './dashboard-gerente-admin/dashboard-gerente-admin.component';
+import { DashboardLectorComponent } from './dashboard-lector/dashboard-lector.component';
+import { catalogoResolver } from './core/resolvers/catalogo.resolver';
+import { libroDetalleResolver } from './core/resolvers/libro-detalle.resolver';
+import { libroPublicoDetalleResolver } from './core/resolvers/libro-publico-detalle.resolver';
 
-// Los roleGuard de abajo reflejan los @PreAuthorize reales de cada
-// controller en backend-springboot (verificado en el codigo, no asumido):
-// - /libros: GET todos los roles, POST/PUT/DELETE y portada exigen
-//   BIBLIOTECARIO/GERENTE/ADMIN -> el minimo para operar el inventario.
-// - /prestamos y /prestamos/gestion: crear/devolver es solo
-//   BIBLIOTECARIO/GERENTE; el listado por usuario admite tambien LECTOR
-//   pero ADMIN queda fuera en todos los endpoints del controller.
-// - /reservaciones y /multas: LECTOR/BIBLIOTECARIO/GERENTE (ADMIN fuera).
-// - /admin/usuarios: ADMIN y GERENTE (ver UsuarioAdminController#listar);
-//   cambiar rol/estado queda gateado dentro del propio componente porque
-//   ahí sí es solo ADMIN.
-// - /admin/configuracion: solo ADMIN (ver ConfiguracionSistemaController,
-//   @PreAuthorize a nivel de clase).
-// Rama C (portal público): la raiz de la app es el portal SIN sesion
-// (/api/publico/libros, permitAll en SecurityConfig). Las rutas de sesion
-// quedan en /login y /registro; las del resto de ramas no cambian. El
-// wildcard ya no redirige a /login sino al portal (nadie esta obligado a
-// iniciar sesion para navegar el catalogo).
 export const routes: Routes = [
   { path: '', component: PortalPublicoComponent },
-  { path: 'portal/:id', component: DetallePublicoComponent },
+  { path: 'portal/:id', component: DetallePublicoComponent, resolve: { libro: libroPublicoDetalleResolver } },
   { path: 'login', component: LoginComponent },
   { path: 'registro', component: RegistroComponent },
-  { path: 'libros', component: LibrosComponent, canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE', 'ADMIN'])] },
-  { path: 'prestamos', component: PrestamosLectorComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
-  { path: 'prestamos/gestion', component: PrestamosGestionComponent, canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE'])] },
-  { path: 'reservaciones', component: ReservacionesComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
-  { path: 'multas', component: MultasComponent, canActivate: [authGuard, roleGuard(['LECTOR', 'BIBLIOTECARIO', 'GERENTE'])] },
-  // Solo ADMIN (ver ConfiguracionSistemaController, @PreAuthorize a nivel
-  // de clase) -- roleGuard evita que un GERENTE/BIBLIOTECARIO/LECTOR
-  // navegue acá por URL y vea un componente vacío condenado a fallar.
-  { path: 'admin/configuracion', component: ConfiguracionSistemaComponent, canActivate: [authGuard, roleGuard(['ADMIN'])] },
-  // Reportes gerenciales: BIBLIOTECARIO/GERENTE (PrestamoController; el
-  // ADMIN no tiene acceso).
-  { path: 'reportes', component: ReportesComponent, canActivate: [authGuard, roleGuard(['BIBLIOTECARIO', 'GERENTE'])] },
-  // Dashboard del GERENTE (mockup 24): top 5 de libros más prestados vía
-  // el mismo PrestamoController de reportes, por eso queda SOLO GERENTE
-  // (el BIBLIOTECARIO tiene /reportes, no esta pantalla).
+
   { path: 'dashboard-gerente', component: DashboardGerenteComponent, canActivate: [authGuard, roleGuard(['GERENTE'])] },
-  // Rama B (frontend/estudiante-catalogo-social): las 5 rutas del
-  // consumidor son 100% LECTOR — verificado en FavoritoController.java y
-  // SugerenciaAdquisicionController.java (los endpoints de favoritos y de
-  // sugerencias/adquisicion son @PreAuthorize hasRole('LECTOR'); las
-  // categorias y autores admiten cualquier rol autenticado).
-  { path: 'catalogo', component: CatalogoComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
-  { path: 'catalogo/:id', component: LibroDetalleComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
-  { path: 'favoritos', component: FavoritosComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
-  { path: 'sugerencias', component: MisSugerenciasComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
-  { path: 'sugerencias/nueva', component: SugerenciasFormComponent, canActivate: [authGuard, roleGuard(['LECTOR'])] },
-  // Revisión de sugerencias: GERENTE/ADMIN listan todas y cambian estado
-  // a APROBADA/RECHAZADA (SugerenciaAdquisicionController real).
-  { path: 'sugerencias/gestion', component: GestionSugerenciasComponent, canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])] },
-  // Rama F (panel administrativo): gestión de usuarios -- listado ADMIN/GERENTE,
-  // PATCH de rol/estado solo ADMIN (UsuarioAdminController real).
-  { path: 'admin/usuarios', component: UsuariosComponent, canActivate: [authGuard, roleGuard(['ADMIN', 'GERENTE'])] },
-  // Auditoría: bitácora de eventos, GERENTE/ADMIN (AuditoriaController real).
-  { path: 'auditoria', component: AuditoriaComponent, canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])] },
-  // Notificaciones: todas las roles autenticadas ven sus propias notificaciones
-  // (el controller valida que solo veas las tuyas).
-  { path: 'notificaciones', component: NotificacionesComponent, canActivate: [authGuard] },
+  {
+    path: 'dashboard-bibliotecario',
+    component: DashboardBibliotecarioComponent,
+    canActivate: [authGuard, roleGuard(['BIBLIOTECARIO'])],
+    children: [
+      { path: '', component: DashboardBibliotecarioHomeComponent },
+      { path: 'libros', loadComponent: () => import('./libros/libros.component').then(m => m.LibrosComponent) },
+      { path: 'libros-pendientes', loadComponent: () => import('./libros-pendientes/libros-pendientes.component').then(m => m.LibrosPendientesComponent) },
+      { path: 'prestamos/gestion', loadComponent: () => import('./prestamos-gestion/prestamos-gestion.component').then(m => m.PrestamosGestionComponent) },
+      { path: 'reservaciones', loadComponent: () => import('./reservaciones/reservaciones.component').then(m => m.ReservacionesComponent) },
+      { path: 'devoluciones', loadComponent: () => import('./devoluciones/devoluciones.component').then(m => m.DevolucionesComponent) },
+      { path: 'multas', loadComponent: () => import('./multas/multas.component').then(m => m.MultasComponent) },
+    ]
+  },
+  {
+    path: 'dashboard-admin',
+    component: DashboardGerenteAdminComponent,
+    canActivate: [authGuard, roleGuard(['GERENTE', 'ADMIN'])],
+    children: [
+      { path: '', component: DashboardGerenteAdminHomeComponent },
+      { path: 'libros', loadComponent: () => import('./libros/libros.component').then(m => m.LibrosComponent) },
+      { path: 'libros-pendientes', loadComponent: () => import('./libros-pendientes/libros-pendientes.component').then(m => m.LibrosPendientesComponent) },
+      { path: 'prestamos/gestion', loadComponent: () => import('./prestamos-gestion/prestamos-gestion.component').then(m => m.PrestamosGestionComponent) },
+      { path: 'reservaciones', loadComponent: () => import('./reservaciones/reservaciones.component').then(m => m.ReservacionesComponent) },
+      { path: 'multas', loadComponent: () => import('./multas/multas.component').then(m => m.MultasComponent) },
+      { path: 'proveedores', loadComponent: () => import('./proveedores/proveedores.component').then(m => m.ProveedoresComponent), canActivate: [roleGuard(['GERENTE', 'ADMIN'])] },
+      { path: 'sugerencias/gestion', loadComponent: () => import('./sugerencias/gestion-sugerencias/gestion-sugerencias.component').then(m => m.GestionSugerenciasComponent) },
+      { path: 'admin/usuarios', loadComponent: () => import('./admin/usuarios/usuarios.component').then(m => m.UsuariosComponent) },
+      { path: 'auditoria', loadComponent: () => import('./admin/auditoria/auditoria.component').then(m => m.AuditoriaComponent) },
+      { path: 'reportes', loadComponent: () => import('./reportes/reportes.component').then(m => m.ReportesComponent), canActivate: [roleGuard(['GERENTE', 'ADMIN'])] },
+      { path: 'admin/configuracion', loadComponent: () => import('./configuracion-sistema/configuracion-sistema.component').then(m => m.ConfiguracionSistemaComponent), canActivate: [roleGuard(['ADMIN'])] },
+    ]
+  },
+  {
+    path: 'dashboard-lector',
+    component: DashboardLectorComponent,
+    canActivate: [authGuard, roleGuard(['LECTOR'])],
+    children: [
+      { path: '', redirectTo: 'catalogo', pathMatch: 'full' },
+      { path: 'catalogo', loadComponent: () => import('./catalogo/catalogo.component').then(m => m.CatalogoComponent), resolve: { data: catalogoResolver } },
+      { path: 'catalogo/:id', loadComponent: () => import('./catalogo/libro-detalle/libro-detalle.component').then(m => m.LibroDetalleComponent), resolve: { data: libroDetalleResolver } },
+      { path: 'prestamos', loadComponent: () => import('./prestamos-lector/prestamos-lector.component').then(m => m.PrestamosLectorComponent) },
+      { path: 'reservaciones', loadComponent: () => import('./reservaciones/reservaciones.component').then(m => m.ReservacionesComponent) },
+      { path: 'multas', loadComponent: () => import('./multas/multas.component').then(m => m.MultasComponent) },
+      { path: 'favoritos', loadComponent: () => import('./favoritos/favoritos.component').then(m => m.FavoritosComponent) },
+      { path: 'sugerencias', loadComponent: () => import('./sugerencias/mis-sugerencias/mis-sugerencias.component').then(m => m.MisSugerenciasComponent) },
+      { path: 'sugerencias/nueva', loadComponent: () => import('./sugerencias/sugerencias-form/sugerencias-form.component').then(m => m.SugerenciasFormComponent) },
+      { path: 'notificaciones', loadComponent: () => import('./notificaciones/notificaciones.component').then(m => m.NotificacionesComponent) },
+      { path: 'mi-credencial', loadComponent: () => import('./mi-credencial/mi-credencial.component').then(m => m.MiCredencialComponent) },
+    ]
+  },
+
   { path: 'no-autorizado', component: NoAutorizadoComponent },
   { path: '**', redirectTo: '' }
 ];

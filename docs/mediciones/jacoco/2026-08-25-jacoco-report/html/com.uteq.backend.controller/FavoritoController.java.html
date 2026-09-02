@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FavoritoController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.controller</a> &gt; <span class="el_source">FavoritoController.java</span></div><h1>FavoritoController.java</h1><pre class="source lang-java linenums">package com.uteq.backend.controller;
+
+import com.uteq.backend.dto.FavoritoResponseDTO;
+import com.uteq.backend.service.FavoritoService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+// Módulo 9.2 del roadmap. Solo LECTOR: favoritos es un concepto de
+// &quot;mi propia lista&quot;, BIBLIOTECARIO/GERENTE/ADMIN no marcan libros propios
+// desde acá (a diferencia de PrestamoController, donde varios roles
+// operan sobre préstamos ajenos). El usuarioId nunca viaja en la URL/body:
+// siempre se resuelve del Authentication en FavoritoService, así que no
+// hace falta un endpoint &quot;de otro usuario&quot; ni su chequeo de acceso.
+@RestController
+@RequestMapping(&quot;/api/v1/favoritos&quot;)
+public class FavoritoController {
+
+    private final FavoritoService favoritoService;
+
+<span class="fc" id="L25">    public FavoritoController(FavoritoService favoritoService) {</span>
+<span class="fc" id="L26">        this.favoritoService = favoritoService;</span>
+<span class="fc" id="L27">    }</span>
+
+    // ── POST /api/v1/favoritos/{libroId} ──────────────────
+    @PostMapping(&quot;/{libroId}&quot;)
+    @PreAuthorize(&quot;hasRole('LECTOR')&quot;)
+    public ResponseEntity&lt;FavoritoResponseDTO&gt; agregar(
+            @PathVariable Long libroId, Authentication authentication) {
+<span class="nc" id="L34">        return ResponseEntity.status(HttpStatus.CREATED)</span>
+<span class="nc" id="L35">                .body(favoritoService.agregar(libroId, authentication));</span>
+    }
+
+    // ── DELETE /api/v1/favoritos/{libroId} ────────────────
+    @DeleteMapping(&quot;/{libroId}&quot;)
+    @PreAuthorize(&quot;hasRole('LECTOR')&quot;)
+    public ResponseEntity&lt;Void&gt; quitar(
+            @PathVariable Long libroId, Authentication authentication) {
+<span class="nc" id="L43">        favoritoService.quitar(libroId, authentication);</span>
+<span class="nc" id="L44">        return ResponseEntity.noContent().build();</span>
+    }
+
+    // ── GET /api/v1/favoritos ──────────────────────────────
+    // Roadmap original proponía /favoritos/usuario/{usuarioId}, pero el
+    // usuarioId ya se resuelve del Authentication (ver FavoritoService) --
+    // exponerlo también en el path permitiría a un LECTOR intentar leer
+    // favoritos ajenos con solo cambiar el número en la URL, mismo tipo de
+    // hallazgo IDOR que ya se corrigió en PrestamoService.validarAccesoUsuario.
+    // Se deja sin path param a propósito: &quot;mis favoritos&quot;, no &quot;favoritos
+    // de tal usuarioId&quot;.
+    @GetMapping
+    @PreAuthorize(&quot;hasRole('LECTOR')&quot;)
+    public ResponseEntity&lt;List&lt;FavoritoResponseDTO&gt;&gt; listarPropios(Authentication authentication) {
+<span class="nc" id="L58">        return ResponseEntity.ok(favoritoService.listarPropios(authentication));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

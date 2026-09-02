@@ -1,19 +1,39 @@
 <main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
-  <div class="mb-lg">
-    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Bienvenida, Gerencia</h1>
-    <p class="font-body-sm text-body-sm text-on-surface-variant">Resumen del estado actual de la biblioteca</p>
+  <div class="flex items-center justify-between mb-lg">
+    <div>
+      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">{{ tituloBienvenida }}</h1>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">Resumen del estado actual de la biblioteca</p>
+    </div>
+    <button type="button" (click)="themeService.toggle()"
+      [attr.aria-label]="themeService.oscuro() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
+      [attr.aria-pressed]="themeService.oscuro()"
+      title="Cambiar tema"
+      class="shrink-0 flex items-center justify-center w-9 h-9 rounded-full hover:bg-surface-container-low transition-colors cursor-pointer text-on-surface-variant">
+      <span class="material-symbols-outlined text-[20px]">{{ themeService.oscuro() ? 'light_mode' : 'dark_mode' }}</span>
+    </button>
   </div>
 
   @if (error) {
     <p class="font-body-sm text-body-sm text-error mb-md">{{ error }}</p>
   }
   @if (cargando) {
-    <p class="font-body-sm text-body-sm text-on-surface-variant mb-md">Cargando dashboard…</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md animate-pulse">
+      @for (i of [1,2,3,4]; track i) {
+        <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-md">
+          <div class="h-4 bg-surface-container-high rounded w-3/4 mb-sm"></div>
+          <div class="h-3 bg-surface-container-high rounded w-1/2 mb-xs"></div>
+          <div class="h-3 bg-surface-container-high rounded w-2/3"></div>
+        </div>
+      }
+    </div>
   }
 
-  <!-- Libros más prestados: datos reales de GET /api/v1/prestamos/reportes/libros-mas-prestados -->
+  <!-- Libros más prestados: datos reales de GET /api/v1/prestamos/reportes/libros-mas-prestados.
+       Solo GERENTE: ADMIN no tiene acceso a este endpoint (@PreAuthorize
+       hasAnyRole('BIBLIOTECARIO','GERENTE')). -->
+  @if (esGerente) {
   <div class="grid lg:grid-cols-2 gap-lg mb-xl">
-    <div class="rounded-xl border border-outline-variant bg-white p-lg">
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm p-lg">
       <h2 class="font-headline-md text-headline-md text-on-background mb-md">Libros más prestados</h2>
       <div class="space-y-sm">
         @for (libro of librosMasPrestados; track libro.libroId; let i = $index) {
@@ -27,32 +47,128 @@
           }
         }
       </div>
-      <a routerLink="/reportes" class="inline-flex items-center gap-xs mt-md font-label-sm text-label-sm text-primary hover:underline">
+      <a routerLink="/dashboard-admin/reportes" class="inline-flex items-center gap-xs mt-md font-label-sm text-label-sm text-primary hover:underline">
         Ver reporte completo <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
       </a>
     </div>
 
     <!-- Accesos rápidos: routerLink a rutas reales del GERENTE (roleGuard en app.routes.ts) -->
-    <div class="rounded-xl border border-outline-variant bg-white p-lg">
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm p-lg">
       <h2 class="font-headline-md text-headline-md text-on-background mb-md">Accesos rápidos</h2>
       <div class="grid grid-cols-2 gap-sm">
-        <a routerLink="/sugerencias/gestion" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
+        <a routerLink="/dashboard-admin/sugerencias/gestion" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
           <span class="material-symbols-outlined text-[22px] text-primary">lightbulb</span>
           <span class="font-label-sm text-[13px] text-on-surface">Revisar sugerencias</span>
         </a>
-        <a routerLink="/admin/usuarios" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
+        <a routerLink="/dashboard-admin/admin/usuarios" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
           <span class="material-symbols-outlined text-[22px] text-primary">manage_accounts</span>
           <span class="font-label-sm text-[13px] text-on-surface">Gestionar usuarios</span>
         </a>
-        <a routerLink="/auditoria" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
-          <span class="material-symbols-outlined text-[22px] text-primary">receipt_long</span>
-          <span class="font-label-sm text-[13px] text-on-surface">Ver auditoría</span>
-        </a>
-        <a routerLink="/reportes" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
+
+        <a routerLink="/dashboard-admin/reportes" class="rounded-lg border border-outline-variant p-md hover:bg-surface-container-low flex flex-col items-start gap-xs">
           <span class="material-symbols-outlined text-[22px] text-primary">picture_as_pdf</span>
           <span class="font-label-sm text-[13px] text-on-surface">Exportar morosidad</span>
         </a>
       </div>
+    </div>
+  </div>
+  }
+
+  <!-- 3 widgets agregados (pedido de Cajas, dashboard GERENTE/ADMIN ampliado) -->
+  <div class="grid lg:grid-cols-3 gap-lg mb-xl">
+    <!-- Resumen financiero: GET /api/v1/multas/reportes/resumen-financiero
+         GERENTE/ADMIN: admite ambos roles (MultaController). -->
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm p-lg">
+      <h2 class="font-headline-md text-headline-md text-on-background mb-md">Resumen financiero</h2>
+      @if (cargandoFinanciero) {
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando…</p>
+      } @else if (errorFinanciero) {
+        <p class="font-body-sm text-body-sm text-error">{{ errorFinanciero }}</p>
+      } @else if (resumenFinanciero) {
+        <div class="space-y-sm mb-md">
+          <div class="flex items-center justify-between">
+            <span class="font-body-sm text-body-sm text-on-surface-variant">Recaudado</span>
+            <span class="font-label-md text-label-md text-secondary">{{ resumenFinanciero.totalRecaudado | currency }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="font-body-sm text-body-sm text-on-surface-variant">Pendiente de cobro</span>
+            <span class="font-label-md text-label-md text-error">{{ resumenFinanciero.totalPendiente | currency }}</span>
+          </div>
+          <div class="flex items-center justify-between border-t border-outline-variant pt-sm">
+            <span class="font-body-sm text-body-sm text-on-surface font-medium">Generado hoy</span>
+            <span class="font-label-md text-label-md text-primary">{{ resumenFinanciero.totalGeneradoHoy | currency }}</span>
+          </div>
+        </div>
+
+        @if (resumenFinanciero.pagosRecientes.length > 0) {
+          <div class="border-t border-outline-variant pt-md">
+            <h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">Pagos recientes</h3>
+            <div class="space-y-sm">
+              @for (pago of resumenFinanciero.pagosRecientes; track pago.multaId) {
+                <div class="flex items-center justify-between gap-sm">
+                  <div class="min-w-0">
+                    <p class="font-body-sm text-body-sm text-on-surface truncate">{{ pago.usuarioNombre }}</p>
+                    <p class="font-label-sm text-[11px] text-on-surface-variant truncate">{{ pago.libroTitulo }}</p>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <p class="font-label-sm text-label-sm text-secondary">+{{ pago.montoPagado | currency }}</p>
+                    <p class="font-label-sm text-[11px] text-on-surface-variant">{{ pago.fechaPagada | date:'short' }}</p>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Morosidad: reutiliza GET /api/v1/prestamos/reportes/morosidad (top 10
+         por defecto en el backend -- no es un porcentaje, ver Javadoc del
+         componente). Solo GERENTE: ADMIN no tiene acceso
+         (@PreAuthorize hasAnyRole('BIBLIOTECARIO','GERENTE')). -->
+    @if (esGerente) {
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm p-lg">
+      <h2 class="font-headline-md text-headline-md text-on-background mb-md">Morosidad (top 10)</h2>
+      @if (cargandoMorosidad) {
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando…</p>
+      } @else if (errorMorosidad) {
+        <p class="font-body-sm text-body-sm text-error">{{ errorMorosidad }}</p>
+      } @else {
+        <div class="space-y-sm">
+          <div class="flex items-center justify-between">
+            <span class="font-body-sm text-body-sm text-on-surface-variant">Usuarios en mora</span>
+            <span class="font-label-md text-label-md text-on-surface">{{ usuariosEnMora.length }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="font-body-sm text-body-sm text-on-surface-variant">Monto adeudado</span>
+            <span class="font-label-md text-label-md text-error">{{ montoTotalAdeudado | currency }}</span>
+          </div>
+        </div>
+      }
+    </div>
+    }
+
+    <!-- Actividad de auditoría reciente: GET /api/v1/auditoria?size=5 (lista
+         compacta -- la tabla completa vive en /auditoria). -->
+    <div class="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm p-lg">
+      <h2 class="font-headline-md text-headline-md text-on-background mb-md">Actividad reciente</h2>
+      @if (cargandoAuditoria) {
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Cargando…</p>
+      } @else if (errorAuditoria) {
+        <p class="font-body-sm text-body-sm text-error">{{ errorAuditoria }}</p>
+      } @else {
+        <div class="space-y-sm">
+          @for (evento of eventosAuditoria; track evento.id) {
+            <div class="flex items-center justify-between gap-sm">
+              <p class="font-body-sm text-body-sm text-on-surface truncate">{{ evento.accion }} · {{ evento.usuario ?? '—' }}</p>
+              <span class="font-label-sm text-[11px] text-on-surface-variant shrink-0">{{ evento.fechaHora | date:'short' }}</span>
+            </div>
+          } @empty {
+            <p class="font-body-sm text-body-sm text-on-surface-variant">Sin actividad registrada</p>
+          }
+        </div>
+
+      }
     </div>
   </div>
 </main>

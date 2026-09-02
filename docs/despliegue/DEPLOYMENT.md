@@ -50,7 +50,7 @@ HTTPS es provisto automáticamente por Render en ambos servicios públicos
 > administrados manualmente. Esa vía se descartó por saturación de
 > capacidad en las instancias ARM del Always Free de Oracle Cloud. La
 > arquitectura final, validada de punta a punta, es la de esta tabla. Ver
-> la Actualización fechada en `docs/adr/adr-012-estrategia-despliegue.md`.
+> la Actualización fechada en `docs/adr/adr-007-estrategia-despliegue.md`.
 
 ## 2. Recursos consumidos por el plan free (estado vigente a agosto 2026)
 
@@ -246,7 +246,7 @@ Configuración actual (servicio `biblora-sgb`, verificada con
 
 | Cabecera | Valor cargado en el Dashboard (patrón `/*`) |
 |---|---|
-| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://sgb-backend-b058.onrender.com; frame-ancestors 'none'; base-uri 'self'; form-action 'none'; object-src 'none'` |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://sgb-backend-b058.onrender.com; frame-ancestors 'none'; base-uri 'self'; form-action 'none'; object-src 'none'` |
 | `X-Frame-Options` | `DENY` |
 | `X-Content-Type-Options` | `nosniff` |
 | `Strict-Transport-Security` | automática del edge de Render (`max-age=315360000; includeSubdomains; preload`) — no requiere configuración propia en Static Sites |
@@ -412,7 +412,7 @@ solo los tests.
 - [RUNBOOK.md](RUNBOOK.md) — operación, rotación de secretos y redeploys.
 - [BACKUP.md](BACKUP.md) — respaldo Neon, retención mínima y prueba de
   restauración.
-- [ADR-012](docs/adr/adr-012-estrategia-despliegue.md) — decisión y
+- [ADR-007](docs/adr/adr-007-estrategia-despliegue.md) — decisión y
   Actualización a esta arquitectura.
 - `render.yaml` (raíz del repo, traído por primera vez a esta rama en
   este merge — ver §0 y §6.1).

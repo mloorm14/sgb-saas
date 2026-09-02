@@ -28,18 +28,27 @@ describe('ConfiguracionSistemaComponent', () => {
     httpMock.verify();
   });
 
-  it('un ADMIN carga el listado de configuración', async () => {
+  it('un ADMIN carga el listado de configuración y tipos de daño', async () => {
     await configurar('ADMIN');
     fixture.detectChanges();
 
-    const req = httpMock.expectOne('http://localhost:8080/api/v1/configuracion');
-    req.flush([
+    const reqConfig = httpMock.expectOne('http://localhost:8080/api/v1/configuracion');
+    reqConfig.flush([
       { clave: 'monto_multa_diaria', valor: '0.50' },
       { clave: 'dias_prestamo_default', valor: '15' }
     ]);
 
+    const reqCategoriasDano = httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano');
+    reqCategoriasDano.flush([]);
+
+    const reqDanos = httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano');
+    reqDanos.flush([
+      { id: 1, nombre: 'Páginas rotas', precio: 5.0 }
+    ]);
+
     expect(component.esAdmin).toBeTrue();
     expect(component.configuraciones.length).toBe(2);
+    expect(component.tiposDano.length).toBe(1);
     expect(component.errorMsg).toBe('');
   });
 
@@ -48,18 +57,25 @@ describe('ConfiguracionSistemaComponent', () => {
     fixture.detectChanges();
 
     httpMock.expectNone('http://localhost:8080/api/v1/configuracion');
+    httpMock.expectNone('http://localhost:8080/api/v1/tipos-dano');
     expect(component.esAdmin).toBeFalse();
 
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('No tenés permisos');
+    expect(fixture.nativeElement.textContent).toContain('No tienes permisos');
   });
 
   it('muestra errorMsg sin romper la UI si el backend falla al listar', async () => {
     await configurar('ADMIN');
     fixture.detectChanges();
 
-    const req = httpMock.expectOne('http://localhost:8080/api/v1/configuracion');
-    req.flush('error', { status: 500, statusText: 'Server Error' });
+    const reqConfig = httpMock.expectOne('http://localhost:8080/api/v1/configuracion');
+    reqConfig.flush('error', { status: 500, statusText: 'Server Error' });
+
+    const reqCategoriasDano = httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano');
+    reqCategoriasDano.flush([]);
+
+    const reqDanos = httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano');
+    reqDanos.flush([]);
 
     expect(component.errorMsg).toBe('Error al cargar la configuración del sistema');
     expect(component.cargando).toBeFalse();
@@ -71,6 +87,8 @@ describe('ConfiguracionSistemaComponent', () => {
 
     httpMock.expectOne('http://localhost:8080/api/v1/configuracion')
       .flush([{ clave: 'monto_multa_diaria', valor: '0.50' }]);
+    httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
 
     component.iniciarEdicion(component.configuraciones[0]);
     component.valorEditando = '0.75';
@@ -94,6 +112,8 @@ describe('ConfiguracionSistemaComponent', () => {
 
     httpMock.expectOne('http://localhost:8080/api/v1/configuracion')
       .flush([{ clave: 'monto_multa_diaria', valor: '0.50' }]);
+    httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
 
     component.iniciarEdicion(component.configuraciones[0]);
     component.valorEditando = 'x'.repeat(201);
@@ -109,6 +129,8 @@ describe('ConfiguracionSistemaComponent', () => {
 
     httpMock.expectOne('http://localhost:8080/api/v1/configuracion')
       .flush([{ clave: 'monto_multa_diaria', valor: '0.50' }]);
+    httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
 
     component.iniciarEdicion(component.configuraciones[0]);
     component.valorEditando = '1.00';
@@ -117,6 +139,92 @@ describe('ConfiguracionSistemaComponent', () => {
     const req = httpMock.expectOne('http://localhost:8080/api/v1/configuracion/monto_multa_diaria');
     req.flush('error', { status: 403, statusText: 'Forbidden' });
 
-    expect(component.errorMsg).toBe('No tenés permisos para modificar la configuración del sistema');
+    expect(component.errorMsg).toBe('No tienes permisos para modificar la configuración del sistema');
+  });
+
+  it('inicia en vista root con 3 módulos', async () => {
+    await configurar('ADMIN');
+    fixture.detectChanges();
+
+    httpMock.expectOne('http://localhost:8080/api/v1/configuracion').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
+
+    expect(component.vista).toBe('root');
+    expect(component.modulos.length).toBe(3);
+    expect(component.modulos[0].id).toBe('sistema');
+    expect(component.modulos[1].id).toBe('danos');
+    expect(component.modulos[2].id).toBe('respaldos');
+  });
+
+  it('abrirModulo("sistema") navega a grid con 5 submódulos', async () => {
+    await configurar('ADMIN');
+    fixture.detectChanges();
+
+    httpMock.expectOne('http://localhost:8080/api/v1/configuracion').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
+
+    component.abrirModulo('sistema');
+
+    expect(component.vista).toBe('grid');
+    expect(component.submodulosFiltrados.length).toBe(5);
+    expect(component.breadcrumbs.length).toBe(1);
+    expect(component.breadcrumbs[0].label).toBe('Configuración');
+  });
+
+  it('abrirSubmodulo navega a detalle con breadcrumb correcto', async () => {
+    await configurar('ADMIN');
+    fixture.detectChanges();
+
+    httpMock.expectOne('http://localhost:8080/api/v1/configuracion').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
+
+    component.abrirSubmodulo('multas');
+
+    expect(component.vista).toBe('detalle');
+    expect(component.submoduloSeleccionado).toBe('multas');
+    expect(component.breadcrumbs.length).toBe(3);
+    expect(component.breadcrumbs[2].label).toBe('Multas');
+  });
+
+  it('volverARoot regresa a la vista raíz', async () => {
+    await configurar('ADMIN');
+    fixture.detectChanges();
+
+    httpMock.expectOne('http://localhost:8080/api/v1/configuracion').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
+
+    component.abrirSubmodulo('multas');
+    component.volverARoot();
+
+    expect(component.vista).toBe('root');
+    expect(component.submoduloSeleccionado).toBeNull();
+    expect(component.breadcrumbs.length).toBe(0);
+  });
+
+  it('tituloActual y descripcionActual cambian con la navegación', async () => {
+    await configurar('ADMIN');
+    fixture.detectChanges();
+
+    httpMock.expectOne('http://localhost:8080/api/v1/configuracion').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
+
+    expect(component.tituloActual).toBe('Configuración');
+
+    component.abrirModulo('sistema');
+    expect(component.tituloActual).toBe('Configuración del sistema');
+
+    component.abrirSubmodulo('multas');
+    expect(component.tituloActual).toBe('Multas');
+
+    component.volverAGrid();
+    expect(component.tituloActual).toBe('Configuración del sistema');
+
+    component.volverARoot();
+    expect(component.tituloActual).toBe('Configuración');
   });
 });

@@ -1,6 +1,6 @@
 package com.uteq.backend.repository.projection;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 /**
  * Proyección de una fila retornada por la función SQL
@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
  */
 public interface ReporteUsoPorPeriodoProjection {
 
-    OffsetDateTime getPeriodo();
+    Instant getPeriodo();
 
     Long getTotalPrestamos();
 

@@ -12,7 +12,9 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.SortDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -37,22 +39,18 @@ public class LibroController {
     }
 
     // ── GET /api/v1/libros?page=0&size=10 ────────────────
-    // Módulo 9.1: ?categoriaId= y ?autorId= son mutuamente excluyentes por
-    // simplicidad (combinar ambos filtros a la vez no está en el alcance
-    // de esta rama); si llegan los dos, categoriaId gana.
+    // Filtros combinables: q (título/ISBN), estadoLibroId, categoriaId, autorId.
+    // Si no se envía estadoLibroId, default = ACTIVO.
     @GetMapping
     @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<Page<LibroResponseDTO>> listar(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) Integer estadoLibroId,
             @RequestParam(required = false) Integer categoriaId,
             @RequestParam(required = false) Long autorId,
+            @RequestParam(required = false) Boolean disponible,
             @PageableDefault(size = 10, sort = "titulo") Pageable pageable) {
-        if (categoriaId != null) {
-            return ResponseEntity.ok(libroService.listarPorCategoria(categoriaId, pageable));
-        }
-        if (autorId != null) {
-            return ResponseEntity.ok(libroService.listarPorAutor(autorId, pageable));
-        }
-        return ResponseEntity.ok(libroService.listar(pageable));
+        return ResponseEntity.ok(libroService.listarConFiltros(q, estadoLibroId, categoriaId, autorId, disponible, pageable));
     }
 
     // ── GET /api/v1/libros/sugerencias?texto= ─────────────
@@ -66,6 +64,19 @@ public class LibroController {
         return ResponseEntity.ok(libroService.sugerir(texto));
     }
 
+    // ── GET /api/v1/libros/pendientes ────────────────
+    // Listado de libros en estados de gestión: DADO_DE_BAJA, PENDIENTE, EN_REPARACION, PERDIDO
+    // Si no se envía estadoIds, usa los 4 por defecto.
+    @GetMapping("/pendientes")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    public ResponseEntity<Page<LibroResponseDTO>> pendientes(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) Integer anioPublicacion,
+            @RequestParam(required = false) List<Integer> estadoIds,
+            @PageableDefault(size = 10) @SortDefault(sort = "fecha_registro", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(libroService.listarPendientes(q, anioPublicacion, estadoIds, pageable));
+    }
+
     // ── GET /api/v1/libros/lookup-isbn?isbn= ─────────────
     // Módulo inventario (mockup 14): autocompletar desde Google Books.
     // La ruta literal /lookup-isbn gana sobre /{id} (Spring elige el
@@ -73,8 +84,8 @@ public class LibroController {
     @GetMapping("/lookup-isbn")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<LibroIsbnLookupDTO> lookupIsbn(
-            @RequestParam @Pattern(regexp = "^[0-9\\-]{10,17}$", message = "ISBN inválido")
-            @Size(max = 13, message = "El ISBN no puede superar 13 caracteres") String isbn) {
+            @RequestParam @Pattern(regexp = "^[0-9]{10,13}$", message = "ISBN debe tener 10 a 13 dígitos")
+            @Size(min = 10, max = 13, message = "El ISBN debe tener entre 10 y 13 caracteres") String isbn) {
         return ResponseEntity.ok(libroIsbnLookupService.buscarPorIsbn(isbn));
     }
 
@@ -85,8 +96,8 @@ public class LibroController {
     @GetMapping("/lookup-isbn/portada")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<byte[]> lookupIsbnPortada(
-            @RequestParam @Pattern(regexp = "^[0-9\\-]{10,17}$", message = "ISBN inválido")
-            @Size(max = 13, message = "El ISBN no puede superar 13 caracteres") String isbn) {
+            @RequestParam @Pattern(regexp = "^[0-9]{10,13}$", message = "ISBN debe tener 10 a 13 dígitos")
+            @Size(min = 10, max = 13, message = "El ISBN debe tener entre 10 y 13 caracteres") String isbn) {
         PortadaImagenDTO portada = libroIsbnLookupService.obtenerPortada(isbn);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(portada.contentType()))

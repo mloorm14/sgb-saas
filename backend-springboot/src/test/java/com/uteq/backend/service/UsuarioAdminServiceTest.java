@@ -6,7 +6,9 @@ import com.uteq.backend.entity.EstadoUsuario;
 import com.uteq.backend.entity.Rol;
 import com.uteq.backend.entity.Usuario;
 import com.uteq.backend.repository.BitacoraAuditoriaRepository;
+import com.uteq.backend.repository.EstadoMultaRepository;
 import com.uteq.backend.repository.EstadoUsuarioRepository;
+import com.uteq.backend.repository.MultaRepository;
 import com.uteq.backend.repository.RolRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -41,6 +43,8 @@ class UsuarioAdminServiceTest {
     @Mock RolRepository rolRepo;
     @Mock EstadoUsuarioRepository estadoUsuarioRepo;
     @Mock BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
+    @Mock MultaRepository multaRepo;
+    @Mock EstadoMultaRepository estadoMultaRepo;
     @Mock Authentication authentication;
 
     @InjectMocks UsuarioAdminService service;
@@ -86,6 +90,13 @@ class UsuarioAdminServiceTest {
 
         given(usuarioRepo.findByNombreContainingIgnoreCaseOrCorreoContainingIgnoreCase("", "", pageable))
                 .willReturn(pagina);
+
+        com.uteq.backend.entity.EstadoMulta estadoPendiente = new com.uteq.backend.entity.EstadoMulta();
+        estadoPendiente.setId(1);
+        estadoPendiente.setNombre("PENDIENTE");
+        given(estadoMultaRepo.findByNombre("PENDIENTE")).willReturn(Optional.of(estadoPendiente));
+        given(multaRepo.findUsuarioIdsConMultasPendientes(List.of(1L, 2L), 1))
+                .willReturn(List.of(1L));
 
         Page<UsuarioListadoResponseDTO> resultado = service.listar(null, pageable);
 

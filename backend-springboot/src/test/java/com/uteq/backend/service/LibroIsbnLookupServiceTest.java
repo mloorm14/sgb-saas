@@ -42,9 +42,16 @@ class LibroIsbnLookupServiceTest {
             exchange.sendResponseHeaders(500, -1);
             exchange.close();
         });
+        server.createContext("/api/books", exchange -> {
+            byte[] body = "{}".getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.close();
+        });
         server.start();
 
-        service = new LibroIsbnLookupService(urlBase, 8000);
+        service = new LibroIsbnLookupService(urlBase, 8000L, urlBase.replace("/books/v1", ""), null);
     }
 
     @AfterEach

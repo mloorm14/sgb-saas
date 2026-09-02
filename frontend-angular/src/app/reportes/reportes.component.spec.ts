@@ -10,17 +10,17 @@ describe('ReportesComponent', () => {
 
   beforeEach(async () => {
     reporteService = jasmine.createSpyObj('ReporteService', [
-      'librosMasPrestados', 'morosidad', 'uso', 'morosidadPdf'
+      'librosMasPrestadosDetallado', 'morosidad', 'morosidadPdf', 'inventario', 'vencidos', 'categoriasDemandadas'
     ]);
-    reporteService.librosMasPrestados.and.returnValue(of([
-      { libroId: 1, titulo: 'El Principito', isbn: '978987800', totalPrestamos: 12 }
+    reporteService.librosMasPrestadosDetallado.and.returnValue(of([
+      { libroId: 1, titulo: 'El Principito', isbn: '978987800', totalPrestamos: 12, autorNombre: 'Saint-Exupéry', categoriaNombre: 'Ficción', porcentaje: 50 }
     ]));
     reporteService.morosidad.and.returnValue(of([
       { usuarioId: 4, nombre: 'Ana', apellido: 'Paz', correo: 'ana@uteq.edu.ec', montoTotalAdeudado: 5.0, cantidadMultasPendientes: 1, diasAtrasoPromedio: 3 }
     ]));
-    reporteService.uso.and.returnValue(of([
-      { periodo: '2026-08-15T00:00:00Z', totalPrestamos: 8, totalDevoluciones: 5 }
-    ]));
+    reporteService.inventario.and.returnValue(of([]));
+    reporteService.vencidos.and.returnValue(of([]));
+    reporteService.categoriasDemandadas.and.returnValue(of([]));
 
     await TestBed.configureTestingModule({
       imports: [ReportesComponent],
@@ -34,38 +34,47 @@ describe('ReportesComponent', () => {
     fixture.detectChanges();
   });
 
-  it('carga los tres reportes al iniciar (libros, morosidad y uso por día)', () => {
-    expect(reporteService.librosMasPrestados).toHaveBeenCalled();
-    expect(reporteService.morosidad).toHaveBeenCalled();
-    expect(reporteService.uso).toHaveBeenCalledWith('dia');
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+
+  it('carga libros al abrir el módulo de libros', () => {
+    component.abrirModulo('libros');
+
+    expect(reporteService.librosMasPrestadosDetallado).toHaveBeenCalled();
     expect(component.libros.length).toBe(1);
+  });
+
+  it('carga morosidad al abrir el módulo de morosidad', () => {
+    component.abrirModulo('morosidad');
+
+    expect(reporteService.morosidad).toHaveBeenCalled();
     expect(component.morosos.length).toBe(1);
-    expect(component.uso.length).toBe(1);
   });
 
-  it('recarga solo el reporte de uso al cambiar la granularidad', () => {
-    component.granularidad = 'mes';
-    component.cambiarGranularidad();
+  it('recarga el reporte al cambiar el limiteTop y aplicar filtros', () => {
+    component.abrirModulo('libros');
+    component.limiteTop = 5;
+    component.aplicarFiltros();
 
-    expect(reporteService.uso).toHaveBeenCalledWith('mes');
-    expect(reporteService.librosMasPrestados).toHaveBeenCalledTimes(1);
+    expect(reporteService.librosMasPrestadosDetallado).toHaveBeenCalledTimes(2);
   });
 
-  it('descarga el PDF de morosidad como Blob (los otros reportes no tienen PDF)', () => {
+  it('descarga el PDF de morosidad como Blob', () => {
     reporteService.morosidadPdf.and.returnValue(of(new Blob(['%PDF'], { type: 'application/pdf' })));
 
     component.descargarMorosidadPdf();
 
     expect(reporteService.morosidadPdf).toHaveBeenCalled();
-    expect(component.descargandoPdf).toBeFalse();
+    expect(component.descargandoPdf).toBeNull();
   });
 
   it('muestra el detail del backend si falla la carga', () => {
-    reporteService.librosMasPrestados.and.returnValue(
+    reporteService.librosMasPrestadosDetallado.and.returnValue(
       throwError(() => ({ error: { detail: 'Sin permisos para el reporte' } }))
     );
 
-    component.ngOnInit();
+    component.abrirModulo('libros');
 
     expect(component.errorMsg).toBe('Sin permisos para el reporte');
   });
@@ -78,6 +87,6 @@ describe('ReportesComponent', () => {
     component.descargarMorosidadPdf();
 
     expect(component.errorMsg).toBe('No se pudo generar el PDF');
-    expect(component.descargandoPdf).toBeFalse();
+    expect(component.descargandoPdf).toBeNull();
   });
 });

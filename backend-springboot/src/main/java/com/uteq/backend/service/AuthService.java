@@ -46,6 +46,7 @@ public class AuthService {
     private static final String ESTADO_INICIAL = "PENDIENTE_VERIFICACION";
     private static final String ESTADO_VERIFICADO = "ACTIVO";
     private static final String TABLA_USUARIOS = "usuarios";
+    private static final String TABLA_SESIONES = "sesiones";
 
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
@@ -57,11 +58,14 @@ public class AuthService {
     private final LoginRateLimiter loginRateLimiter;
     private final BitacoraAuditoriaRepository bitacoraAuditoriaRepository;
     private final VerificacionCorreoService verificacionCorreoService;
+    private final ConfiguracionSistemaService configuracionSistemaService;
 
     public UsuarioResponseDTO registrar(RegistroRequestDTO dto) {
         usuarioRepository.findByCorreo(dto.correo()).ifPresent(usuario -> {
             throw new CorreoYaRegistradoException("El correo ya está registrado: " + dto.correo());
         });
+
+        validarDominioCorreo(dto.correo());
 
         Rol rolLector = rolRepository.findByNombre(ROL_POR_DEFECTO)
                 .orElseThrow(() -> new IllegalStateException("Catalogo roles sin fila '" + ROL_POR_DEFECTO + "'"));
@@ -91,6 +95,35 @@ public class AuthService {
         verificacionCorreoService.generarYEnviarCodigo(guardado);
 
         return mapToUsuarioResponseDTO(guardado);
+    }
+
+    private void validarDominioCorreo(String correo) {
+        try {
+            String dominiosPermitidos = configuracionSistemaService.obtenerValor("correo_dominios_permitidos");
+            if (dominiosPermitidos == null || dominiosPermitidos.isBlank()) return;
+            String dominio = correo.substring(correo.lastIndexOf('@') + 1).toLowerCase();
+            for (String permitido : dominiosPermitidos.split(",")) {
+                if (dominio.equals(permitido.trim().toLowerCase())) return;
+            }
+            throw new CorreoDominioNoPermitidoException(
+                    "Solo se permiten registros con dominio: " + dominiosPermitidos);
+        } catch (jakarta.persistence.EntityNotFoundException e) {
+            // Si la clave no existe en configuracion_sistema, no restringe
+        }
+    }
+
+    // ── POST /api/auth/reenviar-codigo ────────────────────────
+    // Sin autenticación: el usuario todavía no puede loguearse
+    // (PENDIENTE_VERIFICACION) así que no hay JWT. Permite regenerar el
+    // código cuando el TTL de Redis (10 min) ya expiró y el usuario quedó
+    // sin forma de verificar su correo salvo intervención manual en Postgres.
+    public void reenviarCodigo(String correo) {
+        Usuario usuario = usuarioRepository.findByCorreo(correo)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Usuario no encontrado: " + correo));
+        if (usuario.isCorreoVerificado() || !ESTADO_INICIAL.equals(usuario.getEstado().getNombre())) {
+            throw new IllegalArgumentException("El correo ya está verificado o la cuenta no requiere verificación.");
+        }
+        verificacionCorreoService.generarYEnviarCodigo(usuario);
     }
 
     // ── POST /api/auth/verificar-correo ───────────────────────
@@ -188,12 +221,18 @@ public class AuthService {
     // no se resolvió aún (login fallido, logout) para no pagar una consulta
     // extra solo para la bitácora -- el correo intentado ya queda en
     // "detalles" para correlación manual si hace falta.
+    // 2026-08: Separación de tablas: LOGIN_OK/LOGIN_FAIL/LOGOUT escriben
+    // en 'sesiones' (antes mezclados bajo 'usuarios'). CORREO_VERIFICADO
+    // sigue en 'usuarios' porque es una operación sobre la entidad usuario.
     private void registrarAuditoria(Long usuarioId, String tipoOperacion, Long registroId,
                                     String detalles, String ipOrigen) {
+        boolean esSesion = "LOGIN_OK".equals(tipoOperacion)
+                || "LOGIN_FAIL".equals(tipoOperacion)
+                || "LOGOUT".equals(tipoOperacion);
         BitacoraAuditoria evento = BitacoraAuditoria.builder()
                 .usuarioId(usuarioId)
                 .tipoOperacion(tipoOperacion)
-                .tablaAfectada(TABLA_USUARIOS)
+                .tablaAfectada(esSesion ? TABLA_SESIONES : TABLA_USUARIOS)
                 .registroId(registroId)
                 .detalles(detalles)
                 .ipOrigen(ipOrigen)

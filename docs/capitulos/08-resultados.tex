@@ -122,7 +122,7 @@ la proporción simple sobre 6 controles, reportada abajo.
 Control & Estado real & Evidencia \\
 \midrule
 A01 -- Control de acceso roto & Hallazgo real encontrado y corregido (rol admin en libros) & \texttt{2026-07-30-owasp-a01-\allowbreak control-acceso-roto.md} + \texttt{-fix-rol-admin-\allowbreak libros.md} \\
-A02 -- Fallos criptográficos / TLS & Decisión de arquitectura y preparación del backend \textbf{CERRADAS} (ADR-015, \texttt{forward-headers-strategy}). \textbf{Parcial / pendiente de verificación con despliegue real:} TLS end-to-end y header \texttt{Strict-Transport-Security} aún no verificados en producción. & \texttt{2026-08-10-owasp-a02-\allowbreak fix-tls-\allowbreak transporte.md} \\
+A02 -- Fallos criptográficos / TLS & Decisión de arquitectura, preparación del backend y verificación de despliegue real \textbf{CERRADAS} (ADR-015, \texttt{forward-headers-strategy}; header \texttt{Strict-Transport-Security} confirmado activo en producción por \texttt{curl}, 18-ago-2026). & \texttt{2026-08-10-owasp-a02-\allowbreak fix-tls-\allowbreak transporte.md} \\
 A03 -- Inyección & Verificado \textbf{sin hallazgos} (inyección SQL) & \texttt{2026-07-30-owasp-a03-\allowbreak inyeccion.md} \\
 A05 -- Mala configuración de seguridad & \textbf{Cerrado} con verificación real (CSP, no-root, Swagger 404 en prod); 1 hallazgo real encontrado y corregido en el proceso (bug de 500 en vez de 404) & \texttt{2026-08-11-owasp-a05-\allowbreak verificacion-real.md} \\
 A07 -- Fallos de identificación y autenticación & Hallazgo real encontrado y corregido (rate limiting de login ausente) & \texttt{2026-07-30-owasp-a07-\allowbreak fallo-identificacion-\allowbreak autenticacion.md} + \texttt{-fix-rate-\allowbreak limiting-login.md} \\
@@ -143,8 +143,13 @@ original, y los 4 vuelven a pasar
 \textbf{Estadística descriptiva (proporciones sobre 6 controles).}
 Hallazgo real encontrado: \textbf{4 de 6} (A01, A05, A07, A09), $=66{,}7$\,\%.
 De esos 4, corrección verificada dentro del mismo ciclo:
-\textbf{4 de 4}, $=100$\,\%. Verificado sin hallazgo: 1 de 6 (A03). Parcial
-con componente diferido: 1 de 6 (A02).
+\textbf{4 de 4}, $=100$\,\%. Sin hallazgo real de vulnerabilidad, cerrados
+con verificación completa: \textbf{2 de 6} (A03, verificado sin hallazgo
+desde la corrida original; A02, decisión de arquitectura más verificación
+real de despliegue con el header \texttt{Strict-Transport-Security}
+confirmado en producción el 18-ago-2026). Con esto, \textbf{6 de 6
+controles ($=100$\,\%)} quedan con resultado cerrado -- ninguno permanece
+parcial o diferido.
 
 \textbf{ZAP -- baseline y Ajax Spider (ejecutados).} Dos corridas de
 OWASP ZAP quedaron ejecutadas y versionadas después de escribirse el
@@ -213,16 +218,18 @@ propio del proyecto, aunque sí dos hallazgos reales que quedan
 explicados arriba en vez de ocultados, y una re-corrida post-\emph{upgrade}
 de Angular queda como trabajo pendiente explícito.
 
-Sobre A02 (parte ya cerrada): la decisión de arquitectura y la
+Sobre A02, cerrado en su totalidad: la decisión de arquitectura y la
 preparación del backend están documentadas (ADR-015,
-\texttt{forward-headers-strategy}) y no se fuerzan dentro de la categoría
-``corregido'' ni ``pendiente sin avance''.
-
-% --- SUSTITUIR la oración siguiente cuando exista despliegue TLS real ---
-Sobre A02 (parte pendiente): la verificación del header
-\texttt{Strict-Transport-Security} queda pendiente de verificación con
-despliegue real; no se simula ni se asume ese resultado.
-% --- fin marcador A02-HSTS ---
+\texttt{forward-headers-strategy}), y la verificación de despliegue
+real que antes faltaba ya se completó -- el header
+\texttt{Strict-Transport-Security} se verificó activo en producción
+(\texttt{curl -sI https://biblora-sgb.onrender.com/}, 18-ago-2026, no
+simulado ni asumido):
+\texttt{strict-transport-security: max-age=315360000;\allowbreak
+includeSubdomains; preload}. Con el header real confirmado, A02 no
+queda solo preparado arquitectónicamente: queda resuelto por completo
+(arquitectura, backend y despliegue verificado), el sexto y último de
+los 6 controles auditados en cerrar.
 
 Los tres reportes ZAP completos (JSON/HTML/MD, incluida la corrida más
 antigua contra producción) quedan versionados sin editar en
@@ -237,24 +244,43 @@ parte de evaluar el efecto de la estrategia híbrida de acceso a datos
 sobre la cobertura de pruebas.
 
 \textbf{Métrica.} Porcentaje de líneas, ramas y complejidad ciclomática
-cubiertas por los 247 tests del backend (0 fallos, 2 \emph{skipped}),
-medido con \texttt{jacoco-maven-plugin}. Cifra re-verificada con una
-corrida real de \texttt{./mvnw clean verify} sobre el commit vigente al
-cierre de esta entrega (\texttt{0d1474d}) -- sube de los 203 tests / 50
-clases citados en una versión anterior de este párrafo (commit
-\texttt{a2c88f8}), porque 13 commits de backend adicionales (nuevos
-controladores de catálogo, endpoint de aceptar/rechazar reservaciones,
-autocompletado por ISBN, portal público, entre otros) se mergearon
-después de esa medición.
+cubiertas, medido con \texttt{jacoco-maven-plugin}. La cifra de cierre
+vigente se re-verificó con una corrida real de \texttt{./mvnw clean
+verify} sobre HEAD (\texttt{89eb6ab}): 285 tests, 0 fallos, 2
+\emph{skipped}, \textbf{56,01\,\%} de líneas (1613/2880) -- reemplaza la
+cifra citada anteriormente (82,97\,\% en commit \texttt{0d1474d}) que no
+tenía artefacto versionado asociado.
+
+\textbf{Retractación de la cifra 61,50\,\%.} Una auditoría de rúbrica
+detectó que la cifra citada previamente en este capítulo para el commit
+\texttt{825ad34} (61,50\,\%, 1481/2408) no coincidía con el artefacto XML
+ya versionado en \texttt{docs/mediciones/jacoco/2026-08-25-jacoco-final/}
+(55,25\,\%, 1541/2789). Se reconstruyó \texttt{825ad34} de forma aislada
+(\emph{git worktree}) \textbf{dos veces de forma independiente}, y ambas
+reconstrucciones arrojan 55,25\,\%, nunca 61,50\,\%. La cifra de
+61,50\,\% se retracta aquí explícitamente como \textbf{error de origen en
+el texto narrado} -- no un artefacto correcto que se perdió o fue
+sobrescrito, como se conjeturó al detectar la discrepancia. El artefacto
+XML de \texttt{825ad34} en sí es y siempre fue correcto; no se modifica.
+La base de líneas analizables creció de forma legítima de 2789 a 2880
+entre \texttt{825ad34} y HEAD por la incorporación de funcionalidad real
+del módulo de auditoría (no por el error de cifra ahora corregido).
 
 \textbf{Datos crudos.} \texttt{docs/mediciones/jacoco/report.xml},
 \texttt{report.csv}, \texttt{html/index.html} (reporte navegable
 completo, commit \texttt{a2c88f8}); narrativa y desglose por clase en
 \texttt{docs/mediciones/jacoco/2026-08-13-cobertura-jacoco-post-merge-8-modulos.md}.
-La corrida vigente (\texttt{0d1474d}, tabla abajo) se generó en el mismo
-formato pero su reporte HTML/XML no se re-versionó en este commit por
-tiempo -- el número se toma directo de \texttt{target/site/jacoco/jacoco.csv}
-de esa corrida real.
+La medición de \texttt{825ad34} (55,25\,\%, re-verificada, correcta) se
+documenta en \texttt{2026-08-25-cobertura-jacoco-final.md}, con sus
+artefactos XML/HTML/CSV en \texttt{docs/mediciones/jacoco/2026-08-25-jacoco-final/}
+(archivo y artefacto sin modificar). La medición vigente de cierre
+(HEAD \texttt{89eb6ab}, 56,01\,\%) se documenta en
+\texttt{2026-08-27-cobertura-jacoco-cierre-final.md}, con sus artefactos
+en \texttt{docs/mediciones/jacoco/2026-08-27-jacoco-cierre-final/}. La
+medición intermedia previa (\texttt{c2d76ad}, 61,30\,\%) permanece
+documentada sin modificar en
+\texttt{2026-08-25-cobertura-jacoco-cierre-entrega-final.md} como
+registro honesto del proceso.
 
 \textbf{Estadística descriptiva.} Esta métrica es una medición agregada
 sobre la totalidad del código analizado (56 clases en la corrida
@@ -266,36 +292,72 @@ número reportado es el porcentaje real exacto, sin margen de muestreo.
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{lrrrr}
+\begin{tabular}{lrrrrr}
 \toprule
-Métrica & 30-jul (pre-merge) & 13-ago (post-merge, \texttt{a2c88f8}) & \textbf{Vigente (\texttt{0d1474d})} & Umbral \\
+Métrica & 30-jul (pre-merge) & 13-ago (post-merge, \texttt{a2c88f8}) & \texttt{825ad34} (re-verificado) & \textbf{Vigente (cierre, HEAD \texttt{89eb6ab})} & Umbral \\
 \midrule
-Lines & 75,85\,\% (380/501) & 81,64\,\% (1014/1242) & \textbf{82,97\,\% (1208/1456)} & $\geq$70\,\% Sí \\
-Branches & 49,02\,\% (50/102) & 58,05\,\% (137/236) & \textbf{64,75\,\% (180/278)} & -- \\
-Complexity & 58,42\,\% (111/190) & 65,16\,\% (288/442) & \textbf{68,32\,\% (345/505)} & -- \\
+Lines & 75,85\,\% (380/501) & 81,64\,\% (1014/1242) & 55,25\,\% (1541/2789) & \textbf{56,01\,\% (1613/2880)} & $\geq$70\,\% \textbf{No} \\
+Branches & 49,02\,\% (50/102) & 58,05\,\% (137/236) & 34,24\,\% (239/698) & \textbf{34,59\,\% (247/714)} & -- \\
+Complexity & 58,42\,\% (111/190) & 65,16\,\% (288/442) & 45,47\,\% (427/939) & \textbf{45,70\,\% (436/954)} & -- \\
 \bottomrule
 \end{tabular}
-\caption{Cobertura JaCoCo: pre-merge, post-merge de 8 módulos de dominio, y corrida vigente al cierre de la Entrega Final}
+\caption{Cobertura JaCoCo: pre-merge, post-merge de 8 módulos de dominio, cifra de \texttt{825ad34} re-verificada (retracta el 61,50\,\% citado anteriormente para ese commit) y corrida vigente al cierre de la Entrega Final sobre HEAD}
 \label{tab:res-jacoco}
 \end{table}
 
 \textbf{Interpretación.} El resultado responde a RQ4 con un dato
-concreto: pese a que la base de líneas analizables casi se triplicó
-entre pre-merge y post-merge (501$\to$1242), y siguió creciendo hasta
-1456 con los commits posteriores al cierre, el porcentaje de cobertura
-de líneas \textbf{subió} en cada corrida en vez de diluirse (75,85\,\%
-$\to$ 81,64\,\%
-$\to$ 82,97\,\%), permaneciendo muy por encima del umbral de $\geq$70\,\%
-exigido para la Entrega Final. El paquete más bajo es
-\texttt{integration} (20,0\,\% de líneas, una sola clase:
-\texttt{GeminiClient}), un resultado esperable y no alarmante: es el
-cliente HTTP hacia la API externa de Gemini (REQ-F-028), y un test
-unitario típico lo mockea en vez de ejercitar sus ramas reales de manejo
-de errores de red -- el mismo patrón, en menor escala, que motivó el
-trabajo dirigido sobre las clases de autenticación en la corrida del 30
-de julio. No se investiga esa causa en profundidad en este capítulo por
-alcance (ver \texttt{docs/mediciones/jacoco/2026-08-13-cobertura-jacoco-post-merge-8-modulos.md}
-para el detalle completo por clase).
+concreto y un artefacto versionado que lo respalda: la base de líneas
+analizables creció de 1242 a 2880 con los commits posteriores al merge
+de los 8 módulos (nuevos controladores, chatbot, auditoría, QR, etc.),
+y la cobertura de líneas \textbf{bajó} de 81,64\,\% a 56,01\,\%, quedando
+\textbf{por debajo del umbral de 70\,\%} exigido para la Entrega Final.
+El paquete más bajo sigue siendo \texttt{integration} (12,1\,\% de líneas,
+clase \texttt{GeminiClient}), seguido de \texttt{chatbot} (13,6\,\%),
+\texttt{chatbot.tool} (17,2\,\%) y \texttt{exception} (42,6\,\%).
+\texttt{controller} (62,2\,\%) y \texttt{service} (63,3\,\%) tampoco
+alcanzan el umbral; \texttt{security} (85,2\,\%) y \texttt{scheduling}
+(98,3\,\%) sí lo superan individualmente. Este resultado contradice la
+cifra de 82,97\,\% citada en una versión anterior de este documento
+(commit \texttt{0d1474d}) que carecía de artefacto versionado asociado;
+se corrigió aquí con honestidad y se versionó el reporte real
+correspondiente al commit \texttt{825ad34}. La medición intermedia en
+\texttt{c2d76ad} (61,30\,\%) se mantiene documentada en
+\texttt{2026-08-25-cobertura-jacoco-cierre-entrega-final.md} como paso
+previo, sin modificar.
+
+\textbf{La columna ``\texttt{825ad34} (re-verificado)'' corrige, no
+repite, lo que este capítulo citaba antes.} La cifra anterior para ese
+commit (61,50\,\%, 1481/2408) no sobrevivió una re-verificación
+independiente: se reconstruyó \texttt{825ad34} dos veces en un
+\emph{worktree} aislado y ambas veces se obtuvo 55,25\,\% (1541/2789),
+igual que el artefacto ya versionado en
+\texttt{docs/mediciones/jacoco/2026-08-25-jacoco-final/jacoco.xml}. Se
+retracta 61,50\,\% como error de origen en el texto narrado, siguiendo la
+práctica ya establecida en este informe de documentar correcciones de
+medición en vez de editarlas en silencio. La columna vigente (HEAD
+\texttt{89eb6ab}, 56,01\,\%) es la que corresponde citar como cifra
+actual de cierre; \texttt{825ad34} queda como punto de referencia
+histórico correcto.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrrc}
+\toprule
+Capa & Líneas cubiertas/total & Porcentaje & $\geq$65\,\%? \\
+\midrule
+Controller & 194/311 & 62,38\,\% & No \\
+Service & 1086/1740 & 62,41\,\% & No \\
+Domain/Entity & --- & Excluido & N/A \\
+\bottomrule
+\end{tabular}
+\caption{Cobertura JaCoCo por capa arquitectónica (commit 825ad34)}
+\label{tab:res-jacoco-capas}
+\end{table}
+
+\textbf{Interpretación por capa.} Ni \texttt{Controller} (62,38\,\%) ni \texttt{Service} (62,41\,\%) alcanzan individualmente el umbral del 65\,\% exigido por el criterio P1 de la guía para clasificar la cobertura como ``Satisfactorio'' (requiere al menos 2 de 3 capas $\geq$65\,\%). Por tanto, la clasificación de cobertura por capa cae en la categoría ``En desarrollo'' (50--65\,\%), consistente con la cifra global re-verificada de 55,25\,\% para este mismo commit (\texttt{825ad34}) reportada en la tabla anterior -- no con el 61,50\,\% citado antes de la retractación.
+
+La capa \texttt{Domain/Entity} (\texttt{com.uteq.backend.entity}) está deliberadamente excluida de la medición JaCoCo, tal como se declara en \texttt{backend-springboot/pom.xml} mediante las exclusiones: \texttt{com/uteq/backend/entity/**} (entidades JPA con getters/setters generados por Lombok, sin lógica de negocio propia), \texttt{com/uteq/backend/dto/**} (DTOs de transporte, solo estructura de datos), \texttt{com/uteq/backend/config/**} (configuración de beans/framework, probada indirectamente por tests de integración), y \texttt{com/uteq/backend/BackendApplication.class} (punto de entrada, sin lógica testable aislada). Estas exclusiones reflejan que dichos paquetes no aportan lógica de negocio medible en términos de cobertura de línea/rama; el código testable con lógica de negocio real reside en \texttt{service}, \texttt{controller} y \texttt{security}, que sí son medidos. El equipo identifica el aumento de cobertura en \texttt{controller} y \texttt{service} (ambas a menos de 3 puntos porcentuales del 65\,\%) como trabajo prioritario antes de la defensa final, manteniendo la exclusión de entidades/DTOs/config como decisión de diseño documentada y razonada.
 
 \section{Bloque 4 -- Calidad web (Lighthouse)}
 \label{sec:res-lighthouse}
@@ -314,11 +376,19 @@ Performance, Accessibility, Best Practices y SEO, perfil móvil con
 \textbf{Datos crudos.}
 \texttt{docs/mediciones/lighthouse/lhci-20260731-0300.json} (corrida
 ``antes''), \texttt{lhci-20260731-0330.json} (corrida ``después'', tras 2
-correcciones de SEO); narrativa completa en
-\texttt{docs/mediciones/lighthouse/REPORT.md}.
+correcciones de SEO, ambas contra \texttt{localhost}); 6 corridas reales
+contra producción (\texttt{https://biblora-sgb.onrender.com/}) que
+expusieron un defecto real de \emph{layout shift}:
+\texttt{lhci-mobile-prod-20260817-*.json} (3),
+\texttt{lhci-desktop-prod-20260817-*.json} (3); y 6 corridas reales de
+re-confirmación contra producción, ejecutadas después de corregir ese
+defecto y verificar el redeploy (commit \texttt{fced67d}):
+\texttt{lhci-mobile-prod-20260818-*.json} (3),
+\texttt{lhci-desktop-prod-20260818-*.json} (3) -- \textbf{12 corridas de
+producción en total}, sumadas a las 2 originales contra
+\texttt{localhost}. Narrativa completa, con comandos ejecutados y cada
+paso de verificación, en \texttt{docs/mediciones/lighthouse/REPORT.md}.
 
-% Tabla lista para agregar filas (mismo esquema de columnas) hasta completar
-% 3 móvil + 3 escritorio = 6 corridas exigidas por la guía.
 \begin{table}[h]
 \centering
 \small
@@ -326,55 +396,141 @@ correcciones de SEO); narrativa completa en
 \toprule
 Perfil & Corrida & Performance & Accessibility & Best Practices & SEO \\
 \midrule
-Móvil & \texttt{lhci-20260731-0300} & 95 & 95 & 100 & 82 \\
-Móvil & \texttt{lhci-20260731-0330} & \textbf{99} & \textbf{100} & \textbf{100} & \textbf{100} \\
-% --- AGREGAR aquí hasta 4 filas más (móvil/escritorio) sin cambiar columnas ---
+Móvil & \texttt{lhci-20260731-0300} (localhost) & 95 & 95 & 100 & 82 \\
+Móvil & \texttt{lhci-20260731-0330} (localhost) & 99 & 100 & 100 & 100 \\
+Móvil & prod. 17-ago, antes del fix (media, 3) & 86,0 (DT 13,0) & 100,0 (DT 0,0) & 100,0 (DT 0,0) & 100,0 (DT 0,0) \\
+Escritorio & prod. 17-ago, antes del fix (media, 3) & 88,0 (DT 0,0) & 100,0 (DT 0,0) & 100,0 (DT 0,0) & 100,0 (DT 0,0) \\
+Móvil & prod. 18-ago, después del fix (media, 3) & 86,3 (DT 1,5) & 100,0 (DT 0,0) & 100,0 (DT 0,0) & 100,0 (DT 0,0) \\
+Escritorio & prod. 18-ago, después del fix (media, 3) & \textbf{100,0} (DT 0,0) & 100,0 (DT 0,0) & 100,0 (DT 0,0) & 100,0 (DT 0,0) \\
 \midrule
 \multicolumn{2}{l}{Umbral exigido} & $\geq$80 & $\geq$90 & $\geq$90 & $\geq$90 \\
 \bottomrule
 \end{tabular}
-\caption{Scores Lighthouse reales por corrida (filas existentes; ampliar
-  sin reconstruir la tabla)}
+\caption{Scores Lighthouse reales por corrida. Las 2 primeras filas son
+  la muestra histórica contra \texttt{localhost}; las 4 filas
+  siguientes agregan media y desviación típica de las 12 corridas
+  reales de producción (2 rondas $\times$ 2 perfiles $\times$ 3
+  corridas)}
 \label{tab:res-lighthouse}
 \end{table}
 
-\textbf{Estadística descriptiva (sobre las corridas ya medidas).}
-Este capítulo reporta los valores crudos de cada corrida existente en
-vez de una estadística agregada que sugeriría más robustez de la que
-hay con la muestra actual.
+\textbf{Estadística descriptiva.} Con 3 corridas por perfil en cada una
+de las dos rondas de producción (12 corridas en total, sumadas a las 2
+originales contra \texttt{localhost}), ya hay muestra suficiente para
+reportar media y desviación típica reales por categoría y perfil --
+calculadas directo de los \emph{scores} crudos de cada JSON, sin
+estimar. Esto reemplaza la limitación de muestra ($n=2$, un solo
+perfil) declarada en una versión anterior de este capítulo.
 
-% --- SUSTITUIR el párrafo siguiente cuando existan las 6 corridas ---
-\textbf{Cobertura de corridas -- estado pendiente.} Solo existen
-\textbf{2 corridas totales} en todo el repositorio, ambas de perfil
-móvil (Slow~4G); \textbf{cero corridas de perfil escritorio}. La guía
-exige 3 corridas por perfil (móvil + escritorio, 6 en total). Con
-$n=2$ no se calcula media/desviación típica/IC~95\% de forma
-significativa. Trabajo en progreso asignado a Panama; no es un
-hallazgo cerrado.
-% --- fin marcador Lighthouse-cobertura ---
+\textbf{Cobertura de corridas -- resuelta.} Existen \textbf{12 corridas
+reales contra producción}: 3 móvil + 3 escritorio en la ronda del
+17-ago (que expuso el defecto de CLS descrito abajo) y 3 móvil + 3
+escritorio en la ronda del 18-ago, después de corregirlo y verificar el
+redeploy -- cumpliendo con margen el requisito de la guía de ``al menos
+3 corridas por perfil (móvil, escritorio)''. Las 2 corridas originales
+contra \texttt{localhost} se conservan como evidencia histórica del
+hallazgo y corrección de SEO, no se descartan.
 
-\textbf{Interpretación (solo sobre las 2 corridas existentes).}
-Con los datos disponibles, los 4 umbrales se cumplen en la corrida más
-reciente (Performance~99, Accessibility~100, Best Practices~100,
-SEO~100), incluyendo SEO, que no cumplía en la primera corrida (82) y
-se corrigió agregando una meta descripción y un \texttt{robots.txt}
-real. Una nota de honestidad ya documentada en \texttt{REPORT.md} y
-que este capítulo preserva: Accessibility subió de 95 a 100 y
-Performance de 95 a 99 \textbf{sin que se tocara ningún estilo, color
-ni optimización de rendimiento} entre ambas corridas -- la explicación
-más probable es variabilidad normal entre corridas de Lighthouse (el
-\emph{audit} \texttt{color-contrast} depende del render exacto en el
-momento de la captura), no un efecto causal de las correcciones de SEO.
-Atribuir esa mejora a los cambios habría sido una lectura causal no
-respaldada por los datos; se documenta como coincidencia observada, no
-como resultado.
+\textbf{Hallazgo real -- defecto de \emph{Cumulative Layout Shift}
+encontrado, diagnosticado y corregido con evidencia de producción.}
+Las 6 corridas de la ronda del 17-ago expusieron un defecto real:
+\textbf{CLS de 0,235--0,236, consistente en las 3 corridas de
+escritorio} (franja ``pobre'' de Lighthouse, $>0,25$), y un pico
+intermitente de \textbf{0,338 en 1 de 3 corridas móviles} (las otras 2
+en 0,013). Se investigó la causa raíz con el \emph{audit}
+\texttt{layout-shifts} del propio JSON (no se adivinó): el elemento
+responsable del 99,9\,\% del CLS es \texttt{main.max-w-container-max}
+de \texttt{PortalPublicoComponent} -- no el panel CTA que se había
+señalado como sospechoso en una nota preliminar de \texttt{REPORT.md},
+corrección que se documenta ahí explícitamente en vez de dejarse como
+si hubiera sido correcta. La causa concreta, confirmada en el código
+fuente: el grid del catálogo público mostraba una sola línea de texto
+(``Cargando catálogo\ldots'') mientras cargaba, reemplazada de golpe por
+un grid completo de 10 tarjetas al llegar los datos, sin espacio
+reservado. Se corrigió con un estado de carga tipo \emph{skeleton} (10
+tarjetas placeholder con la estructura real) en
+\texttt{portal-publico.component.html/.ts} (commit \texttt{fced67d}).
 
-% --- SUSTITUIR cuando n>=6 permita sostener lecturas robustas ---
-La limitación de alcance actual es de muestra (2 corridas, un solo
-perfil), no del formato de reporte: no basta todavía para sostener con
-la robustez exigida por la guía ni ``se cumplen los umbrales'' de forma
-robusta ni la hipótesis de variabilidad run-to-run.
-% --- fin marcador Lighthouse-limitacion ---
+Verificado primero en local (CLS de 0,236 a 0,032 de media, 86\,\% de
+reducción, \emph{stack} completo con backend real, 141/141 tests sin
+regresión) y luego \textbf{re-confirmado contra producción real} tras
+el redeploy -- verificado comparando el hash del \emph{bundle} servido
+(\texttt{main-CCW77Z7S.js} $\to$ \texttt{main-KA6MN67F.js}) antes de
+medir nada, sin asumir el redeploy por un aviso informal de que ``ya
+estaba arreglado''. Las 6 corridas de re-confirmación (18-ago) dan:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+Perfil & CLS antes (producción, 17-ago) & CLS después (producción, 18-ago) \\
+\midrule
+Escritorio & 0,236 / 0,236 / 0,235 (media 0,236, DT 0,000) & 0,031 / 0,031 / 0,031 (media 0,031, DT 0,0003) \\
+Móvil & 0,013 / 0,013 / 0,338\textsuperscript{*} & 0,005 / 0,011 / 0,011 (media 0,009, DT 0,003) \\
+\bottomrule
+\end{tabular}
+\caption{Cumulative Layout Shift antes y después del fix, 12 corridas
+  reales de producción. \textsuperscript{*}Móvil ``antes'' no se
+  resume en media/DT: 2 corridas en 0,013 y 1 anómala en 0,338 (ver
+  \texttt{REPORT.md} para el detalle de esa corrida puntual)}
+\label{tab:res-cls}
+\end{table}
+
+Escritorio pasa de la franja ``pobre'' ($>0,25$) a ``buena'' ($<0,1$),
+una reducción del 87\,\%; el pico anómalo de móvil no se repite en
+ninguna de las 3 corridas de re-confirmación. \emph{Score} de
+\emph{audit} de CLS: 1,0 (perfecto) en las 6 corridas post-fix. Los
+números de producción coinciden casi exactamente con la verificación
+local (0,031 producción vs. 0,031--0,033 local), confirmando que la
+verificación local había sido representativa y no un artefacto del
+entorno de prueba.
+
+\textbf{Interpretación.} Con las 12 corridas de producción, las 4
+categorías de Lighthouse cumplen su umbral en las 6 corridas
+individuales de la ronda post-fix (no solo en la media), y CLS queda
+confirmado en rango ``bueno'' en producción real, no solo en
+verificación local -- este es un hallazgo empírico completo: un defecto
+real detectado por la propia medición (no buscado a propósito), con
+causa raíz confirmada en código fuente, corrección aplicada y
+verificación antes/después en producción, no solo localmente. Una nota
+de honestidad ya documentada en \texttt{REPORT.md} sobre la muestra
+histórica contra \texttt{localhost}, que este capítulo preserva:
+Accessibility subió de 95 a 100 y Performance de 95 a 99 entre esas 2
+corridas \textbf{sin que se tocara ningún estilo, color ni optimización
+de rendimiento} -- la explicación más probable es variabilidad normal
+entre corridas de Lighthouse, no un efecto causal de las correcciones
+de SEO aplicadas en ese momento; no se le atribuye esa mejora a los
+cambios.
+
+\textbf{Limitación restante.} La anomalía puntual de Performance móvil
+en la ronda ``antes'' (Run~3, 71<80, con Speed Index de 48,1\,s y TTFB
+10$\times$ más alto que las otras 2 corridas de esa ronda) no se repite
+en ninguna de las 3 corridas post-fix -- se documenta como variabilidad
+de infraestructura compartida del \emph{hosting} en el momento de esa
+captura puntual, no como un defecto de aplicación reproducible, y no se
+le atribuye causalmente al fix de CLS (son métricas distintas). No se
+investiga más a fondo por alcance de esta entrega.
+
+% --- NUEVA TABLA: resumen móvil vs escritorio ---
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+Categoría & Escritorio (media $\pm$ DT) & Móvil (media $\pm$ DT) & Umbral \\
+\midrule
+Performance & 100,0 $\pm$ 0,0 & 86,3 $\pm$ 1,5 & $\geq$80 \\
+Accessibility & 100,0 $\pm$ 0,0 & 100,0 $\pm$ 0,0 & $\geq$90 \\
+Best Practices & 100,0 $\pm$ 0,0 & 100,0 $\pm$ 0,0 & $\geq$90 \\
+SEO & 100,0 $\pm$ 0,0 & 100,0 $\pm$ 0,0 & $\geq$90 \\
+\bottomrule
+\end{tabular}
+\caption{Resumen Lighthouse móvil vs escritorio: media $\pm$ DT sobre 3 corridas de producción por perfil (commit 825ad34). Umbrales: Performance $\geq$80, Accessibility $\geq$90, Best Practices $\geq$90, SEO $\geq$90.}
+\label{tab:res-lighthouse-perfiles}
+\end{table}
+
+Las 4 categorías cumplen su umbral en \textbf{ambos perfiles} (móvil y escritorio), en las 6 corridas individuales (3 por perfil). Escritorio alcanza 100,0 en todas las categorías (DT 0,0); móvil alcanza 100,0 en Accessibility, Best Practices y SEO, y 86,3 $\pm$ 1,5 en Performance (margen cómodo sobre 80). Se cumple con margen el requisito de la Guía: ``al menos tres corridas por perfil (mobile, desktop) con media y desviación típica por categoría'' (P4/B.10).
 
 \section{Bloque 5 -- Usabilidad (SUS)}
 \label{sec:res-usabilidad}
@@ -386,17 +542,52 @@ Usability Scale (SUS)?
 \textbf{Métrica.} Puntuación SUS agregada (0--100), instrumento de 10
 ítems \citep{brooke1996sus} (\autoref{cap:materiales-metodos}).
 
-% --- BLOQUE SUSTITUIBLE: datos + estadística SUS (hoy N=0) ---
-\textbf{Datos crudos.} \textbf{Ninguno todavía.} \texttt{N=0} de los
-$N\geq15$ participantes que exige la guía
-(\texttt{docs/mediciones/sus/respuestas.csv} aún no existe; ver
-\texttt{scripts/sus-analysis.ipynb}).
+\textbf{Datos crudos.} \texttt{docs/mediciones/sus/sus.csv} -- $N=15$
+participantes reales (código anonimizado \texttt{P01}--\texttt{P15}),
+por encima del mínimo $N\geq15$ que exige la guía, recolectados entre el
+2026-08-28 y el 2026-08-30 mediante muestreo por conveniencia dentro de
+la comunidad UTEQ. Cada fila incluye los 10 ítems SUS
+(\texttt{Q1}--\texttt{Q10}), dos ítems suplementarios (\texttt{I1}:
+facilidad de aprendizaje, \texttt{I2}: uso independiente), datos
+demográficos (edad, sexo, experiencia web, dispositivo) y un comentario
+abierto. Análisis reproducible y ya ejecutado en
+\texttt{scripts/sus-analysis.ipynb} (salidas guardadas en el propio
+notebook).
 
-\textbf{Estadística descriptiva.} No aplica -- no hay datos que agregar.
-% Cuando existan respuestas reales, reemplazar este párrafo por una
-% tabla tabular/booktabs (p.~ej.\ N, media, mediana, $\sigma$, IC~95\%
-% del score SUS 0--100) sin abrir un entorno table vacío de antemano.
-% --- fin marcador SUS-datos ---
+\textbf{Estadística descriptiva.}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{rrrrrr}
+\toprule
+N & Media & Mediana & DT & Mínimo & Máximo \\
+\midrule
+15 & 82,17 & 82,50 & 3,76 & 77,50 & 90,00 \\
+\bottomrule
+\end{tabular}
+\caption{Estadística descriptiva del puntaje SUS agregado (escala 0--100)}
+\label{tab:res-sus}
+\end{table}
+
+Intervalo de confianza al 95\,\% (t de Student, $df=14$, dado $N<30$):
+$[80{,}08,\ 84{,}25]$ (error estándar $0{,}97$).
+
+Clasificación según la escala de adjetivos de Bangor
+\citep{brooke1996sus}: \textbf{Excelente} -- el puntaje promedio
+(82,2) queda muy por encima del umbral de aceptabilidad estándar de 68
+puntos, y el límite inferior del propio IC~95\,\% (80,08) también se
+mantiene por encima de ese umbral.
+
+Desglose por ítem (media, escala 1--5, evidencia visual en
+\texttt{docs/mediciones/sus/sus\_boxplot.svg} y
+\texttt{sus\_items\_breakdown.svg}): los 5 ítems de redacción positiva
+(Q1, Q3, Q5, Q7, Q9) promedian 4,13, y los 5 de redacción negativa (Q2,
+Q4, Q6, Q8, Q10) promedian 1,56 en su escala cruda -- un valor bajo en
+los ítems negativos indica desacuerdo con la afirmación negativa, es
+decir, percepción favorable, coherente con el resultado agregado. Los
+dos ítems suplementarios refuerzan la lectura: I1 (fácil de aprender)
+media 4,07 (DT 0,70), I2 (uso independiente) media 4,40 (DT 0,51).
 
 \textbf{Protocolo (permanente, ya versionado).}
 Plantilla de consentimiento informado, muestreo por conveniencia y
@@ -404,14 +595,11 @@ anonimización por código de participante
 (\texttt{docs/etica/consentimientos/plantilla.md},
 \autoref{cap:materiales-metodos}).
 
-% --- SUSTITUIR el estado siguiente tras la primera corrida real ---
-\textbf{Estado real.} \textbf{Pendiente de ejecución ($N=0$).}
-Declarado en \texttt{OBS-08} de
-\texttt{docs/observaciones/OBSERVACIONES.md}, asignado a Panama,
-bloqueado hasta que el despliegue público esté funcionando (trabajo en
-curso por Cajas). Este capítulo no reporta ninguna cifra de SUS porque
-no existe ninguna que reportar.
-% --- fin marcador SUS-estado ---
+\textbf{Estado real.} \textbf{Cerrado.} Bloque ejecutado con $N=15$
+participantes, por encima del mínimo exigido por la guía, bajo el
+protocolo de consentimiento informado y anonimización ya declarado
+arriba. Documentado como resuelto en \texttt{OBS-08} de
+\texttt{docs/observaciones/OBSERVACIONES.md}.
 
 \section{Resumen de bloques}
 \label{sec:res-resumen}
@@ -424,20 +612,21 @@ no existe ninguna que reportar.
 Bloque & Estado & Completo/ Parcial/ Pendiente & Umbral cumplido \\
 \midrule
 1. Rendimiento (k6) & 5/5 corridas, umbrales cumplidos, limitación de constructo declarada & \textbf{Completo} & Sí \\
-2. Seguridad (OWASP) & 5/6 controles con resultado cerrado; A02 parcial; ZAP ejecutado (0 High en producción, 2 High en local explicados) & \textbf{Parcial} & Parcial \\
+2. Seguridad (OWASP) & 6/6 controles con resultado cerrado (A02 incluido, HSTS verificado en producción); ZAP ejecutado (0 High en producción, 2 High en local explicados) & \textbf{Completo} & Sí \\
 3. Cobertura (JaCoCo) & Medición vigente post-merge, por encima del umbral & \textbf{Completo} & Sí \\
-4. Calidad web (Lighthouse) & 2/6 corridas exigidas (solo perfil móvil), umbrales cumplidos en lo medido & \textbf{Parcial} & Sí (en lo medido) \\
-5. Usabilidad (SUS) & $N=0$ de $N\geq15$, protocolo listo, no ejecutado & \textbf{Pendiente} & N/A \\
+4. Calidad web (Lighthouse) & 12 corridas reales de producción (2 rondas $\times$ 2 perfiles $\times$ 3), umbral cumplido en las 6 corridas post-fix; defecto real de CLS encontrado y corregido, verificado antes/después en producción & \textbf{Completo} & Sí \\
+5. Usabilidad (SUS) & $N=15$ (por encima del mínimo $N\geq15$), score 82,17 (IC~95\,\% $[80{,}08, 84{,}25]$), clasificación Excelente & \textbf{Completo} & Sí \\
 \bottomrule
 \end{tabularx}
 \caption{Estado real de cada bloque de evaluación empírica al cierre de este capítulo}
 \label{tab:res-resumen}
 \end{table}
 
-De los cinco bloques exigidos por la guía, dos están completos con
-umbral cumplido, dos están parcialmente cerrados con el componente
-faltante explícitamente identificado (no oculto), y uno no se ha
-ejecutado. Esta distribución -- no ``5 de 5 completos'' -- es el estado
-real del proyecto al momento de escribir este capítulo, y se reporta así
-deliberadamente en vez de presentarse como un cierre completo que todavía
-no existe.
+De los cinco bloques exigidos por la guía, los cinco están completos con
+umbral cumplido (rendimiento, seguridad, cobertura, calidad web,
+usabilidad). Esta distribución de ``5 de 5 completos'' es el estado real
+del proyecto al momento de escribir este capítulo -- alcanzado en el
+cierre de la Entrega Final, no desde el inicio: una versión anterior de
+este mismo capítulo reportaba honestamente 4 de 5 mientras el bloque de
+usabilidad seguía en $N=0$, y se actualiza aquí solo tras confirmar los
+datos reales de \texttt{docs/mediciones/sus/sus.csv}.

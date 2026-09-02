@@ -32,7 +32,7 @@ Se separan las dos responsabilidades:
   único rol que puede cambiar el rol de un usuario
   (`PATCH /api/v1/admin/usuarios/{id}/rol`) o su estado
   (`PATCH /api/v1/admin/usuarios/{id}/estado`). Mismo criterio ya aplicado
-  en `ConfiguracionSistemaController` (ver `adr-013-acceso-datos-orm-sp.md`
+  en `ConfiguracionSistemaController` (ver `adr-006-acceso-datos-orm-sp.md`
   y el propio controller): ADMIN es quien toca lo que afecta al sistema
   como un todo, no la operación de un día concreto.
 

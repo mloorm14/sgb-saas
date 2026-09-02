@@ -3,6 +3,7 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
+  standalone: true,
   selector: 'app-no-autorizado',
   imports: [RouterModule],
   templateUrl: './no-autorizado.component.html'
@@ -19,7 +20,7 @@ export class NoAutorizadoComponent {
   // ADMIN -> /libros. Sin sesion, a /login.
   volverAlHome(): void {
     if (!this.authService.isLoggedIn()) {
-      this.router.navigate(['/login']);
+      this.router.navigate(['/']);
       return;
     }
     if (this.authService.hasRole('LECTOR')) {

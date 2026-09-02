@@ -14,10 +14,10 @@
 
   @if (!cargando && favoritos.length > 0) {
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-md">
-      @for (favorito of favoritos; track favorito.libroId) {
-        <div class="rounded-lg overflow-hidden bg-white border border-outline-variant hover:shadow-lg transition-shadow">
-          <a [routerLink]="['/catalogo', favorito.libroId]" class="block relative aspect-[3/4] bg-surface-container-low overflow-hidden">
-            <app-portada-libro [libroId]="favorito.libroId" />
+      @for (favorito of datosPaginados; track favorito.libroId) {
+        <div class="rounded-lg overflow-hidden bg-surface-container-lowest border border-outline-variant hover:shadow-lg transition-shadow">
+          <a [routerLink]="['/dashboard-lector/catalogo', favorito.libroId]" class="block relative aspect-[3/4] bg-surface-container-low overflow-hidden">
+            <app-portada-libro [libroId]="favorito.libroId" [titulo]="favorito.tituloLibro" />
           </a>
           <div class="p-sm">
             <p class="font-label-md text-[13px] text-on-surface leading-tight line-clamp-2">{{ favorito.tituloLibro }}</p>
@@ -30,13 +30,29 @@
         </div>
       }
     </div>
+    <div class="flex flex-wrap justify-between items-center mt-lg gap-sm">
+      <div class="flex items-center gap-xs font-body-sm text-body-sm">
+        <span class="text-on-surface-variant">Mostrar</span>
+        <label for="page-size-favoritos" class="sr-only">Elementos por página</label>
+        <select [ngModel]="tamanoPagina" (ngModelChange)="cambiarTamano($event)" id="page-size-favoritos" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-surface-container-lowest cursor-pointer appearance-none text-xs leading-tight py-1.5">
+          <option [ngValue]="10">10</option><option [ngValue]="20">20</option><option [ngValue]="50">50</option>
+        </select>
+      </div>
+      <div class="flex items-center gap-xs">
+        <button (click)="paginaAnterior()" [disabled]="!puedeAnterior" class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs"><span class="material-symbols-outlined text-[18px]">chevron_left</span> Anterior</button>
+        @for (p of paginasVisibles; track p) {
+          <button (click)="irAPagina(p)" class="w-8 h-8 min-w-[44px] min-h-[44px] rounded font-label-sm text-label-sm cursor-pointer" [class.bg-primary]="p===pagina" [class.text-on-primary]="p===pagina" [class.text-on-surface-variant]="p!==pagina" [class.border]="p!==pagina" [class.border-outline-variant]="p!==pagina" [class.hover:bg-surface-container-low]="p!==pagina">{{ p+1 }}</button>
+        }
+        <button (click)="paginaSiguiente()" [disabled]="!puedeSiguiente" class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">Siguiente <span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+      </div>
+    </div>
   }
 
   @if (!cargando && favoritos.length === 0 && !errorMsg) {
     <div class="mt-xl flex flex-col items-center justify-center text-center py-3xl text-on-surface-variant">
       <span class="material-symbols-outlined text-[48px] mb-sm text-outline-variant">star_border</span>
-      <p class="font-body-md text-body-md">Todavía no tenés favoritos</p>
-      <a routerLink="/catalogo" class="mt-sm text-primary font-label-md text-label-sm hover:underline">Explorar el catálogo</a>
+      <p class="font-body-md text-body-md">Todavía no tienes favoritos</p>
+      <a routerLink="/dashboard-lector/catalogo" class="mt-sm text-primary font-label-md text-label-sm hover:underline">Explorar el catálogo</a>
     </div>
   }
 </main>

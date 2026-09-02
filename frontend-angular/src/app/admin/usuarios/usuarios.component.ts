@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { UsuarioAdminService } from '../../core/services/usuario-admin.service';
 import { UsuarioAdmin } from '../../core/models/usuario-admin.model';
+import { BuscadorUsuarioComponent } from '../../shared/buscador-usuario/buscador-usuario.component';
+import { FocusTrapDirective } from '../../shared/focus-trap.directive';
 
 // Catálogo real de roles y estados_usuario (db/seed.sql). El backend no
 // valida estos valores contra un enum en el DTO (el catálogo vive en las
@@ -22,7 +24,7 @@ const ESTADO_LABEL: Record<string, string> = {
 @Component({
   selector: 'app-usuarios',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BuscadorUsuarioComponent, FocusTrapDirective],
   templateUrl: './usuarios.component.html'
 })
 export class UsuariosComponent implements OnInit {
@@ -41,6 +43,9 @@ export class UsuariosComponent implements OnInit {
   cargando: boolean = false;
   errorMsg: string = '';
   mensajeOk: string = '';
+
+  ordenColumna: string = '';
+  direccionAsc: boolean = true;
 
   // Modal de motivo para cambio de estado (motivo @NotBlank del backend)
   mostrarModalEstado: boolean = false;
@@ -63,13 +68,53 @@ export class UsuariosComponent implements OnInit {
     }
   }
 
+  ordenarPor(columna: string): void {
+    if (this.ordenColumna === columna) {
+      this.direccionAsc = !this.direccionAsc;
+    } else {
+      this.ordenColumna = columna;
+      this.direccionAsc = true;
+    }
+  }
+
+  get datosOrdenados() {
+    const col = this.ordenColumna;
+    const asc = this.direccionAsc;
+    if (!col) return this.usuarios;
+    return [...this.usuarios].sort((a: any, b: any) => {
+      const va = a[col] ?? '';
+      const vb = b[col] ?? '';
+      const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es');
+      return asc ? cmp : -cmp;
+    });
+  }
+
   get paginasVisibles(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i);
+    const windowSize = 4;
+    let start = Math.max(0, this.currentPage - 1);
+    let end = Math.min(this.totalPages, start + windowSize);
+    if (end - start < windowSize) {
+      start = Math.max(0, end - windowSize);
+    }
+    return Array.from({ length: end - start }, (_, i) => start + i);
+  }
+
+  get puedeAnterior(): boolean {
+    return this.currentPage > 0;
+  }
+
+  get puedeSiguiente(): boolean {
+    return this.currentPage < this.totalPages - 1;
   }
 
   buscarUsuarios(): void {
     this.currentPage = 0;
     this.cargarPagina();
+  }
+
+  onBuscarAhora(texto: string): void {
+    this.filtro = texto;
+    this.buscarUsuarios();
   }
 
   // Se llama desde el template (paginacion numerada) -> no private.
@@ -90,18 +135,28 @@ export class UsuariosComponent implements OnInit {
     });
   }
 
+  irAPagina(pagina: number): void {
+    if (pagina < 0 || pagina >= this.totalPages || pagina === this.currentPage) return;
+    this.currentPage = pagina;
+    this.cargarPagina();
+  }
+
   paginaAnterior(): void {
-    if (this.currentPage > 0) {
-      this.currentPage--;
-      this.cargarPagina();
+    if (this.puedeAnterior) {
+      this.irAPagina(this.currentPage - 1);
     }
   }
 
   paginaSiguiente(): void {
-    if (this.currentPage < this.totalPages - 1) {
-      this.currentPage++;
-      this.cargarPagina();
+    if (this.puedeSiguiente) {
+      this.irAPagina(this.currentPage + 1);
     }
+  }
+
+  cambiarTamanoPage(nuevo: number): void {
+    this.pageSize = Number(nuevo);
+    this.currentPage = 0;
+    this.cargarPagina();
   }
 
   etiquetaEstado(estado: string): string {

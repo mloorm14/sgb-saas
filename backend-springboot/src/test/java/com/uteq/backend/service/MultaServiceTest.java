@@ -1,10 +1,15 @@
 package com.uteq.backend.service;
 
 import com.uteq.backend.dto.MultaAccionResponseDTO;
+import com.uteq.backend.dto.ResumenFinancieroMultasResponseDTO;
 import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
+import com.uteq.backend.repository.LibroRepository;
 import com.uteq.backend.repository.MultaProcedureRepository;
 import com.uteq.backend.repository.MultaRepository;
+import com.uteq.backend.repository.PrestamoRepository;
 import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.repository.projection.ResumenFinancieroMultasProjection;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -14,13 +19,21 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.uteq.backend.entity.BitacoraAuditoria;
+import org.mockito.ArgumentCaptor;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -32,6 +45,9 @@ class MultaServiceTest {
     @Mock MultaRepository multaRepo;
     @Mock MultaProcedureRepository multaProcRepo;
     @Mock UsuarioRepository usuarioRepo;
+    @Mock LibroRepository libroRepo;
+    @Mock PrestamoRepository prestamoRepo;
+    @Mock BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     @InjectMocks MultaService multaService;
 
@@ -66,6 +82,8 @@ class MultaServiceTest {
     @Test
     void anular_conRolGerente_resuelveRolDesdeAuthentication() {
         Authentication auth = authComoRol("gerente@uteq.edu.ec", "GERENTE");
+        given(usuarioRepo.findByCorreo("gerente@uteq.edu.ec"))
+                .willReturn(Optional.of(usuarioConId(10L)));
         Map<String, Object> mapaResultado = new HashMap<>();
         mapaResultado.put("o_multa_id", 9L);
         mapaResultado.put("o_usuario_desbloqueado", true);
@@ -85,6 +103,8 @@ class MultaServiceTest {
     @Test
     void anular_conRolAdmin_resuelveRolAdmin() {
         Authentication auth = authComoRol("admin@uteq.edu.ec", "ADMIN");
+        given(usuarioRepo.findByCorreo("admin@uteq.edu.ec"))
+                .willReturn(Optional.of(usuarioConId(11L)));
         Map<String, Object> mapaResultado = new HashMap<>();
         mapaResultado.put("o_multa_id", 12L);
         mapaResultado.put("o_usuario_desbloqueado", false);
@@ -96,7 +116,29 @@ class MultaServiceTest {
         verify(multaProcRepo).spAnularMulta(12L, "Duplicado", "ADMIN");
     }
 
-    // ── Test 5: anular sin rol válido -> defensa en profundidad, denegado ──
+    // ── Test 5: anular registra evento de auditoría con usuarioId real ──
+    @Test
+    void anular_deberiaRegistrarAuditoria() {
+        Authentication auth = authComoRol("gerente@uteq.edu.ec", "GERENTE");
+        given(usuarioRepo.findByCorreo("gerente@uteq.edu.ec"))
+                .willReturn(Optional.of(usuarioConId(10L)));
+        Map<String, Object> mapaResultado = new HashMap<>();
+        mapaResultado.put("o_multa_id", 9L);
+        mapaResultado.put("o_usuario_desbloqueado", false);
+        given(multaProcRepo.spAnularMulta(9L, "Daño grave", "GERENTE"))
+                .willReturn(mapaResultado);
+
+        multaService.anular(9L, "Daño grave", auth);
+
+        ArgumentCaptor<BitacoraAuditoria> captor = ArgumentCaptor.forClass(BitacoraAuditoria.class);
+        verify(bitacoraAuditoriaRepo).save(captor.capture());
+        BitacoraAuditoria evento = captor.getValue();
+        assertThat(evento.getTablaAfectada()).isEqualTo("multas");
+        assertThat(evento.getUsuarioId()).isEqualTo(10L);
+        assertThat(evento.getDetalles()).isEqualTo("Anulación de la multa 9: Daño grave");
+    }
+
+    // ── Test 6: anular sin rol válido -> defensa en profundidad, denegado ──
     // (Escenario que en teoría @PreAuthorize del controller ya bloquea,
     // pero el service lo revalida por su cuenta -- ver Javadoc de
     // MultaService.resolverRolAnulacion.)
@@ -117,6 +159,50 @@ class MultaServiceTest {
 
         assertThatThrownBy(() -> multaService.listarPorUsuario(2L, auth, null))
                 .isInstanceOf(AuthorizationDeniedException.class);
+    }
+
+    // ── Test 7: resumen financiero mapea la proyección a DTO ──
+    @Test
+    void reporteResumenFinanciero_conDatos_mapeaProjectionADTO() {
+        ResumenFinancieroMultasProjection fila = mock(ResumenFinancieroMultasProjection.class);
+        given(fila.getTotalRecaudado()).willReturn(new BigDecimal("125.00"));
+        given(fila.getTotalPendiente()).willReturn(new BigDecimal("40.50"));
+
+        ResumenFinancieroMultasProjection hoy = mock(ResumenFinancieroMultasProjection.class);
+        given(hoy.getTotalRecaudado()).willReturn(new BigDecimal("10.00"));
+        given(hoy.getTotalPendiente()).willReturn(new BigDecimal("5.00"));
+        lenient().when(multaProcRepo.fnReporteResumenFinanciero(any(OffsetDateTime.class), any(OffsetDateTime.class)))
+                .thenReturn(hoy);
+        lenient().when(multaProcRepo.fnPagosRecientes(anyInt())).thenReturn(List.of());
+
+        OffsetDateTime desde = OffsetDateTime.parse("2026-08-01T00:00:00Z");
+        OffsetDateTime hasta = OffsetDateTime.parse("2026-08-31T23:59:59Z");
+        given(multaProcRepo.fnReporteResumenFinanciero(desde, hasta)).willReturn(fila);
+
+        ResumenFinancieroMultasResponseDTO resultado = multaService.reporteResumenFinanciero(desde, hasta);
+
+        assertThat(resultado.totalRecaudado()).isEqualTo(new BigDecimal("125.00"));
+        assertThat(resultado.totalPendiente()).isEqualTo(new BigDecimal("40.50"));
+    }
+
+    // ── Test 8: resumen financiero sin rango de fechas envía null tal cual ──
+    @Test
+    void reporteResumenFinanciero_sinRangoDeFechas_envianullAlRepositorio() {
+        ResumenFinancieroMultasProjection fila = mock(ResumenFinancieroMultasProjection.class);
+        given(fila.getTotalRecaudado()).willReturn(BigDecimal.ZERO);
+        given(fila.getTotalPendiente()).willReturn(BigDecimal.ZERO);
+        given(multaProcRepo.fnReporteResumenFinanciero(null, null)).willReturn(fila);
+
+        ResumenFinancieroMultasProjection hoy = mock(ResumenFinancieroMultasProjection.class);
+        given(hoy.getTotalRecaudado()).willReturn(BigDecimal.ZERO);
+        given(hoy.getTotalPendiente()).willReturn(BigDecimal.ZERO);
+        lenient().when(multaProcRepo.fnReporteResumenFinanciero(any(OffsetDateTime.class), any(OffsetDateTime.class)))
+                .thenReturn(hoy);
+        lenient().when(multaProcRepo.fnPagosRecientes(anyInt())).thenReturn(List.of());
+
+        multaService.reporteResumenFinanciero(null, null);
+
+        verify(multaProcRepo).fnReporteResumenFinanciero(null, null);
     }
 
     // ── Helpers ────────────────────────────────────────────

@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import { Libro, LibroSugerencia } from '../models/libro.model';
 import { Page } from '../models/pagina.model';
 import { ProblemDetail } from '../models/problem-detail.model';
+import { Categoria } from '../models/categoria.model';
 
 // Rama C (portal público): solo lectura contra /api/publico/libros, que
 // SecurityConfig deja pasar sin JWT (permitAll sobre /api/publico/**).
@@ -14,6 +15,7 @@ export interface LibroPublicoListarParams {
   page?: number;
   size?: number;
   sort?: string;
+  q?: string;
   categoriaId?: number;
   autorId?: number;
 }
@@ -24,6 +26,7 @@ export interface LibroPublicoListarParams {
 export class LibroPublicoService {
 
   private apiUrl = `${environment.apiUrl}/publico/libros`;
+  private catUrl = `${environment.apiUrl}/publico/categorias`;
 
   constructor(private http: HttpClient) {}
 
@@ -32,6 +35,7 @@ export class LibroPublicoService {
     if (params.page !== undefined) httpParams = httpParams.set('page', params.page);
     if (params.size !== undefined) httpParams = httpParams.set('size', params.size);
     if (params.sort) httpParams = httpParams.set('sort', params.sort);
+    if (params.q) httpParams = httpParams.set('q', params.q);
     if (params.categoriaId !== undefined) httpParams = httpParams.set('categoriaId', params.categoriaId);
     if (params.autorId !== undefined) httpParams = httpParams.set('autorId', params.autorId);
 
@@ -58,6 +62,12 @@ export class LibroPublicoService {
   // El img-src del CSP en public/_headers incluye el origen del API.
   portadaUrl(id: number): string {
     return `${this.apiUrl}/${id}/portada`;
+  }
+
+  categorias(): Observable<Categoria[]> {
+    return this.http.get<Categoria[]>(this.catUrl).pipe(
+      catchError(err => this.manejarError(err))
+    );
   }
 
   private manejarError(err: unknown): Observable<never> {

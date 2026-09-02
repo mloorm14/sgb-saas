@@ -55,13 +55,13 @@ arquitectura desplegada en [docs/despliegue/DEPLOYMENT.md](docs/despliegue/DEPLO
 
 ## 🚀 Tecnologías
 
-- **Frontend:** Angular 17 / Tailwind CSS
+- **Frontend:** Angular 21 / Tailwind CSS
 - **Backend:** Spring Boot 4.0.6 / Java 21 / Spring Security 7.x
 - **Base de datos:** PostgreSQL 16
 - **Caché y Auth:** Redis 7 (lista negra de tokens JWT)
 - **Migraciones:** Flyway 9
 - **Documentación API:** springdoc-openapi (Swagger UI)
-- **IA Integrada:** Gemini 2.0 Flash API (Entrega 2)
+- **IA Integrada:** Gemini 3.5 Flash Lite API (Entrega 2)
 
 ---
 ## 🔄 Flujo MVC — Ciclo de vida de una petición autenticada
@@ -145,7 +145,7 @@ Autenticación stateless basada en **JWT (HS256)**: `accessToken` de corta durac
 ```
 sgb-saas/
 ├── backend-springboot/   # API REST: Spring Boot 4.0.6 + JPA + Security + JWT
-├── frontend-angular/      # SPA Angular 17
+├── frontend-angular/      # SPA Angular 21
 ├── database/
 │   └── migrations/        # Scripts versionados de Flyway (V1__, V2__, ...)
 ├── docs/                   # Diagramas, ADRs, informes técnicos
@@ -195,18 +195,66 @@ admin real y con rol limitado (LECTOR, sin permisos administrativos)**:
 Este usuario es el que el tribunal puede usar para entrar sin
 registrarse. No modifica ni comparte la cuenta `admin@sgb-saas.local`.
 
-## 📦 Imágenes Docker publicadas (v1.0.0)
+⚠️ **Nota de corrección (2026-08-23, verificación pre-defensa):** una
+auditoría en vivo contra producción, horas antes de la defensa, encontró que
+la cuenta `u@uteq.edu.ec` tenía asignados **dos roles a la vez** (`LECTOR` y
+`GERENTE`). Causa: `V12__fix_usuario_demo.sql` solo *agrega* el rol `LECTOR`
+(`ON CONFLICT DO NOTHING`) pero nunca elimina otros roles que ya existieran
+en esa fila, así que un `GERENTE` preexistente en esa cuenta no se limpiaba
+solo. El login devolvía `GERENTE`, contradiciendo lo documentado arriba.
+
+Se corrigió con un script SQL aplicado directamente contra la base de
+producción (Neon, branch `production`) que deja esa cuenta con
+**únicamente** el rol `LECTOR`, tal como pretendían V11/V12. **Esta
+corrección no está reflejada como una migración Flyway versionada en
+`database/migrations/`** — es un parche puntual sobre producción para no
+bloquear la defensa; una base reprovisionada desde cero (`make up` /
+clonación limpia) no reproduce este estado hasta que se agregue una
+migración `V__` equivalente al repositorio.
+
+Además, no existían credenciales demo públicas para el rol `BIBLIOTECARIO`
+ni para un `LECTOR` alternativo separado de `u@uteq.edu.ec`. Se crearon dos
+cuentas nuevas para cubrir esos roles, independientes de cualquier cuenta
+real de un integrante del equipo:
+
+| Campo | Valor |
+|-------|-------|
+| **Rol** | `LECTOR` |
+| **Usuario / Email** | `lector.demo@sgb-saas.local` |
+| **Contraseña** | `Lector123!` |
+
+| Campo | Valor |
+|-------|-------|
+| **Rol** | `BIBLIOTECARIO` |
+| **Usuario / Email** | `bibliotecario.demo@sgb-saas.local` |
+| **Contraseña** | `Bibliotecario123!` |
+
+| Campo | Valor |
+|-------|-------|
+| **Rol** | `GERENTE` |
+| **Usuario / Email** | `gerente.demo@sgb-saas.local` |
+| **Contraseña** | `Gerente123!` |
+
+> ⚠️ Mismo criterio que el resto de esta sección: credenciales **solo**
+> para evaluación académica / entorno demo.
+
+Para los 4 roles del sistema, el tribunal puede entrar con:
+
+- **ADMIN** — `admin@sgb-saas.local`
+- **GERENTE** — `gerente.demo@sgb-saas.local`
+- **BIBLIOTECARIO** — `bibliotecario.demo@sgb-saas.local`
+- **LECTOR** — `lector.demo@sgb-saas.local` o `u@uteq.edu.ec` (LECTOR).
+
+## 📦 Imágenes Docker publicadas (tag `v1.0.0` retirado; ver `docs/observaciones/OBSERVACIONES.md` OBS-18)
 
 Las imágenes se publican en GitHub Container Registry (GHCR) por el
-workflow `publish-ghcr.yml`, que se dispara con el push del tag `v1.0.0`
-(no por push a rama ni por PR). Digests verificados con `docker pull` +
-`docker inspect` real contra el commit `8610ab0` (el mismo que main y
-demo/interfaces-completas, y el que está sirviendo en producción).
-
-| Servicio  | Imagen                                   | Digest sha256 |
-|-----------|------------------------------------------|---------------|
-| Backend   | `ghcr.io/mloorm14/sgb-saas-backend:v1.0.0`  | `sha256:2cb9f065d4c81cce11ab8b6d113fe20eb8603828ac2a087535280cb54d3f8598` |
-| Frontend  | `ghcr.io/mloorm14/sgb-saas-frontend:v1.0.0` | `sha256:ea3d681b322c06ea3d2657e46d712fadf080e0074575336f0aa27399bd6cd91f` |
+workflow `publish-ghcr.yml`, que se dispara con el push de un tag (no por
+push a rama ni por PR). El tag de git `v1.0.0` fue eliminado por ser
+prematuro (OBS-18: creado 418+ commits detrás de HEAD, antes de que el
+alcance de la Entrega Final estuviera cerrado); las imágenes ya publicadas
+en GHCR bajo ese tag siguen existiendo en el registro como artefacto
+histórico, pero no representan el estado final del proyecto. No se
+republican imágenes hasta que se cree el tag definitivo.
 
 ## 🔁 Reproducibilidad (D.1 / D.2)
 
