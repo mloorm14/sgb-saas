@@ -29,7 +29,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
@@ -48,20 +47,24 @@ class NotificacionServiceTest {
 
     @InjectMocks NotificacionService notificacionService;
 
-    // ── Test 1: alerta de vencimiento -- caso normal, se envía y se guarda ──
+    // ── Test 1: alerta de vencimiento -- la notificacion in-app se crea
+    // igual; el correo automatico esta desactivado desde 2026-08-30 (ver
+    // NotificacionService.crearYEnviar, lineas 195-201: en produccion
+    // generaba 1k+ intentos de envio por corrida con "Authentication
+    // failed" en SMTP -- solo el correo manual de verificacion de cuenta
+    // sigue activo). ──
     @Test
-    void generarAlertaVencimiento_prestamoSinAlertaPrevia_creaYEnviaNotificacion() {
+    void generarAlertaVencimiento_prestamoSinAlertaPrevia_creaNotificacionSinEnviarCorreo() {
         given(tipoNotificacionRepo.findByNombre("VENCIMIENTO"))
                 .willReturn(Optional.of(tipoConId(1, "VENCIMIENTO")));
         given(notificacionRepo.existsByPrestamoIdAndTipoNotificacionId(50L, 1)).willReturn(false);
         given(usuarioRepo.findById(1L)).willReturn(Optional.of(usuarioConCorreo(1L, "lector@uteq.edu.ec")));
         given(libroRepo.findById(2L)).willReturn(Optional.of(libroConTitulo("Clean Code")));
-        given(emailService.enviarCorreo(eq("lector@uteq.edu.ec"), anyString(), anyString())).willReturn(true);
 
         notificacionService.generarAlertaVencimiento(prestamoConId(50L));
 
         verify(notificacionRepo).save(any());
-        verify(emailService).enviarCorreo(eq("lector@uteq.edu.ec"), anyString(), anyString());
+        verify(emailService, never()).enviarCorreo(any(), any(), any());
     }
 
     // ── Test 2: dedup -- ya existe una alerta VENCIMIENTO para este préstamo ──
@@ -77,12 +80,13 @@ class NotificacionServiceTest {
         verify(emailService, never()).enviarCorreo(any(), any(), any());
     }
 
-    // ── Test 3: fallo de SMTP no propaga, y queda registrado enviadoOk=false ──
+    // ── Test 3: el registro queda con enviadoOk=false porque el correo
+    // automatico esta desactivado (ver comentario de Test 1) -- ya no es un
+    // fallo simulado de SMTP, es el comportamiento esperado hoy. ──
     @Test
     void notificarMulta_fallaElEnvio_igualGuardaElRegistroConEnviadoOkFalse() {
         given(tipoNotificacionRepo.findByNombre("MULTA")).willReturn(Optional.of(tipoConId(2, "MULTA")));
         given(usuarioRepo.findById(1L)).willReturn(Optional.of(usuarioConCorreo(1L, "lector@uteq.edu.ec")));
-        given(emailService.enviarCorreo(any(), any(), any())).willReturn(false);
 
         notificacionService.notificarMulta(1L, 50L, new BigDecimal("2.50"));
 
@@ -100,7 +104,6 @@ class NotificacionServiceTest {
                 .willReturn(Optional.of(tipoConId(3, "RESERVA_CADUCADA")));
         given(usuarioRepo.findById(1L)).willReturn(Optional.of(usuarioConCorreo(1L, "lector@uteq.edu.ec")));
         given(libroRepo.findById(2L)).willReturn(Optional.of(libroConTitulo("Clean Code")));
-        given(emailService.enviarCorreo(any(), any(), any())).willReturn(true);
 
         Reservacion reservacion = new Reservacion();
         reservacion.setId(70L);
