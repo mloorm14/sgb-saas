@@ -74,6 +74,24 @@ alcanzable con $n=5$ es exactamente $0{,}0625$). Tamaño de efecto de
 Cliff's delta $=-0{,}68$ (efecto \textbf{grande}, convención
 $|\delta|\geq0{,}474$).
 
+\textbf{Sobre la corrección por comparaciones múltiples.} Este documento
+reporta una única comparación estadística formal (con $p$-valor) en todo
+su alcance: el test de Wilcoxon pareado anterior. Las correcciones por
+comparaciones múltiples (Bonferroni, Holm-Bonferroni,
+Benjamini-Hochberg) existen para controlar la inflación de la tasa de
+falsos positivos cuando se evalúan \emph{varias} hipótesis sobre el
+mismo conjunto de datos; con $m=1$ comparación, el factor de corrección
+de cualquiera de estos métodos es $1$ y el $p$-valor ajustado es
+idéntico al original -- no hay ajuste matemático que aplicar. Los demás
+bloques de este capítulo (SUS, Lighthouse) reportan estadística
+descriptiva (media, mediana, desviación típica, intervalos de
+confianza) sin pruebas de hipótesis adicionales, por lo que tampoco
+contribuyen comparaciones al conjunto. Se documenta esto explícitamente
+en respuesta al comentario del profesor sobre corrección por
+comparaciones múltiples, en vez de aplicar una corrección sin sentido
+estadístico sobre un único test solo para incluir el término en el
+texto.
+
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.85\textwidth]{mediciones/perf/p95-comparacion-escenarios.pdf}
