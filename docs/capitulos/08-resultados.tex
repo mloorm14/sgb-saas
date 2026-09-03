@@ -124,12 +124,12 @@ la proporción simple sobre 6 controles, reportada abajo.
 \toprule
 Control & Estado real & Evidencia \\
 \midrule
-A01 -- Control de acceso roto & Hallazgo real encontrado y corregido (rol admin en libros) & \texttt{2026-07-30-owasp-a01-\allowbreak control-acceso-roto.md} + \texttt{-fix-rol-admin-\allowbreak libros.md} \\
-A02 -- Fallos criptográficos / TLS & Decisión de arquitectura, preparación del backend y verificación de despliegue real \textbf{CERRADAS} (ADR-015, \texttt{forward-headers-strategy}; header \texttt{Strict-Transport-Security} confirmado activo en producción por \texttt{curl}, 18-ago-2026). & \texttt{2026-08-10-owasp-a02-\allowbreak fix-tls-\allowbreak transporte.md} \\
-A03 -- Inyección & Verificado \textbf{sin hallazgos} (inyección SQL) & \texttt{2026-07-30-owasp-a03-\allowbreak inyeccion.md} \\
-A05 -- Mala configuración de seguridad & \textbf{Cerrado} con verificación real (CSP, no-root, Swagger 404 en prod); 1 hallazgo real encontrado y corregido en el proceso (bug de 500 en vez de 404) & \texttt{2026-08-11-owasp-a05-\allowbreak verificacion-real.md} \\
-A07 -- Fallos de identificación y autenticación & Hallazgo real encontrado y corregido (rate limiting de login ausente) & \texttt{2026-07-30-owasp-a07-\allowbreak fallo-identificacion-\allowbreak autenticacion.md} + \texttt{-fix-rate-\allowbreak limiting-login.md} \\
-A09 -- Fallos de registro y monitoreo & Hallazgo real encontrado y corregido (logging de autenticación insuficiente) & \texttt{2026-07-30-owasp-a09-\allowbreak fallo-registro-\allowbreak monitoreo.md} + \texttt{-fix-logging-\allowbreak autenticacion.md} \\
+A01 -- Control de acceso roto & Hallazgo real encontrado y corregido (rol admin en libros) & \texttt{2026-\allowbreak 07-\allowbreak 30-\allowbreak owasp-\allowbreak a01-\allowbreak control-\allowbreak acceso-\allowbreak roto.md} + \texttt{-fix-rol-admin-\allowbreak libros.md} \\
+A02 -- Fallos criptográficos / TLS & Decisión de arquitectura, preparación del backend y verificación de despliegue real \textbf{CERRADAS} (ADR-015, \texttt{forward-headers-strategy}; header \texttt{Strict-Transport-Security} confirmado activo en producción por \texttt{curl}, 18-ago-2026). & \texttt{2026-\allowbreak 08-\allowbreak 10-\allowbreak owasp-\allowbreak a02-\allowbreak fix-tls-\allowbreak transporte.md} \\
+A03 -- Inyección & Verificado \textbf{sin hallazgos} (inyección SQL) & \texttt{2026-\allowbreak 07-\allowbreak 30-\allowbreak owasp-\allowbreak a03-\allowbreak inyeccion.md} \\
+A05 -- Mala configuración de seguridad & \textbf{Cerrado} con verificación real (CSP, no-root, Swagger 404 en prod); 1 hallazgo real encontrado y corregido en el proceso (bug de 500 en vez de 404) & \texttt{2026-\allowbreak 08-\allowbreak 11-\allowbreak owasp-\allowbreak a05-\allowbreak verificacion-real.md} \\
+A07 -- Fallos de identificación y autenticación & Hallazgo real encontrado y corregido (rate limiting de login ausente) & \texttt{2026-\allowbreak 07-\allowbreak 30-\allowbreak owasp-\allowbreak a07-\allowbreak fallo-identificacion-\allowbreak autenticacion.md} + \texttt{-fix-rate-\allowbreak limiting-login.md} \\
+A09 -- Fallos de registro y monitoreo & Hallazgo real encontrado y corregido (logging de autenticación insuficiente) & \texttt{2026-\allowbreak 07-\allowbreak 30-\allowbreak owasp-\allowbreak a09-\allowbreak fallo-registro-\allowbreak monitoreo.md} + \texttt{-fix-logging-\allowbreak autenticacion.md} \\
 \bottomrule
 \end{tabularx}
 \caption{Estado real por control OWASP evaluado (rutas relativas a \texttt{docs/mediciones/sec/})}
@@ -297,6 +297,7 @@ cierre -- se resume en la \autoref{tab:res-jacoco}.
 \begin{table}[h]
 \centering
 \small
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{lrrrrr}
 \toprule
 Métrica & 30-jul (pre-merge) & 13-ago (post-merge, \texttt{a2c88f8}) & \texttt{825ad34} (re-verificado) & \textbf{Vigente (cierre, HEAD \texttt{89eb6ab})} & Umbral \\
@@ -305,7 +306,8 @@ Lines & 75,85\,\% (380/501) & 81,64\,\% (1014/1242) & 55,25\,\% (1541/2789) & \t
 Branches & 49,02\,\% (50/102) & 58,05\,\% (137/236) & 34,24\,\% (239/698) & \textbf{34,59\,\% (247/714)} & -- \\
 Complexity & 58,42\,\% (111/190) & 65,16\,\% (288/442) & 45,47\,\% (427/939) & \textbf{45,70\,\% (436/954)} & -- \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \caption{Cobertura JaCoCo: pre-merge, post-merge de 8 módulos de dominio, cifra de \texttt{825ad34} re-verificada (retracta el 61,50\,\% citado anteriormente para ese commit) y corrida vigente al cierre de la Entrega Final sobre HEAD}
 \label{tab:res-jacoco}
 \end{table}
@@ -400,6 +402,7 @@ Los scores de las 14 corridas se listan en la
 \begin{table}[h]
 \centering
 \small
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{llrrrr}
 \toprule
 Perfil & Corrida & Performance & Accessibility & Best Practices & SEO \\
@@ -413,7 +416,8 @@ Escritorio & prod. 18-ago, después del fix (media, 3) & \textbf{100,0} (DT 0,0)
 \midrule
 \multicolumn{2}{l}{Umbral exigido} & $\geq$80 & $\geq$90 & $\geq$90 & $\geq$90 \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \caption{Scores Lighthouse reales por corrida. Las 2 primeras filas son
   la muestra histórica contra \texttt{localhost}; las 4 filas
   siguientes agregan media y desviación típica de las 12 corridas
@@ -471,6 +475,7 @@ estaba arreglado''. Las 6 corridas de re-confirmación (18-ago) dan
 \begin{table}[h]
 \centering
 \small
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{lrr}
 \toprule
 Perfil & CLS antes (producción, 17-ago) & CLS después (producción, 18-ago) \\
@@ -478,7 +483,8 @@ Perfil & CLS antes (producción, 17-ago) & CLS después (producción, 18-ago) \\
 Escritorio & 0,236 / 0,236 / 0,235 (media 0,236, DT 0,000) & 0,031 / 0,031 / 0,031 (media 0,031, DT 0,0003) \\
 Móvil & 0,013 / 0,013 / 0,338\textsuperscript{*} & 0,005 / 0,011 / 0,011 (media 0,009, DT 0,003) \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \caption{Cumulative Layout Shift antes y después del fix, 12 corridas
   reales de producción. \textsuperscript{*}Móvil ``antes'' no se
   resume en media/DT: 2 corridas en 0,013 y 1 anómala en 0,338 (ver
