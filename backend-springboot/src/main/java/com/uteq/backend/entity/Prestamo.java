@@ -5,17 +5,14 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-// import jakarta.persistence.NamedStoredProcedureQuery; -- ya no se usa,
-// ver bloque comentado abajo (sp_registrar_devolucion ahora se invoca vía
-// @Query nativa en PrestamoProcedureRepository, no vía este mecanismo).
-// import jakarta.persistence.ParameterMode;
-// import jakarta.persistence.StoredProcedureParameter;
+import jakarta.persistence.NamedStoredProcedureQuery;
+import jakarta.persistence.ParameterMode;
+import jakarta.persistence.StoredProcedureParameter;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-// import java.math.BigDecimal; -- ya no se usa, solo lo usaba el
-// @NamedStoredProcedureQuery comentado arriba.
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
@@ -28,22 +25,16 @@ import java.time.OffsetDateTime;
  * los procedimientos de db/procs/ (ver
  * {@link com.uteq.backend.repository.PrestamoProcedureRepository}).
  */
-// ── CÓDIGO ANTERIOR (no usar, dejado como referencia histórica) ──
-// Reemplazado por @Query nativa en PrestamoProcedureRepository.
-// spRegistrarDevolucion tras el fallo documentado en
-// docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md
-// (@Procedure generaba sintaxis "=>" que pgjdbc no soporta -- bug conocido
-// de Hibernate 6.2+/7.x, ver spring-projects/spring-data-jpa#3393).
-// @NamedStoredProcedureQuery(
-//         name = "Prestamo.registrarDevolucion",
-//         procedureName = "sp_registrar_devolucion",
-//         parameters = {
-//                 @StoredProcedureParameter(mode = ParameterMode.IN, name = "p_prestamo_id", type = Long.class),
-//                 @StoredProcedureParameter(mode = ParameterMode.OUT, name = "o_prestamo_id", type = Long.class),
-//                 @StoredProcedureParameter(mode = ParameterMode.OUT, name = "o_hubo_multa", type = Boolean.class),
-//                 @StoredProcedureParameter(mode = ParameterMode.OUT, name = "o_monto_multa", type = BigDecimal.class)
-//         }
-// )
+@NamedStoredProcedureQuery(
+        name = "Prestamo.registrarDevolucion",
+        procedureName = "sp_registrar_devolucion",
+        parameters = {
+                @StoredProcedureParameter(mode = ParameterMode.IN, name = "p_prestamo_id", type = Long.class),
+                @StoredProcedureParameter(mode = ParameterMode.OUT, name = "o_prestamo_id", type = Long.class),
+                @StoredProcedureParameter(mode = ParameterMode.OUT, name = "o_hubo_multa", type = Boolean.class),
+                @StoredProcedureParameter(mode = ParameterMode.OUT, name = "o_monto_multa", type = BigDecimal.class)
+        }
+)
 @Data
 @NoArgsConstructor
 @Entity

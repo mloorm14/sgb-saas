@@ -20,18 +20,16 @@ atomicidad requerida por la guía se cumple igual: cada función corre en la
 transacción implícita de su propia invocación — cualquier `RAISE EXCEPTION`
 revierte todos los cambios hechos dentro de esa llamada.
 
-## Nota de diseño: los 10 objetos se invocan vía `@Query(nativeQuery = true)`, no `@Procedure`
+## Nota de diseño: 16 rutinas totales, @Procedure habilitado para principales
 
-El plan original (ADR-006, requisito A.2.1 de la guía) era invocar las 5
+Inventario real: 10 objetos base de este catalogo + 6 extras en V16/V18-V22 (`sp_pago_parcial_multa`, `fn_pagos_recientes`, `fn_reporte_libros_mas_prestados_detallado`, `fn_reporte_inventario`, `fn_reporte_prestamos_vencidos`, `fn_reporte_categorias_demandadas`). Total 16 rutinas versionadas + trigger `set_actualizado_en`.
+
+El plan original (ADR-006, requisito A.2.1) era invocar las 5
 funciones con efectos secundarios (`sp_crear_prestamo`,
 `sp_registrar_devolucion`, `sp_pagar_multa`, `sp_anular_multa`,
 `sp_expirar_reservaciones_vencidas`) vía `@Procedure` (directo o
-referenciando un `@NamedStoredProcedureQuery`), siguiendo el contrato de
-stored procedures de Jakarta Persistence 2.1, y reservar
-`@Query(nativeQuery = true)` únicamente para las funciones de solo lectura
-que retornan `TABLE` (varias filas — `fn_listar_prestamos_activos_por_usuario`,
-`fn_reporte_libros_mas_prestados`, `fn_reporte_indice_morosidad`,
-`fn_reporte_uso_por_periodo`).
+referenciando un `@NamedStoredProcedureQuery`), y reservar
+`@Query(nativeQuery = true)` para las `TABLE`. Tras el fix `DEMO-FINAL` se habilito `@Procedure`/`@NamedStoredProcedureQuery` para las 3 principales (`sp_crear_prestamo`, `sp_pagar_multa`, `sp_anular_multa`, `sp_registrar_devolucion`) manteniendo `@Query` nativa como fallback.
 
 Ese plan se abandonó en la práctica para **todos** los objetos, no solo los
 de parámetros OUT. Al verificar en runtime (primera ejecución real contra

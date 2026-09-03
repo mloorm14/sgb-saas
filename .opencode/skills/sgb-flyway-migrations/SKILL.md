@@ -46,14 +46,12 @@ En `application.yml`:
 ```yaml
 spring:
   flyway:
-    baseline-version: 14
+    baseline-version: 37
     baseline-on-migrate: true
 ```
 
-Esto significa que Flyway ya considera aplicadas las migraciones V1-V14
-(existentes en `conf-producción`). Si estás creando una migración nueva,
-el siguiente número válido es **V27** (V24, V25, V26 ya están tomados en
-`demo/interfaces-completas`).
+Esto significa que Flyway ya considera aplicadas las migraciones V1-V37
+(V37 incluye indices ADB, V29 nunca existio salto V28->V30). Siguiente es **V38**.
 
 ## Migraciones vs Repeatable
 

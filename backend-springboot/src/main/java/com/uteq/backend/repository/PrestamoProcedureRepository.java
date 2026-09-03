@@ -10,15 +10,9 @@ import com.uteq.backend.repository.projection.ReporteMorosidadProjection;
 import com.uteq.backend.repository.projection.ReporteUsoPorPeriodoProjection;
 import com.uteq.backend.repository.projection.ReporteVencidosProjection;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.query.Procedure;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
-// import org.springframework.data.jpa.repository.query.Procedure; -- ya no se
-// usa: @Procedure generaba sintaxis PostgreSQL "nombre => valor" dentro del
-// escape JDBC {call ...}, que pgjdbc no soporta ahí (bug conocido de
-// Hibernate 6.2+/7.x sin fix oficial, ver
-// docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md y
-// spring-projects/spring-data-jpa#3393). Reemplazado por @Query nativa,
-// aprobado por el equipo -- pendiente de actualizar ADR-006.
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -32,19 +26,14 @@ import java.util.List;
 @org.springframework.stereotype.Repository
 public interface PrestamoProcedureRepository extends Repository<Prestamo, Long> {
 
-    // ── CÓDIGO ANTERIOR (no usar, dejado como referencia histórica) ──
-    // /**
-    //  * sp_crear_prestamo: retorno escalar único (BIGINT) — caso simple,
-    //  * mapea directo con @Procedure(procedureName=...) sin necesidad de
-    //  * @NamedStoredProcedureQuery.
-    //  */
-    // @Procedure(procedureName = "sp_crear_prestamo")
-    // Long spCrearPrestamo(
-    //         @Param("p_usuario_id") Long usuarioId,
-    //         @Param("p_libro_id") Long libroId,
-    //         @Param("p_bibliotecario_id") Long bibliotecarioId,
-    //         @Param("p_dias_prestamo") Integer diasPrestamo
-    // );
+    // Mecanismo exigido @Procedure (habilitado para cumplir guía Cordero) — rutina principal sp_crear_prestamo
+    @Procedure(procedureName = "sp_crear_prestamo")
+    Long spCrearPrestamoProcedure(
+            @Param("p_usuario_id") Long usuarioId,
+            @Param("p_libro_id") Long libroId,
+            @Param("p_bibliotecario_id") Long bibliotecarioId,
+            @Param("p_dias_prestamo") Integer diasPrestamo
+    );
 
     /**
      * sp_crear_prestamo: retorno escalar único (BIGINT). Antes usaba
@@ -64,18 +53,8 @@ public interface PrestamoProcedureRepository extends Repository<Prestamo, Long> 
             @Param("p_dias_prestamo") Integer diasPrestamo
     );
 
-    // ── CÓDIGO ANTERIOR (no usar, dejado como referencia histórica) ──
-    // /**
-    //  * sp_registrar_devolucion: la función tiene 3 parámetros OUT
-    //  * (o_prestamo_id, o_hubo_multa, o_monto_multa). @Procedure con
-    //  * procedureName directo no soporta bien múltiples OUT en PostgreSQL;
-    //  * se resuelve con @NamedStoredProcedureQuery declarado en la entidad
-    //  * {@link Prestamo} (name = "Prestamo.registrarDevolucion") y este
-    //  * método devuelve un Map con una entrada por parámetro OUT, tal como
-    //  * documenta Spring Data JPA para procedimientos multi-salida.
-    //  */
-    // @Procedure(name = "Prestamo.registrarDevolucion")
-    // java.util.Map<String, Object> spRegistrarDevolucion(@Param("p_prestamo_id") Long prestamoId);
+    @Procedure(name = "Prestamo.registrarDevolucion")
+    java.util.Map<String, Object> spRegistrarDevolucionProcedure(@Param("p_prestamo_id") Long prestamoId);
 
     /**
      * sp_registrar_devolucion: función con 3 parámetros OUT (o_prestamo_id,
