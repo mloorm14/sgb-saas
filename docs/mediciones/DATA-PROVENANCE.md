@@ -8,7 +8,7 @@ por última vez. Requisito R2 de la guía. Complementa a
 crudo) sin repetirlo -- este archivo responde "de dónde viene", no "qué
 forma tiene".
 
-**Fecha**: 2026-08-31. **Commit base**: `c6de386`. **Método**: se
+**Fecha**: 2026-08-31. **Commit base**: `39beb37`. **Método**: se
 recorrieron los 13 capítulos de `docs/capitulos/*.tex` buscando
 `\begin{table}`, `\begin{longtable}`, `\begin{tabularx}`,
 `\begin{tabular}` e `\includegraphics` (no solo los que tienen
@@ -42,9 +42,9 @@ reproducible con un nombre de archivo cuando en realidad no lo hay.
 | 13 | Cifra "100\,% de los `Must` verificados" (prosa, §Proceso de validación) | 09-ingenieria-requisitos.tex | `docs/trazabilidad/matriz.csv` (columna `estado`) | Sin script -- cierre logrado agregando 2 tests nuevos (`AuthControllerTest`, `AuthServiceTest`) que permitieron pasar `REQ-F-001`/`REQ-NF-013` de `implementado` a `verificado`. | Tests que cerraron el gap: `e1f0c25`. Prosa en el capítulo: `3538f13`. |
 | 14 | Tasa de estabilidad "95,3\,%" (prosa, §Estabilidad del conjunto de requisitos) | 09-ingenieria-requisitos.tex | `docs/requisitos/CHANGELOG-REQ.md` (comparación `SRS-v0.9.0-rc.md` de 30 requisitos vs.\ `SRS-v1.0.0.md` de 43) | Sin script versionado en `scripts/` -- comparación cuerpo-completo (no solo título) hecha de forma ad-hoc para producir `CHANGELOG-REQ.md`, no repetible desde el repositorio tal cual hoy. | `CHANGELOG-REQ.md`: `82df169`. Prosa en el capítulo (incluida la corrección honesta de la cifra de "verificado" desactualizada del propio `CHANGELOG-REQ.md`, 48,8\,% → 53,5\,%): `3538f13`. |
 | 15 | `tab:decl-credit` (distribución de roles CRediT) | 13-declaraciones.tex | Historial completo de `git log`/`git shortlog -sne --all` (recuento de commits por autor) + `docs/observaciones/OBSERVACIONES.md` (asignación de OBS-08 a Panamá) | Sin script versionado -- conteo manual de `git shortlog` ejecutado durante la redacción del capítulo, no un script guardado en `scripts/`. | `6696bf1` (confirmación final de la tabla, tras la revisión del equipo). |
-| 16 | `fig:sus-boxplot` (boxplot de puntajes SUS, `sus_boxplot.svg` y `.png`) | Resultados, §Usabilidad | `docs/mediciones/sus/sus.csv` | `scripts/sus-analysis.ipynb` (celda 7: boxplot con umbral 68, paleta colorblind) | Datos: `5d404b6`. Figura: `5d404b6`. |
-| 17 | `fig:sus-items` (desglose por ítem SUS, `sus_items_breakdown.svg`) | Resultados, §Usabilidad | `docs/mediciones/sus/sus.csv` | `scripts/sus-analysis.ipynb` (celda 8: barras horizontales Q1–Q10, Likert 1–5) | Datos: `5d404b6`. Figura: `5d404b6`. |
-| 18 | `tab:sus-descriptivo` (estadística descriptiva SUS: media, mediana, DT, IC 95%, Bangor) | Resultados, §Usabilidad | `docs/mediciones/sus/sus.csv` | `scripts/sus-analysis.ipynb` (celdas 3–4: stats; celda 4: IC 95% con `scipy.stats.t.interval`) | Datos: `5d404b6`. Tabla: `5d404b6`. |
+| 16 | `fig:sus-boxplot` (boxplot de puntajes SUS, `sus_boxplot.svg` y `.png`) | Resultados, §Usabilidad | `docs/mediciones/sus/sus.csv` | `scripts/sus-analysis.ipynb` (celda 7: boxplot con umbral 68, paleta colorblind) | Datos: `a5bb914`. Figura: `a5bb914`. |
+| 17 | `fig:sus-items` (desglose por ítem SUS, `sus_items_breakdown.svg`) | Resultados, §Usabilidad | `docs/mediciones/sus/sus.csv` | `scripts/sus-analysis.ipynb` (celda 8: barras horizontales Q1–Q10, Likert 1–5) | Datos: `a5bb914`. Figura: `a5bb914`. |
+| 18 | `tab:sus-descriptivo` (estadística descriptiva SUS: media, mediana, DT, IC 95%, Bangor) | Resultados, §Usabilidad | `docs/mediciones/sus/sus.csv` | `scripts/sus-analysis.ipynb` (celdas 3–4: stats; celda 4: IC 95% con `scipy.stats.t.interval`) | Datos: `a5bb914`. Tabla: `a5bb914`. |
 
 ## Notas de honestidad sobre este archivo
 
