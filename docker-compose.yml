@@ -119,5 +119,32 @@ services:
       timeout: 5s
       retries: 5
 
+  backup-service:
+    build:
+      context: ./backup-service
+      dockerfile: ./Dockerfile
+    container_name: sgb_backup_service
+    environment:
+      DATABASE_URL: postgres://sgb_user:changeme@postgres:5432/sgb_db
+      DB_URL: ${DB_URL:-}
+      DB_USER: sgb_user
+      DB_PASSWORD: changeme
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key}
+      BACKUP_ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY:-}
+      R2_ENDPOINT: ${R2_ENDPOINT:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-}
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
 volumes:
   pgdata:
