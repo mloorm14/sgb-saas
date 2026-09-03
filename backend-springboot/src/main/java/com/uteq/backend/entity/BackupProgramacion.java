@@ -44,8 +44,9 @@ public class BackupProgramacion {
     @Column(name = "tabla")
     private Set<String> tablas;
 
-    // Getter explícito para boolean 'activo' (Lombok a veces genera getActivo en vez de isActivo)
-    public boolean isActivo() { return activo; }
+    // Getter explícito para boolean 'activo' (Lombok a veces genera getActivo en vez de isActivo).
+    // Se usa Boolean.TRUE.equals para evitar NPE por auto-unboxing cuando activo es null.
+    public boolean isActivo() { return Boolean.TRUE.equals(activo); }
 
     // Restricción XOR: exactamente uno de los dos debe tener valor
     @PrePersist
