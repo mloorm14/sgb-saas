@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription, timer } from 'rxjs';
 import { ConfiguracionSistemaService, ParametroConfiguracion } from '../core/services/configuracion-sistema.service';
 import { DevolucionService } from '../core/services/devolucion.service';
 import { AuthService } from '../core/services/auth.service';
@@ -215,9 +216,10 @@ interface BreadcrumbItem {
   imports: [CommonModule, FormsModule],
   templateUrl: './configuracion-sistema.component.html'
 })
-export class ConfiguracionSistemaComponent implements OnInit {
+export class ConfiguracionSistemaComponent implements OnInit, OnDestroy {
   valorMaxLength = VALOR_MAX_LENGTH;
   esAdmin: boolean = false;
+  private pollingSub?: Subscription;
 
   configuraciones: ParametroConfiguracion[] = [];
   cargando: boolean = false;
@@ -354,6 +356,10 @@ export class ConfiguracionSistemaComponent implements OnInit {
       this.cargarCategoriasDano();
       this.cargarTiposDano();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.pollingSub?.unsubscribe();
   }
 
   abrirModulo(moduloId: string): void {
@@ -743,17 +749,19 @@ export class ConfiguracionSistemaComponent implements OnInit {
   dispararBackupCompleto(): void {
     this.generandoBackup = true;
     this.backupService.dispararBackupCompleto().subscribe({
-      next: () => { 
-        this.generandoBackup = false; 
-        this.toast.success('Backup iniciado', 'El volcado completo se está ejecutando.'); 
-        // Darle 1 segundo al microservicio de Node.js para que inserte el registro "EN_PROGRESO" en la BD
-        setTimeout(() => {
-          this.cargarRegistrosRespaldo(this.subSubmoduloSeleccionado?.includes('auto') ? 'automatico' : 'manual'); 
-        }, 1000);
+      next: () => {
+        this.generandoBackup = false;
+        this.toast.success('Backup iniciado', 'El volcado completo se está ejecutando.');
+        // Polling corto para que el historial se actualice solo sin recargar la página.
+        this.pollingSub?.unsubscribe();
+        const tipoRegistro = this.subSubmoduloSeleccionado?.includes('auto') ? 'automatico' : 'manual';
+        this.pollingSub = timer(1000, 3000).subscribe(() => this.cargarRegistrosRespaldo(tipoRegistro));
+        // Detener el polling a los 15 segundos para no dejar suscripciones abiertas.
+        setTimeout(() => this.pollingSub?.unsubscribe(), 15000);
       },
-      error: (err) => { 
-        this.generandoBackup = false; 
-        this.toast.error('Error', err?.error?.detail ?? 'Error al iniciar el backup'); 
+      error: (err) => {
+        this.generandoBackup = false;
+        this.toast.error('Error', err?.error?.detail ?? 'Error al iniciar el backup');
       }
     });
   }
@@ -765,7 +773,7 @@ export class ConfiguracionSistemaComponent implements OnInit {
   generarBackup(): void {
     if (!this.puedeGenerarBackup) return;
     this.generandoBackup = true; this.errorMsgBackup = '';
-    this.backupService.generar({ desde: this.backupDesde, hasta: this.backupHasta, tablas: this.tablasSeleccionadas, formato: this.backupFormato }).subscribe({ next: () => { this.generandoBackup = false; this.toast.success('Respaldo generado', 'El archivo .zip se generó correctamente'); this.cargarBackups(); }, error: (err) => { this.generandoBackup = false; const detail = err?.error?.detail ?? err?.message ?? 'Error al generar el respaldo'; this.errorMsgBackup = detail; this.toast.error('Error', detail); } });
+    this.backupService.generar({ desde: this.backupDesde, hasta: this.backupHasta, tablas: this.tablasSeleccionadas, formato: this.backupFormato }).subscribe({ next: () => { this.generandoBackup = false; this.toast.success('Respaldo generado', 'El archivo .zip se generó correctamente'); this.cargarBackupsPorTipo('manual'); }, error: (err) => { this.generandoBackup = false; const detail = err?.error?.detail ?? err?.message ?? 'Error al generar el respaldo'; this.errorMsgBackup = detail; this.toast.error('Error', detail); } });
   }
   generarBackupAutomatico(): void {
     if (!this.puedeProgramar) return;
@@ -780,11 +788,12 @@ export class ConfiguracionSistemaComponent implements OnInit {
       activo: true
     };
 
-    this.backupService.guardarProgramacion(payload).subscribe({ 
-      next: (prog) => { 
-        this.generandoBackup = false; 
-        this.toast.success('Programación guardada', 'Backup programado con éxito'); 
-        this.cargarProgramaciones(); 
+    this.backupService.guardarProgramacion(payload).subscribe({
+      next: (prog) => {
+        this.generandoBackup = false;
+        this.toast.success('Programación guardada', 'Backup programado con éxito');
+        this.cargarProgramaciones();
+        this.cargarBackupsPorTipo('automatico');
       }, 
       error: (err) => { 
         this.generandoBackup = false; 
@@ -795,16 +804,24 @@ export class ConfiguracionSistemaComponent implements OnInit {
     });
   }
   programarBackup(id: number): void {
-    this.backupService.programar(id).subscribe({ next: (p) => { this.toast.success('Programado', 'Respaldo automático programado correctamente'); this.cargarProgramaciones(); }, error: (err) => { const detail = err?.error?.detail ?? err?.message ?? 'Error al programar'; this.toast.error('Error', detail); } });
+    this.backupService.programar(id).subscribe({ next: (p) => { this.toast.success('Programado', p.mensaje ?? 'Respaldo automático programado correctamente'); this.cargarProgramaciones(); }, error: (err) => { const detail = err?.error?.detail ?? err?.message ?? 'Error al programar'; this.toast.error('Error', detail); } });
   }
   ejecutarAhora(id: number): void {
-    this.backupService.ejecutarAhora(id).subscribe({ next: () => { this.toast.success('Ejecutado', 'Backup ejecutado ahora mismo'); this.cargarProgramaciones(); }, error: (err) => { const detail = err?.error?.detail ?? err?.message ?? 'Error al ejecutar'; this.toast.error('Error', detail); } });
+    this.backupService.ejecutarAhora(id).subscribe({ next: (r) => { this.toast.success('Ejecutado', r.mensaje ?? 'Backup ejecutado ahora mismo'); this.cargarProgramaciones(); this.cargarBackupsPorTipo('automatico'); }, error: (err) => { const detail = err?.error?.detail ?? err?.message ?? 'Error al ejecutar'; this.toast.error('Error', detail); } });
+  }
+  eliminarProgramacion(id: number): void {
+    if (!confirm('¿Eliminar esta programación automática? No se borrará el historial existente.')) return;
+    this.backupService.eliminarProgramacion(id).subscribe({
+      next: () => { this.toast.success('Eliminada', 'Programación eliminada correctamente'); this.cargarProgramaciones(); },
+      error: (err) => { this.toast.error('Error', err?.error?.detail ?? 'Error al eliminar la programación'); }
+    });
   }
   descargarBackup(entry: BackupEntry): void {
     this.backupService.descargar(entry.id).subscribe({ next: (blob) => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `backup-${entry.id}.zip`; a.click(); URL.revokeObjectURL(url); this.toast.success('Descarga iniciada', 'El respaldo se está descargando'); }, error: (err) => { const detail = err?.error?.detail ?? 'Error al descargar el respaldo'; this.toast.error('Error', detail); } });
   }
   borrarBackup(entry: BackupEntry): void {
-    this.backupService.eliminar(entry.id).subscribe({ next: () => { this.toast.success('Eliminado', 'Respaldo eliminado del historial'); this.cargarBackups(); }, error: (err) => { const detail = err?.error?.detail ?? 'Error al eliminar el respaldo'; this.errorMsgBackup = detail; this.toast.error('Error', detail); } });
+    if (!confirm('¿Eliminar este respaldo del historial? Esta acción no se puede deshacer.')) return;
+    this.backupService.eliminar(entry.id).subscribe({ next: () => { this.toast.success('Eliminado', 'Respaldo eliminado del historial'); this.cargarBackupsPorTipo(entry.tipo ?? 'manual'); }, error: (err) => { const detail = err?.error?.detail ?? 'Error al eliminar el respaldo'; this.errorMsgBackup = detail; this.toast.error('Error', detail); } });
   }
   formatearTamano(entry: BackupEntry): string {
     if (entry.tamano) return entry.tamano;
