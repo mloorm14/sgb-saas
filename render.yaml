@@ -298,14 +298,15 @@ services:
         sync: false
 
   # ---- Frontend Angular ----
+  # Prod real: Static Site (no Docker) — biblora-sgb en Render está como Static Site con
+  # Root Directory: frontend-angular, Build Command: npm ci && npm run build,
+  # Publish Directory: dist/frontend-angular/browser. Este bloque documenta el estado real
+  # Static y no fuerza runtime docker (ver histórico bcb3baf7 que proponía Docker para 404 SPA).
   - name: biblora-sgb
-    type: web
-    runtime: docker
+    type: static
     plan: free
-    # (build: ./frontend-angular).
-    dockerfilePath: ./frontend-angular/Dockerfile
-    dockerContext: ./frontend-angular
-    healthCheckPath: /
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist/frontend-angular/browser
     # SIN envVars (actualizado tras el commit b89df9d -- el estado
     # anterior de este comentario, escrito en bcb3baf, decía que el
     # proyecto no tenía environment.ts y que la URL del backend estaba

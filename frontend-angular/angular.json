@@ -33,6 +33,11 @@
                 "glob": "_headers",
                 "input": "public",
                 "output": "./"
+              },
+              {
+                "glob": "_redirects",
+                "input": "public",
+                "output": "./"
               }
             ],
             "styles": [
