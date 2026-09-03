@@ -101,10 +101,16 @@ public class RespaldoCompletoController {
                 requestEntity,
                 String.class
             );
-
+            if (nodeResponse.getStatusCode().value() == 429) {
+                return ResponseEntity.status(429).body(java.util.Map.of("mensaje", "Ya hay un respaldo en ejecucion", "detalle", nodeResponse.getBody() == null ? "" : nodeResponse.getBody()));
+            }
             return ResponseEntity.status(nodeResponse.getStatusCode())
                     .body(java.util.Map.of("mensaje", "Backup completo iniciado",
                             "detalle", nodeResponse.getBody() == null ? "" : nodeResponse.getBody()));
+        } catch (org.springframework.web.client.HttpStatusCodeException e) {
+            int sc = e.getStatusCode().value();
+            if (sc == 429) return ResponseEntity.status(429).body(java.util.Map.of("mensaje", "Ya hay un respaldo en ejecucion", "detalle", e.getResponseBodyAsString()));
+            return ResponseEntity.status(e.getStatusCode()).body(java.util.Map.of("mensaje", "Microservicio de respaldos no disponible", "detalle", e.getResponseBodyAsString()));
         } catch (Exception e) {
             // Devolver JSON 503 en vez de texto HTML para que el frontend no rompa el parse.
             return ResponseEntity.status(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE)

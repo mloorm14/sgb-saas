@@ -9,6 +9,11 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+app.get('/health', async (req, res) => {
+    if (!process.env.DATABASE_URL && !process.env.DB_URL) return res.status(503).json({ status: 'DOWN', db: 'no DATABASE_URL' });
+    try { await pool.query('SELECT 1'); res.json({ status: 'UP' }); } catch (e) { res.status(503).json({ status: 'DOWN', error: e.message }); }
+});
+
 // Middleware de seguridad para validar la API Key interna
 app.use('/api/v1/trigger', (req, res, next) => {
     const expectedKey = process.env.INTERNAL_API_KEY;
@@ -23,14 +28,12 @@ app.use('/api/v1/trigger', (req, res, next) => {
 
 // Endpoint para disparar un backup manual (llamado por el proxy de Spring Boot)
 app.post('/api/v1/trigger', async (req, res) => {
-    // Esto corre asíncrono para no bloquear la respuesta HTTP
-    // El frontend hará polling o simplemente leerá la tabla de registros
     const { usuarioId } = req.body;
-    
-    // Respondemos inmediatamente que se ha encolado
+    try {
+        const chk = await pool.query("SELECT id FROM registros_respaldo WHERE estado='ejecutando' LIMIT 1");
+        if (chk.rows.length > 0) return res.status(429).json({ mensaje: 'Ya hay un respaldo en ejecucion', retryAfter: 60 });
+    } catch (e) {}
     res.status(202).json({ message: 'Backup completo iniciado en background' });
-    
-    // Ejecutamos el backup
     await runBackup('manual', usuarioId);
 });
 
