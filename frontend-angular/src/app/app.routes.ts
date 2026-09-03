@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
+import { redirectIfAuthenticatedGuard } from './core/guards/redirect-if-authenticated.guard';
 import { LoginComponent } from './auth/login/login.component';
 import { RegistroComponent } from './auth/registro/registro.component';
 import { DashboardGerenteComponent } from './dashboard-gerente/dashboard-gerente.component';
@@ -17,10 +18,10 @@ import { libroDetalleResolver } from './core/resolvers/libro-detalle.resolver';
 import { libroPublicoDetalleResolver } from './core/resolvers/libro-publico-detalle.resolver';
 
 export const routes: Routes = [
-  { path: '', component: PortalPublicoComponent },
-  { path: 'portal/:id', component: DetallePublicoComponent, resolve: { libro: libroPublicoDetalleResolver } },
-  { path: 'login', component: LoginComponent },
-  { path: 'registro', component: RegistroComponent },
+  { path: '', component: PortalPublicoComponent, canActivate: [redirectIfAuthenticatedGuard] },
+  { path: 'portal/:id', component: DetallePublicoComponent, resolve: { libro: libroPublicoDetalleResolver }, canActivate: [redirectIfAuthenticatedGuard] },
+  { path: 'login', component: LoginComponent, canActivate: [redirectIfAuthenticatedGuard] },
+  { path: 'registro', component: RegistroComponent, canActivate: [redirectIfAuthenticatedGuard] },
 
   { path: 'dashboard-gerente', component: DashboardGerenteComponent, canActivate: [authGuard, roleGuard(['GERENTE'])] },
   {
