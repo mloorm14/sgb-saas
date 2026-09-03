@@ -57,7 +57,7 @@ public class BackupProgramacionService {
 
     public BackupProgramacion obtener(Long id) {
         return progRepo.findById(id)
-                .filter(p -> p.isActivo())
+                .filter(p -> Boolean.TRUE.equals(p.getActivo()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Programación no encontrada " + id));
     }
 
@@ -72,7 +72,7 @@ public class BackupProgramacionService {
 
     public void actualizarUltimaEjecucion(Long id, OffsetDateTime fecha) {
         BackupProgramacion existing = progRepo.findById(id)
-                .filter(P -> P.isActivo())
+                .filter(P -> Boolean.TRUE.equals(P.getActivo()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Programación no encontrada " + id));
         existing.setUltimaEjecucion(fecha);
         progRepo.save(existing);
@@ -80,12 +80,12 @@ public class BackupProgramacionService {
 
     public void eliminar(Long id) {
         BackupProgramacion p = progRepo.findById(id)
-                .filter(P -> P.isActivo())
+                .filter(P -> Boolean.TRUE.equals(P.getActivo()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Programación no encontrada " + id));
         p.setActivo(false);
         progRepo.save(p);
-        // Cancelar scheduler si existe
-        programacionesActivas.remove(id);
+        // Cancelar el scheduler activo para que deje de ejecutarse de inmediato.
+        cancelarProgramacion(id);
     }
 
     // ---------- Validación XOR ----------
@@ -130,10 +130,10 @@ public class BackupProgramacionService {
      */
     public ScheduledFuture<?> programarEjecucion(Long id) {
         BackupProgramacion p = progRepo.findById(id)
-                .filter(P -> P.isActivo())
+                .filter(P -> Boolean.TRUE.equals(P.getActivo()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Programación no encontrada " + id));
 
-        if (!p.isActivo()) return null;
+        if (!Boolean.TRUE.equals(p.getActivo())) return null;
 
         long intervalSeconds;
         if (p.getCadaHoras() != null) {
@@ -164,26 +164,22 @@ public class BackupProgramacionService {
     }
 
     private long calcularDelayHastaProximoEjecucion(BackupProgramacion p) {
-        // Si es cadaHoras, queremos que empiece en la próxima hora en punto (00 minutos)
-        // Si es cadaDias, queremos que empiece en 00:00 del día siguiente o mismo si ya pasó las 00:00
+        // Retorna segundos hasta la próxima ejecución usando java.time.Duration.
+        // Antes retornaba minutos pero el llamador multiplicaba por 1000 como si fueran
+        // segundos, lo que dejaba el scheduler 60 veces desfasado.
+        OffsetDateTime ahora = OffsetDateTime.now();
+        long segundos;
         if (p.getCadaHoras() != null) {
-            // Próxima hora en punto: si son las 14:32, delay = a las 15:00 = 28min = 1680s
-            long nowMinute = OffsetDateTime.now().getMinute();
-            long nowSecond = OffsetDateTime.now().getSecond();
-            long nowNano = OffsetDateTime.now().getNano();
-            long minutesToNextHour = 60 - nowMinute;
-            long secondsInFuture = minutesToNextHour * 60 - nowSecond - (nowNano / 1_000_000);
-            if (secondsInFuture < 0) secondsInFuture += 3600 * 60;
-            return secondsInFuture / 60; // en minutos
+            // Próxima hora en punto: si son las 14:32, ejecutar a las 15:00.
+            OffsetDateTime proximaHora = ahora.truncatedTo(ChronoUnit.HOURS).plusHours(1);
+            segundos = Duration.between(ahora, proximaHora).getSeconds();
         } else {
-            // Cada X días: delay hasta la próxima medianoche (00:00)
-            long nowHour = OffsetDateTime.now().getHour();
-            long nowMinute = OffsetDateTime.now().getMinute();
-            long nowSecond = OffsetDateTime.now().getSecond();
-            long secondsUntilMidnight = (24 - nowHour) * 3600 - nowMinute * 60 - nowSecond;
-            if (secondsUntilMidnight < 0) secondsUntilMidnight += 24 * 3600;
-            return secondsUntilMidnight / 60; // minutos
+            // Cada X días: próxima medianoche local.
+            OffsetDateTime proximaMedianoche = ahora.toLocalDate().plusDays(1)
+                    .atStartOfDay().atOffset(ahora.getOffset());
+            segundos = Duration.between(ahora, proximaMedianoche).getSeconds();
         }
+        return Math.max(segundos, 1L);
     }
 
     private void cancelarProgramacion(Long id) {
@@ -199,10 +195,10 @@ public class BackupProgramacionService {
      */
     private void ejecutarBackupProgramado(Long id) {
         BackupProgramacion p = progRepo.findById(id)
-                .filter(P -> P.isActivo())
+                .filter(P -> Boolean.TRUE.equals(P.getActivo()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Programación no encontrada " + id));
 
-        if (!p.isActivo()) {
+        if (!Boolean.TRUE.equals(p.getActivo())) {
             cancelarProgramacion(id);
             return;
         }
