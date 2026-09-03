@@ -64,14 +64,19 @@ public class RespaldoCompletoController {
     // ── Proxy hacia el microservicio Node.js ───────────────────────────────────
     @PostMapping("/trigger")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<String> triggerBackupCompleto(java.security.Principal principal) {
+    public ResponseEntity<java.util.Map<String, Object>> triggerBackupCompleto(java.security.Principal principal) {
         String backupServiceUrl = System.getenv("BACKUP_SERVICE_URL");
         if (backupServiceUrl == null || backupServiceUrl.isBlank()) {
             backupServiceUrl = "http://localhost:3000";
         }
-        
+
         try {
-            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+            org.springframework.http.client.SimpleClientHttpRequestFactory factory =
+                    new org.springframework.http.client.SimpleClientHttpRequestFactory();
+            factory.setConnectTimeout(5000);
+            factory.setReadTimeout(30000);
+            org.springframework.web.client.RestTemplate restTemplate =
+                    new org.springframework.web.client.RestTemplate(factory);
             java.util.Map<String, Object> reqBody = new java.util.HashMap<>();
             if (principal != null) {
                 // The frontend doesn't send the user ID in the proxy request, so we need to
@@ -92,14 +97,19 @@ public class RespaldoCompletoController {
             org.springframework.http.HttpEntity<java.util.Map<String, Object>> requestEntity = new org.springframework.http.HttpEntity<>(reqBody, headers);
             
             org.springframework.http.ResponseEntity<String> nodeResponse = restTemplate.postForEntity(
-                backupServiceUrl + "/api/v1/trigger", 
-                requestEntity, 
+                backupServiceUrl + "/api/v1/trigger",
+                requestEntity,
                 String.class
             );
-            
-            return ResponseEntity.status(nodeResponse.getStatusCode()).body(nodeResponse.getBody());
+
+            return ResponseEntity.status(nodeResponse.getStatusCode())
+                    .body(java.util.Map.of("mensaje", "Backup completo iniciado",
+                            "detalle", nodeResponse.getBody() == null ? "" : nodeResponse.getBody()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Error al contactar el microservicio de respaldos: " + e.getMessage());
+            // Devolver JSON 503 en vez de texto HTML para que el frontend no rompa el parse.
+            return ResponseEntity.status(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(java.util.Map.of("mensaje", "Microservicio de respaldos no disponible",
+                            "detalle", e.getMessage() == null ? "" : e.getMessage()));
         }
     }
 

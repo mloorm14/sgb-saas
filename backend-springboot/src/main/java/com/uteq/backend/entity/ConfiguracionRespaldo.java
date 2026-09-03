@@ -35,10 +35,16 @@ public class ConfiguracionRespaldo {
     @Column(name = "actualizado_por")
     private Long actualizadoPor;
 
-    @Column(name = "actualizado_en", insertable = false, updatable = false)
+    @Column(name = "actualizado_en")
     private OffsetDateTime actualizadoEn;
 
     public boolean isHabilitado() {
         return habilitado != null && habilitado;
+    }
+
+    @PrePersist
+    @PreUpdate
+    private void actualizarMarcaTiempo() {
+        actualizadoEn = OffsetDateTime.now();
     }
 }
