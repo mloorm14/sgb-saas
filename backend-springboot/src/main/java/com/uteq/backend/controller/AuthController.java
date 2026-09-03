@@ -4,6 +4,8 @@ import com.uteq.backend.dto.CodigoVerificacionRequestDTO;
 import com.uteq.backend.dto.LoginRequestDTO;
 import com.uteq.backend.dto.ReenviarCodigoRequestDTO;
 import com.uteq.backend.dto.RegistroRequestDTO;
+import com.uteq.backend.dto.ResetPasswordRequestDTO;
+import com.uteq.backend.dto.SolicitarResetRequestDTO;
 import com.uteq.backend.dto.TokenResponseDTO;
 import com.uteq.backend.dto.UsuarioResponseDTO;
 import com.uteq.backend.security.JwtService;
@@ -47,6 +49,18 @@ public class AuthController {
     @PostMapping("/reenviar-codigo")
     public ResponseEntity<Void> reenviarCodigo(@Valid @RequestBody ReenviarCodigoRequestDTO dto) {
         authService.reenviarCodigo(dto.correo());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/solicitar-reset")
+    public ResponseEntity<Void> solicitarReset(@Valid @RequestBody SolicitarResetRequestDTO dto) {
+        authService.solicitarReset(dto.correo());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/reset")
+    public ResponseEntity<Void> reset(@Valid @RequestBody ResetPasswordRequestDTO dto) {
+        authService.resetPassword(dto.correo(), dto.codigo(), dto.nuevaPassword());
         return ResponseEntity.noContent().build();
     }
 

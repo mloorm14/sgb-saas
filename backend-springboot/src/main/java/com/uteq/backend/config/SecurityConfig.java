@@ -59,6 +59,8 @@ public class SecurityConfig {
                                 "/api/auth/registro",
                                 "/api/auth/verificar-correo",
                                 "/api/auth/reenviar-codigo",
+                                "/api/auth/solicitar-reset",
+                                "/api/auth/reset",
                                 "/api/auth/login",
                                 "/api/auth/refresh",
                                 // Portal público (Rama C): superficie de solo

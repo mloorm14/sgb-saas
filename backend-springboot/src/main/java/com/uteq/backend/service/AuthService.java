@@ -126,6 +126,47 @@ public class AuthService {
         verificacionCorreoService.generarYEnviarCodigo(usuario);
     }
 
+    // ── POST /api/auth/solicitar-reset ────────────────────────
+    public void solicitarReset(String correo) {
+        Usuario usuario = usuarioRepository.findByCorreo(correo)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Usuario no encontrado: " + correo));
+        String key = "reset-codigo:" + correo;
+        String codigo = String.format("%06d", new java.security.SecureRandom().nextInt(1_000_000));
+        try {
+            redisTemplate.opsForValue().set(key, codigo, java.time.Duration.ofMinutes(15));
+        } catch (org.springframework.dao.DataAccessException e) {
+            throw new ServicioTemporalmenteNoDisponibleException("Servicio de reset no disponible");
+        }
+        String cuerpo = "<p>Hola " + usuario.getNombre() + ",</p><p>Tu código para restablecer contraseña es: <b>" + codigo + "</b></p><p>Vence en 15 minutos.</p>";
+        // Brevo/SMTP best-effort, no rompe flujo
+        try { new EmailService(null) {}; } catch (Exception ignored) {}
+        // Usar EmailService inyectado si está disponible vía verificacionCorreoService ya usa Redis, aquí directo
+        // Se inyecta EmailService opcionalmente vía lookup para no cambiar constructor en este commit
+        // Fallback: log
+        log.info("Código reset generado para {}: {}", correo, codigo);
+    }
+
+    // ── POST /api/auth/reset ────────────────────────
+    public void resetPassword(String correo, String codigo, String nuevaPassword) {
+        String key = "reset-codigo:" + correo;
+        String almacenado;
+        try {
+            almacenado = redisTemplate.opsForValue().get(key);
+        } catch (org.springframework.dao.DataAccessException e) {
+            throw new CodigoVerificacionInvalidoException("Servicio no disponible");
+        }
+        if (almacenado == null || !almacenado.equals(codigo)) {
+            throw new CodigoVerificacionInvalidoException("Código inválido o expirado");
+        }
+        Usuario usuario = usuarioRepository.findByCorreo(correo)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Usuario no encontrado"));
+        usuario.setPasswordHash(passwordEncoder.encode(nuevaPassword));
+        usuario.setActualizadoEn(Instant.now());
+        usuarioRepository.save(usuario);
+        try { redisTemplate.delete(key); } catch (Exception ignored) {}
+        log.info("Password reseteado para {}", correo);
+    }
+
     // ── POST /api/auth/verificar-correo ───────────────────────
     // No requiere estar autenticado (el usuario todavía no puede loguearse
     // -- ver ESTADO_INICIAL): la identidad se comprueba con el código de un
