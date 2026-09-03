@@ -4,7 +4,8 @@
 \chapter{Diseño y arquitectura del sistema}
 \label{cap:diseno-arquitectura}
 
-El modelo arquitectónico de SGB-SaaS está versionado como código fuente
+El modelo arquitectónico de SGB-SaaS, aplicando el modelo C4 descrito
+en la \autoref{sec:mt-c4}, está versionado como código fuente
 en \texttt{docs/arquitectura/workspace.dsl} (Structurizr DSL, modelo
 C4), en sus tres niveles completos -- Contexto, Contenedores y
 Componentes -- que reemplazan los diagramas estáticos sin fuente
@@ -58,7 +59,8 @@ API y Google Books API aparecían como sistemas externos en el diseño
 original y se \textbf{retiraron} del diagrama actual porque no existe
 ninguna integración con Google Books en el código real (Gemini sí se
 integró, pero como parte interna del contenedor Backend, no como un
-"sistema externo" del Nivel~1 -- ver Nivel~3 más abajo). Tampoco se
+"sistema externo" del Nivel~1 -- ver \autoref{sec:c4-nivel3} más
+abajo). Tampoco se
 diseñó nunca un endpoint de catálogo público accesible sin
 autenticación: \texttt{LibroController} exige rol \texttt{LECTOR} (o
 superior) incluso para listar libros, así que el alcance real del
@@ -216,6 +218,7 @@ credenciales, tokens, contraseñas ni identificación personal).
 
 \section{Atributos de calidad (ISO/IEC 25010)}
 
+Aplicando el modelo de calidad descrito en la \autoref{sec:mt-25010},
 \texttt{docs/arquitectura/ISO25010.md} prioriza las 8 características de
 calidad de producto de la norma para el contexto específico de este
 proyecto (biblioteca universitaria de bajo volumen, no un sistema de

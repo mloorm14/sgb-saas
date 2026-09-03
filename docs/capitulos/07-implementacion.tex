@@ -14,7 +14,8 @@ directamente del repositorio.
 \section{Procedimiento almacenado y su invocación desde Spring Data JPA}
 \label{sec:sp-invocacion}
 
-La estrategia híbrida de acceso a datos (ADR-006, \autoref{sec:adrs})
+La estrategia híbrida de acceso a datos (fundamentada en la
+\autoref{sec:mt-acceso-datos}; ADR-006, \autoref{sec:adrs})
 exige que las operaciones con validación cruzada multi-tabla se
 implementen como procedimiento o función SQL. El siguiente listado es
 \texttt{db/procs/sp\_crear\_prestamo.sql} completo: registra un préstamo

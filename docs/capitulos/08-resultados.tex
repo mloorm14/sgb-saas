@@ -6,10 +6,12 @@
 
 Este capítulo reporta, bloque por bloque, la evidencia empírica reunida
 para responder las cuatro preguntas de investigación del
-\autoref{cap:introduccion}. Cada bloque sigue el mismo formato: pregunta
+\autoref{cap:introduccion}. Cada bloque sigue el patrón
+Goal-Question-Metric de la \autoref{sec:mm-gqm}: pregunta
 de investigación asociada, métrica reportada, datos crudos con su
 ubicación exacta en el repositorio, estadística descriptiva real (no
-estimada) y una interpretación en prosa. \textbf{No todos los bloques
+estimada, con el análisis de la \autoref{sec:mm-estadistica} donde
+aplica) y una interpretación en prosa. \textbf{No todos los bloques
 están completos.} Dos (rendimiento, cobertura) tienen evidencia cerrada;
 uno (seguridad) está mayoritariamente cerrado con un componente diferido
 explícitamente a la Entrega Final; uno (calidad web) tiene evidencia real
@@ -38,7 +40,8 @@ analizados con \texttt{scripts/perf-analysis.py}. Detalle completo del
 protocolo (comando exacto, entorno, semillas) en el
 \autoref{cap:materiales-metodos}.
 
-\textbf{Estadística descriptiva (5 corridas agregadas).}
+\textbf{Estadística descriptiva (5 corridas agregadas).} (Ver
+\autoref{tab:res-perf-descriptivo}.)
 
 \begin{table}[h]
 \centering
@@ -288,6 +291,8 @@ vigente, tras exclusiones documentadas de DTOs/entidades/configuración
 de framework), no una muestra de un proceso aleatorio -- no aplica
 media/desviación típica/IC~95\% de la misma forma que el Bloque~1; el
 número reportado es el porcentaje real exacto, sin margen de muestreo.
+La evolución completa -- pre-merge, post-merge, corrida re-verificada y
+cierre -- se resume en la \autoref{tab:res-jacoco}.
 
 \begin{table}[h]
 \centering
@@ -337,7 +342,8 @@ práctica ya establecida en este informe de documentar correcciones de
 medición en vez de editarlas en silencio. La columna vigente (HEAD
 \texttt{89eb6ab}, 56,01\,\%) es la que corresponde citar como cifra
 actual de cierre; \texttt{825ad34} queda como punto de referencia
-histórico correcto.
+histórico correcto. El desglose por capa arquitectónica de esa corrida
+se muestra en la \autoref{tab:res-jacoco-capas}.
 
 \begin{table}[h]
 \centering
@@ -388,6 +394,8 @@ defecto y verificar el redeploy (commit \texttt{fced67d}):
 producción en total}, sumadas a las 2 originales contra
 \texttt{localhost}. Narrativa completa, con comandos ejecutados y cada
 paso de verificación, en \texttt{docs/mediciones/lighthouse/REPORT.md}.
+Los scores de las 14 corridas se listan en la
+\autoref{tab:res-lighthouse}.
 
 \begin{table}[h]
 \centering
@@ -457,7 +465,8 @@ regresión) y luego \textbf{re-confirmado contra producción real} tras
 el redeploy -- verificado comparando el hash del \emph{bundle} servido
 (\texttt{main-CCW77Z7S.js} $\to$ \texttt{main-KA6MN67F.js}) antes de
 medir nada, sin asumir el redeploy por un aviso informal de que ``ya
-estaba arreglado''. Las 6 corridas de re-confirmación (18-ago) dan:
+estaba arreglado''. Las 6 corridas de re-confirmación (18-ago) dan
+(\autoref{tab:res-cls}):
 
 \begin{table}[h]
 \centering
@@ -510,7 +519,9 @@ en ninguna de las 3 corridas post-fix -- se documenta como variabilidad
 de infraestructura compartida del \emph{hosting} en el momento de esa
 captura puntual, no como un defecto de aplicación reproducible, y no se
 le atribuye causalmente al fix de CLS (son métricas distintas). No se
-investiga más a fondo por alcance de esta entrega.
+investiga más a fondo por alcance de esta entrega. El resumen
+comparativo por perfil se muestra en la
+\autoref{tab:res-lighthouse-perfiles}.
 
 % --- NUEVA TABLA: resumen móvil vs escritorio ---
 \begin{table}[h]
@@ -554,7 +565,7 @@ abierto. Análisis reproducible y ya ejecutado en
 \texttt{scripts/sus-analysis.ipynb} (salidas guardadas en el propio
 notebook).
 
-\textbf{Estadística descriptiva.}
+\textbf{Estadística descriptiva.} (Ver \autoref{tab:res-sus}.)
 
 \begin{table}[h]
 \centering
