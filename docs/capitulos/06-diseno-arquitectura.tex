@@ -10,9 +10,35 @@ C4), en sus tres niveles completos -- Contexto, Contenedores y
 Componentes -- que reemplazan los diagramas estáticos sin fuente
 versionada de la Entrega~1A
 (\texttt{docs/diagramas/diagrama\_c4\_capa1.png},
-\texttt{diagrama\_c4\_capa2.jpeg}).
+\texttt{diagrama\_c4\_capa2.jpeg}), reproducidos en la
+\autoref{fig:c4-entrega1a-capa1} y la \autoref{fig:c4-entrega1a-capa2}
+únicamente como referencia histórica de ese diseño ya superado -- nótese
+que ambos difieren del modelo vigente descrito en las secciones
+siguientes (por ejemplo, citan \texttt{Google Books API} como sistema
+externo, retirado del modelo actual por no existir esa integración en
+el código real, y el segundo no incluye el contenedor Redis,
+incorporado después).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.85\textwidth]{diagramas/diagrama_c4_capa1.png}
+\caption{Diagrama estático de contexto del sistema, Entrega~1A (sin
+fuente versionada) -- reemplazado por el Nivel~1 del modelo C4 vigente
+en \texttt{workspace.dsl}, descrito en la \autoref{sec:c4-nivel1}.}
+\label{fig:c4-entrega1a-capa1}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.9\textwidth]{diagramas/diagrama_c4_capa2.jpeg}
+\caption{Diagrama estático de contenedores del sistema, Entrega~1A (sin
+fuente versionada) -- reemplazado por el Nivel~2 del modelo C4 vigente
+en \texttt{workspace.dsl}, descrito en la \autoref{sec:c4-nivel2}.}
+\label{fig:c4-entrega1a-capa2}
+\end{figure}
 
 \section{Nivel 1 -- Contexto del sistema}
+\label{sec:c4-nivel1}
 
 Cinco actores interactúan con SGB-SaaS como caja negra: \textbf{Lector}
 (consulta el catálogo, reserva libros, ve su historial de préstamos y
@@ -39,6 +65,7 @@ superior) incluso para listar libros, así que el alcance real del
 \emph{Visitante anónimo} se limita a registro e inicio de sesión.
 
 \section{Nivel 2 -- Contenedores}
+\label{sec:c4-nivel2}
 
 Cuatro contenedores, alineados 1:1 con \texttt{docker-compose.yml}:
 
@@ -114,7 +141,19 @@ una validación real. El diagrama de Nivel~3 se exportó a SVG mediante el
 flujo \texttt{structurizr/structurizr export -format plantuml}
 seguido de renderizado con PlantUML, resultando en
 \texttt{docs/arquitectura/c4-nivel3-componentes.svg}, versionado junto
-al DSL fuente.
+al DSL fuente y reproducido en la \autoref{fig:c4-componentes}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{arquitectura/c4-nivel3-componentes.pdf}
+\caption{Modelo C4, Nivel~3 (Componentes) del backend Spring Boot -- 21
+componentes agrupados por dominio (capa API, capa de servicio,
+seguridad e integración externa), con sus relaciones verificadas contra
+el código real. Conversión a PDF del SVG fuente versionado en
+\texttt{docs/arquitectura/c4-nivel3-componentes.svg} (pdflatex no
+soporta SVG directamente).}
+\label{fig:c4-componentes}
+\end{figure}
 
 \section{Decisiones arquitectónicas documentadas (ADR)}
 \label{sec:adrs}

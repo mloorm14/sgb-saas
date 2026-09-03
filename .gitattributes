@@ -1,0 +1,7 @@
+# Los PDF generados por pdflatex/reportlab usan tablas xref con offsets
+# de byte exactos -- una conversion LF->CRLF (autocrlf en Windows) los
+# corrompe silenciosamente. Los PDF vectoriales (sin imagenes rasterizadas
+# tempranas) pueden no tener bytes NUL en los primeros KB, por lo que la
+# deteccion automatica de binarios de git puede fallar y tratarlos como
+# texto. Se fuerzan explicitamente como binarios para evitarlo.
+*.pdf -text -diff
