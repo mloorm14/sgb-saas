@@ -2,12 +2,15 @@ package com.uteq.backend.controller;
 
 import com.uteq.backend.dto.CambioEstadoUsuarioRequestDTO;
 import com.uteq.backend.dto.CambioRolRequestDTO;
+import com.uteq.backend.dto.CrearUsuarioAdminRequestDTO;
 import com.uteq.backend.dto.UsuarioListadoResponseDTO;
+import com.uteq.backend.dto.UsuarioResponseDTO;
 import com.uteq.backend.service.UsuarioAdminService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -57,6 +60,22 @@ public class UsuarioAdminController {
             @Valid @RequestBody CambioEstadoUsuarioRequestDTO dto,
             Authentication authentication) {
         usuarioAdminService.cambiarEstado(id, dto.nuevoEstado(), dto.motivo(), authentication);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ── POST /api/v1/admin/usuarios ──────────
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UsuarioResponseDTO> crear(@Valid @RequestBody CrearUsuarioAdminRequestDTO dto, Authentication authentication) {
+        UsuarioResponseDTO creado = usuarioAdminService.crearUsuario(dto, authentication);
+        return ResponseEntity.status(HttpStatus.CREATED).body(creado);
+    }
+
+    // ── DELETE /api/v1/admin/usuarios/{id} soft INACTIVO ──────────
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> eliminar(@PathVariable Long id, @RequestParam(required = false) String motivo, Authentication authentication) {
+        usuarioAdminService.eliminarUsuario(id, motivo, authentication);
         return ResponseEntity.noContent().build();
     }
 }
