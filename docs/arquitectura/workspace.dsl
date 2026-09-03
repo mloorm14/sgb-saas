@@ -129,7 +129,7 @@ workspace "SGB-SaaS" "Sistema de Gestión Bibliotecaria Web — plataforma de ca
                 geminiClient = component "GeminiClient" "Cliente HTTP hacia la API REST externa de Gemini 3.5 Flash Lite: reintento simple ante 429/timeout/5xx, sin exponer la URL con la API key en logs." "Spring Component"
             }
 
-            postgres = container "PostgreSQL" "Usuarios, roles/permisos, catálogo, préstamos, reservas, multas y bitácora de auditoría (26 tablas)." "PostgreSQL 16" "Database"
+            postgres = container "PostgreSQL" "Usuarios, roles/permisos, catálogo, préstamos, reservas, multas y bitácora de auditoría (44 tablas)." "PostgreSQL 16" "Database"
 
             redis = container "Redis" "Blacklist de tokens JWT revocados (logout/revocación) y cache del listado de libros con TTL configurable externamente." "Redis 7"
         }
