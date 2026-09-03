@@ -87,6 +87,28 @@ Cuatro contenedores, alineados 1:1 con \texttt{docker-compose.yml}:
     externamente.
   \end{itemize}
 
+El diagrama entidad-relación real del esquema PostgreSQL
+(\autoref{fig:der-real}) se generó automáticamente aplicando, en orden
+numérico, las 35 migraciones Flyway de \texttt{database/migrations/}
+(\texttt{V1} a \texttt{V36}, con el hueco ya documentado en
+\texttt{V29}) sobre una instancia PostgreSQL~16 real y limpia, y
+extrayendo el esquema resultante con \texttt{eralchemy2}. El resultado
+tiene 44 tablas -- más que las 26 citadas en la enumeración de arriba,
+cifra que no se corrige aquí por quedar fuera del alcance de esta
+tarea puntual; ver nota en el reporte de esta sesión.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{diagramas/der-real.pdf}
+\caption{Diagrama entidad-relación real, generado automáticamente con
+\texttt{eralchemy2} a partir del esquema PostgreSQL reconstruido desde
+las 35 migraciones Flyway de \texttt{database/migrations/}. Reemplaza
+a \texttt{docs/diagramas/Diagrama\_ER.png}, que correspondía por error
+a un dominio clínico ajeno a este proyecto (ver OBS-21 en
+\texttt{docs/observaciones/OBSERVACIONES.md}).}
+\label{fig:der-real}
+\end{figure}
+
 Respecto al diseño original de Entrega~1A, el contenedor Redis y el
 actor Administrador son incorporaciones directas de la normalización
 RBAC y del mecanismo de revocación de tokens vía \emph{blacklist}, ambos
