@@ -77,15 +77,18 @@ y documentada del proyecto:
   \item \textbf{JaCoCo} (\texttt{jacoco-maven-plugin} en
     \texttt{backend-springboot/pom.xml}): cobertura de línea/rama/complejidad
     ciclomática sobre el backend, con objetivo declarado de la guía de
-    $\geq$70\,\% de líneas para la Entrega Final. El resultado real
-    vigente es \textbf{81,64\,\%} de líneas (1014/1242) y
-    \textbf{58,05\,\%} de ramas (137/236), por encima del umbral de
+    $\geq$70\,\% de líneas para la Entrega Final. El resultado de cierre
+    vigente es \textbf{56,01\,\%} de líneas (1613/2880) y
+    \textbf{34,59\,\%} de ramas (247/714), por debajo del umbral de
     líneas -- tras un primer ciclo de trabajo dirigido específicamente a
     cinco clases de autenticación/autorización que partían de cobertura
-    casi nula, y una medición posterior que confirmó que el porcentaje se
-    mantuvo (de hecho subió) tras el merge de los ocho módulos de dominio
+    casi nula, una medición intermedia que confirmó que el porcentaje
+    subió a 81,64\,\% tras el merge de los ocho módulos de dominio
     nuevos que casi triplicaron la base de código analizable
-    (\texttt{docs/mediciones/jacoco/2026-08-13-cobertura-jacoco-post-merge-8-modulos.md}).
+    (\texttt{docs/mediciones/jacoco/2026-08-13-cobertura-jacoco-post-merge-8-modulos.md}),
+    y una corrida de cierre posterior que registró un descenso a
+    56,01\,\% tras la incorporación de funcionalidad adicional (ver
+    \autoref{sec:res-cobertura} para el detalle completo).
   \item \textbf{Auditoría OWASP} (\texttt{scripts/owasp-audit.sh},
     \texttt{docs/mediciones/sec/}): verificación reproducible vía
     \texttt{curl} contra el stack Docker real de un subconjunto
