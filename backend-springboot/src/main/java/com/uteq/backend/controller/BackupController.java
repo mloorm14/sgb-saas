@@ -24,8 +24,10 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.uteq.backend.config.FlexibleOffsetDateTimeDeserializer;
+import jakarta.validation.Valid;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @RestController
@@ -42,7 +44,7 @@ public class BackupController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<BackupResponseDTO> generar(@RequestBody BackupRequestDTO req) {
+    public ResponseEntity<BackupResponseDTO> generar(@Valid @RequestBody BackupRequestDTO req) {
         String tipo = req.tipo != null ? req.tipo : "manual";
         Backup b = backupService.generarBackup(req.desde, req.hasta, req.tablas, req.formato, tipo);
         String url = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}/download").buildAndExpand(b.getId()).toUriString();
@@ -77,22 +79,45 @@ public class BackupController {
 
     @PostMapping("/{id}/programar")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> programar(@PathVariable Long id) {
+    public ResponseEntity<Map<String, Object>> programar(@PathVariable Long id) {
         progService.programarEjecucion(id);
-        return ResponseEntity.ok().body("Programación activa para backup id=" + id);
+        BackupProgramacion programacion = progService.obtener(id);
+        return ResponseEntity.ok(Map.of(
+                "id", programacion.getId(),
+                "activo", Boolean.TRUE.equals(programacion.getActivo()),
+                "mensaje", "Programación activa para backup id=" + id));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> borrar(@PathVariable Long id) {
+        // Solo elimina el registro de backup. La programación usa su propio endpoint
+        // para evitar colisión de IDs entre ambas tablas.
         backupService.eliminar(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/programacion/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> borrarProgramacion(@PathVariable Long id) {
         progService.eliminar(id);
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/{id}/download")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<byte[]> descargar(@PathVariable Long id) {
+        byte[] contenido = backupService.descargar(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=backup-" + id + ".zip")
+                .contentLength(contenido.length)
+                .body(contenido);
+    }
+
     @PostMapping("/{id}/ejecutar-ahora")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> ejecutarAhora(@PathVariable Long id) {
+    public ResponseEntity<Map<String, Object>> ejecutarAhora(@PathVariable Long id) {
         BackupProgramacion p = progService.obtener(id);
         // Ejecutar backup inmediato con el rango correspondiente
         OffsetDateTime ahora = OffsetDateTime.now();
@@ -108,7 +133,10 @@ public class BackupController {
         Backup backup = backupService.generarBackup(desde, hasta, tablas, p.getFormato(), "automatico");
         // Actualizar última ejecución en la programación (usa método interno del service)
         progService.actualizarUltimaEjecucion(id, backup.getCreadoEn());
-        return ResponseEntity.ok().body("Backup ejecutado id=" + backup.getId());
+        return ResponseEntity.ok(Map.of(
+                "id", backup.getId(),
+                "programacionId", p.getId(),
+                "mensaje", "Backup ejecutado id=" + backup.getId()));
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor
