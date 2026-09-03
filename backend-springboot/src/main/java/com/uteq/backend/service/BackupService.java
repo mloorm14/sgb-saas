@@ -46,6 +46,8 @@ public class BackupService {
             // categorias, autores, configuracion_sistema -> sin fecha, volcado completo
     );
 
+    private static final int MAX_DETALLE_CHARS = 500;
+
     private final BackupRepository backupRepository;
     private final UsuarioRepository usuarioRepository;
     private final JdbcTemplate jdbcTemplate;
@@ -111,11 +113,17 @@ public class BackupService {
                 String col = TABLA_COL.get(tabla);
                 String phys = physTable(tabla);
                 List<Map<String, Object>> rows;
-                if (col != null) {
-                    rows = jdbcTemplate.queryForList("SELECT * FROM " + phys + " WHERE " + col + " >= ? AND " + col + " <= ?", desde, hasta);
-                } else {
-                    // sin columna de fecha (categorias, autores, configuracion_sistema) -> volcado completo
-                    rows = jdbcTemplate.queryForList("SELECT * FROM " + phys);
+                try {
+                    if (col != null) {
+                        rows = jdbcTemplate.queryForList("SELECT * FROM " + phys + " WHERE " + col + " >= ? AND " + col + " <= ?", desde, hasta);
+                    } else {
+                        // sin columna de fecha (categorias, autores, configuracion_sistema) -> volcado completo
+                        rows = jdbcTemplate.queryForList("SELECT * FROM " + phys);
+                    }
+                } catch (org.springframework.dao.DataAccessException e) {
+                    // Convertir el 500 por columna inexistente en 400 legible (B10: categorias, multas, autores).
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "No se pudo filtrar la tabla " + tabla + " por columna " + col + ": " + e.getMostSpecificCause().getMessage());
                 }
                 String ext = fmtExt(formato);
                 zos.putNextEntry(new ZipEntry(tabla + "." + ext));
@@ -149,7 +157,8 @@ public class BackupService {
         for (Map<String, Object> r : rows) {
             sb.append(r.values().stream().map(v -> {
                 if (v == null) return "";
-                String s = v.toString().replace("\"", "\"\"");
+                String s = truncarTexto(v.toString());
+                s = s.replace("\"", "\"\"");
                 if (s.contains(",") || s.contains("\n") || s.contains("\"")) return "\"" + s + "\"";
                 return s;
             }).collect(Collectors.joining(","))).append("\n");
@@ -166,7 +175,7 @@ public class BackupService {
                 if (v == null) return "NULL";
                 if (v instanceof Number) return v.toString();
                 if (v instanceof Boolean) return (Boolean) v ? "TRUE" : "FALSE";
-                return "'" + v.toString().replace("'", "''") + "'";
+                return "'" + truncarTexto(v.toString()).replace("'", "''") + "'";
             }).collect(Collectors.joining(", "));
             sb.append("INSERT INTO ").append(tabla).append(" (").append(cols).append(") VALUES (").append(vals).append(");\n");
         }
@@ -176,6 +185,18 @@ public class BackupService {
     public List<Backup> listarTodos() { return backupRepository.findAllOrderByCreatedDesc(); }
     public List<Backup> listarPorRango(OffsetDateTime desde, OffsetDateTime hasta) { return backupRepository.findByFechaRange(desde, hasta); }
     public Backup obtenerPorId(Long id) { return backupRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Backup no encontrado " + id)); }
+
+    /**
+     * Trunca textos largos para evitar que la bitacora de auditoria genere zips gigantes.
+     * El campo detalles puede traer dumps previos de 10k caracteres que luego se encriptan
+     * y rompen la visualización del frontend.
+     */
+    private String truncarTexto(String texto) {
+        if (texto != null && texto.length() > MAX_DETALLE_CHARS) {
+            return texto.substring(0, MAX_DETALLE_CHARS) + "...(truncado)";
+        }
+        return texto;
+    }
 
     @Transactional
     public void eliminar(Long id) {
