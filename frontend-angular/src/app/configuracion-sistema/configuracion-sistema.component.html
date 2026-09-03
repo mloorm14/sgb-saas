@@ -548,6 +548,10 @@
                           class="w-8 h-8 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center hover:bg-primary/10 text-primary cursor-pointer">
                           <span class="material-symbols-outlined text-[18px]">play_arrow</span>
                         </button>
+                        <button type="button" (click)="eliminarProgramacion(p.id)" aria-label="Eliminar programación"
+                          class="w-8 h-8 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center hover:bg-error/10 text-error cursor-pointer">
+                          <span class="material-symbols-outlined text-[18px]">delete</span>
+                        </button>
                       </div>
                     </td>
                   </tr>
