@@ -143,6 +143,31 @@ public class UsuarioAdminService {
     // (quién hizo el cambio) se resuelve desde el JWT autenticado, nunca
     // desde un campo del body -- evita que alguien falsifique "quién"
     // aparece en la bitácora.
+    @Transactional
+    public com.uteq.backend.dto.UsuarioResponseDTO crearUsuario(com.uteq.backend.dto.CrearUsuarioAdminRequestDTO dto, Authentication authentication) {
+        usuarioRepo.findByCorreo(dto.correo()).ifPresent(u -> { throw new com.uteq.backend.service.CorreoYaRegistradoException("El correo ya está registrado: " + dto.correo()); });
+        Rol rol = rolRepo.findByNombre(dto.rol()).orElseThrow(() -> new IllegalArgumentException(ROL_NO_ENCONTRADO + dto.rol()));
+        EstadoUsuario estadoActivo = estadoUsuarioRepo.findByNombre("ACTIVO").orElseThrow(() -> new IllegalStateException("Estado ACTIVO no existe"));
+        java.util.Set<Rol> roles = new java.util.HashSet<>(); roles.add(rol);
+        Usuario usuario = Usuario.builder().nombre(dto.nombre()).apellido(dto.apellido()).correo(dto.correo()).passwordHash(new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(12).encode(dto.password())).estado(estadoActivo).correoVerificado(true).roles(roles).fechaRegistro(Instant.now()).actualizadoEn(Instant.now()).build();
+        Usuario guardado = usuarioRepo.save(usuario);
+        Long ejecutorId = resolverIdPorCorreo(authentication.getName());
+        registrarAuditoria(ejecutorId, guardado.getId(), "Creación admin de usuario " + dto.correo() + " rol " + dto.rol());
+        java.util.List<String> rolesStr = guardado.getRoles().stream().map(Rol::getNombre).toList();
+        return new com.uteq.backend.dto.UsuarioResponseDTO(guardado.getId(), guardado.getNombre(), guardado.getCorreo(), rolesStr);
+    }
+
+    @Transactional
+    public void eliminarUsuario(Long usuarioId, String motivo, Authentication authentication) {
+        Usuario usuario = usuarioRepo.findById(usuarioId).orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
+        EstadoUsuario inactivo = estadoUsuarioRepo.findByNombre("INACTIVO").orElseThrow(() -> new IllegalStateException("Estado INACTIVO no existe"));
+        usuario.setEstado(inactivo);
+        usuario.setActualizadoEn(Instant.now());
+        usuarioRepo.save(usuario);
+        Long ejecutorId = resolverIdPorCorreo(authentication.getName());
+        registrarAuditoria(ejecutorId, usuarioId, "Eliminación soft usuario " + usuario.getCorreo() + " motivo: " + (motivo != null ? motivo : "no especificado"));
+    }
+
     private Long resolverIdPorCorreo(String correo) {
         return usuarioRepo.findByCorreo(correo)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo))

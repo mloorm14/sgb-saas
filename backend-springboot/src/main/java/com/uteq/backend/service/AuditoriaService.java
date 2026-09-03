@@ -95,6 +95,18 @@ public class AuditoriaService {
         return resultado;
     }
 
+    public byte[] exportarCsv(Long usuarioId, String modulo, OffsetDateTime desde, OffsetDateTime hasta) {
+        var pageable = org.springframework.data.domain.PageRequest.of(0, 10000, org.springframework.data.domain.Sort.by("fecha_hora").descending());
+        var page = bitacoraAuditoriaRepo.buscarConFiltros(usuarioId, modulo, desde, hasta, pageable);
+        StringBuilder sb = new StringBuilder();
+        sb.append("id,usuarioId,tipoOperacion,tablaAfectada,fechaHora,detalles\n");
+        for (var e : page.getContent()) {
+            sb.append(e.getId()).append(",").append(e.getUsuarioId()).append(",").append(escape(e.getTipoOperacion())).append(",").append(escape(e.getTablaAfectada())).append(",").append(e.getFechaHora()).append(",").append(escape(e.getDetalles())).append("\n");
+        }
+        return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    }
+    private String escape(String s) { if (s==null) return ""; String t=s.replace("\"","\"\""); if (t.contains(",")||t.contains("\n")||t.contains("\"")) return "\""+t+"\""; return t; }
+
     private EventoAuditoriaResponseDTO toDTO(BitacoraAuditoria evento, Map<Long, String> correoPorId) {
         String correo = evento.getUsuarioId() == null ? null : correoPorId.get(evento.getUsuarioId());
         return new EventoAuditoriaResponseDTO(
