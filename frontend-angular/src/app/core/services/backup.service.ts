@@ -62,6 +62,18 @@ export interface ConfiguracionRespaldo {
   actualizadoEn?: string;
 }
 
+export interface ProgramarRespuesta {
+  id: number;
+  activo: boolean;
+  mensaje: string;
+}
+
+export interface EjecutarRespuesta {
+  id: number;
+  programacionId: number;
+  mensaje: string;
+}
+
 export type BackupResumen = BackupEntry;
 export type BackupDetalle = BackupEntry;
 
@@ -98,8 +110,11 @@ export class BackupService {
   borrar(id: number | string): Observable<boolean> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(map(() => true), catchError(err => this.manejarError(err)));
   }
-  programar(id: number): Observable<BackupProgramacion> {
-    return this.http.post<BackupProgramacion>(`${this.apiUrl}/${id}/programar`, {}).pipe(catchError(err => this.manejarError(err)));
+  programar(id: number): Observable<ProgramarRespuesta> {
+    return this.http.post<ProgramarRespuesta>(`${this.apiUrl}/${id}/programar`, {}).pipe(catchError(err => this.manejarError(err)));
+  }
+  eliminarProgramacion(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/programacion/${id}`).pipe(catchError(err => this.manejarError(err)));
   }
   listarProgramaciones(): Observable<BackupProgramacion[]> {
     return this.http.get<BackupProgramacion[]>(`${this.apiUrl}/programacion`).pipe(catchError(err => this.manejarError(err)));
@@ -108,8 +123,8 @@ export class BackupService {
   guardarProgramacion(prog: Partial<BackupProgramacion>): Observable<BackupProgramacion> {
     return this.http.post<BackupProgramacion>(`${this.apiUrl}/programacion`, prog).pipe(catchError(err => this.manejarError(err)));
   }
-  ejecutarAhora(id: number): Observable<any> {
-    return this.http.post(`${this.apiUrl}/${id}/ejecutar-ahora`, {}).pipe(catchError(err => this.manejarError(err)));
+  ejecutarAhora(id: number): Observable<EjecutarRespuesta> {
+    return this.http.post<EjecutarRespuesta>(`${this.apiUrl}/${id}/ejecutar-ahora`, {}).pipe(catchError(err => this.manejarError(err)));
   }
 
   // ── Backups Completos (Disaster Recovery) ────────────────────────────────
