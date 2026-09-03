@@ -11,31 +11,32 @@ C4), en sus tres niveles completos -- Contexto, Contenedores y
 Componentes -- que reemplazan los diagramas estáticos sin fuente
 versionada de la Entrega~1A
 (\texttt{docs/diagramas/diagrama\_c4\_capa1.png},
-\texttt{diagrama\_c4\_capa2.jpeg}), reproducidos en la
-\autoref{fig:c4-entrega1a-capa1} y la \autoref{fig:c4-entrega1a-capa2}
-únicamente como referencia histórica de ese diseño ya superado -- nótese
-que ambos difieren del modelo vigente descrito en las secciones
-siguientes (por ejemplo, citan \texttt{Google Books API} como sistema
-externo, retirado del modelo actual por no existir esa integración en
-el código real, y el segundo no incluye el contenedor Redis,
-incorporado después).
+\texttt{diagrama\_c4\_capa2.jpeg}). Esos dos archivos permanecen
+versionados en el repositorio como evidencia histórica del diseño
+original, pero ya no se reproducen en este documento porque estaban
+desactualizados (citaban \texttt{Google Books API} como sistema
+externo, sin integración real en el código, y el segundo no incluía el
+contenedor Redis). Las figuras siguientes son la exportación real y
+automática de \texttt{workspace.dsl} con Structurizr
+(\autoref{sec:c4-exportacion}), no una reconstrucción manual.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.85\textwidth]{diagramas/diagrama_c4_capa1.png}
-\caption{Diagrama estático de contexto del sistema, Entrega~1A (sin
-fuente versionada) -- reemplazado por el Nivel~1 del modelo C4 vigente
-en \texttt{workspace.dsl}, descrito en la \autoref{sec:c4-nivel1}.}
-\label{fig:c4-entrega1a-capa1}
+\includegraphics[width=0.85\textwidth]{arquitectura/c4-nivel1-contexto.png}
+\caption{Modelo C4, Nivel~1 (Contexto): los cinco actores del sistema
+y sus interacciones con SGB-SaaS como caja negra. Exportado
+automáticamente desde \texttt{workspace.dsl}.}
+\label{fig:c4-nivel1-contexto}
 \end{figure}
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.9\textwidth]{diagramas/diagrama_c4_capa2.jpeg}
-\caption{Diagrama estático de contenedores del sistema, Entrega~1A (sin
-fuente versionada) -- reemplazado por el Nivel~2 del modelo C4 vigente
-en \texttt{workspace.dsl}, descrito en la \autoref{sec:c4-nivel2}.}
-\label{fig:c4-entrega1a-capa2}
+\includegraphics[width=0.95\textwidth]{arquitectura/c4-nivel2-contenedores.png}
+\caption{Modelo C4, Nivel~2 (Contenedores): Frontend Angular, Backend
+Spring Boot, PostgreSQL y Redis, alineados 1:1 con
+\texttt{docker-compose.yml}. Exportado automáticamente desde
+\texttt{workspace.dsl}.}
+\label{fig:c4-nivel2-contenedores}
 \end{figure}
 
 \section{Nivel 1 -- Contexto del sistema}
@@ -132,18 +133,30 @@ inventar disponibilidad) corresponden a llamadas reales entre las
 clases Java correspondientes.
 
 \subsection*{Validación sintáctica y exportación visual}
+\label{sec:c4-exportacion}
 
 El archivo se validó sintácticamente con el motor activamente mantenido
 \texttt{structurizr/structurizr} (subcomando \texttt{validate}), no con
 \texttt{structurizr/cli} -- que en este momento del ecosistema
 Structurizr es una imagen retirada que solo imprime un aviso de
 desuso y termina con código de salida~0 para cualquier entrada, válida o
-no, por lo que una validación histórica contra esa imagen no habría sido
-una validación real. El diagrama de Nivel~3 se exportó a SVG mediante el
-flujo \texttt{structurizr/structurizr export -format plantuml}
-seguido de renderizado con PlantUML, resultando en
-\texttt{docs/arquitectura/c4-nivel3-componentes.svg}, versionado junto
-al DSL fuente y reproducido en la \autoref{fig:c4-componentes}.
+no (confirmado también al intentar el \texttt{export} con esa imagen:
+código de salida~0 sin generar ningún archivo), por lo que una
+validación o exportación con esa imagen no habría sido real. Los tres
+niveles se exportaron con el mismo flujo activamente mantenido:
+\texttt{structurizr/structurizr export -workspace workspace.dsl
+-format plantuml}, seguido de renderizado con PlantUML
+(\texttt{plantuml/plantuml} vía Docker). El diagrama de Nivel~3
+resultó en \texttt{docs/arquitectura/c4-nivel3-componentes.svg}
+(generado en una sesión previa; se confirmó en esta sesión que sigue
+coincidiendo con el \texttt{workspace.dsl} vigente -- mismos 21
+componentes, mismas relaciones -- por lo que no fue necesario
+regenerarlo), versionado junto al DSL fuente y reproducido en la
+\autoref{fig:c4-componentes}. Los diagramas de Nivel~1 y Nivel~2 se
+exportaron en esta sesión de la misma forma, resultando en
+\texttt{docs/arquitectura/c4-nivel1-contexto.png} y
+\texttt{c4-nivel2-contenedores.png}, reproducidos en la
+\autoref{fig:c4-nivel1-contexto} y la \autoref{fig:c4-nivel2-contenedores}.
 
 \begin{figure}[h]
 \centering
