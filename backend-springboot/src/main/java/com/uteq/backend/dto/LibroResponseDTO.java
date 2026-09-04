@@ -42,5 +42,8 @@ public record LibroResponseDTO(
         // RedisConfig), y List<String> es trivialmente Serializable sin
         // depender de que Categoria/Autor también lo sean.
         List<String> categorias,
-        List<String> autores
+        List<String> autores,
+        // Proveedor opcional — null = S/P
+        Integer proveedorId,
+        String proveedor
 ) implements Serializable {}
