@@ -50,7 +50,8 @@ export class AppComponent {
       this.enRutaAdmin = url.startsWith('/dashboard-admin');
       this.enRutaLector = url.startsWith('/dashboard-lector');
       this.enRutaPublica = url.startsWith('/no-autorizado');
-      this.enRutaCatalogoPublico = url === '/' || url.startsWith('/portal') || url.startsWith('/catalogo');
+      // Portal público ('/' y '/portal/*') ya trae su propio nav (mockup 12/13) — el header global no debe duplicar h-16.
+      this.enRutaCatalogoPublico = url.startsWith('/catalogo');
       this.cargandoRuta = false;
       this.rutaAnnouncement = this.obtenerNombreRuta(url);
     });
