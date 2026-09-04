@@ -51,8 +51,9 @@ export const routes: Routes = [
       { path: 'multas', loadComponent: () => import('./multas/multas.component').then(m => m.MultasComponent) },
       { path: 'proveedores', loadComponent: () => import('./proveedores/proveedores.component').then(m => m.ProveedoresComponent), canActivate: [roleGuard(['GERENTE', 'ADMIN'])] },
       { path: 'sugerencias/gestion', loadComponent: () => import('./sugerencias/gestion-sugerencias/gestion-sugerencias.component').then(m => m.GestionSugerenciasComponent) },
-      { path: 'admin/usuarios', loadComponent: () => import('./admin/usuarios/usuarios.component').then(m => m.UsuariosComponent) },
-      { path: 'auditoria', loadComponent: () => import('./admin/auditoria/auditoria.component').then(m => m.AuditoriaComponent) },
+      { path: 'admin/usuarios', loadComponent: () => import('./admin/usuarios/usuarios.component').then(m => m.UsuariosComponent), canActivate: [roleGuard(['ADMIN', 'GERENTE'])] },
+      { path: 'admin/mis-usuarios', loadComponent: () => import('./admin/usuarios/usuarios.component').then(m => m.UsuariosComponent), data: { soloMios: true }, canActivate: [roleGuard(['GERENTE'])] },
+      { path: 'auditoria', loadComponent: () => import('./admin/auditoria/auditoria.component').then(m => m.AuditoriaComponent), canActivate: [roleGuard(['ADMIN'])] },
       { path: 'reportes', loadComponent: () => import('./reportes/reportes.component').then(m => m.ReportesComponent), canActivate: [roleGuard(['GERENTE', 'ADMIN'])] },
       { path: 'admin/configuracion', loadComponent: () => import('./configuracion-sistema/configuracion-sistema.component').then(m => m.ConfiguracionSistemaComponent), canActivate: [roleGuard(['ADMIN'])] },
     ]

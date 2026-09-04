@@ -1,8 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
 import { UsuariosComponent } from './usuarios.component';
 import { UsuarioAdminService } from '../../core/services/usuario-admin.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ConfirmDialogService } from '../../shared/confirm-dialog/confirm-dialog.service';
+import { ToastService } from '../../shared/toast/toast.service';
 
 describe('UsuariosComponent', () => {
   let component: UsuariosComponent;
@@ -21,7 +24,7 @@ describe('UsuariosComponent', () => {
   };
 
   beforeEach(async () => {
-    usuarioAdminService = jasmine.createSpyObj('UsuarioAdminService', ['listar', 'cambiarRol', 'cambiarEstado']);
+    usuarioAdminService = jasmine.createSpyObj('UsuarioAdminService', ['listar', 'cambiarRol', 'cambiarEstado', 'crear', 'eliminar']);
     authService = jasmine.createSpyObj('AuthService', ['hasRole']);
     usuarioAdminService.listar.and.returnValue(of(pagina as any));
 
@@ -29,7 +32,10 @@ describe('UsuariosComponent', () => {
       imports: [UsuariosComponent],
       providers: [
         { provide: UsuarioAdminService, useValue: usuarioAdminService },
-        { provide: AuthService, useValue: authService }
+        { provide: AuthService, useValue: authService },
+        { provide: ActivatedRoute, useValue: { snapshot: { data: {} } } },
+        { provide: ConfirmDialogService, useValue: jasmine.createSpyObj('ConfirmDialogService', ['confirm']) },
+        { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['success', 'error', 'warning']) }
       ]
     }).compileComponents();
 
@@ -44,17 +50,18 @@ describe('UsuariosComponent', () => {
 
     expect(component.puedeVer).toBeTrue();
     expect(component.puedeGestionar).toBeTrue();
-    expect(usuarioAdminService.listar).toHaveBeenCalledWith('', 0, 10);
+    expect(usuarioAdminService.listar).toHaveBeenCalledWith('', 0, 10, false);
     expect(component.usuarios.length).toBe(3);
   });
 
-  it('como GERENTE carga el listado en modo solo lectura (sin gestionar)', () => {
+  it('como GERENTE en admin/usuarios queda en solo lectura (gestiona en mis-usuarios)', () => {
     authService.hasRole.and.callFake((...roles: string[]) => roles.includes('GERENTE'));
 
     fixture.detectChanges();
 
     expect(component.puedeVer).toBeTrue();
     expect(component.puedeGestionar).toBeFalse();
+    expect(usuarioAdminService.listar).toHaveBeenCalledWith('', 0, 10, true);
     expect(component.usuarios.length).toBe(3);
   });
 
@@ -136,6 +143,32 @@ describe('UsuariosComponent', () => {
 
       expect(component.errorMsg).toBe('Rol no encontrado');
       expect(usuarioAdminService.listar).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('F8-gerente y crear usuario', () => {
+    it('GERENTE solo ofrece LECTOR y BIBLIOTECARIO en el select', () => {
+      authService.hasRole.and.callFake((...roles: string[]) => roles.includes('GERENTE'));
+      fixture.detectChanges();
+      expect(component.rolesParaSelect).toEqual(['LECTOR', 'BIBLIOTECARIO']);
+      expect(component.rolesParaSelect).not.toContain('GERENTE');
+    });
+
+    it('crear con correo duplicado muestra 409 sin cerrar el modal', () => {
+      authService.hasRole.and.callFake((...roles: string[]) => roles.includes('ADMIN'));
+      fixture.detectChanges();
+      usuarioAdminService.crear.and.returnValue(
+        throwError(() => ({ status: 409, error: { detail: 'El correo ya está registrado' } }))
+      );
+      component.abrirModalCrear();
+      component.nuevoNombre = 'Ana';
+      component.nuevoApellido = 'Paz';
+      component.nuevoCorreo = 'ana@uteq.edu.ec';
+      component.nuevoPassword = 'Secreta123';
+      component.nuevoRol = 'LECTOR';
+      component.confirmarCrear();
+      expect(component.errorCrear).toContain('ya está registrado');
+      expect(component.mostrarModalCrear).toBeTrue();
     });
   });
 });

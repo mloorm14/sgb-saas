@@ -1,11 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { UsuarioAdminService } from '../../core/services/usuario-admin.service';
 import { UsuarioAdmin } from '../../core/models/usuario-admin.model';
 import { BuscadorUsuarioComponent } from '../../shared/buscador-usuario/buscador-usuario.component';
 import { FocusTrapDirective } from '../../shared/focus-trap.directive';
+import { ConfirmDialogService } from '../../shared/confirm-dialog/confirm-dialog.service';
+import { ToastService } from '../../shared/toast/toast.service';
+import { take } from 'rxjs/operators';
 
 // Catálogo real de roles y estados_usuario (db/seed.sql). El backend no
 // valida estos valores contra un enum en el DTO (el catálogo vive en las
@@ -29,11 +33,33 @@ const ESTADO_LABEL: Record<string, string> = {
 })
 export class UsuariosComponent implements OnInit {
   rolesDisponibles = ROLES_DISPONIBLES;
+  // F8-gerente: GERENTE solo crea/ve LECTOR y BIBLIOTECARIO en su apartado.
+  rolesCreablesGerente = ['LECTOR', 'BIBLIOTECARIO'];
 
-  // ADMIN o GERENTE: ven el listado; solo ADMIN puede cambiar rol/estado
-  // (refleja el @PreAuthorize real de UsuarioAdminController).
+  // soloMios viene de la ruta admin/mis-usuarios (GERENTE). ADMIN en
+  // admin/usuarios ve todo sin filtro, como antes.
+  soloMios = false;
+  esAdmin = false;
+  esGerente = false;
+
+  // ADMIN o GERENTE: ven el listado; ADMIN gestiona todo; GERENTE gestiona
+  // solo en su apartado (crear LECTOR/BIBLIOTECARIO + bloquear).
   puedeVer: boolean = false;
   puedeGestionar: boolean = false;
+
+  get rolesParaSelect(): string[] {
+    return this.esAdmin ? this.rolesDisponibles : this.rolesCreablesGerente;
+  }
+
+  // Modal Crear usuario (F7/F8).
+  mostrarModalCrear = false;
+  nuevoNombre = '';
+  nuevoApellido = '';
+  nuevoCorreo = '';
+  nuevoPassword = '';
+  nuevoRol = 'LECTOR';
+  creandoUsuario = false;
+  errorCrear = '';
 
   filtro: string = '';
   usuarios: UsuarioAdmin[] = [];
@@ -57,12 +83,22 @@ export class UsuariosComponent implements OnInit {
 
   constructor(
     private usuarioAdminService: UsuarioAdminService,
-    private authService: AuthService
+    private authService: AuthService,
+    private route: ActivatedRoute,
+    private confirm: ConfirmDialogService,
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {
-    this.puedeVer = this.authService.hasRole('ADMIN', 'GERENTE');
-    this.puedeGestionar = this.authService.hasRole('ADMIN');
+    this.soloMios = this.route.snapshot.data['soloMios'] === true;
+    this.esAdmin = this.authService.hasRole('ADMIN');
+    this.esGerente = this.authService.hasRole('GERENTE');
+    this.puedeVer = this.esAdmin || this.esGerente;
+    // ADMIN gestiona en admin/usuarios; GERENTE solo en su apartado mis-usuarios.
+    this.puedeGestionar = this.esAdmin || (this.esGerente && this.soloMios);
+    if (this.esGerente && !this.esAdmin) {
+      this.nuevoRol = 'LECTOR';
+    }
     if (this.puedeVer) {
       this.cargarPagina();
     }
@@ -121,7 +157,9 @@ export class UsuariosComponent implements OnInit {
   cargarPagina(): void {
     this.cargando = true;
     this.errorMsg = '';
-    this.usuarioAdminService.listar(this.filtro, this.currentPage, this.pageSize).subscribe({
+    // F8-gerente: GERENTE siempre filtra por sus creados (aunque abra admin/usuarios a mano).
+    const mios = this.soloMios || (this.esGerente && !this.esAdmin);
+    this.usuarioAdminService.listar(this.filtro, this.currentPage, this.pageSize, mios).subscribe({
       next: (data) => {
         this.usuarios = data.content;
         this.totalPages = data.totalPages;
@@ -214,6 +252,80 @@ export class UsuariosComponent implements OnInit {
         this.errorModal = (err as { error?: { detail?: string } })?.error?.detail
           || 'Error al cambiar el estado del usuario';
       }
+    });
+  }
+
+  // F7/F8: modal Crear (ADMIN todos los roles, GERENTE solo LECTOR/BIBLIOTECARIO).
+  abrirModalCrear(): void {
+    this.mostrarModalCrear = true;
+    this.errorCrear = '';
+    this.nuevoNombre = '';
+    this.nuevoApellido = '';
+    this.nuevoCorreo = '';
+    this.nuevoPassword = '';
+    this.nuevoRol = 'LECTOR';
+  }
+
+  cerrarModalCrear(): void {
+    this.mostrarModalCrear = false;
+    this.errorCrear = '';
+  }
+
+  get puedeCrear(): boolean {
+    return this.nuevoNombre.trim().length >= 2
+      && this.nuevoApellido.trim().length >= 2
+      && /.+@.+\..+/.test(this.nuevoCorreo.trim())
+      && this.nuevoPassword.length >= 8
+      && this.nuevoRol.length > 0;
+  }
+
+  confirmarCrear(): void {
+    if (!this.puedeCrear || this.creandoUsuario) return;
+    this.creandoUsuario = true;
+    this.errorCrear = '';
+    this.usuarioAdminService.crear({
+      nombre: this.nuevoNombre.trim(),
+      apellido: this.nuevoApellido.trim(),
+      correo: this.nuevoCorreo.trim(),
+      password: this.nuevoPassword,
+      rol: this.nuevoRol
+    }).subscribe({
+      next: () => {
+        this.creandoUsuario = false;
+        this.cerrarModalCrear();
+        this.mensajeOk = `Usuario ${this.nuevoCorreo.trim()} creado`;
+        this.toast.success('Usuario creado', 'La cuenta quedó activa de inmediato');
+        this.cargarPagina();
+      },
+      error: (err) => {
+        this.creandoUsuario = false;
+        this.errorCrear = err?.status === 409
+          ? (err?.error?.detail ?? 'El correo ya está registrado')
+          : (err?.error?.detail ?? 'Error al crear el usuario');
+      }
+    });
+  }
+
+  // Solo ADMIN (backend DELETE soft a INACTIVO). GERENTE usa Bloquear.
+  eliminarDefinitivo(usuario: UsuarioAdmin): void {
+    this.confirm.confirm({
+      title: 'Eliminar usuario',
+      message: `¿Eliminar a ${usuario.nombre} ${usuario.apellido}? Quedará en estado INACTIVO.`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      variant: 'danger'
+    }).pipe(take(1)).subscribe(ok => {
+      if (!ok) return;
+      this.usuarioAdminService.eliminar(usuario.id).subscribe({
+        next: () => {
+          this.mensajeOk = `Usuario ${usuario.nombre} eliminado`;
+          this.toast.success('Eliminado', 'El usuario quedó en estado INACTIVO');
+          this.cargarPagina();
+        },
+        error: (err) => {
+          this.errorMsg = err?.error?.detail ?? 'Error al eliminar el usuario';
+        }
+      });
     });
   }
 
