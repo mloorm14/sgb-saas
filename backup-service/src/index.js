@@ -69,7 +69,26 @@ cron.schedule('0 * * * *', async () => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Backup Service iniciado en puerto ${PORT}`);
     console.log(`Cron job configurado (revisión cada hora)`);
 });
+
+function gracefulShutdown(signal) {
+    console.log(`Recibido ${signal}, cerrando...`);
+    const { abortCurrentDump } = require('./dump');
+    abortCurrentDump();
+    server.close(async () => {
+        try {
+            await pool.query(
+                `UPDATE registros_respaldo SET estado='fallido', mensaje_error='Cancelado por ${signal}', finalizado_en=now() WHERE estado='ejecutando'`
+            );
+        } catch (_) {}
+        try { await pool.end(); } catch (_) {}
+        process.exit(0);
+    });
+    setTimeout(() => process.exit(1), 10000).unref();
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

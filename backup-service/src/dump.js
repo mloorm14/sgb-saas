@@ -4,6 +4,8 @@ const path = require('path');
 const { upload } = require('./s3');
 const { pool, getConnectionString } = require('./db');
 
+let currentChildProcess = null;
+
 async function runBackup(tipo, usuarioId = null) {
     let registroId = null;
     let tempFilePath = null;
@@ -26,7 +28,8 @@ async function runBackup(tipo, usuarioId = null) {
         const cmd = `pg_dump --format=c --file="${tempFilePath}" "${dbUrl}"`;
         
         await new Promise((resolve, reject) => {
-            exec(cmd, (error, stdout, stderr) => {
+            const child = exec(cmd, (error, stdout, stderr) => {
+                currentChildProcess = null;
                 if (error) {
                     console.error(`Error de pg_dump: ${stderr}`);
                     reject(error);
@@ -34,6 +37,7 @@ async function runBackup(tipo, usuarioId = null) {
                     resolve();
                 }
             });
+            currentChildProcess = child;
         });
 
         // 3. Read file and upload
@@ -71,6 +75,14 @@ async function runBackup(tipo, usuarioId = null) {
     }
 }
 
+function abortCurrentDump() {
+    if (currentChildProcess) {
+        try { currentChildProcess.kill('SIGTERM'); } catch (_) {}
+        currentChildProcess = null;
+    }
+}
+
 module.exports = {
-    runBackup
+    runBackup,
+    abortCurrentDump
 };
