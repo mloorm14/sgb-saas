@@ -171,4 +171,35 @@ describe('AuditoriaComponent', () => {
     const json = component.detalleFormateado();
     expect(json).toBe('Intento con correo desconocido');
   });
+
+  it('separa antes/despues en UPDATE Java->Python y detecta diff en nombre', () => {
+    const detalle = JSON.stringify({ antes: { nombre: 'Java' }, despues: { nombre: 'Python' } });
+    const split = component.getAntesDespues(detalle, 'UPDATE');
+    expect(split.esUpdate).toBeTrue();
+    expect(split.antes.nombre).toBe('Java');
+    expect(split.despues.nombre).toBe('Python');
+    expect(component.diffKeys(split.antes, split.despues)).toContain('nombre');
+    const html = component.resaltarConDiff(split.despues, ['nombre']);
+    expect(html).toContain('bg-yellow-200');
+  });
+
+  it('no parte en dos ventanas cuando es INSERT', () => {
+    const split = component.getAntesDespues('{"nombre":"Ana"}', 'INSERT');
+    expect(split.esUpdate).toBeFalse();
+  });
+
+  it('retorna texto plano cuando el detalle no es JSON', () => {
+    const split = component.getAntesDespues('Intento con correo desconocido', 'LOGIN_FAIL');
+    expect(split.esUpdate).toBeFalse();
+    expect(split.textoPlano).toBe('Intento con correo desconocido');
+  });
+
+  it('trunca detalle largo a 2000 chars salvo ver completo', () => {
+    const largo = JSON.stringify({ texto: 'x'.repeat(5000) });
+    component.eventoSeleccionado = { id: 9, usuario: 'a', accion: 'UPDATE', fechaHora: '2026-08-16T15:02:00Z', modulo: 'libros', detalle: largo };
+    component.verCompleto = false;
+    expect(component.detalleFormateado().length).toBeLessThanOrEqual(2100);
+    component.verCompleto = true;
+    expect(component.detalleFormateado()).toContain('xxxx');
+  });
 });

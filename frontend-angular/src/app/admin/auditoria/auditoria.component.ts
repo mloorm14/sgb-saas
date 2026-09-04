@@ -338,15 +338,23 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
   }
 
   // ── Modal de detalle ──────────────────────────────────────
+  verCompleto = false;
+
   abrirDetalle(evento: EventoAuditoria): void {
     this.eventoSeleccionado = evento;
     this.modalVisible = true;
     this.jsonCopiado = false;
+    this.verCompleto = false;
   }
 
   cerrarDetalle(): void {
     this.modalVisible = false;
     this.eventoSeleccionado = null;
+    this.verCompleto = false;
+  }
+
+  alternarVerCompleto(): void {
+    this.verCompleto = !this.verCompleto;
   }
 
   @HostListener('document:keydown.escape')
@@ -359,10 +367,54 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
   detalleFormateado(): string {
     if (!this.eventoSeleccionado?.detalle) return '';
     try {
-      return JSON.stringify(JSON.parse(this.eventoSeleccionado.detalle), null, 2);
+      const formateado = JSON.stringify(JSON.parse(this.eventoSeleccionado.detalle), null, 2);
+      // B9: truncar a 2000 chars para no congelar el modal; ver completo bajo demanda.
+      if (!this.verCompleto && formateado.length > 2000) {
+        return formateado.slice(0, 2000) + '\n… (truncado, usar Ver completo)';
+      }
+      return formateado;
     } catch {
-      return this.eventoSeleccionado.detalle;
+      const texto = this.eventoSeleccionado.detalle;
+      if (!this.verCompleto && texto.length > 2000) {
+        return texto.slice(0, 2000) + '… (truncado, usar Ver completo)';
+      }
+      return texto;
     }
+  }
+
+  // B12: separa {"antes":{...},"despues":{...}} de UPDATE (BitacoraAuditoria.fn_auditoria_generica).
+  // Si no es UPDATE con ambas caras, esUpdate=false y la vista usa ventana única.
+  getAntesDespues(detalle: string, accion: string): { antes: any; despues: any; esUpdate: boolean; textoPlano: string | null } {
+    try {
+      const parsed = JSON.parse(detalle);
+      if (accion === 'UPDATE' && parsed && typeof parsed === 'object' && parsed.antes && parsed.despues) {
+        return { antes: parsed.antes, despues: parsed.despues, esUpdate: true, textoPlano: null };
+      }
+      return { antes: null, despues: parsed ?? null, esUpdate: false, textoPlano: null };
+    } catch {
+      return { antes: null, despues: null, esUpdate: false, textoPlano: detalle };
+    }
+  }
+
+  // Keys cuyo valor cambió entre antes y después (comparación por JSON).
+  diffKeys(antes: any, despues: any): string[] {
+    if (!antes || !despues || typeof antes !== 'object' || typeof despues !== 'object') return [];
+    const todas = new Set([...Object.keys(antes), ...Object.keys(despues)]);
+    return [...todas].filter(k => JSON.stringify((antes as any)[k]) !== JSON.stringify((despues as any)[k]));
+  }
+
+  // Resalta un objeto con resaltarJson() sobre slice(0,5000) y marca las keys del diff con bg-yellow-200.
+  resaltarConDiff(obj: any, diffs: string[]): string {
+    if (obj == null) return '';
+    const base = this.resaltarJson(JSON.stringify(obj, null, 2).slice(0, 5000));
+    let out = base;
+    for (const k of diffs) {
+      const esc = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // resaltarJson envuelve claves como <span class="text-primary">"k"</span>
+      const re = new RegExp(`<span class="text-primary">("${esc}")</span>`, 'g');
+      out = out.replace(re, '<span class="text-primary bg-yellow-200 px-0.5 rounded">$1</span>');
+    }
+    return out;
   }
 
   resaltarJson(json: string): string {
@@ -387,6 +439,28 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
     const json = this.detalleFormateado();
     if (json) {
       navigator.clipboard.writeText(json).then(() => {
+        this.jsonCopiado = true;
+        setTimeout(() => { this.jsonCopiado = false; }, 2000);
+      });
+    }
+  }
+
+  copiarAntes(): void {
+    if (!this.eventoSeleccionado?.detalle) return;
+    const split = this.getAntesDespues(this.eventoSeleccionado.detalle, this.eventoSeleccionado.accion);
+    if (split.esUpdate) {
+      navigator.clipboard.writeText(JSON.stringify(split.antes, null, 2)).then(() => {
+        this.jsonCopiado = true;
+        setTimeout(() => { this.jsonCopiado = false; }, 2000);
+      });
+    }
+  }
+
+  copiarDespues(): void {
+    if (!this.eventoSeleccionado?.detalle) return;
+    const split = this.getAntesDespues(this.eventoSeleccionado.detalle, this.eventoSeleccionado.accion);
+    if (split.esUpdate) {
+      navigator.clipboard.writeText(JSON.stringify(split.despues, null, 2)).then(() => {
         this.jsonCopiado = true;
         setTimeout(() => { this.jsonCopiado = false; }, 2000);
       });
