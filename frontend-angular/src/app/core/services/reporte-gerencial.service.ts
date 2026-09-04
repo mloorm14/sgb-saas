@@ -203,6 +203,24 @@ export class ReporteService {
     );
   }
 
+  usoPorPeriodoPdf(granularidad: 'dia' | 'semana' | 'mes', desde?: string, hasta?: string): Observable<Blob> {
+    const params: Record<string, string> = { granularidad };
+    if (desde) params['desde'] = desde;
+    if (hasta) params['hasta'] = hasta;
+    return this.http.get(`${this.apiUrl}/uso/pdf`, { params, responseType: 'blob' }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  resumenFinancieroPdf(desde?: string, hasta?: string): Observable<Blob> {
+    const params: Record<string, string> = {};
+    if (desde) params['desde'] = desde;
+    if (hasta) params['hasta'] = hasta;
+    return this.http.get(`${environment.apiUrl}/v1/multas/reportes/resumen-financiero/pdf`, { params, responseType: 'blob' }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
   private manejarError(err: unknown): Observable<never> {
     const problem = (err as { error?: ProblemDetail })?.error;
     if (problem?.status) {

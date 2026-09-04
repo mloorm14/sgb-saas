@@ -223,6 +223,23 @@ public class PrestamoController {
                 .body(pdf);
     }
 
+    // ── GET /api/v1/prestamos/reportes/uso/pdf ───────────
+    @GetMapping(value = "/reportes/uso/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    public ResponseEntity<byte[]> reporteUsoPdf(
+            @RequestParam(required = false, defaultValue = "dia") String granularidad,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta) {
+        List<ReporteUsoPorPeriodoResponseDTO> reporte = prestamoService.reporteUsoPorPeriodo(granularidad, desde, hasta);
+        byte[] pdf = reportePdfService.generarReporteUsoPorPeriodo(reporte);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte-uso-periodo.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
+
     // ── GET /api/v1/prestamos/reportes/inventario ─────────
     @GetMapping("/reportes/inventario")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
