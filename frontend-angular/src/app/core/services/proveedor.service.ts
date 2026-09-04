@@ -14,8 +14,17 @@ export class ProveedorService {
 
   constructor(private http: HttpClient) {}
 
-  listar(): Observable<Proveedor[]> {
-    return this.http.get<Proveedor[]>(this.apiUrl).pipe(
+  listar(page?: number, size?: number): Observable<{ content: Proveedor[]; totalPages: number; totalElements: number }> {
+    const params: Record<string, string> = {};
+    if (page !== undefined) params['page'] = String(page);
+    if (size !== undefined) params['size'] = String(size);
+    return this.http.get<{ content: Proveedor[]; totalPages: number; totalElements: number }>(this.apiUrl, { params }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  listarTodo(): Observable<Proveedor[]> {
+    return this.http.get<Proveedor[]>(`${this.apiUrl}/todo`).pipe(
       catchError(err => this.manejarError(err))
     );
   }

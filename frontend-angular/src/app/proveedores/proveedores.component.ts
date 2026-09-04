@@ -20,6 +20,7 @@ export class ProveedoresComponent implements OnInit {
 
   pagina = 0;
   tamanoPagina = 10;
+  totalPaginasServer = 1;
 
   // form
   mostrarForm = false;
@@ -32,11 +33,24 @@ export class ProveedoresComponent implements OnInit {
 
   ngOnInit(): void { this.cargar(); }
 
+  totalElementos = 0;
+
   cargar(): void {
     this.cargando = true;
     this.errorMsg = null;
-    this.proveedorService.listar().subscribe({
-      next: data => { this.proveedores = data; this.aplicarFiltro(); this.cargando = false; },
+    this.proveedorService.listar(this.pagina, this.tamanoPagina).subscribe({
+      next: (page: any) => {
+        const contenido = Array.isArray(page) ? page : page.content ?? [];
+        const totalPages = Array.isArray(page) ? Math.ceil(contenido.length / this.tamanoPagina) : page.totalPages ?? 1;
+        this.totalPaginasServer = totalPages;
+        this.proveedores = contenido;
+        if (!Array.isArray(page) && page.content !== undefined) {
+          this.filtrados = contenido;
+        } else {
+          this.aplicarFiltro();
+        }
+        this.cargando = false;
+      },
       error: () => { this.errorMsg = 'No se pudieron cargar los proveedores.'; this.cargando = false; }
     });
   }
@@ -55,9 +69,13 @@ export class ProveedoresComponent implements OnInit {
   }
 
   get totalPaginas(): number {
+    // Si viene Page del backend, usar totalPaginasServer; si no, fallback client
+    if (this.totalPaginasServer > 1) return this.totalPaginasServer;
     return Math.max(1, Math.ceil(this.filtrados.length / this.tamanoPagina));
   }
   get datosPaginados() {
+    // Server pagination: filtrados ya es la pagina actual, no hacer slice
+    if (this.totalPaginasServer > 1) return this.filtrados;
     const start = this.pagina * this.tamanoPagina;
     return this.filtrados.slice(start, start + this.tamanoPagina);
   }
@@ -73,12 +91,14 @@ export class ProveedoresComponent implements OnInit {
   irAPagina(p: number): void {
     if (p < 0 || p >= this.totalPaginas || p === this.pagina) return;
     this.pagina = p;
+    this.cargar();
   }
-  paginaAnterior(): void { if (this.puedeAnterior) this.pagina--; }
-  paginaSiguiente(): void { if (this.puedeSiguiente) this.pagina++; }
+  paginaAnterior(): void { if (this.puedeAnterior) { this.pagina--; this.cargar(); } }
+  paginaSiguiente(): void { if (this.puedeSiguiente) { this.pagina++; this.cargar(); } }
   cambiarTamano(n: number): void {
     this.tamanoPagina = Number(n);
     this.pagina = 0;
+    this.cargar();
   }
 
   abrirCrear(): void {
