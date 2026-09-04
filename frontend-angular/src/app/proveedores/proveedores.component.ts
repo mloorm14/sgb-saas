@@ -99,6 +99,11 @@ export class ProveedoresComponent implements OnInit {
 
   guardar(): void {
     if (!this.form.nombre?.trim()) { this.formError = 'El nombre es obligatorio.'; return; }
+    if (!this.form.ruc?.trim()) { this.formError = 'El RUC es obligatorio.'; return; }
+    if (!/^[0-9]{13}$/.test(this.form.ruc.trim())) { this.formError = 'El RUC debe tener 13 dígitos numéricos sin guion.'; return; }
+    if (!this.form.direccion?.trim()) { this.formError = 'La dirección es obligatoria.'; return; }
+    if (!this.form.telefono?.trim()) { this.formError = 'El teléfono es obligatorio.'; return; }
+    if (!this.form.email?.trim()) { this.formError = 'El email es obligatorio.'; return; }
     this.guardando = true;
     this.formError = null;
     const obs = this.editando
