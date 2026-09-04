@@ -38,17 +38,16 @@ export class ProveedoresComponent implements OnInit {
   cargar(): void {
     this.cargando = true;
     this.errorMsg = null;
-    this.proveedorService.listar(this.pagina, this.tamanoPagina).subscribe({
+    const q = this.busqueda.trim() || undefined;
+    const activo = this.filtroActivo === 'activo' ? true : this.filtroActivo === 'inactivo' ? false : undefined;
+    this.proveedorService.listar(this.pagina, this.tamanoPagina, q, activo).subscribe({
       next: (page: any) => {
         const contenido = Array.isArray(page) ? page : page.content ?? [];
         const totalPages = Array.isArray(page) ? Math.ceil(contenido.length / this.tamanoPagina) : page.totalPages ?? 1;
         this.totalPaginasServer = totalPages;
+        this.totalElementos = Array.isArray(page) ? contenido.length : page.totalElements ?? contenido.length;
         this.proveedores = contenido;
-        if (!Array.isArray(page) && page.content !== undefined) {
-          this.filtrados = contenido;
-        } else {
-          this.aplicarFiltro();
-        }
+        this.filtrados = contenido;
         this.cargando = false;
       },
       error: () => { this.errorMsg = 'No se pudieron cargar los proveedores.'; this.cargando = false; }
@@ -56,16 +55,8 @@ export class ProveedoresComponent implements OnInit {
   }
 
   aplicarFiltro(): void {
-    let r = this.proveedores;
-    if (this.busqueda.trim()) {
-      const q = this.busqueda.toLowerCase();
-      r = r.filter(p => p.nombre.toLowerCase().includes(q) || (p.ruc ?? '').toLowerCase().includes(q));
-    }
-    if (this.filtroActivo !== 'todos') {
-      r = r.filter(p => this.filtroActivo === 'activo' ? p.activo : !p.activo);
-    }
-    this.filtrados = r;
     this.pagina = 0;
+    this.cargar();
   }
 
   get totalPaginas(): number {
