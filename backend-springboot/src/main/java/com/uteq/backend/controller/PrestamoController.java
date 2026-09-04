@@ -241,9 +241,22 @@ public class PrestamoController {
     }
 
     // ── GET /api/v1/prestamos/reportes/inventario ─────────
+    // Paginacion real server-side para escalar a 50k+ libros: solo la pagina solicitada via LIMIT/OFFSET en DB
     @GetMapping("/reportes/inventario")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
-    public ResponseEntity<List<ReporteInventarioResponseDTO>> reporteInventario(
+    public ResponseEntity<Page<ReporteInventarioResponseDTO>> reporteInventario(
+            @RequestParam(required = false) Integer categoriaId,
+            @RequestParam(required = false) String estadoStock,
+            @RequestParam(required = false) String busqueda,
+            @PageableDefault(size = 20, sort = "titulo") Pageable pageable) {
+        return ResponseEntity.ok(
+                prestamoService.reporteInventarioPaginado(categoriaId, estadoStock, busqueda, pageable));
+    }
+
+    // Compatibilidad: endpoint sin paginacion para PDF/Excel (carga completa, usar con cuidado)
+    @GetMapping("/reportes/inventario/todo")
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    public ResponseEntity<List<ReporteInventarioResponseDTO>> reporteInventarioTodo(
             @RequestParam(required = false) Integer categoriaId,
             @RequestParam(required = false) String estadoStock,
             @RequestParam(required = false) String busqueda) {

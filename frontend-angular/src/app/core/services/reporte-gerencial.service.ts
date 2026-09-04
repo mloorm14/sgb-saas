@@ -111,12 +111,25 @@ export class ReporteService {
     );
   }
 
-  inventario(categoriaId?: number, estadoStock?: string, busqueda?: string): Observable<ReporteInventario[]> {
+  inventario(categoriaId?: number, estadoStock?: string, busqueda?: string, page?: number, size?: number): Observable<{ content: ReporteInventario[]; totalPages: number; totalElements: number }> {
     const params: Record<string, string> = {};
     if (categoriaId) params['categoriaId'] = categoriaId.toString();
     if (estadoStock) params['estadoStock'] = estadoStock;
     if (busqueda) params['busqueda'] = busqueda;
-    return this.http.get<ReporteInventario[]>(`${this.apiUrl}/inventario`, { params }).pipe(
+    if (page !== undefined) params['page'] = String(page);
+    if (size !== undefined) params['size'] = String(size);
+    // Backend ahora es Page, pero si no se manda page/size devuelve Page con size 20 por defecto
+    return this.http.get<{ content: ReporteInventario[]; totalPages: number; totalElements: number }>(`${this.apiUrl}/inventario`, { params }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  inventarioTodo(categoriaId?: number, estadoStock?: string, busqueda?: string): Observable<ReporteInventario[]> {
+    const params: Record<string, string> = {};
+    if (categoriaId) params['categoriaId'] = categoriaId.toString();
+    if (estadoStock) params['estadoStock'] = estadoStock;
+    if (busqueda) params['busqueda'] = busqueda;
+    return this.http.get<ReporteInventario[]>(`${this.apiUrl}/inventario/todo`, { params }).pipe(
       catchError(err => this.manejarError(err))
     );
   }
