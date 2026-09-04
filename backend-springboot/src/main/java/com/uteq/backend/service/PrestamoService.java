@@ -460,6 +460,27 @@ public class PrestamoService {
     }
 
     @Transactional(readOnly = true)
+    public Page<ReporteInventarioResponseDTO> reporteInventarioPaginado(
+            Integer categoriaId, String estadoStock, String busqueda, Pageable pageable) {
+        int limit = pageable.getPageSize();
+        int offset = (int) pageable.getOffset();
+        String sortProperty = pageable.getSort().isSorted()
+                ? pageable.getSort().iterator().next().getProperty()
+                : null;
+        List<ReporteInventarioProjection> projections =
+                prestamoProcRepo.fnReporteInventarioPaginado(categoriaId, estadoStock, busqueda, limit, offset);
+        long total = prestamoProcRepo.countReporteInventario(categoriaId, estadoStock, busqueda);
+        List<ReporteInventarioResponseDTO> content = projections.stream()
+                .map(p -> new ReporteInventarioResponseDTO(
+                        p.getLibroId(), p.getTitulo(), p.getIsbn(), p.getAutorNombre(),
+                        p.getCategoriaNombre(), p.getStockTotal(), p.getStockDisponible(),
+                        p.getEstadoDisponibilidad()))
+                .toList();
+        // Sorting is applied at DB level via ORDER BY in fn_reporte_inventario; for custom sort we rely on DB order
+        return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
+    }
+
+    @Transactional(readOnly = true)
     public List<ReporteVencidosResponseDTO> reportePrestamosVencidos(Integer diasAtrasoMin, String busqueda) {
         return prestamoProcRepo.fnReportePrestamosVencidos(diasAtrasoMin, busqueda).stream()
                 .map(p -> new ReporteVencidosResponseDTO(

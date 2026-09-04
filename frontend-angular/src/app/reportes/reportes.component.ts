@@ -372,23 +372,26 @@ export class ReportesComponent {
   private cargarInventario(): void {
     this.cargando = true;
     this.errorMsg = '';
-    this.reporteService.inventario(undefined, this.estadoStock || undefined, this.busquedaInventario.trim() || undefined).subscribe({
-      next: (inventario) => {
-        this.inventario = inventario;
-        this.inventarioPage = 0;
+    this.reporteService.inventario(
+      undefined,
+      this.estadoStock || undefined,
+      this.busquedaInventario.trim() || undefined,
+      this.inventarioPage,
+      this.inventarioPageSize
+    ).subscribe({
+      next: (page) => {
+        this.inventario = page.content;
+        this.inventarioTotalPages = page.totalPages;
         this.cargando = false;
       },
       error: (err) => this.fallar(err)
     });
   }
 
-  // ── Paginación inventario (igual que libros) ──
-  get inventarioTotalPages(): number {
-    return Math.max(1, Math.ceil(this.inventario.length / this.inventarioPageSize));
-  }
+  // ── Paginación inventario — server-side (Page del backend) ──
+  inventarioTotalPages = 1;
   get inventarioPaginado(): ReporteInventario[] {
-    const start = this.inventarioPage * this.inventarioPageSize;
-    return this.inventario.slice(start, start + this.inventarioPageSize);
+    return this.inventario;
   }
   get inventarioPaginasVisibles(): number[] {
     const windowSize = 4;
@@ -402,12 +405,14 @@ export class ReportesComponent {
   irAInventarioPage(p: number): void {
     if (p < 0 || p >= this.inventarioTotalPages || p === this.inventarioPage) return;
     this.inventarioPage = p;
+    this.cargarInventario();
   }
-  paginaAnteriorInventario(): void { if (this.puedeInvAnterior) this.inventarioPage--; }
-  paginaSiguienteInventario(): void { if (this.puedeInvSiguiente) this.inventarioPage++; }
+  paginaAnteriorInventario(): void { if (this.puedeInvAnterior) { this.inventarioPage--; this.cargarInventario(); } }
+  paginaSiguienteInventario(): void { if (this.puedeInvSiguiente) { this.inventarioPage++; this.cargarInventario(); } }
   cambiarTamanoInventario(n: number): void {
     this.inventarioPageSize = Number(n);
     this.inventarioPage = 0;
+    this.cargarInventario();
   }
 
   // ── Paginación genérica para resto de reportes ──
@@ -695,8 +700,16 @@ export class ReportesComponent {
 
   excelInventario(): void {
     const headers = ['Título', 'ISBN', 'Autor', 'Categoría', 'Stock', 'Disponible', 'Estado'];
-    const rows = this.inventario.map(i => [i.titulo, i.isbn || '—', i.autorNombre || '—', i.categoriaNombre || '—', i.stockTotal, i.stockDisponible, i.estadoDisponibilidad]);
-    this.generarExcel(headers, rows, 'reporte-inventario.xlsx', 'Inventario');
+    this.reporteService.inventarioTodo(undefined, this.estadoStock || undefined, this.busquedaInventario.trim() || undefined).subscribe({
+      next: (todos) => {
+        const rows = todos.map(i => [i.titulo, i.isbn || '—', i.autorNombre || '—', i.categoriaNombre || '—', i.stockTotal, i.stockDisponible, i.estadoDisponibilidad]);
+        this.generarExcel(headers, rows, 'reporte-inventario.xlsx', 'Inventario');
+      },
+      error: () => {
+        const rows = this.inventario.map(i => [i.titulo, i.isbn || '—', i.autorNombre || '—', i.categoriaNombre || '—', i.stockTotal, i.stockDisponible, i.estadoDisponibilidad]);
+        this.generarExcel(headers, rows, 'reporte-inventario.xlsx', 'Inventario');
+      }
+    });
   }
 
   excelVencidos(): void {

@@ -140,6 +140,24 @@ public interface PrestamoProcedureRepository extends Repository<Prestamo, Long> 
             @Param("p_busqueda") String busqueda
     );
 
+    @Query(value = "SELECT * FROM fn_reporte_inventario(:p_categoria_id, :p_estado_stock, :p_busqueda) LIMIT :limit OFFSET :offset",
+            nativeQuery = true)
+    List<ReporteInventarioProjection> fnReporteInventarioPaginado(
+            @Param("p_categoria_id") Integer categoriaId,
+            @Param("p_estado_stock") String estadoStock,
+            @Param("p_busqueda") String busqueda,
+            @Param("limit") int limit,
+            @Param("offset") int offset
+    );
+
+    @Query(value = "SELECT COUNT(*) FROM fn_reporte_inventario(:p_categoria_id, :p_estado_stock, :p_busqueda)",
+            nativeQuery = true)
+    long countReporteInventario(
+            @Param("p_categoria_id") Integer categoriaId,
+            @Param("p_estado_stock") String estadoStock,
+            @Param("p_busqueda") String busqueda
+    );
+
     @Query(value = "SELECT * FROM fn_reporte_prestamos_vencidos(:p_dias_atraso_min, :p_busqueda)",
             nativeQuery = true)
     List<ReporteVencidosProjection> fnReportePrestamosVencidos(
