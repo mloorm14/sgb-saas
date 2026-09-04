@@ -10,25 +10,26 @@ sino los gaps reales ya identificados en el propio repositorio a lo largo
 de este documento. Cada una indica por qué quedó fuera de alcance y cómo
 se abordaría.
 
-\section{Completar la evidencia de usabilidad (SUS, $N\geq15$) -- CERRADO}
+\section{Completar la evidencia de usabilidad (SUS, $N\geq15$) -- PENDIENTE}
 \label{sec:tf-sus}
 
-Una versión anterior de este capítulo declaraba el Bloque~5 de
-evaluación empírica con $N=0$ de los $N\geq15$ participantes que exige
-la guía, bloqueado hasta contar con un despliegue público funcional
-donde participantes reales pudieran interactuar con el sistema.
-\textbf{Ese estado ya no es real:} el \autoref{cap:resultados}
-(\autoref{sec:res-usabilidad}) documenta hoy $N=15$ participantes
-reales, por encima del mínimo exigido, reclutados con el protocolo ya
-definido en su momento (plantilla de consentimiento informado, muestreo
-por conveniencia dentro de la comunidad UTEQ, anonimización por código
-de participante, \texttt{docs/etica/consentimientos/plantilla.md}) y
-analizados con el instrumento SUS de 10 ítems \citep{brooke1996sus}:
-puntuación media 82,17 (IC~95\,\% $[80{,}08, 84{,}25]$, $t$ de Student,
-$df=14$), clasificación \textbf{Excelente} según la escala de adjetivos
-de Bangor, muy por encima del umbral de aceptabilidad de 68. No queda
-trabajo pendiente en este bloque; documentado como resuelto en
-\texttt{OBS-08} de \texttt{docs/observaciones/OBSERVACIONES.md}.
+El Bloque~5 de evaluación empírica sigue con $N=0$ de los $N\geq15$
+participantes que exige la guía, bloqueado hasta contar con un
+despliegue público funcional donde participantes reales puedan
+interactuar con el sistema. Una corrida declarada como $N=15$ se
+retiró por falta de trazabilidad a un export crudo del instrumento
+(ver \texttt{OBS-08} en
+\texttt{docs/observaciones/OBSERVACIONES.md}, reabierta). Lo que sí
+queda implementado y verificado: el protocolo ya definido en su momento
+(plantilla de consentimiento informado, muestreo por conveniencia
+dentro de la comunidad UTEQ, anonimización por código de participante,
+\texttt{docs/etica/consentimientos/plantilla.md}), el instrumento SUS
+de 10 ítems \citep{brooke1996sus} con sus 2 ítems suplementarios, y el
+pipeline de análisis (\texttt{scripts/sus-analysis.ipynb}) validado con
+datos mock. La corrida real -- reclutamiento, sesiones de 15--20 minutos
+con registro de hora/duración, export crudo versionable sin PII,
+análisis y reporte -- se difiere formalmente a la fase de despliegue en
+producción.
 
 \section{Análisis estático de SQL dinámico -- CERRADO}
 \label{sec:tf-audit-sql}

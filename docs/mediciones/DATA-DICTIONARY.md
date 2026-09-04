@@ -4,14 +4,14 @@ Documenta los campos/variables que aparecen en la evidencia cruda ya
 existente en `docs/mediciones/`, requisito E.3 de la guía de la Tercera
 Entrega.
 
-> **Alcance actual (actualizado 2026-08-31)**: el Bloque C ya está en
-> ejecución. Además de los 2 archivos originales de
+> **Alcance actual**: además de los 2 archivos originales de
 > `docs/mediciones/sec/` (julio de 2026), este diccionario documenta
-> ahora las 5 corridas de k6 (`docs/mediciones/perf/`), las 16 evidencias
+> las 5 corridas de k6 (`docs/mediciones/perf/`), las 16 evidencias
 > OWASP (`docs/mediciones/sec/`), los 3 reportes JaCoCo
 > (`docs/mediciones/jacoco/`), las 2 corridas de Lighthouse
-> (`docs/mediciones/lighthouse/`) y el dataset SUS con N=15 participantes
-> (`docs/mediciones/sus/sus.csv`).
+> (`docs/mediciones/lighthouse/`) y la estructura del archivo SUS
+> (`docs/mediciones/sus/sus.csv`, datos mock — el bloque de usabilidad
+> sigue en $N=0$, ver `OBS-08`).
 
 ## `docs/mediciones/sec/2026-07-21-cookie-refresh-token.md`
 
@@ -172,12 +172,17 @@ un campo nuevo -- decisión de esta tarea, no una omisión.
 
 ## `docs/mediciones/sus/sus.csv`
 
-Dataset anonimizado de respuestas al cuestionario System Usability Scale
-(SUS, Brooke 1996) con N=15 participantes (códigos P01–P15), recolectado
-entre 2026-08-28 y 2026-08-30. Los participantes firmaron consentimiento
-informado (ver `docs/etica/consentimientos/plantilla.md`); los formularios
-firmados se almacenan en Google Drive institucional (acceso `@uteq.edu.ec`),
-no en este repositorio (ver `docs/etica/ETHICS.md` §(iii)).
+**Datos de prueba (mock/sintéticos) para validación del pipeline de
+análisis automatizado — sin valor evidencial.** El bloque de usabilidad
+sigue en $N=0$ (ver `OBS-08` en
+`docs/observaciones/OBSERVACIONES.md`, reabierta): una corrida declarada
+como N=15 se retiró por falta de trazabilidad. La tabla de abajo
+documenta el **formato** que tendrá el dataset real (mismos campos que
+producirá el export del instrumento), no una recolección ejecutada. Los
+participantes de la futura corrida firmarán consentimiento informado
+(ver `docs/etica/consentimientos/plantilla.md`); los formularios
+firmados nunca se versionarán en este repositorio (ver
+`docs/etica/ETHICS.md` §(iii)).
 
 | Campo / variable | Tipo de dato | Unidad | Rango esperado | Significado |
 |---|---|---|---|---|
@@ -210,15 +215,16 @@ score = ((Q1-1) + (5-Q2) + (Q3-1) + (5-Q4) + (Q5-1) +
 
 ## `docs/mediciones/sus/sus_boxplot.svg` y `sus_boxplot.png`
 
-Boxplot de las puntuaciones SUS de los 15 participantes, generado por
-`scripts/sus-analysis.ipynb`. Incluye línea de umbral de aceptabilidad (68)
-y línea de media.
+Boxplot generado por `scripts/sus-analysis.ipynb` **sobre los datos mock
+de `sus.csv`** (solo validación del pipeline, sin valor evidencial).
+Incluye línea de umbral de aceptabilidad (68) y línea de media.
 
 ## `docs/mediciones/sus/sus_items_breakdown.svg`
 
 Gráfico de barras horizontal con el promedio de cada ítem SUS (Q1–Q10) en
-escala Likert 1–5, generado por `scripts/sus-analysis.ipynb`. Ítems
-impares (positivos) en color verde; ítems pares (negativos) en naranja.
+escala Likert 1–5, generado por `scripts/sus-analysis.ipynb` **sobre los
+datos mock**. Ítems impares (positivos) en color verde; ítems pares
+(negativos) en naranja.
 
 ## Referencias
 

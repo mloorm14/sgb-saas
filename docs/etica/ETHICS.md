@@ -108,39 +108,27 @@ lectores y personal (tabla `usuarios`, `db/schema.sql`).
 
 ## (iii) Consentimiento informado para pruebas de usabilidad (SUS, Bloque C.3)
 
-Las pruebas de System Usability Scale (SUS) del Bloque C.3 **se ejecutaron
-con N=15 participantes** (códigos `P01` a `P15`) entre el 2026-08-28 y
-2026-08-30. Cada participante firmó la plantilla de consentimiento
-informado antes de iniciar la sesión de onboarding.
+El protocolo ético y la plantilla de consentimiento informado
+(`docs/etica/consentimientos/plantilla.md`) quedaron **diseñados,
+aprobados y versionados**, pero la fase de recolección en campo con
+participantes **se postergó**: el bloque de usabilidad sigue en $N=0$
+(ver `OBS-08` en `docs/observaciones/OBSERVACIONES.md`, reabierta, y la
+toma de datos diferida a la fase de despliegue en producción). No hay
+consentimientos firmados que custodiar a la fecha de este documento.
 
-**Protección de datos personales (PII):** Por cumplimiento estricto de
-normativas de protección de datos personales, los 15 consentimientos
-firmados (física o digitalmente) **no deben conservarse en este repositorio
-público**. Fueron removidos del código actual de la rama mediante `git rm`
-en el commit `971e7f6`.
+**Protección de datos personales (PII) — regla permanente:** Por
+cumplimiento estricto de normativas de protección de datos personales,
+los consentimientos que se firmen en la futura corrida (física o
+digitalmente) **no deben conservarse en este repositorio público bajo
+ninguna forma**.
 
-**Estado real del historial de Git (trazabilidad):** Estos archivos aún
-existen en el historial de commits de Git (commits `5d404b6` y anteriores)
-y son recuperables por cualquier persona con acceso al repositorio mediante
-`git checkout <commit> -- docs/etica/consentimientos/`. Se requiere una
-limpieza profunda del historial de Git (`git filter-repo` o BFG
-Repo-Cleaner) seguida de un push forzado para eliminarlos definitivamente.
-Hasta que esa limpieza se ejecute, los archivos con PII permanecen
-técnicamente accesibles en el historial público del repositorio. La copia
-primaria segura de estos documentos se almacena en un medio privado con
-acceso institucional restringido:
-
-- **Almacenamiento privado (Google Drive institucional):**
-  <https://drive.google.com/drive/folders/1uoGc6gQ7AJuVEayv09OSm84bS0WGB15y?usp=sharing>
-- **Permisos:** Acceso restringido exclusivamente a cuentas con dominio
-  institucional `@uteq.edu.ec` (Docente director y Tribunal evaluador).
-- **Justificación de anonimización:** El repositorio del proyecto es
-  público (GitHub) y contiene código fuente, documentación y evidencia
-  técnica. Almacenar consentimientos firmados con nombres reales en un
-  repositorio público expondría PII (nombre completo, firma) en
-  violación del principio de minimización de datos y del consentimiento
-  informado otorgado por los participantes, quienes fueron informados de
-  que sus datos identificables no se publicarían.
+**Justificación de anonimización:** El repositorio del proyecto es
+público (GitHub) y contiene código fuente, documentación y evidencia
+técnica. Almacenar consentimientos firmados con nombres reales en un
+repositorio público expondría PII (nombre completo, firma) en
+violación del principio de minimización de datos y del consentimiento
+informado otorgado por los participantes, quienes serán informados de
+que sus datos identificables no se publicarán.
 
 La plantilla en blanco (sin datos personales) se mantiene versionada en
 [`docs/etica/consentimientos/plantilla.md`](consentimientos/plantilla.md)
@@ -158,14 +146,12 @@ como referencia pública del protocolo utilizado.
   existentes hoy en `docs/mediciones/sec/` ya cumplen este criterio —
   fueron generados contra el usuario de desarrollo `admin@sgb-saas.local`
   (no una persona real), como se documenta en cada uno de esos archivos.
-- **Los consentimientos firmados de participantes reales de SUS fueron
-  committeados por error** (commit `5d404b6`) y removidos del código actual
-  en el commit `971e7f6`. **Aún persisten en el historial de Git** y requieren
-  limpieza profunda (ver sección (iii)). `docs/etica/consentimientos/` contiene
-  únicamente la plantilla en blanco (versionada, pública); los
-  formularios firmados se almacenan en Google Drive institucional
-  (acceso `@uteq.edu.ec`) como respaldo seguro mientras se ejecuta la
-  limpieza del historial.
+- **Consentimientos de SUS:** a la fecha no hay formularios firmados que
+  custodiar (bloque en $N=0$, ver sección (iii)).
+  `docs/etica/consentimientos/` contiene únicamente la plantilla en blanco
+  (versionada, pública); los formularios que se firmen en la futura corrida
+  se conservarán fuera de este repositorio, en un medio separado de acceso
+  restringido, y nunca se versionarán aquí.
 - Este mismo criterio aplica a cualquier evidencia futura del Bloque C
   (k6, Lighthouse, JaCoCo): son mediciones técnicas sobre el sistema, no
   sobre personas, y no está previsto que requieran ningún dato personal.
