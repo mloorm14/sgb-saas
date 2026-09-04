@@ -92,7 +92,7 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
 
     // Suscripción al autocomplete de usuarios
     this.busquedaSubject.pipe(
-      debounceTime(1300),
+      debounceTime(300),
       distinctUntilChanged(),
       switchMap(texto => {
         if (!texto.trim()) {
