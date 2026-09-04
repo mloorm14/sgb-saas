@@ -32,7 +32,7 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
 
   private readonly estadosGestion = ['DADO_DE_BAJA', 'PENDIENTE', 'EN_REPARACION', 'PERDIDO'];
 
-  private filtro$ = new Subject<void>();
+  private filtro$ = new Subject<string>();
   private destroy$ = new Subject<void>();
 
   get paginasVisibles(): number[] {
@@ -87,7 +87,7 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
     });
     this.cargar();
     this.filtro$.pipe(
-      debounceTime(2000),
+      debounceTime(300),
       distinctUntilChanged(),
       takeUntil(this.destroy$)
     ).subscribe(() => {
@@ -102,7 +102,8 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
   }
 
   onFiltroChange(): void {
-    this.filtro$.next();
+    const snapshot = JSON.stringify({ q: this.q.trim(), anio: this.anioFiltro, estado: this.estadoFiltro });
+    this.filtro$.next(snapshot);
   }
 
   cargar(): void {

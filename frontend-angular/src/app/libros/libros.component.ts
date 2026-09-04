@@ -41,6 +41,7 @@ export class LibrosComponent implements OnInit, OnDestroy {
   form: FormGroup;
   lookupError: string = '';
   lookupCargando = false;
+  private lookupErrorTimer: ReturnType<typeof setTimeout> | null = null;
   portadaPreviewUrl: string | null = null;
   portadaPreviewBlob: Blob | null = null;
   portadaPreviewTipo: string | null = null;
@@ -187,6 +188,7 @@ export class LibrosComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.lookupErrorTimer) clearTimeout(this.lookupErrorTimer);
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -842,13 +844,22 @@ export class LibrosComponent implements OnInit, OnDestroy {
     this.ejecutarLookupIsbn(isbn);
   }
 
+  private mostrarLookupError(mensaje: string): void {
+    if (this.lookupErrorTimer) clearTimeout(this.lookupErrorTimer);
+    this.lookupError = mensaje;
+    this.lookupErrorTimer = setTimeout(() => {
+      this.lookupError = '';
+      this.lookupErrorTimer = null;
+    }, 3000);
+  }
+
   private ejecutarLookupIsbn(isbn: string): void {
     if (!isbn) {
-      this.lookupError = 'Ingresa un ISBN para buscar';
+      this.mostrarLookupError('Ingresa un ISBN para buscar');
       return;
     }
     if (!/^[0-9]{10,13}$/.test(isbn)) {
-      this.lookupError = 'ISBN debe tener 10 a 13 dígitos numéricos';
+      this.mostrarLookupError('ISBN debe tener 10 a 13 dígitos numéricos');
       return;
     }
     if (this.lookupCargando) return;
@@ -889,7 +900,7 @@ export class LibrosComponent implements OnInit, OnDestroy {
         }
 
         if (!dto.titulo && !dto.resumen && dto.anioPublicacion == null && !dto.editorial && !dto.autor) {
-          this.lookupError = 'No se encontraron datos para ese ISBN, completa manualmente';
+          this.mostrarLookupError('No se encontraron datos para ese ISBN, completa manualmente');
         }
 
         if (dto.portadaDisponible) {
@@ -913,9 +924,9 @@ export class LibrosComponent implements OnInit, OnDestroy {
       error: (err) => {
         const detail = err?.error?.detail ?? err?.error?.title ?? '';
         if (err?.status === 404) {
-          this.lookupError = detail || 'No se encontró información para el ISBN, completa manualmente';
+          this.mostrarLookupError(detail || 'No se encontró información para el ISBN, completa manualmente');
         } else {
-          this.lookupError = detail || 'No se pudo consultar el ISBN, intenta de nuevo';
+          this.mostrarLookupError(detail || 'No se pudo consultar el ISBN, intenta de nuevo');
         }
         this.lookupCargando = false;
       }

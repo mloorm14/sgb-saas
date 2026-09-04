@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ReporteService, LibroMasPrestado, ReporteMorosidad } from '../core/services/reporte-gerencial.service';
 import { ReservacionService } from '../core/services/reservacion.service';
@@ -9,7 +10,7 @@ import { ReservacionHoy } from '../core/models/reservacion.model';
 @Component({
   selector: 'app-dashboard-gerente-admin-home',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './dashboard-gerente-admin-home.component.html',
   styles: [`
     .kpi-card { background: linear-gradient(135deg, rgba(0,54,148,0.04), rgba(0,54,148,0)); }
@@ -29,6 +30,10 @@ export class DashboardGerenteAdminHomeComponent implements OnInit {
 
   limiteLibros = 5;
 
+  // Paginacion tabla usuarios con deudas
+  paginaDeudas = 0;
+  tamanoPaginaDeudas = 10;
+
   readonly barColors = ['#003694', '#2c57c1', '#1e4db7', '#59dbc7', '#76f4e0'];
   readonly barTextColors = ['#003694', '#2c57c1', '#1e4db7', '#006b5f', '#006b5f'];
 
@@ -36,6 +41,49 @@ export class DashboardGerenteAdminHomeComponent implements OnInit {
     return [...this.usuariosEnMora]
       .sort((a, b) => b.montoTotalAdeudado - a.montoTotalAdeudado)
       .slice(0, 10);
+  }
+
+  get deudasTotalPages(): number {
+    return Math.max(1, Math.ceil(this.usuariosEnMora.length / this.tamanoPaginaDeudas));
+  }
+
+  get deudasPaginadas(): ReporteMorosidad[] {
+    const inicio = this.paginaDeudas * this.tamanoPaginaDeudas;
+    return this.usuariosEnMora.slice(inicio, inicio + this.tamanoPaginaDeudas);
+  }
+
+  get deudasPaginasVisibles(): number[] {
+    const ventana = 4;
+    let inicio = Math.max(0, this.paginaDeudas - 1);
+    let fin = Math.min(this.deudasTotalPages, inicio + ventana);
+    if (fin - inicio < ventana) inicio = Math.max(0, fin - ventana);
+    return Array.from({ length: fin - inicio }, (_, i) => inicio + i);
+  }
+
+  get puedeDeudasAnterior(): boolean {
+    return this.paginaDeudas > 0;
+  }
+
+  get puedeDeudasSiguiente(): boolean {
+    return this.paginaDeudas < this.deudasTotalPages - 1;
+  }
+
+  irADeudasPagina(pagina: number): void {
+    if (pagina < 0 || pagina >= this.deudasTotalPages || pagina === this.paginaDeudas) return;
+    this.paginaDeudas = pagina;
+  }
+
+  paginaAnteriorDeudas(): void {
+    if (this.puedeDeudasAnterior) this.paginaDeudas--;
+  }
+
+  paginaSiguienteDeudas(): void {
+    if (this.puedeDeudasSiguiente) this.paginaDeudas++;
+  }
+
+  cambiarTamanoDeudas(tamano: number): void {
+    this.tamanoPaginaDeudas = Number(tamano);
+    this.paginaDeudas = 0;
   }
 
   get maxDeudaUsuario(): number {

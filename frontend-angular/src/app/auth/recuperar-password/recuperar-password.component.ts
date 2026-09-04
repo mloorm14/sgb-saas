@@ -10,10 +10,11 @@ function passwordsIgualesValidator(control: AbstractControl): ValidationErrors |
   return pass && pass2 && pass !== pass2 ? { passwordsDistintas: true } : null;
 }
 
-// Recuperación de contraseña en 2 pasos (backend A5: POST /solicitar-reset
-// genera código de 6 dígitos con TTL 15 min, POST /reset lo consume).
-// Ruta pública /recuperar-password con redirectIfAuthenticatedGuard, mismo
-// patrón de máquina de pasos que RegistroComponent. Copy en neutro.
+// Recuperación de cuenta en 2 pasos (backend A5: POST /solicitar-reset
+// genera código de 6 dígitos con TTL 10 min, POST /reset lo consume).
+// Ruta pública /recuperar-password (alias /recuperar-cuenta) con
+// redirectIfAuthenticatedGuard, mismo patrón de máquina de pasos que
+// RegistroComponent. Copy en neutro.
 @Component({
   selector: 'app-recuperar-password',
   standalone: true,

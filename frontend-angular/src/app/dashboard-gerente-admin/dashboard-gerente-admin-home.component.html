@@ -93,7 +93,7 @@
       <div class="flex items-center justify-between mb-sm">
         <span class="material-symbols-outlined text-[26px] text-warning">group</span>
       </div>
-      <p class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider mb-1">Usuarios en mora</p>
+      <p class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider mb-1">Usuarios con deudas</p>
       @if (cargandoMorosidad) {
         <div class="h-8 w-8 bg-surface-container-high rounded animate-pulse"></div>
       } @else {
@@ -174,7 +174,7 @@
         <p class="font-body-sm text-body-sm text-on-surface-variant text-center py-lg">{{ errorMorosidad }}</p>
       } @else if (usuariosEnMora.length === 0) {
         <div class="flex-1 flex items-center justify-center">
-          <p class="font-body-sm text-body-sm text-on-surface-variant text-center">No hay usuarios en mora.</p>
+          <p class="font-body-sm text-body-sm text-on-surface-variant text-center">No hay usuarios con deudas.</p>
         </div>
       } @else {
         <div class="space-y-sm">
@@ -194,9 +194,9 @@
     </div>
   </div>
 
-  <!-- Tabla: usuarios en mora -->
+  <!-- Tabla: usuarios con deudas -->
   <div class="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm p-lg">
-    <h2 class="font-headline-md text-headline-md text-on-background mb-md">Usuarios en mora</h2>
+    <h2 class="font-headline-md text-headline-md text-on-background mb-md">Usuarios con deudas</h2>
 
     @if (cargandoMorosidad) {
       <div class="space-y-sm">
@@ -207,7 +207,7 @@
     } @else if (errorMorosidad) {
       <p class="font-body-sm text-body-sm text-on-surface-variant text-center py-lg">{{ errorMorosidad }}</p>
     } @else if (usuariosEnMora.length === 0) {
-      <p class="font-body-sm text-body-sm text-on-surface-variant text-center py-lg">No hay usuarios en mora.</p>
+      <p class="font-body-sm text-body-sm text-on-surface-variant text-center py-lg">No hay usuarios con deudas.</p>
     } @else {
       <div class="overflow-x-auto">
         <table class="w-full text-left">
@@ -220,7 +220,7 @@
             </tr>
           </thead>
           <tbody class="font-body-sm text-body-sm text-on-surface">
-            @for (u of usuariosEnMora; track u.usuarioId) {
+            @for (u of deudasPaginadas; track u.usuarioId) {
               <tr class="border-b border-outline-variant/50">
                 <td class="py-sm pr-md">
                   <div class="flex items-center gap-sm">
@@ -245,6 +245,23 @@
             }
           </tbody>
         </table>
+      </div>
+      <div class="flex flex-wrap justify-between items-center mt-lg gap-sm">
+        <div class="flex items-center gap-xs font-body-sm text-body-sm">
+          <span class="text-on-surface-variant">Mostrar</span>
+          <select [ngModel]="tamanoPaginaDeudas" (ngModelChange)="cambiarTamanoDeudas($event)" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-surface-container-lowest cursor-pointer appearance-none text-xs leading-tight py-1.5">
+            <option [ngValue]="10">10</option><option [ngValue]="20">20</option><option [ngValue]="30">30</option>
+          </select><span class="text-on-surface-variant">por página</span>
+        </div>
+        @if (deudasTotalPages > 1) {
+          <div class="flex items-center gap-xs">
+            <button (click)="paginaAnteriorDeudas()" [disabled]="!puedeDeudasAnterior" class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs"><span class="material-symbols-outlined text-[18px]">chevron_left</span> Anterior</button>
+            @for (p of deudasPaginasVisibles; track p) {
+              <button (click)="irADeudasPagina(p)" class="w-8 h-8 min-w-[44px] min-h-[44px] rounded font-label-sm text-label-sm cursor-pointer" [class.bg-primary]="p===paginaDeudas" [class.text-on-primary]="p===paginaDeudas" [class.border]="p!==paginaDeudas" [class.border-outline-variant]="p!==paginaDeudas" [class.hover:bg-surface-container-low]="p!==paginaDeudas">{{ p+1 }}</button>
+            }
+            <button (click)="paginaSiguienteDeudas()" [disabled]="!puedeDeudasSiguiente" class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">Siguiente <span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+          </div>
+        }
       </div>
     }
   </div>

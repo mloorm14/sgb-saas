@@ -664,7 +664,7 @@
                     </tr>
                   } @else {
                     <tr class="font-body-sm text-body-sm text-on-surface hover:bg-surface-container-low/40">
-                      <td class="px-md py-sm whitespace-nowrap">{{ b.creadoEn }}</td>
+                      <td class="px-md py-sm whitespace-nowrap">{{ formatearHistorial(b.creadoEn) }}</td>
                       <td class="px-md py-sm"><span class="font-body-xs text-body-xs">@for (t of b.tablas; track t) { {{ nombresTablas[t] || t }}@if (!$last) {, } }</span></td>
                       <td class="px-md py-sm"><span class="inline-flex px-2 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-[11px] uppercase">{{ b.formato }}</span></td>
                       <td class="px-md py-sm whitespace-nowrap">{{ formatearTamano(b) }}</td>
@@ -731,7 +731,7 @@
                     </tr>
                   } @else {
                     <tr class="font-body-sm text-body-sm text-on-surface hover:bg-surface-container-low/40">
-                      <td class="px-md py-sm whitespace-nowrap">{{ r.iniciadoEn }}</td>
+                      <td class="px-md py-sm whitespace-nowrap">{{ formatearHistorial(r.iniciadoEn) }}</td>
                       <td class="px-md py-sm whitespace-nowrap text-on-surface-variant">{{ r.finalizadoEn ?? '—' }}</td>
                       <td class="px-md py-sm text-on-surface-variant">{{ r.nombreArchivo ?? '—' }}</td>
                       <td class="px-md py-sm whitespace-nowrap">
@@ -824,7 +824,7 @@
                     </tr>
                   } @else {
                   <tr class="font-body-sm text-body-sm text-on-surface hover:bg-surface-container-low/40">
-                    <td class="px-md py-sm whitespace-nowrap">{{ b.creadoEn }}</td>
+                    <td class="px-md py-sm whitespace-nowrap">{{ formatearHistorial(b.creadoEn) }}</td>
                     <td class="px-md py-sm whitespace-nowrap text-on-surface-variant">{{ b.desde }} → {{ b.hasta }}</td>
                     <td class="px-md py-sm"><span class="font-body-xs text-body-xs">@for (t of b.tablas; track t) { {{ nombresTablas[t] || t }}@if (!$last) {, } }</span></td>
                     <td class="px-md py-sm"><span class="inline-flex px-2 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-[11px] uppercase">{{ b.formato }}</span></td>

@@ -363,6 +363,21 @@ export class ConfiguracionSistemaComponent implements OnInit, OnDestroy {
     }
   }
 
+  formatearHistorial(iso: string | null | undefined): string {
+    if (!iso) return '—';
+    const fecha = new Date(iso);
+    if (isNaN(fecha.getTime())) return String(iso);
+    const y = fecha.getFullYear();
+    const m = String(fecha.getMonth() + 1).padStart(2, '0');
+    const d = String(fecha.getDate()).padStart(2, '0');
+    let horas = fecha.getHours();
+    const minutos = String(fecha.getMinutes()).padStart(2, '0');
+    const segundos = String(fecha.getSeconds()).padStart(2, '0');
+    const ampm = horas >= 12 ? 'PM' : 'AM';
+    horas = horas % 12 || 12;
+    return `${y}/${m}/${d} — ${horas}:${minutos}:${segundos} ${ampm}`;
+  }
+
   ngOnDestroy(): void {
     this.pollingSub?.unsubscribe();
   }
@@ -761,23 +776,28 @@ export class ConfiguracionSistemaComponent implements OnInit, OnDestroy {
     });
   }
   dispararBackupCompleto(): void {
-    // B11: fila skeleton inmediata, sin overlay global (loader excluye /backups).
     const tempId = -Date.now();
-    this.registrosRespaldo.unshift({ id: tempId, estado: 'ejecutando', iniciadoEn: new Date().toISOString(), finalizadoEn: null, nombreArchivo: 'En curso…', tamanoArchivoBytes: null });
+    const inicioSkeleton = new Date().toISOString();
+    this.registrosRespaldo.unshift({ id: tempId, estado: 'ejecutando', iniciadoEn: inicioSkeleton, finalizadoEn: null, nombreArchivo: 'En curso…', tamanoArchivoBytes: null });
     this.skeletonIds.add(tempId);
     this.backupService.dispararBackupCompleto().subscribe({
       next: () => {
-        this.skeletonIds.delete(tempId);
         this.toast.success('Backup iniciado', 'El volcado completo se está ejecutando.');
-        // Polling corto para que el historial se actualice solo sin recargar la página.
-        this.pollingSub?.unsubscribe();
         const tipoRegistro = this.subSubmoduloSeleccionado?.includes('auto') ? 'automatico' : 'manual';
-        this.pollingSub = timer(1000, 3000).subscribe(() => this.cargarRegistrosRespaldo(tipoRegistro));
-        // Detener el polling a los 15 segundos para no dejar suscripciones abiertas.
-        setTimeout(() => this.pollingSub?.unsubscribe(), 15000);
+        // Polling adaptativo: cada 5s hasta 120s (cubre sleep 40s + dump), se detiene solo cuando el backend reporta completado
+        this.pollingSub?.unsubscribe();
+        let intentos = 0;
+        this.pollingSub = timer(2000, 5000).subscribe(() => {
+          intentos++;
+          this.cargarRegistrosRespaldo(tipoRegistro);
+          if (intentos >= 24) this.terminarPollingBackup(tempId);
+          // Si ya hay un registro exitoso con iniciadoEn posterior al skeleton, remover skeleton y detener
+          const completado = this.registrosRespaldo.some(r => r.id !== tempId && r.estado === 'exitoso' && new Date(r.iniciadoEn).getTime() >= new Date(inicioSkeleton).getTime() - 1000);
+          if (completado) this.terminarPollingBackup(tempId);
+        });
       },
       error: (err) => {
-        this.skeletonIds.delete(tempId);
+        this.terminarPollingBackup(tempId);
         this.registrosRespaldo = this.registrosRespaldo.filter(r => r.id !== tempId);
         if (err?.status === 429) {
           this.toast.warning('Ya se está creando un respaldo', err?.error?.mensaje ?? err?.error?.detail ?? 'Esperar 60 segundos antes de reintentar');
@@ -786,6 +806,13 @@ export class ConfiguracionSistemaComponent implements OnInit, OnDestroy {
         }
       }
     });
+  }
+
+  private terminarPollingBackup(tempId: number): void {
+    this.pollingSub?.unsubscribe();
+    this.pollingSub = undefined;
+    this.skeletonIds.delete(tempId);
+    this.registrosRespaldo = this.registrosRespaldo.filter(r => r.id !== tempId || this.skeletonIds.has(tempId));
   }
 
   cargarProgramaciones(): void {
