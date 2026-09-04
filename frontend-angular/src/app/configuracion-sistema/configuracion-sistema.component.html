@@ -732,7 +732,7 @@
                   } @else {
                     <tr class="font-body-sm text-body-sm text-on-surface hover:bg-surface-container-low/40">
                       <td class="px-md py-sm whitespace-nowrap">{{ formatearHistorial(r.iniciadoEn) }}</td>
-                      <td class="px-md py-sm whitespace-nowrap text-on-surface-variant">{{ r.finalizadoEn ?? '—' }}</td>
+                      <td class="px-md py-sm whitespace-nowrap text-on-surface-variant">{{ r.finalizadoEn ? formatearHistorial(r.finalizadoEn) : '—' }}</td>
                       <td class="px-md py-sm text-on-surface-variant">{{ r.nombreArchivo ?? '—' }}</td>
                       <td class="px-md py-sm whitespace-nowrap">
                         @if (r.tamanoArchivoBytes) { {{ (r.tamanoArchivoBytes / 1048576).toFixed(2) }} MB } @else { — }
