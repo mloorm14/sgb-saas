@@ -65,6 +65,9 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
   eventoSeleccionado: EventoAuditoria | null = null;
   jsonCopiado: boolean = false;
 
+  // Export CSV (GET /export del backend con los filtros vigentes)
+  exportando = false;
+
   // Autocomplete de usuarios
   busquedaUsuario: string = '';
   usuarioSeleccionado: UsuarioAdmin | null = null;
@@ -295,6 +298,36 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
         this.errorMsg = (err as { error?: { detail?: string } })?.error?.detail
           || 'Error al cargar la bitácora de auditoría';
         this.cargando = false;
+      }
+    });
+  }
+
+  // Descarga auditoria.csv con los filtros vigentes (mismo criterio que
+  // cargarPagina: usuarioId + modulo + rango día/hora o desde/hasta).
+  exportarCsv(): void {
+    if (this.exportando) return;
+    this.exportando = true;
+    this.errorMsg = '';
+    const rango = this.construirRangoFechas();
+    this.auditoriaService.exportar({
+      usuarioId: this.usuarioId(),
+      modulo: this.filtroModulo || undefined,
+      desde: rango.desde,
+      hasta: rango.hasta
+    }).subscribe({
+      next: (blob) => {
+        this.exportando = false;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'auditoria.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        this.exportando = false;
+        this.errorMsg = (err as { error?: { detail?: string } })?.error?.detail
+          || 'Error al exportar la bitácora de auditoría';
       }
     });
   }
