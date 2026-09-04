@@ -111,8 +111,13 @@ export class ReportesComponent {
   inventarioPage = 0;
   inventarioPageSize = 10;
 
-  // Paginación libros/morosidad/vencidos/categorias/uso/financiero
+  // Paginación libros/morosidad/vencidos/categorias/uso/financiero — server-side real
   librosPage = 0; librosPageSize = 10;
+  librosTotalPagesServer = 1;
+  morosidadTotalPagesServer = 1;
+  vencidosTotalPagesServer = 1;
+  categoriasTotalPagesServer = 1;
+  usoTotalPagesServer = 1;
   morosidadPage = 0; morosidadPageSize = 10;
   vencidosPage = 0; vencidosPageSize = 10;
   categoriasPage = 0; categoriasPageSize = 10;
@@ -339,10 +344,10 @@ export class ReportesComponent {
     this.cargando = true;
     this.errorMsg = '';
     const rango = this.rangoIso(this.librosDesde, this.librosHasta, this.librosDia, this.librosTipoDias);
-    this.reporteService.librosMasPrestadosDetallado(rango.desde, rango.hasta, this.limiteTop).subscribe({
-      next: (libros) => {
-        this.libros = libros;
-        this.librosPage = 0;
+    this.reporteService.librosMasPrestadosDetallado(rango.desde, rango.hasta, this.limiteTop, undefined, this.librosPage, this.librosPageSize).subscribe({
+      next: (page) => {
+        this.libros = page.content;
+        this.librosTotalPagesServer = page.totalPages;
         this.cargando = false;
       },
       error: (err) => this.fallar(err)
@@ -352,11 +357,11 @@ export class ReportesComponent {
   private cargarMorosidad(): void {
     this.cargando = true;
     this.errorMsg = '';
-    this.reporteService.morosidad().subscribe({
-      next: (morosos) => {
-        this.morososTodos = morosos;
-        this.morosos = this.filtrarMorosidad(morosos);
-        this.morosidadPage = 0;
+    this.reporteService.morosidad(undefined, this.morosidadPage, this.morosidadPageSize).subscribe({
+      next: (page) => {
+        this.morososTodos = page.content;
+        this.morosos = this.filtrarMorosidad(page.content);
+        this.morosidadTotalPagesServer = page.totalPages;
         this.cargando = false;
       },
       error: (err) => this.fallar(err)
@@ -429,60 +434,60 @@ export class ReportesComponent {
     return Array.from({ length: e - s }, (_, i) => s + i);
   }
 
-  // Libros
-  get librosTotalPages(): number { return this.totalPagesFor(this.libros, this.librosPageSize); }
-  get librosPaginado(): LibroMasPrestadoDetallado[] { return this.paginar(this.libros, this.librosPage, this.librosPageSize); }
+  // Libros — server
+  get librosTotalPages(): number { return this.librosTotalPagesServer; }
+  get librosPaginado(): LibroMasPrestadoDetallado[] { return this.libros; }
   get librosPaginasVisibles(): number[] { return this.paginasVisiblesFor(this.librosTotalPages, this.librosPage); }
   get puedeLibrosAnterior(): boolean { return this.librosPage > 0; }
   get puedeLibrosSiguiente(): boolean { return this.librosPage < this.librosTotalPages - 1; }
-  irALibrosPage(p: number): void { if (p < 0 || p >= this.librosTotalPages || p === this.librosPage) return; this.librosPage = p; }
-  paginaAnteriorLibros(): void { if (this.puedeLibrosAnterior) this.librosPage--; }
-  paginaSiguienteLibros(): void { if (this.puedeLibrosSiguiente) this.librosPage++; }
-  cambiarTamanoLibros(n: number): void { this.librosPageSize = Number(n); this.librosPage = 0; }
+  irALibrosPage(p: number): void { if (p < 0 || p >= this.librosTotalPages || p === this.librosPage) return; this.librosPage = p; this.cargarLibros(); }
+  paginaAnteriorLibros(): void { if (this.puedeLibrosAnterior) { this.librosPage--; this.cargarLibros(); } }
+  paginaSiguienteLibros(): void { if (this.puedeLibrosSiguiente) { this.librosPage++; this.cargarLibros(); } }
+  cambiarTamanoLibros(n: number): void { this.librosPageSize = Number(n); this.librosPage = 0; this.cargarLibros(); }
 
-  // Morosidad
-  get morosidadTotalPages(): number { return this.totalPagesFor(this.morososOrdenados, this.morosidadPageSize); }
-  get morosidadPaginado(): ReporteMorosidad[] { return this.paginar(this.morososOrdenados, this.morosidadPage, this.morosidadPageSize); }
+  // Morosidad — server
+  get morosidadTotalPages(): number { return this.morosidadTotalPagesServer; }
+  get morosidadPaginado(): ReporteMorosidad[] { return this.morosos; }
   get morosidadPaginasVisibles(): number[] { return this.paginasVisiblesFor(this.morosidadTotalPages, this.morosidadPage); }
   get puedeMorosidadAnterior(): boolean { return this.morosidadPage > 0; }
   get puedeMorosidadSiguiente(): boolean { return this.morosidadPage < this.morosidadTotalPages - 1; }
-  irAMorosidadPage(p: number): void { if (p < 0 || p >= this.morosidadTotalPages || p === this.morosidadPage) return; this.morosidadPage = p; }
-  paginaAnteriorMorosidad(): void { if (this.puedeMorosidadAnterior) this.morosidadPage--; }
-  paginaSiguienteMorosidad(): void { if (this.puedeMorosidadSiguiente) this.morosidadPage++; }
-  cambiarTamanoMorosidad(n: number): void { this.morosidadPageSize = Number(n); this.morosidadPage = 0; }
+  irAMorosidadPage(p: number): void { if (p < 0 || p >= this.morosidadTotalPages || p === this.morosidadPage) return; this.morosidadPage = p; this.cargarMorosidad(); }
+  paginaAnteriorMorosidad(): void { if (this.puedeMorosidadAnterior) { this.morosidadPage--; this.cargarMorosidad(); } }
+  paginaSiguienteMorosidad(): void { if (this.puedeMorosidadSiguiente) { this.morosidadPage++; this.cargarMorosidad(); } }
+  cambiarTamanoMorosidad(n: number): void { this.morosidadPageSize = Number(n); this.morosidadPage = 0; this.cargarMorosidad(); }
 
-  // Vencidos
-  get vencidosTotalPages(): number { return this.totalPagesFor(this.vencidosOrdenados, this.vencidosPageSize); }
-  get vencidosPaginado(): ReporteVencidos[] { return this.paginar(this.vencidosOrdenados, this.vencidosPage, this.vencidosPageSize); }
+  // Vencidos — server
+  get vencidosTotalPages(): number { return this.vencidosTotalPagesServer; }
+  get vencidosPaginado(): ReporteVencidos[] { return this.vencidos; }
   get vencidosPaginasVisibles(): number[] { return this.paginasVisiblesFor(this.vencidosTotalPages, this.vencidosPage); }
   get puedeVencidosAnterior(): boolean { return this.vencidosPage > 0; }
   get puedeVencidosSiguiente(): boolean { return this.vencidosPage < this.vencidosTotalPages - 1; }
-  irAVencidosPage(p: number): void { if (p < 0 || p >= this.vencidosTotalPages || p === this.vencidosPage) return; this.vencidosPage = p; }
-  paginaAnteriorVencidos(): void { if (this.puedeVencidosAnterior) this.vencidosPage--; }
-  paginaSiguienteVencidos(): void { if (this.puedeVencidosSiguiente) this.vencidosPage++; }
-  cambiarTamanoVencidos(n: number): void { this.vencidosPageSize = Number(n); this.vencidosPage = 0; }
+  irAVencidosPage(p: number): void { if (p < 0 || p >= this.vencidosTotalPages || p === this.vencidosPage) return; this.vencidosPage = p; this.cargarVencidos(); }
+  paginaAnteriorVencidos(): void { if (this.puedeVencidosAnterior) { this.vencidosPage--; this.cargarVencidos(); } }
+  paginaSiguienteVencidos(): void { if (this.puedeVencidosSiguiente) { this.vencidosPage++; this.cargarVencidos(); } }
+  cambiarTamanoVencidos(n: number): void { this.vencidosPageSize = Number(n); this.vencidosPage = 0; this.cargarVencidos(); }
 
-  // Categorias
-  get categoriasTotalPages(): number { return this.totalPagesFor(this.categoriasOrdenadas, this.categoriasPageSize); }
-  get categoriasPaginado(): ReporteCategoriasDemandadas[] { return this.paginar(this.categoriasOrdenadas, this.categoriasPage, this.categoriasPageSize); }
+  // Categorias — server
+  get categoriasTotalPages(): number { return this.categoriasTotalPagesServer; }
+  get categoriasPaginado(): ReporteCategoriasDemandadas[] { return this.categorias; }
   get categoriasPaginasVisibles(): number[] { return this.paginasVisiblesFor(this.categoriasTotalPages, this.categoriasPage); }
   get puedeCategoriasAnterior(): boolean { return this.categoriasPage > 0; }
   get puedeCategoriasSiguiente(): boolean { return this.categoriasPage < this.categoriasTotalPages - 1; }
-  irACategoriasPage(p: number): void { if (p < 0 || p >= this.categoriasTotalPages || p === this.categoriasPage) return; this.categoriasPage = p; }
-  paginaAnteriorCategorias(): void { if (this.puedeCategoriasAnterior) this.categoriasPage--; }
-  paginaSiguienteCategorias(): void { if (this.puedeCategoriasSiguiente) this.categoriasPage++; }
-  cambiarTamanoCategorias(n: number): void { this.categoriasPageSize = Number(n); this.categoriasPage = 0; }
+  irACategoriasPage(p: number): void { if (p < 0 || p >= this.categoriasTotalPages || p === this.categoriasPage) return; this.categoriasPage = p; this.cargarCategorias(); }
+  paginaAnteriorCategorias(): void { if (this.puedeCategoriasAnterior) { this.categoriasPage--; this.cargarCategorias(); } }
+  paginaSiguienteCategorias(): void { if (this.puedeCategoriasSiguiente) { this.categoriasPage++; this.cargarCategorias(); } }
+  cambiarTamanoCategorias(n: number): void { this.categoriasPageSize = Number(n); this.categoriasPage = 0; this.cargarCategorias(); }
 
-  // Uso
-  get usoTotalPages(): number { return this.totalPagesFor(this.usoOrdenado, this.usoPageSize); }
-  get usoPaginado(): ReporteUsoPorPeriodo[] { return this.paginar(this.usoOrdenado, this.usoPage, this.usoPageSize); }
+  // Uso — server
+  get usoTotalPages(): number { return this.usoTotalPagesServer; }
+  get usoPaginado(): ReporteUsoPorPeriodo[] { return this.usoPeriodo; }
   get usoPaginasVisibles(): number[] { return this.paginasVisiblesFor(this.usoTotalPages, this.usoPage); }
   get puedeUsoAnterior(): boolean { return this.usoPage > 0; }
   get puedeUsoSiguiente(): boolean { return this.usoPage < this.usoTotalPages - 1; }
-  irAUsoPage(p: number): void { if (p < 0 || p >= this.usoTotalPages || p === this.usoPage) return; this.usoPage = p; }
-  paginaAnteriorUso(): void { if (this.puedeUsoAnterior) this.usoPage--; }
-  paginaSiguienteUso(): void { if (this.puedeUsoSiguiente) this.usoPage++; }
-  cambiarTamanoUso(n: number): void { this.usoPageSize = Number(n); this.usoPage = 0; }
+  irAUsoPage(p: number): void { if (p < 0 || p >= this.usoTotalPages || p === this.usoPage) return; this.usoPage = p; this.cargarUso(); }
+  paginaAnteriorUso(): void { if (this.puedeUsoAnterior) { this.usoPage--; this.cargarUso(); } }
+  paginaSiguienteUso(): void { if (this.puedeUsoSiguiente) { this.usoPage++; this.cargarUso(); } }
+  cambiarTamanoUso(n: number): void { this.usoPageSize = Number(n); this.usoPage = 0; this.cargarUso(); }
 
   // Financiero pagosRecientes
   get financieroPagos(): any[] { return this.resumenFinanciero?.pagosRecientes ?? []; }
@@ -500,11 +505,11 @@ export class ReportesComponent {
     this.cargando = true;
     this.errorMsg = '';
     const busqueda = [this.vencidosCorreo.trim(), this.vencidosLibro.trim(), this.vencidosIsbn.trim()].filter(Boolean).join(' ') || undefined;
-    this.reporteService.vencidos(undefined, busqueda).subscribe({
-      next: (vencidos) => {
-        this.vencidosTodos = vencidos;
-        this.vencidos = this.filtrarVencidos(vencidos);
-        this.vencidosPage = 0;
+    this.reporteService.vencidos(undefined, busqueda, this.vencidosPage, this.vencidosPageSize).subscribe({
+      next: (page) => {
+        this.vencidos = page.content;
+        this.vencidosTotalPagesServer = page.totalPages;
+        this.vencidosTodos = page.content;
         this.cargando = false;
       },
       error: (err) => this.fallar(err)
@@ -526,11 +531,11 @@ export class ReportesComponent {
   private cargarCategorias(): void {
     this.cargando = true;
     this.errorMsg = '';
-    this.reporteService.categoriasDemandadas(undefined, undefined, this.limiteCategorias).subscribe({
-      next: (categorias) => {
-        this.categoriasTodas = categorias;
-        this.categorias = this.filtrarCategorias(categorias);
-        this.categoriasPage = 0;
+    this.reporteService.categoriasDemandadas(undefined, undefined, this.limiteCategorias, this.categoriasPage, this.categoriasPageSize).subscribe({
+      next: (page) => {
+        this.categoriasTodas = page.content;
+        this.categorias = this.filtrarCategorias(page.content);
+        this.categoriasTotalPagesServer = page.totalPages;
         this.cargando = false;
       },
       error: (err) => this.fallar(err)
@@ -546,10 +551,10 @@ export class ReportesComponent {
   private cargarUso(): void {
     this.cargando = true;
     this.errorMsg = '';
-    this.reporteService.usoPorPeriodo(this.usoGranularidad, this.usoDesde || undefined, this.usoHasta || undefined).subscribe({
-      next: (datos) => {
-        this.usoPeriodo = datos;
-        this.usoPage = 0;
+    this.reporteService.usoPorPeriodo(this.usoGranularidad, this.usoDesde || undefined, this.usoHasta || undefined, this.usoPage, this.usoPageSize).subscribe({
+      next: (page) => {
+        this.usoPeriodo = page.content;
+        this.usoTotalPagesServer = page.totalPages;
         this.cargando = false;
       },
       error: (err) => this.fallar(err)

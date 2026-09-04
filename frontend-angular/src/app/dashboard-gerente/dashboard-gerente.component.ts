@@ -78,7 +78,8 @@ export class DashboardGerenteComponent implements OnInit {
       });
 
       this.reporteService.morosidad().subscribe({
-        next: (usuarios) => {
+        next: (res: any) => {
+          const usuarios = Array.isArray(res) ? res : res.content ?? [];
           this.usuariosEnMora = usuarios;
           this.cargandoMorosidad = false;
         },

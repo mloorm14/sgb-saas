@@ -92,21 +92,25 @@ export class ReporteService {
     );
   }
 
-  librosMasPrestadosDetallado(desde?: string, hasta?: string, limite?: number, categoriaId?: number): Observable<LibroMasPrestadoDetallado[]> {
+  librosMasPrestadosDetallado(desde?: string, hasta?: string, limite?: number, categoriaId?: number, page?: number, size?: number): Observable<{ content: LibroMasPrestadoDetallado[]; totalPages: number; totalElements: number }> {
     const params: Record<string, string> = {};
     if (desde) params['desde'] = desde;
     if (hasta) params['hasta'] = hasta;
     if (limite) params['limite'] = limite.toString();
     if (categoriaId) params['categoriaId'] = categoriaId.toString();
-    return this.http.get<LibroMasPrestadoDetallado[]>(`${this.apiUrl}/libros-mas-prestados-detallado`, { params }).pipe(
+    if (page !== undefined) params['page'] = String(page);
+    if (size !== undefined) params['size'] = String(size);
+    return this.http.get<{ content: LibroMasPrestadoDetallado[]; totalPages: number; totalElements: number }>(`${this.apiUrl}/libros-mas-prestados-detallado`, { params }).pipe(
       catchError(err => this.manejarError(err))
     );
   }
 
-  morosidad(limite?: number): Observable<ReporteMorosidad[]> {
+  morosidad(limite?: number, page?: number, size?: number): Observable<{ content: ReporteMorosidad[]; totalPages: number; totalElements: number }> {
     const params: Record<string, string> = {};
     if (limite) params['limite'] = String(limite);
-    return this.http.get<ReporteMorosidad[]>(`${this.apiUrl}/morosidad`, { params }).pipe(
+    if (page !== undefined) params['page'] = String(page);
+    if (size !== undefined) params['size'] = String(size);
+    return this.http.get<{ content: ReporteMorosidad[]; totalPages: number; totalElements: number }>(`${this.apiUrl}/morosidad`, { params }).pipe(
       catchError(err => this.manejarError(err))
     );
   }
@@ -134,30 +138,36 @@ export class ReporteService {
     );
   }
 
-  vencidos(diasAtrasoMin?: number, busqueda?: string): Observable<ReporteVencidos[]> {
+  vencidos(diasAtrasoMin?: number, busqueda?: string, page?: number, size?: number): Observable<{ content: ReporteVencidos[]; totalPages: number; totalElements: number }> {
     const params: Record<string, string> = {};
     if (diasAtrasoMin) params['diasAtrasoMin'] = diasAtrasoMin.toString();
     if (busqueda) params['busqueda'] = busqueda;
-    return this.http.get<ReporteVencidos[]>(`${this.apiUrl}/vencidos`, { params }).pipe(
+    if (page !== undefined) params['page'] = String(page);
+    if (size !== undefined) params['size'] = String(size);
+    return this.http.get<{ content: ReporteVencidos[]; totalPages: number; totalElements: number }>(`${this.apiUrl}/vencidos`, { params }).pipe(
       catchError(err => this.manejarError(err))
     );
   }
 
-  categoriasDemandadas(desde?: string, hasta?: string, limite?: number): Observable<ReporteCategoriasDemandadas[]> {
+  categoriasDemandadas(desde?: string, hasta?: string, limite?: number, page?: number, size?: number): Observable<{ content: ReporteCategoriasDemandadas[]; totalPages: number; totalElements: number }> {
     const params: Record<string, string> = {};
     if (desde) params['desde'] = desde;
     if (hasta) params['hasta'] = hasta;
     if (limite) params['limite'] = limite.toString();
-    return this.http.get<ReporteCategoriasDemandadas[]>(`${this.apiUrl}/categorias-demandadas`, { params }).pipe(
+    if (page !== undefined) params['page'] = String(page);
+    if (size !== undefined) params['size'] = String(size);
+    return this.http.get<{ content: ReporteCategoriasDemandadas[]; totalPages: number; totalElements: number }>(`${this.apiUrl}/categorias-demandadas`, { params }).pipe(
       catchError(err => this.manejarError(err))
     );
   }
 
-  usoPorPeriodo(granularidad: 'dia' | 'semana' | 'mes', desde?: string, hasta?: string): Observable<ReporteUsoPorPeriodo[]> {
+  usoPorPeriodo(granularidad: 'dia' | 'semana' | 'mes', desde?: string, hasta?: string, page?: number, size?: number): Observable<{ content: ReporteUsoPorPeriodo[]; totalPages: number; totalElements: number }> {
     const params: Record<string, string> = { granularidad };
     if (desde) params['desde'] = desde;
     if (hasta) params['hasta'] = hasta;
-    return this.http.get<ReporteUsoPorPeriodo[]>(`${environment.apiUrl}/v1/prestamos/reportes/uso`, { params }).pipe(
+    if (page !== undefined) params['page'] = String(page);
+    if (size !== undefined) params['size'] = String(size);
+    return this.http.get<{ content: ReporteUsoPorPeriodo[]; totalPages: number; totalElements: number }>(`${environment.apiUrl}/v1/prestamos/reportes/uso`, { params }).pipe(
       catchError(err => this.manejarError(err))
     );
   }

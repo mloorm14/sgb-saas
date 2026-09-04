@@ -108,7 +108,8 @@ export class DashboardGerenteAdminHomeComponent implements OnInit {
     this.cambiarLimiteLibros(this.limiteLibros);
 
     this.reporteService.morosidad().subscribe({
-      next: (usuarios) => {
+      next: (res: any) => {
+        const usuarios = Array.isArray(res) ? res : res.content ?? [];
         this.usuariosEnMora = usuarios;
         this.cargandoMorosidad = false;
       },

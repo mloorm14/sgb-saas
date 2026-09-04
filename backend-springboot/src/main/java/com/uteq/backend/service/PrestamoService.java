@@ -347,6 +347,17 @@ public class PrestamoService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public Page<ReporteMorosidadResponseDTO> reporteMorosidadPaginado(Integer limite, Pageable pageable) {
+        Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
+        int limit = pageable.getPageSize();
+        int offset = (int) pageable.getOffset();
+        List<ReporteMorosidadProjection> projections = prestamoProcRepo.fnReporteIndiceMorosidadPaginado(limiteEfectivo, limit, offset);
+        long total = prestamoProcRepo.countReporteIndiceMorosidad(limiteEfectivo);
+        List<ReporteMorosidadResponseDTO> content = projections.stream().map(this::toDTO).toList();
+        return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
+    }
+
     // ── GET /reportes/uso (Módulo 7) ────────────────────────
     // Validación de p_granularidad en Java (400 vía IllegalArgumentException
     // -> GlobalExceptionHandler) en vez de dejar que un valor no reconocido
@@ -368,6 +379,21 @@ public class PrestamoService {
         return prestamoProcRepo.fnReporteUsoPorPeriodo(granularidadEfectiva, desde, hasta).stream()
                 .map(this::toDTO)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ReporteUsoPorPeriodoResponseDTO> reporteUsoPorPeriodoPaginado(
+            String granularidad, OffsetDateTime desde, OffsetDateTime hasta, Pageable pageable) {
+        String granularidadEfectiva = (granularidad != null) ? granularidad.toLowerCase() : "dia";
+        if (!GRANULARIDADES_VALIDAS.contains(granularidadEfectiva)) {
+            throw new IllegalArgumentException("granularidad inválida: '" + granularidad + "'. Valores permitidos: dia, semana, mes.");
+        }
+        int limit = pageable.getPageSize();
+        int offset = (int) pageable.getOffset();
+        List<ReporteUsoPorPeriodoProjection> projections = prestamoProcRepo.fnReporteUsoPorPeriodoPaginado(granularidadEfectiva, desde, hasta, limit, offset);
+        long total = prestamoProcRepo.countReporteUsoPorPeriodo(granularidadEfectiva, desde, hasta);
+        List<ReporteUsoPorPeriodoResponseDTO> content = projections.stream().map(this::toDTO).toList();
+        return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
     }
 
     // ── "Propio vs cualquiera": LECTOR solo puede pedir su propio
@@ -433,14 +459,22 @@ public class PrestamoService {
         Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
         return prestamoProcRepo.fnReporteLibrosMasPrestadosDetallado(limiteEfectivo, desde, hasta, categoriaId).stream()
                 .map(p -> new LibroMasPrestadoDetalladoResponseDTO(
-                        p.getLibroId(),
-                        p.getTitulo(),
-                        p.getIsbn(),
-                        p.getAutorNombre(),
-                        p.getCategoriaNombre(),
-                        p.getTotalPrestamos(),
-                        p.getPorcentaje()))
+                        p.getLibroId(), p.getTitulo(), p.getIsbn(), p.getAutorNombre(), p.getCategoriaNombre(), p.getTotalPrestamos(), p.getPorcentaje()))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<LibroMasPrestadoDetalladoResponseDTO> reporteLibrosMasPrestadosDetalladoPaginado(
+            Integer limite, OffsetDateTime desde, OffsetDateTime hasta, Integer categoriaId, Pageable pageable) {
+        Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
+        int limit = pageable.getPageSize();
+        int offset = (int) pageable.getOffset();
+        List<LibroMasPrestadoDetalladoProjection> projections = prestamoProcRepo.fnReporteLibrosDetalladoPaginado(limiteEfectivo, desde, hasta, categoriaId, limit, offset);
+        long total = prestamoProcRepo.countReporteLibrosDetallado(limiteEfectivo, desde, hasta, categoriaId);
+        List<LibroMasPrestadoDetalladoResponseDTO> content = projections.stream()
+                .map(p -> new LibroMasPrestadoDetalladoResponseDTO(p.getLibroId(), p.getTitulo(), p.getIsbn(), p.getAutorNombre(), p.getCategoriaNombre(), p.getTotalPrestamos(), p.getPorcentaje()))
+                .toList();
+        return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
     }
 
     @Transactional(readOnly = true)
@@ -484,15 +518,23 @@ public class PrestamoService {
     public List<ReporteVencidosResponseDTO> reportePrestamosVencidos(Integer diasAtrasoMin, String busqueda) {
         return prestamoProcRepo.fnReportePrestamosVencidos(diasAtrasoMin, busqueda).stream()
                 .map(p -> new ReporteVencidosResponseDTO(
-                        p.getPrestamoId(),
-                        p.getUsuarioNombre(),
-                        p.getUsuarioCorreo(),
-                        p.getLibroTitulo(),
-                        p.getLibroIsbn(),
+                        p.getPrestamoId(), p.getUsuarioNombre(), p.getUsuarioCorreo(), p.getLibroTitulo(), p.getLibroIsbn(),
                         p.getFechaDevolucionEstimada() != null ? p.getFechaDevolucionEstimada().atOffset(ZoneOffset.UTC) : null,
-                        p.getDiasAtraso(),
-                        p.getMontoMultaEstimada()))
+                        p.getDiasAtraso(), p.getMontoMultaEstimada()))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ReporteVencidosResponseDTO> reportePrestamosVencidosPaginado(Integer diasAtrasoMin, String busqueda, Pageable pageable) {
+        int limit = pageable.getPageSize();
+        int offset = (int) pageable.getOffset();
+        List<ReporteVencidosProjection> projections = prestamoProcRepo.fnReportePrestamosVencidosPaginado(diasAtrasoMin, busqueda, limit, offset);
+        long total = prestamoProcRepo.countReportePrestamosVencidos(diasAtrasoMin, busqueda);
+        List<ReporteVencidosResponseDTO> content = projections.stream()
+                .map(p -> new ReporteVencidosResponseDTO(p.getPrestamoId(), p.getUsuarioNombre(), p.getUsuarioCorreo(), p.getLibroTitulo(), p.getLibroIsbn(),
+                        p.getFechaDevolucionEstimada() != null ? p.getFechaDevolucionEstimada().atOffset(ZoneOffset.UTC) : null, p.getDiasAtraso(), p.getMontoMultaEstimada()))
+                .toList();
+        return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
     }
 
     @Transactional(readOnly = true)
@@ -500,12 +542,22 @@ public class PrestamoService {
             Integer limite, OffsetDateTime desde, OffsetDateTime hasta) {
         Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
         return prestamoProcRepo.fnReporteCategoriasDemandadas(limiteEfectivo, desde, hasta).stream()
-                .map(p -> new ReporteCategoriasDemandadasResponseDTO(
-                        p.getCategoriaId(),
-                        p.getCategoriaNombre(),
-                        p.getTotalPrestamos(),
-                        p.getPorcentaje()))
+                .map(p -> new ReporteCategoriasDemandadasResponseDTO(p.getCategoriaId(), p.getCategoriaNombre(), p.getTotalPrestamos(), p.getPorcentaje()))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ReporteCategoriasDemandadasResponseDTO> reporteCategoriasDemandadasPaginado(
+            Integer limite, OffsetDateTime desde, OffsetDateTime hasta, Pageable pageable) {
+        Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
+        int limit = pageable.getPageSize();
+        int offset = (int) pageable.getOffset();
+        List<ReporteCategoriasDemandadasProjection> projections = prestamoProcRepo.fnReporteCategoriasDemandadasPaginado(limiteEfectivo, desde, hasta, limit, offset);
+        long total = prestamoProcRepo.countReporteCategoriasDemandadas(limiteEfectivo, desde, hasta);
+        List<ReporteCategoriasDemandadasResponseDTO> content = projections.stream()
+                .map(p -> new ReporteCategoriasDemandadasResponseDTO(p.getCategoriaId(), p.getCategoriaNombre(), p.getTotalPrestamos(), p.getPorcentaje()))
+                .toList();
+        return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
     }
 
     private ReporteMorosidadResponseDTO toDTO(ReporteMorosidadProjection p) {
