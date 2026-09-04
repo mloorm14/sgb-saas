@@ -39,7 +39,7 @@
       @if (paso === 'registro') {
         <div class="mb-lg">
           <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Crear cuenta</h2>
-          <p class="font-body-sm text-body-sm text-on-surface-variant">Regístrate para acceder al catálogo y gestionar tus préstamos</p>
+          <p class="font-body-sm text-body-sm text-on-surface-variant">Completar el registro para acceder al catálogo y gestionar los préstamos</p>
         </div>
 
         <form [formGroup]="formRegistro" (ngSubmit)="submitRegistro()" class="space-y-md">
@@ -54,7 +54,7 @@
                   class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
               </div>
               @if (formRegistro.get('nombre')?.invalid && formRegistro.get('nombre')?.touched) {
-                <p id="nombre-error" class="font-label-sm text-[11px] text-error">Ingresa tu nombre</p>
+                <p id="nombre-error" class="font-label-sm text-[11px] text-error">Escribir el nombre</p>
               }
             </div>
             <div class="flex-1 space-y-xs">
@@ -67,7 +67,7 @@
                   class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
               </div>
               @if (formRegistro.get('apellido')?.invalid && formRegistro.get('apellido')?.touched) {
-                <p id="apellido-error" class="font-label-sm text-[11px] text-error">Ingresa tu apellido</p>
+                <p id="apellido-error" class="font-label-sm text-[11px] text-error">Escribir el apellido</p>
               }
             </div>
           </div>
@@ -83,7 +83,7 @@
                 class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
             </div>
             @if (formRegistro.get('correo')?.invalid && formRegistro.get('correo')?.touched) {
-              <p id="correo-error" class="font-label-sm text-[11px] text-error">Ingresa un correo válido</p>
+              <p id="correo-error" class="font-label-sm text-[11px] text-error">Escribir un correo válido</p>
             }
           </div>
 
@@ -142,7 +142,7 @@
           </button>
 
           <p class="text-center font-body-sm text-body-sm text-on-surface-variant mt-sm">
-            ¿Ya tienes cuenta? <a routerLink="/login" class="text-primary font-medium hover:underline">Iniciar sesión</a>
+            ¿Ya existe una cuenta? <a routerLink="/login" class="text-primary font-medium hover:underline">Iniciar sesión</a>
           </p>
 
           <div class="flex justify-center pt-md">
@@ -157,9 +157,9 @@
       <!-- ===== PASO 2: VERIFICAR CORREO ===== -->
       @if (paso === 'verificar') {
         <div class="mb-lg">
-          <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Verifica tu correo</h2>
+          <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Verificar correo</h2>
           <p class="font-body-sm text-body-sm text-on-surface-variant">
-            Enviamos un código de 6 dígitos a <strong>{{ correoRegistrado }}</strong>. Ingresalo para activar tu cuenta.
+            Se envió un código de 6 dígitos a <strong>{{ correoRegistrado }}</strong>. Escribir el código para activar la cuenta.
           </p>
         </div>
 
@@ -175,12 +175,15 @@
                 class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 py-sm font-body-md text-body-md text-on-surface placeholder-outline tracking-[0.3em] text-center" />
             </div>
             @if (formVerificar.get('codigo')?.invalid && formVerificar.get('codigo')?.touched) {
-              <p id="codigo-error" class="font-label-sm text-[11px] text-error">Debe ser un código de 6 dígitos</p>
+              <p id="codigo-error" class="font-label-sm text-[11px] text-error">Escribir un código de 6 dígitos</p>
             }
           </div>
 
           @if (errorMsgVerificar) {
             <div role="alert" class="text-error text-body-sm">{{ errorMsgVerificar }}</div>
+          }
+          @if (mensajeReenvio) {
+            <div role="status" class="text-success text-body-sm">{{ mensajeReenvio }}</div>
           }
 
           <button type="submit" [disabled]="formVerificar.invalid || cargando"
@@ -188,11 +191,25 @@
             {{ cargando ? 'Verificando...' : 'Verificar cuenta' }}
           </button>
 
-          <p class="text-center font-body-sm text-body-sm text-on-surface-variant mt-sm">
-            <button type="button" (click)="volverARegistro()" class="text-primary font-medium hover:underline">
-              ¿Correo equivocado? Volver a registrarte
+          <div class="flex flex-col sm:flex-row gap-sm mt-sm">
+            <button type="button" (click)="reenviarCodigo()" [disabled]="!puedeReenviar"
+              class="flex-1 h-11 rounded border border-outline-variant font-label-md text-label-md flex items-center justify-center gap-sm hover:bg-surface-container-low transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-on-surface">
+              <span class="material-symbols-outlined text-[18px]">mail</span>
+              {{ enviandoReenvio ? 'Enviando...' : 'Reenviar código (' + reenviosRealizados + '/3)' }}
             </button>
-          </p>
+            <button type="button" (click)="volverARegistro()"
+              class="flex-1 h-11 rounded border border-outline-variant font-label-md text-label-md flex items-center justify-center gap-sm hover:bg-surface-container-low transition-colors text-on-surface">
+              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+              Volver al registro
+            </button>
+          </div>
+          @if (segundosRestantes > 0) {
+            <p class="text-center font-body-sm text-body-sm text-on-surface-variant">Posible nuevo envío en {{ textoCooldown }}</p>
+          } @else if (reenviosRealizados >= 3) {
+            <p class="text-center font-body-sm text-body-sm text-error">Límite de 3 reenvíos alcanzado. Volver a realizar el registro o contactar soporte.</p>
+          } @else {
+            <p class="text-center font-body-sm text-body-sm text-on-surface-variant">En caso de no recibir el código, es posible solicitar un nuevo envío.</p>
+          }
         </form>
       }
 

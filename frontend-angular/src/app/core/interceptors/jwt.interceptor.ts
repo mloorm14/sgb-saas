@@ -34,9 +34,17 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
           // nuevo y la marca X-Retry puesta. Si el refresh falla, la
           // sesión sí venció: logout + redirección a login.
           return authService.refresh().pipe(
-            switchMap(() =>
-              enviar(solicitud.clone({ setHeaders: { 'X-Retry': 'true' } }))
-            ),
+            switchMap((refreshResp) => {
+              const nuevoToken = refreshResp?.accessToken ?? authService.getAccessToken();
+              // B7: el retry reenvía la cookie (withCredentials) y el Bearer nuevo.
+              return enviar(solicitud.clone({
+                withCredentials: true,
+                setHeaders: {
+                  ...(nuevoToken ? { Authorization: `Bearer ${nuevoToken}` } : {}),
+                  'X-Retry': 'true'
+                }
+              }));
+            }),
             catchError((refreshError) => {
               authService.logout('/login');
               router.navigate(['/login']);
