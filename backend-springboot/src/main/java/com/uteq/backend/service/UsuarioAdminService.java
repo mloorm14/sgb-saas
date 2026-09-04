@@ -30,15 +30,12 @@ import java.util.Set;
  * manual). Corresponde a RF-01 y al actor "Gerente/Admin" del documento de
  * requisitos original.
  * <p>
- * Separación ADMIN vs GERENTE (ver {@code docs/adr/adr-014-separacion-admin-gerente.md}):
- * este service asume que quien invoca {@link #cambiarRol} y
- * {@link #cambiarEstado} ya fue autorizado como ADMIN por
- * {@code @PreAuthorize} en {@code UsuarioAdminController} -- no repite la
- * comprobación de rol acá (a diferencia de {@code MultaService}, donde el
- * mismo endpoint admite dos roles distintos y el service necesita saber
- * cuál de los dos ejecuta la acción). Acá cada método del controller ya
- * tiene un único rol fijo requerido, así que no hay ambigüedad que resolver
- * en tiempo de ejecución.
+ * Separación ADMIN vs GERENTE (ver {@code docs/adr/adr-014-separacion-admin-gerente.md},
+ * ampliada por F8-gerente/V38): el controller admite ADMIN y GERENTE en
+ * listar/crear/cambiar-rol/cambiar-estado, y este service aplica el recorte
+ * fino — GERENTE solo ve y opera usuarios con creado_por propio y solo
+ * roles LECTOR/BIBLIOTECARIO + estados ACTIVO/INACTIVO. Solo ADMIN crea
+ * GERENTE/ADMIN y ve todo. DELETE sigue solo ADMIN en el controller.
  */
 @Service
 public class UsuarioAdminService {
@@ -47,6 +44,10 @@ public class UsuarioAdminService {
     private static final String ROL_NO_ENCONTRADO = "Rol no válido: ";
     private static final String ESTADO_NO_ENCONTRADO = "Estado no válido: ";
     private static final String TABLA_USUARIOS = "usuarios";
+    // F8-gerente: GERENTE solo opera LECTOR/BIBLIOTECARIO creados por él.
+    // Solo ADMIN crea GERENTE/ADMIN (ver UsuarioAdminController).
+    private static final Set<String> ROLES_GERENTE_PERMITIDOS = Set.of("LECTOR", "BIBLIOTECARIO");
+    private static final Set<String> ESTADOS_GERENTE_PERMITIDOS = Set.of("ACTIVO", "INACTIVO");
 
     private final UsuarioRepository usuarioRepo;
     private final RolRepository rolRepo;
@@ -71,9 +72,20 @@ public class UsuarioAdminService {
 
     @Transactional(readOnly = true)
     public Page<UsuarioListadoResponseDTO> listar(String filtro, Pageable pageable) {
+        return listar(filtro, pageable, null, false);
+    }
+
+    // F8-gerente: si authentication es GERENTE (o soloMios=true), filtra por
+    // creado_por = miId. ADMIN con soloMios=false ve todo como antes.
+    @Transactional(readOnly = true)
+    public Page<UsuarioListadoResponseDTO> listar(String filtro, Pageable pageable,
+                                                  Authentication authentication, boolean soloMios) {
         String texto = filtro == null ? "" : filtro.trim();
-        Page<Usuario> pagina = usuarioRepo
-                .findByNombreContainingIgnoreCaseOrCorreoContainingIgnoreCase(texto, texto, pageable);
+        Long creadoPor = null;
+        if (authentication != null && (soloMios || esGerente(authentication))) {
+            creadoPor = resolverIdPorCorreo(authentication.getName());
+        }
+        Page<Usuario> pagina = usuarioRepo.buscarConFiltros(texto, creadoPor, pageable);
 
         // Batch query: una sola consulta para saber qué usuarios de la
         // página tienen multas pendientes (evita N+1).
@@ -102,6 +114,18 @@ public class UsuarioAdminService {
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
         Rol rol = rolRepo.findByNombre(nuevoRol)
                 .orElseThrow(() -> new IllegalArgumentException(ROL_NO_ENCONTRADO + nuevoRol));
+        Long ejecutorId = resolverIdPorCorreo(authentication == null ? null : authentication.getName());
+        // F8-gerente: GERENTE solo cambia rol a sus creados y solo LECTOR/BIBLIOTECARIO.
+        if (esGerente(authentication)) {
+            if (!ROLES_GERENTE_PERMITIDOS.contains(nuevoRol)) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "GERENTE solo puede asignar roles LECTOR o BIBLIOTECARIO");
+            }
+            if (usuario.getCreadoPor() == null || !usuario.getCreadoPor().equals(ejecutorId)) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "GERENTE solo puede modificar usuarios creados por él");
+            }
+        }
 
         Set<Rol> roles = new HashSet<>();
         roles.add(rol);
@@ -109,7 +133,6 @@ public class UsuarioAdminService {
         usuario.setActualizadoEn(Instant.now());
         usuarioRepo.save(usuario);
 
-        Long ejecutorId = resolverIdPorCorreo(authentication.getName());
         registrarAuditoria(ejecutorId, usuario.getId(),
                 "Cambio de rol del usuario " + usuario.getCorreo() + " a " + nuevoRol);
     }
@@ -128,12 +151,23 @@ public class UsuarioAdminService {
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
         EstadoUsuario estado = estadoUsuarioRepo.findByNombre(nuevoEstado)
                 .orElseThrow(() -> new IllegalArgumentException(ESTADO_NO_ENCONTRADO + nuevoEstado));
+        Long ejecutorId = resolverIdPorCorreo(authentication == null ? null : authentication.getName());
+        // F8-gerente: GERENTE solo bloquea/reactiva (ACTIVO/INACTIVO) a sus creados.
+        if (esGerente(authentication)) {
+            if (!ESTADOS_GERENTE_PERMITIDOS.contains(nuevoEstado)) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "GERENTE solo puede bloquear o reactivar usuarios");
+            }
+            if (usuario.getCreadoPor() == null || !usuario.getCreadoPor().equals(ejecutorId)) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "GERENTE solo puede modificar usuarios creados por él");
+            }
+        }
 
         usuario.setEstado(estado);
         usuario.setActualizadoEn(Instant.now());
         usuarioRepo.save(usuario);
 
-        Long ejecutorId = resolverIdPorCorreo(authentication.getName());
         registrarAuditoria(ejecutorId, usuario.getId(),
                 "Cambio de estado del usuario " + usuario.getCorreo() + " a " + nuevoEstado
                         + ". Motivo: " + motivo);
@@ -146,12 +180,17 @@ public class UsuarioAdminService {
     @Transactional
     public com.uteq.backend.dto.UsuarioResponseDTO crearUsuario(com.uteq.backend.dto.CrearUsuarioAdminRequestDTO dto, Authentication authentication) {
         usuarioRepo.findByCorreo(dto.correo()).ifPresent(u -> { throw new com.uteq.backend.service.CorreoYaRegistradoException("El correo ya está registrado: " + dto.correo()); });
+        // F8-gerente: solo ADMIN crea GERENTE/ADMIN.
+        if (esGerente(authentication) && !ROLES_GERENTE_PERMITIDOS.contains(dto.rol())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "GERENTE solo puede crear usuarios LECTOR o BIBLIOTECARIO");
+        }
         Rol rol = rolRepo.findByNombre(dto.rol()).orElseThrow(() -> new IllegalArgumentException(ROL_NO_ENCONTRADO + dto.rol()));
         EstadoUsuario estadoActivo = estadoUsuarioRepo.findByNombre("ACTIVO").orElseThrow(() -> new IllegalStateException("Estado ACTIVO no existe"));
         java.util.Set<Rol> roles = new java.util.HashSet<>(); roles.add(rol);
-        Usuario usuario = Usuario.builder().nombre(dto.nombre()).apellido(dto.apellido()).correo(dto.correo()).passwordHash(new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(12).encode(dto.password())).estado(estadoActivo).correoVerificado(true).roles(roles).fechaRegistro(Instant.now()).actualizadoEn(Instant.now()).build();
-        Usuario guardado = usuarioRepo.save(usuario);
         Long ejecutorId = resolverIdPorCorreo(authentication.getName());
+        Usuario usuario = Usuario.builder().nombre(dto.nombre()).apellido(dto.apellido()).correo(dto.correo()).passwordHash(new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(12).encode(dto.password())).estado(estadoActivo).correoVerificado(true).roles(roles).fechaRegistro(Instant.now()).actualizadoEn(Instant.now()).creadoPor(ejecutorId).build();
+        Usuario guardado = usuarioRepo.save(usuario);
         registrarAuditoria(ejecutorId, guardado.getId(), "Creación admin de usuario " + dto.correo() + " rol " + dto.rol());
         java.util.List<String> rolesStr = guardado.getRoles().stream().map(Rol::getNombre).toList();
         return new com.uteq.backend.dto.UsuarioResponseDTO(guardado.getId(), guardado.getNombre(), guardado.getCorreo(), rolesStr);
@@ -172,6 +211,13 @@ public class UsuarioAdminService {
         return usuarioRepo.findByCorreo(correo)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo))
                 .getId();
+    }
+
+    // F8-gerente: GERENTE opera solo sobre sus creados; ADMIN sin restricción.
+    private boolean esGerente(Authentication authentication) {
+        if (authentication == null || authentication.getAuthorities() == null) return false;
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_GERENTE".equals(a.getAuthority()));
     }
 
     // Mismo criterio que AuthService.registrarAuditoria(): INSERT plano de

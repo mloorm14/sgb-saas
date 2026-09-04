@@ -88,7 +88,7 @@ class UsuarioAdminServiceTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Usuario> pagina = new PageImpl<>(List.of(bloqueado, activo), pageable, 2);
 
-        given(usuarioRepo.findByNombreContainingIgnoreCaseOrCorreoContainingIgnoreCase("", "", pageable))
+        given(usuarioRepo.buscarConFiltros("", null, pageable))
                 .willReturn(pagina);
 
         com.uteq.backend.entity.EstadoMulta estadoPendiente = new com.uteq.backend.entity.EstadoMulta();
@@ -189,5 +189,70 @@ class UsuarioAdminServiceTest {
                 .isInstanceOf(EntityNotFoundException.class);
 
         verify(estadoUsuarioRepo, times(0)).findByNombre(any());
+    }
+
+    // ── F8-gerente/V38 ───────────────────────────────────────
+
+    private void comoGerente(String correo, Long id) {
+        org.mockito.Mockito.lenient().when(authentication.getName()).thenReturn(correo);
+        org.mockito.Mockito.lenient().when(authentication.getAuthorities()).thenAnswer(inv -> List.of(
+                (org.springframework.security.core.GrantedAuthority) () -> "ROLE_GERENTE"));
+        Usuario gerente = usuario(id, correo, "GERENTE", "ACTIVO");
+        org.mockito.Mockito.lenient().when(usuarioRepo.findByCorreo(correo)).thenReturn(Optional.of(gerente));
+    }
+
+    @Test
+    void gerente_crearLector_guardaCreadoPor() {
+        comoGerente("gerente@uteq.edu.ec", 7L);
+        given(rolRepo.findByNombre("LECTOR")).willReturn(Optional.of(rol("LECTOR")));
+        given(estadoUsuarioRepo.findByNombre("ACTIVO")).willReturn(Optional.of(estado("ACTIVO")));
+        given(usuarioRepo.findByCorreo("nuevo@uteq.edu.ec")).willReturn(Optional.empty());
+        given(usuarioRepo.save(any())).willAnswer(inv -> {
+            Usuario u = inv.getArgument(0);
+            u.setId(50L);
+            return u;
+        });
+
+        service.crearUsuario(new com.uteq.backend.dto.CrearUsuarioAdminRequestDTO(
+                "Ana", "Paz", "nuevo@uteq.edu.ec", "Secreta123", "LECTOR"), authentication);
+
+        ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+        verify(usuarioRepo).save(captor.capture());
+        assertThat(captor.getValue().getCreadoPor()).isEqualTo(7L);
+    }
+
+    @Test
+    void gerente_crearGerente_lanzaAccessDenied() {
+        comoGerente("gerente@uteq.edu.ec", 7L);
+        given(usuarioRepo.findByCorreo("otro@uteq.edu.ec")).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.crearUsuario(new com.uteq.backend.dto.CrearUsuarioAdminRequestDTO(
+                "Ana", "Paz", "otro@uteq.edu.ec", "Secreta123", "GERENTE"), authentication))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    }
+
+    @Test
+    void gerente_cambiarRolDeOtroGerente_lanzaAccessDenied() {
+        comoGerente("gerente@uteq.edu.ec", 7L);
+        Usuario objetivo = usuario(5L, "lector@uteq.edu.ec", "LECTOR", "ACTIVO");
+        objetivo.setCreadoPor(99L);
+        given(usuarioRepo.findById(5L)).willReturn(Optional.of(objetivo));
+        given(rolRepo.findByNombre("BIBLIOTECARIO")).willReturn(Optional.of(rol("BIBLIOTECARIO")));
+
+        assertThatThrownBy(() -> service.cambiarRol(5L, "BIBLIOTECARIO", authentication))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    }
+
+    @Test
+    void gerente_bloquearSuCreado_permite() {
+        comoGerente("gerente@uteq.edu.ec", 7L);
+        Usuario objetivo = usuario(5L, "lector@uteq.edu.ec", "LECTOR", "ACTIVO");
+        objetivo.setCreadoPor(7L);
+        given(usuarioRepo.findById(5L)).willReturn(Optional.of(objetivo));
+        given(estadoUsuarioRepo.findByNombre("INACTIVO")).willReturn(Optional.of(estado("INACTIVO")));
+
+        service.cambiarEstado(5L, "INACTIVO", "Baja", authentication);
+
+        assertThat(objetivo.getEstado().getNombre()).isEqualTo("INACTIVO");
     }
 }
