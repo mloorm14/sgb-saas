@@ -1,15 +1,23 @@
 <div class="max-w-container-max mx-auto px-md md:px-lg py-lg">
-  <div class="mb-lg">
-    <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Gestión de usuarios</h1>
-    <!-- Ref. técnica: GET /api/v1/admin/usuarios — ADMIN y GERENTE ven el listado; solo ADMIN puede cambiar rol o estado -->
-<p class="font-body-sm text-body-sm text-on-surface-variant">Consultá y gestioná las cuentas de usuarios del sistema.</p>
+  <div class="mb-lg flex flex-wrap items-start justify-between gap-md">
+    <div>
+      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">{{ soloMios ? 'Mis usuarios' : 'Gestión de usuarios' }}</h1>
+      <!-- Ref. técnica: GET /api/v1/admin/usuarios — ADMIN ve todo; GERENTE con ?mios=true ve solo sus creados -->
+      <p class="font-body-sm text-body-sm text-on-surface-variant">{{ soloMios ? 'Cuentas creadas por esta gerencia: solo LECTOR y BIBLIOTECARIO.' : 'Consultá y gestioná las cuentas de usuarios del sistema.' }}</p>
+    </div>
+    @if (puedeGestionar) {
+      <button (click)="abrirModalCrear()"
+        class="h-11 px-lg rounded-full bg-primary text-on-primary font-label-sm text-label-sm inline-flex items-center gap-sm hover:bg-primary/80 transition-colors cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">person_add</span> Crear usuario
+      </button>
+    }
   </div>
 
-  <!-- Nota de modo solo-lectura para GERENTE (mockup 20) -->
+  <!-- Nota de modo solo-lectura para GERENTE fuera de su apartado -->
   @if (puedeVer && !puedeGestionar) {
     <div class="rounded border border-tertiary-fixed-dim bg-tertiary-fixed/30 px-md py-sm mb-md flex items-center gap-sm">
       <span class="material-symbols-outlined text-[18px] text-on-tertiary-container">visibility</span>
-      <p class="font-body-sm text-body-sm text-on-tertiary-container">Estás viendo este listado en modo solo lectura (rol GERENTE). Cambiar rol o estado requiere ADMIN.</p>
+      <p class="font-body-sm text-body-sm text-on-tertiary-container">Vista de solo lectura. La gestión de GERENTE se realiza en el apartado Mis usuarios.</p>
     </div>
   }
 
@@ -91,11 +99,11 @@
             <td class="px-md py-sm hidden md:table-cell text-on-surface-variant">{{ usuario.correo }}</td>
             <td class="px-md py-sm">
               @if (puedeGestionar) {
-                <select [value]="usuario.roles[0]"
-                  (change)="cambiarRol(usuario, $any($event.target).value)"
+                <select [ngModel]="usuario.roles[0]"
+                  (ngModelChange)="cambiarRol(usuario, $event)"
                   class="h-9 px-sm rounded border border-outline-variant font-label-sm text-label-sm bg-surface-container-lowest cursor-pointer">
-                  @for (rol of rolesDisponibles; track rol) {
-                    <option [value]="rol" [selected]="usuario.roles[0] === rol">{{ rol }}</option>
+                  @for (rol of rolesParaSelect; track rol) {
+                    <option [ngValue]="rol">{{ rol }}</option>
                   }
                 </select>
               } @else {
@@ -132,22 +140,30 @@
             </td>
             @if (puedeGestionar) {
               <td class="px-md py-sm">
-                @if (esBloqueable(usuario)) {
-                  <button (click)="abrirModalEstado(usuario, 'INACTIVO')"
-                    class="h-8 px-sm rounded border border-error text-error font-label-sm text-label-sm hover:bg-error-container/40 flex items-center gap-xs cursor-pointer">
-                    <span class="material-symbols-outlined text-[16px]">block</span> Bloquear
-                  </button>
-                } @else if (esActivatable(usuario)) {
-                  <button (click)="abrirModalEstado(usuario, 'ACTIVO')"
-                    class="h-8 px-sm rounded border border-primary text-primary font-label-sm text-label-sm hover:bg-primary/5 flex items-center gap-xs cursor-pointer">
-                    <span class="material-symbols-outlined text-[16px]">check_circle</span> Activar
-                  </button>
-                } @else if (esBloqueoAutomatico(usuario)) {
-                  <button disabled
-                    class="h-8 px-sm rounded border border-outline-variant font-label-sm text-label-sm flex items-center gap-xs opacity-50 cursor-not-allowed">
-                    <span class="material-symbols-outlined text-[16px]">info</span> Bloqueo automático
-                  </button>
-                }
+                <div class="flex items-center gap-xs flex-wrap">
+                  @if (esBloqueable(usuario)) {
+                    <button (click)="abrirModalEstado(usuario, 'INACTIVO')"
+                      class="h-8 px-sm rounded border border-error text-error font-label-sm text-label-sm hover:bg-error-container/40 flex items-center gap-xs cursor-pointer">
+                      <span class="material-symbols-outlined text-[16px]">block</span> Bloquear
+                    </button>
+                  } @else if (esActivatable(usuario)) {
+                    <button (click)="abrirModalEstado(usuario, 'ACTIVO')"
+                      class="h-8 px-sm rounded border border-primary text-primary font-label-sm text-label-sm hover:bg-primary/5 flex items-center gap-xs cursor-pointer">
+                      <span class="material-symbols-outlined text-[16px]">check_circle</span> Activar
+                    </button>
+                  } @else if (esBloqueoAutomatico(usuario)) {
+                    <button disabled
+                      class="h-8 px-sm rounded border border-outline-variant font-label-sm text-label-sm flex items-center gap-xs opacity-50 cursor-not-allowed">
+                      <span class="material-symbols-outlined text-[16px]">info</span> Bloqueo automático
+                    </button>
+                  }
+                  @if (esAdmin) {
+                    <button (click)="eliminarDefinitivo(usuario)" aria-label="Eliminar"
+                      class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-error-container text-error cursor-pointer">
+                      <span class="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  }
+                </div>
               </td>
             }
           </tr>
@@ -199,6 +215,62 @@
       </div>
     }
   </div>
+
+  <!-- Modal: crear usuario (F7/F8) -->
+  @if (mostrarModalCrear) {
+    <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-md"
+      role="dialog" aria-modal="true" aria-labelledby="titulo-crear-usuario">
+      <div class="bg-surface-container-lowest rounded-xl glass-panel w-full max-w-md p-xl"
+        tabindex="-1" appFocusTrap (cerrar)="cerrarModalCrear()">
+        <h2 id="titulo-crear-usuario" class="font-headline-md text-headline-md text-on-background mb-xs">Crear usuario</h2>
+        <p class="font-body-sm text-body-sm text-on-surface-variant mb-md">{{ esAdmin ? 'La cuenta queda activa de inmediato.' : 'Solo es posible crear cuentas LECTOR o BIBLIOTECARIO.' }}</p>
+        <div class="space-y-md">
+          <label class="flex flex-col gap-xs">
+            <span class="font-label-sm text-label-sm text-on-surface">Nombre</span>
+            <input [(ngModel)]="nuevoNombre" type="text" placeholder="Nombre"
+              class="h-10 px-sm rounded border border-outline-variant bg-surface font-body-sm text-body-sm text-on-surface">
+          </label>
+          <label class="flex flex-col gap-xs">
+            <span class="font-label-sm text-label-sm text-on-surface">Apellido</span>
+            <input [(ngModel)]="nuevoApellido" type="text" placeholder="Apellido"
+              class="h-10 px-sm rounded border border-outline-variant bg-surface font-body-sm text-body-sm text-on-surface">
+          </label>
+          <label class="flex flex-col gap-xs">
+            <span class="font-label-sm text-label-sm text-on-surface">Correo</span>
+            <input [(ngModel)]="nuevoCorreo" type="email" placeholder="usuario@correo.com"
+              class="h-10 px-sm rounded border border-outline-variant bg-surface font-body-sm text-body-sm text-on-surface">
+          </label>
+          <label class="flex flex-col gap-xs">
+            <span class="font-label-sm text-label-sm text-on-surface">Contraseña (mínimo 8 caracteres)</span>
+            <input [(ngModel)]="nuevoPassword" type="password" placeholder="••••••••"
+              class="h-10 px-sm rounded border border-outline-variant bg-surface font-body-sm text-body-sm text-on-surface">
+          </label>
+          <label class="flex flex-col gap-xs">
+            <span class="font-label-sm text-label-sm text-on-surface">Rol</span>
+            <select [(ngModel)]="nuevoRol"
+              class="h-10 px-sm rounded border border-outline-variant bg-surface font-body-sm text-body-sm text-on-surface cursor-pointer">
+              @for (rol of rolesParaSelect; track rol) {
+                <option [ngValue]="rol">{{ rol }}</option>
+              }
+            </select>
+          </label>
+        </div>
+        @if (errorCrear) {
+          <p class="font-body-sm text-body-sm text-error mt-md">{{ errorCrear }}</p>
+        }
+        <div class="flex justify-end gap-sm mt-lg">
+          <button (click)="cerrarModalCrear()"
+            class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm hover:bg-surface-container-low cursor-pointer">
+            Cancelar
+          </button>
+          <button (click)="confirmarCrear()" [disabled]="!puedeCrear || creandoUsuario"
+            class="h-10 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm disabled:opacity-40 cursor-pointer">
+            {{ creandoUsuario ? 'Creando…' : 'Crear' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 
   <!-- Modal: motivo obligatorio para cambio de estado -->
   @if (mostrarModalEstado && usuarioAccion) {

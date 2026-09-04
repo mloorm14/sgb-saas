@@ -19,15 +19,33 @@ export class UsuarioAdminService {
 
   constructor(private http: HttpClient) {}
 
-  listar(filtro: string, page: number, size: number): Observable<Page<UsuarioAdmin>> {
+  listar(filtro: string, page: number, size: number, mios = false): Observable<Page<UsuarioAdmin>> {
     let params = new HttpParams()
       .set('page', page)
       .set('size', size);
     if (filtro.trim()) {
       params = params.set('filtro', filtro.trim());
     }
+    // F8-gerente: ?mios=true filtra por creado_por propio en el backend (V38).
+    if (mios) {
+      params = params.set('mios', 'true');
+    }
     return this.http.get<Page<UsuarioAdmin>>(this.apiUrl, { params }).pipe(
       map(data => normalizarPagina(data)),
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  // F8-gerente: POST /v1/admin/usuarios (GERENTE limitado a LECTOR/BIBLIOTECARIO en backend).
+  crear(payload: { nombre: string; apellido: string; correo: string; password: string; rol: string }): Observable<unknown> {
+    return this.http.post<unknown>(this.apiUrl, payload).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  // Solo ADMIN en backend (DELETE soft a INACTIVO).
+  eliminar(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
       catchError(err => this.manejarError(err))
     );
   }

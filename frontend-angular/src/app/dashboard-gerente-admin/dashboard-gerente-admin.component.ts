@@ -28,8 +28,9 @@ export class DashboardGerenteAdminComponent implements OnInit {
 
   // Espejo de los @PreAuthorize reales verificados en backend-springboot:
   // - /libros: todo el staff opera el inventario (LibroController).
-  // - /sugerencias/gestion: GERENTE/ADMIN. /auditoria: solo ADMIN (ahora oculto a GERENTE en sidebar).
-  // - /admin/usuarios: listado GERENTE/ADMIN (cambios solo ADMIN dentro).
+  // - /sugerencias/gestion: GERENTE/ADMIN. /auditoria: solo ADMIN.
+  // - /admin/usuarios: ADMIN ve todo; GERENTE filtra por sus creados (?mios).
+  // - /admin/mis-usuarios: apartado propio de GERENTE (F8/V38, soloMios).
   // - /admin/configuracion: SOLO ADMIN (ConfiguracionSistemaController).
   // - /reportes: BIBLIOTECARIO/GERENTE (PrestamoController) -- el ADMIN
   //   no tiene endpoints ahi, por eso no se le muestra el enlace.
@@ -51,6 +52,7 @@ export class DashboardGerenteAdminComponent implements OnInit {
         { ruta: '/dashboard-admin/proveedores', etiqueta: 'Proveedores', icono: 'local_shipping', roles: ['GERENTE', 'ADMIN'] },
         { ruta: '/dashboard-admin/sugerencias/gestion', etiqueta: 'Sugerencias', icono: 'lightbulb', roles: ['GERENTE', 'ADMIN'] },
         { ruta: '/dashboard-admin/admin/usuarios', etiqueta: 'Usuarios', icono: 'manage_accounts', roles: ['ADMIN'] },
+        { ruta: '/dashboard-admin/admin/mis-usuarios', etiqueta: 'Mis usuarios', icono: 'group', roles: ['GERENTE'] },
       ]
     },
     {
