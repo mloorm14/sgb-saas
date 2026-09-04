@@ -12,8 +12,9 @@ CREATE OR REPLACE FUNCTION fn_reporte_indice_morosidad(p_limite INTEGER DEFAULT 
 RETURNS TABLE (usuario_id BIGINT, nombre VARCHAR(100), apellido VARCHAR(100), correo VARCHAR(150), monto_total_adeudado NUMERIC(10,2), cantidad_multas_pendientes BIGINT, dias_atraso_promedio NUMERIC)
 LANGUAGE sql STABLE AS $$
     SELECT u.id, u.nombre, u.apellido, u.correo,
-           SUM(m.monto)::NUMERIC(10,2), COUNT(m.id),
-           ROUND(AVG(GREATEST(0, EXTRACT(DAY FROM (COALESCE(p.fecha_devolucion_real, NOW()) - p.fecha_devolucion_estimada)))::NUMERIC),1)
+           SUM(m.monto)::NUMERIC(10,2) AS monto_total_adeudado,
+           COUNT(m.id) AS cantidad_multas_pendientes,
+           ROUND(AVG(GREATEST(0, EXTRACT(DAY FROM (COALESCE(p.fecha_devolucion_real, NOW()) - p.fecha_devolucion_estimada)))::NUMERIC),1) AS dias_atraso_promedio
     FROM multas m JOIN estados_multa em ON em.id=m.estado_multa_id
     JOIN prestamos p ON p.id=m.prestamo_id JOIN usuarios u ON u.id=p.usuario_id
     WHERE em.nombre='PENDIENTE' GROUP BY u.id, u.nombre, u.apellido, u.correo
@@ -31,7 +32,7 @@ LANGUAGE sql STABLE AS $$
         WHERE (p_desde IS NULL OR pr.fecha_prestamo >= p_desde) AND (p_hasta IS NULL OR pr.fecha_prestamo <= p_hasta)
         GROUP BY c.id, c.nombre)
     SELECT ppc.categoria_id, ppc.categoria_nombre, ppc.total_prestamos,
-           ROUND(ppc.total_prestamos * 100.0 / NULLIF(tg.total,0),1)
+           ROUND(ppc.total_prestamos * 100.0 / NULLIF(tg.total,0),1) AS porcentaje
     FROM prestamos_por_categoria ppc CROSS JOIN total_general tg
     ORDER BY ppc.total_prestamos DESC;
 $$;
@@ -54,7 +55,7 @@ LANGUAGE sql STABLE AS $$
           AND (p_categoria_id IS NULL OR EXISTS (SELECT 1 FROM libro_categorias lc2 WHERE lc2.libro_id=pr.libro_id AND lc2.categoria_id=p_categoria_id))
         GROUP BY l.id, l.titulo, l.isbn)
     SELECT c.libro_id, c.titulo, c.isbn, c.autor_nombre, c.categoria_nombre, c.total_prestamos,
-           ROUND(c.total_prestamos * 100.0 / NULLIF(tg.total,0),1)
+           ROUND(c.total_prestamos * 100.0 / NULLIF(tg.total,0),1) AS porcentaje
     FROM conteo c CROSS JOIN total_general tg ORDER BY c.total_prestamos DESC;
 $$;
 
