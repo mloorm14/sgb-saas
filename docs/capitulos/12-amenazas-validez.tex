@@ -63,7 +63,11 @@ implementó el sistema es quien ejecutó y documentó la auditoría OWASP: no
 existe una segunda parte independiente que haya intentado explotar el
 sistema sin conocimiento previo de su código fuente, lo que puede
 subestimar la superficie real de vulnerabilidades frente a una prueba de
-penetración por un equipo externo.
+penetración por un equipo externo. En la misma línea de instrumentación,
+la suite frontend presentó 4~tests flaky dependientes de la hora local
+($\geq$18:00, diálogo de hora límite de retiro sin reloj inyectable),
+resueltos con funciones puras y \texttt{ClockService} y registrados como
+\texttt{OBS-20} en \texttt{docs/observaciones/OBSERVACIONES.md}.
 
 \section{Validez externa}
 \label{sec:validez-externa}
