@@ -77,7 +77,7 @@ class PublicoLibroControllerTest {
                 1L, "Clean Code", "9780132350884", "resumen", null,
                 false, null, null, 2008, null, null,
                 1, "Editorial X", 1, "Español", 1, "ACTIVO", 3, 3, null,
-                OffsetDateTime.now(), List.of(), List.of()
+                OffsetDateTime.now(), List.of(), List.of(), null, null
         );
     }
 
