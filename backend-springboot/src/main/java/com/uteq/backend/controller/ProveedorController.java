@@ -9,6 +9,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+
 import java.net.URI;
 import java.util.List;
 
@@ -24,10 +28,18 @@ public class ProveedorController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
-    public ResponseEntity<List<ProveedorResponseDTO>> listar() {
+    public ResponseEntity<Page<ProveedorResponseDTO>> listar(
+            @PageableDefault(size = 20, sort = "nombre") Pageable pageable) {
+        Page<ProveedorResponseDTO> page = proveedorRepository.findAll(pageable).map(this::toDTO);
+        return ResponseEntity.ok(page);
+    }
+
+    // Compatibilidad: lista completa para casos antiguos (no usar con 50k)
+    @GetMapping("/todo")
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    public ResponseEntity<List<ProveedorResponseDTO>> listarTodo() {
         List<ProveedorResponseDTO> proveedores = proveedorRepository.findAll().stream()
-                .map(this::toDTO)
-                .toList();
+                .map(this::toDTO).toList();
         return ResponseEntity.ok(proveedores);
     }
 
