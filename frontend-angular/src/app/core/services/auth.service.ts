@@ -42,6 +42,12 @@ export class AuthService {
     return this.http.post<any>(`${this.apiUrl}/auth/verificar-correo`, { correo, codigo });
   }
 
+  // F6: reenviar código de verificación (POST /auth/reenviar-codigo ya existe
+  // en backend). Sin JWT: la cuenta aún está PENDIENTE_VERIFICACION.
+  reenviarCodigo(correo: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/auth/reenviar-codigo`, { correo });
+  }
+
   logout(redirectTo: string = '/'): void {
     // Llama al backend para agregar el JTI a la blacklist de Redis
     this.http.post(`${this.apiUrl}/auth/logout`, {}, { withCredentials: true }).subscribe({

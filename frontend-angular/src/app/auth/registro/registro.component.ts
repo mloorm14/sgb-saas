@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { interval, Subscription } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 
 function passwordsIgualesValidator(control: AbstractControl): ValidationErrors | null {
@@ -17,7 +18,7 @@ function passwordsIgualesValidator(control: AbstractControl): ValidationErrors |
   templateUrl: './registro.component.html',
   styles: [`:host { display: block; height: 100%; overflow-y: auto; }`]
 })
-export class RegistroComponent {
+export class RegistroComponent implements OnDestroy {
   paso: 'registro' | 'verificar' = 'registro';
 
   formRegistro: FormGroup;
@@ -25,10 +26,20 @@ export class RegistroComponent {
 
   errorMsg: string = '';
   errorMsgVerificar: string = '';
+  mensajeReenvio: string = '';
   cargando: boolean = false;
   mostrarPassword: boolean = false;
   mostrarPassword2: boolean = false;
   correoRegistrado: string = '';
+
+  // F6: reenvío máximo 3 por correo, cooldown 180s entre cada uno.
+  // Contador individual por correo en localStorage (no global).
+  static readonly MAX_REENVIOS = 3;
+  static readonly COOLDOWN_SEG = 180;
+  reenviosRealizados = 0;
+  segundosRestantes = 0;
+  enviandoReenvio = false;
+  private cooldownSub?: Subscription;
 
   constructor(
     private fb: FormBuilder,
@@ -80,6 +91,7 @@ export class RegistroComponent {
         this.cargando = false;
         this.correoRegistrado = correo;
         this.paso = 'verificar';
+        this.iniciarEstadoReenvio();
       },
       error: (err) => {
         this.cargando = false;
@@ -100,14 +112,12 @@ export class RegistroComponent {
     this.authService.verificarCorreo(this.correoRegistrado, codigo).subscribe({
       next: () => {
         this.cargando = false;
+        this.limpiarReenvio(this.correoRegistrado);
         this.router.navigate(['/login'], { queryParams: { verificado: '1' } });
       },
       error: (err) => {
         this.cargando = false;
-        // El backend no tiene endpoint de reenvio de codigo: si expiro o es
-        // invalido, el detail del ProblemDetail lo dice explicitamente y la
-        // unica salida real es volver a /registro (ver roadmap, gap real).
-        this.errorMsgVerificar = err.error?.detail || 'Código inválido o expirado';
+        this.errorMsgVerificar = err.error?.detail || 'Código inválido o expirado. Es posible solicitar un nuevo envío.';
       }
     });
   }
@@ -115,5 +125,95 @@ export class RegistroComponent {
   volverARegistro() {
     this.paso = 'registro';
     this.formRegistro.reset({ compliance: false });
+  }
+
+  ngOnDestroy(): void {
+    this.cooldownSub?.unsubscribe();
+  }
+
+  // ── F6: reenvío con límite y cooldown por correo ──────────────
+  private claveReenvio(correo: string): string {
+    return `reenvio:${correo.trim().toLowerCase()}`;
+  }
+
+  private leerReenvio(correo: string): { count: number; ultimoTs: number } {
+    try {
+      const raw = localStorage.getItem(this.claveReenvio(correo));
+      if (!raw) return { count: 0, ultimoTs: 0 };
+      const parsed = JSON.parse(raw);
+      return { count: Number(parsed.count) || 0, ultimoTs: Number(parsed.ultimoTs) || 0 };
+    } catch {
+      return { count: 0, ultimoTs: 0 };
+    }
+  }
+
+  private guardarReenvio(correo: string, count: number, ultimoTs: number): void {
+    try {
+      localStorage.setItem(this.claveReenvio(correo), JSON.stringify({ count, ultimoTs }));
+    } catch {}
+  }
+
+  private limpiarReenvio(correo: string): void {
+    try { localStorage.removeItem(this.claveReenvio(correo)); } catch {}
+  }
+
+  // Llamar al entrar al paso verificar (tras registro exitoso).
+  iniciarEstadoReenvio(): void {
+    const { count, ultimoTs } = this.leerReenvio(this.correoRegistrado);
+    this.reenviosRealizados = count;
+    this.mensajeReenvio = '';
+    this.errorMsgVerificar = '';
+    const transcurrido = Math.floor((Date.now() - ultimoTs) / 1000);
+    const restante = ultimoTs > 0 ? RegistroComponent.COOLDOWN_SEG - transcurrido : 0;
+    if (count > 0 && restante > 0) {
+      this.iniciarCooldown(restante);
+    } else {
+      this.segundosRestantes = 0;
+    }
+  }
+
+  get puedeReenviar(): boolean {
+    return this.reenviosRealizados < RegistroComponent.MAX_REENVIOS
+      && this.segundosRestantes <= 0
+      && !this.enviandoReenvio
+      && this.correoRegistrado.trim().length > 0;
+  }
+
+  get textoCooldown(): string {
+    const m = Math.floor(this.segundosRestantes / 60);
+    const s = this.segundosRestantes % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+
+  private iniciarCooldown(segundos: number): void {
+    this.cooldownSub?.unsubscribe();
+    this.segundosRestantes = segundos;
+    this.cooldownSub = interval(1000).subscribe(() => {
+      this.segundosRestantes -= 1;
+      if (this.segundosRestantes <= 0) {
+        this.segundosRestantes = 0;
+        this.cooldownSub?.unsubscribe();
+      }
+    });
+  }
+
+  reenviarCodigo(): void {
+    if (!this.puedeReenviar) return;
+    this.enviandoReenvio = true;
+    this.errorMsgVerificar = '';
+    this.mensajeReenvio = '';
+    this.authService.reenviarCodigo(this.correoRegistrado.trim()).subscribe({
+      next: () => {
+        this.enviandoReenvio = false;
+        this.reenviosRealizados += 1;
+        this.guardarReenvio(this.correoRegistrado, this.reenviosRealizados, Date.now());
+        this.iniciarCooldown(RegistroComponent.COOLDOWN_SEG);
+        this.mensajeReenvio = `Nuevo código enviado (${this.reenviosRealizados}/${RegistroComponent.MAX_REENVIOS}). Revisar la bandeja de entrada.`;
+      },
+      error: (err) => {
+        this.enviandoReenvio = false;
+        this.errorMsgVerificar = err?.error?.detail ?? 'No fue posible enviar un nuevo código. Intentar de nuevo.';
+      }
+    });
   }
 }
