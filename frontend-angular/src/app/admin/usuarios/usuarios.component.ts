@@ -57,6 +57,7 @@ export class UsuariosComponent implements OnInit {
   nuevoApellido = '';
   nuevoCorreo = '';
   nuevoPassword = '';
+  mostrarPassword = false;
   nuevoRol = 'LECTOR';
   creandoUsuario = false;
   errorCrear = '';

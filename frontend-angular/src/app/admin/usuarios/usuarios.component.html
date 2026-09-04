@@ -131,7 +131,7 @@
             </td>
             <td class="px-md py-sm hidden md:table-cell text-center">
               @if (usuario.multasPendientes) {
-                <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-warning/25 text-on-tertiary-container">
+                <span class="inline-flex items-center gap-xs px-sm py-xs rounded-full font-label-sm text-[11px] bg-warning/30 text-tertiary border border-warning/40">
                   <span class="material-symbols-outlined text-[14px]">warning</span> Con multas pendientes
                 </span>
               } @else {
@@ -140,27 +140,29 @@
             </td>
             @if (puedeGestionar) {
               <td class="px-md py-sm">
-                <div class="flex items-center gap-xs flex-wrap">
-                  @if (esBloqueable(usuario)) {
-                    <button (click)="abrirModalEstado(usuario, 'INACTIVO')"
-                      class="h-8 px-sm rounded border border-error text-error font-label-sm text-label-sm hover:bg-error-container/40 flex items-center gap-xs cursor-pointer">
-                      <span class="material-symbols-outlined text-[16px]">block</span> Bloquear
-                    </button>
-                  } @else if (esActivatable(usuario)) {
-                    <button (click)="abrirModalEstado(usuario, 'ACTIVO')"
-                      class="h-8 px-sm rounded border border-primary text-primary font-label-sm text-label-sm hover:bg-primary/5 flex items-center gap-xs cursor-pointer">
-                      <span class="material-symbols-outlined text-[16px]">check_circle</span> Activar
-                    </button>
-                  } @else if (esBloqueoAutomatico(usuario)) {
-                    <button disabled
-                      class="h-8 px-sm rounded border border-outline-variant font-label-sm text-label-sm flex items-center gap-xs opacity-50 cursor-not-allowed">
-                      <span class="material-symbols-outlined text-[16px]">info</span> Bloqueo automático
-                    </button>
-                  }
+                <div class="flex items-center justify-between w-full gap-sm flex-nowrap">
+                  <div class="flex items-center gap-xs">
+                    @if (esBloqueable(usuario)) {
+                      <button (click)="abrirModalEstado(usuario, 'INACTIVO')" aria-label="Bloquear"
+                        class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-error-container text-error border border-error cursor-pointer">
+                        <span class="material-symbols-outlined text-[18px]">block</span>
+                      </button>
+                    } @else if (esActivatable(usuario)) {
+                      <button (click)="abrirModalEstado(usuario, 'ACTIVO')" aria-label="Activar"
+                        class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-primary/10 text-primary border border-primary cursor-pointer">
+                        <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                      </button>
+                    } @else if (esBloqueoAutomatico(usuario)) {
+                      <button disabled aria-label="Bloqueo automático"
+                        class="w-8 h-8 rounded-full flex items-center justify-center border border-outline-variant opacity-50 cursor-not-allowed">
+                        <span class="material-symbols-outlined text-[18px]">info</span>
+                      </button>
+                    }
+                  </div>
                   @if (esAdmin) {
                     <button (click)="eliminarDefinitivo(usuario)" aria-label="Eliminar"
-                      class="h-8 px-sm rounded border border-error text-error font-label-sm text-label-sm hover:bg-error-container/40 flex items-center gap-xs cursor-pointer">
-                      <span class="material-symbols-outlined text-[16px]">delete</span> Eliminar
+                      class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-error-container text-error border border-error cursor-pointer">
+                      <span class="material-symbols-outlined text-[18px]">delete</span>
                     </button>
                   }
                 </div>
@@ -237,13 +239,18 @@
           </label>
           <label class="flex flex-col gap-xs">
             <span class="font-label-sm text-label-sm text-on-surface">Correo</span>
-            <input [(ngModel)]="nuevoCorreo" type="email" placeholder="usuario@correo.com"
+            <input [(ngModel)]="nuevoCorreo" type="email" placeholder="usuario@correo.com" autocomplete="off" autocorrect="off" spellcheck="false"
               class="h-10 px-sm rounded border border-outline-variant bg-surface font-body-sm text-body-sm text-on-surface">
           </label>
           <label class="flex flex-col gap-xs">
             <span class="font-label-sm text-label-sm text-on-surface">Contraseña (mínimo 8 caracteres)</span>
-            <input [(ngModel)]="nuevoPassword" type="password" placeholder="••••••••"
-              class="h-10 px-sm rounded border border-outline-variant bg-surface font-body-sm text-body-sm text-on-surface">
+            <div class="relative">
+              <input [(ngModel)]="nuevoPassword" [type]="mostrarPassword ? 'text' : 'password'" placeholder="••••••••" autocomplete="new-password"
+                class="h-10 w-full pr-10 px-sm rounded border border-outline-variant bg-surface font-body-sm text-body-sm text-on-surface">
+              <button type="button" (click)="mostrarPassword = !mostrarPassword" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-high text-on-surface-variant cursor-pointer" [attr.aria-label]="mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+                <span class="material-symbols-outlined text-[18px]">{{ mostrarPassword ? 'visibility_off' : 'visibility' }}</span>
+              </button>
+            </div>
           </label>
           <label class="flex flex-col gap-xs">
             <span class="font-label-sm text-label-sm text-on-surface">Rol</span>
