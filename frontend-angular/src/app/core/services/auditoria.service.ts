@@ -47,6 +47,25 @@ export class AuditoriaService {
     );
   }
 
+  // GET /export del backend (AuditoriaController: siempre CSV aunque acepte
+  // ?formato). Respeta los mismos filtros opcionales del listado.
+  exportar(opciones: {
+    usuarioId?: number | null;
+    modulo?: string;
+    desde?: string;
+    hasta?: string;
+  }): Observable<Blob> {
+    let params = new HttpParams().set('formato', 'csv');
+    if (opciones.usuarioId) params = params.set('usuarioId', opciones.usuarioId);
+    if (opciones.modulo) params = params.set('modulo', opciones.modulo);
+    if (opciones.desde) params = params.set('desde', opciones.desde);
+    if (opciones.hasta) params = params.set('hasta', opciones.hasta);
+
+    return this.http.get(`${this.apiUrl}/export`, { params, responseType: 'blob' }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
   private manejarError(err: unknown): Observable<never> {
     const problem = (err as { error?: ProblemDetail })?.error;
     if (problem?.status) {

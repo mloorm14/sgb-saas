@@ -165,6 +165,15 @@
               class="h-10 flex-1 rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer">
               <span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar
             </button>
+            <button (click)="exportarCsv()" [disabled]="exportando" aria-label="Exportar CSV"
+              class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer hover:bg-surface-container-low disabled:opacity-40 disabled:cursor-not-allowed">
+              @if (exportando) {
+                <span class="material-symbols-outlined text-[18px] animate-spin" aria-hidden="true">progress_activity</span>
+              } @else {
+                <span class="material-symbols-outlined text-[18px]" aria-hidden="true">download</span>
+              }
+              Exportar
+            </button>
             <button (click)="limpiarFiltros()" aria-label="Limpiar filtros"
               class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer hover:bg-surface-container-low">
               <span class="material-symbols-outlined text-[18px]" aria-hidden="true">restart_alt</span>

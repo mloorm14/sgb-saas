@@ -13,14 +13,14 @@ describe('AuditoriaComponent', () => {
     content: [
       { id: 1, usuario: 'admin@sgb-saas.local', accion: 'UPDATE', fechaHora: '2026-08-16T15:02:00Z', modulo: 'usuarios', detalle: '{"nombre":"Ana","rol":"ADMIN"}' },
       { id: 2, usuario: null, accion: 'LOGIN_FAIL', fechaHora: '2026-08-16T14:58:00Z', modulo: 'usuarios', detalle: 'Intento con correo desconocido' },
-      { id: 3, usuario: 'u@uteq.edu.ec', accion: 'LOGIN_OK', fechaHora: '2026-08-16T14:40:00Z', modulo: 'usuarios', detalle: null }
+      { id: 3, usuario: 'u@correo.com', accion: 'LOGIN_OK', fechaHora: '2026-08-16T14:40:00Z', modulo: 'usuarios', detalle: null }
     ],
     totalPages: 1,
     totalElements: 3
   };
 
   beforeEach(async () => {
-    auditoriaService = jasmine.createSpyObj('AuditoriaService', ['listar', 'resumen']);
+    auditoriaService = jasmine.createSpyObj('AuditoriaService', ['listar', 'resumen', 'exportar']);
     auditoriaService.listar.and.returnValue(of(pagina as any));
     auditoriaService.resumen.and.returnValue(of([]));
     const usuarioAdminServiceSpy = jasmine.createSpyObj('UsuarioAdminService', ['listar']);
@@ -54,7 +54,7 @@ describe('AuditoriaComponent', () => {
 
   it('aplica filtros y vuelve a la primera página', () => {
     component.currentPage = 2;
-    component.seleccionarUsuario({ id: 14, nombre: 'Ana', apellido: 'Paz', correo: 'ana@uteq.edu.ec', roles: ['LECTOR'], estado: 'ACTIVO', multasPendientes: false });
+    component.seleccionarUsuario({ id: 14, nombre: 'Ana', apellido: 'Paz', correo: 'ana@correo.com', roles: ['LECTOR'], estado: 'ACTIVO', multasPendientes: false });
     component.filtroModulo = 'usuarios';
     component.filtroDesde = '2026-08-01';
     component.filtroHasta = '2026-08-16';
@@ -113,7 +113,7 @@ describe('AuditoriaComponent', () => {
   });
 
   it('limpia el chip de usuario y vuelve a buscar sin filtro de usuario', () => {
-    component.seleccionarUsuario({ id: 14, nombre: 'Ana', apellido: 'Paz', correo: 'ana@uteq.edu.ec', roles: ['LECTOR'], estado: 'ACTIVO', multasPendientes: false });
+    component.seleccionarUsuario({ id: 14, nombre: 'Ana', apellido: 'Paz', correo: 'ana@correo.com', roles: ['LECTOR'], estado: 'ACTIVO', multasPendientes: false });
     expect(component.usuarioSeleccionado).toBeTruthy();
     expect(component.filtroUsuarioId).toBe('14');
 
@@ -192,6 +192,34 @@ describe('AuditoriaComponent', () => {
     const split = component.getAntesDespues('Intento con correo desconocido', 'LOGIN_FAIL');
     expect(split.esUpdate).toBeFalse();
     expect(split.textoPlano).toBe('Intento con correo desconocido');
+  });
+
+  it('exporta CSV con los filtros vigentes', () => {
+    auditoriaService.exportar.and.returnValue(of(new Blob(['a,b'], { type: 'text/csv' })));
+    component.filtroModulo = 'usuarios';
+    component.filtroDesde = '2026-08-01';
+    component.filtroHasta = '2026-08-16';
+
+    component.exportarCsv();
+
+    expect(auditoriaService.exportar).toHaveBeenCalledWith({
+      usuarioId: null,
+      modulo: 'usuarios',
+      desde: '2026-08-01T00:00:00.000Z',
+      hasta: '2026-08-16T23:59:59.999Z'
+    });
+    expect(component.exportando).toBeFalse();
+  });
+
+  it('muestra el detail si la exportación falla', () => {
+    auditoriaService.exportar.and.returnValue(
+      throwError(() => ({ error: { detail: 'Sin permiso de exportación' } }))
+    );
+
+    component.exportarCsv();
+
+    expect(component.errorMsg).toBe('Sin permiso de exportación');
+    expect(component.exportando).toBeFalse();
   });
 
   it('trunca detalle largo a 2000 chars salvo ver completo', () => {
