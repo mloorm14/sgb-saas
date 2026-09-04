@@ -23,7 +23,12 @@ const MODULOS: ModuloOpcion[] = [
   { valor: 'reservaciones', etiqueta: 'Reservaciones' },
   { valor: 'registro_danos', etiqueta: 'Registro de daños' },
   { valor: 'sugerencias_adquisicion', etiqueta: 'Sugerencias de adquisición' },
-  { valor: 'configuracion_sistema', etiqueta: 'Configuración del sistema' }
+  { valor: 'configuracion_sistema', etiqueta: 'Configuración del sistema' },
+  { valor: 'proveedores', etiqueta: 'Proveedores' },
+  { valor: 'tipos_dano', etiqueta: 'Tipos de daño' },
+  { valor: 'categorias_dano', etiqueta: 'Categorías de daño' },
+  { valor: 'respaldos', etiqueta: 'Respaldos' },
+  { valor: 'roles_permisos', etiqueta: 'Roles y permisos' }
 ];
 
 @Component({
@@ -357,6 +362,20 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
   }
 
   moduloLabel(modulo: string): string {
+    const grupos: Record<string, string> = {
+      'roles': 'Roles y permisos',
+      'usuario_roles': 'Roles y permisos',
+      'permisos': 'Roles y permisos',
+      'rol_permisos': 'Roles y permisos',
+      'roles_permisos': 'Roles y permisos',
+      'backups': 'Respaldos',
+      'backups_tablas': 'Respaldos',
+      'backup_programacion': 'Respaldos',
+      'configuracion_respaldo': 'Respaldos',
+      'registros_respaldo': 'Respaldos',
+      'respaldos': 'Respaldos'
+    };
+    if (grupos[modulo]) return grupos[modulo];
     const encontrado = this.modulos.find(m => m.valor === modulo);
     if (encontrado) return encontrado.etiqueta;
     return modulo ? modulo.replace(/_/g, ' ') : '—';
@@ -541,7 +560,21 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
       'reservaciones': 'event_available',
       'registro_danos': 'report_problem',
       'sugerencias_adquisicion': 'lightbulb',
-      'configuracion_sistema': 'settings'
+      'configuracion_sistema': 'settings',
+      'proveedores': 'local_shipping',
+      'tipos_dano': 'handyman',
+      'categorias_dano': 'category',
+      'respaldos': 'backup',
+      'roles_permisos': 'admin_panel_settings',
+      'roles': 'admin_panel_settings',
+      'usuario_roles': 'admin_panel_settings',
+      'permisos': 'admin_panel_settings',
+      'rol_permisos': 'admin_panel_settings',
+      'backups': 'backup',
+      'backups_tablas': 'backup',
+      'backup_programacion': 'backup',
+      'configuracion_respaldo': 'backup',
+      'registros_respaldo': 'backup'
     };
     return iconos[tabla] || 'folder';
   }
@@ -556,7 +589,21 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
       'reservaciones': 'AUD-RES',
       'registro_danos': 'AUD-DAN',
       'sugerencias_adquisicion': 'AUD-SUG',
-      'configuracion_sistema': 'AUD-CFG'
+      'configuracion_sistema': 'AUD-CFG',
+      'proveedores': 'AUD-PRO',
+      'tipos_dano': 'AUD-TDA',
+      'categorias_dano': 'AUD-CDA',
+      'respaldos': 'AUD-BAK',
+      'roles_permisos': 'AUD-ROL',
+      'roles': 'AUD-ROL',
+      'usuario_roles': 'AUD-ROL',
+      'permisos': 'AUD-ROL',
+      'rol_permisos': 'AUD-ROL',
+      'backups': 'AUD-BAK',
+      'backups_tablas': 'AUD-BAK',
+      'backup_programacion': 'AUD-BAK',
+      'configuracion_respaldo': 'AUD-BAK',
+      'registros_respaldo': 'AUD-BAK'
     };
     return codigos[tabla] || tabla.toUpperCase().substring(0, 7);
   }
@@ -571,7 +618,21 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
       'reservaciones': 'Aceptación y rechazo de reservas',
       'registro_danos': 'Devoluciones con daños reportados',
       'sugerencias_adquisicion': 'Evaluación de propuestas',
-      'configuracion_sistema': 'Cambios de parámetros globales'
+      'configuracion_sistema': 'Cambios de parámetros globales',
+      'proveedores': 'Alta y edición de proveedores',
+      'tipos_dano': 'Precios y categorías de daños',
+      'categorias_dano': 'Categorías de daño (Leve/Grave)',
+      'respaldos': 'Respaldos y programaciones',
+      'roles_permisos': 'Asignación de roles y permisos',
+      'roles': 'Asignación de roles y permisos',
+      'usuario_roles': 'Asignación de roles y permisos',
+      'permisos': 'Asignación de roles y permisos',
+      'rol_permisos': 'Asignación de roles y permisos',
+      'backups': 'Respaldos y programaciones',
+      'backups_tablas': 'Respaldos y programaciones',
+      'backup_programacion': 'Respaldos y programaciones',
+      'configuracion_respaldo': 'Respaldos y programaciones',
+      'registros_respaldo': 'Respaldos y programaciones'
     };
     return descripciones[tabla] || tabla;
   }
@@ -586,7 +647,21 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
       'reservaciones': 'bg-success/10 text-success',
       'registro_danos': 'bg-error/10 text-error',
       'sugerencias_adquisicion': 'bg-warning/20 text-tertiary',
-      'configuracion_sistema': 'bg-surface-variant/50 text-on-surface-variant'
+      'configuracion_sistema': 'bg-surface-variant/50 text-on-surface-variant',
+      'proveedores': 'bg-secondary/10 text-secondary',
+      'tipos_dano': 'bg-error/10 text-error',
+      'categorias_dano': 'bg-error/10 text-error',
+      'respaldos': 'bg-tertiary/10 text-tertiary',
+      'roles_permisos': 'bg-primary/10 text-primary',
+      'roles': 'bg-primary/10 text-primary',
+      'usuario_roles': 'bg-primary/10 text-primary',
+      'permisos': 'bg-primary/10 text-primary',
+      'rol_permisos': 'bg-primary/10 text-primary',
+      'backups': 'bg-tertiary/10 text-tertiary',
+      'backups_tablas': 'bg-tertiary/10 text-tertiary',
+      'backup_programacion': 'bg-tertiary/10 text-tertiary',
+      'configuracion_respaldo': 'bg-tertiary/10 text-tertiary',
+      'registros_respaldo': 'bg-tertiary/10 text-tertiary'
     };
     return colores[tabla] || 'bg-surface-variant/50 text-on-surface-variant';
   }
