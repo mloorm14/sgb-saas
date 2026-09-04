@@ -111,6 +111,14 @@ export class ReportesComponent {
   inventarioPage = 0;
   inventarioPageSize = 10;
 
+  // Paginación libros/morosidad/vencidos/categorias/uso/financiero
+  librosPage = 0; librosPageSize = 10;
+  morosidadPage = 0; morosidadPageSize = 10;
+  vencidosPage = 0; vencidosPageSize = 10;
+  categoriasPage = 0; categoriasPageSize = 10;
+  usoPage = 0; usoPageSize = 10;
+  financieroPage = 0; financieroPageSize = 10;
+
   // Vencidos
   vencidosCorreo = '';
   vencidosLibro = '';
@@ -278,9 +286,11 @@ export class ReportesComponent {
         this.librosDia = '';
         this.librosTipoDias = null;
         this.limiteTop = 10;
+        this.librosPage = 0;
         break;
       case 'morosidad':
         this.morosidadCorreo = '';
+        this.morosidadPage = 0;
         break;
       case 'inventario':
         this.busquedaInventario = '';
@@ -291,19 +301,23 @@ export class ReportesComponent {
         this.vencidosCorreo = '';
         this.vencidosLibro = '';
         this.vencidosIsbn = '';
+        this.vencidosPage = 0;
         break;
       case 'categorias':
         this.categoriasBusqueda = '';
         this.limiteCategorias = 10;
+        this.categoriasPage = 0;
         break;
       case 'uso':
         this.usoGranularidad = 'mes';
         this.usoDesde = '';
         this.usoHasta = '';
+        this.usoPage = 0;
         break;
       case 'financiero':
         this.finDesde = '';
         this.finHasta = '';
+        this.financieroPage = 0;
         break;
     }
     this.cargarModuloActual();
@@ -328,6 +342,7 @@ export class ReportesComponent {
     this.reporteService.librosMasPrestadosDetallado(rango.desde, rango.hasta, this.limiteTop).subscribe({
       next: (libros) => {
         this.libros = libros;
+        this.librosPage = 0;
         this.cargando = false;
       },
       error: (err) => this.fallar(err)
@@ -341,6 +356,7 @@ export class ReportesComponent {
       next: (morosos) => {
         this.morososTodos = morosos;
         this.morosos = this.filtrarMorosidad(morosos);
+        this.morosidadPage = 0;
         this.cargando = false;
       },
       error: (err) => this.fallar(err)
@@ -394,14 +410,96 @@ export class ReportesComponent {
     this.inventarioPage = 0;
   }
 
+  // ── Paginación genérica para resto de reportes ──
+  private paginar<T>(arr: T[], page: number, size: number): T[] {
+    const s = page * size;
+    return arr.slice(s, s + size);
+  }
+  private totalPagesFor(arr: unknown[], size: number): number {
+    return Math.max(1, Math.ceil(arr.length / size));
+  }
+  private paginasVisiblesFor(total: number, current: number): number[] {
+    const w = 4; let s = Math.max(0, current - 1); let e = Math.min(total, s + w);
+    if (e - s < w) s = Math.max(0, e - w);
+    return Array.from({ length: e - s }, (_, i) => s + i);
+  }
+
+  // Libros
+  get librosTotalPages(): number { return this.totalPagesFor(this.libros, this.librosPageSize); }
+  get librosPaginado(): LibroMasPrestadoDetallado[] { return this.paginar(this.libros, this.librosPage, this.librosPageSize); }
+  get librosPaginasVisibles(): number[] { return this.paginasVisiblesFor(this.librosTotalPages, this.librosPage); }
+  get puedeLibrosAnterior(): boolean { return this.librosPage > 0; }
+  get puedeLibrosSiguiente(): boolean { return this.librosPage < this.librosTotalPages - 1; }
+  irALibrosPage(p: number): void { if (p < 0 || p >= this.librosTotalPages || p === this.librosPage) return; this.librosPage = p; }
+  paginaAnteriorLibros(): void { if (this.puedeLibrosAnterior) this.librosPage--; }
+  paginaSiguienteLibros(): void { if (this.puedeLibrosSiguiente) this.librosPage++; }
+  cambiarTamanoLibros(n: number): void { this.librosPageSize = Number(n); this.librosPage = 0; }
+
+  // Morosidad
+  get morosidadTotalPages(): number { return this.totalPagesFor(this.morososOrdenados, this.morosidadPageSize); }
+  get morosidadPaginado(): ReporteMorosidad[] { return this.paginar(this.morososOrdenados, this.morosidadPage, this.morosidadPageSize); }
+  get morosidadPaginasVisibles(): number[] { return this.paginasVisiblesFor(this.morosidadTotalPages, this.morosidadPage); }
+  get puedeMorosidadAnterior(): boolean { return this.morosidadPage > 0; }
+  get puedeMorosidadSiguiente(): boolean { return this.morosidadPage < this.morosidadTotalPages - 1; }
+  irAMorosidadPage(p: number): void { if (p < 0 || p >= this.morosidadTotalPages || p === this.morosidadPage) return; this.morosidadPage = p; }
+  paginaAnteriorMorosidad(): void { if (this.puedeMorosidadAnterior) this.morosidadPage--; }
+  paginaSiguienteMorosidad(): void { if (this.puedeMorosidadSiguiente) this.morosidadPage++; }
+  cambiarTamanoMorosidad(n: number): void { this.morosidadPageSize = Number(n); this.morosidadPage = 0; }
+
+  // Vencidos
+  get vencidosTotalPages(): number { return this.totalPagesFor(this.vencidosOrdenados, this.vencidosPageSize); }
+  get vencidosPaginado(): ReporteVencidos[] { return this.paginar(this.vencidosOrdenados, this.vencidosPage, this.vencidosPageSize); }
+  get vencidosPaginasVisibles(): number[] { return this.paginasVisiblesFor(this.vencidosTotalPages, this.vencidosPage); }
+  get puedeVencidosAnterior(): boolean { return this.vencidosPage > 0; }
+  get puedeVencidosSiguiente(): boolean { return this.vencidosPage < this.vencidosTotalPages - 1; }
+  irAVencidosPage(p: number): void { if (p < 0 || p >= this.vencidosTotalPages || p === this.vencidosPage) return; this.vencidosPage = p; }
+  paginaAnteriorVencidos(): void { if (this.puedeVencidosAnterior) this.vencidosPage--; }
+  paginaSiguienteVencidos(): void { if (this.puedeVencidosSiguiente) this.vencidosPage++; }
+  cambiarTamanoVencidos(n: number): void { this.vencidosPageSize = Number(n); this.vencidosPage = 0; }
+
+  // Categorias
+  get categoriasTotalPages(): number { return this.totalPagesFor(this.categoriasOrdenadas, this.categoriasPageSize); }
+  get categoriasPaginado(): ReporteCategoriasDemandadas[] { return this.paginar(this.categoriasOrdenadas, this.categoriasPage, this.categoriasPageSize); }
+  get categoriasPaginasVisibles(): number[] { return this.paginasVisiblesFor(this.categoriasTotalPages, this.categoriasPage); }
+  get puedeCategoriasAnterior(): boolean { return this.categoriasPage > 0; }
+  get puedeCategoriasSiguiente(): boolean { return this.categoriasPage < this.categoriasTotalPages - 1; }
+  irACategoriasPage(p: number): void { if (p < 0 || p >= this.categoriasTotalPages || p === this.categoriasPage) return; this.categoriasPage = p; }
+  paginaAnteriorCategorias(): void { if (this.puedeCategoriasAnterior) this.categoriasPage--; }
+  paginaSiguienteCategorias(): void { if (this.puedeCategoriasSiguiente) this.categoriasPage++; }
+  cambiarTamanoCategorias(n: number): void { this.categoriasPageSize = Number(n); this.categoriasPage = 0; }
+
+  // Uso
+  get usoTotalPages(): number { return this.totalPagesFor(this.usoOrdenado, this.usoPageSize); }
+  get usoPaginado(): ReporteUsoPorPeriodo[] { return this.paginar(this.usoOrdenado, this.usoPage, this.usoPageSize); }
+  get usoPaginasVisibles(): number[] { return this.paginasVisiblesFor(this.usoTotalPages, this.usoPage); }
+  get puedeUsoAnterior(): boolean { return this.usoPage > 0; }
+  get puedeUsoSiguiente(): boolean { return this.usoPage < this.usoTotalPages - 1; }
+  irAUsoPage(p: number): void { if (p < 0 || p >= this.usoTotalPages || p === this.usoPage) return; this.usoPage = p; }
+  paginaAnteriorUso(): void { if (this.puedeUsoAnterior) this.usoPage--; }
+  paginaSiguienteUso(): void { if (this.puedeUsoSiguiente) this.usoPage++; }
+  cambiarTamanoUso(n: number): void { this.usoPageSize = Number(n); this.usoPage = 0; }
+
+  // Financiero pagosRecientes
+  get financieroPagos(): any[] { return this.resumenFinanciero?.pagosRecientes ?? []; }
+  get financieroTotalPages(): number { return this.totalPagesFor(this.financieroPagos, this.financieroPageSize); }
+  get financieroPaginado(): any[] { return this.paginar(this.financieroPagos, this.financieroPage, this.financieroPageSize); }
+  get financieroPaginasVisibles(): number[] { return this.paginasVisiblesFor(this.financieroTotalPages, this.financieroPage); }
+  get puedeFinancieroAnterior(): boolean { return this.financieroPage > 0; }
+  get puedeFinancieroSiguiente(): boolean { return this.financieroPage < this.financieroTotalPages - 1; }
+  irAFinancieroPage(p: number): void { if (p < 0 || p >= this.financieroTotalPages || p === this.financieroPage) return; this.financieroPage = p; }
+  paginaAnteriorFinanciero(): void { if (this.puedeFinancieroAnterior) this.financieroPage--; }
+  paginaSiguienteFinanciero(): void { if (this.puedeFinancieroSiguiente) this.financieroPage++; }
+  cambiarTamanoFinanciero(n: number): void { this.financieroPageSize = Number(n); this.financieroPage = 0; }
+
   private cargarVencidos(): void {
     this.cargando = true;
     this.errorMsg = '';
-    const busqueda = this.vencidosCorreo.trim() || this.vencidosLibro.trim() || this.vencidosIsbn.trim() || undefined;
+    const busqueda = [this.vencidosCorreo.trim(), this.vencidosLibro.trim(), this.vencidosIsbn.trim()].filter(Boolean).join(' ') || undefined;
     this.reporteService.vencidos(undefined, busqueda).subscribe({
       next: (vencidos) => {
         this.vencidosTodos = vencidos;
         this.vencidos = this.filtrarVencidos(vencidos);
+        this.vencidosPage = 0;
         this.cargando = false;
       },
       error: (err) => this.fallar(err)
@@ -427,6 +525,7 @@ export class ReportesComponent {
       next: (categorias) => {
         this.categoriasTodas = categorias;
         this.categorias = this.filtrarCategorias(categorias);
+        this.categoriasPage = 0;
         this.cargando = false;
       },
       error: (err) => this.fallar(err)
@@ -445,6 +544,7 @@ export class ReportesComponent {
     this.reporteService.usoPorPeriodo(this.usoGranularidad, this.usoDesde || undefined, this.usoHasta || undefined).subscribe({
       next: (datos) => {
         this.usoPeriodo = datos;
+        this.usoPage = 0;
         this.cargando = false;
       },
       error: (err) => this.fallar(err)
@@ -457,6 +557,7 @@ export class ReportesComponent {
     this.reporteService.resumenFinanciero(this.finDesde || undefined, this.finHasta || undefined).subscribe({
       next: (datos) => {
         this.resumenFinanciero = datos;
+        this.financieroPage = 0;
         this.cargando = false;
       },
       error: (err) => this.fallar(err)
@@ -536,10 +637,24 @@ export class ReportesComponent {
   }
 
   descargarVencidosPdf(): void {
-    const busqueda = this.vencidosCorreo.trim() || this.vencidosLibro.trim() || this.vencidosIsbn.trim() || undefined;
+    const busqueda = [this.vencidosCorreo.trim(), this.vencidosLibro.trim(), this.vencidosIsbn.trim()].filter(Boolean).join(' ') || undefined;
     this.descargarPdf(
       this.reporteService.vencidosPdf(undefined, busqueda),
       'reporte-vencidos.pdf', 'vencidos-pdf'
+    );
+  }
+
+  descargarUsoPdf(): void {
+    this.descargarPdf(
+      this.reporteService.usoPorPeriodoPdf(this.usoGranularidad, this.usoDesde || undefined, this.usoHasta || undefined),
+      'reporte-uso-periodo.pdf', 'uso-pdf'
+    );
+  }
+
+  descargarFinancieroPdf(): void {
+    this.descargarPdf(
+      this.reporteService.resumenFinancieroPdf(this.finDesde || undefined, this.finHasta || undefined),
+      'reporte-resumen-financiero.pdf', 'financiero-pdf'
     );
   }
 
@@ -594,6 +709,19 @@ export class ReportesComponent {
     const headers = ['#', 'Categoría', 'Préstamos', '% del total'];
     const rows = this.categorias.map((c, i) => [i + 1, c.categoriaNombre, c.totalPrestamos, c.porcentaje + '%']);
     this.generarExcel(headers, rows, 'reporte-categorias.xlsx', 'Categorías demandadas');
+  }
+
+  excelUso(): void {
+    const headers = ['Período', 'Préstamos', 'Devoluciones'];
+    const rows = this.usoPeriodo.map(u => [u.periodo, u.totalPrestamos, u.totalDevoluciones]);
+    this.generarExcel(headers, rows, 'reporte-uso-periodo.xlsx', 'Uso por período');
+  }
+
+  excelFinanciero(): void {
+    const headers = ['Multa', 'Monto', 'Fecha', 'Usuario', 'Libro'];
+    const pagos = this.resumenFinanciero?.pagosRecientes ?? [];
+    const rows = pagos.map(p => [p.multaId, p.montoPagado, p.fechaPagada, p.usuarioNombre || p.usuarioCorreo, p.libroTitulo]);
+    this.generarExcel(headers, rows, 'reporte-financiero.xlsx', 'Resumen financiero');
   }
 
   fechaCorta(iso: string): string {

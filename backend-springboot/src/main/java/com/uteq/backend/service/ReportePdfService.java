@@ -15,7 +15,9 @@ import com.uteq.backend.dto.LibroMasPrestadoDetalladoResponseDTO;
 import com.uteq.backend.dto.ReporteCategoriasDemandadasResponseDTO;
 import com.uteq.backend.dto.ReporteInventarioResponseDTO;
 import com.uteq.backend.dto.ReporteMorosidadResponseDTO;
+import com.uteq.backend.dto.ReporteUsoPorPeriodoResponseDTO;
 import com.uteq.backend.dto.ReporteVencidosResponseDTO;
+import com.uteq.backend.dto.ResumenFinancieroMultasResponseDTO;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -185,6 +187,65 @@ public class ReportePdfService {
                             ? f.fechaDevolucionEstimada().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "—")));
                     tabla.addCell(new Cell().add(new Paragraph(String.valueOf(f.diasAtraso()))));
                     tabla.addCell(new Cell().add(new Paragraph("$" + f.montoMultaEstimada())));
+                }
+                document.add(tabla);
+            }
+        }
+        return salida.toByteArray();
+    }
+
+    // ── Uso por período ────────────────────────────────
+    public byte[] generarReporteUsoPorPeriodo(List<ReporteUsoPorPeriodoResponseDTO> filas) {
+        ByteArrayOutputStream salida = new ByteArrayOutputStream();
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(salida));
+             Document document = new Document(pdfDoc)) {
+            PdfFont negrita = crearFuenteNegrita();
+            agregarEncabezado(document, "Reporte de uso por período", negrita);
+            if (filas.isEmpty()) {
+                document.add(new Paragraph("No hay datos de uso por período."));
+            } else {
+                Table tabla = new Table(UnitValue.createPercentArray(new float[]{3, 2, 2})).useAllAvailableWidth();
+                tabla.addHeaderCell(celdaEncabezado("Período", negrita));
+                tabla.addHeaderCell(celdaEncabezado("Préstamos", negrita));
+                tabla.addHeaderCell(celdaEncabezado("Devoluciones", negrita));
+                for (var f : filas) {
+                    String periodo = f.periodo() != null ? f.periodo().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "—";
+                    tabla.addCell(new Cell().add(new Paragraph(periodo)));
+                    tabla.addCell(new Cell().add(new Paragraph(String.valueOf(f.totalPrestamos()))));
+                    tabla.addCell(new Cell().add(new Paragraph(String.valueOf(f.totalDevoluciones()))));
+                }
+                document.add(tabla);
+            }
+        }
+        return salida.toByteArray();
+    }
+
+    // ── Resumen financiero ──────────────────────────────
+    public byte[] generarReporteResumenFinanciero(ResumenFinancieroMultasResponseDTO dto) {
+        ByteArrayOutputStream salida = new ByteArrayOutputStream();
+        try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(salida));
+             Document document = new Document(pdfDoc)) {
+            PdfFont negrita = crearFuenteNegrita();
+            agregarEncabezado(document, "Resumen financiero de multas", negrita);
+            document.add(new Paragraph("Recaudado: $" + dto.totalRecaudado()).setFont(negrita));
+            document.add(new Paragraph("Pendiente: $" + dto.totalPendiente()));
+            document.add(new Paragraph("Generado hoy: $" + dto.totalGeneradoHoy()));
+            document.add(new Paragraph("\n"));
+            if (dto.pagosRecientes() == null || dto.pagosRecientes().isEmpty()) {
+                document.add(new Paragraph("Sin pagos recientes."));
+            } else {
+                Table tabla = new Table(UnitValue.createPercentArray(new float[]{1, 2, 2, 3, 3})).useAllAvailableWidth();
+                tabla.addHeaderCell(celdaEncabezado("Multa", negrita));
+                tabla.addHeaderCell(celdaEncabezado("Monto", negrita));
+                tabla.addHeaderCell(celdaEncabezado("Fecha", negrita));
+                tabla.addHeaderCell(celdaEncabezado("Usuario", negrita));
+                tabla.addHeaderCell(celdaEncabezado("Libro", negrita));
+                for (var p : dto.pagosRecientes()) {
+                    tabla.addCell(new Cell().add(new Paragraph(String.valueOf(p.multaId()))));
+                    tabla.addCell(new Cell().add(new Paragraph("$" + p.montoPagado())));
+                    tabla.addCell(new Cell().add(new Paragraph(p.fechaPagada() != null ? p.fechaPagada().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "—")));
+                    tabla.addCell(new Cell().add(new Paragraph(p.usuarioNombre() != null ? p.usuarioNombre() : p.usuarioCorreo() != null ? p.usuarioCorreo() : "—")));
+                    tabla.addCell(new Cell().add(new Paragraph(p.libroTitulo() != null ? p.libroTitulo() : "—")));
                 }
                 document.add(tabla);
             }
