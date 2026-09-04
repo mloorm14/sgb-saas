@@ -24,6 +24,7 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent, canActivate: [redirectIfAuthenticatedGuard] },
   { path: 'registro', component: RegistroComponent, canActivate: [redirectIfAuthenticatedGuard] },
   { path: 'recuperar-password', component: RecuperarPasswordComponent, canActivate: [redirectIfAuthenticatedGuard] },
+  { path: 'recuperar-cuenta', redirectTo: 'recuperar-password', pathMatch: 'full' },
 
   { path: 'dashboard-gerente', component: DashboardGerenteComponent, canActivate: [authGuard, roleGuard(['GERENTE'])] },
   {

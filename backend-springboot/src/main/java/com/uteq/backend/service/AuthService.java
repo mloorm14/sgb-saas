@@ -59,6 +59,7 @@ public class AuthService {
     private final BitacoraAuditoriaRepository bitacoraAuditoriaRepository;
     private final VerificacionCorreoService verificacionCorreoService;
     private final ConfiguracionSistemaService configuracionSistemaService;
+    private final EmailService emailService;
 
     public UsuarioResponseDTO registrar(RegistroRequestDTO dto) {
         usuarioRepository.findByCorreo(dto.correo()).ifPresent(usuario -> {
@@ -127,23 +128,30 @@ public class AuthService {
     }
 
     // ── POST /api/auth/solicitar-reset ────────────────────────
+    // Flujo de recuperación de cuenta en 2 pasos: genera código de 6 dígitos
+    // con TTL 10 minutos (mismo que verificacion-correo), lo guarda en Redis
+    // y lo envía por correo via EmailService (SMTP/Brevo best-effort).
     public void solicitarReset(String correo) {
         Usuario usuario = usuarioRepository.findByCorreo(correo)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Usuario no encontrado: " + correo));
         String key = "reset-codigo:" + correo;
         String codigo = String.format("%06d", new java.security.SecureRandom().nextInt(1_000_000));
         try {
-            redisTemplate.opsForValue().set(key, codigo, java.time.Duration.ofMinutes(15));
+            redisTemplate.opsForValue().set(key, codigo, java.time.Duration.ofMinutes(10));
         } catch (org.springframework.dao.DataAccessException e) {
             throw new ServicioTemporalmenteNoDisponibleException("Servicio de reset no disponible");
         }
-        String cuerpo = "<p>Hola " + usuario.getNombre() + ",</p><p>Tu código para restablecer contraseña es: <b>" + codigo + "</b></p><p>Vence en 15 minutos.</p>";
-        // Brevo/SMTP best-effort, no rompe flujo
-        try { new EmailService(null) {}; } catch (Exception ignored) {}
-        // Usar EmailService inyectado si está disponible vía verificacionCorreoService ya usa Redis, aquí directo
-        // Se inyecta EmailService opcionalmente vía lookup para no cambiar constructor en este commit
-        // Fallback: log
-        log.info("Código reset generado para {}: {}", correo, codigo);
+        String cuerpo = "<p>Hola " + usuario.getNombre() + ",</p>"
+                + "<p>Tu código para recuperar la cuenta es: <b>" + codigo + "</b></p>"
+                + "<p>Vence en 10 minutos.</p>";
+        // Reutiliza el mismo EmailService que crear-cuenta (SMTP + fallback Brevo).
+        // Es best-effort: si falla, el código queda en Redis y el error se loguea
+        // sin romper el flujo (el usuario puede reintentar).
+        boolean enviado = emailService.enviarCorreo(correo, "Recuperar cuenta - SGB-SaaS", cuerpo);
+        if (!enviado) {
+            log.warn("No se pudo enviar correo de recuperacion a {} (codigo en Redis)", correo);
+        }
+        log.info("Código de recuperacion generado para {}: {}", correo, codigo);
     }
 
     // ── POST /api/auth/reset ────────────────────────
