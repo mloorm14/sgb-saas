@@ -22,7 +22,7 @@
 -- db/roles-privilegios.sql aplica con RBAC + RLS a nivel de motor,
 -- independiente del RBAC de aplicación en las tablas roles/permisos).
 --
--- Este archivo agrega UNA función de trigger genérica y la ata a las 12
+-- Este archivo agrega UNA función de trigger genérica y la ata a las 21
 -- tablas de negocio más relevantes para auditoría (ver sección 2). No
 -- reemplaza la auditoría de aplicación (LOGIN_OK/LOGIN_FAIL/LOGOUT y el
 -- registro de IP siguen siendo responsabilidad exclusiva del backend, que
@@ -170,12 +170,15 @@ $$;
 
 
 -- ============================================================================
--- 2. TRIGGERS: se atan a las 12 tablas de negocio auditables
+-- 2. TRIGGERS: se atan a las 21 tablas de negocio auditables
 -- ============================================================================
 -- AFTER (no BEFORE): la auditoría deja constancia de lo que efectivamente
 -- se escribió, no de una intención que podría todavía fallar por otro
 -- trigger/constraint posterior. FOR EACH ROW: bitacora_auditoria necesita
 -- una fila por registro afectado, no una sola fila por sentencia.
+-- V40 agrega: proveedores, configuracion_sistema, tipos_dano,
+-- categorias_dano, backups, backups_tablas, backup_programacion,
+-- configuracion_respaldo, registros_respaldo (ver database/migrations/V40).
 -- ============================================================================
 
 CREATE TRIGGER trg_auditoria_usuarios
@@ -224,6 +227,43 @@ CREATE TRIGGER trg_auditoria_sugerencias_adquisicion
 
 CREATE TRIGGER trg_auditoria_registro_danos
     AFTER INSERT OR UPDATE OR DELETE ON registro_danos
+    FOR EACH ROW EXECUTE FUNCTION fn_auditoria_generica();
+
+-- ── V40 — Fase 1: tablas que faltaban ──────────────────
+CREATE TRIGGER trg_auditoria_proveedores
+    AFTER INSERT OR UPDATE OR DELETE ON proveedores
+    FOR EACH ROW EXECUTE FUNCTION fn_auditoria_generica();
+
+CREATE TRIGGER trg_auditoria_configuracion_sistema
+    AFTER INSERT OR UPDATE OR DELETE ON configuracion_sistema
+    FOR EACH ROW EXECUTE FUNCTION fn_auditoria_generica();
+
+CREATE TRIGGER trg_auditoria_tipos_dano
+    AFTER INSERT OR UPDATE OR DELETE ON tipos_dano
+    FOR EACH ROW EXECUTE FUNCTION fn_auditoria_generica();
+
+CREATE TRIGGER trg_auditoria_categorias_dano
+    AFTER INSERT OR UPDATE OR DELETE ON categorias_dano
+    FOR EACH ROW EXECUTE FUNCTION fn_auditoria_generica();
+
+CREATE TRIGGER trg_auditoria_backups
+    AFTER INSERT OR UPDATE OR DELETE ON backups
+    FOR EACH ROW EXECUTE FUNCTION fn_auditoria_generica();
+
+CREATE TRIGGER trg_auditoria_backups_tablas
+    AFTER INSERT OR UPDATE OR DELETE ON backups_tablas
+    FOR EACH ROW EXECUTE FUNCTION fn_auditoria_generica();
+
+CREATE TRIGGER trg_auditoria_backup_programacion
+    AFTER INSERT OR UPDATE OR DELETE ON backup_programacion
+    FOR EACH ROW EXECUTE FUNCTION fn_auditoria_generica();
+
+CREATE TRIGGER trg_auditoria_configuracion_respaldo
+    AFTER INSERT OR UPDATE OR DELETE ON configuracion_respaldo
+    FOR EACH ROW EXECUTE FUNCTION fn_auditoria_generica();
+
+CREATE TRIGGER trg_auditoria_registros_respaldo
+    AFTER INSERT OR UPDATE OR DELETE ON registros_respaldo
     FOR EACH ROW EXECUTE FUNCTION fn_auditoria_generica();
 
 
