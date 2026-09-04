@@ -4,6 +4,7 @@ import { roleGuard } from './core/guards/role.guard';
 import { redirectIfAuthenticatedGuard } from './core/guards/redirect-if-authenticated.guard';
 import { LoginComponent } from './auth/login/login.component';
 import { RegistroComponent } from './auth/registro/registro.component';
+import { RecuperarPasswordComponent } from './auth/recuperar-password/recuperar-password.component';
 import { DashboardGerenteComponent } from './dashboard-gerente/dashboard-gerente.component';
 import { DashboardGerenteAdminHomeComponent } from './dashboard-gerente-admin/dashboard-gerente-admin-home.component';
 import { DashboardBibliotecarioComponent } from './dashboard/dashboard-bibliotecario.component';
@@ -22,6 +23,7 @@ export const routes: Routes = [
   { path: 'portal/:id', component: DetallePublicoComponent, resolve: { libro: libroPublicoDetalleResolver }, canActivate: [redirectIfAuthenticatedGuard] },
   { path: 'login', component: LoginComponent, canActivate: [redirectIfAuthenticatedGuard] },
   { path: 'registro', component: RegistroComponent, canActivate: [redirectIfAuthenticatedGuard] },
+  { path: 'recuperar-password', component: RecuperarPasswordComponent, canActivate: [redirectIfAuthenticatedGuard] },
 
   { path: 'dashboard-gerente', component: DashboardGerenteComponent, canActivate: [authGuard, roleGuard(['GERENTE'])] },
   {

@@ -35,6 +35,8 @@ export class LoginComponent implements OnInit {
   ngOnInit(): void {
     if (this.route.snapshot.queryParamMap.get('verificado') === '1') {
       this.exitoMsg = 'Cuenta verificada correctamente. Ya puedes iniciar sesión.';
+    } else if (this.route.snapshot.queryParamMap.get('reset') === '1') {
+      this.exitoMsg = 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.';
     }
   }
 

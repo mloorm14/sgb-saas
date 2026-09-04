@@ -48,6 +48,17 @@ export class AuthService {
     return this.http.post<any>(`${this.apiUrl}/auth/reenviar-codigo`, { correo });
   }
 
+  // Recuperación de contraseña (AuthController: POST /solicitar-reset y
+  // POST /reset). Sin JWT: quien la usa no puede loguearse todavía.
+  // El código vive 15 min en Redis y es de un solo uso.
+  solicitarReset(correo: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/auth/solicitar-reset`, { correo });
+  }
+
+  resetearPassword(correo: string, codigo: string, nuevaPassword: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/auth/reset`, { correo, codigo, nuevaPassword });
+  }
+
   logout(redirectTo: string = '/'): void {
     // Llama al backend para agregar el JTI a la blacklist de Redis
     this.http.post(`${this.apiUrl}/auth/logout`, {}, { withCredentials: true }).subscribe({
