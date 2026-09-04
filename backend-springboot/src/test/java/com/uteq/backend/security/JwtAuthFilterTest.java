@@ -85,7 +85,7 @@ class JwtAuthFilterTest {
                 .id(7L)
                 .nombre("Filtro")
                 .apellido("De Prueba")
-                .correo("filtro-test@uteq.edu.ec")
+                .correo("filtro-test@correo.com")
                 .passwordHash("hash")
                 .estado(activo)
                 .correoVerificado(true)

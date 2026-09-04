@@ -147,7 +147,7 @@ class UsuarioAdminControllerSecurityTest {
     void crear_conRolGerente_sePermiteANivelHttp() throws Exception {
         mockMvc.perform(post("/api/v1/admin/usuarios")
                         .contentType("application/json")
-                        .content("{\"nombre\":\"Ana\",\"apellido\":\"Paz\",\"correo\":\"ana@uteq.edu.ec\",\"password\":\"Secreta123\",\"rol\":\"LECTOR\"}"))
+                        .content("{\"nombre\":\"Ana\",\"apellido\":\"Paz\",\"correo\":\"ana@correo.com\",\"password\":\"Secreta123\",\"rol\":\"LECTOR\"}"))
                 .andExpect(status().isCreated());
     }
 
@@ -156,7 +156,7 @@ class UsuarioAdminControllerSecurityTest {
     void crear_conRolLector_seRechaza() throws Exception {
         mockMvc.perform(post("/api/v1/admin/usuarios")
                         .contentType("application/json")
-                        .content("{\"nombre\":\"Ana\",\"apellido\":\"Paz\",\"correo\":\"ana@uteq.edu.ec\",\"password\":\"Secreta123\",\"rol\":\"LECTOR\"}"))
+                        .content("{\"nombre\":\"Ana\",\"apellido\":\"Paz\",\"correo\":\"ana@correo.com\",\"password\":\"Secreta123\",\"rol\":\"LECTOR\"}"))
                 .andExpect(status().isForbidden());
     }
 

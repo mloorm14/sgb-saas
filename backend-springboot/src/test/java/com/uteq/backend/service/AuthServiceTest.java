@@ -102,7 +102,7 @@ class AuthServiceTest {
                 .id(1L)
                 .nombre("Lector de Prueba")
                 .apellido("Apellido de Prueba")
-                .correo("lector@uteq.edu.ec")
+                .correo("lector@correo.com")
                 .passwordHash("hash-encriptado")
                 .estado(activo)
                 .correoVerificado(true)
@@ -115,9 +115,9 @@ class AuthServiceTest {
     @Test
     void loginExitoso() {
         Usuario usuario = usuarioDePrueba();
-        LoginRequestDTO dto = new LoginRequestDTO("lector@uteq.edu.ec", "password123");
+        LoginRequestDTO dto = new LoginRequestDTO("lector@correo.com", "password123");
 
-        when(usuarioRepository.findByCorreo("lector@uteq.edu.ec")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByCorreo("lector@correo.com")).thenReturn(Optional.of(usuario));
         when(jwtService.generateToken(usuario)).thenReturn("access-token-de-prueba");
         when(jwtService.generateRefreshToken(usuario)).thenReturn("refresh-token-de-prueba");
         when(jwtService.getExpirationMs()).thenReturn(3600000L);
@@ -139,22 +139,22 @@ class AuthServiceTest {
     @Test
     void loginExitosoReseteaContadorDeRateLimit() {
         Usuario usuario = usuarioDePrueba();
-        LoginRequestDTO dto = new LoginRequestDTO("lector@uteq.edu.ec", "password123");
+        LoginRequestDTO dto = new LoginRequestDTO("lector@correo.com", "password123");
 
-        when(usuarioRepository.findByCorreo("lector@uteq.edu.ec")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByCorreo("lector@correo.com")).thenReturn(Optional.of(usuario));
         when(jwtService.generateToken(usuario)).thenReturn("access-token-de-prueba");
         when(jwtService.generateRefreshToken(usuario)).thenReturn("refresh-token-de-prueba");
         when(jwtService.getExpirationMs()).thenReturn(3600000L);
 
         authService.login(dto, IP_DE_PRUEBA);
 
-        verify(loginRateLimiter).resetear("lector@uteq.edu.ec", IP_DE_PRUEBA);
+        verify(loginRateLimiter).resetear("lector@correo.com", IP_DE_PRUEBA);
         verify(bitacoraAuditoriaRepository).save(any());
     }
 
     @Test
     void loginClaveIncorrecta() {
-        LoginRequestDTO dto = new LoginRequestDTO("lector@uteq.edu.ec", "claveIncorrecta");
+        LoginRequestDTO dto = new LoginRequestDTO("lector@correo.com", "claveIncorrecta");
 
         doThrow(new BadCredentialsException("Credenciales inválidas"))
                 .when(authenticationManager).authenticate(any());
@@ -167,14 +167,14 @@ class AuthServiceTest {
     // nunca llegaría al máximo configurado.
     @Test
     void loginFallidoIncrementaContadorDeRateLimit() {
-        LoginRequestDTO dto = new LoginRequestDTO("lector@uteq.edu.ec", "claveIncorrecta");
+        LoginRequestDTO dto = new LoginRequestDTO("lector@correo.com", "claveIncorrecta");
 
         doThrow(new BadCredentialsException("Credenciales inválidas"))
                 .when(authenticationManager).authenticate(any());
 
         assertThrows(BadCredentialsException.class, () -> authService.login(dto, IP_DE_PRUEBA));
 
-        verify(loginRateLimiter).registrarFallo("lector@uteq.edu.ec", IP_DE_PRUEBA);
+        verify(loginRateLimiter).registrarFallo("lector@correo.com", IP_DE_PRUEBA);
         verify(bitacoraAuditoriaRepository).save(any());
     }
 
@@ -187,10 +187,10 @@ class AuthServiceTest {
     // autenticar contra credenciales potencialmente correctas.
     @Test
     void loginBloqueadoPorRateLimitNoIntentaAutenticar() {
-        LoginRequestDTO dto = new LoginRequestDTO("lector@uteq.edu.ec", "password123");
+        LoginRequestDTO dto = new LoginRequestDTO("lector@correo.com", "password123");
 
-        when(loginRateLimiter.estaBloqueado("lector@uteq.edu.ec", IP_DE_PRUEBA)).thenReturn(true);
-        when(loginRateLimiter.segundosRestantes("lector@uteq.edu.ec", IP_DE_PRUEBA)).thenReturn(600L);
+        when(loginRateLimiter.estaBloqueado("lector@correo.com", IP_DE_PRUEBA)).thenReturn(true);
+        when(loginRateLimiter.segundosRestantes("lector@correo.com", IP_DE_PRUEBA)).thenReturn(600L);
 
         assertThrows(LoginRateLimitExcedidoException.class, () -> authService.login(dto, IP_DE_PRUEBA));
 
@@ -202,10 +202,10 @@ class AuthServiceTest {
     void registroCorreoDuplicado() {
         Usuario usuarioExistente = usuarioDePrueba();
         RegistroRequestDTO dto = new RegistroRequestDTO(
-                "Nuevo Lector", "Apellido Nuevo", "lector@uteq.edu.ec", "password123"
+                "Nuevo Lector", "Apellido Nuevo", "lector@correo.com", "password123"
         );
 
-        when(usuarioRepository.findByCorreo("lector@uteq.edu.ec")).thenReturn(Optional.of(usuarioExistente));
+        when(usuarioRepository.findByCorreo("lector@correo.com")).thenReturn(Optional.of(usuarioExistente));
 
         assertThrows(CorreoYaRegistradoException.class, () -> authService.registrar(dto));
 
@@ -216,7 +216,7 @@ class AuthServiceTest {
     @Test
     void registroExitoso_dejaAlUsuarioPendienteDeVerificacionYEnviaElCodigo() {
         RegistroRequestDTO dto = new RegistroRequestDTO(
-                "Nuevo", "Lector", "nuevo@uteq.edu.ec", "password123");
+                "Nuevo", "Lector", "nuevo@correo.com", "password123");
 
         EstadoUsuario pendienteVerificacion = new EstadoUsuario();
         pendienteVerificacion.setId(4);
@@ -226,7 +226,7 @@ class AuthServiceTest {
         lector.setId(1);
         lector.setNombre("LECTOR");
 
-        when(usuarioRepository.findByCorreo("nuevo@uteq.edu.ec")).thenReturn(Optional.empty());
+        when(usuarioRepository.findByCorreo("nuevo@correo.com")).thenReturn(Optional.empty());
         when(rolRepository.findByNombre("LECTOR")).thenReturn(Optional.of(lector));
         when(estadoUsuarioRepository.findByNombre("PENDIENTE_VERIFICACION")).thenReturn(Optional.of(pendienteVerificacion));
         when(passwordEncoder.encode("password123")).thenReturn("hash-encriptado");
@@ -256,7 +256,7 @@ class AuthServiceTest {
     @Test
     void registroConPayloadDeInyeccionSql_seGuardaComoTextoLiteralSinLanzarExcepcion() {
         RegistroRequestDTO dto = new RegistroRequestDTO(
-                "' OR '1'='1", "'; DROP TABLE usuarios; --", "owasp@uteq.edu.ec", "password123");
+                "' OR '1'='1", "'; DROP TABLE usuarios; --", "owasp@correo.com", "password123");
 
         EstadoUsuario pendienteVerificacion = new EstadoUsuario();
         pendienteVerificacion.setId(4);
@@ -266,7 +266,7 @@ class AuthServiceTest {
         lector.setId(1);
         lector.setNombre("LECTOR");
 
-        when(usuarioRepository.findByCorreo("owasp@uteq.edu.ec")).thenReturn(Optional.empty());
+        when(usuarioRepository.findByCorreo("owasp@correo.com")).thenReturn(Optional.empty());
         when(rolRepository.findByNombre("LECTOR")).thenReturn(Optional.of(lector));
         when(estadoUsuarioRepository.findByNombre("PENDIENTE_VERIFICACION")).thenReturn(Optional.of(pendienteVerificacion));
         when(passwordEncoder.encode("password123")).thenReturn("hash-encriptado");
@@ -293,13 +293,13 @@ class AuthServiceTest {
         activo.setId(1);
         activo.setNombre("ACTIVO");
 
-        when(usuarioRepository.findByCorreo("lector@uteq.edu.ec")).thenReturn(Optional.of(usuarioPendiente));
+        when(usuarioRepository.findByCorreo("lector@correo.com")).thenReturn(Optional.of(usuarioPendiente));
         when(estadoUsuarioRepository.findByNombre("ACTIVO")).thenReturn(Optional.of(activo));
         when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        authService.verificarCorreo("lector@uteq.edu.ec", "123456", IP_DE_PRUEBA);
+        authService.verificarCorreo("lector@correo.com", "123456", IP_DE_PRUEBA);
 
-        verify(verificacionCorreoService).validar("lector@uteq.edu.ec", "123456");
+        verify(verificacionCorreoService).validar("lector@correo.com", "123456");
         var capturado = org.mockito.ArgumentCaptor.forClass(Usuario.class);
         verify(usuarioRepository).save(capturado.capture());
         assertTrue(capturado.getValue().isCorreoVerificado());
@@ -312,10 +312,10 @@ class AuthServiceTest {
     @Test
     void verificarCorreo_codigoInvalido_noActivaAlUsuario() {
         doThrow(new CodigoVerificacionInvalidoException("El código ingresado es incorrecto."))
-                .when(verificacionCorreoService).validar("lector@uteq.edu.ec", "000000");
+                .when(verificacionCorreoService).validar("lector@correo.com", "000000");
 
         assertThrows(CodigoVerificacionInvalidoException.class,
-                () -> authService.verificarCorreo("lector@uteq.edu.ec", "000000", IP_DE_PRUEBA));
+                () -> authService.verificarCorreo("lector@correo.com", "000000", IP_DE_PRUEBA));
 
         verify(usuarioRepository, never()).save(any());
     }
@@ -375,8 +375,8 @@ class AuthServiceTest {
         String refreshTokenDePrueba = "refresh-token-de-usuario-eliminado";
 
         when(jwtService.validateToken(refreshTokenDePrueba)).thenReturn(true);
-        when(jwtService.extractCorreo(refreshTokenDePrueba)).thenReturn("fantasma@uteq.edu.ec");
-        when(usuarioRepository.findByCorreo("fantasma@uteq.edu.ec")).thenReturn(Optional.empty());
+        when(jwtService.extractCorreo(refreshTokenDePrueba)).thenReturn("fantasma@correo.com");
+        when(usuarioRepository.findByCorreo("fantasma@correo.com")).thenReturn(Optional.empty());
 
         assertThrows(RefreshTokenInvalidoException.class, () -> authService.refresh(refreshTokenDePrueba));
     }

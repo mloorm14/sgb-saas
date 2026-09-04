@@ -64,7 +64,7 @@ class JwtServiceTest {
                 .id(42L)
                 .nombre("Usuario")
                 .apellido("De Prueba")
-                .correo("jwt-test@uteq.edu.ec")
+                .correo("jwt-test@correo.com")
                 .passwordHash("hash")
                 .estado(activo)
                 .correoVerificado(true)
@@ -87,7 +87,7 @@ class JwtServiceTest {
         Claims claims = parsearClaims(token);
 
         assertEquals("42", claims.getSubject());
-        assertEquals("jwt-test@uteq.edu.ec", claims.get("correo", String.class));
+        assertEquals("jwt-test@correo.com", claims.get("correo", String.class));
         assertEquals(List.of("LECTOR"), claims.get("roles", List.class));
         assertEquals("LECTOR", claims.get("rol", String.class));
         assertNotNull(claims.getId());
@@ -195,7 +195,7 @@ class JwtServiceTest {
         String token = jwtService.generateToken(usuario);
         Claims claimsEsperados = parsearClaims(token);
 
-        assertEquals("jwt-test@uteq.edu.ec", jwtService.extractCorreo(token));
+        assertEquals("jwt-test@correo.com", jwtService.extractCorreo(token));
         assertEquals(claimsEsperados.getId(), jwtService.extractJti(token));
         assertEquals(claimsEsperados.getExpiration(), jwtService.extractExpiration(token));
     }

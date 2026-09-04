@@ -39,8 +39,8 @@ class SugerenciaAdquisicionServiceTest {
     // ── Test 1: crear registra la sugerencia en PENDIENTE ──
     @Test
     void crear_conDatosValidos_quedaEnPendiente() {
-        given(authentication.getName()).willReturn("lector@uteq.edu.ec");
-        given(usuarioRepo.findByCorreo("lector@uteq.edu.ec")).willReturn(Optional.of(usuarioConId(7L)));
+        given(authentication.getName()).willReturn("lector@correo.com");
+        given(usuarioRepo.findByCorreo("lector@correo.com")).willReturn(Optional.of(usuarioConId(7L)));
         given(sugerenciaRepo.save(any())).willAnswer(inv -> {
             SugerenciaAdquisicion s = inv.getArgument(0);
             s.setId(1L);
@@ -57,8 +57,8 @@ class SugerenciaAdquisicionServiceTest {
     // ── Test 2: listarPropias filtra por el usuario autenticado ──
     @Test
     void listarPropias_devuelveSoloLasDelUsuarioAutenticado() {
-        given(authentication.getName()).willReturn("lector@uteq.edu.ec");
-        given(usuarioRepo.findByCorreo("lector@uteq.edu.ec")).willReturn(Optional.of(usuarioConId(7L)));
+        given(authentication.getName()).willReturn("lector@correo.com");
+        given(usuarioRepo.findByCorreo("lector@correo.com")).willReturn(Optional.of(usuarioConId(7L)));
         Page<SugerenciaAdquisicion> pagina = new PageImpl<>(List.of(sugerenciaConId(1L, 7L)));
         given(sugerenciaRepo.findByUsuarioId(7L, Pageable.unpaged())).willReturn(pagina);
 
@@ -86,8 +86,8 @@ class SugerenciaAdquisicionServiceTest {
     void cambiarEstado_aAprobada_registraRevisor() {
         SugerenciaAdquisicion sugerencia = sugerenciaConId(1L, 7L);
         given(sugerenciaRepo.findById(1L)).willReturn(Optional.of(sugerencia));
-        given(authentication.getName()).willReturn("gerente@uteq.edu.ec");
-        given(usuarioRepo.findByCorreo("gerente@uteq.edu.ec")).willReturn(Optional.of(usuarioConId(3L)));
+        given(authentication.getName()).willReturn("gerente@correo.com");
+        given(usuarioRepo.findByCorreo("gerente@correo.com")).willReturn(Optional.of(usuarioConId(3L)));
         given(sugerenciaRepo.save(sugerencia)).willReturn(sugerencia);
 
         SugerenciaAdquisicionResponseDTO resultado =

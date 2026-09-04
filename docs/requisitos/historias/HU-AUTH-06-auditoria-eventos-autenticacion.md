@@ -14,12 +14,12 @@ haya reportado en el momento.
 Característica: Registro de eventos de autenticación (OWASP A09)
 
   Escenario: Un login exitoso queda registrado con IP, timestamp y usuario
-    Dado que el usuario "lector@uteq.edu.ec" inicia sesión correctamente desde la IP "172.18.0.1"
+    Dado que el usuario "lector@correo.com" inicia sesión correctamente desde la IP "172.18.0.1"
     Entonces se registra un evento LOGIN_OK con esa IP, la fecha/hora, y el id del usuario
     Y ese evento es consultable tanto en los logs de la aplicación como en la tabla bitacora_auditoria
 
   Escenario: Un login fallido queda registrado
-    Dado que alguien intenta iniciar sesión con el correo "lector@uteq.edu.ec" y una contraseña incorrecta
+    Dado que alguien intenta iniciar sesión con el correo "lector@correo.com" y una contraseña incorrecta
     Entonces se registra un evento LOGIN_FAIL con el correo intentado, la IP, y la fecha/hora
     (no hay un id de usuario que asociar todavía, porque la autenticación nunca llegó a resolverlo)
 

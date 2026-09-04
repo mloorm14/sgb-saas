@@ -30,15 +30,15 @@ Secuencia ejecutada manualmente en Postman (colección `avance_3`) contra
 el id del usuario lector (no expuesto por ningún endpoint GET del módulo)
 y para simular el atraso de la fecha de devolución estimada.
 
-1. `POST /api/auth/login` — `biblio@uteq.edu.ec` → obtener `accessToken`.
+1. `POST /api/auth/login` — `biblio@correo.com` → obtener `accessToken`.
 2. `SELECT u.id, u.correo FROM usuarios u JOIN usuario_roles ur ON ur.usuario_id = u.id JOIN roles r ON r.id = ur.rol_id WHERE r.nombre = 'LECTOR';` → id del lector usado = `10`.
 3. `POST /api/v1/prestamos` — Bearer biblio, body `{"usuarioId":10,"libroId":1,"diasPrestamo":7}`.
 4. `UPDATE prestamos SET fecha_devolucion_estimada = NOW() - INTERVAL '1 day' WHERE id = 9;` (simulación de atraso sobre el préstamo creado en el paso 3, id 9).
 5. `POST /api/v1/prestamos/9/devolucion` — Bearer biblio.
-6. `POST /api/auth/login` — `lector@uteq.edu.ec` (verificación de bloqueo).
+6. `POST /api/auth/login` — `lector@correo.com` (verificación de bloqueo).
 7. `GET /api/v1/multas/usuario/10` — Bearer biblio.
 8. `POST /api/v1/multas/6/pago` — Bearer biblio.
-9. `POST /api/auth/login` — `lector@uteq.edu.ec` (verificación de desbloqueo).
+9. `POST /api/auth/login` — `lector@correo.com` (verificación de desbloqueo).
 
 ## Resultados crudos
 
@@ -87,7 +87,7 @@ Response: `200 OK` · 49 ms · 474 B
 Request: `POST http://localhost:8080/api/auth/login`
 ```json
 {
-  "correo": "lector@uteq.edu.ec",
+  "correo": "lector@correo.com",
   "password": "12345678"
 }
 ```
@@ -156,7 +156,7 @@ Response: `200 OK` · 43 ms · 463 B
 Request: `POST http://localhost:8080/api/auth/login`
 ```json
 {
-  "correo": "lector@uteq.edu.ec",
+  "correo": "lector@correo.com",
   "password": "12345678"
 }
 ```

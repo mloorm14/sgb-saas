@@ -32,7 +32,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class UserDetailsServiceImplTest {
 
-    private static final String CORREO = "userdetails-test@uteq.edu.ec";
+    private static final String CORREO = "userdetails-test@correo.com";
 
     @Mock
     private UsuarioRepository usuarioRepository;

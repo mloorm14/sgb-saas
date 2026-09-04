@@ -81,8 +81,8 @@ class MultaServiceTest {
     // ── Test 3: anular con rol GERENTE -> resuelve rolEjecutor del token, no del body ──
     @Test
     void anular_conRolGerente_resuelveRolDesdeAuthentication() {
-        Authentication auth = authComoRol("gerente@uteq.edu.ec", "GERENTE");
-        given(usuarioRepo.findByCorreo("gerente@uteq.edu.ec"))
+        Authentication auth = authComoRol("gerente@correo.com", "GERENTE");
+        given(usuarioRepo.findByCorreo("gerente@correo.com"))
                 .willReturn(Optional.of(usuarioConId(10L)));
         Map<String, Object> mapaResultado = new HashMap<>();
         mapaResultado.put("o_multa_id", 9L);
@@ -102,8 +102,8 @@ class MultaServiceTest {
     // ── Test 4: anular con rol ADMIN también es válido ────────
     @Test
     void anular_conRolAdmin_resuelveRolAdmin() {
-        Authentication auth = authComoRol("admin@uteq.edu.ec", "ADMIN");
-        given(usuarioRepo.findByCorreo("admin@uteq.edu.ec"))
+        Authentication auth = authComoRol("admin@correo.com", "ADMIN");
+        given(usuarioRepo.findByCorreo("admin@correo.com"))
                 .willReturn(Optional.of(usuarioConId(11L)));
         Map<String, Object> mapaResultado = new HashMap<>();
         mapaResultado.put("o_multa_id", 12L);
@@ -119,8 +119,8 @@ class MultaServiceTest {
     // ── Test 5: anular registra evento de auditoría con usuarioId real ──
     @Test
     void anular_deberiaRegistrarAuditoria() {
-        Authentication auth = authComoRol("gerente@uteq.edu.ec", "GERENTE");
-        given(usuarioRepo.findByCorreo("gerente@uteq.edu.ec"))
+        Authentication auth = authComoRol("gerente@correo.com", "GERENTE");
+        given(usuarioRepo.findByCorreo("gerente@correo.com"))
                 .willReturn(Optional.of(usuarioConId(10L)));
         Map<String, Object> mapaResultado = new HashMap<>();
         mapaResultado.put("o_multa_id", 9L);
@@ -144,7 +144,7 @@ class MultaServiceTest {
     // MultaService.resolverRolAnulacion.)
     @Test
     void anular_sinRolGerenteOAdmin_lanzaAccesoDenegado() {
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
 
         assertThatThrownBy(() -> multaService.anular(9L, "motivo", auth))
                 .isInstanceOf(AuthorizationDeniedException.class);
@@ -153,8 +153,8 @@ class MultaServiceTest {
     // ── Test 6: acceso denegado cuando un LECTOR pide multas de otro usuario ──
     @Test
     void listarPorUsuario_cuandoLectorPideOtroUsuario_lanzaAccesoDenegado() {
-        Authentication auth = authComoRol("lector@uteq.edu.ec", "LECTOR");
-        given(usuarioRepo.findByCorreo("lector@uteq.edu.ec"))
+        Authentication auth = authComoRol("lector@correo.com", "LECTOR");
+        given(usuarioRepo.findByCorreo("lector@correo.com"))
                 .willReturn(Optional.of(usuarioConId(1L)));
 
         assertThatThrownBy(() -> multaService.listarPorUsuario(2L, auth, null))
