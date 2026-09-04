@@ -165,6 +165,22 @@ public interface PrestamoProcedureRepository extends Repository<Prestamo, Long> 
             @Param("p_busqueda") String busqueda
     );
 
+    @Query(value = "SELECT * FROM fn_reporte_prestamos_vencidos(:p_dias_atraso_min, :p_busqueda) LIMIT :limit OFFSET :offset",
+            nativeQuery = true)
+    List<ReporteVencidosProjection> fnReportePrestamosVencidosPaginado(
+            @Param("p_dias_atraso_min") Integer diasAtrasoMin,
+            @Param("p_busqueda") String busqueda,
+            @Param("limit") int limit,
+            @Param("offset") int offset
+    );
+
+    @Query(value = "SELECT COUNT(*) FROM fn_reporte_prestamos_vencidos(:p_dias_atraso_min, :p_busqueda)",
+            nativeQuery = true)
+    long countReportePrestamosVencidos(
+            @Param("p_dias_atraso_min") Integer diasAtrasoMin,
+            @Param("p_busqueda") String busqueda
+    );
+
     @Query(value = "SELECT * FROM fn_reporte_categorias_demandadas(:p_limite, :p_desde, :p_hasta)",
             nativeQuery = true)
     List<ReporteCategoriasDemandadasProjection> fnReporteCategoriasDemandadas(
@@ -172,4 +188,36 @@ public interface PrestamoProcedureRepository extends Repository<Prestamo, Long> 
             @Param("p_desde") OffsetDateTime desde,
             @Param("p_hasta") OffsetDateTime hasta
     );
+
+    // Paginados restantes (wrapper LIMIT/OFFSET + COUNT) — codigo legible, una query por reporte
+    @Query(value = "SELECT * FROM fn_reporte_categorias_demandadas(:p_limite, :p_desde, :p_hasta) LIMIT :limit OFFSET :offset",
+            nativeQuery = true)
+    List<ReporteCategoriasDemandadasProjection> fnReporteCategoriasDemandadasPaginado(
+            @Param("p_limite") Integer limite, @Param("p_desde") OffsetDateTime desde, @Param("p_hasta") OffsetDateTime hasta,
+            @Param("limit") int limit, @Param("offset") int offset);
+
+    @Query(value = "SELECT COUNT(*) FROM fn_reporte_categorias_demandadas(:p_limite, :p_desde, :p_hasta)", nativeQuery = true)
+    long countReporteCategoriasDemandadas(@Param("p_limite") Integer limite, @Param("p_desde") OffsetDateTime desde, @Param("p_hasta") OffsetDateTime hasta);
+
+    @Query(value = "SELECT * FROM fn_reporte_indice_morosidad(:p_limite) LIMIT :limit OFFSET :offset", nativeQuery = true)
+    List<ReporteMorosidadProjection> fnReporteIndiceMorosidadPaginado(@Param("p_limite") Integer limite, @Param("limit") int limit, @Param("offset") int offset);
+
+    @Query(value = "SELECT COUNT(*) FROM fn_reporte_indice_morosidad(:p_limite)", nativeQuery = true)
+    long countReporteIndiceMorosidad(@Param("p_limite") Integer limite);
+
+    @Query(value = "SELECT * FROM fn_reporte_libros_mas_prestados_detallado(:p_limite, :p_desde, :p_hasta, :p_categoria_id) LIMIT :limit OFFSET :offset", nativeQuery = true)
+    List<LibroMasPrestadoDetalladoProjection> fnReporteLibrosDetalladoPaginado(
+            @Param("p_limite") Integer limite, @Param("p_desde") OffsetDateTime desde, @Param("p_hasta") OffsetDateTime hasta,
+            @Param("p_categoria_id") Integer categoriaId, @Param("limit") int limit, @Param("offset") int offset);
+
+    @Query(value = "SELECT COUNT(*) FROM fn_reporte_libros_mas_prestados_detallado(:p_limite, :p_desde, :p_hasta, :p_categoria_id)", nativeQuery = true)
+    long countReporteLibrosDetallado(@Param("p_limite") Integer limite, @Param("p_desde") OffsetDateTime desde, @Param("p_hasta") OffsetDateTime hasta, @Param("p_categoria_id") Integer categoriaId);
+
+    @Query(value = "SELECT * FROM fn_reporte_uso_por_periodo(:p_granularidad, :p_desde, :p_hasta) LIMIT :limit OFFSET :offset", nativeQuery = true)
+    List<ReporteUsoPorPeriodoProjection> fnReporteUsoPorPeriodoPaginado(
+            @Param("p_granularidad") String granularidad, @Param("p_desde") OffsetDateTime desde, @Param("p_hasta") OffsetDateTime hasta,
+            @Param("limit") int limit, @Param("offset") int offset);
+
+    @Query(value = "SELECT COUNT(*) FROM fn_reporte_uso_por_periodo(:p_granularidad, :p_desde, :p_hasta)", nativeQuery = true)
+    long countReporteUsoPorPeriodo(@Param("p_granularidad") String granularidad, @Param("p_desde") OffsetDateTime desde, @Param("p_hasta") OffsetDateTime hasta);
 }

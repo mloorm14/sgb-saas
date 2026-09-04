@@ -106,25 +106,40 @@ public class PrestamoController {
     // ── GET /api/v1/prestamos/reportes/libros-mas-prestados-detallado ──
     @GetMapping("/reportes/libros-mas-prestados-detallado")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
-    public ResponseEntity<List<LibroMasPrestadoDetalladoResponseDTO>> reporteLibrosMasPrestadosDetallado(
+    public ResponseEntity<Page<LibroMasPrestadoDetalladoResponseDTO>> reporteLibrosMasPrestadosDetallado(
             @RequestParam(required = false) Integer limite,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta,
-            @RequestParam(required = false) Integer categoriaId) {
+            @RequestParam(required = false) Integer categoriaId,
+            @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(
-                prestamoService.reporteLibrosMasPrestadosDetallado(limite, desde, hasta, categoriaId));
+                prestamoService.reporteLibrosMasPrestadosDetalladoPaginado(limite, desde, hasta, categoriaId, pageable));
+    }
+
+    @GetMapping("/reportes/libros-mas-prestados-detallado/todo")
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    public ResponseEntity<List<LibroMasPrestadoDetalladoResponseDTO>> reporteLibrosMasPrestadosDetalladoTodo(
+            @RequestParam(required = false) Integer limite,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta,
+            @RequestParam(required = false) Integer categoriaId) {
+        return ResponseEntity.ok(prestamoService.reporteLibrosMasPrestadosDetallado(limite, desde, hasta, categoriaId));
     }
 
     // ── GET /api/v1/prestamos/reportes/morosidad ──────────
-    // Mismo criterio de acceso que reporteLibrosMasPrestados (arriba):
-    // BIBLIOTECARIO/GERENTE, no GERENTE/ADMIN -- se sigue el patrón que ya
-    // existe en este controller en vez del roadmap original del Módulo 7
-    // (que sugería GERENTE/ADMIN sin haber revisado el código real).
     @GetMapping("/reportes/morosidad")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
-    public ResponseEntity<List<ReporteMorosidadResponseDTO>> reporteMorosidad(
+    public ResponseEntity<Page<ReporteMorosidadResponseDTO>> reporteMorosidad(
+            @RequestParam(required = false) Integer limite,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(prestamoService.reporteMorosidadPaginado(limite, pageable));
+    }
+
+    @GetMapping("/reportes/morosidad/todo")
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    public ResponseEntity<List<ReporteMorosidadResponseDTO>> reporteMorosidadTodo(
             @RequestParam(required = false) Integer limite) {
         return ResponseEntity.ok(prestamoService.reporteMorosidad(limite));
     }
@@ -132,14 +147,21 @@ public class PrestamoController {
     // ── GET /api/v1/prestamos/reportes/uso?granularidad=dia|semana|mes ──
     @GetMapping("/reportes/uso")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
-    public ResponseEntity<List<ReporteUsoPorPeriodoResponseDTO>> reporteUsoPorPeriodo(
+    public ResponseEntity<Page<ReporteUsoPorPeriodoResponseDTO>> reporteUsoPorPeriodo(
             @RequestParam(required = false, defaultValue = "dia") String granularidad,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta) {
-        return ResponseEntity.ok(
-                prestamoService.reporteUsoPorPeriodo(granularidad, desde, hasta));
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(prestamoService.reporteUsoPorPeriodoPaginado(granularidad, desde, hasta, pageable));
+    }
+
+    @GetMapping("/reportes/uso/todo")
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    public ResponseEntity<List<ReporteUsoPorPeriodoResponseDTO>> reporteUsoPorPeriodoTodo(
+            @RequestParam(required = false, defaultValue = "dia") String granularidad,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta) {
+        return ResponseEntity.ok(prestamoService.reporteUsoPorPeriodo(granularidad, desde, hasta));
     }
 
     // ── GET /api/v1/prestamos/reportes/morosidad/pdf ──────
@@ -267,23 +289,38 @@ public class PrestamoController {
     // ── GET /api/v1/prestamos/reportes/vencidos ───────────
     @GetMapping("/reportes/vencidos")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
-    public ResponseEntity<List<ReporteVencidosResponseDTO>> reportePrestamosVencidos(
+    public ResponseEntity<Page<ReporteVencidosResponseDTO>> reportePrestamosVencidos(
+            @RequestParam(required = false) Integer diasAtrasoMin,
+            @RequestParam(required = false) String busqueda,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(prestamoService.reportePrestamosVencidosPaginado(diasAtrasoMin, busqueda, pageable));
+    }
+
+    @GetMapping("/reportes/vencidos/todo")
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    public ResponseEntity<List<ReporteVencidosResponseDTO>> reportePrestamosVencidosTodo(
             @RequestParam(required = false) Integer diasAtrasoMin,
             @RequestParam(required = false) String busqueda) {
-        return ResponseEntity.ok(
-                prestamoService.reportePrestamosVencidos(diasAtrasoMin, busqueda));
+        return ResponseEntity.ok(prestamoService.reportePrestamosVencidos(diasAtrasoMin, busqueda));
     }
 
     // ── GET /api/v1/prestamos/reportes/categorias-demandadas ──
     @GetMapping("/reportes/categorias-demandadas")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
-    public ResponseEntity<List<ReporteCategoriasDemandadasResponseDTO>> reporteCategoriasDemandadas(
+    public ResponseEntity<Page<ReporteCategoriasDemandadasResponseDTO>> reporteCategoriasDemandadas(
             @RequestParam(required = false) Integer limite,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta) {
-        return ResponseEntity.ok(
-                prestamoService.reporteCategoriasDemandadas(limite, desde, hasta));
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(prestamoService.reporteCategoriasDemandadasPaginado(limite, desde, hasta, pageable));
+    }
+
+    @GetMapping("/reportes/categorias-demandadas/todo")
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    public ResponseEntity<List<ReporteCategoriasDemandadasResponseDTO>> reporteCategoriasDemandadasTodo(
+            @RequestParam(required = false) Integer limite,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta) {
+        return ResponseEntity.ok(prestamoService.reporteCategoriasDemandadas(limite, desde, hasta));
     }
 }
