@@ -14,10 +14,12 @@ export class ProveedorService {
 
   constructor(private http: HttpClient) {}
 
-  listar(page?: number, size?: number): Observable<{ content: Proveedor[]; totalPages: number; totalElements: number }> {
+  listar(page?: number, size?: number, q?: string, activo?: boolean): Observable<{ content: Proveedor[]; totalPages: number; totalElements: number }> {
     const params: Record<string, string> = {};
     if (page !== undefined) params['page'] = String(page);
     if (size !== undefined) params['size'] = String(size);
+    if (q) params['q'] = q;
+    if (activo !== undefined && activo !== null) params['activo'] = String(activo);
     return this.http.get<{ content: Proveedor[]; totalPages: number; totalElements: number }>(this.apiUrl, { params }).pipe(
       catchError(err => this.manejarError(err))
     );

@@ -19,7 +19,16 @@ export class FavoritoService {
   constructor(private http: HttpClient) {}
 
   listar(): Observable<Favorito[]> {
-    return this.http.get<Favorito[]>(this.apiUrl).pipe(
+    return this.http.get<Favorito[]>(`${this.apiUrl}/todo`).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  listarPaginado(page?: number, size?: number): Observable<{ content: Favorito[]; totalPages: number; totalElements: number }> {
+    const params: Record<string, string> = {};
+    if (page !== undefined) params['page'] = String(page);
+    if (size !== undefined) params['size'] = String(size);
+    return this.http.get<{ content: Favorito[]; totalPages: number; totalElements: number }>(this.apiUrl, { params }).pipe(
       catchError(err => this.manejarError(err))
     );
   }

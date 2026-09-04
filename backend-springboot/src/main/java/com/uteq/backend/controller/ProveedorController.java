@@ -29,8 +29,16 @@ public class ProveedorController {
     @GetMapping
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<Page<ProveedorResponseDTO>> listar(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) Boolean activo,
             @PageableDefault(size = 20, sort = "nombre") Pageable pageable) {
-        Page<ProveedorResponseDTO> page = proveedorRepository.findAll(pageable).map(this::toDTO);
+        String filtro = (q != null && !q.isBlank()) ? q.trim() : null;
+        Boolean activoFiltro = activo;
+        // Si no hay filtros, usar findAll paginado (mas eficiente)
+        if (filtro == null && activoFiltro == null) {
+            return ResponseEntity.ok(proveedorRepository.findAll(pageable).map(this::toDTO));
+        }
+        Page<ProveedorResponseDTO> page = proveedorRepository.buscarConFiltros(filtro, activoFiltro, pageable).map(this::toDTO);
         return ResponseEntity.ok(page);
     }
 

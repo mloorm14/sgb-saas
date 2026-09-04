@@ -8,6 +8,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+
 import java.util.List;
 
 // Módulo 9.2 del roadmap. Solo LECTOR: favoritos es un concepto de
@@ -54,7 +58,15 @@ public class FavoritoController {
     // de tal usuarioId".
     @GetMapping
     @PreAuthorize("hasRole('LECTOR')")
-    public ResponseEntity<List<FavoritoResponseDTO>> listarPropios(Authentication authentication) {
+    public ResponseEntity<Page<FavoritoResponseDTO>> listarPropios(
+            Authentication authentication,
+            @PageableDefault(size = 10, sort = "agregadoEn") Pageable pageable) {
+        return ResponseEntity.ok(favoritoService.listarPropiosPaginado(authentication, pageable));
+    }
+
+    @GetMapping("/todo")
+    @PreAuthorize("hasRole('LECTOR')")
+    public ResponseEntity<List<FavoritoResponseDTO>> listarPropiosTodo(Authentication authentication) {
         return ResponseEntity.ok(favoritoService.listarPropios(authentication));
     }
 }
