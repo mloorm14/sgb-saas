@@ -87,6 +87,11 @@ public class Libro {
     @JoinColumn(name = "estado_id", nullable = false)
     private EstadoLibro estado;
 
+    // Proveedor opcional (S/P si null) — FK nullable, ON DELETE SET NULL.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "proveedor_id")
+    private Proveedor proveedor;
+
     @Column(name = "stock_total", nullable = false, columnDefinition = "SMALLINT")
     private Short stockTotal = (short) 1;
 

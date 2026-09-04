@@ -105,7 +105,8 @@
             <div class="col-span-12 sm:col-span-3">
               <label for="libro-isbn" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">ISBN *</label>
               <div class="flex gap-xs">
-                <input id="libro-isbn" formControlName="isbn" type="text" inputmode="numeric" maxlength="13" placeholder="978..."
+                <input id="libro-isbn" formControlName="isbn" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="13" placeholder="978..."
+                  (keypress)="soloNumeros($event)" (paste)="pegarSoloNumeros($event)"
                   [attr.aria-invalid]="form.get('isbn')?.invalid && form.get('isbn')?.touched ? true : null"
                   [attr.aria-describedby]="form.get('isbn')?.invalid && form.get('isbn')?.touched ? 'isbn-error' : null"
                   class="flex-1 min-w-0 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
@@ -132,8 +133,12 @@
             </div>
             <div class="col-span-6 sm:col-span-2">
               <label for="libro-num-paginas" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Nº páginas</label>
-              <input id="libro-num-paginas" formControlName="numeroPaginas" type="number" min="1" max="99999" placeholder="320"
+              <input id="libro-num-paginas" formControlName="numeroPaginas" type="number" min="1" max="4100" placeholder="4100"
+                [attr.aria-invalid]="form.get('numeroPaginas')?.invalid && form.get('numeroPaginas')?.touched ? true : null"
                 class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
+              @if (form.get('numeroPaginas')?.touched && form.get('numeroPaginas')?.invalid) {
+                <p class="text-[11px] text-error mt-1">Entre 1 y 4.100 páginas</p>
+              }
             </div>
             <div class="col-span-6 sm:col-span-3" data-autocomplete-idioma>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Idioma *</label>
@@ -147,7 +152,8 @@
                   </span>
                 </div>
               }
-              <div class="relative flex items-center gap-1">
+              <!-- Combobox idioma: botones dentro del input (h-11 uniforme) -->
+              <div class="relative">
                 <label for="buscar-idioma" class="sr-only">Buscar idioma</label>
                 <input type="text" [(ngModel)]="textoIdioma" [ngModelOptions]="{standalone: true}" id="buscar-idioma"
                   (keydown)="onKeydownIdioma($event)"
@@ -156,13 +162,15 @@
                   role="combobox" [attr.aria-expanded]="mostrarSugerenciasIdioma"
                   aria-controls="libro-idioma-listbox" aria-autocomplete="list"
                   [attr.aria-activedescendant]="indiceIdioma >= 0 ? 'libro-idioma-option-' + indiceIdioma : null"
-                  class="flex-1 min-w-0 h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
-                <button type="button" (click)="buscarIdiomaManualmente()" aria-label="Buscar idioma" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
-                  <span class="material-symbols-outlined text-[18px]">search</span>
-                </button>
-                <button type="button" (click)="agregarIdioma()" aria-label="Agregar idioma" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Agregar">
-                  <span class="material-symbols-outlined text-[18px]">add</span>
-                </button>
+                  class="w-full h-11 px-sm pr-[72px] rounded border border-outline-variant font-body-sm text-body-sm" />
+                <div class="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  <button type="button" (click)="buscarIdiomaManualmente()" aria-label="Buscar idioma" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer" title="Buscar">
+                    <span class="material-symbols-outlined text-[18px]">search</span>
+                  </button>
+                  <button type="button" (click)="agregarIdioma()" aria-label="Agregar idioma" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer" title="Agregar">
+                    <span class="material-symbols-outlined text-[18px]">add</span>
+                  </button>
+                </div>
                 @if (mostrarSugerenciasIdioma) {
                   <ul id="libro-idioma-listbox" role="listbox" aria-label="Sugerencias de idiomas" class="absolute left-0 right-0 top-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
                     @if (sugerenciasIdioma.length > 0) {
@@ -182,8 +190,12 @@
               <div class="col-span-6 sm:col-span-2">
                 <label for="libro-precio" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Precio</label>
                 <div class="relative group">
-                  <input id="libro-precio" formControlName="precioBase" type="number" min="0" step="0.01" placeholder="199.99"
+                  <input id="libro-precio" formControlName="precioBase" type="number" min="0" max="250" step="0.01" placeholder="25.00"
+                    [attr.aria-invalid]="form.get('precioBase')?.invalid && form.get('precioBase')?.touched ? true : null"
                     class="w-full h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm disabled:bg-surface-container-low disabled:opacity-60" />
+                  @if (form.get('precioBase')?.touched && form.get('precioBase')?.invalid) {
+                    <p class="text-[11px] text-error mt-1">Máx 250.00 (2 decimales)</p>
+                  }
                   @if (modoRevisionPendiente && !esGerenteAdmin) {
                     <span class="absolute right-2 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center justify-center w-6 h-6 rounded-full bg-error text-white">
                       <span class="material-symbols-outlined text-[16px]">close</span>
@@ -328,7 +340,8 @@
                   </span>
                 </div>
               }
-              <div class="relative flex items-center gap-1">
+              <!-- Combobox editorial: botones dentro del input, ocupa ancho completo -->
+              <div class="relative">
                 <label for="buscar-editorial" class="sr-only">Buscar editorial</label>
                 <input type="text" #editorialInput [(ngModel)]="textoEditorial" [ngModelOptions]="{standalone: true}" id="buscar-editorial"
                   (keydown)="onKeydownEditorial($event)"
@@ -336,13 +349,15 @@
                   role="combobox" [attr.aria-expanded]="mostrarSugerenciasEditorial"
                   aria-controls="libro-editorial-listbox" aria-autocomplete="list"
                   [attr.aria-activedescendant]="indiceEditorial >= 0 ? 'libro-editorial-option-' + indiceEditorial : null"
-                  class="flex-1 min-w-0 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
-                <button type="button" (click)="buscarEditorialManualmente()" aria-label="Buscar editorial" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Buscar">
-                  <span class="material-symbols-outlined text-[18px]">search</span>
-                </button>
-                <button type="button" (click)="agregarEditorial()" aria-label="Agregar editorial" class="w-8 h-8 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer shrink-0" title="Agregar">
-                  <span class="material-symbols-outlined text-[18px]">add</span>
-                </button>
+                  class="w-full h-11 px-sm pr-[72px] rounded border border-outline-variant font-body-sm text-body-sm" />
+                <div class="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  <button type="button" (click)="buscarEditorialManualmente()" aria-label="Buscar editorial" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer" title="Buscar">
+                    <span class="material-symbols-outlined text-[18px]">search</span>
+                  </button>
+                  <button type="button" (click)="agregarEditorial()" aria-label="Agregar editorial" class="w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer" title="Agregar">
+                    <span class="material-symbols-outlined text-[18px]">add</span>
+                  </button>
+                </div>
                 @if (mostrarSugerenciasEditorial) {
                   <ul id="libro-editorial-listbox" role="listbox" aria-label="Sugerencias de editoriales" class="absolute left-0 right-0 top-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
                     @if (sugerenciasEditorial.length>0) {
@@ -366,6 +381,51 @@
                 }
               </select>
             </div>
+          </div>
+
+          <!-- Fila: Proveedor (opcional, S/P si vacío) — debajo de Editorial, misma grilla -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-md mb-lg" data-autocomplete-proveedor>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Proveedor</label>
+              @if (form.get('proveedorId')?.value) {
+                <div class="flex items-center gap-xs mb-xs">
+                  <span class="inline-flex items-center gap-1 px-sm py-xs rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-[11px]">
+                    {{ nombreProveedorSeleccionado() }}
+                    <button type="button" (click)="quitarProveedor()" [disabled]="!puedeGestionarProveedor" aria-label="Quitar proveedor" class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-on-primary-fixed-variant/20 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+                      <span class="material-symbols-outlined text-[12px]">close</span>
+                    </button>
+                  </span>
+                </div>
+              }
+              <div class="relative">
+                <label for="buscar-proveedor" class="sr-only">Buscar proveedor</label>
+                <input type="text" [(ngModel)]="textoProveedor" [ngModelOptions]="{standalone: true}" id="buscar-proveedor"
+                  (keydown)="onKeydownProveedor($event)"
+                  [disabled]="!puedeGestionarProveedor"
+                  [placeholder]="puedeGestionarProveedor ? 'Buscar proveedor...' : 'Solo GERENTE/ADMIN'"
+                  [attr.aria-disabled]="!puedeGestionarProveedor"
+                  role="combobox" [attr.aria-expanded]="mostrarSugerenciasProveedor"
+                  aria-controls="libro-proveedor-listbox" aria-autocomplete="list"
+                  [attr.aria-activedescendant]="indiceProveedor >= 0 ? 'libro-proveedor-option-' + indiceProveedor : null"
+                  class="w-full h-11 px-sm pr-9 rounded border border-outline-variant font-body-sm text-body-sm disabled:bg-surface-container-low disabled:opacity-60 disabled:cursor-not-allowed" />
+                <button type="button" (click)="buscarProveedorManualmente()" aria-label="Buscar proveedor" [disabled]="!puedeGestionarProveedor"
+                  class="absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded border border-outline-variant flex items-center justify-center hover:bg-surface-container-low cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none" title="Buscar">
+                  <span class="material-symbols-outlined text-[18px]">search</span>
+                </button>
+                @if (mostrarSugerenciasProveedor) {
+                  <ul id="libro-proveedor-listbox" role="listbox" aria-label="Sugerencias de proveedores" class="absolute left-0 right-0 top-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                    @if (sugerenciasProveedor.length > 0) {
+                      @for (s of sugerenciasProveedor; track s.id; let i = $index) {
+                        <li (mousedown)="seleccionarProveedor(s)" role="option" [id]="'libro-proveedor-option-' + i" [attr.aria-selected]="i===indiceProveedor" class="px-sm py-xs cursor-pointer font-body-sm text-body-sm hover:bg-surface-container-low" [class.bg-primary-container]="i===indiceProveedor">{{ s.nombre }}</li>
+                      }
+                    } @else if (textoProveedor.trim().length >= 1) {
+                      <li class="px-sm py-xs font-body-sm text-body-sm text-on-surface-variant">No se encontraron resultados</li>
+                    }
+                  </ul>
+                }
+              </div>
+            </div>
+            <div><!-- columna vacía para mantener grilla --></div>
           </div>
 
           @if (errorCatalogo) {

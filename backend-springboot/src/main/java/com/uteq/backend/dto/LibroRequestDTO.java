@@ -20,10 +20,12 @@ public record LibroRequestDTO(
         Integer anioPublicacion,
 
         @Min(value = 1, message = "El número de páginas debe ser mayor a 0")
+        @Max(value = 4100, message = "El número de páginas no puede superar 4100")
         Integer numeroPaginas,
 
-        @Digits(integer = 8, fraction = 2, message = "Precio base inválido")
+        @Digits(integer = 3, fraction = 2, message = "Precio base inválido (máx 250.00 con 2 decimales)")
         @DecimalMin(value = "0.00", message = "El precio base debe ser mayor o igual a 0")
+        @DecimalMax(value = "250.00", message = "El precio base no puede superar 250.00")
         java.math.BigDecimal precioBase,
 
         @Size(max = 2000, message = "El resumen no puede superar 2000 caracteres")
@@ -61,5 +63,8 @@ public record LibroRequestDTO(
         // obligatorios.
         Set<Integer> categoriaIds,
 
-        Set<Integer> autorIds
+        Set<Integer> autorIds,
+
+        // Proveedor opcional — null o ausente = S/P (Sin proveedor).
+        Integer proveedorId
 ) {}

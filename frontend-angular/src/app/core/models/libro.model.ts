@@ -24,6 +24,8 @@ export interface Libro {
   fechaRegistro: string;
   categorias: string[];
   autores: string[];
+  proveedorId?: number | null;
+  proveedor?: string | null;
 }
 
 export interface LibroRequest {
@@ -42,6 +44,7 @@ export interface LibroRequest {
   stockDisponible: number;
   categoriaIds?: number[];
   autorIds?: number[];
+  proveedorId?: number | null;
 }
 
 // Respuesta de GET /v1/libros/sugerencias?texto= (LibroSugerenciaDTO).

@@ -16,6 +16,8 @@ import { Autor } from '../core/models/autor.model';
 import { Editorial } from '../core/models/editorial.model';
 import { Idioma } from '../core/models/idioma.model';
 import { EstadoLibro } from '../core/models/estado-libro.model';
+import { Proveedor } from '../core/models/proveedor.model';
+import { ProveedorService } from '../core/services/proveedor.service';
 import { Libro, LibroRequest } from '../core/models/libro.model';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 
@@ -57,6 +59,7 @@ export class LibrosComponent implements OnInit, OnDestroy {
   textoCategoria: string = '';
   textoEditorial: string = '';
   textoIdioma: string = '';
+  textoProveedor: string = '';
 
   textoBusqueda: string = '';
   estadoLibroFiltro: number | null = null;
@@ -65,17 +68,21 @@ export class LibrosComponent implements OnInit, OnDestroy {
   sugerenciasCategoria: Categoria[] = [];
   sugerenciasEditorial: Editorial[] = [];
   sugerenciasIdioma: Idioma[] = [];
+  sugerenciasProveedor: Proveedor[] = [];
   mostrarSugerenciasAutor: boolean = false;
   mostrarSugerenciasCategoria: boolean = false;
   mostrarSugerenciasEditorial: boolean = false;
   mostrarSugerenciasIdioma: boolean = false;
+  mostrarSugerenciasProveedor: boolean = false;
   indiceAutor: number = -1;
   indiceCategoria: number = -1;
   indiceEditorial: number = -1;
   indiceIdioma: number = -1;
+  indiceProveedor: number = -1;
 
   editorialSeleccionadaNombre: string = '';
   idiomaSeleccionadoNombre: string = '';
+  proveedorSeleccionadoNombre: string = '';
 
   anioMax: number = new Date().getFullYear() + 1;
   esGerenteAdmin: boolean = false;
@@ -114,6 +121,7 @@ export class LibrosComponent implements OnInit, OnDestroy {
     private editorialService: EditorialService,
     private idiomaService: IdiomaService,
     private estadoLibroService: EstadoLibroService,
+    private proveedorService: ProveedorService,
     private authService: AuthService,
     private route: ActivatedRoute,
     private router: Router,
@@ -126,15 +134,16 @@ export class LibrosComponent implements OnInit, OnDestroy {
       resumen: ['', [Validators.maxLength(2000)]],
       ubicacionFisica: ['', [Validators.maxLength(50)]],
       anioPublicacion: ['', [Validators.required, Validators.min(1950), Validators.max(this.anioMax)]],
-      numeroPaginas: ['', [Validators.min(1), Validators.max(99999)]],
-      precioBase: [{ value: '', disabled: !this.esGerenteAdmin }, [Validators.min(0)]],
+      numeroPaginas: ['', [Validators.min(1), Validators.max(4100)]],
+      precioBase: [{ value: '', disabled: !this.esGerenteAdmin }, [Validators.min(0), Validators.max(250), Validators.pattern('^\\d+(\\.\\d{1,2})?$')]],
       stockTotal: ['', [Validators.required, Validators.min(0)]],
       stockDisponible: ['', [Validators.required, Validators.min(0)]],
       editorialId: [null, [Validators.required]],
       idiomaId: [null, [Validators.required]],
       estadoId: [null, [Validators.required]],
       categoriaIds: [[]],
-      autorIds: [[]]
+      autorIds: [[]],
+      proveedorId: [null]
     });
   }
 
@@ -266,19 +275,22 @@ export class LibrosComponent implements OnInit, OnDestroy {
     this.modoEdicion = false;
     this.modoRevisionPendiente = false;
     this.libroSeleccionadoId = null;
-    this.form.reset({ categoriaIds: [], autorIds: [], editorialId: null, idiomaId: null, estadoId: null, numeroPaginas: '', precioBase: '' });
+    this.form.reset({ categoriaIds: [], autorIds: [], editorialId: null, idiomaId: null, estadoId: null, numeroPaginas: '', precioBase: '', proveedorId: null });
     if (this.esGerenteAdmin) this.form.get('precioBase')?.enable(); else this.form.get('precioBase')?.disable();
     this.limpiarPortada();
     this.textoAutor = '';
     this.textoCategoria = '';
     this.textoEditorial = '';
     this.textoIdioma = '';
+    this.textoProveedor = '';
     this.editorialSeleccionadaNombre = '';
     this.idiomaSeleccionadoNombre = '';
+    this.proveedorSeleccionadoNombre = '';
     this.sugerenciasAutor = [];
     this.sugerenciasCategoria = [];
     this.sugerenciasEditorial = [];
     this.sugerenciasIdioma = [];
+    this.sugerenciasProveedor = [];
     this.mostrarFormulario = true;
   }
 
@@ -291,12 +303,15 @@ export class LibrosComponent implements OnInit, OnDestroy {
     this.textoCategoria = '';
     this.textoEditorial = '';
     this.textoIdioma = '';
+    this.textoProveedor = '';
     this.sugerenciasAutor = [];
     this.sugerenciasCategoria = [];
     this.sugerenciasEditorial = [];
     this.sugerenciasIdioma = [];
+    this.sugerenciasProveedor = [];
     this.editorialSeleccionadaNombre = libro.editorial ?? '';
     this.idiomaSeleccionadoNombre = libro.idioma ?? '';
+    this.proveedorSeleccionadoNombre = (libro as any).proveedor ?? '';
     this.form.patchValue({
       isbn: libro.isbn,
       titulo: libro.titulo,
@@ -311,7 +326,8 @@ export class LibrosComponent implements OnInit, OnDestroy {
       idiomaId: libro.idiomaId,
       estadoId: libro.estadoId,
       categoriaIds: this.idsDeNombres(this.categorias, libro.categorias),
-      autorIds: this.idsDeNombres(this.autores, libro.autores)
+      autorIds: this.idsDeNombres(this.autores, libro.autores),
+      proveedorId: (libro as any).proveedorId ?? null
     });
     // Precio solo editable por GERENTE/ADMIN, y nunca en modo revisión pendiente si es bibliotecario
     if (this.modoRevisionPendiente && !this.esGerenteAdmin) {
@@ -334,17 +350,20 @@ export class LibrosComponent implements OnInit, OnDestroy {
   cerrarFormulario(): void {
     this.mostrarFormulario = false;
     this.modoRevisionPendiente = false;
-    this.form.reset({ categoriaIds: [], autorIds: [], editorialId: null, idiomaId: null, estadoId: null, numeroPaginas: '', precioBase: '' });
+    this.form.reset({ categoriaIds: [], autorIds: [], editorialId: null, idiomaId: null, estadoId: null, numeroPaginas: '', precioBase: '', proveedorId: null });
     if (this.esGerenteAdmin) this.form.get('precioBase')?.enable(); else this.form.get('precioBase')?.disable();
     this.limpiarPortada();
     this.textoAutor = '';
     this.textoCategoria = '';
     this.textoEditorial = '';
     this.textoIdioma = '';
+    this.textoProveedor = '';
+    this.proveedorSeleccionadoNombre = '';
     this.sugerenciasAutor = [];
     this.sugerenciasCategoria = [];
     this.sugerenciasEditorial = [];
     this.sugerenciasIdioma = [];
+    this.sugerenciasProveedor = [];
     // limpiar query param revision si existe
     this.router.navigate([], { queryParams: {}, queryParamsHandling: 'merge' });
   }
@@ -545,6 +564,57 @@ export class LibrosComponent implements OnInit, OnDestroy {
     this.idiomaSeleccionadoNombre = '';
   }
 
+  // ── Autocomplete manual: Proveedor (opcional, S/P si null) ──
+  // Solo GERENTE/ADMIN pueden buscar/vincular proveedor; BIBLIOTECARIO ve campo deshabilitado.
+  get puedeGestionarProveedor(): boolean {
+    return this.esGerenteAdmin;
+  }
+
+  buscarProveedorManualmente(): void {
+    if (!this.puedeGestionarProveedor) return;
+    const texto = this.textoProveedor.trim();
+    if (!texto) { this.sugerenciasProveedor = []; this.mostrarSugerenciasProveedor = false; return; }
+    this.proveedorService.buscar(texto).subscribe({
+      next: (res) => { this.sugerenciasProveedor = res; this.indiceProveedor = -1; this.mostrarSugerenciasProveedor = true; },
+      error: () => { this.sugerenciasProveedor = []; this.mostrarSugerenciasProveedor = true; }
+    });
+  }
+
+  seleccionarProveedor(proveedor: Proveedor): void {
+    if (!this.puedeGestionarProveedor) return;
+    this.form.patchValue({ proveedorId: proveedor.id });
+    this.proveedorSeleccionadoNombre = proveedor.nombre;
+    this.textoProveedor = '';
+    this.sugerenciasProveedor = [];
+    this.mostrarSugerenciasProveedor = false;
+  }
+
+  quitarProveedor(): void {
+    if (!this.puedeGestionarProveedor) return;
+    this.form.patchValue({ proveedorId: null });
+    this.proveedorSeleccionadoNombre = '';
+  }
+
+  nombreProveedorSeleccionado(): string {
+    if (this.proveedorSeleccionadoNombre) return this.proveedorSeleccionadoNombre;
+    return '';
+  }
+
+  // ── Validación ISBN solo números ──
+
+  /** Bloquea letras y guiones en ISBN (solo dígitos permitidos). */
+  soloNumeros(event: KeyboardEvent): void {
+    const permitidas = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
+    if (permitidas.includes(event.key)) return;
+    if (!/^[0-9]$/.test(event.key)) event.preventDefault();
+  }
+
+  /** Evita pegar texto con letras/guiones en ISBN. */
+  pegarSoloNumeros(event: ClipboardEvent): void {
+    const texto = event.clipboardData?.getData('text') ?? '';
+    if (!/^[0-9]*$/.test(texto)) event.preventDefault();
+  }
+
   nombreEditorialSeleccionada(): string {
     if (this.editorialSeleccionadaNombre) return this.editorialSeleccionadaNombre;
     const id = this.form.get('editorialId')?.value;
@@ -662,6 +732,28 @@ export class LibrosComponent implements OnInit, OnDestroy {
     }
   }
 
+  onKeydownProveedor(event: KeyboardEvent): void {
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        this.indiceProveedor = Math.min(this.indiceProveedor + 1, this.sugerenciasProveedor.length - 1);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.indiceProveedor = Math.max(this.indiceProveedor - 1, -1);
+        break;
+      case 'Enter':
+        event.preventDefault();
+        if (this.indiceProveedor >= 0 && this.indiceProveedor < this.sugerenciasProveedor.length) {
+          this.seleccionarProveedor(this.sugerenciasProveedor[this.indiceProveedor]);
+        }
+        break;
+      case 'Escape':
+        this.mostrarSugerenciasProveedor = false;
+        break;
+    }
+  }
+
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
@@ -676,6 +768,9 @@ export class LibrosComponent implements OnInit, OnDestroy {
     }
     if (!target.closest('[data-autocomplete-idioma]')) {
       this.mostrarSugerenciasIdioma = false;
+    }
+    if (!target.closest('[data-autocomplete-proveedor]')) {
+      this.mostrarSugerenciasProveedor = false;
     }
   }
 
@@ -853,7 +948,8 @@ export class LibrosComponent implements OnInit, OnDestroy {
       stockTotal: raw.stockTotal,
       stockDisponible: raw.stockDisponible,
       categoriaIds: raw.categoriaIds,
-      autorIds: raw.autorIds
+      autorIds: raw.autorIds,
+      proveedorId: (raw as any).proveedorId ?? null
     } as LibroRequest;
 
     const accion = this.modoEdicion && this.libroSeleccionadoId

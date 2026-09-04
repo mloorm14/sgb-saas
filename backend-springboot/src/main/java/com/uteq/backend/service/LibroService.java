@@ -9,6 +9,7 @@ import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.Categoria;
 import com.uteq.backend.entity.EstadoLibro;
 import com.uteq.backend.entity.Libro;
+import com.uteq.backend.entity.Proveedor;
 import com.uteq.backend.repository.AutorRepository;
 import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.CategoriaRepository;
@@ -16,6 +17,7 @@ import com.uteq.backend.repository.EditorialRepository;
 import com.uteq.backend.repository.EstadoLibroRepository;
 import com.uteq.backend.repository.IdiomaRepository;
 import com.uteq.backend.repository.LibroRepository;
+import com.uteq.backend.repository.ProveedorRepository;
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.cache.annotation.CacheEvict;
@@ -64,6 +66,7 @@ public class LibroService {
     // intermedio, a diferencia de LibroService en sí).
     private final CategoriaRepository categoriaRepo;
     private final AutorRepository autorRepo;
+    private final ProveedorRepository proveedorRepo;
     // Módulo portada binaria: para leer max_tamano_portada_mb con cache en
     // memoria (ver ConfiguracionSistemaService), mismo patrón que
     // PrestamoService con dias_prestamo_default/max_renovaciones_default.
@@ -77,6 +80,7 @@ public class LibroService {
                         EstadoLibroRepository estadoRepo,
                         CategoriaRepository categoriaRepo,
                         AutorRepository autorRepo,
+                        ProveedorRepository proveedorRepo,
                         ConfiguracionSistemaService configuracionSistemaService,
                         BitacoraAuditoriaRepository bitacoraAuditoriaRepo,
                         @org.springframework.beans.factory.annotation.Autowired(required = false) SuscripcionDisponibilidadService suscripcionDisponibilidadService) {
@@ -86,6 +90,7 @@ public class LibroService {
         this.estadoRepo    = estadoRepo;
         this.categoriaRepo = categoriaRepo;
         this.autorRepo     = autorRepo;
+        this.proveedorRepo = proveedorRepo;
         this.configuracionSistemaService = configuracionSistemaService;
         this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
         this.suscripcionDisponibilidadService = suscripcionDisponibilidadService;
@@ -318,6 +323,12 @@ public class LibroService {
         libro.setEstado(dto.estadoId() != null ? estadoRepo.getReferenceById(dto.estadoId()) : null);
         libro.setCategorias(resolverCategorias(dto.categoriaIds()));
         libro.setAutores(resolverAutores(dto.autorIds()));
+        // Proveedor opcional: solo GERENTE/ADMIN pueden vincular (BIBLIOTECARIO -> S/P).
+        if (dto.proveedorId() != null && esGerenteOAdmin()) {
+            libro.setProveedor(proveedorRepo.getReferenceById(dto.proveedorId()));
+        } else {
+            libro.setProveedor(null);
+        }
         // precioBase solo GERENTE/ADMIN puede modificar
         if (esGerenteOAdmin()) {
             if (dto.precioBase() != null && dto.precioBase().signum() < 0) {
@@ -501,7 +512,9 @@ public class LibroService {
                 l.getCategorias() == null ? List.of() :
                         l.getCategorias().stream().map(Categoria::getNombre).toList(),
                 l.getAutores() == null ? List.of() :
-                        l.getAutores().stream().map(Autor::getNombre).toList()
+                        l.getAutores().stream().map(Autor::getNombre).toList(),
+                l.getProveedor() != null ? l.getProveedor().getId() : null,
+                l.getProveedor() != null ? l.getProveedor().getNombre() : null
         );
     }
 
@@ -522,6 +535,12 @@ public class LibroService {
         l.setEstado(estadoRepo.getReferenceById(dto.estadoId()));
         l.setCategorias(resolverCategorias(dto.categoriaIds()));
         l.setAutores(resolverAutores(dto.autorIds()));
+        // Proveedor opcional: solo GERENTE/ADMIN pueden vincular (BIBLIOTECARIO -> S/P).
+        if (dto.proveedorId() != null && esGerenteOAdmin()) {
+            l.setProveedor(proveedorRepo.getReferenceById(dto.proveedorId()));
+        } else {
+            l.setProveedor(null);
+        }
         return l;
     }
 }
