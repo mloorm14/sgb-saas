@@ -7,6 +7,8 @@ import { AutorService } from '../core/services/autor.service';
 import { FavoritoService } from '../core/services/favorito.service';
 import { ReservacionService } from '../core/services/reservacion.service';
 import { AuthService } from '../core/services/auth.service';
+import { ConfirmDialogService } from '../shared/confirm-dialog/confirm-dialog.service';
+import { ClockService } from '../core/services/clock.service';
 import { Libro } from '../core/models/libro.model';
 import { ActivatedRoute } from '@angular/router';
 
@@ -18,6 +20,12 @@ describe('CatalogoComponent', () => {
   let autorService: jasmine.SpyObj<AutorService>;
   let favoritoService: jasmine.SpyObj<FavoritoService>;
   let reservacionService: jasmine.SpyObj<ReservacionService>;
+  let confirmDialog: jasmine.SpyObj<ConfirmDialogService>;
+  let clock: jasmine.SpyObj<ClockService>;
+
+  // Fechas locales fijas (OBS-20): deterministas en cualquier zona horaria.
+  const MANANA_10H = new Date(2026, 8, 4, 10, 0, 0);
+  const TARDE_1930H = new Date(2026, 8, 4, 19, 30, 0);
 
   const libro = (id: number, titulo: string, stockDisponible: number): Libro => ({
     id, titulo, isbn: 'x', resumen: '', portadaUrl: '', tienePortada: false,
@@ -39,6 +47,12 @@ describe('CatalogoComponent', () => {
     (categoriaService as any).buscar = jasmine.createSpy('buscar').and.returnValue(of([]));
     favoritoService.listar.and.returnValue(of([]));
     reservacionService.listarPorUsuario.and.returnValue(of({ content: [], totalPages: 0 } as any));
+    // OBS-20: reloj y diálogo stubbeados — la suite ya no depende de la hora
+    // real (antes fallaba ≥18:00 porque el ConfirmDialog real nunca emitía).
+    confirmDialog = jasmine.createSpyObj('ConfirmDialogService', ['confirm']);
+    confirmDialog.confirm.and.returnValue(of(true));
+    clock = jasmine.createSpyObj('ClockService', ['now']);
+    clock.now.and.returnValue(MANANA_10H);
 
     await TestBed.configureTestingModule({
       imports: [CatalogoComponent],
@@ -49,6 +63,8 @@ describe('CatalogoComponent', () => {
         { provide: FavoritoService, useValue: favoritoService },
         { provide: ReservacionService, useValue: reservacionService },
         { provide: AuthService, useValue: { getUserId: () => 2, hasRole: () => false } },
+        { provide: ConfirmDialogService, useValue: confirmDialog },
+        { provide: ClockService, useValue: clock },
         { provide: ActivatedRoute, useValue: { snapshot: {} } }
       ]
     }).compileComponents();
@@ -195,5 +211,58 @@ describe('CatalogoComponent', () => {
     expect(component.errorMsg).toBe('No se pudo reservar el libro');
     expect(component.estaReservado(1)).toBeFalse();
     expect(component.toastMsg).toBeNull();
+  });
+
+  // ── OBS-20: ramas determinísticas de la hora límite ──────────────
+
+  it('no abre el diálogo de hora límite antes de las 18:00', () => {
+    clock.now.and.returnValue(MANANA_10H);
+    fixture.detectChanges();
+    reservacionService.crear.and.returnValue(of({
+      id: 9, usuarioId: 2, libroId: 1, estadoReservacionId: 1,
+      fechaReserva: '', fechaLimiteRetiro: '2026-09-04T12:00:00-05:00'
+    } as any));
+
+    component.reservarLibro(new Event('click'), component.libros[0]);
+    component.confirmarReserva();
+
+    expect(confirmDialog.confirm).not.toHaveBeenCalled();
+    expect(reservacionService.crear).toHaveBeenCalledWith(jasmine.objectContaining({ usuarioId: 2, libroId: 1 }));
+  });
+
+  it('reprograma para mañana y reserva al confirmar tras las 18:00', () => {
+    clock.now.and.returnValue(TARDE_1930H);
+    confirmDialog.confirm.and.returnValue(of(true));
+    fixture.detectChanges();
+    reservacionService.crear.and.returnValue(of({
+      id: 9, usuarioId: 2, libroId: 1, estadoReservacionId: 1,
+      fechaReserva: '', fechaLimiteRetiro: '2026-09-05T12:00:00-05:00'
+    } as any));
+
+    component.reservarLibro(new Event('click'), component.libros[0]);
+    expect(component.fechaRetiro).toBe('2026-09-04');
+    component.confirmarReserva();
+
+    expect(confirmDialog.confirm).toHaveBeenCalled();
+    expect(component.fechaRetiro).toBe('2026-09-05');
+    expect(reservacionService.crear).toHaveBeenCalledWith(jasmine.objectContaining({
+      usuarioId: 2, libroId: 1, fechaRetiro: jasmine.stringMatching(/^2026-09-05/)
+    }));
+    expect(component.estaReservado(1)).toBeTrue();
+    expect(component.toastMsg).toContain('Reserva creada');
+  });
+
+  it('no reserva al cancelar el diálogo tras las 18:00', () => {
+    clock.now.and.returnValue(TARDE_1930H);
+    confirmDialog.confirm.and.returnValue(of(false));
+    fixture.detectChanges();
+
+    component.reservarLibro(new Event('click'), component.libros[0]);
+    component.confirmarReserva();
+
+    expect(confirmDialog.confirm).toHaveBeenCalled();
+    expect(reservacionService.crear).not.toHaveBeenCalled();
+    expect(component.fechaRetiro).toBe('2026-09-04');
+    expect(component.estaReservado(1)).toBeFalse();
   });
 });

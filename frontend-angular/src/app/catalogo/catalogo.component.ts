@@ -14,6 +14,13 @@ import { Categoria } from '../core/models/categoria.model';
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
 import { FocusTrapDirective } from '../shared/focus-trap.directive';
 import { toOffsetDateTime } from '../core/utils/fecha';
+import {
+  requiereConfirmacionHoraLimite,
+  fechaMananaISO,
+  fechaMaxRetiroISO,
+  aFechaStr
+} from '../core/utils/hora-limite';
+import { ClockService } from '../core/services/clock.service';
 import { SuscripcionDisponibilidadService } from '../core/services/suscripcion-disponibilidad.service';
 import { ToastService } from '../shared/toast/toast.service';
 import { ConfirmDialogService } from '../shared/confirm-dialog/confirm-dialog.service';
@@ -64,15 +71,15 @@ export class CatalogoComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private suscripcionService: SuscripcionDisponibilidadService,
     private toast: ToastService,
-    private confirmDialog: ConfirmDialogService
+    private confirmDialog: ConfirmDialogService,
+    private clock: ClockService
   ) {}
 
   ngOnInit(): void {
-    const hoy = new Date();
-    this.minFechaRetiro = hoy.toISOString().split('T')[0];
-    const max = new Date(hoy);
-    max.setDate(max.getDate() + 14);
-    this.maxFechaRetiro = max.toISOString().split('T')[0];
+    // OBS-20: fechas del picker vía ClockService (inyectable en tests).
+    const ahora = this.clock.now();
+    this.minFechaRetiro = aFechaStr(ahora);
+    this.maxFechaRetiro = fechaMaxRetiroISO(ahora);
     this.fechaRetiro = this.minFechaRetiro;
 
     this.cargarCategorias();
@@ -162,8 +169,10 @@ export class CatalogoComponent implements OnInit, OnDestroy {
 
   confirmarReserva(): void {
     if (!this.libroParaReservar) return;
-    const hoyStr = new Date().toISOString().split('T')[0];
-    if (this.fechaRetiro === hoyStr && new Date().getHours() >= 18) {
+    // OBS-20: gate de hora límite vía ClockService + helpers puros (testeable,
+    // sin acoplamiento al reloj real que hacía flaky la suite desde las 18:00).
+    const ahora = this.clock.now();
+    if (requiereConfirmacionHoraLimite(this.fechaRetiro, ahora)) {
       this.confirmDialog.confirm({
         title: 'Hora limite superada',
         message: 'Ya paso la hora limite (18:00). ¿Quieres retirarlo mañana hasta las 18:00?',
@@ -172,8 +181,7 @@ export class CatalogoComponent implements OnInit, OnDestroy {
         variant: 'default'
       }).subscribe((ok: boolean) => {
         if (!ok) return;
-        const manana = new Date(); manana.setDate(manana.getDate()+1);
-        this.fechaRetiro = manana.toISOString().split('T')[0];
+        this.fechaRetiro = fechaMananaISO(this.clock.now());
         this.ejecutarReserva();
       });
       return;
