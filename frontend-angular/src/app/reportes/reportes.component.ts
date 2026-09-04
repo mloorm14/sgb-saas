@@ -719,7 +719,7 @@ export class ReportesComponent {
 
   excelVencidos(): void {
     const headers = ['Usuario', 'Correo', 'Libro', 'ISBN', 'Vencimiento', 'Días atraso', 'Multa estimada'];
-    const rows = this.vencidos.map(v => [v.usuarioNombre, v.usuarioCorreo, v.libroTitulo, v.libroIsbn || '—', this.fechaCorta(v.fechaDevolucionEstimada), v.diasAtraso, v.montoMultaEstimada]);
+    const rows = this.vencidos.map(v => [v.usuarioNombre, v.usuarioCorreo, v.libroTitulo, v.libroIsbn || '—', this.formatearFechaHora(v.fechaDevolucionEstimada), v.diasAtraso, v.montoMultaEstimada]);
     this.generarExcel(headers, rows, 'reporte-vencidos.xlsx', 'Préstamos vencidos');
   }
 
@@ -738,7 +738,7 @@ export class ReportesComponent {
   excelFinanciero(): void {
     const headers = ['Multa', 'Monto', 'Fecha', 'Usuario', 'Libro'];
     const pagos = this.resumenFinanciero?.pagosRecientes ?? [];
-    const rows = pagos.map(p => [p.multaId, p.montoPagado, p.fechaPagada, p.usuarioNombre || p.usuarioCorreo, p.libroTitulo]);
+    const rows = pagos.map(p => [p.multaId, p.montoPagado, this.formatearFechaHora(p.fechaPagada), p.usuarioNombre || p.usuarioCorreo, p.libroTitulo]);
     this.generarExcel(headers, rows, 'reporte-financiero.xlsx', 'Resumen financiero');
   }
 
