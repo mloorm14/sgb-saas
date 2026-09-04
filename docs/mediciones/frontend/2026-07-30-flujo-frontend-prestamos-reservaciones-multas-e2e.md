@@ -74,8 +74,8 @@ por defecto) y se promovió una a BIBLIOTECARIO directamente por SQL
 
 | Usuario | id | Rol(es) final(es) | Uso en esta evidencia |
 |---|---|---|---|
-| `lector.e2e@uteq.edu.ec` | 2 | LECTOR | Simula al lector real usando `PrestamosLectorComponent`, `ReservacionesComponent` y `MultasComponent` |
-| `biblio.e2e@uteq.edu.ec` | 3 | BIBLIOTECARIO | Simula al bibliotecario usando `PrestamosGestionComponent` y `MultasComponent` (acción Pagar) |
+| `lector.e2e@correo.com` | 2 | LECTOR | Simula al lector real usando `PrestamosLectorComponent`, `ReservacionesComponent` y `MultasComponent` |
+| `biblio.e2e@correo.com` | 3 | BIBLIOTECARIO | Simula al bibliotecario usando `PrestamosGestionComponent` y `MultasComponent` (acción Pagar) |
 | `admin@sgb-saas.local` | (seed) | ADMIN | Simula GERENTE/ADMIN usando `MultasComponent` (acción Anular) |
 
 ### Hallazgo durante la preparación (documentado porque es información
@@ -140,8 +140,8 @@ en ambos casos. Confirmado por consulta posterior:
 ```
  id | nombre | correo                  | roles
 ----+--------+-------------------------+---------
-  2 | Lector | lector.e2e@uteq.edu.ec  | {LECTOR}
-  3 | Biblio | biblio.e2e@uteq.edu.ec  | {LECTOR}
+  2 | Lector | lector.e2e@correo.com  | {LECTOR}
+  3 | Biblio | biblio.e2e@correo.com  | {LECTOR}
 ```
 
 Tras promover/corregir roles por SQL:
@@ -149,8 +149,8 @@ Tras promover/corregir roles por SQL:
 ```
          correo          |     nombre
 --------------------------+---------------
- biblio.e2e@uteq.edu.ec  | BIBLIOTECARIO
- lector.e2e@uteq.edu.ec  | LECTOR
+ biblio.e2e@correo.com  | BIBLIOTECARIO
+ lector.e2e@correo.com  | LECTOR
 ```
 
 ### 2. Crear préstamo — verificación del fix `dias` → `diasPrestamo`

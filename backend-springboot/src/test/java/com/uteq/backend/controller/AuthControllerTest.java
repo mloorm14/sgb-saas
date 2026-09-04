@@ -81,22 +81,22 @@ class AuthControllerTest {
 
     @Test
     void registro_datosValidos_devuelve201ConUsuarioCreado() throws Exception {
-        RegistroRequestDTO dto = new RegistroRequestDTO("Nueva", "Persona", "nueva@uteq.edu.ec", "password123");
+        RegistroRequestDTO dto = new RegistroRequestDTO("Nueva", "Persona", "nueva@correo.com", "password123");
         when(authService.registrar(any())).thenReturn(
-                new UsuarioResponseDTO(1L, "Nueva", "nueva@uteq.edu.ec", List.of("LECTOR")));
+                new UsuarioResponseDTO(1L, "Nueva", "nueva@correo.com", List.of("LECTOR")));
 
         mockMvc.perform(post("/api/auth/registro")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.correo").value("nueva@uteq.edu.ec"));
+                .andExpect(jsonPath("$.correo").value("nueva@correo.com"));
     }
 
     @Test
     void registro_correoDuplicado_devuelve409ProblemDetail() throws Exception {
-        RegistroRequestDTO dto = new RegistroRequestDTO("Nueva", "Persona", "duplicado@uteq.edu.ec", "password123");
+        RegistroRequestDTO dto = new RegistroRequestDTO("Nueva", "Persona", "duplicado@correo.com", "password123");
         when(authService.registrar(any()))
-                .thenThrow(new CorreoYaRegistradoException("El correo ya está registrado: duplicado@uteq.edu.ec"));
+                .thenThrow(new CorreoYaRegistradoException("El correo ya está registrado: duplicado@correo.com"));
 
         mockMvc.perform(post("/api/auth/registro")
                         .contentType("application/json")
@@ -107,7 +107,7 @@ class AuthControllerTest {
 
     @Test
     void login_credencialesValidas_devuelve200ConCookieRefreshTokenHttpOnly() throws Exception {
-        LoginRequestDTO dto = new LoginRequestDTO("valido@uteq.edu.ec", "password123");
+        LoginRequestDTO dto = new LoginRequestDTO("valido@correo.com", "password123");
         when(authService.login(any(), anyString()))
                 .thenReturn(new TokenResponseDTO("access-token-x", "refresh-token-y", 3600));
         when(jwtService.getRefreshExpirationMs()).thenReturn(604_800_000L);
@@ -126,7 +126,7 @@ class AuthControllerTest {
 
     @Test
     void login_credencialesInvalidas_devuelve401ProblemDetail() throws Exception {
-        LoginRequestDTO dto = new LoginRequestDTO("valido@uteq.edu.ec", "claveMala");
+        LoginRequestDTO dto = new LoginRequestDTO("valido@correo.com", "claveMala");
         when(authService.login(any(), anyString())).thenThrow(new BadCredentialsException("Credenciales inválidas"));
 
         mockMvc.perform(post("/api/auth/login")
@@ -137,7 +137,7 @@ class AuthControllerTest {
 
     @Test
     void login_rateLimitExcedido_devuelve429ProblemDetail() throws Exception {
-        LoginRequestDTO dto = new LoginRequestDTO("valido@uteq.edu.ec", "password123");
+        LoginRequestDTO dto = new LoginRequestDTO("valido@correo.com", "password123");
         when(authService.login(any(), anyString()))
                 .thenThrow(new LoginRateLimitExcedidoException("Demasiados intentos fallidos. Intente en 600 segundos."));
 
@@ -154,7 +154,7 @@ class AuthControllerTest {
     // 423/403 con ProblemDetail solo ocurria en produccion, nunca en un test.
     @Test
     void login_cuentaBloqueadaPorMulta_devuelve423ProblemDetail() throws Exception {
-        LoginRequestDTO dto = new LoginRequestDTO("bloqueado@uteq.edu.ec", "password123");
+        LoginRequestDTO dto = new LoginRequestDTO("bloqueado@correo.com", "password123");
         when(authService.login(any(), anyString()))
                 .thenThrow(new LockedException("Cuenta bloqueada por multas pendientes"));
 
@@ -167,7 +167,7 @@ class AuthControllerTest {
 
     @Test
     void login_cuentaInactiva_devuelve403ProblemDetail() throws Exception {
-        LoginRequestDTO dto = new LoginRequestDTO("inactivo@uteq.edu.ec", "password123");
+        LoginRequestDTO dto = new LoginRequestDTO("inactivo@correo.com", "password123");
         when(authService.login(any(), anyString()))
                 .thenThrow(new DisabledException("Cuenta inactiva"));
 
@@ -201,7 +201,7 @@ class AuthControllerTest {
     // invalida, el resto de campos son validos.
     @Test
     void registro_passwordCorta_devuelve400ProblemDetail() throws Exception {
-        RegistroRequestDTO dto = new RegistroRequestDTO("Nueva", "Persona", "nueva@uteq.edu.ec", "corta");
+        RegistroRequestDTO dto = new RegistroRequestDTO("Nueva", "Persona", "nueva@correo.com", "corta");
 
         mockMvc.perform(post("/api/auth/registro")
                         .contentType("application/json")

@@ -40,7 +40,7 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class ChatbotServiceTest {
 
-    private static final String CORREO = "lector@uteq.edu.ec";
+    private static final String CORREO = "lector@correo.com";
     private static final String MENSAJE_FALLBACK_GEMINI =
             "El asistente está saturado, intenta en unos segundos.";
 

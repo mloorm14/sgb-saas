@@ -11,14 +11,14 @@ préstamos/reservaciones/multas según mi rol.
 Característica: Registro de usuario
 
   Escenario: Registro exitoso con datos válidos
-    Dado que no existe ningún usuario con el correo "nuevo@uteq.edu.ec"
-    Cuando el visitante se registra con nombre, apellido, correo "nuevo@uteq.edu.ec" y una contraseña de 8 o más caracteres
+    Dado que no existe ningún usuario con el correo "nuevo@correo.com"
+    Cuando el visitante se registra con nombre, apellido, correo "nuevo@correo.com" y una contraseña de 8 o más caracteres
     Entonces el sistema responde 201 con los datos del usuario creado
     Y el usuario queda con rol "LECTOR" y estado "ACTIVO" por defecto
     Y la contraseña se almacena hasheada, nunca en texto plano
 
   Escenario: Intento de registro con correo ya registrado
-    Dado que ya existe un usuario con el correo "lector@uteq.edu.ec"
+    Dado que ya existe un usuario con el correo "lector@correo.com"
     Cuando alguien intenta registrarse de nuevo con ese mismo correo
     Entonces el sistema rechaza la operación con un error 409
     Y no se crea ningún usuario nuevo

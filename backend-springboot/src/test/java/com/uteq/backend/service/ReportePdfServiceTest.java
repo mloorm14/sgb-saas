@@ -27,7 +27,7 @@ class ReportePdfServiceTest {
     void generarReporteMorosidad_conFilas_generaPdfConDatosEsperados() throws IOException {
         List<ReporteMorosidadResponseDTO> filas = List.of(
                 new ReporteMorosidadResponseDTO(
-                        1L, "Ana", "Pérez", "ana@uteq.edu.ec",
+                        1L, "Ana", "Pérez", "ana@correo.com",
                         new BigDecimal("15.50"), 2L, new BigDecimal("3.5"))
         );
 
@@ -37,7 +37,7 @@ class ReportePdfServiceTest {
         String texto = extraerTexto(pdf);
         assertThat(texto).contains("Reporte de índice de morosidad");
         assertThat(texto).contains("Ana Pérez");
-        assertThat(texto).contains("ana@uteq.edu.ec");
+        assertThat(texto).contains("ana@correo.com");
     }
 
     // ── Test 2: PDF sin filas no está vacío y avisa "sin morosos" ──

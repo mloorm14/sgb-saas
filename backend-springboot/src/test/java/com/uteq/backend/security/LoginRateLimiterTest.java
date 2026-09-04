@@ -21,7 +21,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class LoginRateLimiterTest {
 
-    private static final String CORREO = "lector@uteq.edu.ec";
+    private static final String CORREO = "lector@correo.com";
     private static final String IP = "10.0.0.1";
     private static final String KEY = "login-attempts:" + CORREO + ":" + IP;
 

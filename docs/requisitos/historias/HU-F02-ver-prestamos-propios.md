@@ -12,7 +12,7 @@ sin tener que preguntar en el mostrador.
 Característica: Visualización de préstamos propios (vista lector)
 
   Escenario: El lector ve un préstamo activo con su fecha límite
-    Dado que el lector "juan@uteq.edu.ec" tiene un préstamo sin devolver
+    Dado que el lector "juan@correo.com" tiene un préstamo sin devolver
     Cuando el lector abre la sección "Mis préstamos"
     Entonces ve el libro, la fecha en que lo retiró, y la fecha límite de devolución
 

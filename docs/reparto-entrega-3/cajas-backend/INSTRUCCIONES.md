@@ -466,8 +466,8 @@ Característica: Registro de préstamos
 
   Escenario: Préstamo exitoso con stock disponible
     Dado que el libro "Clean Code" tiene stock disponible mayor a 0
-    Y el usuario "juan@uteq.edu.ec" tiene estado ACTIVO
-    Cuando el bibliotecario registra un préstamo de "Clean Code" para "juan@uteq.edu.ec"
+    Y el usuario "juan@correo.com" tiene estado ACTIVO
+    Cuando el bibliotecario registra un préstamo de "Clean Code" para "juan@correo.com"
     Entonces el préstamo se crea con estado ACTIVO
     Y el stock disponible del libro se decrementa en 1
 
@@ -478,8 +478,8 @@ Característica: Registro de préstamos
     Y el mensaje indica que no hay stock disponible
 
   Escenario: Intento de préstamo para un usuario bloqueado
-    Dado que el usuario "maria@uteq.edu.ec" tiene estado BLOQUEADO_POR_MULTA
-    Cuando el bibliotecario intenta registrar un préstamo para "maria@uteq.edu.ec"
+    Dado que el usuario "maria@correo.com" tiene estado BLOQUEADO_POR_MULTA
+    Cuando el bibliotecario intenta registrar un préstamo para "maria@correo.com"
     Entonces la operación se rechaza con un error 422
     Y el mensaje indica que el usuario tiene multas pendientes
 ```

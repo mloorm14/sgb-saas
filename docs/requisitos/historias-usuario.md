@@ -19,8 +19,8 @@ Característica: Registro de préstamos
 
   Escenario: Préstamo exitoso con stock disponible
     Dado que el libro "Clean Code" tiene stock disponible mayor a 0
-    Y el usuario "juan@uteq.edu.ec" tiene estado ACTIVO
-    Cuando el bibliotecario registra un préstamo de "Clean Code" para "juan@uteq.edu.ec"
+    Y el usuario "juan@correo.com" tiene estado ACTIVO
+    Cuando el bibliotecario registra un préstamo de "Clean Code" para "juan@correo.com"
     Entonces el préstamo se crea con estado ACTIVO
     Y el stock disponible del libro se decrementa en 1
 
@@ -31,8 +31,8 @@ Característica: Registro de préstamos
     Y el mensaje indica que no hay stock disponible
 
   Escenario: Intento de préstamo para un usuario bloqueado
-    Dado que el usuario "maria@uteq.edu.ec" tiene estado BLOQUEADO_POR_MULTA
-    Cuando el bibliotecario intenta registrar un préstamo para "maria@uteq.edu.ec"
+    Dado que el usuario "maria@correo.com" tiene estado BLOQUEADO_POR_MULTA
+    Cuando el bibliotecario intenta registrar un préstamo para "maria@correo.com"
     Entonces la operación se rechaza con un error 422
     Y el mensaje indica que el usuario tiene multas pendientes
 ```
@@ -82,7 +82,7 @@ Característica: Registro de devoluciones
 Característica: Creación de reservaciones
 
   Escenario: Reservación propia exitosa
-    Dado que el lector "juan@uteq.edu.ec" tiene sesión iniciada
+    Dado que el lector "juan@correo.com" tiene sesión iniciada
     Cuando reserva el libro "Domain-Driven Design" para sí mismo
     Entonces la reservación se crea con estado PENDIENTE
     Y la fecha de reserva es la fecha y hora actuales
@@ -90,13 +90,13 @@ Característica: Creación de reservaciones
 
   Escenario: Bibliotecario reserva en nombre de otro usuario
     Dado que el bibliotecario tiene sesión iniciada
-    Cuando registra una reservación de "Domain-Driven Design" para "maria@uteq.edu.ec"
-    Entonces la reservación se crea a nombre de "maria@uteq.edu.ec" con estado PENDIENTE
+    Cuando registra una reservación de "Domain-Driven Design" para "maria@correo.com"
+    Entonces la reservación se crea a nombre de "maria@correo.com" con estado PENDIENTE
 
   Escenario: Lector intenta reservar en nombre de otro usuario
-    Dado que el lector "juan@uteq.edu.ec" tiene sesión iniciada
-    Cuando intenta enviar en el request el usuarioId de "maria@uteq.edu.ec"
-    Entonces la reservación se crea igualmente a nombre de "juan@uteq.edu.ec"
+    Dado que el lector "juan@correo.com" tiene sesión iniciada
+    Cuando intenta enviar en el request el usuarioId de "maria@correo.com"
+    Entonces la reservación se crea igualmente a nombre de "juan@correo.com"
     Y se ignora cualquier usuarioId distinto al propio enviado en el request
 ```
 

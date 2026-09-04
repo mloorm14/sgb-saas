@@ -45,8 +45,8 @@ class ReservacionServiceTest {
     // ── Test 1: creación exitosa (LECTOR reserva para sí mismo) ──
     @Test
     void crear_lectorReservaParaSiMismo_creaReservacionPendiente() {
-        Authentication auth = authComoRol("lector@uteq.edu.ec", "LECTOR");
-        given(usuarioRepo.findByCorreo("lector@uteq.edu.ec"))
+        Authentication auth = authComoRol("lector@correo.com", "LECTOR");
+        given(usuarioRepo.findByCorreo("lector@correo.com"))
                 .willReturn(Optional.of(usuarioConId(1L)));
         given(estadoReservacionRepo.findByNombre("PENDIENTE"))
                 .willReturn(Optional.of(estadoConId(1)));
@@ -69,8 +69,8 @@ class ReservacionServiceTest {
     // ── Test 2: LECTOR intenta reservar para OTRO usuario -> denegado ──
     @Test
     void crear_lectorReservaParaOtroUsuario_lanzaAccesoDenegado() {
-        Authentication auth = authComoRol("lector@uteq.edu.ec", "LECTOR");
-        given(usuarioRepo.findByCorreo("lector@uteq.edu.ec"))
+        Authentication auth = authComoRol("lector@correo.com", "LECTOR");
+        given(usuarioRepo.findByCorreo("lector@correo.com"))
                 .willReturn(Optional.of(usuarioConId(1L)));
 
         assertThatThrownBy(() -> reservacionService.crear(
@@ -81,7 +81,7 @@ class ReservacionServiceTest {
     // ── Test 3: BIBLIOTECARIO reserva en nombre de otro usuario -> permitido ──
     @Test
     void crear_bibliotecarioReservaParaOtroUsuario_sePermite() {
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
         given(estadoReservacionRepo.findByNombre("PENDIENTE"))
                 .willReturn(Optional.of(estadoConId(1)));
         given(reservacionRepo.save(any())).willAnswer(inv -> inv.getArgument(0));
@@ -95,7 +95,7 @@ class ReservacionServiceTest {
     // ── Test 4: catálogo PENDIENTE faltante -> error de sistema (500), no 404 ──
     @Test
     void crear_sinCatalogoPendiente_lanzaIllegalState() {
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
         given(estadoReservacionRepo.findByNombre("PENDIENTE"))
                 .willReturn(Optional.empty());
 
@@ -108,8 +108,8 @@ class ReservacionServiceTest {
     // ── Test 5: acceso denegado al listar reservaciones de otro usuario ──
     @Test
     void listarPorUsuario_cuandoLectorPideOtroUsuario_lanzaAccesoDenegado() {
-        Authentication auth = authComoRol("lector@uteq.edu.ec", "LECTOR");
-        given(usuarioRepo.findByCorreo("lector@uteq.edu.ec"))
+        Authentication auth = authComoRol("lector@correo.com", "LECTOR");
+        given(usuarioRepo.findByCorreo("lector@correo.com"))
                 .willReturn(Optional.of(usuarioConId(1L)));
 
         assertThatThrownBy(() -> reservacionService.listarPorUsuario(2L, auth, null))
@@ -119,11 +119,11 @@ class ReservacionServiceTest {
     // ── Test 6: aceptar una reservación pendiente -> LISTA_PARA_RETIRO ──
     @Test
     void cambiarEstado_aceptarPendiente_quedaListaParaRetiro() {
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
         given(reservacionRepo.findById(50L)).willReturn(Optional.of(reservacionPendiente(50L)));
         given(estadoReservacionRepo.findByNombre("PENDIENTE")).willReturn(Optional.of(estadoConId(1)));
         given(estadoReservacionRepo.findByNombre("LISTA_PARA_RETIRO")).willReturn(Optional.of(estadoConId(2)));
-        given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec")).willReturn(Optional.of(usuarioConId(1L)));
+        given(usuarioRepo.findByCorreo("biblio@correo.com")).willReturn(Optional.of(usuarioConId(1L)));
 
         ReservacionResponseDTO resultado = reservacionService.cambiarEstado(
                 50L, new CambioEstadoReservacionRequestDTO("LISTA_PARA_RETIRO"), auth);
@@ -137,11 +137,11 @@ class ReservacionServiceTest {
     // ── Test 7: rechazar una reservación pendiente -> CANCELADA ──
     @Test
     void cambiarEstado_rechazarPendiente_quedaCancelada() {
-        Authentication auth = authComoRol("gerente@uteq.edu.ec", "GERENTE");
+        Authentication auth = authComoRol("gerente@correo.com", "GERENTE");
         given(reservacionRepo.findById(51L)).willReturn(Optional.of(reservacionPendiente(51L)));
         given(estadoReservacionRepo.findByNombre("PENDIENTE")).willReturn(Optional.of(estadoConId(1)));
         given(estadoReservacionRepo.findByNombre("CANCELADA")).willReturn(Optional.of(estadoConId(5)));
-        given(usuarioRepo.findByCorreo("gerente@uteq.edu.ec")).willReturn(Optional.of(usuarioConId(2L)));
+        given(usuarioRepo.findByCorreo("gerente@correo.com")).willReturn(Optional.of(usuarioConId(2L)));
 
         ReservacionResponseDTO resultado = reservacionService.cambiarEstado(
                 51L, new CambioEstadoReservacionRequestDTO("CANCELADA"), auth);
@@ -153,7 +153,7 @@ class ReservacionServiceTest {
     // ── Test 8: reservación inexistente -> 404 ──
     @Test
     void cambiarEstado_reservacionNoExiste_lanzaEntityNotFound() {
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
         given(reservacionRepo.findById(999L)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> reservacionService.cambiarEstado(
@@ -165,7 +165,7 @@ class ReservacionServiceTest {
     // ── Test 9: ya no está pendiente -> no se puede aceptar/rechazar ──
     @Test
     void cambiarEstado_reservacionYaRetirada_lanzaIllegalState() {
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
         Reservacion retirada = reservacionPendiente(52L);
         retirada.setEstadoReservacionId(3);
         given(reservacionRepo.findById(52L)).willReturn(Optional.of(retirada));
@@ -180,7 +180,7 @@ class ReservacionServiceTest {
     // ── Test 10: catálogo destino faltante -> error de sistema (500) ──
     @Test
     void cambiarEstado_sinCatalogoDestino_lanzaIllegalState() {
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
         given(reservacionRepo.findById(53L)).willReturn(Optional.of(reservacionPendiente(53L)));
         given(estadoReservacionRepo.findByNombre("PENDIENTE")).willReturn(Optional.of(estadoConId(1)));
         given(estadoReservacionRepo.findByNombre("CANCELADA")).willReturn(Optional.empty());

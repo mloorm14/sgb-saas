@@ -58,7 +58,7 @@ class NotificacionServiceTest {
         given(tipoNotificacionRepo.findByNombre("VENCIMIENTO"))
                 .willReturn(Optional.of(tipoConId(1, "VENCIMIENTO")));
         given(notificacionRepo.existsByPrestamoIdAndTipoNotificacionId(50L, 1)).willReturn(false);
-        given(usuarioRepo.findById(1L)).willReturn(Optional.of(usuarioConCorreo(1L, "lector@uteq.edu.ec")));
+        given(usuarioRepo.findById(1L)).willReturn(Optional.of(usuarioConCorreo(1L, "lector@correo.com")));
         given(libroRepo.findById(2L)).willReturn(Optional.of(libroConTitulo("Clean Code")));
 
         notificacionService.generarAlertaVencimiento(prestamoConId(50L));
@@ -86,7 +86,7 @@ class NotificacionServiceTest {
     @Test
     void notificarMulta_fallaElEnvio_igualGuardaElRegistroConEnviadoOkFalse() {
         given(tipoNotificacionRepo.findByNombre("MULTA")).willReturn(Optional.of(tipoConId(2, "MULTA")));
-        given(usuarioRepo.findById(1L)).willReturn(Optional.of(usuarioConCorreo(1L, "lector@uteq.edu.ec")));
+        given(usuarioRepo.findById(1L)).willReturn(Optional.of(usuarioConCorreo(1L, "lector@correo.com")));
 
         notificacionService.notificarMulta(1L, 50L, new BigDecimal("2.50"));
 
@@ -102,7 +102,7 @@ class NotificacionServiceTest {
     void notificarReservaCaducada_guardaConPrestamoIdNulo() {
         given(tipoNotificacionRepo.findByNombre("RESERVA_CADUCADA"))
                 .willReturn(Optional.of(tipoConId(3, "RESERVA_CADUCADA")));
-        given(usuarioRepo.findById(1L)).willReturn(Optional.of(usuarioConCorreo(1L, "lector@uteq.edu.ec")));
+        given(usuarioRepo.findById(1L)).willReturn(Optional.of(usuarioConCorreo(1L, "lector@correo.com")));
         given(libroRepo.findById(2L)).willReturn(Optional.of(libroConTitulo("Clean Code")));
 
         Reservacion reservacion = new Reservacion();
@@ -121,9 +121,9 @@ class NotificacionServiceTest {
     // ── Test 5: un LECTOR pidiendo el listado de OTRO usuario -> 403 ──
     @Test
     void listarPorUsuario_lectorPideOtroUsuario_lanzaAccesoDenegado() {
-        Authentication auth = authComoRol("lector@uteq.edu.ec", "LECTOR");
-        given(usuarioRepo.findByCorreo("lector@uteq.edu.ec"))
-                .willReturn(Optional.of(usuarioConCorreo(1L, "lector@uteq.edu.ec")));
+        Authentication auth = authComoRol("lector@correo.com", "LECTOR");
+        given(usuarioRepo.findByCorreo("lector@correo.com"))
+                .willReturn(Optional.of(usuarioConCorreo(1L, "lector@correo.com")));
 
         assertThatThrownBy(() -> notificacionService.listarPorUsuario(99L, auth, mock(Pageable.class)))
                 .isInstanceOf(AuthorizationDeniedException.class);
@@ -132,7 +132,7 @@ class NotificacionServiceTest {
     // ── Test 6: un BIBLIOTECARIO puede consultar cualquier usuario ──
     @Test
     void listarPorUsuario_bibliotecarioPideCualquierUsuario_sePermite() {
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
         given(notificacionRepo.findByUsuarioId(eq(99L), any())).willReturn(Page.empty());
 
         Page<?> resultado = notificacionService.listarPorUsuario(99L, auth, mock(Pageable.class));

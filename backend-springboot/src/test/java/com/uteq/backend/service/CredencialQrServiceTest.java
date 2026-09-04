@@ -31,9 +31,9 @@ class CredencialQrServiceTest {
     @Test
     void generarImagenQrPropio_conUsuarioExistente_generaImagenPngNoVacia() {
         Authentication auth = mock(Authentication.class);
-        when(auth.getName()).thenReturn("lector@uteq.edu.ec");
+        when(auth.getName()).thenReturn("lector@correo.com");
         Usuario usuario = usuarioConCredencial(1L, UUID.randomUUID(), "ACTIVO");
-        given(usuarioRepo.findByCorreo("lector@uteq.edu.ec")).willReturn(Optional.of(usuario));
+        given(usuarioRepo.findByCorreo("lector@correo.com")).willReturn(Optional.of(usuario));
 
         byte[] imagen = credencialQrService.generarImagenQrPropio(auth);
 
@@ -53,8 +53,8 @@ class CredencialQrServiceTest {
     @Test
     void generarImagenQrPropio_conUsuarioInexistente_lanza404() {
         Authentication auth = mock(Authentication.class);
-        when(auth.getName()).thenReturn("fantasma@uteq.edu.ec");
-        given(usuarioRepo.findByCorreo("fantasma@uteq.edu.ec")).willReturn(Optional.empty());
+        when(auth.getName()).thenReturn("fantasma@correo.com");
+        given(usuarioRepo.findByCorreo("fantasma@correo.com")).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> credencialQrService.generarImagenQrPropio(auth))
                 .isInstanceOf(EntityNotFoundException.class);

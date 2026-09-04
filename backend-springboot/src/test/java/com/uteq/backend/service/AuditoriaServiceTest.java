@@ -80,12 +80,12 @@ class AuditoriaServiceTest {
 
         given(bitacoraAuditoriaRepo.buscarConFiltros(null, null, null, null, pageable))
                 .willReturn(pagina);
-        given(usuarioRepo.findAllById(Set.of(9L))).willReturn(List.of(usuario(9L, "admin@uteq.edu.ec")));
+        given(usuarioRepo.findAllById(Set.of(9L))).willReturn(List.of(usuario(9L, "admin@correo.com")));
 
         Page<EventoAuditoriaResponseDTO> resultado = service.listar(null, null, null, null, pageable);
 
         assertThat(resultado.getContent()).hasSize(1);
-        assertThat(resultado.getContent().get(0).usuario()).isEqualTo("admin@uteq.edu.ec");
+        assertThat(resultado.getContent().get(0).usuario()).isEqualTo("admin@correo.com");
         assertThat(resultado.getContent().get(0).accion()).isEqualTo("UPDATE");
         assertThat(resultado.getContent().get(0).modulo()).isEqualTo("usuarios");
     }

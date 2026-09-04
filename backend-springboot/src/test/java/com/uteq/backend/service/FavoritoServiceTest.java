@@ -36,8 +36,8 @@ class FavoritoServiceTest {
     // ── Test 1: agregar un libro nuevo a favoritos ────────
     @Test
     void agregar_cuandoLibroExisteYNoEsFavoritoAun_loGuarda() {
-        given(authentication.getName()).willReturn("lector@uteq.edu.ec");
-        given(usuarioRepo.findByCorreo("lector@uteq.edu.ec")).willReturn(Optional.of(usuarioConId(7L)));
+        given(authentication.getName()).willReturn("lector@correo.com");
+        given(usuarioRepo.findByCorreo("lector@correo.com")).willReturn(Optional.of(usuarioConId(7L)));
         given(libroRepo.findById(1L)).willReturn(Optional.of(libroConTitulo("Clean Code")));
         given(favoritoRepo.existsByUsuarioIdAndLibroId(7L, 1L)).willReturn(false);
         given(favoritoRepo.save(org.mockito.ArgumentMatchers.any())).willReturn(new Favorito(7L, 1L));
@@ -52,8 +52,8 @@ class FavoritoServiceTest {
     // ── Test 2: agregar un libro que no existe lanza 404 ──
     @Test
     void agregar_cuandoLibroNoExiste_lanzaEntityNotFound() {
-        given(authentication.getName()).willReturn("lector@uteq.edu.ec");
-        given(usuarioRepo.findByCorreo("lector@uteq.edu.ec")).willReturn(Optional.of(usuarioConId(7L)));
+        given(authentication.getName()).willReturn("lector@correo.com");
+        given(usuarioRepo.findByCorreo("lector@correo.com")).willReturn(Optional.of(usuarioConId(7L)));
         given(libroRepo.findById(99L)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> favoritoService.agregar(99L, authentication))
@@ -65,8 +65,8 @@ class FavoritoServiceTest {
     // (no lanza excepcion, devuelve el existente en vez de duplicar)
     @Test
     void agregar_cuandoYaEsFavorito_noDuplicaYDevuelveElExistente() {
-        given(authentication.getName()).willReturn("lector@uteq.edu.ec");
-        given(usuarioRepo.findByCorreo("lector@uteq.edu.ec")).willReturn(Optional.of(usuarioConId(7L)));
+        given(authentication.getName()).willReturn("lector@correo.com");
+        given(usuarioRepo.findByCorreo("lector@correo.com")).willReturn(Optional.of(usuarioConId(7L)));
         given(libroRepo.findById(1L)).willReturn(Optional.of(libroConTitulo("Clean Code")));
         given(favoritoRepo.existsByUsuarioIdAndLibroId(7L, 1L)).willReturn(true);
         given(favoritoRepo.findByUsuarioId(7L)).willReturn(List.of(new Favorito(7L, 1L)));
@@ -80,8 +80,8 @@ class FavoritoServiceTest {
     // ── Test 4: quitar un favorito que no existe lanza 404 ──
     @Test
     void quitar_cuandoNoEsFavorito_lanzaEntityNotFound() {
-        given(authentication.getName()).willReturn("lector@uteq.edu.ec");
-        given(usuarioRepo.findByCorreo("lector@uteq.edu.ec")).willReturn(Optional.of(usuarioConId(7L)));
+        given(authentication.getName()).willReturn("lector@correo.com");
+        given(usuarioRepo.findByCorreo("lector@correo.com")).willReturn(Optional.of(usuarioConId(7L)));
         given(favoritoRepo.existsByUsuarioIdAndLibroId(7L, 1L)).willReturn(false);
 
         assertThatThrownBy(() -> favoritoService.quitar(1L, authentication))
@@ -92,8 +92,8 @@ class FavoritoServiceTest {
     // autenticado ────────────────────────────────────────
     @Test
     void listarPropios_devuelveSoloLosDelUsuarioAutenticado() {
-        given(authentication.getName()).willReturn("lector@uteq.edu.ec");
-        given(usuarioRepo.findByCorreo("lector@uteq.edu.ec")).willReturn(Optional.of(usuarioConId(7L)));
+        given(authentication.getName()).willReturn("lector@correo.com");
+        given(usuarioRepo.findByCorreo("lector@correo.com")).willReturn(Optional.of(usuarioConId(7L)));
         given(favoritoRepo.findByUsuarioId(7L)).willReturn(List.of(new Favorito(7L, 1L)));
         given(libroRepo.findById(1L)).willReturn(Optional.of(libroConTitulo("Clean Code")));
 

@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 class EmailServiceTest {
 
     private static final String REMITENTE = "no-reply@sgb-saas.local";
-    private static final String DESTINATARIO = "lector@uteq.edu.ec";
+    private static final String DESTINATARIO = "lector@correo.com";
     private static final String ASUNTO = "Tu préstamo vence pronto";
     private static final String CUERPO = "<p>Recuerda devolver tu libro.</p>";
 

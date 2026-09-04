@@ -83,8 +83,8 @@ class UsuarioAdminServiceTest {
 
     @Test
     void listar_retornaUsuariosMapeadosYMarcaMultasPendientesSegunEstado() {
-        Usuario bloqueado = usuario(1L, "bloqueado@uteq.edu.ec", "LECTOR", "BLOQUEADO_POR_MULTA");
-        Usuario activo = usuario(2L, "activo@uteq.edu.ec", "LECTOR", "ACTIVO");
+        Usuario bloqueado = usuario(1L, "bloqueado@correo.com", "LECTOR", "BLOQUEADO_POR_MULTA");
+        Usuario activo = usuario(2L, "activo@correo.com", "LECTOR", "ACTIVO");
         Pageable pageable = PageRequest.of(0, 10);
         Page<Usuario> pagina = new PageImpl<>(List.of(bloqueado, activo), pageable, 2);
 
@@ -110,13 +110,13 @@ class UsuarioAdminServiceTest {
 
     @Test
     void cambiarRol_conDatosValidos_actualizaRolesYRegistraAuditoria() {
-        Usuario usuarioObjetivo = usuario(5L, "lector@uteq.edu.ec", "LECTOR", "ACTIVO");
-        Usuario admin = usuario(9L, "admin@uteq.edu.ec", "ADMIN", "ACTIVO");
+        Usuario usuarioObjetivo = usuario(5L, "lector@correo.com", "LECTOR", "ACTIVO");
+        Usuario admin = usuario(9L, "admin@correo.com", "ADMIN", "ACTIVO");
 
         given(usuarioRepo.findById(5L)).willReturn(Optional.of(usuarioObjetivo));
         given(rolRepo.findByNombre("BIBLIOTECARIO")).willReturn(Optional.of(rol("BIBLIOTECARIO")));
-        given(authentication.getName()).willReturn("admin@uteq.edu.ec");
-        given(usuarioRepo.findByCorreo("admin@uteq.edu.ec")).willReturn(Optional.of(admin));
+        given(authentication.getName()).willReturn("admin@correo.com");
+        given(usuarioRepo.findByCorreo("admin@correo.com")).willReturn(Optional.of(admin));
 
         service.cambiarRol(5L, "BIBLIOTECARIO", authentication);
 
@@ -140,7 +140,7 @@ class UsuarioAdminServiceTest {
 
     @Test
     void cambiarRol_conRolInexistenteEnCatalogo_lanzaIllegalArgument() {
-        Usuario usuarioObjetivo = usuario(5L, "lector@uteq.edu.ec", "LECTOR", "ACTIVO");
+        Usuario usuarioObjetivo = usuario(5L, "lector@correo.com", "LECTOR", "ACTIVO");
         given(usuarioRepo.findById(5L)).willReturn(Optional.of(usuarioObjetivo));
         given(rolRepo.findByNombre("SUPERVISOR")).willReturn(Optional.empty());
 
@@ -153,13 +153,13 @@ class UsuarioAdminServiceTest {
 
     @Test
     void cambiarEstado_conDatosValidos_actualizaEstadoYRegistraAuditoriaConMotivo() {
-        Usuario usuarioObjetivo = usuario(5L, "lector@uteq.edu.ec", "LECTOR", "ACTIVO");
-        Usuario admin = usuario(9L, "admin@uteq.edu.ec", "ADMIN", "ACTIVO");
+        Usuario usuarioObjetivo = usuario(5L, "lector@correo.com", "LECTOR", "ACTIVO");
+        Usuario admin = usuario(9L, "admin@correo.com", "ADMIN", "ACTIVO");
 
         given(usuarioRepo.findById(5L)).willReturn(Optional.of(usuarioObjetivo));
         given(estadoUsuarioRepo.findByNombre("INACTIVO")).willReturn(Optional.of(estado("INACTIVO")));
-        given(authentication.getName()).willReturn("admin@uteq.edu.ec");
-        given(usuarioRepo.findByCorreo("admin@uteq.edu.ec")).willReturn(Optional.of(admin));
+        given(authentication.getName()).willReturn("admin@correo.com");
+        given(usuarioRepo.findByCorreo("admin@correo.com")).willReturn(Optional.of(admin));
 
         service.cambiarEstado(5L, "INACTIVO", "Solicitud de baja voluntaria", authentication);
 
@@ -172,7 +172,7 @@ class UsuarioAdminServiceTest {
 
     @Test
     void cambiarEstado_conEstadoInexistenteEnCatalogo_lanzaIllegalArgument() {
-        Usuario usuarioObjetivo = usuario(5L, "lector@uteq.edu.ec", "LECTOR", "ACTIVO");
+        Usuario usuarioObjetivo = usuario(5L, "lector@correo.com", "LECTOR", "ACTIVO");
         given(usuarioRepo.findById(5L)).willReturn(Optional.of(usuarioObjetivo));
         given(estadoUsuarioRepo.findByNombre("SUSPENDIDO")).willReturn(Optional.empty());
 
@@ -203,10 +203,10 @@ class UsuarioAdminServiceTest {
 
     @Test
     void gerente_crearLector_guardaCreadoPor() {
-        comoGerente("gerente@uteq.edu.ec", 7L);
+        comoGerente("gerente@correo.com", 7L);
         given(rolRepo.findByNombre("LECTOR")).willReturn(Optional.of(rol("LECTOR")));
         given(estadoUsuarioRepo.findByNombre("ACTIVO")).willReturn(Optional.of(estado("ACTIVO")));
-        given(usuarioRepo.findByCorreo("nuevo@uteq.edu.ec")).willReturn(Optional.empty());
+        given(usuarioRepo.findByCorreo("nuevo@correo.com")).willReturn(Optional.empty());
         given(usuarioRepo.save(any())).willAnswer(inv -> {
             Usuario u = inv.getArgument(0);
             u.setId(50L);
@@ -214,7 +214,7 @@ class UsuarioAdminServiceTest {
         });
 
         service.crearUsuario(new com.uteq.backend.dto.CrearUsuarioAdminRequestDTO(
-                "Ana", "Paz", "nuevo@uteq.edu.ec", "Secreta123", "LECTOR"), authentication);
+                "Ana", "Paz", "nuevo@correo.com", "Secreta123", "LECTOR"), authentication);
 
         ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
         verify(usuarioRepo).save(captor.capture());
@@ -223,18 +223,18 @@ class UsuarioAdminServiceTest {
 
     @Test
     void gerente_crearGerente_lanzaAccessDenied() {
-        comoGerente("gerente@uteq.edu.ec", 7L);
-        given(usuarioRepo.findByCorreo("otro@uteq.edu.ec")).willReturn(Optional.empty());
+        comoGerente("gerente@correo.com", 7L);
+        given(usuarioRepo.findByCorreo("otro@correo.com")).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.crearUsuario(new com.uteq.backend.dto.CrearUsuarioAdminRequestDTO(
-                "Ana", "Paz", "otro@uteq.edu.ec", "Secreta123", "GERENTE"), authentication))
+                "Ana", "Paz", "otro@correo.com", "Secreta123", "GERENTE"), authentication))
                 .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
     }
 
     @Test
     void gerente_cambiarRolDeOtroGerente_lanzaAccessDenied() {
-        comoGerente("gerente@uteq.edu.ec", 7L);
-        Usuario objetivo = usuario(5L, "lector@uteq.edu.ec", "LECTOR", "ACTIVO");
+        comoGerente("gerente@correo.com", 7L);
+        Usuario objetivo = usuario(5L, "lector@correo.com", "LECTOR", "ACTIVO");
         objetivo.setCreadoPor(99L);
         given(usuarioRepo.findById(5L)).willReturn(Optional.of(objetivo));
         given(rolRepo.findByNombre("BIBLIOTECARIO")).willReturn(Optional.of(rol("BIBLIOTECARIO")));
@@ -245,8 +245,8 @@ class UsuarioAdminServiceTest {
 
     @Test
     void gerente_bloquearSuCreado_permite() {
-        comoGerente("gerente@uteq.edu.ec", 7L);
-        Usuario objetivo = usuario(5L, "lector@uteq.edu.ec", "LECTOR", "ACTIVO");
+        comoGerente("gerente@correo.com", 7L);
+        Usuario objetivo = usuario(5L, "lector@correo.com", "LECTOR", "ACTIVO");
         objetivo.setCreadoPor(7L);
         given(usuarioRepo.findById(5L)).willReturn(Optional.of(objetivo));
         given(estadoUsuarioRepo.findByNombre("INACTIVO")).willReturn(Optional.of(estado("INACTIVO")));

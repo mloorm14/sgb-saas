@@ -68,8 +68,8 @@ class PrestamoServiceTest {
     @Test
     void crear_conDatosValidos_invocaProcedimientoYRetornaDTO() {
         permitirCrearPrestamo();
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
-        given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec"))
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
+        given(usuarioRepo.findByCorreo("biblio@correo.com"))
                 .willReturn(Optional.of(usuarioConId(5L)));
         given(prestamoProcRepo.spCrearPrestamo(1L, 2L, 5L, 7)).willReturn(99L);
         given(prestamoRepo.findById(99L)).willReturn(Optional.of(prestamoConId(99L)));
@@ -138,8 +138,8 @@ class PrestamoServiceTest {
     // ── Test 4: acceso denegado cuando un LECTOR pide el id de otro usuario ──
     @Test
     void listarPorUsuario_cuandoLectorPideOtroUsuario_lanzaAccesoDenegado() {
-        Authentication auth = authComoRol("lector@uteq.edu.ec", "LECTOR");
-        given(usuarioRepo.findByCorreo("lector@uteq.edu.ec"))
+        Authentication auth = authComoRol("lector@correo.com", "LECTOR");
+        given(usuarioRepo.findByCorreo("lector@correo.com"))
                 .willReturn(Optional.of(usuarioConId(1L)));
 
         assertThatThrownBy(() -> prestamoService.listarPorUsuario(2L, auth, null))
@@ -162,7 +162,7 @@ class PrestamoServiceTest {
     // ── Test 6: renovación exitosa ─────────────────────────
     @Test
     void renovar_prestamoVigenteSinRenovacionesPrevias_extiendeFecha() {
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
         Prestamo prestamo = prestamoConId(50L);
         prestamo.setRenovacionesRealizadas((short) 0);
         prestamo.setEstadoPrestamoId(1);
@@ -177,7 +177,7 @@ class PrestamoServiceTest {
                 .willReturn(false);
         given(configuracionSistemaService.obtenerValorEntero("dias_prestamo_default")).willReturn(15);
         given(estadoPrestamoRepo.findByNombre("RENOVADO")).willReturn(Optional.of(estadoPrestamo(2, "RENOVADO")));
-        given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec")).willReturn(Optional.of(usuarioConId(5L)));
+        given(usuarioRepo.findByCorreo("biblio@correo.com")).willReturn(Optional.of(usuarioConId(5L)));
 
         RenovacionResponseDTO resultado = prestamoService.renovar(50L, auth);
 
@@ -190,7 +190,7 @@ class PrestamoServiceTest {
     // ── Test 7: préstamo vencido ────────────────────────────
     @Test
     void renovar_prestamoVencido_lanzaExcepcion() {
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
         Prestamo prestamo = prestamoConId(51L);
         prestamo.setEstadoPrestamoId(1);
         prestamo.setFechaDevolucionEstimada(OffsetDateTime.now().minusDays(2));
@@ -204,7 +204,7 @@ class PrestamoServiceTest {
     // ── Test 8: límite de renovaciones alcanzado ───────────
     @Test
     void renovar_limiteRenovacionesAlcanzado_lanzaExcepcion() {
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
         Prestamo prestamo = prestamoConId(52L);
         prestamo.setEstadoPrestamoId(1);
         prestamo.setRenovacionesRealizadas((short) 2);
@@ -219,7 +219,7 @@ class PrestamoServiceTest {
     // ── Test 9: material reservado por otro usuario ────────
     @Test
     void renovar_materialReservadoPorOtroUsuario_lanzaExcepcion() {
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
         Prestamo prestamo = prestamoConId(53L);
         prestamo.setEstadoPrestamoId(1);
         given(prestamoRepo.findById(53L)).willReturn(Optional.of(prestamo));
@@ -239,10 +239,10 @@ class PrestamoServiceTest {
     // ── Test 10: LECTOR intenta renovar un préstamo ajeno ──
     @Test
     void renovar_lectorIntentaRenovarPrestamoAjeno_lanzaAccesoDenegado() {
-        Authentication auth = authComoRol("lector@uteq.edu.ec", "LECTOR");
+        Authentication auth = authComoRol("lector@correo.com", "LECTOR");
         Prestamo prestamo = prestamoConId(54L); // usuarioId = 1L (ver helper)
         given(prestamoRepo.findById(54L)).willReturn(Optional.of(prestamo));
-        given(usuarioRepo.findByCorreo("lector@uteq.edu.ec")).willReturn(Optional.of(usuarioConId(99L)));
+        given(usuarioRepo.findByCorreo("lector@correo.com")).willReturn(Optional.of(usuarioConId(99L)));
 
         assertThatThrownBy(() -> prestamoService.renovar(54L, auth))
                 .isInstanceOf(AuthorizationDeniedException.class);
@@ -251,7 +251,7 @@ class PrestamoServiceTest {
     // ── Test 11: préstamo ya devuelto ──────────────────────
     @Test
     void renovar_prestamoYaDevuelto_lanzaExcepcion() {
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
         Prestamo prestamo = prestamoConId(55L);
         prestamo.setEstadoPrestamoId(3);
         given(prestamoRepo.findById(55L)).willReturn(Optional.of(prestamo));
@@ -265,9 +265,9 @@ class PrestamoServiceTest {
     @Test
     void crear_conCredencialQrValida_resuelveUsuarioCorrecto() {
         permitirCrearPrestamo();
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
         UUID token = UUID.randomUUID();
-        given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec"))
+        given(usuarioRepo.findByCorreo("biblio@correo.com"))
                 .willReturn(Optional.of(usuarioConId(5L)));
         given(credencialQrService.resolverPorToken(token)).willReturn(usuarioConId(3L));
         given(prestamoProcRepo.spCrearPrestamo(3L, 2L, 5L, 7)).willReturn(100L);
@@ -283,7 +283,7 @@ class PrestamoServiceTest {
     // ── Test 13: credencial QR que no resuelve a ningún usuario ──
     @Test
     void crear_conCredencialQrInexistente_lanza404() {
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
         UUID token = UUID.randomUUID();
         given(credencialQrService.resolverPorToken(token))
                 .willThrow(new EntityNotFoundException("Credencial QR no reconocida o usuario inactivo."));
@@ -296,7 +296,7 @@ class PrestamoServiceTest {
     // ── Test 14: usuarioId y credencialQrToken ambos presentes ──
     @Test
     void crear_conUsuarioIdYCredencialQrAmbosPresentes_lanzaExcepcion() {
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
 
         assertThatThrownBy(() -> prestamoService.crear(
                 new PrestamoRequestDTO(1L, UUID.randomUUID(), 2L, 7, null), auth))
@@ -306,7 +306,7 @@ class PrestamoServiceTest {
     // ── Test 15: ni usuarioId ni credencialQrToken ───────────
     @Test
     void crear_sinUsuarioIdNiCredencialQr_lanzaExcepcion() {
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
 
         assertThatThrownBy(() -> prestamoService.crear(
                 new PrestamoRequestDTO(null, null, 2L, 7, null), auth))
@@ -320,10 +320,10 @@ class PrestamoServiceTest {
     @Test
     void crear_conReservacionVigente_vinculaPrestamoYMarcaRetirada() {
         permitirCrearPrestamo();
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
         Reservacion reserva = reservacionVigente(77L, 1L, 2L, 1); // PENDIENTE
         Prestamo prestamoCreado = prestamoConId(99L);
-        given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec"))
+        given(usuarioRepo.findByCorreo("biblio@correo.com"))
                 .willReturn(Optional.of(usuarioConId(5L)));
         given(reservacionRepo.findById(77L)).willReturn(Optional.of(reserva));
         given(estadoReservacionRepo.findByNombre("PENDIENTE"))
@@ -350,8 +350,8 @@ class PrestamoServiceTest {
     @Test
     void crear_conReservacionDeOtroUsuario_lanzaExcepcion() {
         permitirCrearPrestamo();
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
-        given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec"))
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
+        given(usuarioRepo.findByCorreo("biblio@correo.com"))
                 .willReturn(Optional.of(usuarioConId(5L)));
         given(reservacionRepo.findById(78L))
                 .willReturn(Optional.of(reservacionVigente(78L, 999L, 2L, 1)));
@@ -365,8 +365,8 @@ class PrestamoServiceTest {
     @Test
     void crear_conLibroDistintoAlDeLaReservacion_lanzaExcepcion() {
         permitirCrearPrestamo();
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
-        given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec"))
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
+        given(usuarioRepo.findByCorreo("biblio@correo.com"))
                 .willReturn(Optional.of(usuarioConId(5L)));
         given(reservacionRepo.findById(79L))
                 .willReturn(Optional.of(reservacionVigente(79L, 1L, 2L, 1)));
@@ -380,8 +380,8 @@ class PrestamoServiceTest {
     @Test
     void crear_conReservacionYaRetirada_lanzaExcepcion() {
         permitirCrearPrestamo();
-        Authentication auth = authComoRol("biblio@uteq.edu.ec", "BIBLIOTECARIO");
-        given(usuarioRepo.findByCorreo("biblio@uteq.edu.ec"))
+        Authentication auth = authComoRol("biblio@correo.com", "BIBLIOTECARIO");
+        given(usuarioRepo.findByCorreo("biblio@correo.com"))
                 .willReturn(Optional.of(usuarioConId(5L)));
         given(reservacionRepo.findById(80L))
                 .willReturn(Optional.of(reservacionVigente(80L, 1L, 2L, 3))); // RETIRADA
@@ -416,7 +416,7 @@ class PrestamoServiceTest {
         given(fila.getUsuarioId()).willReturn(3L);
         given(fila.getNombre()).willReturn("Ana");
         given(fila.getApellido()).willReturn("Pérez");
-        given(fila.getCorreo()).willReturn("ana@uteq.edu.ec");
+        given(fila.getCorreo()).willReturn("ana@correo.com");
         given(fila.getMontoTotalAdeudado()).willReturn(new BigDecimal("15.50"));
         given(fila.getCantidadMultasPendientes()).willReturn(2L);
         given(fila.getDiasAtrasoPromedio()).willReturn(new BigDecimal("3.5"));

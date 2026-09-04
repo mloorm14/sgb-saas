@@ -11,7 +11,7 @@ presencialmente a preguntar si hay disponibilidad.
 Característica: Creación de reservaciones (vista lector)
 
   Escenario: El lector reserva un libro para sí mismo sin elegir usuario
-    Dado que el lector "juan@uteq.edu.ec" está en la sección "Mis reservaciones"
+    Dado que el lector "juan@correo.com" está en la sección "Mis reservaciones"
     Cuando completa el ID del libro y confirma la reservación
     Entonces la reservación se crea a su propio nombre, sin que la interfaz le pida elegir un usuario
 

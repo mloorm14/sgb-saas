@@ -194,7 +194,7 @@ class PrestamoMultaProcedureIntegrationTest {
                 .map(EstadoUsuario::getId)
                 .orElseThrow(() -> new IllegalStateException(
                         "Catálogo estados_usuario sin fila 'ACTIVO' -- revisar db/seed.sql"));
-        String correoUnico = "test-" + UUID.randomUUID() + "@uteq.edu.ec";
+        String correoUnico = "test-" + UUID.randomUUID() + "@correo.com";
         return jdbcTemplate.queryForObject(
                 "INSERT INTO usuarios (nombre, apellido, correo, password_hash, estado_id, correo_verificado) " +
                         "VALUES ('Test', 'Integracion', ?, 'hash-no-relevante-para-este-test', ?, true) " +
