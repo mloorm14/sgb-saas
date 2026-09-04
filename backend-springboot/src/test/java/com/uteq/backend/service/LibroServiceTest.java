@@ -13,6 +13,7 @@ import com.uteq.backend.repository.EditorialRepository;
 import com.uteq.backend.repository.EstadoLibroRepository;
 import com.uteq.backend.repository.IdiomaRepository;
 import com.uteq.backend.repository.LibroRepository;
+import com.uteq.backend.repository.ProveedorRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,6 +46,7 @@ class LibroServiceTest {
     @Mock EstadoLibroRepository estadoRepo;
     @Mock CategoriaRepository categoriaRepo;
     @Mock AutorRepository autorRepo;
+    @Mock ProveedorRepository proveedorRepo;
     @Mock ConfiguracionSistemaService configuracionSistemaService;
     @Mock BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
@@ -290,6 +292,7 @@ class LibroServiceTest {
                 1,
                 1,
                 1,
+                null,
                 null,
                 null
         );
