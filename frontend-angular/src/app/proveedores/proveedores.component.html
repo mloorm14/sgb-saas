@@ -50,12 +50,16 @@
                 <td class="p-3">{{ p.personaContacto || '—' }}</td>
                 <td class="p-3">{{ p.email || '—' }}</td>
                 <td class="p-3">
-                  <span class="px-2 py-1 rounded-full text-xs" [class.bg-green-100]="p.activo" [class.text-green-800]="p.activo" [class.bg-gray-100]="!p.activo" [class.text-gray-600]="!p.activo">
+                  <span class="px-2 py-1 rounded-full text-xs inline-flex items-center gap-1" [class.bg-green-100]="p.activo" [class.text-green-800]="p.activo" [class.bg-red-100]="!p.activo" [class.text-red-800]="!p.activo">
+                    <span class="material-symbols-outlined text-[12px]">{{ p.activo ? 'check_circle' : 'block' }}</span>
                     {{ p.activo ? 'Activo' : 'Inactivo' }}
                   </span>
                 </td>
                 <td class="p-3 text-right">
-                  <button (click)="abrirEditar(p)" class="text-primary hover:underline">Editar</button>
+                  <button (click)="abrirEditar(p)" aria-label="Editar proveedor"
+                    class="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-primary/10 text-primary cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">edit</span>
+                  </button>
                 </td>
               </tr>
             }
@@ -67,7 +71,7 @@
           <span class="text-on-surface-variant">Mostrar</span>
           <label for="page-size-proveedores" class="sr-only">Elementos por página</label>
           <select [ngModel]="tamanoPagina" (ngModelChange)="cambiarTamano($event)" id="page-size-proveedores" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-surface-container-lowest cursor-pointer appearance-none text-xs leading-tight py-1.5">
-            <option [ngValue]="10">10</option><option [ngValue]="20">20</option><option [ngValue]="50">50</option>
+            <option [ngValue]="10">10</option><option [ngValue]="20">20</option><option [ngValue]="30">30</option>
           </select>
         </div>
         <div class="flex items-center gap-xs">
@@ -88,14 +92,14 @@
         @if (formError) { <div class="p-2 mb-3 bg-error/10 text-error rounded text-sm">{{ formError }}</div> }
         <div class="space-y-3">
           <label class="block"><span class="text-sm">Nombre *</span><input [(ngModel)]="form.nombre" class="w-full px-3 py-2 border rounded-lg" placeholder="Nombre del proveedor" /></label>
-          <label class="block"><span class="text-sm">RUC / Identificación fiscal</span><input [(ngModel)]="form.ruc" class="w-full px-3 py-2 border rounded-lg" placeholder="RUC" /></label>
-          <label class="block"><span class="text-sm">Dirección</span><input [(ngModel)]="form.direccion" class="w-full px-3 py-2 border rounded-lg" placeholder="Dirección" /></label>
+          <label class="block"><span class="text-sm">RUC *</span><input [(ngModel)]="form.ruc" class="w-full px-3 py-2 border rounded-lg" placeholder="13 dígitos sin guion" maxlength="13" inputmode="numeric" /></label>
+          <label class="block"><span class="text-sm">Dirección *</span><input [(ngModel)]="form.direccion" class="w-full px-3 py-2 border rounded-lg" placeholder="Dirección" /></label>
           <div class="grid grid-cols-2 gap-3">
-            <label class="block"><span class="text-sm">Teléfono</span><input [(ngModel)]="form.telefono" class="w-full px-3 py-2 border rounded-lg" placeholder="Teléfono" /></label>
-            <label class="block"><span class="text-sm">Email</span><input [(ngModel)]="form.email" type="email" class="w-full px-3 py-2 border rounded-lg" placeholder="email@ejemplo.com" /></label>
+            <label class="block"><span class="text-sm">Teléfono *</span><input [(ngModel)]="form.telefono" class="w-full px-3 py-2 border rounded-lg" placeholder="Teléfono" /></label>
+            <label class="block"><span class="text-sm">Email *</span><input [(ngModel)]="form.email" type="text" class="w-full px-3 py-2 border rounded-lg" placeholder="email@ejemplo.com" /></label>
           </div>
           <label class="block"><span class="text-sm">Persona de contacto</span><input [(ngModel)]="form.personaContacto" class="w-full px-3 py-2 border rounded-lg" placeholder="Nombre contacto" /></label>
-          <label class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="form.activo" /> <span class="text-sm">Activo</span></label>
+          <label for="proveedor-activo" class="flex items-center gap-2 cursor-pointer select-none"><input id="proveedor-activo" type="checkbox" [(ngModel)]="form.activo" class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-2 focus:ring-primary" /> <span class="text-sm">Activo</span></label>
         </div>
         <div class="flex justify-end gap-2 mt-6">
           <button (click)="cancelar()" class="px-4 py-2 border rounded-lg">Cancelar</button>
