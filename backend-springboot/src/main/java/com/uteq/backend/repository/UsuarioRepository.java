@@ -32,6 +32,26 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     Page<Usuario> findByNombreContainingIgnoreCaseOrCorreoContainingIgnoreCase(
             String nombre, String correo, Pageable pageable);
 
+    // F8-gerente (V38): listado con filtro opcional + creador opcional.
+    // Nativa con CAST explícito para evitar el bug PostgreSQL+Hibernate
+    // con parámetros NULL (ver skill sgb-backend-conventions).
+    @org.springframework.data.jpa.repository.Query(
+            value = "SELECT * FROM usuarios u WHERE "
+                    + "(CAST(:filtro AS TEXT) IS NULL OR CAST(:filtro AS TEXT) = '' "
+                    + "OR u.nombre ILIKE '%' || CAST(:filtro AS TEXT) || '%' "
+                    + "OR u.correo ILIKE '%' || CAST(:filtro AS TEXT) || '%') "
+                    + "AND (CAST(:creadoPor AS BIGINT) IS NULL OR u.creado_por = CAST(:creadoPor AS BIGINT))",
+            countQuery = "SELECT COUNT(*) FROM usuarios u WHERE "
+                    + "(CAST(:filtro AS TEXT) IS NULL OR CAST(:filtro AS TEXT) = '' "
+                    + "OR u.nombre ILIKE '%' || CAST(:filtro AS TEXT) || '%' "
+                    + "OR u.correo ILIKE '%' || CAST(:filtro AS TEXT) || '%') "
+                    + "AND (CAST(:creadoPor AS BIGINT) IS NULL OR u.creado_por = CAST(:creadoPor AS BIGINT))",
+            nativeQuery = true)
+    Page<Usuario> buscarConFiltros(
+            @org.springframework.data.repository.query.Param("filtro") String filtro,
+            @org.springframework.data.repository.query.Param("creadoPor") Long creadoPor,
+            Pageable pageable);
+
     // Auto-eliminación de cuentas no verificados: borra usuarios cuyo
     // correo no fue verificado dentro de las últimas 24 horas. Invocado
     // periódicamente por UsuarioScheduler.

@@ -91,6 +91,12 @@ public class Usuario {
     @Column(name = "actualizado_en", nullable = false)
     private Instant actualizadoEn;
 
+    // F8-gerente (V38): quién creó este usuario. NULL = histórico/sistema
+    // (ADMIN lo ve igual). Sin relación JPA a propósito — solo FK libre de
+    // joins, mismo criterio que Prestamo/Reservacion.
+    @Column(name = "creado_por")
+    private Long creadoPor;
+
     @Builder.Default
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
