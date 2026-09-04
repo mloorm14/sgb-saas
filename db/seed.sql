@@ -160,7 +160,12 @@ INSERT INTO usuario_roles (usuario_id, rol_id)
 VALUES (
     (SELECT id FROM usuarios WHERE correo = 'u@uteq.edu.ec'),
     (SELECT id FROM roles WHERE nombre = 'LECTOR')
-);
+) ON CONFLICT DO NOTHING;
+
+-- Espejo de V42: si el seed se usó antes y quedó GERENTE huérfano, limpiarlo
+DELETE FROM usuario_roles
+WHERE usuario_id = (SELECT id FROM usuarios WHERE correo = 'u@uteq.edu.ec')
+  AND rol_id != (SELECT id FROM roles WHERE nombre = 'LECTOR');
 
 -- ============================================================================
 -- LIBROS DE EJEMPLO
