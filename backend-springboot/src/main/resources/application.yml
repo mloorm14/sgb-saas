@@ -165,6 +165,7 @@ app:
 
 security:
   jwt:
+    # Fallback dev placeholder — prod debe setear JWT_SECRET real (64 hex via Render Dashboard, render.yaml sync:false). Ver RUNBOOK.md
     secret: ${JWT_SECRET:CAMBIAR_EN_PRODUCCION_MIN_256_BITS}
     expiration-ms: 3600000
     refresh-expiration-ms: 10800000

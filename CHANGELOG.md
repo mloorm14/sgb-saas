@@ -10,6 +10,8 @@ que no correspondan a un commit existente en el historial.
 
 ## [Unreleased]
 
+- Documentado hueco V29 nunca asignada (ver ADR-029 — baseline 37 cubre salto V28→V30)
+
 Cambios acumulados desde el tag `v0.1.0-entrega-1b` (commit `1f89354`,
 cierre de Entrega 1B) hasta el estado actual de `main`, camino al tag
 objetivo `v0.9.0-rc` de esta Tercera Entrega.
