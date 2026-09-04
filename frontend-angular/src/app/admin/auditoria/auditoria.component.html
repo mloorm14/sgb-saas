@@ -328,10 +328,41 @@
           </div>
         </div>
 
-        <!-- Cuerpo: JSON -->
+        <!-- Cuerpo: JSON (B12 diff Antes/Después, B9 truncado) -->
         <div class="flex-1 overflow-auto px-lg py-md">
           @if (eventoSeleccionado.detalle) {
-            <pre class="bg-surface-container-low rounded-lg p-md font-body-sm text-body-sm text-on-surface overflow-auto max-h-[50vh] whitespace-pre-wrap break-words border border-outline-variant/30"><code [innerHTML]="resaltarJson(detalleFormateado())"></code></pre>
+            @if (getAntesDespues(eventoSeleccionado.detalle, eventoSeleccionado.accion).esUpdate) {
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+                <div class="rounded-lg border border-red-200 bg-red-50 overflow-hidden">
+                  <h4 class="font-label-md text-label-md px-md pt-sm pb-xs">Antes</h4>
+                  <pre class="bg-surface-container-low rounded-lg p-md m-sm font-body-sm text-body-sm text-on-surface overflow-auto max-h-[50vh] whitespace-pre-wrap break-words border border-outline-variant/30"><code [innerHTML]="resaltarConDiff(getAntesDespues(eventoSeleccionado.detalle, eventoSeleccionado.accion).antes, diffKeys(getAntesDespues(eventoSeleccionado.detalle, eventoSeleccionado.accion).antes, getAntesDespues(eventoSeleccionado.detalle, eventoSeleccionado.accion).despues))"></code></pre>
+                  <div class="px-sm pb-sm">
+                    <button (click)="copiarAntes()"
+                      class="w-full h-9 rounded-lg border border-outline-variant font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer hover:bg-surface-container-low transition-colors text-on-surface">
+                      <span class="material-symbols-outlined text-[18px]">content_copy</span>
+                      Copiar Antes
+                    </button>
+                  </div>
+                </div>
+                <div class="rounded-lg border border-green-200 bg-green-50 overflow-hidden">
+                  <h4 class="font-label-md text-label-md px-md pt-sm pb-xs">Después</h4>
+                  <pre class="bg-surface-container-low rounded-lg p-md m-sm font-body-sm text-body-sm text-on-surface overflow-auto max-h-[50vh] whitespace-pre-wrap break-words border border-outline-variant/30"><code [innerHTML]="resaltarConDiff(getAntesDespues(eventoSeleccionado.detalle, eventoSeleccionado.accion).despues, diffKeys(getAntesDespues(eventoSeleccionado.detalle, eventoSeleccionado.accion).antes, getAntesDespues(eventoSeleccionado.detalle, eventoSeleccionado.accion).despues))"></code></pre>
+                  <div class="px-sm pb-sm">
+                    <button (click)="copiarDespues()"
+                      class="w-full h-9 rounded-lg border border-outline-variant font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer hover:bg-surface-container-low transition-colors text-on-surface">
+                      <span class="material-symbols-outlined text-[18px]">content_copy</span>
+                      Copiar Después
+                    </button>
+                  </div>
+                </div>
+              </div>
+            } @else {
+              <pre class="bg-surface-container-low rounded-lg p-md font-body-sm text-body-sm text-on-surface overflow-auto max-h-[50vh] whitespace-pre-wrap break-words border border-outline-variant/30"><code [innerHTML]="resaltarJson(detalleFormateado())"></code></pre>
+              <button (click)="alternarVerCompleto()"
+                class="mt-sm h-9 px-md rounded-lg border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low transition-colors text-on-surface">
+                {{ verCompleto ? 'Ver menos' : 'Ver completo' }}
+              </button>
+            }
           } @else {
             <div class="text-center py-lg text-on-surface-variant font-body-sm text-body-sm">
               <span class="material-symbols-outlined text-[32px] block mb-sm">info</span>
@@ -341,7 +372,7 @@
         </div>
 
         <!-- Pie: Copiar JSON -->
-        @if (eventoSeleccionado.detalle) {
+        @if (eventoSeleccionado.detalle && !getAntesDespues(eventoSeleccionado.detalle, eventoSeleccionado.accion).esUpdate) {
           <div class="px-lg py-md border-t border-outline-variant/30 shrink-0">
             <button (click)="copiarJson()"
               class="w-full h-10 rounded-lg border border-outline-variant font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer hover:bg-surface-container-low transition-colors"
