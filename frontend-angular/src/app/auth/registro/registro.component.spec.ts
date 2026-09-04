@@ -29,13 +29,13 @@ describe('RegistroComponent reenvío F6', () => {
   });
 
   it('permite reenviar cuando no hay intentos ni cooldown', () => {
-    component.correoRegistrado = 'a@uteq.edu.ec';
+    component.correoRegistrado = 'a@correo.com';
     component.iniciarEstadoReenvio();
     expect(component.puedeReenviar).toBeTrue();
   });
 
   it('bloquea tras 3 reenvíos (contador por correo)', () => {
-    component.correoRegistrado = 'a@uteq.edu.ec';
+    component.correoRegistrado = 'a@correo.com';
     authService.reenviarCodigo.and.returnValue(of({}));
     component.iniciarEstadoReenvio();
     for (let i = 0; i < 3; i++) {
@@ -47,21 +47,21 @@ describe('RegistroComponent reenvío F6', () => {
   });
 
   it('el contador es independiente por correo', () => {
-    component.correoRegistrado = 'a@uteq.edu.ec';
+    component.correoRegistrado = 'a@correo.com';
     authService.reenviarCodigo.and.returnValue(of({}));
     component.iniciarEstadoReenvio();
     component.segundosRestantes = 0;
     component.reenviarCodigo();
     expect(component.reenviosRealizados).toBe(1);
 
-    component.correoRegistrado = 'b@uteq.edu.ec';
+    component.correoRegistrado = 'b@correo.com';
     component.iniciarEstadoReenvio();
     expect(component.reenviosRealizados).toBe(0);
     expect(component.puedeReenviar).toBeTrue();
   });
 
   it('inicia cooldown de 3 minutos tras reenviar', () => {
-    component.correoRegistrado = 'a@uteq.edu.ec';
+    component.correoRegistrado = 'a@correo.com';
     authService.reenviarCodigo.and.returnValue(of({}));
     component.iniciarEstadoReenvio();
     component.reenviarCodigo();

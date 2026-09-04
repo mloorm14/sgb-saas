@@ -63,7 +63,7 @@ describe('MultasComponent', () => {
   const mockUsuario: UsuarioPrestamos = {
     id: 3,
     nombreCompleto: 'Juan Perez',
-    correo: 'juan.perez@uteq.edu.ec',
+    correo: 'juan.perez@correo.com',
     cedula: '1234567890',
     tiposUsuario: ['LECTOR'],
     estadoCuenta: 'ACTIVO',
@@ -78,7 +78,7 @@ describe('MultasComponent', () => {
     authService = jasmine.createSpyObj('AuthService', ['getUserId', 'getCorreo', 'hasRole']);
 
     authService.getUserId.and.returnValue(3);
-    authService.getCorreo.and.returnValue('juan.perez@uteq.edu.ec');
+    authService.getCorreo.and.returnValue('juan.perez@correo.com');
     authService.hasRole.and.callFake((...roles: string[]) => roles.includes('LECTOR'));
     multaService.listarDetallePorUsuario.and.returnValue(of(mockPage));
     prestamoService.buscarUsuarioPorCorreo.and.returnValue(of(mockUsuario));
@@ -165,9 +165,9 @@ describe('MultasComponent', () => {
     authService.hasRole.and.returnValue(false);
     fixture.detectChanges();
 
-    component.onBuscarAhora('juan.perez@uteq.edu.ec');
+    component.onBuscarAhora('juan.perez@correo.com');
 
-    expect(prestamoService.buscarUsuarioPorCorreo).toHaveBeenCalledWith('juan.perez@uteq.edu.ec');
+    expect(prestamoService.buscarUsuarioPorCorreo).toHaveBeenCalledWith('juan.perez@correo.com');
     expect(component.usuarioSeleccionado?.id).toBe(3);
     expect(multaService.listarDetallePorUsuario).toHaveBeenCalledWith(3, jasmine.anything());
   });

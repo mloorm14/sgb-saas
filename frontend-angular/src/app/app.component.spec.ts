@@ -50,7 +50,7 @@ describe('AppComponent', () => {
   it('muestra los enlaces del LECTOR y cierra sesion via dropdown', () => {
     authService.isLoggedIn.and.returnValue(true);
     authService.hasRole.and.callFake((...roles: string[]) => roles.includes('LECTOR'));
-    authService.getCorreo.and.returnValue('lector@uteq.edu.ec');
+    authService.getCorreo.and.returnValue('lector@correo.com');
 
     const fixture = TestBed.createComponent(AppComponent);
     fixture.componentInstance.cargandoRuta = false;

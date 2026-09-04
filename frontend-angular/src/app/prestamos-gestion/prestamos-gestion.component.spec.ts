@@ -11,7 +11,7 @@ function usuarioActivo(): UsuarioPrestamos {
     id: 7,
     nombreCompleto: 'Ana Pérez',
     cedula: '1712345678',
-    correo: 'ana.perez@uteq.edu.ec',
+    correo: 'ana.perez@correo.com',
     tiposUsuario: ['LECTOR'],
     estadoCuenta: 'ACTIVO',
     montoMultasPendientes: 0,
@@ -53,10 +53,10 @@ describe('PrestamosGestionComponent', () => {
   });
 
   it('busca al usuario por correo y carga reserva e historial', () => {
-    component.correoBusqueda = 'ana.perez@uteq.edu.ec';
+    component.correoBusqueda = 'ana.perez@correo.com';
     component.buscarUsuario();
 
-    expect(prestamoService.buscarUsuarioPorCorreo).toHaveBeenCalledWith('ana.perez@uteq.edu.ec');
+    expect(prestamoService.buscarUsuarioPorCorreo).toHaveBeenCalledWith('ana.perez@correo.com');
     expect(component.usuario?.id).toBe(7);
     expect(component.diasReserva).toBe(15);
     expect(component.errorBusqueda).toBe('');
@@ -68,7 +68,7 @@ describe('PrestamosGestionComponent', () => {
       throwError(() => ({ status: 404 }))
     );
 
-    component.correoBusqueda = 'nadie@uteq.edu.ec';
+    component.correoBusqueda = 'nadie@correo.com';
     component.buscarUsuario();
 
     expect(component.errorBusqueda).toBe('No se encontró ningún usuario con este correo');
@@ -92,7 +92,7 @@ describe('PrestamosGestionComponent', () => {
     };
     prestamoService.buscarUsuarioPorCorreo.and.returnValue(of(bloqueado));
 
-    component.correoBusqueda = 'ana.perez@uteq.edu.ec';
+    component.correoBusqueda = 'ana.perez@correo.com';
     component.buscarUsuario();
 
     expect(component.estaBloqueado).toBeTrue();

@@ -17,7 +17,7 @@ describe('MiCredencialComponent', () => {
       imports: [MiCredencialComponent],
       providers: [
         { provide: CredencialQrService, useValue: credencialService },
-        { provide: AuthService, useValue: { getCorreo: () => 'ana@uteq.edu.ec' } }
+        { provide: AuthService, useValue: { getCorreo: () => 'ana@correo.com' } }
       ]
     }).compileComponents();
 
