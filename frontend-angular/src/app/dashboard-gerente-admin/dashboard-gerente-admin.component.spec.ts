@@ -13,7 +13,7 @@ describe('DashboardGerenteAdminComponent', () => {
       authService = jasmine.createSpyObj('AuthService', ['isLoggedIn', 'hasRole', 'logout', 'getCorreo']);
       authService.isLoggedIn.and.returnValue(true);
       authService.hasRole.and.callFake((...roles: string[]) => roles.includes('GERENTE'));
-      authService.getCorreo.and.returnValue('gerente@uteq.edu.ec');
+      authService.getCorreo.and.returnValue('gerente@correo.com');
 
       await TestBed.configureTestingModule({
         imports: [DashboardGerenteAdminComponent],
@@ -52,7 +52,7 @@ describe('DashboardGerenteAdminComponent', () => {
       authService = jasmine.createSpyObj('AuthService', ['isLoggedIn', 'hasRole', 'logout', 'getCorreo']);
       authService.isLoggedIn.and.returnValue(true);
       authService.hasRole.and.callFake((...roles: string[]) => roles.includes('ADMIN'));
-      authService.getCorreo.and.returnValue('admin@uteq.edu.ec');
+      authService.getCorreo.and.returnValue('admin@correo.com');
 
       await TestBed.configureTestingModule({
         imports: [DashboardGerenteAdminComponent],

@@ -32,13 +32,13 @@ describe('DashboardGerenteComponent', () => {
   };
 
   const dosMorosos: ReporteMorosidad[] = [
-    { usuarioId: 1, nombre: 'Ana', apellido: 'Pérez', correo: 'ana@uteq.edu.ec', montoTotalAdeudado: 15.5, cantidadMultasPendientes: 1, diasAtrasoPromedio: 3 },
-    { usuarioId: 2, nombre: 'Luis', apellido: 'Gómez', correo: 'luis@uteq.edu.ec', montoTotalAdeudado: 24.5, cantidadMultasPendientes: 2, diasAtrasoPromedio: 5 }
+    { usuarioId: 1, nombre: 'Ana', apellido: 'Pérez', correo: 'ana@correo.com', montoTotalAdeudado: 15.5, cantidadMultasPendientes: 1, diasAtrasoPromedio: 3 },
+    { usuarioId: 2, nombre: 'Luis', apellido: 'Gómez', correo: 'luis@correo.com', montoTotalAdeudado: 24.5, cantidadMultasPendientes: 2, diasAtrasoPromedio: 5 }
   ];
 
   const paginaAuditoria: Page<EventoAuditoria> = {
     content: [
-      { id: 1, usuario: 'admin@uteq.edu.ec', accion: 'UPDATE', fechaHora: '2026-08-19T10:00:00Z', modulo: 'usuarios', detalle: 'ejemplo' }
+      { id: 1, usuario: 'admin@correo.com', accion: 'UPDATE', fechaHora: '2026-08-19T10:00:00Z', modulo: 'usuarios', detalle: 'ejemplo' }
     ],
     totalPages: 1,
     totalElements: 1,

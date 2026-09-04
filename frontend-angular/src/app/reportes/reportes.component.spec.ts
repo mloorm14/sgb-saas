@@ -16,7 +16,7 @@ describe('ReportesComponent', () => {
       { libroId: 1, titulo: 'El Principito', isbn: '978987800', totalPrestamos: 12, autorNombre: 'Saint-Exupéry', categoriaNombre: 'Ficción', porcentaje: 50 }
     ]));
     reporteService.morosidad.and.returnValue(of([
-      { usuarioId: 4, nombre: 'Ana', apellido: 'Paz', correo: 'ana@uteq.edu.ec', montoTotalAdeudado: 5.0, cantidadMultasPendientes: 1, diasAtrasoPromedio: 3 }
+      { usuarioId: 4, nombre: 'Ana', apellido: 'Paz', correo: 'ana@correo.com', montoTotalAdeudado: 5.0, cantidadMultasPendientes: 1, diasAtrasoPromedio: 3 }
     ]));
     reporteService.inventario.and.returnValue(of([]));
     reporteService.vencidos.and.returnValue(of([]));

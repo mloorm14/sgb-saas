@@ -12,7 +12,7 @@ describe('DashboardBibliotecarioComponent', () => {
     authService = jasmine.createSpyObj('AuthService', ['isLoggedIn', 'hasRole', 'logout', 'getCorreo']);
     authService.isLoggedIn.and.returnValue(true);
     authService.hasRole.and.callFake((...roles: string[]) => roles.includes('BIBLIOTECARIO'));
-    authService.getCorreo.and.returnValue('bibliotecario@uteq.edu.ec');
+    authService.getCorreo.and.returnValue('bibliotecario@correo.com');
 
     await TestBed.configureTestingModule({
       imports: [DashboardBibliotecarioComponent],
@@ -50,7 +50,7 @@ describe('DashboardBibliotecarioComponent', () => {
 
   it('debería mostrar el correo del usuario', () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('bibliotecario@uteq.edu.ec');
+    expect(compiled.textContent).toContain('bibliotecario@correo.com');
   });
 
   it('debería tener iniciales del usuario', () => {

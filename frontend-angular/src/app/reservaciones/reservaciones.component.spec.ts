@@ -92,7 +92,7 @@ describe('ReservacionesComponent', () => {
     component.usuario = {
       id: 1,
       nombreCompleto: 'Juan Perez',
-      correo: 'juan@uteq.edu.ec',
+      correo: 'juan@correo.com',
       estadoCuenta: 'ACTIVO',
       cantidadReservasActivas: 0,
       limiteReservas: 3

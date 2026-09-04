@@ -15,9 +15,9 @@ describe('UsuariosComponent', () => {
 
   const pagina = {
     content: [
-      { id: 1, nombre: 'María', apellido: 'López', correo: 'm.lopez@uteq.edu.ec', roles: ['LECTOR'], estado: 'ACTIVO', multasPendientes: false },
-      { id: 2, nombre: 'Usuario', apellido: 'Demo', correo: 'u@uteq.edu.ec', roles: ['LECTOR'], estado: 'BLOQUEADO_POR_MULTA', multasPendientes: true },
-      { id: 3, nombre: 'Jorge', apellido: 'Cajas', correo: 'j.cajas@uteq.edu.ec', roles: ['BIBLIOTECARIO'], estado: 'INACTIVO', multasPendientes: false }
+      { id: 1, nombre: 'María', apellido: 'López', correo: 'm.lopez@correo.com', roles: ['LECTOR'], estado: 'ACTIVO', multasPendientes: false },
+      { id: 2, nombre: 'Usuario', apellido: 'Demo', correo: 'u@correo.com', roles: ['LECTOR'], estado: 'BLOQUEADO_POR_MULTA', multasPendientes: true },
+      { id: 3, nombre: 'Jorge', apellido: 'Cajas', correo: 'j.cajas@correo.com', roles: ['BIBLIOTECARIO'], estado: 'INACTIVO', multasPendientes: false }
     ],
     totalPages: 1,
     totalElements: 3
@@ -163,7 +163,7 @@ describe('UsuariosComponent', () => {
       component.abrirModalCrear();
       component.nuevoNombre = 'Ana';
       component.nuevoApellido = 'Paz';
-      component.nuevoCorreo = 'ana@uteq.edu.ec';
+      component.nuevoCorreo = 'ana@correo.com';
       component.nuevoPassword = 'Secreta123';
       component.nuevoRol = 'LECTOR';
       component.confirmarCrear();
