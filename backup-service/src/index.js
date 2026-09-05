@@ -9,6 +9,11 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// Cerrojo en memoria: evita que un backup manual y el cron automático
+// corran a la vez (el chequeo en BD tiene una ventana de carrera mientras
+// se inserta el registro). Node es single-thread: el flag basta.
+let backupEnCurso = false;
+
 app.get('/health', async (req, res) => {
     if (!process.env.DATABASE_URL && !process.env.DB_URL) return res.status(503).json({ status: 'DOWN', db: 'no DATABASE_URL' });
     try { await pool.query('SELECT 1'); res.json({ status: 'UP' }); } catch (e) { res.status(503).json({ status: 'DOWN', error: e.message }); }
@@ -29,12 +34,18 @@ app.use('/api/v1/trigger', (req, res, next) => {
 // Endpoint para disparar un backup manual (llamado por el proxy de Spring Boot)
 app.post('/api/v1/trigger', async (req, res) => {
     const { usuarioId } = req.body;
+    if (backupEnCurso) return res.status(429).json({ mensaje: 'Ya hay un respaldo en ejecucion', retryAfter: 60 });
     try {
         const chk = await pool.query("SELECT id FROM registros_respaldo WHERE estado='ejecutando' LIMIT 1");
         if (chk.rows.length > 0) return res.status(429).json({ mensaje: 'Ya hay un respaldo en ejecucion', retryAfter: 60 });
     } catch (e) {}
+    backupEnCurso = true;
     res.status(202).json({ message: 'Backup completo iniciado en background' });
-    await runBackup('manual', usuarioId);
+    try {
+        await runBackup('manual', usuarioId);
+    } finally {
+        backupEnCurso = false;
+    }
 });
 
 // Cron job para leer configuracion_respaldo
@@ -51,17 +62,22 @@ cron.schedule('0 * * * *', async () => {
         const now = new Date();
         const proxima = new Date(config.proxima_ejecucion);
         
-        if (now >= proxima) {
+        if (now >= proxima && !backupEnCurso) {
             console.log('Ejecutando backup automático...');
-            // Ejecutamos el backup
-            await runBackup('automatico', config.actualizado_por);
-            
-            // Calculamos próxima ejecución
-            const nuevaProxima = new Date(now.getTime() + config.frecuencia_horas * 60 * 60 * 1000);
-            await pool.query(
-                `UPDATE configuracion_respaldo SET ultima_ejecucion = $1, proxima_ejecucion = $2 WHERE id = $3`,
-                [now, nuevaProxima, config.id]
-            );
+            backupEnCurso = true;
+            try {
+                // Ejecutamos el backup
+                await runBackup('automatico', config.actualizado_por);
+
+                // Calculamos próxima ejecución
+                const nuevaProxima = new Date(now.getTime() + config.frecuencia_horas * 60 * 60 * 1000);
+                await pool.query(
+                    `UPDATE configuracion_respaldo SET ultima_ejecucion = $1, proxima_ejecucion = $2 WHERE id = $3`,
+                    [now, nuevaProxima, config.id]
+                );
+            } finally {
+                backupEnCurso = false;
+            }
         }
     } catch (err) {
         console.error('Error en cron automático:', err);
