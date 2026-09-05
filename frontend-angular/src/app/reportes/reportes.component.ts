@@ -1,8 +1,13 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { ReporteService, LibroMasPrestadoDetallado, ReporteMorosidad, ReporteInventario, ReporteVencidos, ReporteCategoriasDemandadas, ReporteUsoPorPeriodo, ResumenFinancieroMultas } from '../core/services/reporte-gerencial.service';
+import { CategoriaService } from '../core/services/categoria.service';
+import { EditorialService } from '../core/services/editorial.service';
+import { ProveedorService } from '../core/services/proveedor.service';
+import { EstadoLibroService } from '../core/services/estado-libro.service';
+import { IdiomaService } from '../core/services/idioma.service';
 
 export type VistaReporte = 'tarjetas' | 'libros' | 'morosidad' | 'inventario' | 'vencidos' | 'categorias' | 'uso' | 'financiero';
 
@@ -21,7 +26,7 @@ export interface ModuloReporte {
   imports: [CommonModule, FormsModule],
   templateUrl: './reportes.component.html'
 })
-export class ReportesComponent {
+export class ReportesComponent implements OnInit {
   vista: VistaReporte = 'tarjetas';
 
   modulos: ModuloReporte[] = [
@@ -105,11 +110,24 @@ export class ReportesComponent {
   // Morosidad
   morosidadCorreo = '';
 
-  // Inventario
+  // Inventario — 8 filtros gerenciales (tanda 1 V44)
   busquedaInventario = '';
   estadoStock = '';
+  filtroCategoriaId: number | null = null;
+  filtroEditorialId: number | null = null;
+  filtroProveedorId: number | null = null;
+  filtroEstadoLibroId: number | null = null;
+  filtroIdiomaId: number | null = null;
+  filtroAnioDesde: number | null = null;
+  filtroAnioHasta: number | null = null;
+  filtroUbicacion = '';
   inventarioPage = 0;
   inventarioPageSize = 10;
+  categoriasCatalog: any[] = [];
+  editoriales: any[] = [];
+  proveedoresCatalog: any[] = [];
+  estadosLibro: any[] = [];
+  idiomas: any[] = [];
 
   // Paginación libros/morosidad/vencidos/categorias/uso/financiero — server-side real
   librosPage = 0; librosPageSize = 10;
@@ -157,7 +175,26 @@ export class ReportesComponent {
   ordenColumnaInv: string = '';
   direccionAscInv: boolean = true;
 
-  constructor(private reporteService: ReporteService) {}
+  constructor(
+    private reporteService: ReporteService,
+    private categoriaService: CategoriaService,
+    private editorialService: EditorialService,
+    private proveedorService: ProveedorService,
+    private estadoLibroService: EstadoLibroService,
+    private idiomaService: IdiomaService
+  ) {}
+
+  ngOnInit(): void {
+    this.cargarCatalogosInventario();
+  }
+
+  private cargarCatalogosInventario(): void {
+    this.categoriaService.listar().subscribe({ next: d => this.categoriasCatalog = d });
+    this.editorialService.listar().subscribe({ next: d => this.editoriales = d });
+    this.proveedorService.listarTodo().subscribe({ next: d => this.proveedoresCatalog = d });
+    this.estadoLibroService.listar().subscribe({ next: d => this.estadosLibro = d });
+    this.idiomaService.listar().subscribe({ next: d => this.idiomas = d });
+  }
 
   ordenarPorMor(columna: string): void {
     if (this.ordenColumnaMor === columna) {
@@ -300,6 +337,14 @@ export class ReportesComponent {
       case 'inventario':
         this.busquedaInventario = '';
         this.estadoStock = '';
+        this.filtroCategoriaId = null;
+        this.filtroEditorialId = null;
+        this.filtroProveedorId = null;
+        this.filtroEstadoLibroId = null;
+        this.filtroIdiomaId = null;
+        this.filtroAnioDesde = null;
+        this.filtroAnioHasta = null;
+        this.filtroUbicacion = '';
         this.inventarioPage = 0;
         break;
       case 'vencidos':
@@ -378,11 +423,19 @@ export class ReportesComponent {
     this.cargando = true;
     this.errorMsg = '';
     this.reporteService.inventario(
-      undefined,
+      this.filtroCategoriaId ?? undefined,
       this.estadoStock || undefined,
       this.busquedaInventario.trim() || undefined,
       this.inventarioPage,
-      this.inventarioPageSize
+      this.inventarioPageSize,
+      this.filtroEditorialId ?? undefined,
+      this.filtroProveedorId ?? undefined,
+      this.filtroEstadoLibroId ?? undefined,
+      this.filtroIdiomaId ?? undefined,
+      this.filtroAnioDesde ?? undefined,
+      this.filtroAnioHasta ?? undefined,
+      undefined, undefined, undefined, undefined,
+      this.filtroUbicacion?.trim() || undefined
     ).subscribe({
       next: (page) => {
         this.inventario = page.content;

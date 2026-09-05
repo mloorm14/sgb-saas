@@ -245,22 +245,76 @@
       <!-- 3) INVENTARIO -->
       @if (vista === 'inventario') {
         <div class="rounded-lg border border-outline-variant bg-surface-container-lowest shadow-sm p-md mb-md">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-sm items-end">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end">
             <div>
               <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Buscar (título, ISBN, autor)</label>
               <input type="text" [(ngModel)]="busquedaInventario" placeholder="Título, ISBN o autor"
                 class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
             </div>
             <div>
-              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Estado</label>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Disponibilidad</label>
               <select [(ngModel)]="estadoStock" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest cursor-pointer">
                 <option value="">Todos</option><option value="disponible">Disponibles</option><option value="baja">Baja disponibilidad</option><option value="agotado">Agotados</option>
               </select>
             </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Categoría</label>
+              <select [(ngModel)]="filtroCategoriaId" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest cursor-pointer">
+                <option [ngValue]="null">Todas</option>
+                @for (c of categoriasCatalog; track c.id) { <option [ngValue]="c.id">{{ c.nombre }}</option> }
+              </select>
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Editorial</label>
+              <select [(ngModel)]="filtroEditorialId" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest cursor-pointer">
+                <option [ngValue]="null">Todas</option>
+                @for (e of editoriales; track e.id) { <option [ngValue]="e.id">{{ e.nombre }}</option> }
+              </select>
+            </div>
           </div>
-          <div class="flex gap-sm mt-sm">
-            <button (click)="aplicarFiltros()" class="h-10 px-md rounded bg-primary text-on-primary font-label-sm text-label-sm cursor-pointer">Filtrar</button>
-            <button (click)="limpiarFiltros()" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low">Limpiar</button>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end mt-sm">
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Proveedor</label>
+              <select [(ngModel)]="filtroProveedorId" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest cursor-pointer">
+                <option [ngValue]="null">Todos</option>
+                @for (p of proveedoresCatalog; track p.id) { <option [ngValue]="p.id">{{ p.nombre }}</option> }
+              </select>
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Estado libro</label>
+              <select [(ngModel)]="filtroEstadoLibroId" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest cursor-pointer">
+                <option [ngValue]="null">Todos</option>
+                @for (e of estadosLibro; track e.id) { <option [ngValue]="e.id">{{ e.nombre }}</option> }
+              </select>
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Idioma</label>
+              <select [(ngModel)]="filtroIdiomaId" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest cursor-pointer">
+                <option [ngValue]="null">Todos</option>
+                @for (i of idiomas; track i.id) { <option [ngValue]="i.id">{{ i.nombre }}</option> }
+              </select>
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Ubicación</label>
+              <input type="text" [(ngModel)]="filtroUbicacion" placeholder="Ej: A3"
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm items-end mt-sm">
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Año desde</label>
+              <input type="number" [(ngModel)]="filtroAnioDesde" placeholder="1950"
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
+            </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Año hasta</label>
+              <input type="number" [(ngModel)]="filtroAnioHasta" placeholder="2026"
+                class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
+            </div>
+            <div class="flex gap-sm items-end">
+              <button (click)="aplicarFiltros()" class="h-10 flex-1 rounded bg-primary text-on-primary font-label-sm text-label-sm cursor-pointer">Filtrar</button>
+              <button (click)="limpiarFiltros()" class="h-10 px-md rounded border border-outline-variant font-label-sm text-label-sm cursor-pointer hover:bg-surface-container-low">Limpiar</button>
+            </div>
           </div>
         </div>
         <div class="flex items-center justify-end gap-xs mb-sm">
