@@ -29,7 +29,7 @@ if (!rawUrl) {
         if (!password || typeof password !== 'string' || password.length === 0) {
             throw new Error('[db] La contrasena esta vacia tras parsear la URL.');
         }
-        poolConfig = { host, port, database, user, password, ssl: { rejectUnauthorized: false } };
+        poolConfig = { host, port, database, user, password, ssl: { rejectUnauthorized: false }, query_timeout: 15000 };
         pool = new Pool(poolConfig);
     } catch (e) {
         console.error('[db] Error parseando URL:', e.message);

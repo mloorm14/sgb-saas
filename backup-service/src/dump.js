@@ -28,7 +28,7 @@ async function runBackup(tipo, usuarioId = null) {
         const cmd = `pg_dump --format=c --file="${tempFilePath}" "${dbUrl}"`;
         
         await new Promise((resolve, reject) => {
-            const child = exec(cmd, (error, stdout, stderr) => {
+            const child = exec(cmd, { timeout: 300000 }, (error, stdout, stderr) => {
                 currentChildProcess = null;
                 if (error) {
                     console.error(`Error de pg_dump: ${stderr}`);
