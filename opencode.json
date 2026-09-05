@@ -1,13 +1,16 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "instructions": ["AGENTS.md"],
-  "mcpServers": {
+  "mcp": {
     "graphify": {
-      "command": "graphify-mcp",
-      "args": [
-        "--graph",
-        "graphify-out/graph.json"
-      ]
+      "type": "local",
+      "command": ["graphify-mcp", "--graph", "graphify-out/graph.json"],
+      "enabled": true
+    },
+    "playwright": {
+      "type": "local",
+      "command": ["npx", "-y", "@playwright/mcp@latest"],
+      "enabled": true
     }
   }
 }
