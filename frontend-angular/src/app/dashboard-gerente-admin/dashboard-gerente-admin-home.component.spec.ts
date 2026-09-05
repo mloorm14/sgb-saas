@@ -33,7 +33,7 @@ describe('DashboardGerenteAdminHomeComponent', () => {
     reservacionServiceSpy = jasmine.createSpyObj('ReservacionService', ['reservacionesDeHoy', 'cambiarEstado']);
 
     reporteServiceSpy.librosMasPrestados.and.returnValue(of(mockLibros));
-    reporteServiceSpy.morosidad.and.returnValue(of(mockMorosidad));
+    reporteServiceSpy.morosidad.and.returnValue(of({ content: mockMorosidad, totalPages: 1, totalElements: 1 }));
     reservacionServiceSpy.reservacionesDeHoy.and.returnValue(of(mockReservaciones));
     reservacionServiceSpy.cambiarEstado.and.returnValue(of({} as any));
 

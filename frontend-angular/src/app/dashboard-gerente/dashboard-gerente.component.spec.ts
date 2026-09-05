@@ -55,7 +55,7 @@ describe('DashboardGerenteComponent', () => {
 
     // Valores por defecto (happy path): los tests de error los sobrescriben.
     reporteService.librosMasPrestados.and.returnValue(of(seisLibros));
-    reporteService.morosidad.and.returnValue(of(dosMorosos));
+    reporteService.morosidad.and.returnValue(of({ content: dosMorosos, totalPages: 1, totalElements: 2 }));
     multaService.resumenFinanciero.and.returnValue(of(resumenFinanciero));
     auditoriaService.listar.and.returnValue(of(paginaAuditoria));
 
@@ -160,7 +160,7 @@ describe('DashboardGerenteComponent', () => {
     multaService = jasmine.createSpyObj('MultaService', ['resumenFinanciero']);
     auditoriaService = jasmine.createSpyObj('AuditoriaService', ['listar']);
     reporteService.librosMasPrestados.and.returnValue(of(seisLibros));
-    reporteService.morosidad.and.returnValue(of(dosMorosos));
+    reporteService.morosidad.and.returnValue(of({ content: dosMorosos, totalPages: 1, totalElements: 2 }));
     multaService.resumenFinanciero.and.returnValue(of(resumenFinanciero));
     auditoriaService.listar.and.returnValue(of(paginaAuditoria));
 

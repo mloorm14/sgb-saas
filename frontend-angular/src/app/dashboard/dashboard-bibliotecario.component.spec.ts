@@ -53,17 +53,9 @@ describe('DashboardBibliotecarioComponent', () => {
     expect(compiled.textContent).toContain('bibliotecario@correo.com');
   });
 
-  it('debería tener iniciales del usuario', () => {
-    expect(component.inicialesUsuario).toBe('BI');
-  });
-
-  it('debería mostrar nombre del rol como Bibliotecario', () => {
-    expect(component.nombreRol).toBe('Bibliotecario');
-  });
-
-  it('debería cerrar sesión al llamar cerrarSesion()', () => {
-    component.cerrarSesion();
-    expect(authService.logout).toHaveBeenCalled();
-    expect(component.mostrarMenuUsuario).toBeFalse();
+  it('debería mostrar iniciales y rol a través del shell compartido', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('BI');
+    expect(compiled.textContent).toContain('Bibliotecario');
   });
 });

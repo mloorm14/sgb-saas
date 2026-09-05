@@ -12,15 +12,23 @@ describe('ReportesComponent', () => {
     reporteService = jasmine.createSpyObj('ReporteService', [
       'librosMasPrestadosDetallado', 'morosidad', 'morosidadPdf', 'inventario', 'vencidos', 'categoriasDemandadas'
     ]);
-    reporteService.librosMasPrestadosDetallado.and.returnValue(of([
-      { libroId: 1, titulo: 'El Principito', isbn: '978987800', totalPrestamos: 12, autorNombre: 'Saint-Exupéry', categoriaNombre: 'Ficción', porcentaje: 50 }
-    ]));
-    reporteService.morosidad.and.returnValue(of([
-      { usuarioId: 4, nombre: 'Ana', apellido: 'Paz', correo: 'ana@correo.com', montoTotalAdeudado: 5.0, cantidadMultasPendientes: 1, diasAtrasoPromedio: 3 }
-    ]));
-    reporteService.inventario.and.returnValue(of([]));
-    reporteService.vencidos.and.returnValue(of([]));
-    reporteService.categoriasDemandadas.and.returnValue(of([]));
+    reporteService.librosMasPrestadosDetallado.and.returnValue(of({
+      content: [
+        { libroId: 1, titulo: 'El Principito', isbn: '978987800', totalPrestamos: 12, autorNombre: 'Saint-Exupéry', categoriaNombre: 'Ficción', porcentaje: 50 }
+      ],
+      totalPages: 1,
+      totalElements: 1
+    }));
+    reporteService.morosidad.and.returnValue(of({
+      content: [
+        { usuarioId: 4, nombre: 'Ana', apellido: 'Paz', correo: 'ana@correo.com', montoTotalAdeudado: 5.0, cantidadMultasPendientes: 1, diasAtrasoPromedio: 3 }
+      ],
+      totalPages: 1,
+      totalElements: 1
+    }));
+    reporteService.inventario.and.returnValue(of({ content: [], totalPages: 0, totalElements: 0 }));
+    reporteService.vencidos.and.returnValue(of({ content: [], totalPages: 0, totalElements: 0 }));
+    reporteService.categoriasDemandadas.and.returnValue(of({ content: [], totalPages: 0, totalElements: 0 }));
 
     await TestBed.configureTestingModule({
       imports: [ReportesComponent],

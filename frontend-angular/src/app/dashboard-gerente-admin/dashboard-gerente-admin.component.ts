@@ -1,31 +1,17 @@
-import { Component, HostListener, OnInit, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { AuthService } from '../core/services/auth.service';
+import { Component } from '@angular/core';
+import { DashboardShellComponent } from '../shared/dashboard-shell/dashboard-shell.component';
+import { SeccionSidebar } from '../shared/dashboard-shell/seccion-sidebar.model';
 
-interface EnlaceSidebar {
-  ruta: string;
-  etiqueta: string;
-  icono: string;
-  roles: string[];
-}
-
-interface SeccionSidebar {
-  titulo: string;
-  enlaces: EnlaceSidebar[];
-}
-
+// Shell compartido GERENTE/ADMIN. El filtrado por roles vive en los
+// enlaces (campo roles) y lo aplica el shell. Ruta y guards intactos.
 @Component({
   selector: 'app-dashboard-gerente-admin',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [DashboardShellComponent],
   templateUrl: './dashboard-gerente-admin.component.html',
   styles: [`:host { display: block; height: 100%; overflow: hidden; }`]
 })
-export class DashboardGerenteAdminComponent implements OnInit {
-  mostrarMenuUsuario = false;
-  isCollapsed = signal(false);
-  seccionesExpandidas = signal<Set<string>>(new Set());
-
+export class DashboardGerenteAdminComponent {
   // Espejo de los @PreAuthorize reales verificados en backend-springboot:
   // - /libros: todo el staff opera el inventario (LibroController).
   // - /sugerencias/gestion: GERENTE/ADMIN. /auditoria: solo ADMIN.
@@ -64,85 +50,4 @@ export class DashboardGerenteAdminComponent implements OnInit {
       ]
     }
   ];
-
-  constructor(private authService: AuthService) {}
-
-  ngOnInit(): void {
-    // Restaurar estado del sidebar desde localStorage
-    const saved = localStorage.getItem('sidebar:collapsed');
-    if (saved !== null) {
-      this.isCollapsed.set(saved === 'true');
-    }
-    // Restaurar secciones expandidas
-    const savedSecciones = localStorage.getItem('sidebar:secciones-expandidas');
-    if (savedSecciones) {
-      try { this.seccionesExpandidas.set(new Set(JSON.parse(savedSecciones))); } catch {}
-    }
-    // Default: todas expandidas si no hay guardado
-    if (this.seccionesExpandidas().size === 0) {
-      this.seccionesExpandidas.set(new Set(this.secciones.map(s => s.titulo)));
-    }
-  }
-
-  isMobile(): boolean {
-    return window.innerWidth < 1024;
-  }
-
-  visibles(seccion: SeccionSidebar): EnlaceSidebar[] {
-    return seccion.enlaces.filter(enlace => this.authService.hasRole(...enlace.roles));
-  }
-
-  toggleSidebar(): void {
-    this.isCollapsed.update(v => !v);
-    localStorage.setItem('sidebar:collapsed', String(this.isCollapsed()));
-    if (this.isCollapsed()) { this.mostrarMenuUsuario = false; }
-  }
-
-  onClickMenuUsuario(): void {
-    if (this.isCollapsed()) { return; }
-    this.mostrarMenuUsuario = !this.mostrarMenuUsuario;
-  }
-
-  toggleSeccion(titulo: string): void {
-    this.seccionesExpandidas.update(set => {
-      const nuevo = new Set(set);
-      nuevo.has(titulo) ? nuevo.delete(titulo) : nuevo.add(titulo);
-      localStorage.setItem('sidebar:secciones-expandidas', JSON.stringify([...nuevo]));
-      return nuevo;
-    });
-  }
-
-  estaExpandida(titulo: string): boolean {
-    return this.seccionesExpandidas().has(titulo);
-  }
-
-  @HostListener('document:click', ['$event'])
-  cerrarMenuFuera(event: Event): void {
-    const target = event.target as HTMLElement;
-    if (!target.closest('[data-menu-usuario-sidebar]')) {
-      this.mostrarMenuUsuario = false;
-    }
-  }
-
-  get correoUsuario(): string {
-    return this.authService.getCorreo() ?? '';
-  }
-
-  get inicialesUsuario(): string {
-    const correo = this.correoUsuario;
-    if (!correo) return '??';
-    const parte = correo.split('@')[0];
-    return parte.substring(0, 2).toUpperCase();
-  }
-
-  get nombreRol(): string {
-    if (this.authService.hasRole('ADMIN')) return 'Administrador';
-    if (this.authService.hasRole('GERENTE')) return 'Gerente';
-    return '';
-  }
-
-  cerrarSesion(): void {
-    this.mostrarMenuUsuario = false;
-    this.authService.logout();
-  }
 }

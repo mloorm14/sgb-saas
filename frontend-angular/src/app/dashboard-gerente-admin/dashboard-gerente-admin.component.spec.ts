@@ -43,7 +43,8 @@ describe('DashboardGerenteAdminComponent', () => {
     });
 
     it('debería mostrar nombre del rol como Gerente', () => {
-      expect(component.nombreRol).toBe('Gerente');
+      const compiled = fixture.nativeElement as HTMLElement;
+      expect(compiled.textContent).toContain('Gerente');
     });
   });
 
@@ -83,7 +84,8 @@ describe('DashboardGerenteAdminComponent', () => {
     });
 
     it('debería mostrar nombre del rol como Administrador', () => {
-      expect(component.nombreRol).toBe('Administrador');
+      const compiled = fixture.nativeElement as HTMLElement;
+      expect(compiled.textContent).toContain('Administrador');
     });
   });
 });
