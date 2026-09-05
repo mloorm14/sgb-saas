@@ -28,6 +28,7 @@ db/init/
 *.blg
 *.lof
 *.lot
+*.lol
 *.fdb_latexmk
 *.fls
 *.synctex.gz

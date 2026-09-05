@@ -4,15 +4,43 @@
 \chapter{Diseño y arquitectura del sistema}
 \label{cap:diseno-arquitectura}
 
-El modelo arquitectónico de SGB-SaaS está versionado como código fuente
+El modelo arquitectónico de SGB-SaaS, aplicando el modelo C4 descrito
+en la \autoref{sec:mt-c4}, está versionado como código fuente
 en \texttt{docs/arquitectura/workspace.dsl} (Structurizr DSL, modelo
 C4), en sus tres niveles completos -- Contexto, Contenedores y
 Componentes -- que reemplazan los diagramas estáticos sin fuente
 versionada de la Entrega~1A
 (\texttt{docs/diagramas/diagrama\_c4\_capa1.png},
-\texttt{diagrama\_c4\_capa2.jpeg}).
+\texttt{diagrama\_c4\_capa2.jpeg}). Esos dos archivos permanecen
+versionados en el repositorio como evidencia histórica del diseño
+original, pero ya no se reproducen en este documento porque estaban
+desactualizados (citaban \texttt{Google Books API} como sistema
+externo, sin integración real en el código, y el segundo no incluía el
+contenedor Redis). Las figuras siguientes son la exportación real y
+automática de \texttt{workspace.dsl} con Structurizr
+(\autoref{sec:c4-exportacion}), no una reconstrucción manual.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.85\textwidth]{arquitectura/c4-nivel1-contexto.png}
+\caption{Modelo C4, Nivel~1 (Contexto): los cinco actores del sistema
+y sus interacciones con SGB-SaaS como caja negra. Exportado
+automáticamente desde \texttt{workspace.dsl}.}
+\label{fig:c4-nivel1-contexto}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{arquitectura/c4-nivel2-contenedores.png}
+\caption{Modelo C4, Nivel~2 (Contenedores): Frontend Angular, Backend
+Spring Boot, PostgreSQL y Redis, alineados 1:1 con
+\texttt{docker-compose.yml}. Exportado automáticamente desde
+\texttt{workspace.dsl}.}
+\label{fig:c4-nivel2-contenedores}
+\end{figure}
 
 \section{Nivel 1 -- Contexto del sistema}
+\label{sec:c4-nivel1}
 
 Cinco actores interactúan con SGB-SaaS como caja negra: \textbf{Lector}
 (consulta el catálogo, reserva libros, ve su historial de préstamos y
@@ -32,13 +60,15 @@ API y Google Books API aparecían como sistemas externos en el diseño
 original y se \textbf{retiraron} del diagrama actual porque no existe
 ninguna integración con Google Books en el código real (Gemini sí se
 integró, pero como parte interna del contenedor Backend, no como un
-"sistema externo" del Nivel~1 -- ver Nivel~3 más abajo). Tampoco se
+"sistema externo" del Nivel~1 -- ver \autoref{sec:c4-nivel3} más
+abajo). Tampoco se
 diseñó nunca un endpoint de catálogo público accesible sin
 autenticación: \texttt{LibroController} exige rol \texttt{LECTOR} (o
 superior) incluso para listar libros, así que el alcance real del
 \emph{Visitante anónimo} se limita a registro e inicio de sesión.
 
 \section{Nivel 2 -- Contenedores}
+\label{sec:c4-nivel2}
 
 Cuatro contenedores, alineados 1:1 con \texttt{docker-compose.yml}:
 
@@ -56,6 +86,28 @@ Cuatro contenedores, alineados 1:1 con \texttt{docker-compose.yml}:
     revocación) y caché del listado de libros con TTL configurable
     externamente.
   \end{itemize}
+
+El diagrama entidad-relación real del esquema PostgreSQL
+(\autoref{fig:der-real}) se generó automáticamente aplicando, en orden
+numérico, las 35 migraciones Flyway de \texttt{database/migrations/}
+(\texttt{V1} a \texttt{V36}, con el hueco ya documentado en
+\texttt{V29}) sobre una instancia PostgreSQL~16 real y limpia, y
+extrayendo el esquema resultante con \texttt{eralchemy2}. El resultado
+tiene 44 tablas -- más que las 26 citadas en la enumeración de arriba,
+cifra que no se corrige aquí por quedar fuera del alcance de esta
+tarea puntual; ver nota en el reporte de esta sesión.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{diagramas/der-real.pdf}
+\caption{Diagrama entidad-relación real, generado automáticamente con
+\texttt{eralchemy2} a partir del esquema PostgreSQL reconstruido desde
+las 35 migraciones Flyway de \texttt{database/migrations/}. Reemplaza
+a \texttt{docs/diagramas/Diagrama\_ER.png}, que correspondía por error
+a un dominio clínico ajeno a este proyecto (ver OBS-21 en
+\texttt{docs/observaciones/OBSERVACIONES.md}).}
+\label{fig:der-real}
+\end{figure}
 
 Respecto al diseño original de Entrega~1A, el contenedor Redis y el
 actor Administrador son incorporaciones directas de la normalización
@@ -103,18 +155,42 @@ inventar disponibilidad) corresponden a llamadas reales entre las
 clases Java correspondientes.
 
 \subsection*{Validación sintáctica y exportación visual}
+\label{sec:c4-exportacion}
 
 El archivo se validó sintácticamente con el motor activamente mantenido
 \texttt{structurizr/structurizr} (subcomando \texttt{validate}), no con
 \texttt{structurizr/cli} -- que en este momento del ecosistema
 Structurizr es una imagen retirada que solo imprime un aviso de
 desuso y termina con código de salida~0 para cualquier entrada, válida o
-no, por lo que una validación histórica contra esa imagen no habría sido
-una validación real. El diagrama de Nivel~3 se exportó a SVG mediante el
-flujo \texttt{structurizr/structurizr export -format plantuml}
-seguido de renderizado con PlantUML, resultando en
-\texttt{docs/arquitectura/c4-nivel3-componentes.svg}, versionado junto
-al DSL fuente.
+no (confirmado también al intentar el \texttt{export} con esa imagen:
+código de salida~0 sin generar ningún archivo), por lo que una
+validación o exportación con esa imagen no habría sido real. Los tres
+niveles se exportaron con el mismo flujo activamente mantenido:
+\texttt{structurizr/structurizr export -workspace workspace.dsl
+-format plantuml}, seguido de renderizado con PlantUML
+(\texttt{plantuml/plantuml} vía Docker). El diagrama de Nivel~3
+resultó en \texttt{docs/arquitectura/c4-nivel3-componentes.svg}
+(generado en una sesión previa; se confirmó en esta sesión que sigue
+coincidiendo con el \texttt{workspace.dsl} vigente -- mismos 21
+componentes, mismas relaciones -- por lo que no fue necesario
+regenerarlo), versionado junto al DSL fuente y reproducido en la
+\autoref{fig:c4-componentes}. Los diagramas de Nivel~1 y Nivel~2 se
+exportaron en esta sesión de la misma forma, resultando en
+\texttt{docs/arquitectura/c4-nivel1-contexto.png} y
+\texttt{c4-nivel2-contenedores.png}, reproducidos en la
+\autoref{fig:c4-nivel1-contexto} y la \autoref{fig:c4-nivel2-contenedores}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{arquitectura/c4-nivel3-componentes.pdf}
+\caption{Modelo C4, Nivel~3 (Componentes) del backend Spring Boot -- 21
+componentes agrupados por dominio (capa API, capa de servicio,
+seguridad e integración externa), con sus relaciones verificadas contra
+el código real. Conversión a PDF del SVG fuente versionado en
+\texttt{docs/arquitectura/c4-nivel3-componentes.svg} (pdflatex no
+soporta SVG directamente).}
+\label{fig:c4-componentes}
+\end{figure}
 
 \section{Decisiones arquitectónicas documentadas (ADR)}
 \label{sec:adrs}
@@ -177,6 +253,7 @@ credenciales, tokens, contraseñas ni identificación personal).
 
 \section{Atributos de calidad (ISO/IEC 25010)}
 
+Aplicando el modelo de calidad descrito en la \autoref{sec:mt-25010},
 \texttt{docs/arquitectura/ISO25010.md} prioriza las 8 características de
 calidad de producto de la norma para el contexto específico de este
 proyecto (biblioteca universitaria de bajo volumen, no un sistema de
