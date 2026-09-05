@@ -54,3 +54,15 @@ Antes de realizar cualquier lectura masiva de archivos, búsquedas globales (gre
 
 - Consultá siempre el grafo de dependencias local con `graphify affected <NombreClaseOArchivo>` o mediante las herramientas del servidor MCP de Graphify.
 - Identificá con precisión los nodos impactados y leé únicamente los archivos estrictamente necesarios.
+
+## REGLAS DE USO PARA PLAYWRIGHT MCP (QA / E2E TESTING)
+
+1. **ACTIVACIÓN EXCLUSIVA BAJO DEMANDA:**
+   - QUEDA PROHIBIDO usar las herramientas de Playwright durante tareas de refactorización o corrección de código estándar. Solo activa el navegador si el usuario solicita explícitamente: "prueba la interfaz", "valida el flujo E2E" o "crea una prueba de Playwright".
+
+2. **REQUISITO PREVIO Y TOLERANCIA A COLD-START (RENDER):**
+   - Antes de ejecutar cualquier prueba de Playwright, verifica la conexión con la URL objetivo en Render.
+   - Al hacer la petición inicial, contempla un tiempo de espera (timeout) de hasta 60 segundos en el navegador para permitir que la instancia de Render despierte si estaba suspendida. Si la URL no responde tras este tiempo, informa al usuario y detén la ejecución.
+
+3. **EFICIENCIA DE CONTEXTO (OPTIMIZACIÓN DE TOKENS):**
+   - Prioriza la inspección del árbol de accesibilidad o elementos DOM específicos. Evita solicitar capturas de pantalla (`screenshot`) a menos que sea estrictamente necesario para diagnosticar un error visual.
