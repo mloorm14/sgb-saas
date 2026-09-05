@@ -364,7 +364,7 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
   moduloLabel(modulo: string): string {
     const grupos: Record<string, string> = {
       'roles': 'Roles y permisos',
-      'usuario_roles': 'Roles y permisos',
+      'usuario_roles': 'Usuario y roles',
       'permisos': 'Roles y permisos',
       'rol_permisos': 'Roles y permisos',
       'roles_permisos': 'Roles y permisos',

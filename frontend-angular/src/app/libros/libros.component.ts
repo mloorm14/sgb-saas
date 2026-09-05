@@ -152,11 +152,11 @@ export class LibrosComponent implements OnInit, OnDestroy {
     this.cargarLibros();
     this.cargarCatalogo();
 
-    this.busqueda$.pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      takeUntil(this.destroy$)
-    ).subscribe(() => { this.currentPage = 0; this.cargarLibros(); });
+  this.busqueda$.pipe(
+    debounceTime(3000),
+    distinctUntilChanged(),
+    takeUntil(this.destroy$)
+  ).subscribe(() => { this.currentPage = 0; this.cargarLibros(); });
 
     // H3: debounce ISBN — auto-lookup al completar 13 dígitos
     this.form.get('isbn')!.valueChanges.pipe(

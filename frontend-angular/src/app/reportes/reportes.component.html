@@ -584,7 +584,7 @@
             </th></tr></thead>
             <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
               @for (u of usoPaginado; track u.periodo) {
-                <tr><td class="px-md py-sm font-medium">{{ u.periodo }}</td><td class="px-md py-sm text-right">{{ u.totalPrestamos }}</td><td class="px-md py-sm text-right">{{ u.totalDevoluciones }}</td></tr>
+                <tr><td class="px-md py-sm font-medium">{{ formatearFechaHora(u.periodo) }}</td><td class="px-md py-sm text-right">{{ u.totalPrestamos }}</td><td class="px-md py-sm text-right">{{ u.totalDevoluciones }}</td></tr>
               } @empty { @if (!cargando) { <tr><td colspan="3" class="px-md py-lg text-center text-on-surface-variant">Sin datos de uso</td></tr> } }
             </tbody>
           </table>
