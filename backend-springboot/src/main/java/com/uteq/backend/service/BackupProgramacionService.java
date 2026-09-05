@@ -5,6 +5,7 @@ import com.uteq.backend.entity.BackupProgramacion;
 import com.uteq.backend.entity.Usuario;
 import com.uteq.backend.repository.BackupProgramacionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
+import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -40,6 +41,22 @@ public class BackupProgramacionService {
         this.usuarioRepo = usuarioRepo;
         this.taskScheduler = taskScheduler;
         this.backupService = backupService;
+    }
+
+    /**
+     * Revive las programaciones activas al arrancar el servidor.
+     * Sin esto, un reinicio/suspensión (Render free) borra los
+     * TaskScheduler en memoria y los automáticos dejan de correr.
+     */
+    @PostConstruct
+    public void inicializarTareasProgramadas() {
+        progRepo.findByActivoTrueOrderByUltimaEjecucionDesc().forEach(p -> {
+            try {
+                programarEjecucion(p.getId());
+            } catch (Exception e) {
+                System.err.println("No se pudo reprogramar backup id=" + p.getId() + ": " + e.getMessage());
+            }
+        });
     }
 
     // ---------- CRUD simples ----------
