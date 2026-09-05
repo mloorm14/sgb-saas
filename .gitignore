@@ -42,3 +42,6 @@ live-bundle*.js
 graphify-out/
 graph.json
 graph.html
+
+# SonarQube scanner local
+.scannerwork/
