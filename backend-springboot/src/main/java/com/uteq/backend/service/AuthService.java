@@ -47,6 +47,7 @@ public class AuthService {
     private static final String ESTADO_VERIFICADO = "ACTIVO";
     private static final String TABLA_USUARIOS = "usuarios";
     private static final String TABLA_SESIONES = "sesiones";
+    private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado: ";
 
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
@@ -120,7 +121,7 @@ public class AuthService {
     // sin forma de verificar su correo salvo intervención manual en Postgres.
     public void reenviarCodigo(String correo) {
         Usuario usuario = usuarioRepository.findByCorreo(correo)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Usuario no encontrado: " + correo));
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo));
         if (usuario.isCorreoVerificado() || !ESTADO_INICIAL.equals(usuario.getEstado().getNombre())) {
             throw new IllegalArgumentException("El correo ya está verificado o la cuenta no requiere verificación.");
         }
@@ -133,7 +134,7 @@ public class AuthService {
     // y lo envía por correo via EmailService (SMTP/Brevo best-effort).
     public void solicitarReset(String correo) {
         Usuario usuario = usuarioRepository.findByCorreo(correo)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Usuario no encontrado: " + correo));
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo));
         String key = "reset-codigo:" + correo;
         String codigo = String.format("%06d", new java.security.SecureRandom().nextInt(1_000_000));
         try {
@@ -171,7 +172,9 @@ public class AuthService {
         usuario.setPasswordHash(passwordEncoder.encode(nuevaPassword));
         usuario.setActualizadoEn(Instant.now());
         usuarioRepository.save(usuario);
-        try { redisTemplate.delete(key); } catch (Exception ignored) {}
+          try { redisTemplate.delete(key); } catch (Exception ignored) {
+              // best-effort: si Redis cae, el reseteo ya se completó en BD
+          }
         log.info("Password reseteado para {}", correo);
     }
 
@@ -183,7 +186,7 @@ public class AuthService {
         verificacionCorreoService.validar(correo, codigo);
 
         Usuario usuario = usuarioRepository.findByCorreo(correo)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado: " + correo));
+                .orElseThrow(() -> new IllegalArgumentException(USUARIO_NO_ENCONTRADO + correo));
         EstadoUsuario estadoActivo = estadoUsuarioRepository.findByNombre(ESTADO_VERIFICADO)
                 .orElseThrow(() -> new IllegalStateException("Catalogo estados_usuario sin fila '" + ESTADO_VERIFICADO + "'"));
 
@@ -224,7 +227,7 @@ public class AuthService {
         }
 
         Usuario usuario = usuarioRepository.findByCorreo(dto.correo())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + dto.correo()));
+                .orElseThrow(() -> new RuntimeException(USUARIO_NO_ENCONTRADO + dto.correo()));
 
         // Login exitoso: resetea el contador de fallos de esta combinación
         // correo+IP -- no se penaliza a alguien que se equivocó una vez y

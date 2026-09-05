@@ -56,7 +56,15 @@ public class BackupController {
     public ResponseEntity<List<BackupResumenDTO>> listar(@RequestParam(required = false) String desde, @RequestParam(required = false) String hasta) {
         OffsetDateTime d = desde != null ? parseFlexible(desde) : null;
         OffsetDateTime h = hasta != null ? parseFlexible(hasta) : null;
-        List<Backup> lista = (d != null || h != null) ? backupService.listarPorRango(d != null ? d : OffsetDateTime.now().minusDays(30), h != null ? h : OffsetDateTime.now()) : backupService.listarTodos();
+        OffsetDateTime ahora = OffsetDateTime.now();
+        List<Backup> lista;
+        if (d != null || h != null) {
+            OffsetDateTime desdeEfectivo = d != null ? d : ahora.minusDays(30);
+            OffsetDateTime hastaEfectivo = h != null ? h : ahora;
+            lista = backupService.listarPorRango(desdeEfectivo, hastaEfectivo);
+        } else {
+            lista = backupService.listarTodos();
+        }
         return ResponseEntity.ok(lista.stream().map(b -> new BackupResumenDTO(b.getId(), b.getCreadoEn(), b.getDesde(), b.getHasta(), b.getTablas(), b.getFormato(), b.getTamanoBytes(), b.getEstado(), b.getTipo())).toList());
     }
 
@@ -120,8 +128,9 @@ public class BackupController {
     public ResponseEntity<Map<String, Object>> ejecutarAhora(@PathVariable Long id) {
         BackupProgramacion p = progService.obtener(id);
         // Ejecutar backup inmediato con el rango correspondiente
-        OffsetDateTime ahora = OffsetDateTime.now();
-        OffsetDateTime desde, hasta;
+          OffsetDateTime ahora = OffsetDateTime.now();
+          OffsetDateTime desde;
+          OffsetDateTime hasta;
         if (p.getCadaHoras() != null) {
             desde = ahora.minusHours(p.getCadaHoras());
             hasta = ahora;
@@ -148,18 +157,38 @@ public class BackupController {
         String tipo; // "manual" o "automatico", default "manual"
     }
     @Data @NoArgsConstructor @AllArgsConstructor
-    public static class BackupResponseDTO {
-        Long id; OffsetDateTime creadoEn; OffsetDateTime desde; OffsetDateTime hasta; Set<String> tablas; String formato; String ruta; Long tamanoBytes; String estado; String tipo; String urlDescarga;
-    }
-    @Data @NoArgsConstructor @AllArgsConstructor
-    public static class BackupResumenDTO {
-        Long id; OffsetDateTime creadoEn; OffsetDateTime desde; OffsetDateTime hasta; Set<String> tablas; String formato; Long tamanoBytes; String estado; String tipo;
-    }
+      public static class BackupResponseDTO {
+          Long id;
+          OffsetDateTime creadoEn;
+          OffsetDateTime desde;
+          OffsetDateTime hasta;
+          Set<String> tablas;
+          String formato;
+          String ruta;
+          Long tamanoBytes;
+          String estado;
+          String tipo;
+          String urlDescarga;
+      }
+      @Data @NoArgsConstructor @AllArgsConstructor
+      public static class BackupResumenDTO {
+          Long id;
+          OffsetDateTime creadoEn;
+          OffsetDateTime desde;
+          OffsetDateTime hasta;
+          Set<String> tablas;
+          String formato;
+          Long tamanoBytes;
+          String estado;
+          String tipo;
+      }
 
     private static OffsetDateTime parseFlexible(String text) {
         if (text == null || text.isBlank()) return null;
         text = text.trim().replace(' ', 'T');
-        try { return OffsetDateTime.parse(text); } catch (Exception ignored) {}
+          try { return OffsetDateTime.parse(text); } catch (Exception ignored) {
+              // best-effort: se intenta el siguiente formato flexible
+          }
         try {
             java.time.format.DateTimeFormatter fmt = new java.time.format.DateTimeFormatterBuilder()
                     .append(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE).appendLiteral('T').appendPattern("HH:mm")

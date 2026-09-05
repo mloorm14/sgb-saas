@@ -3,6 +3,7 @@ package com.uteq.backend.chatbot;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.uteq.backend.chatbot.tool.AbstractUsuarioAwareTool;
 import com.uteq.backend.dto.MensajeChatHistorialDTO;
 import com.uteq.backend.dto.MensajeChatRequestDTO;
 import com.uteq.backend.dto.MensajeChatResponseDTO;
@@ -272,13 +273,13 @@ public class ChatbotOrchestrator {
      */
     private JsonNode inyectarUsuarioIdSiRequerido(String toolName, JsonNode args, Long usuarioId) {
         if (toolRegistry.requiresUserId(toolName)) {
-            if (args == null || args.isNull() || !args.has("usuario_id") || args.path("usuario_id").asLong(0) == 0) {
+            if (args == null || args.isNull() || !args.has(AbstractUsuarioAwareTool.USUARIO_ID) || args.path(AbstractUsuarioAwareTool.USUARIO_ID).asLong(0) == 0) {
                 ObjectNode argsConUsuario = mapper.createObjectNode();
                 if (args != null && !args.isNull()) {
                     // Copiar campos existentes
                     args.fields().forEachRemaining(entry -> argsConUsuario.set(entry.getKey(), entry.getValue()));
                 }
-                argsConUsuario.put("usuario_id", usuarioId);
+                argsConUsuario.put(AbstractUsuarioAwareTool.USUARIO_ID, usuarioId);
                 log.debug("Inyectado usuario_id={} en tool {}", usuarioId, toolName);
                 return argsConUsuario;
             }

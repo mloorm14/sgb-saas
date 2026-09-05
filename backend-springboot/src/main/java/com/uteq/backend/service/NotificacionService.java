@@ -43,6 +43,7 @@ public class NotificacionService {
     private static final String ROL_LECTOR = "LECTOR";
     private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado: ";
     private static final String TIPO_NO_ENCONTRADO = "Catalogo tipos_notificacion sin fila '";
+    private static final String CIERRE_DIV = "</div>";
 
     private final NotificacionRepository notificacionRepo;
     private final TipoNotificacionRepository tipoNotificacionRepo;
@@ -144,7 +145,7 @@ public class NotificacionService {
                 + "<div style=\"background:#1a237e;color:white;padding:24px;text-align:center;\">"
                 + "<h1 style=\"margin:0;font-size:22px;\">Sistema de Gestion Bibliotecaria</h1>"
                 + "<p style=\"margin:8px 0 0;font-size:14px;opacity:0.9;\">Comprobante de Pago de Multa</p>"
-                + "</div>"
+                + CIERRE_DIV
                 + "<div style=\"padding:24px;\">"
                 + "<p style=\"color:#555;font-size:13px;margin:0 0 16px;\">Fecha: <strong>" + fechaHora + "</strong></p>"
                 + "<p style=\"color:#555;font-size:13px;margin:0 0 4px;\">Cliente: <strong>"
@@ -158,12 +159,12 @@ public class NotificacionService {
                 + "<div style=\"background:#e8f5e9;border-radius:8px;padding:16px;text-align:center;margin-top:20px;\">"
                 + "<p style=\"margin:0;color:#2e7d32;font-size:13px;\">Estado del pago</p>"
                 + "<p style=\"margin:4px 0 0;color:#1b5e20;font-size:18px;font-weight:bold;\">REGISTRADO</p>"
-                + "</div>"
-                + "</div>"
+                + CIERRE_DIV
+                + CIERRE_DIV
                 + "<div style=\"background:#f5f5f5;padding:16px;text-align:center;font-size:11px;color:#999;\">"
                 + "Sistema de Gestion Bibliotecaria &copy; " + java.time.Year.now().getValue()
-                + "</div>"
-                + "</div>";
+                + CIERRE_DIV
+                + CIERRE_DIV;
 
         crearYEnviar(usuarioId, null, idDelTipo(TIPO_COMPROBANTE_PAGO), html, asunto);
     }
@@ -193,7 +194,13 @@ public class NotificacionService {
         notificacion.setTipoNotificacionId(tipoNotificacionId);
         notificacion.setMensaje(mensaje);
         notificacion.setEnviadoOk(enviado);
-        notificacion.setErrorEnvio(enviado ? null : (error != null ? error : "Fallo envio correo disponible"));
+        if (enviado) {
+            notificacion.setErrorEnvio(null);
+        } else if (error != null) {
+            notificacion.setErrorEnvio(error);
+        } else {
+            notificacion.setErrorEnvio("Fallo envio correo disponible");
+        }
         notificacion.setFechaEnvio(enviado ? OffsetDateTime.now() : null);
         notificacion.setCreadoEn(OffsetDateTime.now());
         notificacionRepo.save(notificacion);

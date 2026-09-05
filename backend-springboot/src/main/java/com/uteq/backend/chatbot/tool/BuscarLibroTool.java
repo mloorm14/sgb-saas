@@ -17,6 +17,8 @@ import java.util.List;
 @Component
 public class BuscarLibroTool extends AbstractChatbotTool {
 
+    private static final String PARAM_QUERY = "query";
+
     private final LibroService libroService;
 
     public BuscarLibroTool(LibroService libroService) {
@@ -43,12 +45,12 @@ public class BuscarLibroTool extends AbstractChatbotTool {
         ObjectNode queryProp = mapper.createObjectNode();
         queryProp.put("type", "string");
         queryProp.put("description", "Título, autor o tema a buscar (ej: 'Clean Code', 'machine learning')");
-        properties.set("query", queryProp);
+        properties.set(PARAM_QUERY, queryProp);
 
         schema.set("properties", properties);
 
         ArrayNode required = mapper.createArrayNode();
-        required.add("query");
+        required.add(PARAM_QUERY);
         schema.set("required", required);
 
         return schema;
@@ -56,7 +58,7 @@ public class BuscarLibroTool extends AbstractChatbotTool {
 
     @Override
     public JsonNode execute(JsonNode args) {
-        String query = args.path("query").asText("");
+        String query = args.path(PARAM_QUERY).asText("");
         List<LibroSugerenciaDTO> resultados = libroService.sugerir(query);
 
         ArrayNode resultadosArray = mapper.createArrayNode();

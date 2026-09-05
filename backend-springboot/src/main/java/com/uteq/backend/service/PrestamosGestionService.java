@@ -4,9 +4,12 @@ import com.uteq.backend.dto.HistorialPrestamoDTO;
 import com.uteq.backend.dto.ReservaActivaDTO;
 import com.uteq.backend.dto.UsuarioPrestamosGestionDTO;
 import com.uteq.backend.dto.UsuarioSugerenciaDTO;
+import com.uteq.backend.entity.Autor;
+import com.uteq.backend.entity.Categoria;
 import com.uteq.backend.entity.Libro;
 import com.uteq.backend.entity.Prestamo;
 import com.uteq.backend.entity.Reservacion;
+import com.uteq.backend.entity.Rol;
 import com.uteq.backend.entity.Usuario;
 import com.uteq.backend.repository.EstadoMultaRepository;
 import com.uteq.backend.repository.EstadoPrestamoRepository;
@@ -119,7 +122,7 @@ public class PrestamosGestionService {
                 usuario.getIdentificacionUsuario(),
                 usuario.getCorreo(),
                 usuario.getRoles().stream()
-                        .map(rol -> rol.getNombre())
+                        .map(Rol::getNombre)
                         .sorted()
                         .toList(),
                 usuario.getEstado().getNombre(),
@@ -168,7 +171,7 @@ public class PrestamosGestionService {
                 libro.getId(),
                 libro.getTitulo(),
                 libro.getAutores().stream()
-                        .map(autor -> autor.getNombre())
+                        .map(Autor::getNombre)
                         .sorted()
                         .toList(),
                 libro.getIsbn(),
@@ -180,7 +183,7 @@ public class PrestamosGestionService {
                 libro.getStockTotal(),
                 libro.getUbicacionFisica(),
                 libro.getCategorias().stream()
-                        .map(cat -> cat.getNombre())
+                        .map(Categoria::getNombre)
                         .sorted()
                         .toList(),
                 libro.getPortadaImagen() != null || (libro.getPortadaUrl() != null && !libro.getPortadaUrl().isBlank()));

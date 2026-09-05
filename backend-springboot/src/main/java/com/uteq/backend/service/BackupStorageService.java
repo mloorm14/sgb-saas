@@ -57,23 +57,40 @@ public class BackupStorageService {
     private String sanitize(String k) { return k.replace("/", "_").replace("\\", "_"); }
     private byte[] encrypt(byte[] plain) {
         try {
-            byte[] kb = decodeKey(); SecretKeySpec ks = new SecretKeySpec(kb, "AES");
-            byte[] iv = new byte[GCM_IV_LENGTH]; new SecureRandom().nextBytes(iv);
-            Cipher c = Cipher.getInstance(AES_GCM); c.init(Cipher.ENCRYPT_MODE, ks, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
-            byte[] ct = c.doFinal(plain); byte[] out = new byte[iv.length + ct.length]; System.arraycopy(iv,0,out,0,iv.length); System.arraycopy(ct,0,out,iv.length,ct.length); return out;
+            byte[] kb = decodeKey();
+            SecretKeySpec ks = new SecretKeySpec(kb, "AES");
+            byte[] iv = new byte[GCM_IV_LENGTH];
+            new SecureRandom().nextBytes(iv);
+            Cipher c = Cipher.getInstance(AES_GCM);
+            c.init(Cipher.ENCRYPT_MODE, ks, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
+            byte[] ct = c.doFinal(plain);
+            byte[] out = new byte[iv.length + ct.length];
+            System.arraycopy(iv,0,out,0,iv.length);
+            System.arraycopy(ct,0,out,iv.length,ct.length);
+            return out;
         } catch (Exception e) { throw new RuntimeException("Error al encriptar respaldo", e); }
     }
     private byte[] decrypt(byte[] enc) {
         try {
-            byte[] kb = decodeKey(); SecretKeySpec ks = new SecretKeySpec(kb, "AES");
-            byte[] iv = new byte[GCM_IV_LENGTH]; System.arraycopy(enc,0,iv,0,GCM_IV_LENGTH);
-            byte[] ct = new byte[enc.length - GCM_IV_LENGTH]; System.arraycopy(enc,GCM_IV_LENGTH,ct,0,ct.length);
-            Cipher c = Cipher.getInstance(AES_GCM); c.init(Cipher.DECRYPT_MODE, ks, new GCMParameterSpec(GCM_TAG_LENGTH, iv)); return c.doFinal(ct);
+            byte[] kb = decodeKey();
+            SecretKeySpec ks = new SecretKeySpec(kb, "AES");
+            byte[] iv = new byte[GCM_IV_LENGTH];
+            System.arraycopy(enc,0,iv,0,GCM_IV_LENGTH);
+            byte[] ct = new byte[enc.length - GCM_IV_LENGTH];
+            System.arraycopy(enc,GCM_IV_LENGTH,ct,0,ct.length);
+            Cipher c = Cipher.getInstance(AES_GCM);
+            c.init(Cipher.DECRYPT_MODE, ks, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
+            return c.doFinal(ct);
         } catch (Exception e) { throw new RuntimeException("Error al desencriptar respaldo", e); }
     }
-    private byte[] decodeKey() {
-        String k = encryptionKey.trim();
-        try { byte[] d = Base64.getDecoder().decode(k); if (d.length==32) return d; } catch (IllegalArgumentException ignored) {}
-        byte[] raw = k.getBytes(java.nio.charset.StandardCharsets.UTF_8); byte[] out = new byte[32]; System.arraycopy(raw,0,out,0,Math.min(raw.length,32)); return out;
-    }
+      private byte[] decodeKey() {
+          String k = encryptionKey.trim();
+          try { byte[] d = Base64.getDecoder().decode(k); if (d.length==32) return d; } catch (IllegalArgumentException ignored) {
+              // best-effort: si no es Base64 se deriva del texto plano abajo
+          }
+          byte[] raw = k.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+          byte[] out = new byte[32];
+          System.arraycopy(raw,0,out,0,Math.min(raw.length,32));
+          return out;
+      }
 }

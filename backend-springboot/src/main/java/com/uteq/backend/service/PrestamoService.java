@@ -66,6 +66,8 @@ public class PrestamoService {
     private static final String ESTADO_RESERVA_RETIRADA = "RETIRADA";
     private static final String CLAVE_DIAS_PRESTAMO_DEFAULT = "dias_prestamo_default";
     private static final String CLAVE_MAX_RENOVACIONES_DEFAULT = "max_renovaciones_default";
+    private static final String CATALOGO_ESTADOS_RESERVA = "Catálogo estados_reservacion sin fila '";
+    private static final String PRESTAMO_MSG = "El préstamo ";
 
     private final PrestamoRepository prestamoRepo;
     private final PrestamoProcedureRepository prestamoProcRepo;
@@ -151,7 +153,7 @@ public class PrestamoService {
         List<Integer> idsVigentes = ESTADOS_RESERVA_VIGENTE.stream()
                 .map(nombre -> estadoReservacionRepo.findByNombre(nombre)
                         .orElseThrow(() -> new IllegalStateException(
-                                "Catálogo estados_reservacion sin fila '" + nombre + "'"))
+                                CATALOGO_ESTADOS_RESERVA + nombre + "'"))
                         .getId())
                 .toList();
         if (!idsVigentes.contains(reservacion.getEstadoReservacionId())) {
@@ -230,12 +232,12 @@ public class PrestamoService {
 
         if (ESTADO_DEVUELTO.equals(nombreEstadoPrestamo(prestamo.getEstadoPrestamoId()))) {
             throw new IllegalArgumentException(
-                    "El préstamo " + prestamoId + " ya fue devuelto, no se puede renovar.");
+                    PRESTAMO_MSG + prestamoId + " ya fue devuelto, no se puede renovar.");
         }
 
         if (prestamo.getFechaDevolucionEstimada().isBefore(OffsetDateTime.now())) {
             throw new PrestamoVencidoException(
-                    "El préstamo " + prestamoId + " está vencido, no se puede renovar.");
+                    PRESTAMO_MSG + prestamoId + " está vencido, no se puede renovar.");
         }
 
         int maxRenovaciones = configuracionSistemaService.obtenerValorEntero(CLAVE_MAX_RENOVACIONES_DEFAULT);
@@ -270,7 +272,7 @@ public class PrestamoService {
         List<Integer> idsEstadosVigentes = ESTADOS_RESERVA_VIGENTE.stream()
                 .map(nombre -> estadoReservacionRepo.findByNombre(nombre)
                         .orElseThrow(() -> new IllegalStateException(
-                                "Catálogo estados_reservacion sin fila '" + nombre + "'"))
+                                CATALOGO_ESTADOS_RESERVA + nombre + "'"))
                         .getId())
                 .toList();
         return reservacionRepo.existsByLibroIdAndEstadoReservacionIdInAndUsuarioIdNot(
@@ -299,7 +301,7 @@ public class PrestamoService {
     private Integer idEstadoReservacion(String nombre) {
         return estadoReservacionRepo.findByNombre(nombre)
                 .orElseThrow(() -> new IllegalStateException(
-                        "Catálogo estados_reservacion sin fila '" + nombre + "'"))
+                        CATALOGO_ESTADOS_RESERVA + nombre + "'"))
                 .getId();
     }
 

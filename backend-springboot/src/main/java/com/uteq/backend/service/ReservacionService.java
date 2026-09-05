@@ -33,10 +33,7 @@ public class ReservacionService {
     private static final String ESTADO_INICIAL = "PENDIENTE";
     private static final String ROL_LECTOR = "LECTOR";
     private static final String TABLA_RESERVACIONES = "reservaciones";
-
-    // Valor pendiente para el limite que pueda retirar un libro prestado
-    // quedara con un día de limite para retirar un libro pedido.
-    private static final int DIAS_LIMITE_RETIRO = 1;
+    private static final String CATALOGO_SIN_FILA = "Catálogo estados_reservacion sin fila '";
 
     private final ReservacionRepository reservacionRepo;
     private final EstadoReservacionRepository estadoReservacionRepo;
@@ -72,7 +69,9 @@ public class ReservacionService {
 
     private void validarLimiteReservas(Long usuarioId) {
         int max = 3;
-        try { max = configuracionSistemaService.obtenerValorEntero("max_reservas_por_usuario"); } catch (Exception ignored) {}
+          try { max = configuracionSistemaService.obtenerValorEntero("max_reservas_por_usuario"); } catch (Exception ignored) {
+              // best-effort: se usa el valor por defecto si falla la config
+          }
         long activas = reservacionRepo.countByUsuarioIdAndEstadoReservacionIdIn(usuarioId, List.of(1, 2));
         if (activas >= max) {
             throw new IllegalStateException("Has alcanzado el máximo de " + max + " reservas activas. Cancela o retira una para reservar otra.");
@@ -105,7 +104,9 @@ public class ReservacionService {
 
         // Fecha limite: usa hora_limite_retiro_reserva (ej 18:00) del dia elegido
         String horaLimiteStr = "18:00";
-        try { String v = configuracionSistemaService.obtenerValor("hora_limite_retiro_reserva"); if (v != null && !v.isBlank()) horaLimiteStr = v.trim(); } catch (Exception ignored) {}
+          try { String v = configuracionSistemaService.obtenerValor("hora_limite_retiro_reserva"); if (v != null && !v.isBlank()) horaLimiteStr = v.trim(); } catch (Exception ignored) {
+              // best-effort: se usa la hora por defecto si falla la config
+          }
         LocalTime horaLimite = LocalTime.parse(horaLimiteStr.length()==5?horaLimiteStr+":00":horaLimiteStr);
         if (dto.fechaRetiro() != null) {
             if (dto.fechaRetiro().isBefore(ahora)) {
@@ -147,8 +148,7 @@ public class ReservacionService {
         // RF-10, documentado en el resumen de la rama).
         EstadoReservacion estadoInicial = estadoReservacionRepo.findByNombre(ESTADO_INICIAL)
                 .orElseThrow(() -> new EstadoReservacionInicialNoConfiguradoException(
-                        "Catálogo estados_reservacion sin fila '" + ESTADO_INICIAL + "'"));
-        if (!estadoInicial.getId().equals(reservacion.getEstadoReservacionId())) {
+                        CATALOGO_SIN_FILA + ESTADO_INICIAL + "'"));if (!estadoInicial.getId().equals(reservacion.getEstadoReservacionId())) {
             throw new IllegalStateException(
                     "Solo se puede aceptar o rechazar una reservación pendiente.");
         }

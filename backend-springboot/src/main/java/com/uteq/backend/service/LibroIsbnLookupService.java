@@ -44,6 +44,8 @@ public class LibroIsbnLookupService {
     private static final String ERROR_GOOGLE =
             "No se pudo encontrar información de ese libro";
     private static final Pattern ANIO_PATTERN = Pattern.compile("^(\\d{4})");
+    private static final String CAMPO_COVER = "cover";
+    private static final String CAMPO_MEDIUM = "medium";
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
@@ -145,7 +147,7 @@ public class LibroIsbnLookupService {
                 Matcher m = ANIO_PATTERN.matcher(publishDate);
                 if (m.find()) anio = Integer.parseInt(m.group(1));
             }
-            boolean portada = data.has("cover") && !data.path("cover").path("medium").isMissingNode();
+            boolean portada = data.has(CAMPO_COVER) && !data.path(CAMPO_COVER).path(CAMPO_MEDIUM).isMissingNode();
             String editorial = null;
             JsonNode pubs = data.path("publishers");
             if (pubs.isArray() && pubs.size() > 0) editorial = pubs.get(0).path("name").asText(null);
@@ -197,8 +199,8 @@ public class LibroIsbnLookupService {
                 JsonNode root = objectMapper.readTree(json);
                 JsonNode data = root.path("ISBN:" + limpio);
                 if (!data.isMissingNode() && !data.isEmpty()) {
-                    if (data.has("cover") && !data.path("cover").path("medium").isMissingNode()) {
-                        String coverUrl = data.path("cover").path("medium").asText();
+                    if (data.has(CAMPO_COVER) && !data.path(CAMPO_COVER).path(CAMPO_MEDIUM).isMissingNode()) {
+                        String coverUrl = data.path(CAMPO_COVER).path(CAMPO_MEDIUM).asText();
                         byte[] bytes = restClient.get()
                                 .uri(coverUrl)
                                 .retrieve()

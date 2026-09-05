@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public abstract class AbstractUsuarioAwareTool extends AbstractChatbotTool {
 
     /** Nombre del parámetro de usuario en schemas y respuestas. */
-    protected static final String USUARIO_ID = "usuario_id";
+    public static final String USUARIO_ID = "usuario_id";
 
     @Override
     public JsonNode getInputSchema() {

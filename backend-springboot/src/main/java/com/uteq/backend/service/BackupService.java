@@ -25,19 +25,23 @@ import java.util.zip.ZipOutputStream;
 public class BackupService {
 
     private static final int MAX_DIAS = 30;
+    private static final String TABLA_RESERVAS = "reservas";
+    private static final String TABLA_RESERVACIONES = "reservaciones";
+    private static final String TABLA_BITACORA = "bitacora_auditoria";
+    private static final String TABLA_AUDITORIA = "auditoria";
     private static final Set<String> TABLAS_PERMITIDAS = Set.of(
-            "prestamos", "reservas", "reservaciones", "multas", "libros", "usuarios",
-            "bitacora_auditoria", "auditoria", "configuracion_sistema",
+            "prestamos", TABLA_RESERVAS, TABLA_RESERVACIONES, "multas", "libros", "usuarios",
+            TABLA_BITACORA, TABLA_AUDITORIA, "configuracion_sistema",
             "notificaciones", "favoritos", "sugerencias_adquisicion", "categorias", "autores"
     );
 
     private static final Map<String, String> TABLA_COL = Map.ofEntries(
             Map.entry("prestamos", "fecha_prestamo"),
-            Map.entry("reservas", "fecha_reserva"),
-            Map.entry("reservaciones", "fecha_reserva"),
+            Map.entry(TABLA_RESERVAS, "fecha_reserva"),
+            Map.entry(TABLA_RESERVACIONES, "fecha_reserva"),
             Map.entry("multas", "fecha_generada"),
-            Map.entry("bitacora_auditoria", "fecha_hora"),
-            Map.entry("auditoria", "fecha_hora"),
+            Map.entry(TABLA_BITACORA, "fecha_hora"),
+            Map.entry(TABLA_AUDITORIA, "fecha_hora"),
             Map.entry("libros", "fecha_registro"),
             Map.entry("usuarios", "fecha_registro"),
             Map.entry("notificaciones", "creado_en"),
@@ -201,7 +205,9 @@ public class BackupService {
     @Transactional
     public void eliminar(Long id) {
         Backup b = obtenerPorId(id);
-        try { storageService.delete(b.getRuta()); } catch (Exception ignored) {}
+          try { storageService.delete(b.getRuta()); } catch (Exception ignored) {
+              // best-effort: el registro se elimina aunque falle el storage
+          }
         backupRepository.delete(b);
     }
 

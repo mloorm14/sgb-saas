@@ -4,7 +4,6 @@ import com.uteq.backend.entity.Backup;
 import com.uteq.backend.entity.BackupProgramacion;
 import com.uteq.backend.entity.Usuario;
 import com.uteq.backend.repository.BackupProgramacionRepository;
-import com.uteq.backend.repository.BackupRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,11 +23,9 @@ import java.util.concurrent.ScheduledFuture;
 public class BackupProgramacionService {
 
     private final BackupProgramacionRepository progRepo;
-    private final BackupRepository backupRepo;
     private final UsuarioRepository usuarioRepo;
     private final TaskScheduler taskScheduler;
     private final BackupService backupService;
-    private final BackupStorageService storageService;
 
     @Value("${app.backup.r2.bucket:}")
     private String bucket;
@@ -36,17 +33,13 @@ public class BackupProgramacionService {
     private final Map<Long, ScheduledFuture<?>> programacionesActivas = new HashMap<>();
 
     public BackupProgramacionService(BackupProgramacionRepository progRepo,
-                                     BackupRepository backupRepo,
-                                     UsuarioRepository usuarioRepo,
-                                     TaskScheduler taskScheduler,
-                                     BackupService backupService,
-                                     BackupStorageService storageService) {
+                                      UsuarioRepository usuarioRepo,
+                                      TaskScheduler taskScheduler,
+                                      BackupService backupService) {
         this.progRepo = progRepo;
-        this.backupRepo = backupRepo;
         this.usuarioRepo = usuarioRepo;
         this.taskScheduler = taskScheduler;
         this.backupService = backupService;
-        this.storageService = storageService;
     }
 
     // ---------- CRUD simples ----------
@@ -57,7 +50,7 @@ public class BackupProgramacionService {
 
     public BackupProgramacion obtener(Long id) {
         return progRepo.findById(id)
-                .filter(p -> Boolean.TRUE.equals(p.getActivo()))
+                .filter(prog -> Boolean.TRUE.equals(prog.getActivo()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Programación no encontrada " + id));
     }
 
@@ -72,7 +65,7 @@ public class BackupProgramacionService {
 
     public void actualizarUltimaEjecucion(Long id, OffsetDateTime fecha) {
         BackupProgramacion existing = progRepo.findById(id)
-                .filter(P -> Boolean.TRUE.equals(P.getActivo()))
+                .filter(prog -> Boolean.TRUE.equals(prog.getActivo()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Programación no encontrada " + id));
         existing.setUltimaEjecucion(fecha);
         progRepo.save(existing);
@@ -80,7 +73,7 @@ public class BackupProgramacionService {
 
     public void eliminar(Long id) {
         BackupProgramacion p = progRepo.findById(id)
-                .filter(P -> Boolean.TRUE.equals(P.getActivo()))
+                .filter(prog -> Boolean.TRUE.equals(prog.getActivo()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Programación no encontrada " + id));
         p.setActivo(false);
         progRepo.save(p);
@@ -125,7 +118,7 @@ public class BackupProgramacionService {
      */
     public ScheduledFuture<?> programarEjecucion(Long id) {
         BackupProgramacion p = progRepo.findById(id)
-                .filter(P -> Boolean.TRUE.equals(P.getActivo()))
+                .filter(prog -> Boolean.TRUE.equals(prog.getActivo()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Programación no encontrada " + id));
 
         if (!Boolean.TRUE.equals(p.getActivo())) return null;
@@ -190,7 +183,7 @@ public class BackupProgramacionService {
      */
     private void ejecutarBackupProgramado(Long id) {
         BackupProgramacion p = progRepo.findById(id)
-                .filter(P -> Boolean.TRUE.equals(P.getActivo()))
+                .filter(prog -> Boolean.TRUE.equals(prog.getActivo()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Programación no encontrada " + id));
 
         if (!Boolean.TRUE.equals(p.getActivo())) {
@@ -212,7 +205,8 @@ public class BackupProgramacionService {
             // Para cadaHoras: usamos el rango desde la hora actual hasta + cadaHoras
             // Para cadaDias: usamos desde 00:00 hace X días hasta ahora
             OffsetDateTime ahora = OffsetDateTime.now();
-            OffsetDateTime desde, hasta;
+            OffsetDateTime desde;
+            OffsetDateTime hasta;
 
             if (p.getCadaHoras() != null) {
                 // Cada X horas: desde hace X horas hasta ahora

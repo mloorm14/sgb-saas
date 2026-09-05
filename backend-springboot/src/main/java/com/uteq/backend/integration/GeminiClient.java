@@ -36,6 +36,8 @@ public class GeminiClient {
             "El asistente está saturado, intenta en unos segundos.";
     private static final String MENSAJE_FALLBACK_GENERICO =
             "No se pudo obtener respuesta del asistente, intenta de nuevo.";
+    private static final String CLAVE_PARTS = "parts";
+    private static final String CLAVE_FUNCTION_CALL = "functionCall";
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
@@ -148,10 +150,10 @@ public class GeminiClient {
                     JsonNode argsNode = objectMapper.readTree(argsJson);
                     contents.add(Map.of(
                             "role", "model",
-                            "parts", List.of(Map.of("functionCall", Map.of("name", name, "args", argsNode)))));
+                            CLAVE_PARTS, List.of(Map.of(CLAVE_FUNCTION_CALL, Map.of("name", name, "args", argsNode)))));
                 } catch (Exception ex) {
                     log.warn("No se pudo parsear FunctionCall: {}", contenido);
-                    contents.add(Map.of("role", rol, "parts", List.of(Map.of("text", contenido))));
+                    contents.add(Map.of("role", rol, CLAVE_PARTS, List.of(Map.of("text", contenido))));
                 }
             } else if (contenido != null && contenido.startsWith("[FunctionResponse:") && contenido.endsWith("]")) {
                 // Parsear: [FunctionResponse:nombre:{...}]
@@ -163,15 +165,15 @@ public class GeminiClient {
                     JsonNode resultNode = objectMapper.readTree(resultJson);
                     contents.add(Map.of(
                             "role", "user",
-                            "parts", List.of(Map.of("functionResponse", Map.of("name", name, "response", resultNode)))));
+                            CLAVE_PARTS, List.of(Map.of("functionResponse", Map.of("name", name, "response", resultNode)))));
                 } catch (Exception ex) {
                     log.warn("No se pudo parsear FunctionResponse: {}", contenido);
-                    contents.add(Map.of("role", rol, "parts", List.of(Map.of("text", contenido))));
+                    contents.add(Map.of("role", rol, CLAVE_PARTS, List.of(Map.of("text", contenido))));
                 }
             } else {
                 contents.add(Map.of(
                         "role", rol,
-                        "parts", List.of(Map.of("text", contenido != null ? contenido : ""))));
+                        CLAVE_PARTS, List.of(Map.of("text", contenido != null ? contenido : ""))));
             }
         }
 
@@ -180,12 +182,12 @@ public class GeminiClient {
                 || !mensajeNuevo.equals(historial.get(historial.size() - 1).getContenido())) {
             contents.add(Map.of(
                     "role", "user",
-                    "parts", List.of(Map.of("text", mensajeNuevo))));
+                    CLAVE_PARTS, List.of(Map.of("text", mensajeNuevo))));
         }
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("contents", contents);
-        body.put("systemInstruction", Map.of("parts", List.of(Map.of("text", promptSistema))));
+        body.put("systemInstruction", Map.of(CLAVE_PARTS, List.of(Map.of("text", promptSistema))));
 
         if (tools != null && !tools.isEmpty()) {
             body.put("tools", tools);
@@ -224,7 +226,7 @@ public class GeminiClient {
 
             JsonNode candidate = candidates.get(0);
             JsonNode content = candidate.path("content");
-            JsonNode parts = content.path("parts");
+            JsonNode parts = content.path(CLAVE_PARTS);
 
             if (!parts.isArray() || parts.isEmpty()) {
                 log.warn("Respuesta de Gemini sin parts: {}", respuestaJson);
@@ -233,8 +235,8 @@ public class GeminiClient {
 
             // Verificar si hay functionCall
             JsonNode firstPart = parts.get(0);
-            if (firstPart.has("functionCall")) {
-                JsonNode functionCall = firstPart.path("functionCall");
+        if (firstPart.has(CLAVE_FUNCTION_CALL)) {
+            JsonNode functionCall = firstPart.path(CLAVE_FUNCTION_CALL);
                 String name = functionCall.path("name").asText("");
                 JsonNode args = functionCall.path("args");
                 log.info("Gemini solicitó functionCall: {} con args: {}", name, args);

@@ -15,6 +15,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -54,7 +55,7 @@ public class AuditoriaService {
         // este mapeo se resuelve acá, no con un JOIN FETCH en el repositorio.
         Set<Long> idsUsuarios = pagina.getContent().stream()
                 .map(BitacoraAuditoria::getUsuarioId)
-                .filter(id -> id != null)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         Map<Long, String> correoPorId = usuarioRepo.findAllById(idsUsuarios).stream()
                 .collect(Collectors.toMap(Usuario::getId, Usuario::getCorreo));

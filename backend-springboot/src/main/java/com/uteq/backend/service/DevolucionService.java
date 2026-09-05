@@ -20,7 +20,6 @@ import com.uteq.backend.entity.Usuario;
 import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.EvidenciaDanoRepository;
 import com.uteq.backend.repository.EstadoMultaRepository;
-import com.uteq.backend.repository.EstadoPrestamoRepository;
 import com.uteq.backend.repository.LibroRepository;
 import com.uteq.backend.repository.MultaRepository;
 import com.uteq.backend.repository.PrestamoProcedureRepository;
@@ -30,6 +29,8 @@ import com.uteq.backend.repository.RegistroDanoRepository;
 import com.uteq.backend.repository.TipoDanoRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,16 +42,19 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 public class DevolucionService {
 
+    private static final Logger log = LoggerFactory.getLogger(DevolucionService.class);
+
     private static final String PRESTAMO_NO_ENCONTRADO = "Prestamo no encontrado: ";
     private static final String ESTADO_MULTA_PENDIENTE = "PENDIENTE";
     private static final String TABLA_REGISTRO_DANOS = "registro_danos";
-    private static final String TABLA_PRESTAMOS = "prestamos";
+    private static final String NOMBRE_DESCONOCIDO = "Desconocido";
     private static final int LIMITE_HISTORIAL = 10;
     private static final String CLAVE_MAX_TAMANO_EVIDENCIA_MB = "max_tamano_evidencia_mb";
     private static final Set<String> TIPOS_EVIDENCIA_PERMITIDOS = Set.of(
@@ -60,7 +64,6 @@ public class DevolucionService {
     private final PrestamoProcedureRepository prestamoProcRepo;
     private final UsuarioRepository usuarioRepo;
     private final LibroRepository libroRepo;
-    private final EstadoPrestamoRepository estadoPrestamoRepo;
     private final EstadoMultaRepository estadoMultaRepo;
     private final MultaRepository multaRepo;
     private final TipoDanoRepository tipoDanoRepo;
@@ -74,7 +77,6 @@ public class DevolucionService {
                              PrestamoProcedureRepository prestamoProcRepo,
                              UsuarioRepository usuarioRepo,
                              LibroRepository libroRepo,
-                             EstadoPrestamoRepository estadoPrestamoRepo,
                              EstadoMultaRepository estadoMultaRepo,
                              MultaRepository multaRepo,
                              TipoDanoRepository tipoDanoRepo,
@@ -87,7 +89,6 @@ public class DevolucionService {
         this.prestamoProcRepo = prestamoProcRepo;
         this.usuarioRepo = usuarioRepo;
         this.libroRepo = libroRepo;
-        this.estadoPrestamoRepo = estadoPrestamoRepo;
         this.estadoMultaRepo = estadoMultaRepo;
         this.multaRepo = multaRepo;
         this.tipoDanoRepo = tipoDanoRepo;
@@ -128,10 +129,13 @@ public class DevolucionService {
 
         // precio_base obligatorio para cálculo porcentaje
         BigDecimal precioLibro = BigDecimal.ZERO;
-        try {
-            Libro lib = libroRepo.findById(prestamo.getLibroId()).orElse(null);
-            if (lib != null && lib.getPrecioBase() != null) precioLibro = lib.getPrecioBase();
-        } catch (Exception ignored) {}
+          try {
+              Libro lib = libroRepo.findById(prestamo.getLibroId()).orElse(null);
+              if (lib != null && lib.getPrecioBase() != null) precioLibro = lib.getPrecioBase();
+          } catch (Exception e) {
+              // best-effort: sin precio base la multa por daño se calcula en cero
+              log.debug("No se pudo resolver precio base del libro {}", prestamo.getLibroId(), e);
+          }
 
         if (hayDanos || esPerdido) {
             RegistroDano registro = new RegistroDano();
@@ -159,7 +163,7 @@ public class DevolucionService {
                         } else {
                             // fallback para tests que usan precioCobrado directo
                             cobrado = item.precioCobrado() != null ? item.precioCobrado() : BigDecimal.ZERO;
-                            nombreDano = "Desconocido";
+                            nombreDano = NOMBRE_DESCONOCIDO;
                         }
                     } else {
                         // daño custom (nombreCustom) - valor viene del front como fijo
@@ -206,9 +210,7 @@ public class DevolucionService {
                 multaDano.setObservaciones("Dano registrado: " + dto.estadoDevolucion());
                 multaRepo.save(multaDano);
 
-                if (huboMultaAtraso != null && huboMultaAtraso) {
-                    Usuario usuario = usuarioRepo.findById(prestamo.getUsuarioId()).orElse(null);
-                }
+                // (lookup de usuario removido: su resultado se descartaba sin uso)
             }
 
             registrarAuditoria(bibliotecarioId, registro.getId(),
@@ -221,7 +223,7 @@ public class DevolucionService {
             Usuario bibliotecario = usuarioRepo.findById(bibliotecarioId).orElse(null);
             String nombreBiblio = bibliotecario != null
                     ? (bibliotecario.getNombre() + " " + bibliotecario.getApellido()).trim()
-                    : "Desconocido";
+                    : NOMBRE_DESCONOCIDO;
 
             registrarAuditoria(bibliotecarioId, prestamoId,
                     "Devolucion prestamo " + prestamoId
@@ -280,7 +282,7 @@ public class DevolucionService {
         Usuario bibliotecario = usuarioRepo.findById(bibliotecarioId).orElse(null);
         String nombreBiblio = bibliotecario != null
                 ? (bibliotecario.getNombre() + " " + bibliotecario.getApellido()).trim()
-                : "Desconocido";
+                : NOMBRE_DESCONOCIDO;
 
         List<Long> registroIds = registros.stream().map(RegistroDano::getId).toList();
         Map<Long, BigDecimal> multasPorRegistro = calcularMultasPorRegistro(registroIds);
@@ -296,7 +298,7 @@ public class DevolucionService {
                     p.getId(),
                     l != null ? l.getTitulo() : "Libro #" + p.getLibroId(),
                     l != null ? l.getIsbn() : "",
-                    u != null ? (u.getNombre() + " " + u.getApellido()).trim() : "Desconocido",
+                    u != null ? (u.getNombre() + " " + u.getApellido()).trim() : NOMBRE_DESCONOCIDO,
                     p.getFechaPrestamo(),
                     p.getFechaDevolucionEstimada(),
                     p.getFechaDevolucionReal(),
@@ -304,19 +306,16 @@ public class DevolucionService {
                     multasPorRegistro.getOrDefault(rd.getId(), BigDecimal.ZERO),
                     nombreBiblio,
                     rd.getFechaRegistro());
-        }).filter(rd -> rd != null).toList();
+        }).filter(Objects::nonNull).toList();
     }
 
     private Map<Long, BigDecimal> calcularMultasPorRegistro(List<Long> registroIds) {
         if (registroIds.isEmpty()) return Map.of();
 
-        Map<Long, BigDecimal> resultado = new java.util.HashMap<>();
-
-        List<Multa> multas = multaRepo.findAll().stream()
-                .filter(m -> m.getObservaciones() != null && m.getObservaciones().contains("Dano registrado"))
-                .toList();
-
-        return resultado;
+        // NOTA: retorna mapa vacío a propósito (las multas por daño se
+        // registran sueltas, sin vínculo al registro). Si a futuro se
+        // vinculan, poblar aquí agrupando por registro.
+        return Map.of();
     }
 
     private void registrarAuditoria(Long ejecutorId, Long registroId, String detalles) {

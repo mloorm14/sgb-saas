@@ -341,7 +341,9 @@ public class LibroService {
         LibroResponseDTO resultado = toDTO(libroRepo.save(libro));
         registrarAuditoria(null, "UPDATE", id, "Libro actualizado: " + dto.titulo());
         if (stockAntes == 0 && dto.stockDisponible() != null && dto.stockDisponible() > 0 && suscripcionDisponibilidadService != null) {
-            try { suscripcionDisponibilidadService.notificarDisponibles(id); } catch (Exception ignored) {}
+              try { suscripcionDisponibilidadService.notificarDisponibles(id); } catch (Exception ignored) {
+                  // best-effort: la actualización del libro ya se guardó
+              }
         }
         return resultado;
     }

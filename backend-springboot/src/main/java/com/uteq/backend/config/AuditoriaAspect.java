@@ -49,6 +49,8 @@ public class AuditoriaAspect {
                                     .setParameter("id", u.getId().toString())
                                     .getSingleResult();
                         } catch (Exception ignored) {
+                            // best-effort: si falla set_config, la operación
+                            // de negocio continúa y el trigger registra NULL
                         }
                     });
                 }
