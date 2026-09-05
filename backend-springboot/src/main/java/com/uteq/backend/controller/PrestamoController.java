@@ -263,27 +263,50 @@ public class PrestamoController {
     }
 
     // ── GET /api/v1/prestamos/reportes/inventario ─────────
-    // Paginacion real server-side para escalar a 50k+ libros: solo la pagina solicitada via LIMIT/OFFSET en DB
+    // Paginacion real + 8 filtros gerenciales (categoria/editorial/año/stock/ubicacion/proveedor/estado/idioma)
     @GetMapping("/reportes/inventario")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<Page<ReporteInventarioResponseDTO>> reporteInventario(
             @RequestParam(required = false) Integer categoriaId,
             @RequestParam(required = false) String estadoStock,
             @RequestParam(required = false) String busqueda,
+            @RequestParam(required = false) Integer editorialId,
+            @RequestParam(required = false) Integer proveedorId,
+            @RequestParam(required = false) Integer estadoLibroId,
+            @RequestParam(required = false) Integer idiomaId,
+            @RequestParam(required = false) Short anioDesde,
+            @RequestParam(required = false) Short anioHasta,
+            @RequestParam(required = false) Short stockTotalMin,
+            @RequestParam(required = false) Short stockTotalMax,
+            @RequestParam(required = false) Short stockDispMin,
+            @RequestParam(required = false) Short stockDispMax,
+            @RequestParam(required = false) String ubicacion,
             @PageableDefault(size = 20, sort = "titulo") Pageable pageable) {
-        return ResponseEntity.ok(
-                prestamoService.reporteInventarioPaginado(categoriaId, estadoStock, busqueda, pageable));
+        return ResponseEntity.ok(prestamoService.reporteInventarioPaginado(
+                categoriaId, estadoStock, busqueda, editorialId, proveedorId, estadoLibroId, idiomaId,
+                anioDesde, anioHasta, stockTotalMin, stockTotalMax, stockDispMin, stockDispMax, ubicacion, pageable));
     }
 
-    // Compatibilidad: endpoint sin paginacion para PDF/Excel (carga completa, usar con cuidado)
     @GetMapping("/reportes/inventario/todo")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<List<ReporteInventarioResponseDTO>> reporteInventarioTodo(
             @RequestParam(required = false) Integer categoriaId,
             @RequestParam(required = false) String estadoStock,
-            @RequestParam(required = false) String busqueda) {
-        return ResponseEntity.ok(
-                prestamoService.reporteInventario(categoriaId, estadoStock, busqueda));
+            @RequestParam(required = false) String busqueda,
+            @RequestParam(required = false) Integer editorialId,
+            @RequestParam(required = false) Integer proveedorId,
+            @RequestParam(required = false) Integer estadoLibroId,
+            @RequestParam(required = false) Integer idiomaId,
+            @RequestParam(required = false) Short anioDesde,
+            @RequestParam(required = false) Short anioHasta,
+            @RequestParam(required = false) Short stockTotalMin,
+            @RequestParam(required = false) Short stockTotalMax,
+            @RequestParam(required = false) Short stockDispMin,
+            @RequestParam(required = false) Short stockDispMax,
+            @RequestParam(required = false) String ubicacion) {
+        return ResponseEntity.ok(prestamoService.reporteInventario(
+                categoriaId, estadoStock, busqueda, editorialId, proveedorId, estadoLibroId, idiomaId,
+                anioDesde, anioHasta, stockTotalMin, stockTotalMax, stockDispMin, stockDispMax, ubicacion));
     }
 
     // ── GET /api/v1/prestamos/reportes/vencidos ───────────

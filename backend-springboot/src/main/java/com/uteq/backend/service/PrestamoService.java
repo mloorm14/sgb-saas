@@ -510,6 +510,49 @@ public class PrestamoService {
         return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
     }
 
+    // Sobrecarga con 8 filtros gerenciales (V44)
+    @Transactional(readOnly = true)
+    public List<ReporteInventarioResponseDTO> reporteInventario(
+            Integer categoriaId, String estadoStock, String busqueda,
+            Integer editorialId, Integer proveedorId, Integer estadoLibroId, Integer idiomaId,
+            Short anioDesde, Short anioHasta, Short stockTotalMin, Short stockTotalMax,
+            Short stockDispMin, Short stockDispMax, String ubicacion) {
+        return prestamoProcRepo.fnReporteInventario(categoriaId, estadoStock, busqueda,
+                        editorialId, proveedorId, estadoLibroId, idiomaId, anioDesde, anioHasta,
+                        stockTotalMin, stockTotalMax, stockDispMin, stockDispMax, ubicacion).stream()
+                .map(p -> new ReporteInventarioResponseDTO(
+                        p.getLibroId(), p.getTitulo(), p.getIsbn(), p.getAutorNombre(), p.getCategoriaNombre(),
+                        p.getStockTotal(), p.getStockDisponible(), p.getEstadoDisponibilidad(),
+                        p.getEditorialNombre(), p.getProveedorNombre(), p.getIdiomaNombre(), p.getEstadoLibroNombre(),
+                        p.getAnioPublicacion(), p.getUbicacionFisica()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ReporteInventarioResponseDTO> reporteInventarioPaginado(
+            Integer categoriaId, String estadoStock, String busqueda,
+            Integer editorialId, Integer proveedorId, Integer estadoLibroId, Integer idiomaId,
+            Short anioDesde, Short anioHasta, Short stockTotalMin, Short stockTotalMax,
+            Short stockDispMin, Short stockDispMax, String ubicacion, Pageable pageable) {
+        int limit = pageable.getPageSize();
+        int offset = (int) pageable.getOffset();
+        List<ReporteInventarioProjection> projections =
+                prestamoProcRepo.fnReporteInventarioPaginado(categoriaId, estadoStock, busqueda,
+                        editorialId, proveedorId, estadoLibroId, idiomaId, anioDesde, anioHasta,
+                        stockTotalMin, stockTotalMax, stockDispMin, stockDispMax, ubicacion, limit, offset);
+        long total = prestamoProcRepo.countReporteInventario(categoriaId, estadoStock, busqueda,
+                        editorialId, proveedorId, estadoLibroId, idiomaId, anioDesde, anioHasta,
+                        stockTotalMin, stockTotalMax, stockDispMin, stockDispMax, ubicacion);
+        List<ReporteInventarioResponseDTO> content = projections.stream()
+                .map(p -> new ReporteInventarioResponseDTO(
+                        p.getLibroId(), p.getTitulo(), p.getIsbn(), p.getAutorNombre(), p.getCategoriaNombre(),
+                        p.getStockTotal(), p.getStockDisponible(), p.getEstadoDisponibilidad(),
+                        p.getEditorialNombre(), p.getProveedorNombre(), p.getIdiomaNombre(), p.getEstadoLibroNombre(),
+                        p.getAnioPublicacion(), p.getUbicacionFisica()))
+                .toList();
+        return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
+    }
+
     @Transactional(readOnly = true)
     public List<ReporteVencidosResponseDTO> reportePrestamosVencidos(Integer diasAtrasoMin, String busqueda) {
         return prestamoProcRepo.fnReportePrestamosVencidos(diasAtrasoMin, busqueda).stream()

@@ -40,6 +40,12 @@ export interface ReporteInventario {
   stockTotal: number;
   stockDisponible: number;
   estadoDisponibilidad: string;
+  editorialNombre?: string;
+  proveedorNombre?: string;
+  idiomaNombre?: string;
+  estadoLibroNombre?: string;
+  anioPublicacion?: number;
+  ubicacionFisica?: string;
 }
 
 export interface ReporteVencidos {
@@ -115,14 +121,28 @@ export class ReporteService {
     );
   }
 
-  inventario(categoriaId?: number, estadoStock?: string, busqueda?: string, page?: number, size?: number): Observable<{ content: ReporteInventario[]; totalPages: number; totalElements: number }> {
+  inventario(categoriaId?: number, estadoStock?: string, busqueda?: string, page?: number, size?: number,
+             editorialId?: number, proveedorId?: number, estadoLibroId?: number, idiomaId?: number,
+             anioDesde?: number, anioHasta?: number, stockTotalMin?: number, stockTotalMax?: number,
+             stockDispMin?: number, stockDispMax?: number, ubicacion?: string
+  ): Observable<{ content: ReporteInventario[]; totalPages: number; totalElements: number }> {
     const params: Record<string, string> = {};
     if (categoriaId) params['categoriaId'] = categoriaId.toString();
     if (estadoStock) params['estadoStock'] = estadoStock;
     if (busqueda) params['busqueda'] = busqueda;
+    if (editorialId) params['editorialId'] = String(editorialId);
+    if (proveedorId) params['proveedorId'] = String(proveedorId);
+    if (estadoLibroId) params['estadoLibroId'] = String(estadoLibroId);
+    if (idiomaId) params['idiomaId'] = String(idiomaId);
+    if (anioDesde) params['anioDesde'] = String(anioDesde);
+    if (anioHasta) params['anioHasta'] = String(anioHasta);
+    if (stockTotalMin !== undefined) params['stockTotalMin'] = String(stockTotalMin);
+    if (stockTotalMax !== undefined) params['stockTotalMax'] = String(stockTotalMax);
+    if (stockDispMin !== undefined) params['stockDispMin'] = String(stockDispMin);
+    if (stockDispMax !== undefined) params['stockDispMax'] = String(stockDispMax);
+    if (ubicacion) params['ubicacion'] = ubicacion;
     if (page !== undefined) params['page'] = String(page);
     if (size !== undefined) params['size'] = String(size);
-    // Backend ahora es Page, pero si no se manda page/size devuelve Page con size 20 por defecto
     return this.http.get<{ content: ReporteInventario[]; totalPages: number; totalElements: number }>(`${this.apiUrl}/inventario`, { params }).pipe(
       catchError(err => this.manejarError(err))
     );
