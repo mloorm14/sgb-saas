@@ -1,0 +1,11 @@
+backend-springboot/target/
+frontend-angular/node_modules/
+frontend-angular/dist/
+frontend-angular/.angular/
+build/
+db/init/
+docs/*.aux
+docs/*.pdf
+.git/
+.ipynb_checkpoints/
+*.log

@@ -37,3 +37,8 @@ db/init/
 
 # Scratch files de verificación de bundle (temporales, no versionar)
 live-bundle*.js
+
+# Graphify MCP Local Artefacts
+graphify-out/
+graph.json
+graph.html
