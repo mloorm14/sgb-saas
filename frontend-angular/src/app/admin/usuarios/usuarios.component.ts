@@ -252,8 +252,15 @@ export class UsuariosComponent implements OnInit {
       },
       error: (err) => {
         this.enviandoEstado = false;
-        this.errorModal = (err as { error?: { detail?: string } })?.error?.detail
+        const detail = (err as { error?: { detail?: string } })?.error?.detail
           || 'Error al cambiar el estado del usuario';
+        this.errorModal = detail;
+        // Fix 404 fantasma: purga fila stale y cierra modal si el usuario ya no existe
+        if ((err as { status?: number })?.status === 404) {
+          this.toast.error('No encontrado', detail);
+          this.cerrarModalEstado();
+          this.cargarPagina();
+        }
       }
     });
   }
@@ -327,6 +334,10 @@ export class UsuariosComponent implements OnInit {
         },
         error: (err) => {
           this.errorMsg = err?.error?.detail ?? 'Error al eliminar el usuario';
+          if ((err as { status?: number })?.status === 404) {
+            this.toast.error('No encontrado', this.errorMsg);
+            this.cargarPagina();
+          }
         }
       });
     });

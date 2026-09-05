@@ -50,6 +50,17 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
             @org.springframework.data.repository.query.Param("creadoPor") Long creadoPor,
             Pageable pageable);
 
+    // Fix 404 Admin usuarios (Bloquear/Eliminar): fetch con JOIN FETCH evita
+    // LazyInitialization en findById sin tocar paginación de buscarConFiltros.
+    @org.springframework.data.jpa.repository.Query(
+            "SELECT u FROM Usuario u LEFT JOIN FETCH u.estado LEFT JOIN FETCH u.roles WHERE u.id = :id")
+    Optional<Usuario> findByIdWithEstadoAndRoles(
+            @org.springframework.data.repository.query.Param("id") Long id);
+
+    // Case-insensitive para resolver ejecutor desde JWT (evita 404 fantasma si
+    // correo viene con mayúsculas/espacios).
+    Optional<Usuario> findByCorreoIgnoreCase(String correo);
+
     // Auto-eliminación de cuentas no verificados: borra usuarios cuyo
     // correo no fue verificado dentro de las últimas 24 horas. Invocado
     // periódicamente por UsuarioScheduler.
