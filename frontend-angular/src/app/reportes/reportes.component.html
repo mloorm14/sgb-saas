@@ -90,6 +90,13 @@
               <input type="number" min="1" max="100" [(ngModel)]="limiteTop"
                 class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest" />
             </div>
+            <div>
+              <label class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Categoría</label>
+              <select [(ngModel)]="filtroLibrosCategoriaId" class="w-full h-10 px-sm rounded border border-outline-variant font-body-sm text-body-sm bg-surface-container-lowest cursor-pointer">
+                <option [ngValue]="null">Todas</option>
+                @for (c of categoriasCatalog; track c.id) { <option [ngValue]="c.id">{{ c.nombre }}</option> }
+              </select>
+            </div>
             <div class="flex gap-sm">
               <button (click)="aplicarFiltros()" class="h-10 flex-1 rounded bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center gap-xs cursor-pointer">
                 <span class="material-symbols-outlined text-[18px]">filter_alt</span> Filtrar
