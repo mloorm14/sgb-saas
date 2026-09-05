@@ -93,7 +93,7 @@ public class BackupController {
         return ResponseEntity.ok(Map.of(
                 "id", programacion.getId(),
                 "activo", Boolean.TRUE.equals(programacion.getActivo()),
-                "mensaje", "Programación activa para backup id=" + id));
+                "mensaje", "Programación de respaldo activada exitosamente"));
     }
 
     @DeleteMapping("/{id}")
@@ -145,7 +145,7 @@ public class BackupController {
         return ResponseEntity.ok(Map.of(
                 "id", backup.getId(),
                 "programacionId", p.getId(),
-                "mensaje", "Backup ejecutado id=" + backup.getId()));
+                "mensaje", "El respaldo se ejecutó y guardó correctamente"));
     }
 
     @Data @NoArgsConstructor @AllArgsConstructor
