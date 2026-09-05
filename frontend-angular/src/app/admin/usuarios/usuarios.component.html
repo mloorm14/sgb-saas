@@ -288,7 +288,7 @@
         <h2 id="titulo-estado-usuario" class="font-headline-md text-headline-md text-on-background mb-xs">
           {{ nuevoEstado === 'INACTIVO' ? 'Bloquear' : 'Activar' }} a {{ usuarioAccion.nombre }} {{ usuarioAccion.apellido }}
         </h2>
-        <p class="font-body-sm text-body-sm text-on-surface-variant mb-md">El motivo queda registrado en la bitácora de auditoría — es obligatorio.</p>
+        <p class="font-body-sm text-body-sm text-on-surface-variant mb-md">El motivo es obligatorio.</p>
         <label for="motivo-estado-usuario" class="font-label-sm text-label-sm text-on-surface-variant block mb-xs">Motivo (máx. 255 caracteres)</label>
         <textarea id="motivo-estado-usuario" rows="3" maxlength="255" [(ngModel)]="motivoEstado"
           placeholder="Ej: solicitud del propio usuario, incumplimiento de política..."
