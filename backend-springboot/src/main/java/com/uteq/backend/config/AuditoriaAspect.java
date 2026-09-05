@@ -11,8 +11,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 /**
- * Fija SET LOCAL app.current_user_id antes de cada servicio transaccional
- * que modifica tablas auditadas. El trigger fn_auditoria_generica() lee
+ * Fija app.current_user_id (via set_config, equivalente a SET LOCAL)
+ * antes de cada servicio transaccional que modifica tablas auditadas.
+ * El trigger fn_auditoria_generica() lee
  * current_setting('app.current_user_id', true) en la misma transaccion/
  * conexion y deja de insertar usuario_id=NULL (bug "Sistema" robot).
  */
@@ -38,9 +39,15 @@ public class AuditoriaAspect {
                 if (correo != null && correo.contains("@")) {
                     usuarioRepository.findByCorreo(correo).ifPresent(u -> {
                         try {
-                            entityManager.createNativeQuery("SET LOCAL app.current_user_id = :id")
+                            // set_config() en vez de SET LOCAL: PostgreSQL/JDBC
+                            // no admite bind parameters ($1) en sentencias
+                            // utilitarias como SET LOCAL ("syntax error at
+                            // near $1" -> 503, ver fix ea1847f). Al ser
+                            // llamada a funcion, set_config si acepta :id.
+                            entityManager.createNativeQuery(
+                                            "SELECT set_config('app.current_user_id', CAST(:id AS text), true)")
                                     .setParameter("id", u.getId().toString())
-                                    .executeUpdate();
+                                    .getSingleResult();
                         } catch (Exception ignored) {
                         }
                     });
