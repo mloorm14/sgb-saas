@@ -113,7 +113,7 @@ class UsuarioAdminServiceTest {
         Usuario usuarioObjetivo = usuario(5L, "lector@correo.com", "LECTOR", "ACTIVO");
         Usuario admin = usuario(9L, "admin@correo.com", "ADMIN", "ACTIVO");
 
-        given(usuarioRepo.findById(5L)).willReturn(Optional.of(usuarioObjetivo));
+        given(usuarioRepo.findByIdWithEstadoAndRoles(5L)).willReturn(Optional.of(usuarioObjetivo));
         given(rolRepo.findByNombre("BIBLIOTECARIO")).willReturn(Optional.of(rol("BIBLIOTECARIO")));
         given(authentication.getName()).willReturn("admin@correo.com");
         given(usuarioRepo.findByCorreo("admin@correo.com")).willReturn(Optional.of(admin));
@@ -132,7 +132,7 @@ class UsuarioAdminServiceTest {
 
     @Test
     void cambiarRol_conUsuarioInexistente_lanzaEntityNotFound() {
-        given(usuarioRepo.findById(404L)).willReturn(Optional.empty());
+        given(usuarioRepo.findByIdWithEstadoAndRoles(404L)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.cambiarRol(404L, "ADMIN", authentication))
                 .isInstanceOf(EntityNotFoundException.class);
@@ -141,7 +141,7 @@ class UsuarioAdminServiceTest {
     @Test
     void cambiarRol_conRolInexistenteEnCatalogo_lanzaIllegalArgument() {
         Usuario usuarioObjetivo = usuario(5L, "lector@correo.com", "LECTOR", "ACTIVO");
-        given(usuarioRepo.findById(5L)).willReturn(Optional.of(usuarioObjetivo));
+        given(usuarioRepo.findByIdWithEstadoAndRoles(5L)).willReturn(Optional.of(usuarioObjetivo));
         given(rolRepo.findByNombre("SUPERVISOR")).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.cambiarRol(5L, "SUPERVISOR", authentication))
@@ -156,7 +156,7 @@ class UsuarioAdminServiceTest {
         Usuario usuarioObjetivo = usuario(5L, "lector@correo.com", "LECTOR", "ACTIVO");
         Usuario admin = usuario(9L, "admin@correo.com", "ADMIN", "ACTIVO");
 
-        given(usuarioRepo.findById(5L)).willReturn(Optional.of(usuarioObjetivo));
+        given(usuarioRepo.findByIdWithEstadoAndRoles(5L)).willReturn(Optional.of(usuarioObjetivo));
         given(estadoUsuarioRepo.findByNombre("INACTIVO")).willReturn(Optional.of(estado("INACTIVO")));
         given(authentication.getName()).willReturn("admin@correo.com");
         given(usuarioRepo.findByCorreo("admin@correo.com")).willReturn(Optional.of(admin));
@@ -173,7 +173,7 @@ class UsuarioAdminServiceTest {
     @Test
     void cambiarEstado_conEstadoInexistenteEnCatalogo_lanzaIllegalArgument() {
         Usuario usuarioObjetivo = usuario(5L, "lector@correo.com", "LECTOR", "ACTIVO");
-        given(usuarioRepo.findById(5L)).willReturn(Optional.of(usuarioObjetivo));
+        given(usuarioRepo.findByIdWithEstadoAndRoles(5L)).willReturn(Optional.of(usuarioObjetivo));
         given(estadoUsuarioRepo.findByNombre("SUSPENDIDO")).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.cambiarEstado(5L, "SUSPENDIDO", "motivo", authentication))
@@ -183,7 +183,7 @@ class UsuarioAdminServiceTest {
 
     @Test
     void cambiarEstado_conUsuarioInexistente_lanzaEntityNotFoundYNoConsultaEstados() {
-        given(usuarioRepo.findById(404L)).willReturn(Optional.empty());
+        given(usuarioRepo.findByIdWithEstadoAndRoles(404L)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.cambiarEstado(404L, "INACTIVO", "motivo", authentication))
                 .isInstanceOf(EntityNotFoundException.class);
@@ -236,7 +236,7 @@ class UsuarioAdminServiceTest {
         comoGerente("gerente@correo.com", 7L);
         Usuario objetivo = usuario(5L, "lector@correo.com", "LECTOR", "ACTIVO");
         objetivo.setCreadoPor(99L);
-        given(usuarioRepo.findById(5L)).willReturn(Optional.of(objetivo));
+        given(usuarioRepo.findByIdWithEstadoAndRoles(5L)).willReturn(Optional.of(objetivo));
         given(rolRepo.findByNombre("BIBLIOTECARIO")).willReturn(Optional.of(rol("BIBLIOTECARIO")));
 
         assertThatThrownBy(() -> service.cambiarRol(5L, "BIBLIOTECARIO", authentication))
@@ -248,7 +248,7 @@ class UsuarioAdminServiceTest {
         comoGerente("gerente@correo.com", 7L);
         Usuario objetivo = usuario(5L, "lector@correo.com", "LECTOR", "ACTIVO");
         objetivo.setCreadoPor(7L);
-        given(usuarioRepo.findById(5L)).willReturn(Optional.of(objetivo));
+        given(usuarioRepo.findByIdWithEstadoAndRoles(5L)).willReturn(Optional.of(objetivo));
         given(estadoUsuarioRepo.findByNombre("INACTIVO")).willReturn(Optional.of(estado("INACTIVO")));
 
         service.cambiarEstado(5L, "INACTIVO", "Baja", authentication);

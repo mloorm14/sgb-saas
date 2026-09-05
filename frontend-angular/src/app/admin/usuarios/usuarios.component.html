@@ -101,7 +101,7 @@
               @if (puedeGestionar) {
                 <select [ngModel]="usuario.roles[0]"
                   (ngModelChange)="cambiarRol(usuario, $event)"
-                  class="h-9 px-sm rounded border border-outline-variant font-label-sm text-label-sm bg-surface-container-lowest cursor-pointer">
+                  class="h-9 pl-sm pr-8 rounded border border-outline-variant font-label-sm text-label-sm bg-surface-container-lowest cursor-pointer appearance-none">
                   @for (rol of rolesParaSelect; track rol) {
                     <option [ngValue]="rol">{{ rol }}</option>
                   }
@@ -159,7 +159,7 @@
                       </button>
                     }
                   </div>
-                  @if (esAdmin) {
+                  @if (esAdmin && usuario.estado !== 'INACTIVO') {
                     <button (click)="eliminarDefinitivo(usuario)" aria-label="Eliminar"
                       class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-error-container text-error border border-error cursor-pointer">
                       <span class="material-symbols-outlined text-[18px]">delete</span>

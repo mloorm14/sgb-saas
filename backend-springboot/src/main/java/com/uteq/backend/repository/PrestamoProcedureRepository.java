@@ -191,28 +191,44 @@ public interface PrestamoProcedureRepository extends Repository<Prestamo, Long> 
             @Param("p_ubicacion") String ubicacion
     );
 
-    @Query(value = "SELECT * FROM fn_reporte_prestamos_vencidos(:p_dias_atraso_min, :p_busqueda)",
+    @Query(value = "SELECT * FROM fn_reporte_prestamos_vencidos(CAST(:p_dias_atraso_min AS INTEGER), CAST(:p_busqueda AS TEXT), CAST(:p_dias_atraso_max AS INTEGER))",
             nativeQuery = true)
     List<ReporteVencidosProjection> fnReportePrestamosVencidos(
             @Param("p_dias_atraso_min") Integer diasAtrasoMin,
-            @Param("p_busqueda") String busqueda
+            @Param("p_busqueda") String busqueda,
+            @Param("p_dias_atraso_max") Integer diasAtrasoMax
     );
 
-    @Query(value = "SELECT * FROM fn_reporte_prestamos_vencidos(:p_dias_atraso_min, :p_busqueda) LIMIT :limit OFFSET :offset",
+    // Compat 2 params (existente): delega a 3 params con null en max (evita romper callers)
+    default List<ReporteVencidosProjection> fnReportePrestamosVencidos(Integer diasAtrasoMin, String busqueda) {
+        return fnReportePrestamosVencidos(diasAtrasoMin, busqueda, null);
+    }
+
+    @Query(value = "SELECT * FROM fn_reporte_prestamos_vencidos(CAST(:p_dias_atraso_min AS INTEGER), CAST(:p_busqueda AS TEXT), CAST(:p_dias_atraso_max AS INTEGER)) LIMIT :limit OFFSET :offset",
             nativeQuery = true)
     List<ReporteVencidosProjection> fnReportePrestamosVencidosPaginado(
             @Param("p_dias_atraso_min") Integer diasAtrasoMin,
             @Param("p_busqueda") String busqueda,
+            @Param("p_dias_atraso_max") Integer diasAtrasoMax,
             @Param("limit") int limit,
             @Param("offset") int offset
     );
 
-    @Query(value = "SELECT COUNT(*) FROM fn_reporte_prestamos_vencidos(:p_dias_atraso_min, :p_busqueda)",
+    default List<ReporteVencidosProjection> fnReportePrestamosVencidosPaginado(Integer diasAtrasoMin, String busqueda, int limit, int offset) {
+        return fnReportePrestamosVencidosPaginado(diasAtrasoMin, busqueda, null, limit, offset);
+    }
+
+    @Query(value = "SELECT COUNT(*) FROM fn_reporte_prestamos_vencidos(CAST(:p_dias_atraso_min AS INTEGER), CAST(:p_busqueda AS TEXT), CAST(:p_dias_atraso_max AS INTEGER))",
             nativeQuery = true)
     long countReportePrestamosVencidos(
             @Param("p_dias_atraso_min") Integer diasAtrasoMin,
-            @Param("p_busqueda") String busqueda
+            @Param("p_busqueda") String busqueda,
+            @Param("p_dias_atraso_max") Integer diasAtrasoMax
     );
+
+    default long countReportePrestamosVencidos(Integer diasAtrasoMin, String busqueda) {
+        return countReportePrestamosVencidos(diasAtrasoMin, busqueda, null);
+    }
 
     @Query(value = "SELECT * FROM fn_reporte_categorias_demandadas(:p_limite, :p_desde, :p_hasta)",
             nativeQuery = true)

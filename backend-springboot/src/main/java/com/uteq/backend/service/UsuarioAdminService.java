@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -110,7 +111,7 @@ public class UsuarioAdminService {
      */
     @Transactional
     public void cambiarRol(Long usuarioId, String nuevoRol, Authentication authentication) {
-        Usuario usuario = usuarioRepo.findById(usuarioId)
+        Usuario usuario = usuarioRepo.findByIdWithEstadoAndRoles(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
         Rol rol = rolRepo.findByNombre(nuevoRol)
                 .orElseThrow(() -> new IllegalArgumentException(ROL_NO_ENCONTRADO + nuevoRol));
@@ -147,7 +148,7 @@ public class UsuarioAdminService {
      */
      @Transactional
     public void cambiarEstado(Long usuarioId, String nuevoEstado, String motivo, Authentication authentication) {
-        Usuario usuario = usuarioRepo.findById(usuarioId)
+        Usuario usuario = usuarioRepo.findByIdWithEstadoAndRoles(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
         EstadoUsuario estado = estadoUsuarioRepo.findByNombre(nuevoEstado)
                 .orElseThrow(() -> new IllegalArgumentException(ESTADO_NO_ENCONTRADO + nuevoEstado));
@@ -198,7 +199,7 @@ public class UsuarioAdminService {
 
     @Transactional
     public void eliminarUsuario(Long usuarioId, String motivo, Authentication authentication) {
-        Usuario usuario = usuarioRepo.findById(usuarioId).orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
+        Usuario usuario = usuarioRepo.findByIdWithEstadoAndRoles(usuarioId).orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
         EstadoUsuario inactivo = estadoUsuarioRepo.findByNombre("INACTIVO").orElseThrow(() -> new IllegalStateException("Estado INACTIVO no existe"));
         usuario.setEstado(inactivo);
         usuario.setActualizadoEn(Instant.now());
@@ -208,6 +209,11 @@ public class UsuarioAdminService {
     }
 
     private Long resolverIdPorCorreo(String correo) {
+        if (correo == null) throw new EntityNotFoundException(USUARIO_NO_ENCONTRADO + "null");
+        String normalizado = correo.trim().toLowerCase();
+        // Usa IgnoreCase para evitar 404 fantasma por mayúsculas en JWT; tolera mock sin stub
+        Optional<Usuario> opt = usuarioRepo.findByCorreoIgnoreCase(normalizado);
+        if (opt != null && opt.isPresent()) return opt.get().getId();
         return usuarioRepo.findByCorreo(correo)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo))
                 .getId();
