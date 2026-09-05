@@ -303,7 +303,6 @@ export class UsuariosComponent implements OnInit {
       next: () => {
         this.creandoUsuario = false;
         this.cerrarModalCrear();
-        this.mensajeOk = `Usuario ${this.nuevoCorreo.trim()} creado`;
         this.toast.success('Usuario creado', 'La cuenta quedó activa de inmediato');
         this.cargarPagina();
       },
@@ -328,7 +327,6 @@ export class UsuariosComponent implements OnInit {
       if (!ok) return;
       this.usuarioAdminService.eliminar(usuario.id).subscribe({
         next: () => {
-          this.mensajeOk = `Usuario ${usuario.nombre} eliminado`;
           this.toast.success('Eliminado', 'El usuario quedó en estado INACTIVO');
           this.cargarPagina();
         },

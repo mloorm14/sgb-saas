@@ -171,4 +171,41 @@ describe('UsuariosComponent', () => {
       expect(component.mostrarModalCrear).toBeTrue();
     });
   });
+
+  describe('toast único sin cuadro inline duplicado', () => {
+    let toastService: jasmine.SpyObj<ToastService>;
+
+    beforeEach(() => {
+      authService.hasRole.and.callFake((...roles: string[]) => roles.includes('ADMIN'));
+      fixture.detectChanges();
+      toastService = TestBed.inject(ToastService) as jasmine.SpyObj<ToastService>;
+    });
+
+    it('crear exitoso invoca toast y deja mensajeOk vacío', () => {
+      usuarioAdminService.crear.and.returnValue(of({} as any));
+      component.abrirModalCrear();
+      component.nuevoNombre = 'Andres';
+      component.nuevoApellido = 'Paz';
+      component.nuevoCorreo = 'andres@correo.com';
+      component.nuevoPassword = 'Secreta123';
+      component.nuevoRol = 'LECTOR';
+      component.confirmarCrear();
+
+      expect(toastService.success).toHaveBeenCalledTimes(1);
+      expect(toastService.success).toHaveBeenCalledWith('Usuario creado', jasmine.any(String));
+      expect(component.mensajeOk).toBe('');
+    });
+
+    it('eliminar exitoso invoca toast y deja mensajeOk vacío', () => {
+      const confirmService = TestBed.inject(ConfirmDialogService) as jasmine.SpyObj<ConfirmDialogService>;
+      confirmService.confirm.and.returnValue(of(true));
+      usuarioAdminService.eliminar.and.returnValue(of(undefined));
+
+      component.eliminarDefinitivo(component.usuarios[0]);
+
+      expect(toastService.success).toHaveBeenCalledTimes(1);
+      expect(toastService.success).toHaveBeenCalledWith('Eliminado', jasmine.any(String));
+      expect(component.mensajeOk).toBe('');
+    });
+  });
 });
