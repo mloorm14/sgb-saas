@@ -38,8 +38,7 @@ public class AuditoriaAspect {
                 if (correo != null && correo.contains("@")) {
                     usuarioRepository.findByCorreo(correo).ifPresent(u -> {
                         try {
-                            entityManager.createNativeQuery("SET LOCAL app.current_user_id = :id")
-                                    .setParameter("id", u.getId().toString())
+                            entityManager.createNativeQuery("SET LOCAL app.current_user_id = '" + u.getId() + "'")
                                     .executeUpdate();
                         } catch (Exception ignored) {
                         }
