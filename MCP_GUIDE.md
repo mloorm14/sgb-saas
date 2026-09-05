@@ -68,14 +68,53 @@ Pega este prompt en una nueva sesión para confirmar que responde:
 
 ## 🎭 3. Playwright MCP (Pruebas E2E y QA en Render)
 
-Permite al agente abrir un navegador en segundo plano e interactuar directamente con el entorno desplegado en Render para validar flujos y pantallas en tiempo real.
+Permite al agente operar un navegador Chromium real contra el entorno desplegado en Render (o cualquier entorno activo) para validar flujos y pantallas, en segundo plano o de forma visible en tu pantalla.
 
 ### ⚠️ Reglas y Tolerancia a Cold-Start (Render)
 
 * **100% Automático:** No requiere instalaciones manuales. Se ejecuta vía `npx` en segundo plano al abrir OpenCode Desktop (requiere Node.js en la máquina).
-* **Entorno Render:** La aplicación se prueba sobre la URL del entorno desplegado.
-* **Tolerancia de 60 segundos:** Las instancias gratuitas de Render se suspenden por inactividad. El agente esperará hasta 60s en la primera carga para permitir que el servidor despierte. *(Aplica solo a Render, no a páginas locales como `about:blank`, que responden al instante.)*
+* **Entorno desplegado:** Las pruebas E2E/QA están destinadas a la URL desplegada en Render, una vez activo el deploy (también sirve cualquier otro entorno activo que indiques en el prompt).
+* **Tolerancia de 60 segundos:** Las instancias gratuitas de Render se suspenden por inactividad. El agente esperará hasta 60s **en la primera carga** para permitir que el servidor despierte. *(Aplica solo a Render, no a páginas locales como `about:blank`, que responden al instante.)*
 * **Uso bajo demanda:** Playwright solo se activará si solicitas explícitamente probar la interfaz o un flujo E2E.
+
+### 🎛️ Las 3 Modalidades de Ejecución de Pruebas
+
+* **Modo 1: Silencioso / Headless (Por defecto — Recomendado para QA rápido)**
+  - *Comportamiento:* Corre 100% en segundo plano sin abrir ventanas flotantes. Analiza DOM, red, respuestas API y consola a máxima velocidad.
+  - *Ideal para:* Validar navegación, detectar errores HTTP (400/500) y comprobar respuestas de backend sin interrupción visual.
+  - *Ejemplo de prompt:* *"Usa Playwright en segundo plano para verificar el flujo de..."*
+
+* **Modo 2: Evidencia Visual (Con Screenshots)**
+  - *Comportamiento:* Corre en segundo plano pero genera capturas de pantalla (`screenshot`) en pasos específicos o cuando detecta una falla.
+  - *Ideal para:* Validar maquetación, diseño responsive y guardar evidencia del estado de las pantallas.
+  - *Resguardo (costo de tokens):* screenshots solo a pedido o ante falla visual; por defecto se prioriza árbol de accesibilidad/DOM.
+  - *Ejemplo de prompt:* *"Ejecuta Playwright en `[URL]` y toma una captura de pantalla antes y después de hacer clic en..."*
+
+* **Modo 3: Visible / Interactivo (`headless: false`)**
+  - *Comportamiento:* Abre la ventana del navegador Chromium en tu pantalla para observar en vivo al agente escribir, hacer clics y desplegar modales.
+  - *Ideal para:* Depurar UX, verificar animaciones, probar modales de confirmación o acciones críticas (ej. bloquear/eliminar).
+  - *Regla de seguridad en prod:* abrir los modales de acciones críticas pero **nunca confirmarlas** sin autorización explícita; usar filas de prueba secundarias, jamás el admin principal.
+
+### 📝 Plantilla Estándar para Pruebas Visibles
+
+Copia, adapta los `[corchetes]` y pégala en el chat para probar cualquier módulo o flujo:
+
+```text
+Usa Playwright MCP para probar el módulo de [Nombre del Módulo] en [Nombre de la App] con el navegador VISIBLE (`headless: false`):
+
+1. **Navegador Visible:** Configura Playwright en modo gráfico (`headless: false`).
+2. **URL Objetivo:** `[URL de Render o entorno desplegado]`
+3. **Autenticación / Requisitos Previos:**
+   - Navega a `/login`.
+   - Completa los pasos previos (ej. marcar checkbox de políticas si aplica).
+   - Inicia sesión con las credenciales de prueba `[usuario / clave]` (ver cuentas de prueba en `README.md`).
+4. **Prueba Específica del Módulo:**
+   - Navega a la vista/sección `[Nombre de la Sección]`.
+   - Ubica el elemento o fila a probar `[ej. usuario secundario / registro específico]`.
+   - **Prueba de Acción 1:** Haz clic en `[ej. Botón de Filtro / Estado / Bloquear]` y verifica la respuesta.
+   - **Prueba de Acción 2:** Haz clic en `[ej. Botón Eliminar / Editar]` y confirma si despliega el modal de confirmación o notificación.
+5. **Cierre y Reporte:** Mantén la ventana abierta unos segundos para apreciar la interacción y reporta en el chat si los componentes respondieron, si el backend arrojó errores de consola/HTTP, y confirma explícitamente que nada fue mutado.
+```
 
 ### 🧪 Prueba de Verificación (Playwright)
 
@@ -93,6 +132,7 @@ Pega este prompt en el chat para verificar que el navegador inicia localmente (s
 | **Impacto de cambios** | *"Usa Graphify y dime qué archivos se ven afectados si modifico `UsuarioAdminService`."* |
 | **Ruta entre capas** | *"Traza la ruta de dependencias entre `RegistroComponent` y `AuthService` usando el grafo."* |
 | **Prueba visual en Render** | *"Usa Playwright para abrir la URL de Render y verifica si el módulo de proveedores carga correctamente."* |
+| **QA visible de módulo** | *"Ejecuta un QA visible de [Módulo] en Render sin confirmar acciones destructivas."* |
 
 ---
 
