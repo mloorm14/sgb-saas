@@ -97,6 +97,10 @@ server:
 # Módulo 2: notificaciones por correo.
 notificaciones:
   remitente: ${MAIL_FROM:no-reply@sgb-saas.local}
+  # Correos automáticos desactivados por defecto (volumen en producción,
+  # 2026-08-30). Activar solo por configuración cuando SMTP esté listo.
+  email:
+    habilitado: ${NOTIF_EMAIL_HABILITADO:false}
   # Ventana de anticipación con la que NotificacionVencimientoScheduler
   # detecta préstamos por vencer (minutos antes de
   # fecha_devolucion_estimada). Config externa, mismo criterio que

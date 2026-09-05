@@ -108,17 +108,12 @@ public class BackupProgramacionService {
     private Long obtenerUsuarioActualId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null) return 1L;
-        Object principal = auth.getPrincipal();
+        // Sin reflexión: el principal es User de Spring (sin campo id).
+        // Se resuelve por correo, igual que el resto de services.
         try {
-            var field = principal.getClass().getDeclaredField("id");
-            field.setAccessible(true);
-            return (Long) field.get(principal);
-        } catch (Exception e) {
-            try {
-                return usuarioRepo.findByCorreo(auth.getName()).map(Usuario::getId).orElse(1L);
-            } catch (Exception ex) {
-                return 1L;
-            }
+            return usuarioRepo.findByCorreo(auth.getName()).map(Usuario::getId).orElse(1L);
+        } catch (Exception ex) {
+            return 1L;
         }
     }
 

@@ -12,6 +12,7 @@ import com.uteq.backend.repository.NotificacionRepository;
 import com.uteq.backend.repository.TipoNotificacionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authorization.AuthorizationDeniedException;
@@ -48,6 +49,12 @@ public class NotificacionService {
     private final UsuarioRepository usuarioRepo;
     private final LibroRepository libroRepo;
     private final EmailService emailService;
+
+    // Flag de configuración (default: desactivado). Los correos automáticos
+    // se desactivaron por volumen en producción (2026-08-30); reactivar
+    // solo cambiando configuración, nunca código.
+    @Value("${notificaciones.email.habilitado:false}")
+    private boolean emailHabilitado;
 
     public NotificacionService(NotificacionRepository notificacionRepo,
                                 TipoNotificacionRepository tipoNotificacionRepo,
@@ -204,8 +211,11 @@ public class NotificacionService {
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
 
         String cuerpoHtml = mensaje.startsWith("<") ? mensaje : "<p>" + mensaje + "</p>";
-        // DESACTIVADO: boolean enviado = emailService.enviarCorreo(usuario.getCorreo(), asunto, cuerpoHtml);
+        // DESACTIVADO por defecto (ver emailHabilitado): boolean enviado = emailService.enviarCorreo(usuario.getCorreo(), asunto, cuerpoHtml);
         boolean enviado = false;
+        if (emailHabilitado) {
+            enviado = emailService.enviarCorreo(usuario.getCorreo(), asunto, cuerpoHtml);
+        }
 
         Notificacion notificacion = new Notificacion();
         notificacion.setUsuarioId(usuarioId);
@@ -213,7 +223,7 @@ public class NotificacionService {
         notificacion.setTipoNotificacionId(tipoNotificacionId);
         notificacion.setMensaje(mensaje);
         notificacion.setEnviadoOk(enviado);
-        notificacion.setErrorEnvio(enviado ? null : "Correo automático desactivado (solo verificación activa) - ver NotificacionService.crearYEnviar");
+        notificacion.setErrorEnvio(enviado ? null : (emailHabilitado ? "Error al enviar correo" : "Correo automático desactivado (solo verificación activa) - ver NotificacionService.crearYEnviar"));
         notificacion.setFechaEnvio(enviado ? OffsetDateTime.now() : null);
         notificacion.setCreadoEn(OffsetDateTime.now());
         notificacionRepo.save(notificacion);
