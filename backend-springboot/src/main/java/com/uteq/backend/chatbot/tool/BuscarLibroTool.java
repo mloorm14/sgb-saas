@@ -1,10 +1,8 @@
 package com.uteq.backend.chatbot.tool;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.uteq.backend.chatbot.ChatbotTool;
 import com.uteq.backend.dto.LibroSugerenciaDTO;
 import com.uteq.backend.service.LibroService;
 import org.springframework.stereotype.Component;
@@ -17,10 +15,9 @@ import java.util.List;
  * pg_trgm (similitud de texto) y retorna los 3 resultados más relevantes.
  */
 @Component
-public class BuscarLibroTool implements ChatbotTool {
+public class BuscarLibroTool extends AbstractChatbotTool {
 
     private final LibroService libroService;
-    private final ObjectMapper mapper = new ObjectMapper();
 
     public BuscarLibroTool(LibroService libroService) {
         this.libroService = libroService;

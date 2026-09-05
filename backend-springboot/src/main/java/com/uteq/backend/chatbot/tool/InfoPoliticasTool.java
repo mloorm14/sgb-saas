@@ -1,10 +1,6 @@
 package com.uteq.backend.chatbot.tool;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.uteq.backend.chatbot.ChatbotTool;
 import com.uteq.backend.entity.BaseConocimiento;
 import com.uteq.backend.repository.BaseConocimientoRepository;
 import org.springframework.stereotype.Component;
@@ -14,16 +10,13 @@ import java.util.List;
 /**
  * Tool que consulta información sobre políticas de la biblioteca:
  * préstamo, devolución, sanciones, etc.
- * Filtra la base de conocimiento por categoría POLITICAS.
+ * Filtra la base de conocimiento por categorías POLITICAS y MULTAS.
  */
 @Component
-public class InfoPoliticasTool implements ChatbotTool {
-
-    private final BaseConocimientoRepository baseConocimientoRepo;
-    private final ObjectMapper mapper = new ObjectMapper();
+public class InfoPoliticasTool extends AbstractBaseConocimientoTool {
 
     public InfoPoliticasTool(BaseConocimientoRepository baseConocimientoRepo) {
-        this.baseConocimientoRepo = baseConocimientoRepo;
+        super(baseConocimientoRepo);
     }
 
     @Override
@@ -38,32 +31,21 @@ public class InfoPoliticasTool implements ChatbotTool {
     }
 
     @Override
-    public JsonNode getInputSchema() {
-        ObjectNode schema = mapper.createObjectNode();
-        schema.put("type", "object");
-        schema.set("properties", mapper.createObjectNode());
-        return schema;
+    protected List<String> getCategorias() {
+        return List.of("POLITICAS", "MULTAS");
     }
 
     @Override
-    public JsonNode execute(JsonNode args) {
-        List<BaseConocimiento> politicas = baseConocimientoRepo.findByActivoTrue().stream()
-                .filter(bc -> "POLITICAS".equalsIgnoreCase(bc.getCategoria())
-                        || "MULTAS".equalsIgnoreCase(bc.getCategoria()))
-                .toList();
+    protected String getRespuestaKey() {
+        return "politicas";
+    }
 
-        ArrayNode politicasArray = mapper.createArrayNode();
-        for (BaseConocimiento bc : politicas) {
-            ObjectNode nodo = mapper.createObjectNode();
-            nodo.put("categoria", bc.getCategoria());
-            nodo.put("pregunta", bc.getPreguntaEjemplo());
-            nodo.put("respuesta", bc.getRespuesta());
-            politicasArray.add(nodo);
-        }
-
-        ObjectNode respuesta = mapper.createObjectNode();
-        respuesta.set("politicas", politicasArray);
-        respuesta.put("total", politicas.size());
-        return respuesta;
+    @Override
+    protected ObjectNode mapearEntrada(BaseConocimiento bc) {
+        ObjectNode nodo = mapper.createObjectNode();
+        nodo.put("categoria", bc.getCategoria());
+        nodo.put("pregunta", bc.getPreguntaEjemplo());
+        nodo.put("respuesta", bc.getRespuesta());
+        return nodo;
     }
 }

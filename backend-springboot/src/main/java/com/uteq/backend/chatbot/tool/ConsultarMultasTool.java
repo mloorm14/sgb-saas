@@ -1,10 +1,7 @@
 package com.uteq.backend.chatbot.tool;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.uteq.backend.chatbot.ChatbotTool;
 import com.uteq.backend.repository.MultaRepository;
 import com.uteq.backend.repository.EstadoMultaRepository;
 import org.springframework.stereotype.Component;
@@ -16,11 +13,10 @@ import java.math.BigDecimal;
  * Incluye saldo total adeudado y cantidad de multas.
  */
 @Component
-public class ConsultarMultasTool implements ChatbotTool {
+public class ConsultarMultasTool extends AbstractUsuarioAwareTool {
 
     private final MultaRepository multaRepo;
     private final EstadoMultaRepository estadoMultaRepo;
-    private final ObjectMapper mapper = new ObjectMapper();
 
     public ConsultarMultasTool(MultaRepository multaRepo, EstadoMultaRepository estadoMultaRepo) {
         this.multaRepo = multaRepo;
@@ -39,32 +35,10 @@ public class ConsultarMultasTool implements ChatbotTool {
     }
 
     @Override
-    public JsonNode getInputSchema() {
-        ObjectNode schema = mapper.createObjectNode();
-        schema.put("type", "object");
-
-        ObjectNode properties = mapper.createObjectNode();
-        ObjectNode usuarioIdProp = mapper.createObjectNode();
-        usuarioIdProp.put("type", "integer");
-        usuarioIdProp.put("description", "ID del usuario (se resuelve automáticamente desde la sesión autenticada)");
-        properties.set("usuario_id", usuarioIdProp);
-
-        schema.set("properties", properties);
-
-        ArrayNode required = mapper.createArrayNode();
-        required.add("usuario_id");
-        schema.set("required", required);
-
-        return schema;
-    }
-
-    @Override
     public JsonNode execute(JsonNode args) {
-        Long usuarioId = args.path("usuario_id").asLong(0);
-        if (usuarioId == 0) {
-            ObjectNode error = mapper.createObjectNode();
-            error.put("error", "Se requiere usuario_id");
-            return error;
+        Long usuarioId = resolverUsuarioId(args);
+        if (usuarioId == null) {
+            return errorNode("Se requiere usuario_id");
         }
 
         Integer estadoPendienteId = estadoMultaRepo.findByNombre("PENDIENTE")
@@ -72,9 +46,7 @@ public class ConsultarMultasTool implements ChatbotTool {
                 .orElse(null);
 
         if (estadoPendienteId == null) {
-            ObjectNode error = mapper.createObjectNode();
-            error.put("error", "Estado PENDIENTE no encontrado en catálogo");
-            return error;
+            return errorNode("Estado PENDIENTE no encontrado en catálogo");
         }
 
         long cantidad = multaRepo.countByUsuarioIdAndEstadoMultaId(usuarioId, estadoPendienteId);

@@ -1,10 +1,8 @@
 package com.uteq.backend.chatbot.tool;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.uteq.backend.chatbot.ChatbotTool;
 import com.uteq.backend.entity.EstadoReservacion;
 import com.uteq.backend.entity.Libro;
 import com.uteq.backend.repository.EstadoReservacionRepository;
@@ -24,12 +22,11 @@ import java.util.Optional;
  * El usuario_id se inyecta automáticamente desde el orchestrator.
  */
 @Component
-public class ConsultarReservacionesTool implements ChatbotTool {
+public class ConsultarReservacionesTool extends AbstractUsuarioAwareTool {
 
     private final ReservacionRepository reservacionRepo;
     private final EstadoReservacionRepository estadoReservacionRepo;
     private final LibroRepository libroRepo;
-    private final ObjectMapper mapper = new ObjectMapper();
 
     public ConsultarReservacionesTool(ReservacionRepository reservacionRepo,
                                       EstadoReservacionRepository estadoReservacionRepo,
@@ -51,32 +48,10 @@ public class ConsultarReservacionesTool implements ChatbotTool {
     }
 
     @Override
-    public JsonNode getInputSchema() {
-        ObjectNode schema = mapper.createObjectNode();
-        schema.put("type", "object");
-
-        ObjectNode properties = mapper.createObjectNode();
-        ObjectNode usuarioIdProp = mapper.createObjectNode();
-        usuarioIdProp.put("type", "integer");
-        usuarioIdProp.put("description", "ID del usuario (se resuelve automáticamente desde la sesión autenticada)");
-        properties.set("usuario_id", usuarioIdProp);
-
-        schema.set("properties", properties);
-
-        ArrayNode required = mapper.createArrayNode();
-        required.add("usuario_id");
-        schema.set("required", required);
-
-        return schema;
-    }
-
-    @Override
     public JsonNode execute(JsonNode args) {
-        Long usuarioId = args.path("usuario_id").asLong(0);
-        if (usuarioId == 0) {
-            ObjectNode error = mapper.createObjectNode();
-            error.put("error", "Se requiere usuario_id");
-            return error;
+        Long usuarioId = resolverUsuarioId(args);
+        if (usuarioId == null) {
+            return errorNode("Se requiere usuario_id");
         }
 
         // Resolver IDs de estados vigentes
@@ -88,9 +63,7 @@ public class ConsultarReservacionesTool implements ChatbotTool {
                 .orElse(null);
 
         if (estadoPendienteId == null && estadoListaParaRetiroId == null) {
-            ObjectNode error = mapper.createObjectNode();
-            error.put("error", "Estados de reserva vigentes no encontrados en catálogo");
-            return error;
+            return errorNode("Estados de reserva vigentes no encontrados en catálogo");
         }
 
         Page<com.uteq.backend.entity.Reservacion> pagina = reservacionRepo.findByUsuarioId(
