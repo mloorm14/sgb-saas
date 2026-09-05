@@ -16,6 +16,9 @@ import java.util.List;
 @RequestMapping("/api/v1/admin/respaldo-completo")
 public class RespaldoCompletoController {
 
+    private static final String CLAVE_MENSAJE = "mensaje";
+    private static final String CLAVE_DETALLE = "detalle";
+
     private final RespaldoCompletoService service;
 
     public RespaldoCompletoController(RespaldoCompletoService service) {
@@ -102,20 +105,20 @@ public class RespaldoCompletoController {
                 String.class
             );
             if (nodeResponse.getStatusCode().value() == 429) {
-                return ResponseEntity.status(429).body(java.util.Map.of("mensaje", "Ya hay un respaldo en ejecucion", "detalle", nodeResponse.getBody() == null ? "" : nodeResponse.getBody()));
+                return ResponseEntity.status(429).body(java.util.Map.of(CLAVE_MENSAJE, "Ya hay un respaldo en ejecucion", CLAVE_DETALLE, nodeResponse.getBody() == null ? "" : nodeResponse.getBody()));
             }
             return ResponseEntity.status(nodeResponse.getStatusCode())
-                    .body(java.util.Map.of("mensaje", "Backup completo iniciado",
-                            "detalle", nodeResponse.getBody() == null ? "" : nodeResponse.getBody()));
+                    .body(java.util.Map.of(CLAVE_MENSAJE, "Backup completo iniciado",
+                            CLAVE_DETALLE, nodeResponse.getBody() == null ? "" : nodeResponse.getBody()));
         } catch (org.springframework.web.client.HttpStatusCodeException e) {
             int sc = e.getStatusCode().value();
-            if (sc == 429) return ResponseEntity.status(429).body(java.util.Map.of("mensaje", "Ya hay un respaldo en ejecucion", "detalle", e.getResponseBodyAsString()));
-            return ResponseEntity.status(e.getStatusCode()).body(java.util.Map.of("mensaje", "Microservicio de respaldos no disponible", "detalle", e.getResponseBodyAsString()));
+            if (sc == 429) return ResponseEntity.status(429).body(java.util.Map.of(CLAVE_MENSAJE, "Ya hay un respaldo en ejecucion", CLAVE_DETALLE, e.getResponseBodyAsString()));
+            return ResponseEntity.status(e.getStatusCode()).body(java.util.Map.of(CLAVE_MENSAJE, "Microservicio de respaldos no disponible", CLAVE_DETALLE, e.getResponseBodyAsString()));
         } catch (Exception e) {
             // Devolver JSON 503 en vez de texto HTML para que el frontend no rompa el parse.
             return ResponseEntity.status(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE)
-                    .body(java.util.Map.of("mensaje", "Microservicio de respaldos no disponible",
-                            "detalle", e.getMessage() == null ? "" : e.getMessage()));
+                    .body(java.util.Map.of(CLAVE_MENSAJE, "Microservicio de respaldos no disponible",
+                            CLAVE_DETALLE, e.getMessage() == null ? "" : e.getMessage()));
         }
     }
 

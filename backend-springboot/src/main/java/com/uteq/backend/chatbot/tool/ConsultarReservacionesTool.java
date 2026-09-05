@@ -100,7 +100,7 @@ public class ConsultarReservacionesTool extends AbstractUsuarioAwareTool {
         ObjectNode respuesta = mapper.createObjectNode();
         respuesta.set("reservas_vigentes", reservasArray);
         respuesta.put("total", vigentes.size());
-        respuesta.put("usuario_id", usuarioId);
+        respuesta.put(USUARIO_ID, usuarioId);
         return respuesta;
     }
 }

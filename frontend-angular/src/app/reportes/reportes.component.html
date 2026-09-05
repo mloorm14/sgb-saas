@@ -42,6 +42,7 @@
       @if (cargando) {
         <div class="rounded-lg border border-outline-variant bg-surface-container-lowest animate-pulse overflow-hidden">
           <table class="w-full text-left">
+            <caption class="sr-only">Libros más prestados (resumen)</caption>
             <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">#</th><th class="px-md py-sm">Título</th><th class="px-md py-sm hidden md:table-cell">ISBN</th><th class="px-md py-sm hidden lg:table-cell">Autor</th><th class="px-md py-sm text-right">Préstamos</th><th class="px-md py-sm text-right">% del total</th></tr></thead>
             <tbody class="divide-y divide-outline-variant">
               @for (i of [1,2,3,4,5]; track i) {
@@ -119,6 +120,7 @@
 
         <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-x-auto overflow-y-hidden">
           <table class="w-full text-left">
+            <caption class="sr-only">Libros más prestados (detalle)</caption>
             <thead class="bg-surface-container-low">
               <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
                 <th class="px-md py-sm">#</th>
@@ -195,6 +197,7 @@
         </div>
         <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-x-auto overflow-y-hidden">
           <table class="w-full text-left">
+            <caption class="sr-only">Usuarios con morosidad</caption>
             <thead class="bg-surface-container-low">
               <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
                 <th class="px-md py-sm cursor-pointer select-none" (click)="ordenarPorMor('nombre')">
@@ -330,6 +333,7 @@
         </div>
         <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-x-auto overflow-y-hidden">
           <table class="w-full text-left">
+            <caption class="sr-only">Inventario y disponibilidad</caption>
             <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm cursor-pointer select-none" (click)="ordenarPorInv('titulo')">
               <span class="inline-flex items-center gap-xs">
                 Título
@@ -410,6 +414,7 @@
         </div>
         <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-x-auto overflow-y-hidden">
           <table class="w-full text-left">
+            <caption class="sr-only">Préstamos vencidos</caption>
             <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm cursor-pointer select-none" (click)="ordenarPorVen('usuarioNombre')">
               <span class="inline-flex items-center gap-xs">
                 Usuario
@@ -482,6 +487,7 @@
         </div>
         <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-x-auto overflow-y-hidden">
           <table class="w-full text-left">
+            <caption class="sr-only">Categorías demandadas</caption>
             <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">#</th><th class="px-md py-sm cursor-pointer select-none" (click)="ordenarPorCat('categoriaNombre')">
               <span class="inline-flex items-center gap-xs">
                 Categoría
@@ -560,6 +566,7 @@
         </div>
         <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-x-auto overflow-y-hidden">
           <table class="w-full text-left">
+            <caption class="sr-only">Uso por período</caption>
             <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm cursor-pointer select-none" (click)="ordenarPorUso('periodo')">
               <span class="inline-flex items-center gap-xs">
                 Período
@@ -647,6 +654,7 @@
           </div>
           <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-x-auto overflow-y-hidden">
             <table class="w-full text-left">
+              <caption class="sr-only">Pagos recientes</caption>
               <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">Multa</th><th class="px-md py-sm">Monto</th><th class="px-md py-sm hidden md:table-cell">Fecha</th><th class="px-md py-sm">Usuario</th><th class="px-md py-sm hidden lg:table-cell">Libro</th></tr></thead>
               <tbody class="divide-y divide-outline-variant font-body-sm text-body-sm text-on-surface">
                 @for (p of financieroPaginado; track p.multaId) {

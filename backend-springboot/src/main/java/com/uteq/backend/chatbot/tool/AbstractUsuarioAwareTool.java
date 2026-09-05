@@ -11,6 +11,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  */
 public abstract class AbstractUsuarioAwareTool extends AbstractChatbotTool {
 
+    /** Nombre del parámetro de usuario en schemas y respuestas. */
+    protected static final String USUARIO_ID = "usuario_id";
+
     @Override
     public JsonNode getInputSchema() {
         ObjectNode schema = mapper.createObjectNode();
@@ -20,12 +23,12 @@ public abstract class AbstractUsuarioAwareTool extends AbstractChatbotTool {
         ObjectNode usuarioIdProp = mapper.createObjectNode();
         usuarioIdProp.put("type", "integer");
         usuarioIdProp.put("description", "ID del usuario (se resuelve automáticamente desde la sesión autenticada)");
-        properties.set("usuario_id", usuarioIdProp);
+        properties.set(USUARIO_ID, usuarioIdProp);
 
         schema.set("properties", properties);
 
         ArrayNode required = mapper.createArrayNode();
-        required.add("usuario_id");
+        required.add(USUARIO_ID);
         schema.set("required", required);
 
         return schema;
@@ -37,7 +40,7 @@ public abstract class AbstractUsuarioAwareTool extends AbstractChatbotTool {
      */
     protected Long resolverUsuarioId(JsonNode args) {
         if (args == null) return null;
-        long id = args.path("usuario_id").asLong(0);
+        long id = args.path(USUARIO_ID).asLong(0);
         return id == 0 ? null : id;
     }
 }

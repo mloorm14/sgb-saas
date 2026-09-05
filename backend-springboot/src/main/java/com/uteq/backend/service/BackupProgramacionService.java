@@ -91,7 +91,7 @@ public class BackupProgramacionService {
     // ---------- Validación XOR ----------
 
     private void validarXorCampos(BackupProgramacion dto) {
-        long count = ((dto.getCadaHoras() != null) ? 1 : 0) + ((dto.getCadaDias() != null) ? 1 : 0);
+        long count = ((dto.getCadaHoras() != null) ? 1L : 0L) + ((dto.getCadaDias() != null) ? 1L : 0L);
         if (count != 1) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debe definirse exactamente uno de: cada_horas o cada_dias");
         }

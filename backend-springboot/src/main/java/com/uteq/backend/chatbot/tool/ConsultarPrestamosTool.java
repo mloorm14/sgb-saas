@@ -59,7 +59,7 @@ public class ConsultarPrestamosTool extends AbstractUsuarioAwareTool {
         ObjectNode respuesta = mapper.createObjectNode();
         respuesta.set("prestamos_activos", prestamosArray);
         respuesta.put("total", prestamos.size());
-        respuesta.put("usuario_id", usuarioId);
+        respuesta.put(USUARIO_ID, usuarioId);
         return respuesta;
     }
 }

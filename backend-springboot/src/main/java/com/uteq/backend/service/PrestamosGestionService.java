@@ -63,7 +63,7 @@ public class PrestamosGestionService {
     // PrestamoService.ESTADOS_RESERVA_VIGENTE; no existe un estado literal
     // "ACTIVA" en estados_reservacion).
     private static final List<String> ESTADOS_RESERVA_VIGENTE =
-            List.of("PENDIENTE", "LISTA_PARA_RETIRO");
+            List.of(ESTADO_MULTA_PENDIENTE, "LISTA_PARA_RETIRO");
 
     private static final String CLAVE_DIAS_PRESTAMO_DEFAULT = "dias_prestamo_default";
 

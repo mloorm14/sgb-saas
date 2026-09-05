@@ -37,6 +37,7 @@ public class MultaService {
     private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado: ";
     private static final String ROL_LECTOR = "LECTOR";
     private static final String TABLA_MULTAS = "multas";
+    private static final String PREFIJO_ROL = "ROLE_";
     private static final Set<String> ROLES_ANULACION = Set.of("GERENTE", "ADMIN");
 
     private final MultaRepository multaRepo;
@@ -139,8 +140,8 @@ public class MultaService {
     private String resolverRolAnulacion(Authentication authentication) {
         return authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .filter(rol -> rol.startsWith("ROLE_"))
-                .map(rol -> rol.substring("ROLE_".length()))
+                .filter(rol -> rol.startsWith(PREFIJO_ROL))
+                .map(rol -> rol.substring(PREFIJO_ROL.length()))
                 .filter(ROLES_ANULACION::contains)
                 .findFirst()
                 .orElseThrow(() -> new AuthorizationDeniedException(
@@ -150,7 +151,7 @@ public class MultaService {
     private void validarAccesoUsuario(Long usuarioIdSolicitado, Authentication authentication) {
         boolean esLector = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .anyMatch(rol -> rol.equals("ROLE_" + ROL_LECTOR));
+                .anyMatch(rol -> rol.equals(PREFIJO_ROL + ROL_LECTOR));
         if (!esLector) {
             return;
         }

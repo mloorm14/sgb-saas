@@ -34,6 +34,10 @@ public class ReportePdfService {
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final DateTimeFormatter FORMATO_FECHA_CORTA =
             DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final String TEXTO_VACIO = "—";
+    private static final String HEADER_USUARIO = "Usuario";
+    private static final String HEADER_PRESTAMOS = "Préstamos";
+    private static final String HEADER_CATEGORIA = "Categoría";
 
     private static PdfFont crearFuenteNegrita() {
         try {
@@ -60,7 +64,15 @@ public class ReportePdfService {
     }
 
     private static String textoOAlternativo(String valor) {
-        return valor != null ? valor : "—";
+        return valor != null ? valor : TEXTO_VACIO;
+    }
+
+    /** Primer valor no nulo, o el texto de vacío si todos son nulos. */
+    private static String primeroNoNulo(String... valores) {
+        for (String v : valores) {
+            if (v != null) return v;
+        }
+        return TEXTO_VACIO;
     }
 
     /**
@@ -107,7 +119,7 @@ public class ReportePdfService {
                 "No hay usuarios con multas pendientes.",
                 filas,
                 new float[]{3, 3, 2, 2, 2},
-                List.of("Usuario", "Correo", "Monto adeudado", "Multas pendientes", "Días atraso (prom.)"),
+                List.of(HEADER_USUARIO, "Correo", "Monto adeudado", "Multas pendientes", "Días atraso (prom.)"),
                 (tabla, f) -> {
                     tabla.addCell(new Cell().add(new Paragraph(f.nombre() + " " + f.apellido())));
                     tabla.addCell(new Cell().add(new Paragraph(f.correo())));
@@ -125,7 +137,7 @@ public class ReportePdfService {
                 "No hay datos de préstamos.",
                 filas,
                 new float[]{1, 3, 2, 2, 2, 1.5f, 1.5f},
-                List.of("#", "Título", "ISBN", "Autor", "Categoría", "Préstamos", "% del total"),
+                List.of("#", "Título", "ISBN", "Autor", HEADER_CATEGORIA, HEADER_PRESTAMOS, "% del total"),
                 (tabla, f) -> {
                     tabla.addCell(new Cell().add(new Paragraph(String.valueOf(contador[0]++))));
                     tabla.addCell(new Cell().add(new Paragraph(f.titulo())));
@@ -144,7 +156,7 @@ public class ReportePdfService {
                 "No hay datos de inventario.",
                 filas,
                 new float[]{3, 2, 2, 2, 1, 1, 2},
-                List.of("Título", "ISBN", "Autor", "Categoría", "Stock", "Disponible", "Estado"),
+                List.of("Título", "ISBN", "Autor", HEADER_CATEGORIA, "Stock", "Disponible", "Estado"),
                 (tabla, f) -> {
                     tabla.addCell(new Cell().add(new Paragraph(f.titulo())));
                     tabla.addCell(new Cell().add(new Paragraph(textoOAlternativo(f.isbn()))));
@@ -163,14 +175,14 @@ public class ReportePdfService {
                 "No hay préstamos vencidos.",
                 filas,
                 new float[]{2.5f, 2.5f, 2.5f, 2, 2, 1, 1.5f},
-                List.of("Usuario", "Correo", "Libro", "ISBN", "Vencimiento", "Días", "Multa est."),
+                List.of(HEADER_USUARIO, "Correo", "Libro", "ISBN", "Vencimiento", "Días", "Multa est."),
                 (tabla, f) -> {
                     tabla.addCell(new Cell().add(new Paragraph(f.usuarioNombre())));
                     tabla.addCell(new Cell().add(new Paragraph(f.usuarioCorreo())));
                     tabla.addCell(new Cell().add(new Paragraph(f.libroTitulo())));
                     tabla.addCell(new Cell().add(new Paragraph(textoOAlternativo(f.libroIsbn()))));
                     tabla.addCell(new Cell().add(new Paragraph(f.fechaDevolucionEstimada() != null
-                            ? f.fechaDevolucionEstimada().format(FORMATO_FECHA_CORTA) : "—")));
+                            ? f.fechaDevolucionEstimada().format(FORMATO_FECHA_CORTA) : TEXTO_VACIO)));
                     tabla.addCell(new Cell().add(new Paragraph(String.valueOf(f.diasAtraso()))));
                     tabla.addCell(new Cell().add(new Paragraph("$" + f.montoMultaEstimada())));
                 });
@@ -183,9 +195,9 @@ public class ReportePdfService {
                 "No hay datos de uso por período.",
                 filas,
                 new float[]{3, 2, 2},
-                List.of("Período", "Préstamos", "Devoluciones"),
+                List.of("Período", HEADER_PRESTAMOS, "Devoluciones"),
                 (tabla, f) -> {
-                    String periodo = f.periodo() != null ? f.periodo().format(FORMATO_FECHA_CORTA) : "—";
+                    String periodo = f.periodo() != null ? f.periodo().format(FORMATO_FECHA_CORTA) : TEXTO_VACIO;
                     tabla.addCell(new Cell().add(new Paragraph(periodo)));
                     tabla.addCell(new Cell().add(new Paragraph(String.valueOf(f.totalPrestamos()))));
                     tabla.addCell(new Cell().add(new Paragraph(String.valueOf(f.totalDevoluciones()))));
@@ -210,16 +222,16 @@ public class ReportePdfService {
                         document,
                         negrita,
                         new float[]{1, 2, 2, 3, 3},
-                        List.of("Multa", "Monto", "Fecha", "Usuario", "Libro"),
+                        List.of("Multa", "Monto", "Fecha", HEADER_USUARIO, "Libro"),
                         dto.pagosRecientes(),
                         (tabla, p) -> {
                             tabla.addCell(new Cell().add(new Paragraph(String.valueOf(p.multaId()))));
                             tabla.addCell(new Cell().add(new Paragraph("$" + p.montoPagado())));
                             tabla.addCell(new Cell().add(new Paragraph(p.fechaPagada() != null
-                                    ? p.fechaPagada().format(FORMATO_FECHA_CORTA) : "—")));
-                            tabla.addCell(new Cell().add(new Paragraph(p.usuarioNombre() != null
-                                    ? p.usuarioNombre() : p.usuarioCorreo() != null ? p.usuarioCorreo() : "—")));
-                            tabla.addCell(new Cell().add(new Paragraph(p.libroTitulo() != null ? p.libroTitulo() : "—")));
+                                    ? p.fechaPagada().format(FORMATO_FECHA_CORTA) : TEXTO_VACIO)));
+                            tabla.addCell(new Cell().add(new Paragraph(
+                                    primeroNoNulo(p.usuarioNombre(), p.usuarioCorreo()))));
+                            tabla.addCell(new Cell().add(new Paragraph(p.libroTitulo() != null ? p.libroTitulo() : TEXTO_VACIO)));
                         });
             }
         }
@@ -234,7 +246,7 @@ public class ReportePdfService {
                 "No hay datos de categorías.",
                 filas,
                 new float[]{1, 4, 2, 2},
-                List.of("#", "Categoría", "Préstamos", "% del total"),
+                List.of("#", HEADER_CATEGORIA, HEADER_PRESTAMOS, "% del total"),
                 (tabla, f) -> {
                     tabla.addCell(new Cell().add(new Paragraph(String.valueOf(contador[0]++))));
                     tabla.addCell(new Cell().add(new Paragraph(f.categoriaNombre())));

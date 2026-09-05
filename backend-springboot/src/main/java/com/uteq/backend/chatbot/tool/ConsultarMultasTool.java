@@ -53,7 +53,7 @@ public class ConsultarMultasTool extends AbstractUsuarioAwareTool {
         BigDecimal saldoTotal = multaRepo.sumSaldoByUsuarioIdAndEstadoMultaId(usuarioId, estadoPendienteId);
 
         ObjectNode respuesta = mapper.createObjectNode();
-        respuesta.put("usuario_id", usuarioId);
+        respuesta.put(USUARIO_ID, usuarioId);
         respuesta.put("multas_pendientes", cantidad);
         respuesta.put("saldo_total_pendiente", saldoTotal != null ? saldoTotal.doubleValue() : 0.0);
         respuesta.put("tiene_multas_pendientes", cantidad > 0);

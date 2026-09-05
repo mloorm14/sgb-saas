@@ -211,7 +211,7 @@ public class NotificacionService {
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
 
         String cuerpoHtml = mensaje.startsWith("<") ? mensaje : "<p>" + mensaje + "</p>";
-        // DESACTIVADO por defecto (ver emailHabilitado): boolean enviado = emailService.enviarCorreo(usuario.getCorreo(), asunto, cuerpoHtml);
+        // Correo automático desactivado por defecto (ver emailHabilitado).
         boolean enviado = false;
         if (emailHabilitado) {
             enviado = emailService.enviarCorreo(usuario.getCorreo(), asunto, cuerpoHtml);
@@ -223,7 +223,13 @@ public class NotificacionService {
         notificacion.setTipoNotificacionId(tipoNotificacionId);
         notificacion.setMensaje(mensaje);
         notificacion.setEnviadoOk(enviado);
-        notificacion.setErrorEnvio(enviado ? null : (emailHabilitado ? "Error al enviar correo" : "Correo automático desactivado (solo verificación activa) - ver NotificacionService.crearYEnviar"));
+        if (enviado) {
+            notificacion.setErrorEnvio(null);
+        } else if (emailHabilitado) {
+            notificacion.setErrorEnvio("Error al enviar correo");
+        } else {
+            notificacion.setErrorEnvio("Correo automático desactivado (solo verificación activa) - ver NotificacionService.crearYEnviar");
+        }
         notificacion.setFechaEnvio(enviado ? OffsetDateTime.now() : null);
         notificacion.setCreadoEn(OffsetDateTime.now());
         notificacionRepo.save(notificacion);

@@ -269,6 +269,9 @@ public class GlobalExceptionHandler {
             DataAccessException.class
     })
     public ProblemDetail handleStoredProcedureError(DataAccessException ex) {
+        // Spring siempre entrega la excepción (nunca null): el guard es para
+        // el analizador estático (S2259) y documenta la precondición.
+        Objects.requireNonNull(ex, "el handler siempre recibe la excepción");
         Throwable causa = ex;
         while (causa != null && !(causa instanceof SQLException)) {
             causa = causa.getCause();
@@ -288,9 +291,13 @@ public class GlobalExceptionHandler {
             }
         }
 
-        log.error("Error no controlado en procedimiento almacenado: {}", ex.getMessage(), ex);
+        String mensajeEx = "desconocida";
+        if (ex != null) {
+            mensajeEx = Objects.toString(ex.getMessage(), "sin mensaje");
+        }
+        log.error("Error no controlado en procedimiento almacenado: {}", mensajeEx, ex);
         String root = Objects.toString(ex.getMostSpecificCause().getMessage(), ex.getMessage());
-        String detail = "Error interno del servidor" + (root != null ? ": " + root.substring(0, Math.min(300, root.length())) : "");
+        String detail = "Error interno del servidor: " + root.substring(0, Math.min(300, root.length()));
         return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail);
     }
 

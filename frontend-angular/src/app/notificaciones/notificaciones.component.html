@@ -14,6 +14,7 @@
   @if (cargando && notificaciones.length === 0) {
     <div class="rounded-lg border border-outline-variant bg-surface-container-lowest animate-pulse overflow-hidden">
       <table class="w-full text-left">
+        <caption class="sr-only">Cargando notificaciones</caption>
         <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">Fecha</th><th class="px-md py-sm">Tipo</th><th class="px-md py-sm">Mensaje</th><th class="px-md py-sm hidden md:table-cell">Préstamo</th><th class="px-md py-sm">Estado</th></tr></thead>
         <tbody class="divide-y divide-outline-variant">
           @for (i of [1,2,3,4,5]; track i) {
@@ -34,6 +35,7 @@
     @if (notificaciones.length > 0) {
       <div class="overflow-x-auto">
         <table class="w-full text-left">
+          <caption class="sr-only">Notificaciones</caption>
           <thead class="bg-surface-container-low">
             <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
               <th class="px-md py-sm">Fecha</th>

@@ -29,6 +29,7 @@
   @if (cargando && libros.length===0) {
     <div class="rounded-lg border border-outline-variant bg-surface-container-lowest animate-pulse overflow-hidden">
       <table class="w-full text-left">
+        <caption class="sr-only">Libros pendientes de revisión</caption>
         <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">Título</th><th class="px-md py-sm hidden md:table-cell">ISBN</th><th class="px-md py-sm hidden lg:table-cell">Autor</th><th class="px-md py-sm hidden lg:table-cell">Categoría</th><th class="px-md py-sm text-right">Stock</th><th class="px-md py-sm text-right">Disponible</th><th class="px-md py-sm">Estado</th></tr></thead>
         <tbody class="divide-y divide-outline-variant">
           @for (i of [1,2,3,4,5]; track i) {

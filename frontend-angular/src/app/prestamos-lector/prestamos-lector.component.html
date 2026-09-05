@@ -54,6 +54,7 @@
   @if (cargando) {
     <div class="rounded-lg border border-outline-variant bg-surface-container-lowest animate-pulse overflow-hidden">
       <table class="w-full text-left">
+        <caption class="sr-only">Cargando préstamos</caption>
         <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">Libro</th><th class="px-md py-sm hidden sm:table-cell">Prestado</th><th class="px-md py-sm hidden sm:table-cell">Devolución estimada</th><th class="px-md py-sm hidden sm:table-cell">Devuelto</th><th class="px-md py-sm">Estado</th></tr></thead>
         <tbody class="divide-y divide-outline-variant">
           @for (i of [1,2,3,4,5]; track i) {
@@ -72,6 +73,7 @@
   @if (!cargando && prestamos.length > 0) {
     <div class="rounded-lg border border-outline-variant bg-surface-container-lowest overflow-hidden mb-lg">
       <table class="w-full text-left">
+        <caption class="sr-only">Mis préstamos</caption>
         <thead class="bg-surface-container-low">
           <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
             <th class="px-md py-sm">Libro</th>

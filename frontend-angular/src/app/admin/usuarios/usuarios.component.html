@@ -41,6 +41,7 @@
   @if (cargando && usuarios.length === 0) {
     <div class="rounded-lg border border-outline-variant bg-surface-container-lowest animate-pulse overflow-hidden">
       <table class="w-full text-left">
+        <caption class="sr-only">Cargando usuarios</caption>
         <thead class="bg-surface-container-low"><tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide"><th class="px-md py-sm">Usuario</th><th class="px-md py-sm hidden md:table-cell">Correo</th><th class="px-md py-sm">Rol</th><th class="px-md py-sm">Estado</th><th class="px-md py-sm">Acciones</th></tr></thead>
         <tbody class="divide-y divide-outline-variant">
           @for (i of [1,2,3,4,5]; track i) {
@@ -59,6 +60,7 @@
 
   <div class="rounded-lg border border-outline-variant bg-surface-container-lowest shadow-sm overflow-x-auto overflow-y-hidden">
     <table class="w-full text-left">
+      <caption class="sr-only">Usuarios del sistema</caption>
       <thead class="bg-surface-container-low">
         <tr class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">
           <th class="px-md py-sm cursor-pointer select-none" (click)="ordenarPor('nombre')">
