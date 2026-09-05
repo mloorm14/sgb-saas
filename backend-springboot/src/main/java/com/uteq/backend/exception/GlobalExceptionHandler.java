@@ -267,7 +267,7 @@ public class GlobalExceptionHandler {
             UncategorizedSQLException.class,
             DataAccessException.class
     })
-    public ProblemDetail handleStoredProcedureError(Exception ex) {
+    public ProblemDetail handleStoredProcedureError(DataAccessException ex) {
         Throwable causa = ex;
         while (causa != null && !(causa instanceof SQLException)) {
             causa = causa.getCause();
