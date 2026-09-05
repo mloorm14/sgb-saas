@@ -227,4 +227,17 @@ describe('ConfiguracionSistemaComponent', () => {
     component.volverARoot();
     expect(component.tituloActual).toBe('Configuración');
   });
+
+  it('formatearFechaHora convierte ISO al formato app sin depender de zona horaria', () => {
+    const texto = component.formatearFechaHora('2026-09-05T17:11:06.143625Z');
+
+    expect(texto).toMatch(/^\d{4}\/\d{2}\/\d{2} — \d{1,2}:\d{2}:\d{2} (AM|PM)$/);
+    expect(texto).not.toContain('T');
+  });
+
+  it('formatearFechaHora devuelve em-dash con nulo y eco con texto inválido', () => {
+    expect(component.formatearFechaHora(null)).toBe('—');
+    expect(component.formatearFechaHora(undefined)).toBe('—');
+    expect(component.formatearFechaHora('no-es-fecha')).toBe('no-es-fecha');
+  });
 });

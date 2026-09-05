@@ -902,4 +902,18 @@ export class ConfiguracionSistemaComponent implements OnInit, OnDestroy {
   }
   limpiarFiltros(): void { this.filtroBackupFecha = ''; this.filtroBackupDia = ''; this.filtroBackupHora = ''; }
   get filtrosActivos(): boolean { return !!this.filtroBackupFecha || !!this.filtroBackupDia || !!this.filtroBackupHora; }
+  formatearFechaHora(iso: string | null | undefined): string {
+    if (!iso) return '—';
+    const fecha = new Date(iso);
+    if (isNaN(fecha.getTime())) return String(iso);
+    const y = fecha.getFullYear();
+    const m = String(fecha.getMonth() + 1).padStart(2, '0');
+    const d = String(fecha.getDate()).padStart(2, '0');
+    let h = fecha.getHours();
+    const min = String(fecha.getMinutes()).padStart(2, '0');
+    const s = String(fecha.getSeconds()).padStart(2, '0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${y}/${m}/${d} — ${h}:${min}:${s} ${ampm}`;
+  }
 }

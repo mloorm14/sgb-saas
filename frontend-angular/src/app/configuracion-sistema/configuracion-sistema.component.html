@@ -543,7 +543,7 @@
                       @else { — }
                     </td>
                     <td class="px-md py-sm"><span class="inline-flex px-2 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-[11px] uppercase">{{ p.formato }}</span></td>
-                    <td class="px-md py-sm whitespace-nowrap text-on-surface-variant">{{ p.ultimaEjecucion ?? 'Nunca' }}</td>
+                    <td class="px-md py-sm whitespace-nowrap text-on-surface-variant">{{ p.ultimaEjecucion ? formatearFechaHora(p.ultimaEjecucion) : 'Nunca' }}</td>
                     <td class="px-md py-sm"><span class="font-label-sm text-[12px]" [class.text-green-600]="p.activo" [class.text-error]="!p.activo">{{ p.activo ? 'Activo' : 'Inactivo' }}</span></td>
                     <td class="px-md py-sm">
                       <div class="flex items-center justify-end gap-xs">
