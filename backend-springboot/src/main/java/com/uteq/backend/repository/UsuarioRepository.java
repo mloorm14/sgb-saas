@@ -36,20 +36,15 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
             String nombre, String correo, Pageable pageable);
 
     // F8-gerente (V38): listado con filtro opcional + creador opcional.
-    // Nativa con CAST explícito para evitar el bug PostgreSQL+Hibernate
-    // con parámetros NULL (ver skill sgb-backend-conventions).
+    // JPQL con LOWER+CONCAT evita el bug PostgreSQL+Hibernate con
+    // CAST(:param AS TEXT) "syntax error at or near $1" (Position:33) en
+    // nativeQuery cuando el param es NULL (ver 7e81c1e6 baseline).
     @org.springframework.data.jpa.repository.Query(
-            value = "SELECT * FROM usuarios u WHERE "
-                    + "(CAST(:filtro AS TEXT) IS NULL OR CAST(:filtro AS TEXT) = '' "
-                    + "OR u.nombre ILIKE '%' || CAST(:filtro AS TEXT) || '%' "
-                    + "OR u.correo ILIKE '%' || CAST(:filtro AS TEXT) || '%') "
-                    + "AND (CAST(:creadoPor AS BIGINT) IS NULL OR u.creado_por = CAST(:creadoPor AS BIGINT))",
-            countQuery = "SELECT COUNT(*) FROM usuarios u WHERE "
-                    + "(CAST(:filtro AS TEXT) IS NULL OR CAST(:filtro AS TEXT) = '' "
-                    + "OR u.nombre ILIKE '%' || CAST(:filtro AS TEXT) || '%' "
-                    + "OR u.correo ILIKE '%' || CAST(:filtro AS TEXT) || '%') "
-                    + "AND (CAST(:creadoPor AS BIGINT) IS NULL OR u.creado_por = CAST(:creadoPor AS BIGINT))",
-            nativeQuery = true)
+            value = "SELECT u FROM Usuario u WHERE "
+                    + "(:filtro IS NULL OR :filtro = '' "
+                    + "OR LOWER(u.nombre) LIKE LOWER(CONCAT('%', :filtro, '%')) "
+                    + "OR LOWER(u.correo) LIKE LOWER(CONCAT('%', :filtro, '%'))) "
+                    + "AND (:creadoPor IS NULL OR u.creadoPor = :creadoPor)")
     Page<Usuario> buscarConFiltros(
             @org.springframework.data.repository.query.Param("filtro") String filtro,
             @org.springframework.data.repository.query.Param("creadoPor") Long creadoPor,
@@ -64,8 +59,5 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     @org.springframework.data.jpa.repository.Modifying
     int deleteNoVerificadosBefore(@org.springframework.data.repository.query.Param("cutoff") java.time.Instant cutoff);
 
-    // Lookup directo por PK sin filtros Hibernate (útil para admin cambiarEstado/eliminar
-    // cuando el registro existe con estado INACTIVO/BLOQUEADO y un @Where hipotético lo ocultaría).
-    @org.springframework.data.jpa.repository.Query(value = "SELECT * FROM usuarios WHERE id = :id", nativeQuery = true)
-    java.util.Optional<Usuario> findByIdNative(@org.springframework.data.repository.query.Param("id") Long id);
+
 }
