@@ -11,6 +11,10 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.cache.interceptor.CacheErrorHandler;
+
 import java.time.Duration;
 import java.util.Map;
 
@@ -74,7 +78,27 @@ public class RedisConfig {
                 .withInitialCacheConfigurations(Map.of(
                         "libros", librosConfig,
                         "sugerencias-libros", sugerenciasConfig))
+                .transactionAware()
                 .build();
+    }
+
+    @Bean
+    public CacheErrorHandler cacheErrorHandler() {
+        return new CacheErrorHandler() {
+            private final Logger log = LoggerFactory.getLogger(CacheErrorHandler.class);
+            @Override public void handleCacheGetError(RuntimeException e, org.springframework.cache.Cache cache, Object key) {
+                log.warn("Cache get error (Redis degradado) cache={} key={}: {}", cache.getName(), key, e.toString());
+            }
+            @Override public void handleCachePutError(RuntimeException e, org.springframework.cache.Cache cache, Object key, Object value) {
+                log.warn("Cache put error (Redis degradado) cache={} key={}: {}", cache.getName(), key, e.toString());
+            }
+            @Override public void handleCacheEvictError(RuntimeException e, org.springframework.cache.Cache cache, Object key) {
+                log.warn("Cache evict error (Redis degradado) cache={} key={}: {}", cache.getName(), key, e.toString());
+            }
+            @Override public void handleCacheClearError(RuntimeException e, org.springframework.cache.Cache cache) {
+                log.warn("Cache clear error (Redis degradado) cache={}: {}", cache.getName(), e.toString());
+            }
+        };
     }
 
     @Bean
