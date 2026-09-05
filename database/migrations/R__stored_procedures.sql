@@ -483,7 +483,7 @@ AS $$
     WHERE em.nombre = 'PENDIENTE'
     GROUP BY u.id, u.nombre, u.apellido, u.correo
     ORDER BY monto_total_adeudado DESC
-    LIMIT p_limite;
+    LIMIT COALESCE(p_limite, 10);
 $$;
 
 -- ----------------------------------------------------------------------------
