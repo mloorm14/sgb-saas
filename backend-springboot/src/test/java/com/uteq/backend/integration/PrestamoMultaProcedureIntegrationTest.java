@@ -60,6 +60,15 @@ class PrestamoMultaProcedureIntegrationTest {
     @ServiceConnection
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
+    // La función fn_auditoria_generica() solo vive en db/auditoria-triggers.sql
+    // (fuera de Flyway): en BD fresca V40 fallaría sin ella. Se aporta vía
+    // ubicación solo-test (src/test no se empaqueta: prod jamás la ve).
+    @DynamicPropertySource
+    static void flywayTest(DynamicPropertyRegistry registry) {
+        registry.add("spring.flyway.locations",
+                () -> "classpath:db/test-migrations,filesystem:../database/migrations");
+    }
+
     @Autowired JdbcTemplate jdbcTemplate;
     @Autowired PrestamoProcedureRepository prestamoProcRepo;
     @Autowired MultaProcedureRepository multaProcRepo;
