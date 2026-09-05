@@ -237,9 +237,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({DataAccessResourceFailureException.class, UncategorizedDataAccessException.class})
     public ProblemDetail handleDataAccessResourceFailure(DataAccessException ex) {
-        log.error("Fallo de acceso a dependencia de datos (Redis/BD)", ex);
-        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE,
-                "El servicio de almacenamiento temporal no está disponible. Intente más tarde.");
+        log.error("Fallo de acceso a dependencia de datos (Redis/BD) {}: {}", ex.getClass().getSimpleName(), ex.getMessage(), ex);
+        String root = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
+        String detail = "El servicio de almacenamiento temporal no está disponible. Intente más tarde."
+                + (root != null ? " (" + root.substring(0, Math.min(200, root.length())) + ")" : "");
+        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, detail);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -285,8 +287,10 @@ public class GlobalExceptionHandler {
             }
         }
 
-        log.error("Error no controlado en procedimiento almacenado", ex);
-        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor");
+        log.error("Error no controlado en procedimiento almacenado: {}", ex.getMessage(), ex);
+        String root = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
+        String detail = "Error interno del servidor" + (root != null ? ": " + root.substring(0, Math.min(300, root.length())) : "");
+        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail);
     }
 
     // ResponseStatusException lanzada desde servicios con @Transactional (BackupService,
@@ -304,10 +308,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGenerica(Exception ex) {
-        // Sin este log, un 500 no deja ningún rastro server-side: el cliente
-        // recibe el detail genérico (correcto, no debe filtrar detalles
-        // internos) pero el equipo no tiene forma de diagnosticar la causa.
-        log.error("Error no controlado", ex);
-        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor");
+        log.error("Error no controlado: {}", ex.getMessage(), ex);
+        String detail = "Error interno del servidor: " + (ex.getMessage() != null ? ex.getMessage().substring(0, Math.min(300, ex.getMessage().length())) : ex.getClass().getSimpleName());
+        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail);
     }
 }
