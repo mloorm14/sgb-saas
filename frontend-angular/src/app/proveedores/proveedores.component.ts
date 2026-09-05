@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, debounceTime, takeUntil } from 'rxjs';
 import { ProveedorService } from '../core/services/proveedor.service';
 import { Proveedor } from '../core/models/proveedor.model';
 
@@ -10,7 +11,7 @@ import { Proveedor } from '../core/models/proveedor.model';
   imports: [CommonModule, FormsModule],
   templateUrl: './proveedores.component.html'
 })
-export class ProveedoresComponent implements OnInit {
+export class ProveedoresComponent implements OnInit, OnDestroy {
   proveedores: Proveedor[] = [];
   filtrados: Proveedor[] = [];
   cargando = false;
@@ -22,6 +23,9 @@ export class ProveedoresComponent implements OnInit {
   tamanoPagina = 10;
   totalPaginasServer = 1;
 
+  private filtro$ = new Subject<void>();
+  private destroy$ = new Subject<void>();
+
   // form
   mostrarForm = false;
   editando: Proveedor | null = null;
@@ -31,7 +35,18 @@ export class ProveedoresComponent implements OnInit {
 
   constructor(private proveedorService: ProveedorService) {}
 
-  ngOnInit(): void { this.cargar(); }
+  ngOnInit(): void {
+    this.cargar();
+    this.filtro$.pipe(debounceTime(3000), takeUntil(this.destroy$)).subscribe(() => {
+      this.pagina = 0;
+      this.cargar();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   totalElementos = 0;
 
@@ -55,8 +70,7 @@ export class ProveedoresComponent implements OnInit {
   }
 
   aplicarFiltro(): void {
-    this.pagina = 0;
-    this.cargar();
+    this.filtro$.next();
   }
 
   get totalPaginas(): number {
