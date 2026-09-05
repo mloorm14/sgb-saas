@@ -1466,3 +1466,16 @@ por una:
     sin HU/CU en absoluto (la propia matriz los marca con `—` en ambas
     columnas, no una omisión de este SRS) — mismo criterio que REQ-F-010
     ya establecía en la versión anterior.
+
+---
+
+## Aprobación del docente-director
+
+El presente documento (SRS v1.0.0) se somete a revisión y aprobación del
+docente-director del Proyecto Fin de Curso.
+
+**Docente-director:** Dr. Gleiston Cicerón Guerrero Ulloa, Ph.D.
+
+\vspace{2.5cm}
+
+**Firma:** ______________________
