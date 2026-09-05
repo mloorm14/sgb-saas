@@ -9,6 +9,8 @@ describe('DashboardBibliotecarioComponent', () => {
   let authService: jasmine.SpyObj<AuthService>;
 
   beforeEach(async () => {
+    // El shell persiste colapso en localStorage: aislar cada test del orden de ejecución.
+    localStorage.clear();
     authService = jasmine.createSpyObj('AuthService', ['isLoggedIn', 'hasRole', 'logout', 'getCorreo']);
     authService.isLoggedIn.and.returnValue(true);
     authService.hasRole.and.callFake((...roles: string[]) => roles.includes('BIBLIOTECARIO'));

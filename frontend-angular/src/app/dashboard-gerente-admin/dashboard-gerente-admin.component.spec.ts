@@ -10,6 +10,8 @@ describe('DashboardGerenteAdminComponent', () => {
 
   describe('con rol GERENTE', () => {
     beforeEach(async () => {
+      // El shell persiste colapso en localStorage: aislar cada test del orden de ejecución.
+      localStorage.clear();
       authService = jasmine.createSpyObj('AuthService', ['isLoggedIn', 'hasRole', 'logout', 'getCorreo']);
       authService.isLoggedIn.and.returnValue(true);
       authService.hasRole.and.callFake((...roles: string[]) => roles.includes('GERENTE'));
@@ -50,6 +52,8 @@ describe('DashboardGerenteAdminComponent', () => {
 
   describe('con rol ADMIN', () => {
     beforeEach(async () => {
+      // El shell persiste colapso en localStorage: aislar cada test del orden de ejecución.
+      localStorage.clear();
       authService = jasmine.createSpyObj('AuthService', ['isLoggedIn', 'hasRole', 'logout', 'getCorreo']);
       authService.isLoggedIn.and.returnValue(true);
       authService.hasRole.and.callFake((...roles: string[]) => roles.includes('ADMIN'));
