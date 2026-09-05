@@ -64,6 +64,20 @@ Pega este prompt en una nueva sesión para confirmar que responde:
 
 *(Nota: `AuthService` existe dos veces en este repo — backend `backend-springboot/src/main/java/com/uteq/backend/service/AuthService.java` y frontend `frontend-angular/src/app/core/services/auth.service.ts`. Si el grafo responde "Ambiguous", reintentá con el path repo-relativo del que te interese.)*
 
+### 🌐 Opciones de Visualización Interactiva (`graph.html`)
+
+Puedes explorar el mapa visual de la arquitectura en `graphify-out/graph.html` en dos modalidades:
+
+1. **🧩 Vista Agregada por Comunidades (Rápida y Fluida):**
+   * **Descripción:** Agrupa los ~5,900 nodos en burbujas de colores según sus módulos/capas (ideal para no congelar el navegador).
+   * **Prompt:** *"Genera el grafo con clustering ejecutando `graphify extract . --code-only` y luego `graphify cluster-only .` para regenerar `graph.html`, y ábrelo."*
+
+2. **🌌 Vista Plana Completa (Todos los Nodos Individuales):**
+   * **Descripción:** Dibuja punto por punto todos los elementos del proyecto en un solo mapa de red.
+   * **Prompt:** *"Genera la vista plana sin clustering ejecutando `graphify extract . --code-only --no-cluster` y luego `graphify export html --node-limit 10000` para ver todos los nodos en `graph.html`."*
+
+   💡 *Nota sobre el layout visual: `graph.html` utiliza una simulación de fuerzas (D3.js). La posición visual de los nodos/burbujas puede cambiar en cada recarga, pero la estructura de conexiones y dependencias del código es exactamente la misma.*
+
 ---
 
 ## 🎭 3. Playwright MCP (Pruebas E2E y QA en Render)
@@ -133,6 +147,7 @@ Pega este prompt en el chat para verificar que el navegador inicia localmente (s
 | **Ruta entre capas** | *"Traza la ruta de dependencias entre `RegistroComponent` y `AuthService` usando el grafo."* |
 | **Prueba visual en Render** | *"Usa Playwright para abrir la URL de Render y verifica si el módulo de proveedores carga correctamente."* |
 | **QA visible de módulo** | *"Ejecuta un QA visible de [Módulo] en Render sin confirmar acciones destructivas."* |
+| **Ver mapa visual interactivo del grafo** | `start graphify-out/graph.html` (o pedirle al agente: *"Actualiza el grafo y dame la ruta absoluta de graph.html para abrirlo"*). |
 
 ---
 
