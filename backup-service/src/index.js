@@ -74,6 +74,25 @@ const server = app.listen(PORT, () => {
     console.log(`Cron job configurado (revisión cada hora)`);
 });
 
+// Al arrancar, limpiar cualquier registro que quedó atascado en 'ejecutando'
+// por un reinicio abrupto o un crash anterior del servicio (sin este barrido
+// el guard del trigger responde 429 para siempre). El gracefulShutdown ya
+// cubre SIGTERM; esto cubre kill -9 / caídas sin señal.
+try {
+    pool.query(
+        `UPDATE registros_respaldo
+         SET estado = 'fallido',
+             mensaje_error = 'Servicio reiniciado durante ejecución',
+             finalizado_en = now()
+         WHERE estado = 'ejecutando'`
+    ).then(
+        res => { if (res.rowCount > 0) console.log(`Auto-limpieza: ${res.rowCount} registro(s) atascado(s) marcado(s) como fallido`); },
+        err => console.warn('Aviso: no se pudieron limpiar registros atascados:', err.message)
+    );
+} catch (err) {
+    console.warn('Aviso: pool no inicializado, se omite auto-limpieza:', err.message);
+}
+
 function gracefulShutdown(signal) {
     console.log(`Recibido ${signal}, cerrando...`);
     const { abortCurrentDump } = require('./dump');
