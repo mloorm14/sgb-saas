@@ -68,13 +68,15 @@ Pega este prompt en una nueva sesión para confirmar que responde:
 
 Puedes explorar el mapa visual de la arquitectura en `graphify-out/graph.html` en dos modalidades:
 
-1. **🧩 Vista Agregada por Comunidades (Rápida y Fluida):**
-   * **Descripción:** Agrupa los ~5,900 nodos en burbujas de colores según sus módulos/capas (ideal para no congelar el navegador).
-   * **Prompt:** *"Genera el grafo con clustering ejecutando `graphify extract . --code-only` y luego `graphify cluster-only .` para regenerar `graph.html`, y ábrelo."*
+1. **🧩 Vista Normal / Agregada (Recomendada - Agrupada por comunidades):**
+   * **Descripción:** Extrae, calcula las comunidades y abre la interfaz visual sin saturar la pantalla.
+   * **Prompt directo:**
+     > *"Actualiza el grafo en vista agregada y ábrelo en mi navegador ejecutando en la terminal: `graphify extract . --code-only`, luego `graphify cluster-only .` y finalmente `start graphify-out/graph.html`."*
 
-2. **🌌 Vista Plana Completa (Todos los Nodos Individuales):**
-   * **Descripción:** Dibuja punto por punto todos los elementos del proyecto en un solo mapa de red.
-   * **Prompt:** *"Genera la vista plana sin clustering ejecutando `graphify extract . --code-only --no-cluster` y luego `graphify export html --node-limit 10000` para ver todos los nodos en `graph.html`."*
+2. **🌌 Vista Plana Completa (Todos los nodos individuales):**
+   * **Descripción:** Fuerza el renderizado punto por punto de todos los nodos del repositorio.
+   * **Prompt directo:**
+     > *"Genera la vista plana completa del grafo y ábrela en mi navegador ejecutando en la terminal: `graphify extract . --code-only --no-cluster`, luego `graphify export html --node-limit 10000` y finalmente `start graphify-out/graph.html`."*
 
    💡 *Nota sobre el layout visual: `graph.html` utiliza una simulación de fuerzas (D3.js). La posición visual de los nodos/burbujas puede cambiar en cada recarga, pero la estructura de conexiones y dependencias del código es exactamente la misma.*
 
