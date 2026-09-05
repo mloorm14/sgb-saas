@@ -18,6 +18,7 @@ import { Idioma } from '../core/models/idioma.model';
 import { EstadoLibro } from '../core/models/estado-libro.model';
 import { Proveedor } from '../core/models/proveedor.model';
 import { ProveedorService } from '../core/services/proveedor.service';
+import { ToastService } from '../shared/toast/toast.service';
 import { Libro, LibroRequest } from '../core/models/libro.model';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 
@@ -124,6 +125,7 @@ export class LibrosComponent implements OnInit, OnDestroy {
     private estadoLibroService: EstadoLibroService,
     private proveedorService: ProveedorService,
     private authService: AuthService,
+    private toast: ToastService,
     private route: ActivatedRoute,
     private router: Router,
     private fb: FormBuilder
@@ -969,6 +971,11 @@ export class LibrosComponent implements OnInit, OnDestroy {
 
     accion.subscribe({
       next: (libro) => {
+        if (this.modoEdicion) {
+          this.toast.success('Libro actualizado', 'Los cambios se guardaron correctamente.');
+        } else {
+          this.toast.success('Libro creado', 'El libro quedó disponible en el catálogo.');
+        }
         this.guardarPortadaPendiente(libro.id);
         this.cerrarFormulario();
       },

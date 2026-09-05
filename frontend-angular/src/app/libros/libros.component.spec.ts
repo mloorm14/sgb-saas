@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
 import { LibrosComponent } from './libros.component';
 import { LibroService } from '../core/services/libro.service';
@@ -8,11 +8,13 @@ import { AutorService } from '../core/services/autor.service';
 import { EditorialService } from '../core/services/editorial.service';
 import { IdiomaService } from '../core/services/idioma.service';
 import { EstadoLibroService } from '../core/services/estado-libro.service';
+import { ToastService } from '../shared/toast/toast.service';
 
 describe('LibrosComponent', () => {
   let component: LibrosComponent;
   let fixture: ComponentFixture<LibrosComponent>;
   let libroService: jasmine.SpyObj<LibroService>;
+  let toastService: jasmine.SpyObj<ToastService>;
   let categoriaService: jasmine.SpyObj<CategoriaService>;
   let autorService: jasmine.SpyObj<AutorService>;
   let editorialService: jasmine.SpyObj<EditorialService>;
@@ -43,6 +45,7 @@ describe('LibrosComponent', () => {
     editorialService = jasmine.createSpyObj('EditorialService', ['listar']);
     idiomaService = jasmine.createSpyObj('IdiomaService', ['listar']);
     estadoLibroService = jasmine.createSpyObj('EstadoLibroService', ['listar']);
+    toastService = jasmine.createSpyObj('ToastService', ['success', 'error', 'warning', 'info']);
     libroService.listar.and.returnValue(of({ content: [libroBase], totalPages: 1 } as any));
     libroService.obtenerPortada.and.returnValue(of(new Blob(['img'], { type: 'image/jpeg' })));
     categoriaService.listar.and.returnValue(of([{ id: 1, nombre: 'Tecnología' }, { id: 2, nombre: 'Ficción' }]));
@@ -60,6 +63,7 @@ describe('LibrosComponent', () => {
         { provide: EditorialService, useValue: editorialService },
         { provide: IdiomaService, useValue: idiomaService },
         { provide: EstadoLibroService, useValue: estadoLibroService },
+        { provide: ToastService, useValue: toastService },
         { provide: ActivatedRoute, useValue: { queryParams: of({}) } }
       ]
     }).compileComponents();
@@ -208,6 +212,65 @@ describe('LibrosComponent', () => {
       expect(component.form.valid).toBeTrue();
       component.guardarLibro();
       expect(libroService.crear).toHaveBeenCalled();
+    });
+
+    it('muestra toast verde al crear el libro', () => {
+      libroService.crear.and.returnValue(of(libroBase as any));
+      component.form.patchValue({
+        isbn: '9780132350884',
+        titulo: 'Clean Code',
+        anioPublicacion: 2008,
+        stockTotal: 3,
+        stockDisponible: 2,
+        editorialId: 1,
+        idiomaId: 1,
+        estadoId: 1
+      });
+
+      component.guardarLibro();
+
+      expect(toastService.success).toHaveBeenCalledTimes(1);
+      expect(toastService.success).toHaveBeenCalledWith('Libro creado', jasmine.any(String));
+    });
+
+    it('muestra toast verde al actualizar el libro', () => {
+      libroService.actualizar.and.returnValue(of(libroBase as any));
+      component.modoEdicion = true;
+      component.libroSeleccionadoId = 5;
+      component.form.patchValue({
+        isbn: '9780132350884',
+        titulo: 'Clean Code',
+        anioPublicacion: 2008,
+        stockTotal: 3,
+        stockDisponible: 2,
+        editorialId: 1,
+        idiomaId: 1,
+        estadoId: 1
+      });
+
+      component.guardarLibro();
+
+      expect(toastService.success).toHaveBeenCalledTimes(1);
+      expect(toastService.success).toHaveBeenCalledWith('Libro actualizado', jasmine.any(String));
+    });
+
+    it('no muestra toast si el backend rechaza el guardado', () => {
+      libroService.crear.and.returnValue(throwError(() => ({ error: { detail: 'ISBN duplicado' } })));
+      component.form.patchValue({
+        isbn: '9780132350884',
+        titulo: 'Clean Code',
+        anioPublicacion: 2008,
+        stockTotal: 3,
+        stockDisponible: 2,
+        editorialId: 1,
+        idiomaId: 1,
+        estadoId: 1
+      });
+
+      component.guardarLibro();
+
+      expect(toastService.success).not.toHaveBeenCalled();
+      expect(component.errorMsg).toContain('ISBN duplicado');
     });
   });
 
