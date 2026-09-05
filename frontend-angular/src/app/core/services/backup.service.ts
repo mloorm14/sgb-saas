@@ -139,6 +139,12 @@ export class BackupService {
     if (tipo) params = params.set('tipo', tipo);
     return this.http.get<RegistroRespaldo[]>(`${this.drUrl}/registros`, { params }).pipe(catchError(err => this.manejarError(err)));
   }
+  descargarRegistro(id: number | string): Observable<Blob> {
+    return this.http.get(`${this.drUrl}/registros/${id}/download`, { responseType: 'blob' }).pipe(catchError(err => this.manejarError(err)));
+  }
+  eliminarRegistro(id: number | string): Observable<void> {
+    return this.http.delete<void>(`${this.drUrl}/registros/${id}`).pipe(catchError(err => this.manejarError(err)));
+  }
   dispararBackupCompleto(): Observable<any> {
     return this.http.post(`${this.drUrl}/trigger`, {}).pipe(catchError(err => this.manejarError(err)));
   }

@@ -49,6 +49,24 @@ public class RespaldoCompletoController {
         return ResponseEntity.ok(lista);
     }
 
+    @DeleteMapping("/registros/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> eliminarRegistro(@PathVariable Long id) {
+        service.eliminar(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/registros/{id}/download")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<byte[]> descargarRegistro(@PathVariable Long id) {
+        byte[] contenido = service.descargar(id);
+        return ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.parseMediaType("application/zip"))
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=backup-completo-" + id + ".zip")
+                .contentLength(contenido.length)
+                .body(contenido);
+    }
+
     // ── Registro de ejecución (llamado desde el microservicio Node.js vía token interno) ──
     @PostMapping("/registros")
     @PreAuthorize("hasRole('ADMIN')")
@@ -76,8 +94,8 @@ public class RespaldoCompletoController {
         try {
             org.springframework.http.client.SimpleClientHttpRequestFactory factory =
                     new org.springframework.http.client.SimpleClientHttpRequestFactory();
-            factory.setConnectTimeout(5000);
-            factory.setReadTimeout(30000);
+            factory.setConnectTimeout(10000);
+            factory.setReadTimeout(90000); // 90 segundos para tolerar el cold-start de Render
             org.springframework.web.client.RestTemplate restTemplate =
                     new org.springframework.web.client.RestTemplate(factory);
             java.util.Map<String, Object> reqBody = new java.util.HashMap<>();

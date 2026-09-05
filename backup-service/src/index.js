@@ -35,11 +35,20 @@ app.use('/api/v1/trigger', (req, res, next) => {
 app.post('/api/v1/trigger', async (req, res) => {
     const { usuarioId } = req.body;
     if (backupEnCurso) return res.status(429).json({ mensaje: 'Ya hay un respaldo en ejecucion', retryAfter: 60 });
+    
+    // Adquirir el cerrojo sincrónicamente antes de ceder el control al event loop
+    backupEnCurso = true;
+
     try {
         const chk = await pool.query("SELECT id FROM registros_respaldo WHERE estado='ejecutando' LIMIT 1");
-        if (chk.rows.length > 0) return res.status(429).json({ mensaje: 'Ya hay un respaldo en ejecucion', retryAfter: 60 });
-    } catch (e) {}
-    backupEnCurso = true;
+        if (chk.rows.length > 0) {
+            backupEnCurso = false; // Liberar si la BD indica que hay uno corriendo
+            return res.status(429).json({ mensaje: 'Ya hay un respaldo en ejecucion', retryAfter: 60 });
+        }
+    } catch (e) {
+        // Si la BD falla, continuamos con el lock en memoria
+    }
+
     res.status(202).json({ message: 'Backup completo iniciado en background' });
     try {
         await runBackup('manual', usuarioId);

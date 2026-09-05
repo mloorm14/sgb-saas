@@ -748,11 +748,11 @@ export class ConfiguracionSistemaComponent implements OnInit, OnDestroy {
   drHabilitado: boolean = false;
   guardandoConfigDR = false;
 
-  cargarRegistrosRespaldo(tipo: string): void {
-    this.cargandoRegistros = true;
+  cargarRegistrosRespaldo(tipo: string, silent: boolean = false): void {
+    if (!silent) this.cargandoRegistros = true;
     this.backupService.listarRegistrosRespaldo(tipo).subscribe({
-      next: (data) => { this.registrosRespaldo = data; this.cargandoRegistros = false; },
-      error: () => { this.cargandoRegistros = false; }
+      next: (data) => { this.registrosRespaldo = data; if (!silent) this.cargandoRegistros = false; },
+      error: () => { if (!silent) this.cargandoRegistros = false; }
     });
   }
   cargarConfigDR(): void {
@@ -789,7 +789,7 @@ export class ConfiguracionSistemaComponent implements OnInit, OnDestroy {
         let intentos = 0;
         this.pollingSub = timer(2000, 5000).subscribe(() => {
           intentos++;
-          this.cargarRegistrosRespaldo(tipoRegistro);
+          this.cargarRegistrosRespaldo(tipoRegistro, true);
           if (intentos >= 24) this.terminarPollingBackup(tempId);
           // Si ya hay un registro exitoso con iniciadoEn posterior al skeleton, remover skeleton y detener
           const completado = this.registrosRespaldo.some(r => r.id !== tempId && r.estado === 'exitoso' && new Date(r.iniciadoEn).getTime() >= new Date(inicioSkeleton).getTime() - 1000);
@@ -813,6 +813,41 @@ export class ConfiguracionSistemaComponent implements OnInit, OnDestroy {
     this.pollingSub = undefined;
     this.skeletonIds.delete(tempId);
     this.registrosRespaldo = this.registrosRespaldo.filter(r => r.id !== tempId || this.skeletonIds.has(tempId));
+  }
+
+  descargarRegistroDR(r: any): void {
+    this.toast.info('Descargando', 'Preparando archivo...');
+    this.backupService.descargarRegistro(r.id).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = r.nombreArchivo || `backup-completo-${r.id}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        this.toast.error('Error', err?.error?.detail ?? 'No se pudo descargar el archivo');
+      }
+    });
+  }
+
+  eliminarRegistroDR(r: any): void {
+    this.confirm.confirmar('Eliminar respaldo', `¿Está seguro de eliminar el respaldo completo del ${this.formatearHistorial(r.iniciadoEn)}? Esta acción es irreversible.`, 'Eliminar', 'Cancelar').pipe(take(1)).subscribe(res => {
+      if (res) {
+        this.backupService.eliminarRegistro(r.id).subscribe({
+          next: () => {
+            this.toast.success('Eliminado', 'El respaldo ha sido eliminado');
+            this.cargarRegistrosRespaldo(this.subSubmoduloSeleccionado?.includes('auto') ? 'automatico' : 'manual');
+          },
+          error: (err) => {
+            this.toast.error('Error', err?.error?.detail ?? 'Error al eliminar el respaldo');
+          }
+        });
+      }
+    });
   }
 
   cargarProgramaciones(): void {

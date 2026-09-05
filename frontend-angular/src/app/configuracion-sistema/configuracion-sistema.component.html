@@ -720,6 +720,7 @@
                   <th class="px-md py-sm">Archivo</th>
                   <th class="px-md py-sm">Tamaño</th>
                   <th class="px-md py-sm">Estado</th>
+                  <th class="px-md py-sm text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-outline-variant">
@@ -731,6 +732,7 @@
                       <td class="px-md py-sm"><div class="bg-surface-container-low h-4 rounded w-2/3"></div></td>
                       <td class="px-md py-sm"><div class="bg-surface-container-low h-4 rounded w-1/4"></div></td>
                       <td class="px-md py-sm"><div class="bg-surface-container-low h-4 rounded w-1/3"></div></td>
+                      <td class="px-md py-sm"></td>
                     </tr>
                   } @else {
                     <tr class="font-body-sm text-body-sm text-on-surface hover:bg-surface-container-low/40">
@@ -750,6 +752,20 @@
                         @if (r.mensajeError) {
                           <p class="font-body-xs text-body-xs text-error mt-xs">{{ r.mensajeError }}</p>
                         }
+                      </td>
+                      <td class="px-md py-sm">
+                        <div class="flex items-center justify-end gap-xs">
+                          @if (r.estado === 'exitoso' && r.rutaR2) {
+                            <button type="button" (click)="descargarRegistroDR(r)" aria-label="Descargar"
+                              class="w-8 h-8 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center hover:bg-primary/10 text-primary cursor-pointer">
+                              <span class="material-symbols-outlined text-[18px]">download</span>
+                            </button>
+                          }
+                          <button type="button" (click)="eliminarRegistroDR(r)" aria-label="Eliminar"
+                            class="w-8 h-8 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center hover:bg-error-container text-error cursor-pointer">
+                            <span class="material-symbols-outlined text-[18px]">delete</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   }

@@ -22,12 +22,16 @@ public class RespaldoCompletoService {
     private final RegistroRespaldoRepository registroRepo;
     private final UsuarioRepository usuarioRepository;
 
+    private final BackupStorageService storageService;
+
     public RespaldoCompletoService(ConfiguracionRespaldoRepository configRepo,
                                    RegistroRespaldoRepository registroRepo,
-                                   UsuarioRepository usuarioRepository) {
+                                   UsuarioRepository usuarioRepository,
+                                   BackupStorageService storageService) {
         this.configRepo = configRepo;
         this.registroRepo = registroRepo;
         this.usuarioRepository = usuarioRepository;
+        this.storageService = storageService;
     }
 
     // ── Configuración ────────────────────────────────────────────────────────
@@ -69,6 +73,42 @@ public class RespaldoCompletoService {
 
     public List<RegistroRespaldo> listarTodos() {
         return registroRepo.findAll();
+    }
+
+    @Transactional
+    public void eliminar(Long id) {
+        RegistroRespaldo r = registroRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Registro no encontrado"));
+        if (r.getRutaR2() != null) {
+            try {
+                String key = extraerKey(r.getRutaR2());
+                storageService.delete(key);
+            } catch (Exception ignored) {
+            }
+        }
+        registroRepo.delete(r);
+    }
+
+    public byte[] descargar(Long id) {
+        RegistroRespaldo r = registroRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Registro no encontrado"));
+        if (r.getRutaR2() == null || r.getRutaR2().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No hay archivo asociado a este registro");
+        }
+        String key = extraerKey(r.getRutaR2());
+        return storageService.download(key);
+    }
+
+    private String extraerKey(String ruta) {
+        // Node.js retorna "s3://bucket/backups/..." o una ruta local.
+        if (ruta.startsWith("s3://")) {
+            String sinEsquema = ruta.substring(5);
+            int idx = sinEsquema.indexOf('/');
+            if (idx != -1 && idx < sinEsquema.length() - 1) {
+                return sinEsquema.substring(idx + 1);
+            }
+        }
+        return ruta;
     }
 
     // ── Registro de ejecución (llamado desde el microservicio Node.js via token interno) ──
