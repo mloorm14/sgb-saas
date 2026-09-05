@@ -106,6 +106,7 @@ export class ReportesComponent implements OnInit {
   librosDia = '';
   librosTipoDias: number | null = null;
   limiteTop = 10;
+  filtroLibrosCategoriaId: number | null = null;
 
   // Morosidad
   morosidadCorreo = '';
@@ -328,6 +329,7 @@ export class ReportesComponent implements OnInit {
         this.librosDia = '';
         this.librosTipoDias = null;
         this.limiteTop = 10;
+        this.filtroLibrosCategoriaId = null;
         this.librosPage = 0;
         break;
       case 'morosidad':
@@ -389,7 +391,7 @@ export class ReportesComponent implements OnInit {
     this.cargando = true;
     this.errorMsg = '';
     const rango = this.rangoIso(this.librosDesde, this.librosHasta, this.librosDia, this.librosTipoDias);
-    this.reporteService.librosMasPrestadosDetallado(rango.desde, rango.hasta, this.limiteTop, undefined, this.librosPage, this.librosPageSize).subscribe({
+    this.reporteService.librosMasPrestadosDetallado(rango.desde, rango.hasta, this.limiteTop, this.filtroLibrosCategoriaId ?? undefined, this.librosPage, this.librosPageSize).subscribe({
       next: (page) => {
         this.libros = page.content;
         this.librosTotalPagesServer = page.totalPages;

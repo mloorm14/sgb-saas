@@ -238,14 +238,16 @@ export class UsuariosComponent implements OnInit {
     if (!this.usuarioAccion || !motivo || this.enviandoEstado) return;
     this.enviandoEstado = true;
     this.errorModal = '';
+    const nombreUsuario = this.usuarioAccion.nombre;
+    const esBloqueo = this.nuevoEstado === 'INACTIVO';
 
     this.usuarioAdminService.cambiarEstado(this.usuarioAccion.id, this.nuevoEstado, motivo).subscribe({
       next: () => {
         this.enviandoEstado = false;
         this.cerrarModalEstado();
-        this.mensajeOk = this.nuevoEstado === 'INACTIVO'
-          ? `Usuario ${this.usuarioAccion?.nombre} bloqueado`
-          : `Usuario ${this.usuarioAccion?.nombre} activado`;
+        this.mensajeOk = esBloqueo
+          ? `Usuario ${nombreUsuario} bloqueado`
+          : `Usuario ${nombreUsuario} activado`;
         this.cargarPagina();
       },
       error: (err) => {

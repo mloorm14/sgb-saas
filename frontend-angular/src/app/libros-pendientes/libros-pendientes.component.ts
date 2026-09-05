@@ -87,7 +87,7 @@ export class LibrosPendientesComponent implements OnInit, OnDestroy {
     });
     this.cargar();
     this.filtro$.pipe(
-      debounceTime(300),
+      debounceTime(3000),
       distinctUntilChanged(),
       takeUntil(this.destroy$)
     ).subscribe(() => {
