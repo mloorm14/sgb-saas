@@ -66,9 +66,9 @@ Pega este prompt en una nueva sesión para confirmar que responde:
 
 ### 🌐 Opciones de Visualización Interactiva (`graph.html`)
 
-Puedes explorar el mapa visual de la arquitectura en `graphify-out/graph.html` en dos modalidades:
+Puedes explorar el mapa visual de la arquitectura en `graphify-out/graph.html` en dos modalidades mediante estos prompts de un solo paso:
 
-1. **🧩 Vista Normal / Agregada (Recomendada - Agrupada por comunidades):**
+1. **🧩 Vista Normal / Agregada (Recomendada - Agrupada por Comunidades):**
    * **Descripción:** Extrae, calcula las comunidades y abre la interfaz visual sin saturar la pantalla.
    * **Prompt directo:**
      > *"Actualiza el grafo en vista agregada y ábrelo en mi navegador ejecutando en la terminal: `graphify extract . --code-only`, luego `graphify cluster-only .` y finalmente `start graphify-out/graph.html`."*
@@ -78,7 +78,7 @@ Puedes explorar el mapa visual de la arquitectura en `graphify-out/graph.html` e
    * **Prompt directo:**
      > *"Genera la vista plana completa del grafo y ábrela en mi navegador ejecutando en la terminal: `graphify extract . --code-only --no-cluster`, luego `graphify export html --node-limit 10000` y finalmente `start graphify-out/graph.html`."*
 
-   💡 *Nota sobre el layout visual: `graph.html` utiliza una simulación de fuerzas (D3.js). La posición visual de los nodos/burbujas puede cambiar en cada recarga, pero la estructura de conexiones y dependencias del código es exactamente la misma.*
+> 💡 **Nota sobre el layout visual:** `graph.html` utiliza una simulación de fuerzas (D3.js). La posición visual de los nodos/burbujas puede cambiar ligeramente en cada recarga, pero la estructura de conexiones y dependencias del código es exactamente la misma.
 
 ---
 
