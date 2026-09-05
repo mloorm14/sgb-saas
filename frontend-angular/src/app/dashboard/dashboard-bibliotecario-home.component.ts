@@ -2,11 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReservacionService } from '../core/services/reservacion.service';
 import { ReservacionHoy } from '../core/models/reservacion.model';
+import { ReservacionesHoyCardComponent } from '../shared/reservaciones-hoy-card/reservaciones-hoy-card.component';
 
 @Component({
   selector: 'app-dashboard-bibliotecario-home',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ReservacionesHoyCardComponent],
   templateUrl: './dashboard-bibliotecario-home.component.html'
 })
 export class DashboardBibliotecarioHomeComponent implements OnInit {

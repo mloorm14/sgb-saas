@@ -6,11 +6,12 @@ import { ReporteService, LibroMasPrestado, ReporteMorosidad } from '../core/serv
 import { ReservacionService } from '../core/services/reservacion.service';
 import { AuthService } from '../core/services/auth.service';
 import { ReservacionHoy } from '../core/models/reservacion.model';
+import { ReservacionesHoyCardComponent } from '../shared/reservaciones-hoy-card/reservaciones-hoy-card.component';
 
 @Component({
   selector: 'app-dashboard-gerente-admin-home',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReservacionesHoyCardComponent],
   templateUrl: './dashboard-gerente-admin-home.component.html',
   styles: [`
     .kpi-card { background: linear-gradient(135deg, rgba(0,54,148,0.04), rgba(0,54,148,0)); }
