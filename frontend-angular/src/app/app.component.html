@@ -76,7 +76,9 @@
 <app-loader />
 <app-confirm-dialog />
 
-<router-outlet />
+<main id="contenido-principal" class="flex-1 min-w-0">
+  <router-outlet />
+</main>
 
 @if (esLector() && !enRutaLector) {
   <app-chatbot-widget />
