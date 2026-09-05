@@ -145,9 +145,10 @@ public class UsuarioAdminService {
      * por multas impagas, que lo aplica {@code sp_pagar_multa}/
      * {@code sp_anular_multa} sin intervención de un ADMIN.
      */
-    @Transactional
+     @Transactional
     public void cambiarEstado(Long usuarioId, String nuevoEstado, String motivo, Authentication authentication) {
         Usuario usuario = usuarioRepo.findById(usuarioId)
+                .or(() -> usuarioRepo.findByIdNative(usuarioId))
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
         EstadoUsuario estado = estadoUsuarioRepo.findByNombre(nuevoEstado)
                 .orElseThrow(() -> new IllegalArgumentException(ESTADO_NO_ENCONTRADO + nuevoEstado));
@@ -198,7 +199,9 @@ public class UsuarioAdminService {
 
     @Transactional
     public void eliminarUsuario(Long usuarioId, String motivo, Authentication authentication) {
-        Usuario usuario = usuarioRepo.findById(usuarioId).orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
+        Usuario usuario = usuarioRepo.findById(usuarioId)
+                .or(() -> usuarioRepo.findByIdNative(usuarioId))
+                .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
         EstadoUsuario inactivo = estadoUsuarioRepo.findByNombre("INACTIVO").orElseThrow(() -> new IllegalStateException("Estado INACTIVO no existe"));
         usuario.setEstado(inactivo);
         usuario.setActualizadoEn(Instant.now());

@@ -11,6 +11,9 @@ import java.util.UUID;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
+    // Nota: usuarios no tiene columna "estado" (42703); el estado normalizado
+    // es estado_id FK a estados_usuario (V2). Usar JOIN estados_usuario para
+    // leer eu.nombre como estado (ver queries de morosidad).
     Optional<Usuario> findByCorreo(String correo);
 
     // Autocompletado de usuarios por correo parcial (ventanilla de préstamos).
@@ -60,4 +63,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
             nativeQuery = true)
     @org.springframework.data.jpa.repository.Modifying
     int deleteNoVerificadosBefore(@org.springframework.data.repository.query.Param("cutoff") java.time.Instant cutoff);
+
+    // Lookup directo por PK sin filtros Hibernate (útil para admin cambiarEstado/eliminar
+    // cuando el registro existe con estado INACTIVO/BLOQUEADO y un @Where hipotético lo ocultaría).
+    @org.springframework.data.jpa.repository.Query(value = "SELECT * FROM usuarios WHERE id = :id", nativeQuery = true)
+    java.util.Optional<Usuario> findByIdNative(@org.springframework.data.repository.query.Param("id") Long id);
 }
