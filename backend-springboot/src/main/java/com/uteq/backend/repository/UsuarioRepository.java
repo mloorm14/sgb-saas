@@ -68,6 +68,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
             value = "DELETE FROM usuarios WHERE correo_verificado = false AND fecha_registro < :cutoff",
             nativeQuery = true)
     @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
     int deleteNoVerificadosBefore(@org.springframework.data.repository.query.Param("cutoff") java.time.Instant cutoff);
 
 
