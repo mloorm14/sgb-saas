@@ -835,7 +835,13 @@ export class ConfiguracionSistemaComponent implements OnInit, OnDestroy {
   }
 
   eliminarRegistroDR(r: any): void {
-    this.confirm.confirmar('Eliminar respaldo', `¿Está seguro de eliminar el respaldo completo del ${this.formatearHistorial(r.iniciadoEn)}? Esta acción es irreversible.`, 'Eliminar', 'Cancelar').pipe(take(1)).subscribe(res => {
+    this.confirm.confirm({
+      title: 'Eliminar respaldo',
+      message: `¿Está seguro de eliminar el respaldo completo del ${this.formatearHistorial(r.iniciadoEn)}? Esta acción es irreversible.`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      variant: 'danger'
+    }).pipe(take(1)).subscribe((res: boolean) => {
       if (res) {
         this.backupService.eliminarRegistro(r.id).subscribe({
           next: () => {
