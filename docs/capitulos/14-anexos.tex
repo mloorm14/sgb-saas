@@ -135,25 +135,26 @@ estándar de Brooke; \textbf{no se inventa aquí ninguna puntuación}.
 \label{sec:anexo-cicd}
 
 El flujo de integración continua del proyecto está definido en
-\texttt{.github/workflows/ci.yml} (job \texttt{build-and-test} sobre
-\texttt{ubuntu-latest}, disparado en \texttt{push}/\texttt{pull\_request}
-hacia \texttt{main} y \texttt{develop}). La guía pide evidencia visual
-de \textbf{tres corridas verdes consecutivas}. Esas capturas
-\textbf{aún no están en el repositorio}: el archivo
-\texttt{anexos/ci-pipeline-placeholder.png} (\autoref{fig:ci-pipeline-placeholder})
-es un placeholder explícito para que el equipo las sustituya
-manualmente cuando existan.
+\texttt{.github/workflows/ci.yml} (disparado en \texttt{push}/
+\texttt{pull\_request} hacia \texttt{main} y \texttt{develop}). La guía
+pide evidencia visual de \textbf{tres corridas verdes consecutivas}.
+Esas capturas \textbf{aún no están en el repositorio}: en su lugar se
+documenta aquí el pipeline real versionado, job por job, para que la
+evidencia visual futura sea verificable contra esta especificación
+(no se fabrican aquí capturas ni se declara un estado de CI no
+verificado en este anexo).
 
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.95\textwidth]{anexos/ci-pipeline-placeholder.png}
-\caption{Placeholder pendiente de captura manual: tres corridas verdes
-  consecutivas del pipeline CI/CD de GitHub Actions
-  (\texttt{.github/workflows/ci.yml}). Sustituir este archivo por las
-  capturas reales cuando estén disponibles; no se fabrican aquí
-  capturas ni se declara un estado de CI no verificado en este anexo.}
-\label{fig:ci-pipeline-placeholder}
-\end{figure}
+\begin{itemize}[leftmargin=1.4cm]
+  \item \textbf{build-and-test} (\texttt{ubuntu-latest}, servicios
+    Postgres + Redis): checkout, JDK~21, cliente \texttt{psql},
+    inicialización de esquema y procedimientos, auditoría de SQL
+    dinámico en procedimientos, build + tests Maven, archivo de
+    reporte SpotBugs + find-sec-bugs, validación de matriz de
+    trazabilidad.
+  \item \textbf{frontend} (\texttt{ubuntu-latest}): checkout, Node~20,
+    instalación de dependencias, lint (pendiente), tests en modo
+    headless, build de producción.
+\end{itemize}
 
 \section{Checklist Ralph et~al.\ (2021) --- Engineering Research}
 \label{sec:anexo-ralph}

@@ -295,3 +295,11 @@ Targets disponibles: `up` `down` `test` `bench` `audit` `docs` `all` `clean`.
 ## 📄 Estado del proyecto
 
 **Entrega 1B (Junio 2026):** módulo de autenticación JWT + CRUD de `Libro` con Spring Data JPA, Flyway, Redis y Docker Compose. Ver `docs/` para el informe técnico completo.
+
+## Integridad del entregable
+
+Digest SHA256 de `docs/informe-final.pdf` (compilado 2026-09-05, 111 páginas):
+
+```
+456ca9c51df741c36d710d3c8ae9a39c344e2d2ec94eda060e9b5c8986cc022a
+```

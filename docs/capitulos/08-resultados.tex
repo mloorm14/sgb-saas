@@ -71,6 +71,13 @@ alcanzable con $n=5$ es exactamente $0{,}0625$). Tamaño de efecto de
 Cliff's delta $=-0{,}68$ (efecto \textbf{grande}, convención
 $|\delta|\geq0{,}474$).
 
+\textbf{Correcciones por comparaciones múltiples.} No aplican en este
+estudio: se realizó una única comparación pareada planificada
+(\texttt{cache\_caliente} vs.\ \texttt{cache\_frio}), no una familia
+de contrastes post-hoc simultáneos sobre los mismos datos; por tanto
+no corresponde ajustar el nivel de significancia con Bonferroni, Holm
+ni Benjamini-Hochberg.
+
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.85\textwidth]{mediciones/perf/p95-comparacion-escenarios.pdf}
@@ -575,6 +582,25 @@ y el protocolo SUS se difieren formalmente como trabajo futuro para la
 fase de despliegue en producción (\autoref{sec:tf-sus}). Documentado
 como reabierto en \texttt{OBS-08} de
 \texttt{docs/observaciones/OBSERVACIONES.md}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.85\textwidth]{mediciones/sus/sus_boxplot.png}
+\caption{Distribución de puntuaciones SUS con datos mock/sintéticos de
+  prueba del pipeline (sin valor evidencial, $N=0$): la muestra real de
+  usabilidad queda reservada para fases futuras con despliegue en
+  producción.}
+\label{fig:res-sus-boxplot}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.85\textwidth]{mediciones/sus/sus_items_breakdown.pdf}
+\caption{Desglose por ítem Q1--Q10 del instrumento SUS con datos
+  mock/sintéticos de prueba del pipeline (sin valor evidencial,
+  $N=0$): muestra real reservada para fases futuras.}
+\label{fig:res-sus-items}
+\end{figure}
 
 \section{Resumen de bloques}
 \label{sec:res-resumen}
