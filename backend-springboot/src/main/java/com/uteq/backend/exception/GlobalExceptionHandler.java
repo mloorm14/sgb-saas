@@ -38,6 +38,7 @@ import org.springframework.jdbc.UncategorizedSQLException;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Todas las respuestas de error se devuelven como {@link ProblemDetail}
@@ -159,9 +160,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ProblemDetail handleBodyMalformed(HttpMessageNotReadableException ex) {
-        String detalle = ex.getMostSpecificCause() != null
-                ? ex.getMostSpecificCause().getMessage()
-                : "El cuerpo de la solicitud no es válido";
+        // getMostSpecificCause() nunca retorna null (retorna this sin causa).
+        String detalle = Objects.toString(
+                ex.getMostSpecificCause().getMessage(), "El cuerpo de la solicitud no es válido");
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detalle);
     }
 
@@ -238,7 +239,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({DataAccessResourceFailureException.class, UncategorizedDataAccessException.class})
     public ProblemDetail handleDataAccessResourceFailure(DataAccessException ex) {
         log.error("Fallo de acceso a dependencia de datos (Redis/BD) {}: {}", ex.getClass().getSimpleName(), ex.getMessage(), ex);
-        String root = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
+        String root = Objects.toString(ex.getMostSpecificCause().getMessage(), ex.getMessage());
         String detail = "El servicio de almacenamiento temporal no está disponible. Intente más tarde."
                 + (root != null ? " (" + root.substring(0, Math.min(200, root.length())) + ")" : "");
         return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, detail);
@@ -288,7 +289,7 @@ public class GlobalExceptionHandler {
         }
 
         log.error("Error no controlado en procedimiento almacenado: {}", ex.getMessage(), ex);
-        String root = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
+        String root = Objects.toString(ex.getMostSpecificCause().getMessage(), ex.getMessage());
         String detail = "Error interno del servidor" + (root != null ? ": " + root.substring(0, Math.min(300, root.length())) : "");
         return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail);
     }
@@ -309,7 +310,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGenerica(Exception ex) {
         log.error("Error no controlado: {}", ex.getMessage(), ex);
-        String detail = "Error interno del servidor: " + (ex.getMessage() != null ? ex.getMessage().substring(0, Math.min(300, ex.getMessage().length())) : ex.getClass().getSimpleName());
+        String msg = ex.getMessage();
+        String detail = "Error interno del servidor: " + (msg != null ? msg.substring(0, Math.min(300, msg.length())) : ex.getClass().getSimpleName());
         return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail);
     }
 }

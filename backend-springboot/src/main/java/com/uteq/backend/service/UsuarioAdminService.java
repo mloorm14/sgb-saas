@@ -213,7 +213,8 @@ public class UsuarioAdminService {
         String normalizado = correo.trim().toLowerCase();
         // Usa IgnoreCase para evitar 404 fantasma por mayúsculas en JWT; tolera mock sin stub
         Optional<Usuario> opt = usuarioRepo.findByCorreoIgnoreCase(normalizado);
-        if (opt != null && opt.isPresent()) return opt.get().getId();
+        // Optional nunca es null (Mockito retorna Optional.empty() por defecto).
+        if (opt.isPresent()) return opt.get().getId();
         return usuarioRepo.findByCorreo(correo)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo))
                 .getId();

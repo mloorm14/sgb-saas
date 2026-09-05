@@ -165,7 +165,7 @@ public class BackupController {
                     .append(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE).appendLiteral('T').appendPattern("HH:mm")
                     .optionalStart().appendPattern(":ss").optionalEnd()
                     .parseDefaulting(java.time.temporal.ChronoField.SECOND_OF_MINUTE, 0)
-                    .parseDefaulting(java.time.temporal.ChronoField.OFFSET_SECONDS, -5*3600).toFormatter();
+                    .parseDefaulting(java.time.temporal.ChronoField.OFFSET_SECONDS, java.time.ZoneOffset.of("-05:00").getTotalSeconds()).toFormatter();
             return OffsetDateTime.parse(text, fmt);
         } catch (Exception e) { throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Formato de fecha inválido: " + text); }
     }
