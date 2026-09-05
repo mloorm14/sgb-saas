@@ -76,7 +76,10 @@
 <app-loader />
 <app-confirm-dialog />
 
-<main id="contenido-principal" class="flex-1 min-w-0">
+<!-- Contenedor raíz del contenido: flex-columna con altura constrained
+     (restaura la cadena height:100% que necesitan las zonas de scroll;
+     NO scrollea él mismo para evitar doble scrollbar con los shells) -->
+<main id="contenido-principal" class="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
   <router-outlet />
 </main>
 
