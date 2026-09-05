@@ -8,5 +8,11 @@ public record ReporteInventarioResponseDTO(
         String categoriaNombre,
         Short stockTotal,
         Short stockDisponible,
-        String estadoDisponibilidad
+        String estadoDisponibilidad,
+        String editorialNombre,
+        String proveedorNombre,
+        String idiomaNombre,
+        String estadoLibroNombre,
+        Short anioPublicacion,
+        String ubicacionFisica
 ) {}

@@ -132,30 +132,63 @@ public interface PrestamoProcedureRepository extends Repository<Prestamo, Long> 
             @Param("p_categoria_id") Integer categoriaId
     );
 
-    @Query(value = "SELECT * FROM fn_reporte_inventario(:p_categoria_id, :p_estado_stock, :p_busqueda)",
+    @Query(value = "SELECT * FROM fn_reporte_inventario(:p_categoria_id, :p_estado_stock, :p_busqueda, :p_editorial_id, :p_proveedor_id, :p_estado_libro_id, :p_idioma_id, :p_anio_desde, :p_anio_hasta, :p_stock_total_min, :p_stock_total_max, :p_stock_disp_min, :p_stock_disp_max, :p_ubicacion)",
             nativeQuery = true)
     List<ReporteInventarioProjection> fnReporteInventario(
             @Param("p_categoria_id") Integer categoriaId,
             @Param("p_estado_stock") String estadoStock,
-            @Param("p_busqueda") String busqueda
+            @Param("p_busqueda") String busqueda,
+            @Param("p_editorial_id") Integer editorialId,
+            @Param("p_proveedor_id") Integer proveedorId,
+            @Param("p_estado_libro_id") Integer estadoLibroId,
+            @Param("p_idioma_id") Integer idiomaId,
+            @Param("p_anio_desde") Short anioDesde,
+            @Param("p_anio_hasta") Short anioHasta,
+            @Param("p_stock_total_min") Short stockTotalMin,
+            @Param("p_stock_total_max") Short stockTotalMax,
+            @Param("p_stock_disp_min") Short stockDispMin,
+            @Param("p_stock_disp_max") Short stockDispMax,
+            @Param("p_ubicacion") String ubicacion
     );
 
-    @Query(value = "SELECT * FROM fn_reporte_inventario(:p_categoria_id, :p_estado_stock, :p_busqueda) LIMIT :limit OFFSET :offset",
+    @Query(value = "SELECT * FROM fn_reporte_inventario(:p_categoria_id, :p_estado_stock, :p_busqueda, :p_editorial_id, :p_proveedor_id, :p_estado_libro_id, :p_idioma_id, :p_anio_desde, :p_anio_hasta, :p_stock_total_min, :p_stock_total_max, :p_stock_disp_min, :p_stock_disp_max, :p_ubicacion) LIMIT :limit OFFSET :offset",
             nativeQuery = true)
     List<ReporteInventarioProjection> fnReporteInventarioPaginado(
             @Param("p_categoria_id") Integer categoriaId,
             @Param("p_estado_stock") String estadoStock,
             @Param("p_busqueda") String busqueda,
+            @Param("p_editorial_id") Integer editorialId,
+            @Param("p_proveedor_id") Integer proveedorId,
+            @Param("p_estado_libro_id") Integer estadoLibroId,
+            @Param("p_idioma_id") Integer idiomaId,
+            @Param("p_anio_desde") Short anioDesde,
+            @Param("p_anio_hasta") Short anioHasta,
+            @Param("p_stock_total_min") Short stockTotalMin,
+            @Param("p_stock_total_max") Short stockTotalMax,
+            @Param("p_stock_disp_min") Short stockDispMin,
+            @Param("p_stock_disp_max") Short stockDispMax,
+            @Param("p_ubicacion") String ubicacion,
             @Param("limit") int limit,
             @Param("offset") int offset
     );
 
-    @Query(value = "SELECT COUNT(*) FROM fn_reporte_inventario(:p_categoria_id, :p_estado_stock, :p_busqueda)",
+    @Query(value = "SELECT COUNT(*) FROM fn_reporte_inventario(:p_categoria_id, :p_estado_stock, :p_busqueda, :p_editorial_id, :p_proveedor_id, :p_estado_libro_id, :p_idioma_id, :p_anio_desde, :p_anio_hasta, :p_stock_total_min, :p_stock_total_max, :p_stock_disp_min, :p_stock_disp_max, :p_ubicacion)",
             nativeQuery = true)
     long countReporteInventario(
             @Param("p_categoria_id") Integer categoriaId,
             @Param("p_estado_stock") String estadoStock,
-            @Param("p_busqueda") String busqueda
+            @Param("p_busqueda") String busqueda,
+            @Param("p_editorial_id") Integer editorialId,
+            @Param("p_proveedor_id") Integer proveedorId,
+            @Param("p_estado_libro_id") Integer estadoLibroId,
+            @Param("p_idioma_id") Integer idiomaId,
+            @Param("p_anio_desde") Short anioDesde,
+            @Param("p_anio_hasta") Short anioHasta,
+            @Param("p_stock_total_min") Short stockTotalMin,
+            @Param("p_stock_total_max") Short stockTotalMax,
+            @Param("p_stock_disp_min") Short stockDispMin,
+            @Param("p_stock_disp_max") Short stockDispMax,
+            @Param("p_ubicacion") String ubicacion
     );
 
     @Query(value = "SELECT * FROM fn_reporte_prestamos_vencidos(:p_dias_atraso_min, :p_busqueda)",

@@ -12,6 +12,18 @@ public interface ReporteInventarioProjection {
 
     String getCategoriaNombre();
 
+    String getEditorialNombre();
+
+    String getProveedorNombre();
+
+    String getIdiomaNombre();
+
+    String getEstadoLibroNombre();
+
+    Short getAnioPublicacion();
+
+    String getUbicacionFisica();
+
     Short getStockTotal();
 
     Short getStockDisponible();
