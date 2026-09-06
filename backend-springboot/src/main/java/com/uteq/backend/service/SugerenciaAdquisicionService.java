@@ -12,7 +12,6 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -96,21 +95,20 @@ public class SugerenciaAdquisicionService {
     }
 
     // ── Gestión por demanda: lo más pedido primero ──────────────────────────
-    // Sin sort explícito se ordena por cantidad desc (lo que alimenta la
-    // gráfica top de gestión). El sort del Pageable se respeta si viene.
+    // El orden vive en el JPQL (ORDER BY COUNT(s) DESC, isbn ASC). El sort
+    // del Pageable se ignora a propósito: Sort.by("cantidad") lo califica
+    // Spring contra la entidad (s.cantidad) y revienta con
+    // UnknownPathException porque cantidad es alias del SELECT, no campo.
     @Transactional(readOnly = true)
     public Page<SugerenciaAgrupadaDTO> getMasPedidos(Pageable pageable) {
-        Pageable efectivo = pageable.getSort().isSorted() ? pageable
-                : PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
-                        Sort.by(Sort.Direction.DESC, "cantidad"));
+        Pageable efectivo = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
         return sugerenciaRepo.findMasPedidosAgrupados(efectivo);
     }
 
     @Transactional(readOnly = true)
     public List<SugerenciaAgrupadaDTO> getMasPedidosList() {
         return sugerenciaRepo
-                .findMasPedidosAgrupados(PageRequest.of(0, Integer.MAX_VALUE,
-                        Sort.by(Sort.Direction.DESC, "cantidad")))
+                .findMasPedidosAgrupados(PageRequest.of(0, Integer.MAX_VALUE))
                 .getContent();
     }
 

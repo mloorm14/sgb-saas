@@ -210,6 +210,14 @@
 			<artifactId>spring-boot-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- @DataJpaTest: en Spring Boot 4 tambien es modulo propio
+		     (org.springframework.boot.data.jpa.test.autoconfigure); valida
+		     JPQL real contra H2 en vez de solo mocks. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-data-jpa-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<groupId>software.amazon.awssdk</groupId>
 			<artifactId>s3</artifactId>

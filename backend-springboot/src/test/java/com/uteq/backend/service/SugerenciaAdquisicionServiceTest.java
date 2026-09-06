@@ -136,21 +136,23 @@ class SugerenciaAdquisicionServiceTest {
         assertThat(sugerenciaService.confirmarAdquisicion("9781449373320", 3L)).isZero();
     }
 
-    // ── Test 8: getMasPedidos ordena por cantidad desc por defecto ──
+    // ── Test 8: getMasPedidos pasa el Pageable sin sort (el orden vive en
+    // el JPQL; Sort.by("cantidad") revienta con UnknownPathException) ──
     @Test
-    void getMasPedidos_sinSort_ordenaPorCantidadDesc() {
+    void getMasPedidos_pasaPageableSinSort() {
         org.springframework.data.domain.Page<com.uteq.backend.dto.SugerenciaAgrupadaDTO> pagina =
                 new org.springframework.data.domain.PageImpl<>(java.util.List.of());
         given(sugerenciaRepo.findMasPedidosAgrupados(org.mockito.ArgumentMatchers.any()))
                 .willReturn(pagina);
 
-        sugerenciaService.getMasPedidos(org.springframework.data.domain.PageRequest.of(0, 10));
+        sugerenciaService.getMasPedidos(org.springframework.data.domain.PageRequest.of(1, 20));
 
         org.mockito.ArgumentCaptor<org.springframework.data.domain.Pageable> captor =
                 org.mockito.ArgumentCaptor.forClass(org.springframework.data.domain.Pageable.class);
         org.mockito.Mockito.verify(sugerenciaRepo).findMasPedidosAgrupados(captor.capture());
-        assertThat(captor.getValue().getSort().getOrderFor("cantidad").getDirection())
-                .isEqualTo(org.springframework.data.domain.Sort.Direction.DESC);
+        assertThat(captor.getValue().getPageNumber()).isEqualTo(1);
+        assertThat(captor.getValue().getPageSize()).isEqualTo(20);
+        assertThat(captor.getValue().getSort().isSorted()).isFalse();
     }
 
     // ── Helpers ───────────────────────────────────────────
