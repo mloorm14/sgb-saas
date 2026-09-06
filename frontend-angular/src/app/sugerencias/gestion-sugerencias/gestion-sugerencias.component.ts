@@ -2,13 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SugerenciaAdquisicionService } from '../../core/services/sugerencia-adquisicion.service';
-import { SugerenciaAdquisicion } from '../../core/models/sugerencia-adquisicion.model';
+import { SugerenciaAgrupada } from '../../core/models/sugerencia-adquisicion.model';
 
-// Filtros del mockup 22. El valor se manda tal cual a ?estado=; el
-// backend filtra por el estado literal del catálogo (PENDIENTE/APROBADA/
-// RECHAZADA). "Todas" no envía el parámetro.
-type FiltroEstado = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | '';
-
+// Gestión por demanda (GERENTE/ADMIN): gráfica de columnas con lo más
+// pedido arriba + tabla paginada abajo con botón "Confirmar adquisición"
+// por ISBN. Al confirmar (botón o creando el libro en Libros), las PENDIENTE
+// de ese ISBN pasan a APROBADA y salen del listado.
 @Component({
   selector: 'app-gestion-sugerencias',
   standalone: true,
@@ -16,15 +15,13 @@ type FiltroEstado = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | '';
   templateUrl: './gestion-sugerencias.component.html'
 })
 export class GestionSugerenciasComponent implements OnInit {
-  filtroEstado: FiltroEstado = 'PENDIENTE';
-
-  sugerencias: SugerenciaAdquisicion[] = [];
-  totalPages: number = 0;
-  currentPage: number = 0;
-  pageSize: number = 10;
-  cargando: boolean = false;
-  errorMsg: string = '';
-  cambiandoId: number | null = null;
+  masPedidos: SugerenciaAgrupada[] = [];
+  totalPages = 0;
+  currentPage = 0;
+  pageSize = 10;
+  cargando = false;
+  errorMsg = '';
+  confirmandoIsbn: string | null = null;
 
   constructor(private sugerenciaService: SugerenciaAdquisicionService) {}
 
@@ -32,28 +29,61 @@ export class GestionSugerenciasComponent implements OnInit {
     this.cargarPagina();
   }
 
+  // ── Gráfica: top 8 de la página actual, barras en % del máximo ──
+  get chartItems(): SugerenciaAgrupada[] {
+    return this.masPedidos.slice(0, 8);
+  }
+
+  get maxCantidad(): number {
+    return this.chartItems.reduce((max, item) => Math.max(max, item.cantidad), 0);
+  }
+
+  alturaBarra(cantidad: number): number {
+    if (!this.maxCantidad) return 0;
+    return Math.max(4, Math.round((cantidad / this.maxCantidad) * 100));
+  }
+
+  // ── Paginación (patrón proveedores) ──
   get paginasVisibles(): number[] {
     return Array.from({ length: this.totalPages }, (_, i) => i);
   }
 
-  cambiarFiltro(estado: FiltroEstado): void {
-    if (this.filtroEstado === estado) return;
-    this.filtroEstado = estado;
+  get puedeAnterior(): boolean { return this.currentPage > 0; }
+  get puedeSiguiente(): boolean { return this.currentPage < this.totalPages - 1; }
+
+  irAPagina(pagina: number): void {
+    if (pagina < 0 || pagina >= this.totalPages || pagina === this.currentPage) return;
+    this.currentPage = pagina;
+    this.cargarPagina();
+  }
+
+  paginaAnterior(): void {
+    if (!this.puedeAnterior) return;
+    this.currentPage--;
+    this.cargarPagina();
+  }
+
+  paginaSiguiente(): void {
+    if (!this.puedeSiguiente) return;
+    this.currentPage++;
+    this.cargarPagina();
+  }
+
+  cambiarTamano(n: number): void {
+    this.pageSize = Number(n);
     this.currentPage = 0;
     this.cargarPagina();
   }
 
-  // Se llama desde el template (paginacion numerada) -> no private.
   cargarPagina(): void {
     this.cargando = true;
     this.errorMsg = '';
-    this.sugerenciaService.listarTodas(this.filtroEstado, {
+    this.sugerenciaService.listarMasPedidos({
       page: this.currentPage,
-      size: this.pageSize,
-      sort: 'creadoEn,desc'
+      size: this.pageSize
     }).subscribe({
       next: (data) => {
-        this.sugerencias = data.content;
+        this.masPedidos = data.content;
         this.totalPages = data.totalPages;
         this.cargando = false;
       },
@@ -65,64 +95,20 @@ export class GestionSugerenciasComponent implements OnInit {
     });
   }
 
-  paginaAnterior(): void {
-    if (this.currentPage > 0) {
-      this.currentPage--;
-      this.cargarPagina();
-    }
-  }
-
-  paginaSiguiente(): void {
-    if (this.currentPage < this.totalPages - 1) {
-      this.currentPage++;
-      this.cargarPagina();
-    }
-  }
-
-  cambiarTamano(n: number): void {
-    this.pageSize = Number(n);
-    this.currentPage = 0;
-    this.cargarPagina();
-  }
-
-  // El backend solo acepta APROBADA o RECHAZADA (CambioEstadoSugerenciaRequestDTO
-  // @Pattern) -- no hay botón para volver a Pendiente.
-  aprobar(sugerencia: SugerenciaAdquisicion): void {
-    this.cambiarEstado(sugerencia, 'APROBADA');
-  }
-
-  rechazar(sugerencia: SugerenciaAdquisicion): void {
-    this.cambiarEstado(sugerencia, 'RECHAZADA');
-  }
-
-  private cambiarEstado(sugerencia: SugerenciaAdquisicion, nuevoEstado: 'APROBADA' | 'RECHAZADA'): void {
-    this.cambiandoId = sugerencia.id;
+  confirmarAdquisicion(isbn: string): void {
+    if (!isbn || this.confirmandoIsbn) return;
+    this.confirmandoIsbn = isbn;
     this.errorMsg = '';
-    this.sugerenciaService.cambiarEstado(sugerencia.id, nuevoEstado).subscribe({
+    this.sugerenciaService.confirmarAdquisicion(isbn).subscribe({
       next: () => {
-        this.cambiandoId = null;
+        this.confirmandoIsbn = null;
         this.cargarPagina();
       },
       error: (err) => {
-        this.cambiandoId = null;
+        this.confirmandoIsbn = null;
         this.errorMsg = (err as { error?: { detail?: string } })?.error?.detail
-          || 'Error al cambiar el estado de la sugerencia';
+          || 'Error al confirmar la adquisición';
       }
     });
-  }
-
-  // El DTO trae usuarioId (Long), no el correo del solicitante -- se
-  // muestra el id en vez de inventar un campo que no existe.
-  solicitanteLabel(sugerencia: SugerenciaAdquisicion): string {
-    return `Usuario #${sugerencia.usuarioId}`;
-  }
-
-  // Muestra quién revisó la sugerencia (solo cuando ya no está PENDIENTE).
-  // El DTO trae revisadoPor (number, id del usuario que revisó).
-  // No hay endpoint para resolver id->nombre: queda como "Usuario #{id}".
-  // TODO: cuando exista endpoint de catálogo de usuarios, resolver nombre real.
-  revisadoPorLabel(sugerencia: SugerenciaAdquisicion): string {
-    if (!sugerencia.revisadoPor) return '—';
-    return `Usuario #${sugerencia.revisadoPor}`;
   }
 }

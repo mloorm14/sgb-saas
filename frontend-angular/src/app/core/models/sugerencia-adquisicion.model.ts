@@ -20,3 +20,11 @@ export interface SugerenciaAdquisicionRequest {
   isbn?: string;
   justificacion?: string;
 }
+
+// Fila agregada de GET /mas-pedidos (gestión por demanda y reportes).
+export interface SugerenciaAgrupada {
+  isbn: string;
+  titulo: string;
+  autor: string;
+  cantidad: number;
+}

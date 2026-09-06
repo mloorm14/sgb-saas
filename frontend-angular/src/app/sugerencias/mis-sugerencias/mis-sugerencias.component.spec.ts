@@ -42,19 +42,8 @@ describe('MisSugerenciasComponent', () => {
     expect(component.sugerencias.length).toBe(1);
   });
 
-  it('formatea el estado y la fecha como los mockups', () => {
-    expect(component.estadoTexto('PENDIENTE')).toBe('Pendiente');
-    expect(component.estadoTexto('APROBADA')).toBe('Aprobada');
-    expect(component.estadoTexto('RECHAZADA')).toBe('Rechazada');
+  it('formatea la fecha como los mockups', () => {
     expect(component.formatearFecha('2026-08-10T10:00:00')).toBe('10 ago 2026');
-  });
-
-  it('usa los 3 colores de badge del mockup 08', () => {
-    expect(component.badgeEstilo('PENDIENTE')).toEqual({ background: '#fff6d9', color: '#7a5c00' });
-    expect(component.badgeEstilo('APROBADA')).toEqual({ background: '#dff7ee', color: '#0f6e56' });
-    expect(component.esRechazada('RECHAZADA')).toBeTrue();
-    expect(component.badgeIcono('RECHAZADA')).toBe('cancel');
-    expect(component.badgeIcono('PENDIENTE')).toBe('schedule');
   });
 
   it('pagina y vuelve a consultar la página solicitada', () => {

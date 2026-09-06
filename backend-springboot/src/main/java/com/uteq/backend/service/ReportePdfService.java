@@ -18,6 +18,7 @@ import com.uteq.backend.dto.ReporteMorosidadResponseDTO;
 import com.uteq.backend.dto.ReporteUsoPorPeriodoResponseDTO;
 import com.uteq.backend.dto.ReporteVencidosResponseDTO;
 import com.uteq.backend.dto.ResumenFinancieroMultasResponseDTO;
+import com.uteq.backend.dto.SugerenciaAgrupadaDTO;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -252,6 +253,24 @@ public class ReportePdfService {
                     tabla.addCell(new Cell().add(new Paragraph(f.categoriaNombre())));
                     tabla.addCell(new Cell().add(new Paragraph(String.valueOf(f.totalPrestamos()))));
                     tabla.addCell(new Cell().add(new Paragraph(f.porcentaje() + "%")));
+                });
+    }
+
+    // ── Sugerencias más pedidas ───────────────────────────
+    public byte[] generarReporteSugerenciasMasPedidas(List<SugerenciaAgrupadaDTO> filas) {
+        int[] contador = {1};
+        return generarPdf(
+                "Reporte de sugerencias más pedidas",
+                "No hay sugerencias pendientes.",
+                filas,
+                new float[]{1, 4, 3, 2, 2},
+                List.of("#", "Título", "Autor", "ISBN", "Solicitudes"),
+                (tabla, f) -> {
+                    tabla.addCell(new Cell().add(new Paragraph(String.valueOf(contador[0]++))));
+                    tabla.addCell(new Cell().add(new Paragraph(textoOAlternativo(f.titulo()))));
+                    tabla.addCell(new Cell().add(new Paragraph(textoOAlternativo(f.autor()))));
+                    tabla.addCell(new Cell().add(new Paragraph(textoOAlternativo(f.isbn()))));
+                    tabla.addCell(new Cell().add(new Paragraph(String.valueOf(f.cantidad()))));
                 });
     }
 }

@@ -2,6 +2,7 @@ package com.uteq.backend.service;
 
 import com.uteq.backend.dto.SugerenciaAdquisicionRequestDTO;
 import com.uteq.backend.dto.SugerenciaAdquisicionResponseDTO;
+import com.uteq.backend.dto.SugerenciaAgrupadaDTO;
 import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.SugerenciaAdquisicion;
 import com.uteq.backend.repository.BitacoraAuditoriaRepository;
@@ -9,12 +10,15 @@ import com.uteq.backend.repository.SugerenciaAdquisicionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 // Módulo 9.3 del roadmap. crear() resuelve el usuarioId siempre desde el
 // Authentication autenticado (mismo criterio que FavoritoService): un
@@ -91,8 +95,45 @@ public class SugerenciaAdquisicionService {
         return resultado;
     }
 
-    private void registrarAuditoria(Long ejecutorId, Long registroId, String detalles) {
-        BitacoraAuditoria evento = BitacoraAuditoria.builder()
+    // ── Gestión por demanda: lo más pedido primero ──────────────────────────
+    // Sin sort explícito se ordena por cantidad desc (lo que alimenta la
+    // gráfica top de gestión). El sort del Pageable se respeta si viene.
+    @Transactional(readOnly = true)
+    public Page<SugerenciaAgrupadaDTO> getMasPedidos(Pageable pageable) {
+        Pageable efectivo = pageable.getSort().isSorted() ? pageable
+                : PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                        Sort.by(Sort.Direction.DESC, "cantidad"));
+        return sugerenciaRepo.findMasPedidosAgrupados(efectivo);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SugerenciaAgrupadaDTO> getMasPedidosList() {
+        return sugerenciaRepo
+                .findMasPedidosAgrupados(PageRequest.of(0, Integer.MAX_VALUE,
+                        Sort.by(Sort.Direction.DESC, "cantidad")))
+                .getContent();
+    }
+
+    /**
+     * Confirma la adquisición de un ISBN: todas sus sugerencias PENDIENTE
+     * pasan a APROBADA (que acá significa "adquirido") y salen del agrupado.
+     * La llama el botón de gestión, el reporte no la usa, y LibroService al
+     * crear un libro con ese ISBN (validación automática).
+     */
+    @Transactional
+    public int confirmarAdquisicion(String isbn, Long revisorId) {
+        List<SugerenciaAdquisicion> pendientes = sugerenciaRepo.findByIsbnAndEstado(isbn, SugerenciaAdquisicion.PENDIENTE);
+        for (SugerenciaAdquisicion s : pendientes) {
+            s.setEstado(SugerenciaAdquisicion.APROBADA);
+            s.setRevisadoPor(revisorId);
+            sugerenciaRepo.save(s);
+            registrarAuditoria(revisorId, s.getId(),
+                    "Sugerencia " + s.getId() + " confirmada por adquisición del ISBN " + isbn);
+        }
+        return pendientes.size();
+    }
+
+    private void registrarAuditoria(Long ejecutorId, Long registroId, String detalles) {        BitacoraAuditoria evento = BitacoraAuditoria.builder()
                 .usuarioId(ejecutorId)
                 .tipoOperacion("UPDATE")
                 .tablaAfectada(TABLA_SUGERENCIAS)
@@ -107,6 +148,11 @@ public class SugerenciaAdquisicionService {
         return usuarioRepo.findByCorreo(correo)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo))
                 .getId();
+    }
+
+    /** Versión pública para el controller (confirmar-adquisicion). */
+    public Long resolverIdPorCorreoPublico(String correo) {
+        return resolverIdPorCorreo(correo);
     }
 
     private SugerenciaAdquisicionResponseDTO toDTO(SugerenciaAdquisicion s) {

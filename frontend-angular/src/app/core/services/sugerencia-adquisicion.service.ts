@@ -4,7 +4,7 @@ import { catchError, Observable, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Page } from '../models/pagina.model';
 import { ProblemDetail } from '../models/problem-detail.model';
-import { SugerenciaAdquisicion, SugerenciaAdquisicionRequest } from '../models/sugerencia-adquisicion.model';
+import { SugerenciaAdquisicion, SugerenciaAdquisicionRequest, SugerenciaAgrupada } from '../models/sugerencia-adquisicion.model';
 
 // Contrato de SugerenciaAdquisicionController (/api/v1/sugerencias-adquisicion),
 // verificado en backend-springboot. crear() y listarMias() son 100% LECTOR
@@ -62,6 +62,35 @@ export class SugerenciaAdquisicionService {
   // forma de volver una sugerencia a PENDIENTE.
   cambiarEstado(id: number, nuevoEstado: 'APROBADA' | 'RECHAZADA'): Observable<SugerenciaAdquisicion> {
     return this.http.patch<SugerenciaAdquisicion>(`${this.apiUrl}/${id}/estado`, { nuevoEstado }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  // GET /mas-pedidos (GERENTE/ADMIN): PENDIENTE agrupadas por ISBN, paginado.
+  listarMasPedidos(params: SugerenciaListarParams = {}): Observable<Page<SugerenciaAgrupada>> {
+    let httpParams = new HttpParams();
+    if (params.page !== undefined) httpParams = httpParams.set('page', params.page);
+    if (params.size !== undefined) httpParams = httpParams.set('size', params.size);
+    if (params.sort) httpParams = httpParams.set('sort', params.sort);
+
+    return this.http.get<Page<SugerenciaAgrupada>>(`${this.apiUrl}/mas-pedidos`, { params: httpParams }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  // POST /confirmar-adquisicion?isbn= (GERENTE/ADMIN): marca adquiridas
+  // todas las PENDIENTE de ese ISBN (salen del agrupado).
+  confirmarAdquisicion(isbn: string): Observable<{ isbn: string; confirmadas: number }> {
+    const httpParams = new HttpParams().set('isbn', isbn);
+    return this.http.post<{ isbn: string; confirmadas: number }>(
+      `${this.apiUrl}/confirmar-adquisicion`, {}, { params: httpParams }).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
+
+  // GET /reporte-pdf (GERENTE/ADMIN): PDF con todas las más pedidas.
+  reportePdf(): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/reporte-pdf`, { responseType: 'blob' }).pipe(
       catchError(err => this.manejarError(err))
     );
   }

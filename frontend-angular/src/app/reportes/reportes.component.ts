@@ -8,8 +8,10 @@ import { EditorialService } from '../core/services/editorial.service';
 import { ProveedorService } from '../core/services/proveedor.service';
 import { EstadoLibroService } from '../core/services/estado-libro.service';
 import { IdiomaService } from '../core/services/idioma.service';
+import { SugerenciaAdquisicionService } from '../core/services/sugerencia-adquisicion.service';
+import { SugerenciaAgrupada } from '../core/models/sugerencia-adquisicion.model';
 
-export type VistaReporte = 'tarjetas' | 'libros' | 'morosidad' | 'inventario' | 'vencidos' | 'categorias' | 'uso' | 'financiero';
+export type VistaReporte = 'tarjetas' | 'libros' | 'morosidad' | 'inventario' | 'vencidos' | 'categorias' | 'uso' | 'financiero' | 'sugerencias';
 
 export interface ModuloReporte {
   id: Exclude<VistaReporte, 'tarjetas'>;
@@ -85,6 +87,14 @@ export class ReportesComponent implements OnInit {
       descripcion: 'Recaudación, pendiente y pagos recientes',
       icono: 'account_balance',
       color: 'bg-tertiary/10 text-tertiary'
+    },
+    {
+      id: 'sugerencias',
+      codigo: 'RPT-SUG',
+      etiqueta: 'Sugerencias más pedidas',
+      descripcion: 'Libros más solicitados para adquisición',
+      icono: 'lightbulb',
+      color: 'bg-warning/10 text-warning'
     }
   ];
 
@@ -95,6 +105,7 @@ export class ReportesComponent implements OnInit {
   categorias: ReporteCategoriasDemandadas[] = [];
   usoPeriodo: ReporteUsoPorPeriodo[] = [];
   resumenFinanciero: ResumenFinancieroMultas | null = null;
+  sugerenciasMasPedidas: SugerenciaAgrupada[] = [];
 
   private morososTodos: ReporteMorosidad[] = [];
   private vencidosTodos: ReporteVencidos[] = [];
@@ -142,6 +153,7 @@ export class ReportesComponent implements OnInit {
   categoriasPage = 0; categoriasPageSize = 10;
   usoPage = 0; usoPageSize = 10;
   financieroPage = 0; financieroPageSize = 10;
+  sugerenciasPage = 0; sugerenciasPageSize = 10;
 
   // Vencidos
   vencidosCorreo = '';
@@ -182,7 +194,8 @@ export class ReportesComponent implements OnInit {
     private editorialService: EditorialService,
     private proveedorService: ProveedorService,
     private estadoLibroService: EstadoLibroService,
-    private idiomaService: IdiomaService
+    private idiomaService: IdiomaService,
+    private sugerenciaService: SugerenciaAdquisicionService
   ) {}
 
   ngOnInit(): void {
@@ -371,6 +384,9 @@ export class ReportesComponent implements OnInit {
         this.finHasta = '';
         this.financieroPage = 0;
         break;
+      case 'sugerencias':
+        this.sugerenciasPage = 0;
+        break;
     }
     this.cargarModuloActual();
   }
@@ -384,6 +400,7 @@ export class ReportesComponent implements OnInit {
       case 'categorias': this.cargarCategorias(); break;
       case 'uso': this.cargarUso(); break;
       case 'financiero': this.cargarFinanciero(); break;
+      case 'sugerencias': this.cargarSugerencias(); break;
     }
   }
 
@@ -556,6 +573,41 @@ export class ReportesComponent implements OnInit {
   paginaSiguienteFinanciero(): void { if (this.puedeFinancieroSiguiente) this.financieroPage++; }
   cambiarTamanoFinanciero(n: number): void { this.financieroPageSize = Number(n); this.financieroPage = 0; }
 
+  // Sugerencias más pedidas — server-side (Page del backend)
+  sugerenciasTotalPagesServer = 1;
+  private cargarSugerencias(): void {
+    this.cargando = true;
+    this.errorMsg = '';
+    this.sugerenciaService.listarMasPedidos({ page: this.sugerenciasPage, size: this.sugerenciasPageSize }).subscribe({
+      next: (page) => {
+        this.sugerenciasMasPedidas = page.content;
+        this.sugerenciasTotalPagesServer = page.totalPages;
+        this.cargando = false;
+      },
+      error: (err) => this.fallar(err)
+    });
+  }
+  get sugerenciasTotalPages(): number { return this.sugerenciasTotalPagesServer; }
+  get sugerenciasPaginado(): SugerenciaAgrupada[] { return this.sugerenciasMasPedidas; }
+  get sugerenciasPaginasVisibles(): number[] { return this.paginasVisiblesFor(this.sugerenciasTotalPages, this.sugerenciasPage); }
+  get puedeSugerenciasAnterior(): boolean { return this.sugerenciasPage > 0; }
+  get puedeSugerenciasSiguiente(): boolean { return this.sugerenciasPage < this.sugerenciasTotalPages - 1; }
+  irASugerenciasPage(p: number): void { if (p < 0 || p >= this.sugerenciasTotalPages || p === this.sugerenciasPage) return; this.sugerenciasPage = p; this.cargarSugerencias(); }
+  paginaAnteriorSugerencias(): void { if (this.puedeSugerenciasAnterior) { this.sugerenciasPage--; this.cargarSugerencias(); } }
+  paginaSiguienteSugerencias(): void { if (this.puedeSugerenciasSiguiente) { this.sugerenciasPage++; this.cargarSugerencias(); } }
+  cambiarTamanoSugerencias(n: number): void { this.sugerenciasPageSize = Number(n); this.sugerenciasPage = 0; this.cargarSugerencias(); }
+  descargarSugerenciasPdf(): void {
+    this.descargarPdf(
+      this.sugerenciaService.reportePdf(),
+      'reporte-sugerencias-mas-pedidas.pdf', 'sugerencias-pdf'
+    );
+  }
+  excelSugerencias(): void {
+    const headers = ['#', 'Título', 'Autor', 'ISBN', 'Solicitudes'];
+    const rows = this.sugerenciasMasPedidas.map((s, i) => [i + 1 + this.sugerenciasPage * this.sugerenciasPageSize, s.titulo, s.autor || '—', s.isbn, s.cantidad]);
+    this.generarExcel(headers, rows, 'reporte-sugerencias-mas-pedidas.xlsx', 'Sugerencias más pedidas');
+  }
+
   private cargarVencidos(): void {
     this.cargando = true;
     this.errorMsg = '';
@@ -619,8 +671,7 @@ export class ReportesComponent implements OnInit {
   private cargarFinanciero(): void {
     this.cargando = true;
     this.errorMsg = '';
-    this.reporteService.resumenFinanciero(this.finDesde || undefined, this.finHasta || undefined).subscribe({
-      next: (datos) => {
+    this.reporteService.resumenFinanciero(this.finDesde || undefined, this.finHasta || undefined).subscribe({      next: (datos) => {
         this.resumenFinanciero = datos;
         this.financieroPage = 0;
         this.cargando = false;

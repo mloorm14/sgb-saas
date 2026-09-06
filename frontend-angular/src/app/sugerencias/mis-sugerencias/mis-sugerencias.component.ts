@@ -48,29 +48,6 @@ export class MisSugerenciasComponent implements OnInit {
     });
   }
 
-  estadoTexto(estado: string): string {
-    return estado.charAt(0) + estado.slice(1).toLowerCase();
-  }
-
-  // Colores inline del mockup 08 (no existen como tokens en tailwind.config):
-  // Pendiente -> ámbar, Aprobada -> verde.
-  badgeEstilo(estado: string): Record<string, string> {
-    if (estado === 'APROBADA') {
-      return { background: '#dff7ee', color: '#0f6e56' };
-    }
-    return { background: '#fff6d9', color: '#7a5c00' };
-  }
-
-  badgeIcono(estado: string): string {
-    if (estado === 'APROBADA') return 'check_circle';
-    if (estado === 'RECHAZADA') return 'cancel';
-    return 'schedule';
-  }
-
-  esRechazada(estado: string): boolean {
-    return estado === 'RECHAZADA';
-  }
-
   // "10 ago 2026": el backend envía ISO (LocalDateTime).
   formatearFecha(iso: string): string {
     if (!iso) return '';

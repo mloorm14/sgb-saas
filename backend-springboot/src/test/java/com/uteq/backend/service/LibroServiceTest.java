@@ -49,6 +49,7 @@ class LibroServiceTest {
     @Mock ProveedorRepository proveedorRepo;
     @Mock ConfiguracionSistemaService configuracionSistemaService;
     @Mock BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
+    @Mock SugerenciaAdquisicionService sugerenciaAdquisicionService;
 
     @InjectMocks LibroService libroService;
 
@@ -72,6 +73,17 @@ class LibroServiceTest {
         assertThatThrownBy(() -> libroService.crear(requestDTO()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("ISBN ya registrado");
+    }
+
+    // ── Crear con ISBN pedido confirma las sugerencias pendientes ──
+    @Test
+    void crearLibro_conIsbnPedido_confirmaSugerencias() {
+        given(libroRepo.existsByIsbn("9780132350884")).willReturn(false);
+        given(libroRepo.save(any())).willReturn(libroConId());
+
+        libroService.crear(requestDTO());
+
+        verify(sugerenciaAdquisicionService).confirmarAdquisicion("9780132350884", null);
     }
 
     // ── Test 3: buscar libro que no existe lanza 404 ──────

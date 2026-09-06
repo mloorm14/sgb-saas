@@ -3,6 +3,8 @@ import { of, throwError } from 'rxjs';
 import { GestionSugerenciasComponent } from './gestion-sugerencias.component';
 import { SugerenciaAdquisicionService } from '../../core/services/sugerencia-adquisicion.service';
 
+// Gestión por demanda: gráfica top-8 + tabla paginada de mas-pedidos con
+// botón Confirmar adquisición por ISBN (sin filtros ni estados).
 describe('GestionSugerenciasComponent', () => {
   let component: GestionSugerenciasComponent;
   let fixture: ComponentFixture<GestionSugerenciasComponent>;
@@ -10,8 +12,8 @@ describe('GestionSugerenciasComponent', () => {
 
   const pagina = {
     content: [
-      { id: 1, usuarioId: 9, titulo: 'Designing Data-Intensive Applications', autor: 'Martin Kleppmann', isbn: '', justificacion: 'Lo piden varios estudiantes', estado: 'PENDIENTE', revisadoPor: null, creadoEn: '2026-08-01T10:00:00Z' },
-      { id: 2, usuarioId: 3, titulo: 'Refactoring', autor: 'Martin Fowler', isbn: '9780134757599', justificacion: '', estado: 'APROBADA', revisadoPor: 1, creadoEn: '2026-07-28T09:00:00Z' }
+      { isbn: '9781449373320', titulo: 'Designing Data-Intensive Applications', autor: 'Martin Kleppmann', cantidad: 5 },
+      { isbn: '9780134757599', titulo: 'Refactoring', autor: 'Martin Fowler', cantidad: 2 }
     ],
     totalPages: 1,
     totalElements: 2
@@ -19,9 +21,9 @@ describe('GestionSugerenciasComponent', () => {
 
   beforeEach(async () => {
     sugerenciaService = jasmine.createSpyObj('SugerenciaAdquisicionService', [
-      'listarTodas', 'cambiarEstado'
+      'listarMasPedidos', 'confirmarAdquisicion'
     ]);
-    sugerenciaService.listarTodas.and.returnValue(of(pagina as any));
+    sugerenciaService.listarMasPedidos.and.returnValue(of(pagina as any));
 
     await TestBed.configureTestingModule({
       imports: [GestionSugerenciasComponent],
@@ -35,60 +37,57 @@ describe('GestionSugerenciasComponent', () => {
     fixture.detectChanges();
   });
 
-  it('carga el listado inicial con el filtro PENDIENTE por defecto', () => {
-    expect(sugerenciaService.listarTodas).toHaveBeenCalledWith('PENDIENTE', jasmine.any(Object));
-    expect(component.sugerencias.length).toBe(2);
+  it('carga el agrupado paginado al iniciar', () => {
+    expect(sugerenciaService.listarMasPedidos).toHaveBeenCalledWith(
+      jasmine.objectContaining({ page: 0, size: 10 }));
+    expect(component.masPedidos.length).toBe(2);
   });
 
-  it('cambia el filtro, vuelve a la primera página y recarga sin enviar estado para "Todas"', () => {
-    component.currentPage = 3;
-    component.cambiarFiltro('APROBADA');
-    expect(component.currentPage).toBe(0);
-    expect(sugerenciaService.listarTodas).toHaveBeenCalledWith('APROBADA', jasmine.any(Object));
-
-    component.cambiarFiltro('');
-    expect(sugerenciaService.listarTodas).toHaveBeenCalledWith('', jasmine.any(Object));
+  it('la gráfica muestra el top en % del máximo', () => {
+    expect(component.chartItems.length).toBe(2);
+    expect(component.maxCantidad).toBe(5);
+    expect(component.alturaBarra(5)).toBe(100);
+    expect(component.alturaBarra(2)).toBe(40);
   });
 
-  it('aprueba una sugerencia pendiente (solo APROBADA/RECHAZADA, nunca Pendiente de vuelta)', () => {
-    sugerenciaService.cambiarEstado.and.returnValue(of(pagina.content[0] as any));
+  it('confirma un ISBN y recarga la página', () => {
+    sugerenciaService.confirmarAdquisicion.and.returnValue(of({ isbn: '9781449373320', confirmadas: 5 }));
 
-    component.aprobar(component.sugerencias[0]);
+    component.confirmarAdquisicion('9781449373320');
 
-    expect(sugerenciaService.cambiarEstado).toHaveBeenCalledWith(1, 'APROBADA');
-    expect(sugerenciaService.listarTodas).toHaveBeenCalledTimes(2);
+    expect(sugerenciaService.confirmarAdquisicion).toHaveBeenCalledWith('9781449373320');
+    expect(sugerenciaService.listarMasPedidos).toHaveBeenCalledTimes(2);
+    expect(component.confirmandoIsbn).toBeNull();
   });
 
-  it('rechaza una sugerencia pendiente', () => {
-    sugerenciaService.cambiarEstado.and.returnValue(of(pagina.content[0] as any));
+  it('no confirma dos veces el mismo clic en vuelo', () => {
+    component.confirmandoIsbn = '9781449373320';
 
-    component.rechazar(component.sugerencias[0]);
+    component.confirmarAdquisicion('9781449373320');
 
-    expect(sugerenciaService.cambiarEstado).toHaveBeenCalledWith(1, 'RECHAZADA');
+    expect(sugerenciaService.confirmarAdquisicion).not.toHaveBeenCalled();
   });
 
-  it('muestra el detail del backend si el cambio de estado falla', () => {
-    sugerenciaService.cambiarEstado.and.returnValue(
-      throwError(() => ({ error: { detail: 'El estado debe ser APROBADA o RECHAZADA' } }))
+  it('muestra el detail del backend si confirmar falla', () => {
+    sugerenciaService.confirmarAdquisicion.and.returnValue(
+      throwError(() => ({ error: { detail: 'ISBN inválido' } }))
     );
 
-    component.aprobar(component.sugerencias[0]);
+    component.confirmarAdquisicion('9781449373320');
 
-    expect(component.errorMsg).toBe('El estado debe ser APROBADA o RECHAZADA');
-    expect(component.cambiandoId).toBeNull();
+    expect(component.errorMsg).toBe('ISBN inválido');
+    expect(component.confirmandoIsbn).toBeNull();
   });
 
-  it('muestra el id del solicitante (el DTO no trae el correo)', () => {
-    expect(component.solicitanteLabel(component.sugerencias[0])).toBe('Usuario #9');
-  });
+  it('cambia de página y de tamaño recargando', () => {
+    component.totalPages = 3;
+    component.irAPagina(2);
+    expect(component.currentPage).toBe(2);
 
-  it('cambiar el tamaño vuelve a la primera página con el nuevo size', () => {
-    component.currentPage = 2;
     component.cambiarTamano(20);
-
     expect(component.pageSize).toBe(20);
     expect(component.currentPage).toBe(0);
-    expect(sugerenciaService.listarTodas).toHaveBeenCalledWith(
-      'PENDIENTE', jasmine.objectContaining({ size: 20, page: 0 }));
+    expect(sugerenciaService.listarMasPedidos).toHaveBeenCalledWith(
+      jasmine.objectContaining({ size: 20, page: 0 }));
   });
 });

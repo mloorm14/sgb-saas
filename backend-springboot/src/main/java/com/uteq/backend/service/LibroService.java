@@ -73,6 +73,7 @@ public class LibroService {
     private final ConfiguracionSistemaService configuracionSistemaService;
     private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
     private final SuscripcionDisponibilidadService suscripcionDisponibilidadService;
+    private final SugerenciaAdquisicionService sugerenciaAdquisicionService;
 
     public LibroService(LibroRepository libroRepo,
                         EditorialRepository editorialRepo,
@@ -83,7 +84,8 @@ public class LibroService {
                         ProveedorRepository proveedorRepo,
                         ConfiguracionSistemaService configuracionSistemaService,
                         BitacoraAuditoriaRepository bitacoraAuditoriaRepo,
-                        @org.springframework.beans.factory.annotation.Autowired(required = false) SuscripcionDisponibilidadService suscripcionDisponibilidadService) {
+                        @org.springframework.beans.factory.annotation.Autowired(required = false) SuscripcionDisponibilidadService suscripcionDisponibilidadService,
+                        @org.springframework.beans.factory.annotation.Autowired(required = false) SugerenciaAdquisicionService sugerenciaAdquisicionService) {
         this.libroRepo     = libroRepo;
         this.editorialRepo = editorialRepo;
         this.idiomaRepo    = idiomaRepo;
@@ -94,6 +96,7 @@ public class LibroService {
         this.configuracionSistemaService = configuracionSistemaService;
         this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
         this.suscripcionDisponibilidadService = suscripcionDisponibilidadService;
+        this.sugerenciaAdquisicionService = sugerenciaAdquisicionService;
     }
 
     private void registrarAuditoria(Long usuarioId, String tipoOperacion, Long registroId, String detalles) {
@@ -287,6 +290,12 @@ public class LibroService {
         }
         LibroResponseDTO resultado = toDTO(libroRepo.save(libro));
         registrarAuditoria(null, "INSERT", resultado.id(), "Libro creado: " + dto.titulo());
+        // Validación automática: si el ISBN estaba pedido en sugerencias,
+        // esas quedan confirmadas (salen del agrupado de gestión/reportes).
+        // Solo al crear, nunca al editar.
+        if (sugerenciaAdquisicionService != null && dto.isbn() != null && !dto.isbn().isBlank()) {
+            sugerenciaAdquisicionService.confirmarAdquisicion(dto.isbn(), null);
+        }
         return resultado;
     }
 

@@ -7,6 +7,7 @@ import com.uteq.backend.dto.SugerenciaAdquisicionResponseDTO;
 import com.uteq.backend.security.JwtAuthFilter;
 import com.uteq.backend.security.JwtService;
 import com.uteq.backend.security.UserDetailsServiceImpl;
+import com.uteq.backend.service.ReportePdfService;
 import com.uteq.backend.service.SugerenciaAdquisicionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +35,8 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 // Módulo 9.3 del roadmap: LECTOR crea/ve las suyas, GERENTE/ADMIN listan
@@ -61,6 +64,9 @@ class SugerenciaAdquisicionControllerSecurityTest {
 
     @MockitoBean
     private SugerenciaAdquisicionService sugerenciaService;
+
+    @MockitoBean
+    private ReportePdfService reportePdfService;
 
     @MockitoBean
     private JwtService jwtService;
@@ -139,6 +145,53 @@ class SugerenciaAdquisicionControllerSecurityTest {
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(new CambioEstadoSugerenciaRequestDTO("APROBADA"))))
                 .andExpect(status().isForbidden());
+    }
+
+    // ── Gestión por demanda: mas-pedidos ──
+    @Test
+    @WithMockUser(roles = "GERENTE")
+    void masPedidos_conRolGerente_sePermite() throws Exception {
+        when(sugerenciaService.getMasPedidos(any())).thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/v1/sugerencias-adquisicion/mas-pedidos"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "LECTOR")
+    void masPedidos_conRolLector_seRechaza() throws Exception {
+        mockMvc.perform(get("/api/v1/sugerencias-adquisicion/mas-pedidos"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void confirmarAdquisicion_conRolAdmin_confirmaBulk() throws Exception {
+        when(sugerenciaService.resolverIdPorCorreoPublico(anyString())).thenReturn(1L);
+        when(sugerenciaService.confirmarAdquisicion("9781449373320", 1L)).thenReturn(3);
+
+        mockMvc.perform(post("/api/v1/sugerencias-adquisicion/confirmar-adquisicion")
+                        .param("isbn", "9781449373320"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.confirmadas").value(3));
+    }
+
+    @Test
+    @WithMockUser(roles = "LECTOR")
+    void confirmarAdquisicion_conRolLector_seRechaza() throws Exception {
+        mockMvc.perform(post("/api/v1/sugerencias-adquisicion/confirmar-adquisicion")
+                        .param("isbn", "9781449373320"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "GERENTE")
+    void reportePdf_conRolGerente_descargaPdf() throws Exception {
+        when(sugerenciaService.getMasPedidosList()).thenReturn(java.util.List.of());
+
+        mockMvc.perform(get("/api/v1/sugerencias-adquisicion/reporte-pdf"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/pdf"));
     }
 
     // ISBN de sugerencia: exactamente 13 dígitos numéricos, sin guiones.

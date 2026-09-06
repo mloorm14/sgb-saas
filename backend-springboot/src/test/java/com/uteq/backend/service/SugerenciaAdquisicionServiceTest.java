@@ -107,6 +107,52 @@ class SugerenciaAdquisicionServiceTest {
                 .hasMessageContaining("99");
     }
 
+    // ── Test 6: confirmarAdquisicion pasa a APROBADA todas las PENDIENTE del ISBN ──
+    @Test
+    void confirmarAdquisicion_conPendientes_lasApruebaYAudita() {
+        SugerenciaAdquisicion s1 = sugerenciaConId(1L, 7L);
+        s1.setIsbn("9781449373320");
+        SugerenciaAdquisicion s2 = sugerenciaConId(2L, 9L);
+        s2.setIsbn("9781449373320");
+        given(sugerenciaRepo.findByIsbnAndEstado("9781449373320", SugerenciaAdquisicion.PENDIENTE))
+                .willReturn(java.util.List.of(s1, s2));
+
+        int confirmadas = sugerenciaService.confirmarAdquisicion("9781449373320", 3L);
+
+        assertThat(confirmadas).isEqualTo(2);
+        assertThat(s1.getEstado()).isEqualTo(SugerenciaAdquisicion.APROBADA);
+        assertThat(s2.getEstado()).isEqualTo(SugerenciaAdquisicion.APROBADA);
+        assertThat(s1.getRevisadoPor()).isEqualTo(3L);
+        org.mockito.Mockito.verify(bitacoraAuditoriaRepo, org.mockito.Mockito.times(2))
+                .save(org.mockito.ArgumentMatchers.any());
+    }
+
+    // ── Test 7: confirmarAdquisicion sin pendientes retorna 0 ──
+    @Test
+    void confirmarAdquisicion_sinPendientes_retornaCero() {
+        given(sugerenciaRepo.findByIsbnAndEstado("9781449373320", SugerenciaAdquisicion.PENDIENTE))
+                .willReturn(java.util.List.of());
+
+        assertThat(sugerenciaService.confirmarAdquisicion("9781449373320", 3L)).isZero();
+    }
+
+    // ── Test 8: getMasPedidos ordena por cantidad desc por defecto ──
+    @Test
+    void getMasPedidos_sinSort_ordenaPorCantidadDesc() {
+        org.springframework.data.domain.Page<com.uteq.backend.dto.SugerenciaAgrupadaDTO> pagina =
+                new org.springframework.data.domain.PageImpl<>(java.util.List.of());
+        given(sugerenciaRepo.findMasPedidosAgrupados(org.mockito.ArgumentMatchers.any()))
+                .willReturn(pagina);
+
+        sugerenciaService.getMasPedidos(org.springframework.data.domain.PageRequest.of(0, 10));
+
+        org.mockito.ArgumentCaptor<org.springframework.data.domain.Pageable> captor =
+                org.mockito.ArgumentCaptor.forClass(org.springframework.data.domain.Pageable.class);
+        org.mockito.Mockito.verify(sugerenciaRepo).findMasPedidosAgrupados(captor.capture());
+        assertThat(captor.getValue().getSort().getOrderFor("cantidad").getDirection())
+                .isEqualTo(org.springframework.data.domain.Sort.Direction.DESC);
+    }
+
     // ── Helpers ───────────────────────────────────────────
     private Usuario usuarioConId(Long id) {
         Usuario usuario = new Usuario();
