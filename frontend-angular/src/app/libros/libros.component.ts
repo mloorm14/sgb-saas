@@ -165,19 +165,8 @@ export class LibrosComponent implements OnInit, OnDestroy {
     takeUntil(this.destroy$)
   ).subscribe(() => { this.currentPage = 0; this.cargarLibros(); });
 
-    // H3: debounce ISBN — auto-lookup al completar 13 dígitos, SOLO al
-    // crear. En edición (modoEdicion) el ISBN se digita a mano para no
-    // pisar los datos existentes con el fallback Google Books/OpenLibrary/IA.
-    this.form.get('isbn')!.valueChanges.pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      takeUntil(this.destroy$)
-    ).subscribe(valor => {
-      const isbn = (valor ?? '').trim();
-      if (this.puedeBuscarIsbn(isbn)) {
-        this.ejecutarLookupIsbn(isbn);
-      }
-    });
+    // Sin autobuscador por ISBN: el lookup solo se dispara con el botón
+    // Buscar (una vez por cada valor distinto; en edición solo si cambió).
 
     // Soporte para modo revisión pendiente vía query param ?revision=ID
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
@@ -897,7 +886,9 @@ export class LibrosComponent implements OnInit, OnDestroy {
       next: (dto) => {
         const patch: Record<string, unknown> = {};
         if (dto.titulo) patch['titulo'] = dto.titulo;
-        if (dto.resumen) patch['resumen'] = dto.resumen;
+        // Sin resumen en la respuesta se limpia el campo en vez de
+        // conservar el texto del ISBN anterior (quedaba el resumen viejo).
+        patch['resumen'] = dto.resumen ?? '';
         if (dto.anioPublicacion != null) patch['anioPublicacion'] = dto.anioPublicacion;
         if (dto.numeroPaginas != null) patch['numeroPaginas'] = dto.numeroPaginas;
         if (Object.keys(patch).length) this.form.patchValue(patch);

@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
 import { LibrosComponent } from './libros.component';
@@ -138,16 +138,24 @@ describe('LibrosComponent', () => {
     expect(component.portadaPreviewUrl).toBeNull();
   });
 
-  describe('ISBN lookup solo al crear', () => {
-    it('en edición NO dispara el auto-lookup aunque el ISBN tenga 13 dígitos', fakeAsync(() => {
+  describe('ISBN lookup (botón Buscar, sin autobuscador)', () => {
+    it('escribir el ISBN NO dispara nada sin pulsar Buscar', () => {
+      libroService.buscarPorIsbn.and.returnValue(of({ titulo: 'X' } as any));
+
+      component.abrirFormularioCrear();
+      component.form.get('isbn')!.setValue('9780132350884');
+
+      expect(libroService.buscarPorIsbn).not.toHaveBeenCalled();
+    });
+
+    it('en edición el ISBN precargado no dispara el lookup', () => {
       libroService.buscarPorIsbn.and.returnValue(of({} as any));
 
       component.abrirFormularioEditar(libroBase as any);
-      component.form.get('isbn')!.setValue('9780132350884');
-      tick(1000);
 
       expect(libroService.buscarPorIsbn).not.toHaveBeenCalled();
-    }));
+      expect(component.isbnEditadoCambio).toBeFalse();
+    });
 
     it('en edición el botón Buscar no dispara con el ISBN precargado', () => {
       libroService.buscarPorIsbn.and.returnValue(of({} as any));
@@ -158,54 +166,52 @@ describe('LibrosComponent', () => {
       expect(libroService.buscarPorIsbn).not.toHaveBeenCalled();
     });
 
-    it('en edición SÍ busca cuando el ISBN cambia por otro', fakeAsync(() => {
+    it('en edición SÍ busca cuando el ISBN cambia por otro', () => {
       libroService.buscarPorIsbn.and.returnValue(of({ titulo: 'X' } as any));
 
       component.abrirFormularioEditar(libroBase as any);
       component.form.get('isbn')!.setValue('9780132350885');
-      tick(1000);
+      component.buscarPorIsbn();
 
       expect(libroService.buscarPorIsbn).toHaveBeenCalledWith('9780132350885');
       expect(component.isbnEditadoCambio).toBeTrue();
-    }));
+    });
 
-    it('al crear SÍ dispara el auto-lookup al completar 13 dígitos', fakeAsync(() => {
+    it('al crear el botón Buscar dispara el lookup con 13 dígitos', () => {
       libroService.buscarPorIsbn.and.returnValue(of({ titulo: 'X' } as any));
 
       component.abrirFormularioCrear();
       component.form.get('isbn')!.setValue('9780132350884');
-      tick(1000);
+      component.buscarPorIsbn();
 
       expect(libroService.buscarPorIsbn).toHaveBeenCalledWith('9780132350884');
-    }));
+    });
 
-    it('al crear NO repite el lookup para el mismo ISBN', fakeAsync(() => {
+    it('NO repite el lookup para el mismo ISBN', () => {
       libroService.buscarPorIsbn.and.returnValue(of({ titulo: 'X' } as any));
 
       component.abrirFormularioCrear();
       component.form.get('isbn')!.setValue('9780132350884');
-      tick(1000);
-      component.form.get('isbn')!.setValue('9780132350884');
-      tick(1000);
+      component.buscarPorIsbn();
       component.buscarPorIsbn();
 
       expect(libroService.buscarPorIsbn).toHaveBeenCalledTimes(1);
-    }));
+    });
 
-    it('al crear SÍ busca de nuevo si el ISBN cambia por otro distinto', fakeAsync(() => {
+    it('SÍ busca de nuevo si el ISBN cambia por otro distinto', () => {
       libroService.buscarPorIsbn.and.returnValue(of({ titulo: 'X' } as any));
 
       component.abrirFormularioCrear();
       component.form.get('isbn')!.setValue('9780132350884');
-      tick(1000);
+      component.buscarPorIsbn();
       component.form.get('isbn')!.setValue('9780132350885');
-      tick(1000);
+      component.buscarPorIsbn();
 
       expect(libroService.buscarPorIsbn).toHaveBeenCalledTimes(2);
       expect(libroService.buscarPorIsbn).toHaveBeenCalledWith('9780132350885');
-    }));
+    });
 
-    it('al crear SÍ permite reintentar si el lookup falló, avisando con mensaje', fakeAsync(() => {
+    it('SÍ permite reintentar si el lookup falló, avisando con toast', () => {
       libroService.buscarPorIsbn.and.returnValues(
         throwError(() => ({ status: 404 })),
         of({ titulo: 'X' } as any)
@@ -213,17 +219,29 @@ describe('LibrosComponent', () => {
 
       component.abrirFormularioCrear();
       component.form.get('isbn')!.setValue('9780132350884');
-      tick(1000);
+      component.buscarPorIsbn();
 
       expect(toastService.warning).toHaveBeenCalledWith(
         'Búsqueda ISBN', jasmine.stringContaining('No se encontró información'));
       expect(libroService.buscarPorIsbn).toHaveBeenCalledTimes(1);
 
       component.form.get('isbn')!.setValue('9780132350885');
-      tick(1000);
+      component.buscarPorIsbn();
 
       expect(libroService.buscarPorIsbn).toHaveBeenCalledTimes(2);
-    }));
+    });
+
+    it('limpia el resumen si el ISBN nuevo no trae descripción (no queda el viejo)', () => {
+      libroService.buscarPorIsbn.and.returnValue(of({ titulo: 'Nuevo Título', resumen: null } as any));
+
+      component.abrirFormularioEditar(libroBase as any);
+      component.form.get('resumen')!.setValue('Resumen del libro anterior');
+      component.form.get('isbn')!.setValue('9780132350885');
+      component.buscarPorIsbn();
+
+      expect(component.form.get('titulo')!.value).toBe('Nuevo Título');
+      expect(component.form.get('resumen')!.value).toBe('');
+    });
   });
 
   describe('guardarLibro', () => {
