@@ -209,7 +209,7 @@ public class ReservacionService {
                         p.getLibroTitulo(),
                         p.getLibroIsbn(),
                         p.getEstadoNombre(),
-                        p.getFechaLimiteRetiro()))
+                        p.getFechaLimiteRetiro() != null ? p.getFechaLimiteRetiro().atOffset(java.time.ZoneOffset.UTC) : null))
                 .toList();
     }
 
@@ -223,7 +223,7 @@ public class ReservacionService {
                         p.getLibroTitulo(),
                         p.getLibroIsbn(),
                         p.getEstadoNombre(),
-                        p.getFechaLimiteRetiro()))
+                        p.getFechaLimiteRetiro() != null ? p.getFechaLimiteRetiro().atOffset(java.time.ZoneOffset.UTC) : null))
                 .toList();
     }
 

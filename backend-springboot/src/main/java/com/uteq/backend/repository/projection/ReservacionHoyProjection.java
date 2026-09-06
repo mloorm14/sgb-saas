@@ -1,6 +1,6 @@
 package com.uteq.backend.repository.projection;
 
-import java.time.OffsetDateTime;
+
 
 /**
  * Proyección de una fila retornada por la query nativa
@@ -15,5 +15,5 @@ public interface ReservacionHoyProjection {
     String getLibroTitulo();
     String getLibroIsbn();
     String getEstadoNombre();
-    OffsetDateTime getFechaLimiteRetiro();
+    java.time.Instant getFechaLimiteRetiro();
 }
