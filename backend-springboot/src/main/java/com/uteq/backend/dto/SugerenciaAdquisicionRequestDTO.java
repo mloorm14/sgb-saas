@@ -13,8 +13,7 @@ public record SugerenciaAdquisicionRequestDTO(
         @Size(max = 150, message = "El autor no puede superar 150 caracteres")
         String autor,
 
-        @Pattern(regexp = "^[0-9\\-]{10,17}$", message = "ISBN inválido")
-        @Size(max = 13, message = "El ISBN no puede superar 13 caracteres")
+        @Pattern(regexp = "^[0-9]{13}$", message = "El ISBN debe tener 13 dígitos numéricos, sin guiones")
         String isbn,
 
         @Size(max = 1000, message = "La justificación no puede superar 1000 caracteres")

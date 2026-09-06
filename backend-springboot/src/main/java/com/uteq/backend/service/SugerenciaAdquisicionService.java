@@ -49,7 +49,11 @@ public class SugerenciaAdquisicionService {
         sugerencia.setUsuarioId(usuarioId);
         sugerencia.setTitulo(dto.titulo());
         sugerencia.setAutor(dto.autor());
-        sugerencia.setIsbn(dto.isbn());
+        // ISBN opcional: "" (form vacío) se guarda como null para no
+        // chocar con el @Pattern ^[0-9]{13}$ del DTO (Bean Validation
+        // ignora null pero no ""). Sin esto, sugerir sin ISBN da 400.
+        String isbn = dto.isbn() == null || dto.isbn().isBlank() ? null : dto.isbn();
+        sugerencia.setIsbn(isbn);
         sugerencia.setJustificacion(dto.justificacion());
         sugerencia.setEstado(SugerenciaAdquisicion.PENDIENTE);
 

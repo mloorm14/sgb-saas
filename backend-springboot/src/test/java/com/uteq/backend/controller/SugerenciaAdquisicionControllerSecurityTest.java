@@ -28,6 +28,8 @@ import java.time.OffsetDateTime;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -137,5 +139,47 @@ class SugerenciaAdquisicionControllerSecurityTest {
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(new CambioEstadoSugerenciaRequestDTO("APROBADA"))))
                 .andExpect(status().isForbidden());
+    }
+
+    // ISBN de sugerencia: exactamente 13 dígitos numéricos, sin guiones.
+    @Test
+    @WithMockUser(roles = "LECTOR")
+    void crear_conIsbnConGuiones_seRechaza400() throws Exception {
+        var request = new SugerenciaAdquisicionRequestDTO(
+                "Clean Architecture", "Robert C. Martin", "978-1449373320", "Complementa POO");
+
+        mockMvc.perform(post("/api/v1/sugerencias-adquisicion")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        verify(sugerenciaService, never()).crear(any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "LECTOR")
+    void crear_conIsbnDe12Digitos_seRechaza400() throws Exception {
+        var request = new SugerenciaAdquisicionRequestDTO(
+                "Clean Architecture", "Robert C. Martin", "978144937332", "Complementa POO");
+
+        mockMvc.perform(post("/api/v1/sugerencias-adquisicion")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        verify(sugerenciaService, never()).crear(any(), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "LECTOR")
+    void crear_conIsbnDe13Digitos_sePermite() throws Exception {
+        when(sugerenciaService.crear(any(), any())).thenReturn(responseCreada());
+        var request = new SugerenciaAdquisicionRequestDTO(
+                "Clean Architecture", "Robert C. Martin", "9781449373320", "Complementa POO");
+
+        mockMvc.perform(post("/api/v1/sugerencias-adquisicion")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
     }
 }

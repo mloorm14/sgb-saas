@@ -37,14 +37,14 @@ describe('SugerenciasFormComponent', () => {
 
   it('envía la sugerencia con el DTO correcto y navega a mis solicitudes', () => {
     sugerenciaService.crear.and.returnValue(of({
-      id: 1, usuarioId: 1, titulo: 'DDIA', autor: 'Kleppmann', isbn: '978-144937332',
+      id: 1, usuarioId: 1, titulo: 'DDIA', autor: 'Kleppmann', isbn: '9781449373320',
       justificacion: 'Muy usado', estado: 'PENDIENTE', revisadoPor: 0, creadoEn: ''
     }));
 
     component.form.patchValue({
       titulo: 'Designing Data-Intensive Applications',
       autor: 'Martin Kleppmann',
-      isbn: '978-144937332',
+      isbn: '9781449373320',
       justificacion: 'Muy usado en la carrera'
     });
     component.enviar();
@@ -52,7 +52,7 @@ describe('SugerenciasFormComponent', () => {
     expect(sugerenciaService.crear).toHaveBeenCalledWith({
       titulo: 'Designing Data-Intensive Applications',
       autor: 'Martin Kleppmann',
-      isbn: '978-144937332',
+      isbn: '9781449373320',
       justificacion: 'Muy usado en la carrera'
     });
     expect(router.navigate).toHaveBeenCalledWith(['/sugerencias']);
@@ -62,6 +62,21 @@ describe('SugerenciasFormComponent', () => {
     component.form.patchValue({ titulo: 'T', autor: '', isbn: 'abc', justificacion: '' });
     expect(component.form.invalid).toBeTrue();
     expect(component.form.get('isbn')?.hasError('pattern')).toBeTrue();
+  });
+
+  it('rechaza un ISBN con guiones (solo 13 dígitos sin guiones)', () => {
+    component.form.patchValue({ titulo: 'T', autor: '', isbn: '978-1449373320', justificacion: '' });
+    expect(component.form.get('isbn')?.hasError('pattern')).toBeTrue();
+  });
+
+  it('rechaza un ISBN de 12 dígitos', () => {
+    component.form.patchValue({ titulo: 'T', autor: '', isbn: '978144937332', justificacion: '' });
+    expect(component.form.invalid).toBeTrue();
+  });
+
+  it('acepta un ISBN de 13 dígitos numéricos', () => {
+    component.form.patchValue({ titulo: 'T', autor: '', isbn: '9781449373320', justificacion: '' });
+    expect(component.form.get('isbn')?.valid).toBeTrue();
   });
 
   it('muestra el contador de caracteres de la justificación', () => {

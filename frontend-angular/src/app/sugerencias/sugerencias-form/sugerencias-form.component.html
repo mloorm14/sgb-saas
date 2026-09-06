@@ -2,7 +2,7 @@
   <div class="w-full max-w-xl">
     <div class="mb-lg">
       <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background mb-xs">Sugerir adquisición</h1>
-      <p class="font-body-sm text-body-sm text-on-surface-variant">Si un libro no está en el catálogo, pedile a la biblioteca que lo consiga</p>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">Si un libro no está en el catálogo, puedes sugerir su adquisición a la biblioteca</p>
     </div>
 
     @if (errorMsg) {
@@ -35,12 +35,12 @@
       <div class="space-y-xs">
         <label class="font-label-sm text-label-sm text-on-surface">ISBN</label>
         <div class="rounded border border-outline-variant bg-surface">
-          <input type="text" formControlName="isbn" maxlength="13" placeholder="978-1449373320"
+          <input type="text" formControlName="isbn" maxlength="13" placeholder="9781449373320"
             class="w-full bg-transparent border-none focus:ring-2 focus:ring-primary focus:ring-offset-2 px-sm py-sm font-body-sm text-body-sm text-on-surface placeholder-outline" />
         </div>
-        <p class="font-label-sm text-[11px] text-on-surface-variant">Formato numérico, 10 a 17 caracteres con guiones opcionales</p>
+        <p class="font-label-sm text-[11px] text-on-surface-variant">13 dígitos numéricos, sin guiones (opcional)</p>
         @if (campoInvalido('isbn')) {
-          <p class="font-label-sm text-[11px] text-error">ISBN inválido (solo números y guiones, 10 a 17 caracteres)</p>
+          <p class="font-label-sm text-[11px] text-error">ISBN inválido (13 dígitos numéricos, sin guiones)</p>
         }
       </div>
 

@@ -7,8 +7,8 @@ import { SugerenciaAdquisicionService } from '../../core/services/sugerencia-adq
 // Formulario de sugerencia de adquisición (Rama B, mockup 07). Las
 // validaciones replican EXACTAS a SugerenciaAdquisicionRequestDTO del
 // backend (verificado en backend-springboot): titulo requerido max 255,
-// autor opcional max 150, isbn opcional con patrón ^[0-9\-]{10,17}$ max 13,
-// justificacion opcional max 1000.
+// autor opcional max 150, isbn opcional de 13 dígitos numéricos sin
+// guiones (^[0-9]{13}$), justificacion opcional max 1000.
 @Component({
   standalone: true,
   selector: 'app-sugerencias-form',
@@ -29,7 +29,7 @@ export class SugerenciasFormComponent implements OnInit {
     this.form = this.fb.group({
       titulo: ['', [Validators.required, Validators.maxLength(255)]],
       autor: ['', [Validators.maxLength(150)]],
-      isbn: ['', [Validators.maxLength(13), Validators.pattern(/^[0-9\-]{10,17}$/)]],
+      isbn: ['', [Validators.minLength(13), Validators.maxLength(13), Validators.pattern(/^[0-9]{13}$/)]],
       justificacion: ['', [Validators.maxLength(1000)]]
     });
   }
