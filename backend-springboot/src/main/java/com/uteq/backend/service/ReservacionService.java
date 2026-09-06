@@ -109,8 +109,7 @@ public class ReservacionService {
               // best-effort: se usa la hora por defecto si falla la config
           }
         LocalTime horaLimite = LocalTime.parse(horaLimiteStr.length()==5?horaLimiteStr+":00":horaLimiteStr);
-        if (dto.fechaRetiro() != null) {
-            if (dto.fechaRetiro().isBefore(LocalDate.from(ahora))) {
+        if (dto.fechaRetiro() != null && dto.fechaRetiro().toLocalDate().isBefore(LocalDate.from(ahora))) {
                 throw new IllegalArgumentException(
                         "La fecha de retiro no puede ser anterior a la fecha actual.");
             }
