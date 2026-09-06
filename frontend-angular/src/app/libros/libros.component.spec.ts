@@ -167,6 +167,38 @@ describe('LibrosComponent', () => {
 
       expect(libroService.buscarPorIsbn).toHaveBeenCalledWith('9780132350884');
     }));
+
+    it('al crear NO repite el lookup una vez que trajo datos', fakeAsync(() => {
+      libroService.buscarPorIsbn.and.returnValue(of({ titulo: 'X' } as any));
+
+      component.abrirFormularioCrear();
+      component.form.get('isbn')!.setValue('9780132350884');
+      tick(1000);
+      component.form.get('isbn')!.setValue('9780132350885');
+      tick(1000);
+      component.buscarPorIsbn();
+
+      expect(libroService.buscarPorIsbn).toHaveBeenCalledTimes(1);
+    }));
+
+    it('al crear SÍ permite reintentar si el lookup falló, avisando con mensaje', fakeAsync(() => {
+      libroService.buscarPorIsbn.and.returnValues(
+        throwError(() => ({ status: 404 })),
+        of({ titulo: 'X' } as any)
+      );
+
+      component.abrirFormularioCrear();
+      component.form.get('isbn')!.setValue('9780132350884');
+      tick(1000);
+
+      expect(component.lookupError).toContain('No se encontró información');
+      expect(libroService.buscarPorIsbn).toHaveBeenCalledTimes(1);
+
+      component.form.get('isbn')!.setValue('9780132350885');
+      tick(1000);
+
+      expect(libroService.buscarPorIsbn).toHaveBeenCalledTimes(2);
+    }));
   });
 
   describe('guardarLibro', () => {

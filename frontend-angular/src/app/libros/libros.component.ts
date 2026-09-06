@@ -42,6 +42,10 @@ export class LibrosComponent implements OnInit, OnDestroy {
   form: FormGroup;
   lookupError: string = '';
   lookupCargando = false;
+  // El autorelleno ISBN corre una sola vez por formulario de creación:
+  // se marca cuando el lookup TRAJO datos; si falló, se puede reintentar
+  // (el error ya avisa con mensaje). Se resetea al abrir/cerrar el form.
+  private isbnLookupExitoso = false;
   private lookupErrorTimer: ReturnType<typeof setTimeout> | null = null;
   portadaPreviewUrl: string | null = null;
   portadaPreviewBlob: Blob | null = null;
@@ -169,7 +173,7 @@ export class LibrosComponent implements OnInit, OnDestroy {
       takeUntil(this.destroy$)
     ).subscribe(valor => {
       const isbn = (valor ?? '').trim();
-      if (!this.modoEdicion && /^[0-9]{13}$/.test(isbn)) {
+      if (!this.modoEdicion && !this.isbnLookupExitoso && /^[0-9]{13}$/.test(isbn)) {
         this.ejecutarLookupIsbn(isbn);
       }
     });
@@ -279,6 +283,7 @@ export class LibrosComponent implements OnInit, OnDestroy {
 
   abrirFormularioCrear(): void {
     this.modoEdicion = false;
+    this.isbnLookupExitoso = false;
     this.modoRevisionPendiente = false;
     this.libroSeleccionadoId = null;
     this.form.reset({ categoriaIds: [], autorIds: [], editorialId: null, idiomaId: null, estadoId: null, numeroPaginas: '', precioBase: '', proveedorId: null });
@@ -355,6 +360,7 @@ export class LibrosComponent implements OnInit, OnDestroy {
 
   cerrarFormulario(): void {
     this.mostrarFormulario = false;
+    this.isbnLookupExitoso = false;
     this.modoRevisionPendiente = false;
     this.form.reset({ categoriaIds: [], autorIds: [], editorialId: null, idiomaId: null, estadoId: null, numeroPaginas: '', precioBase: '', proveedorId: null });
     if (this.esGerenteAdmin) this.form.get('precioBase')?.enable(); else this.form.get('precioBase')?.disable();
@@ -845,7 +851,7 @@ export class LibrosComponent implements OnInit, OnDestroy {
   // En edición no se usa: el formulario se rellena a mano.
 
   buscarPorIsbn(): void {
-    if (this.modoEdicion) return;
+    if (this.modoEdicion || this.isbnLookupExitoso) return;
     const isbn = (this.form.get('isbn')?.value as string ?? '').trim();
     this.ejecutarLookupIsbn(isbn);
   }
@@ -907,6 +913,9 @@ export class LibrosComponent implements OnInit, OnDestroy {
 
         if (!dto.titulo && !dto.resumen && dto.anioPublicacion == null && !dto.editorial && !dto.autor) {
           this.mostrarLookupError('No se encontraron datos para ese ISBN, completa manualmente');
+        } else {
+          // Trajo datos: el autorelleno ya cumplió, no se repite en este formulario.
+          this.isbnLookupExitoso = true;
         }
 
         if (dto.portadaDisponible) {
