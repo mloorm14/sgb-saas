@@ -110,8 +110,8 @@
                   [attr.aria-invalid]="form.get('isbn')?.invalid && form.get('isbn')?.touched ? true : null"
                   [attr.aria-describedby]="form.get('isbn')?.invalid && form.get('isbn')?.touched ? 'isbn-error' : null"
                   class="flex-1 min-w-0 h-11 px-sm rounded border border-outline-variant font-body-sm text-body-sm" />
-                <!-- Buscar por ISBN solo al crear: en edición el ISBN se digita a mano -->
-                @if (!modoEdicion) {
+                <!-- Buscar por ISBN: siempre al crear; al editar solo si cambió el ISBN -->
+                @if (!modoEdicion || isbnEditadoCambio) {
                   <button type="button" (click)="buscarPorIsbn()" [disabled]="lookupCargando"
                     class="h-11 px-sm rounded bg-primary text-on-primary font-label-sm text-[13px] flex items-center gap-xs hover:bg-on-primary-fixed-variant disabled:opacity-40 shrink-0 cursor-pointer">
                     <span class="material-symbols-outlined text-[18px]">{{ lookupCargando ? 'progress_activity' : 'search' }}</span>

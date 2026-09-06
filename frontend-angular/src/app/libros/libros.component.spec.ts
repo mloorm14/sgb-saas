@@ -149,7 +149,7 @@ describe('LibrosComponent', () => {
       expect(libroService.buscarPorIsbn).not.toHaveBeenCalled();
     }));
 
-    it('en edición el botón Buscar no dispara el lookup', () => {
+    it('en edición el botón Buscar no dispara con el ISBN precargado', () => {
       libroService.buscarPorIsbn.and.returnValue(of({} as any));
 
       component.abrirFormularioEditar(libroBase as any);
@@ -157,6 +157,17 @@ describe('LibrosComponent', () => {
 
       expect(libroService.buscarPorIsbn).not.toHaveBeenCalled();
     });
+
+    it('en edición SÍ busca cuando el ISBN cambia por otro', fakeAsync(() => {
+      libroService.buscarPorIsbn.and.returnValue(of({ titulo: 'X' } as any));
+
+      component.abrirFormularioEditar(libroBase as any);
+      component.form.get('isbn')!.setValue('9780132350885');
+      tick(1000);
+
+      expect(libroService.buscarPorIsbn).toHaveBeenCalledWith('9780132350885');
+      expect(component.isbnEditadoCambio).toBeTrue();
+    }));
 
     it('al crear SÍ dispara el auto-lookup al completar 13 dígitos', fakeAsync(() => {
       libroService.buscarPorIsbn.and.returnValue(of({ titulo: 'X' } as any));
@@ -168,7 +179,20 @@ describe('LibrosComponent', () => {
       expect(libroService.buscarPorIsbn).toHaveBeenCalledWith('9780132350884');
     }));
 
-    it('al crear NO repite el lookup una vez que trajo datos', fakeAsync(() => {
+    it('al crear NO repite el lookup para el mismo ISBN', fakeAsync(() => {
+      libroService.buscarPorIsbn.and.returnValue(of({ titulo: 'X' } as any));
+
+      component.abrirFormularioCrear();
+      component.form.get('isbn')!.setValue('9780132350884');
+      tick(1000);
+      component.form.get('isbn')!.setValue('9780132350884');
+      tick(1000);
+      component.buscarPorIsbn();
+
+      expect(libroService.buscarPorIsbn).toHaveBeenCalledTimes(1);
+    }));
+
+    it('al crear SÍ busca de nuevo si el ISBN cambia por otro distinto', fakeAsync(() => {
       libroService.buscarPorIsbn.and.returnValue(of({ titulo: 'X' } as any));
 
       component.abrirFormularioCrear();
@@ -176,9 +200,9 @@ describe('LibrosComponent', () => {
       tick(1000);
       component.form.get('isbn')!.setValue('9780132350885');
       tick(1000);
-      component.buscarPorIsbn();
 
-      expect(libroService.buscarPorIsbn).toHaveBeenCalledTimes(1);
+      expect(libroService.buscarPorIsbn).toHaveBeenCalledTimes(2);
+      expect(libroService.buscarPorIsbn).toHaveBeenCalledWith('9780132350885');
     }));
 
     it('al crear SÍ permite reintentar si el lookup falló, avisando con mensaje', fakeAsync(() => {

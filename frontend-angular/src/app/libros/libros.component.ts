@@ -42,10 +42,12 @@ export class LibrosComponent implements OnInit, OnDestroy {
   form: FormGroup;
   lookupError: string = '';
   lookupCargando = false;
-  // El autorelleno ISBN corre una sola vez por formulario de creación:
-  // se marca cuando el lookup TRAJO datos; si falló, se puede reintentar
-  // (el error ya avisa con mensaje). Se resetea al abrir/cerrar el form.
-  private isbnLookupExitoso = false;
+  // Autorelleno ISBN: dispara una vez por cada valor distinto de 13
+  // dígitos. En edición el ISBN precargado NO dispara; solo cuando el
+  // usuario lo CAMBIA por otro. Si el lookup falló, se puede reintentar
+  // (el toast ya avisa). Ambos se resetean al abrir/cerrar el form.
+  private ultimoIsbnBuscado: string | null = null;
+  private isbnOriginalEdicion: string | null = null;
   portadaPreviewUrl: string | null = null;
   portadaPreviewBlob: Blob | null = null;
   portadaPreviewTipo: string | null = null;
@@ -172,7 +174,7 @@ export class LibrosComponent implements OnInit, OnDestroy {
       takeUntil(this.destroy$)
     ).subscribe(valor => {
       const isbn = (valor ?? '').trim();
-      if (!this.modoEdicion && !this.isbnLookupExitoso && /^[0-9]{13}$/.test(isbn)) {
+      if (this.puedeBuscarIsbn(isbn)) {
         this.ejecutarLookupIsbn(isbn);
       }
     });
@@ -281,7 +283,8 @@ export class LibrosComponent implements OnInit, OnDestroy {
 
   abrirFormularioCrear(): void {
     this.modoEdicion = false;
-    this.isbnLookupExitoso = false;
+    this.ultimoIsbnBuscado = null;
+    this.isbnOriginalEdicion = null;
     this.modoRevisionPendiente = false;
     this.libroSeleccionadoId = null;
     this.form.reset({ categoriaIds: [], autorIds: [], editorialId: null, idiomaId: null, estadoId: null, numeroPaginas: '', precioBase: '', proveedorId: null });
@@ -305,6 +308,8 @@ export class LibrosComponent implements OnInit, OnDestroy {
 
   abrirFormularioEditar(libro: Libro, esRevisionPendiente: boolean = false): void {
     this.modoEdicion = true;
+    this.ultimoIsbnBuscado = null;
+    this.isbnOriginalEdicion = (libro.isbn ?? '').trim();
     this.modoRevisionPendiente = esRevisionPendiente;
     this.libroSeleccionadoId = libro.id;
     this.limpiarPortada();
@@ -358,7 +363,8 @@ export class LibrosComponent implements OnInit, OnDestroy {
 
   cerrarFormulario(): void {
     this.mostrarFormulario = false;
-    this.isbnLookupExitoso = false;
+    this.ultimoIsbnBuscado = null;
+    this.isbnOriginalEdicion = null;
     this.modoRevisionPendiente = false;
     this.form.reset({ categoriaIds: [], autorIds: [], editorialId: null, idiomaId: null, estadoId: null, numeroPaginas: '', precioBase: '', proveedorId: null });
     if (this.esGerenteAdmin) this.form.get('precioBase')?.enable(); else this.form.get('precioBase')?.disable();
@@ -845,12 +851,27 @@ export class LibrosComponent implements OnInit, OnDestroy {
     this.lookupError = '';
   }
 
-  // ── ISBN lookup (solo al crear: botón manual + auto-debounce) ──
-  // En edición no se usa: el formulario se rellena a mano.
+  // ── ISBN lookup (botón manual + auto-debounce) ──
+  // Al crear: cualquier ISBN de 13 dígitos. Al editar: solo si cambió
+  // respecto al precargado, y una vez por cada valor distinto.
+
+  /** ISBN actual difiere del precargado en edición (activa el buscador). */
+  get isbnEditadoCambio(): boolean {
+    if (!this.modoEdicion) return false;
+    const actual = (this.form.get('isbn')?.value as string ?? '').trim();
+    return actual !== (this.isbnOriginalEdicion ?? '');
+  }
+
+  private puedeBuscarIsbn(isbn: string): boolean {
+    if (!/^[0-9]{13}$/.test(isbn)) return false;
+    if (isbn === this.ultimoIsbnBuscado) return false;
+    if (this.modoEdicion && isbn === this.isbnOriginalEdicion) return false;
+    return true;
+  }
 
   buscarPorIsbn(): void {
-    if (this.modoEdicion || this.isbnLookupExitoso) return;
     const isbn = (this.form.get('isbn')?.value as string ?? '').trim();
+    if (!this.puedeBuscarIsbn(isbn)) return;
     this.ejecutarLookupIsbn(isbn);
   }
 
@@ -909,8 +930,9 @@ export class LibrosComponent implements OnInit, OnDestroy {
         if (!dto.titulo && !dto.resumen && dto.anioPublicacion == null && !dto.editorial && !dto.autor) {
           this.mostrarLookupError('No se encontraron datos para ese ISBN, completa manualmente');
         } else {
-          // Trajo datos: el autorelleno ya cumplió, no se repite en este formulario.
-          this.isbnLookupExitoso = true;
+          // Trajo datos: este valor ya cumplió, no se repite (un ISBN
+          // distinto sí vuelve a buscar).
+          this.ultimoIsbnBuscado = isbn;
         }
 
         if (dto.portadaDisponible) {
