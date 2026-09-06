@@ -78,20 +78,37 @@
       </table>
     </div>
 
-    @if (totalPages > 1) {
-      <div class="flex justify-center mt-lg gap-xs">
-        @for (pagina of paginasVisibles; track pagina) {
-          <button (click)="irAPagina(pagina)"
-            [class.bg-primary]="pagina === currentPage"
-            [class.text-on-primary]="pagina === currentPage"
-            [class.border]="pagina !== currentPage"
-            [class.border-outline-variant]="pagina !== currentPage"
-            [class.text-on-surface]="pagina !== currentPage"
-            class="w-8 h-8 rounded font-label-sm text-label-sm cursor-pointer">
-            {{ pagina + 1 }}
-          </button>
-        }
+    <div class="flex flex-wrap justify-between items-center mt-lg gap-sm">
+      <div class="flex items-center gap-xs font-body-sm text-body-sm">
+        <span class="text-on-surface-variant">Mostrar</span>
+        <label for="page-size-mis-sugerencias" class="sr-only">Elementos por página</label>
+        <select [ngModel]="pageSize" (ngModelChange)="cambiarTamano($event)" id="page-size-mis-sugerencias" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-surface-container-lowest cursor-pointer appearance-none text-xs leading-tight py-1.5">
+          <option [ngValue]="10">10</option><option [ngValue]="20">20</option><option [ngValue]="30">30</option>
+        </select>
       </div>
-    }
+      @if (totalPages > 1) {
+        <div class="flex items-center gap-xs">
+          <button (click)="paginaAnterior()" [disabled]="!puedeAnterior" aria-label="Página anterior"
+            class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">
+            <span class="material-symbols-outlined text-[18px]">chevron_left</span> Anterior
+          </button>
+          @for (pagina of paginasVisibles; track pagina) {
+            <button (click)="irAPagina(pagina)"
+              [class.bg-primary]="pagina === currentPage"
+              [class.text-on-primary]="pagina === currentPage"
+              [class.border]="pagina !== currentPage"
+              [class.border-outline-variant]="pagina !== currentPage"
+              [class.text-on-surface]="pagina !== currentPage"
+              class="w-8 h-8 rounded font-label-sm text-label-sm cursor-pointer">
+              {{ pagina + 1 }}
+            </button>
+          }
+          <button (click)="paginaSiguiente()" [disabled]="!puedeSiguiente" aria-label="Página siguiente"
+            class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">
+            Siguiente <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+          </button>
+        </div>
+      }
+    </div>
   }
 </main>

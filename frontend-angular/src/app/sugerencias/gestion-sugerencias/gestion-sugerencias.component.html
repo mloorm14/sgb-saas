@@ -144,7 +144,15 @@
   </div>
 
   @if (totalPages > 1) {
-    <div class="flex justify-center mt-lg gap-xs">
+    <div class="flex flex-wrap justify-between items-center mt-lg gap-sm">
+      <div class="flex items-center gap-xs font-body-sm text-body-sm">
+        <span class="text-on-surface-variant">Mostrar</span>
+        <label for="page-size-gestion-sugerencias" class="sr-only">Elementos por página</label>
+        <select [ngModel]="pageSize" (ngModelChange)="cambiarTamano($event)" id="page-size-gestion-sugerencias" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-surface-container-lowest cursor-pointer appearance-none text-xs leading-tight py-1.5">
+          <option [ngValue]="10">10</option><option [ngValue]="20">20</option><option [ngValue]="30">30</option>
+        </select>
+      </div>
+      <div class="flex justify-center gap-xs">
       <button (click)="paginaAnterior()" [disabled]="currentPage === 0" aria-label="Página anterior"
         class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
         <span class="material-symbols-outlined text-[18px]" aria-hidden="true">chevron_left</span>
@@ -163,6 +171,7 @@
         class="w-8 h-8 rounded flex items-center justify-center border border-outline-variant text-outline disabled:opacity-40 cursor-pointer">
         <span class="material-symbols-outlined text-[18px]" aria-hidden="true">chevron_right</span>
       </button>
+      </div>
     </div>
   }
 </main>

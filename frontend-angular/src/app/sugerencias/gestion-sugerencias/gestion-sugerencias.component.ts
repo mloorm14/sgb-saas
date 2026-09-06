@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { SugerenciaAdquisicionService } from '../../core/services/sugerencia-adquisicion.service';
 import { SugerenciaAdquisicion } from '../../core/models/sugerencia-adquisicion.model';
 
@@ -11,7 +12,7 @@ type FiltroEstado = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | '';
 @Component({
   selector: 'app-gestion-sugerencias',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './gestion-sugerencias.component.html'
 })
 export class GestionSugerenciasComponent implements OnInit {
@@ -76,6 +77,12 @@ export class GestionSugerenciasComponent implements OnInit {
       this.currentPage++;
       this.cargarPagina();
     }
+  }
+
+  cambiarTamano(n: number): void {
+    this.pageSize = Number(n);
+    this.currentPage = 0;
+    this.cargarPagina();
   }
 
   // El backend solo acepta APROBADA o RECHAZADA (CambioEstadoSugerenciaRequestDTO

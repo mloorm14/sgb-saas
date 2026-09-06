@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { SugerenciaAdquisicionService } from '../../core/services/sugerencia-adquisicion.service';
 import { SugerenciaAdquisicion } from '../../core/models/sugerencia-adquisicion.model';
@@ -11,7 +12,7 @@ import { SugerenciaAdquisicion } from '../../core/models/sugerencia-adquisicion.
 @Component({
   standalone: true,
   selector: 'app-mis-sugerencias',
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './mis-sugerencias.component.html'
 })
 export class MisSugerenciasComponent implements OnInit {
@@ -89,6 +90,27 @@ export class MisSugerenciasComponent implements OnInit {
   irAPagina(pagina: number): void {
     if (pagina < 0 || pagina >= this.totalPages || pagina === this.currentPage) return;
     this.currentPage = pagina;
+    this.cargarPagina();
+  }
+
+  get puedeAnterior(): boolean { return this.currentPage > 0; }
+  get puedeSiguiente(): boolean { return this.currentPage < this.totalPages - 1; }
+
+  paginaAnterior(): void {
+    if (!this.puedeAnterior) return;
+    this.currentPage--;
+    this.cargarPagina();
+  }
+
+  paginaSiguiente(): void {
+    if (!this.puedeSiguiente) return;
+    this.currentPage++;
+    this.cargarPagina();
+  }
+
+  cambiarTamano(n: number): void {
+    this.pageSize = Number(n);
+    this.currentPage = 0;
     this.cargarPagina();
   }
 }

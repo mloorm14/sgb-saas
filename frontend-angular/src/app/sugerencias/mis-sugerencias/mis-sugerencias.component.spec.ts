@@ -78,4 +78,31 @@ describe('MisSugerenciasComponent', () => {
     expect(component.errorMsg).toBe('Error al cargar las solicitudes');
     expect(component.cargando).toBeFalse();
   });
+
+  it('avanza y retrocede con Anterior/Siguiente recargando la página', () => {
+    sugerenciaService.listarMias.and.returnValue(of({ content: [], totalPages: 4 } as any));
+    fixture.detectChanges();
+
+    component.paginaSiguiente();
+    expect(component.currentPage).toBe(1);
+    expect(sugerenciaService.listarMias).toHaveBeenCalledWith(jasmine.objectContaining({ page: 1 }));
+
+    component.paginaAnterior();
+    expect(component.currentPage).toBe(0);
+
+    component.paginaAnterior(); // ya en la primera: no recarga
+    expect(component.currentPage).toBe(0);
+  });
+
+  it('cambiar el tamaño vuelve a la primera página con el nuevo size', () => {
+    sugerenciaService.listarMias.and.returnValue(of({ content: [], totalPages: 4 } as any));
+    fixture.detectChanges();
+
+    component.currentPage = 2;
+    component.cambiarTamano(20);
+
+    expect(component.pageSize).toBe(20);
+    expect(component.currentPage).toBe(0);
+    expect(sugerenciaService.listarMias).toHaveBeenCalledWith(jasmine.objectContaining({ size: 20, page: 0 }));
+  });
 });

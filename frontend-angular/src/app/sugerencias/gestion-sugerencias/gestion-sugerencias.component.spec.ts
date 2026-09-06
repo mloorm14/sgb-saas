@@ -81,4 +81,14 @@ describe('GestionSugerenciasComponent', () => {
   it('muestra el id del solicitante (el DTO no trae el correo)', () => {
     expect(component.solicitanteLabel(component.sugerencias[0])).toBe('Usuario #9');
   });
+
+  it('cambiar el tamaño vuelve a la primera página con el nuevo size', () => {
+    component.currentPage = 2;
+    component.cambiarTamano(20);
+
+    expect(component.pageSize).toBe(20);
+    expect(component.currentPage).toBe(0);
+    expect(sugerenciaService.listarTodas).toHaveBeenCalledWith(
+      'PENDIENTE', jasmine.objectContaining({ size: 20, page: 0 }));
+  });
 });
