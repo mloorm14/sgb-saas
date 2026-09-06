@@ -740,6 +740,7 @@ export class ConfiguracionSistemaComponent implements OnInit, OnDestroy {
 
   // Historial de Backups Completos (DR)
   registrosRespaldo: any[] = [];
+  disparandoRespaldo = false;
   cargandoRegistros = false;
   configDR: any = null;
   cargandoConfigDR = false;
@@ -776,12 +777,17 @@ export class ConfiguracionSistemaComponent implements OnInit, OnDestroy {
     });
   }
   dispararBackupCompleto(): void {
+    // Anti-doble-clic: el segundo POST concurrente recibe 429 legítimo
+    // del cerrojo Node aunque no haya nada atascado.
+    if (this.disparandoRespaldo) return;
+    this.disparandoRespaldo = true;
     const tempId = -Date.now();
     const inicioSkeleton = new Date().toISOString();
     this.registrosRespaldo.unshift({ id: tempId, estado: 'ejecutando', iniciadoEn: inicioSkeleton, finalizadoEn: null, nombreArchivo: 'En curso…', tamanoArchivoBytes: null });
     this.skeletonIds.add(tempId);
     this.backupService.dispararBackupCompleto().subscribe({
       next: () => {
+        this.disparandoRespaldo = false;
         this.toast.success('Backup iniciado', 'El volcado completo se está ejecutando.');
         const tipoRegistro = this.subSubmoduloSeleccionado?.includes('auto') ? 'automatico' : 'manual';
         // Polling adaptativo: cada 5s hasta 120s (cubre sleep 40s + dump), se detiene solo cuando el backend reporta completado
@@ -797,6 +803,7 @@ export class ConfiguracionSistemaComponent implements OnInit, OnDestroy {
         });
       },
       error: (err) => {
+        this.disparandoRespaldo = false;
         this.terminarPollingBackup(tempId);
         this.registrosRespaldo = this.registrosRespaldo.filter(r => r.id !== tempId);
         if (err?.status === 429) {

@@ -242,4 +242,22 @@ describe('ConfiguracionSistemaComponent', () => {
     expect(component.formatearFechaHora(undefined)).toBe('—');
     expect(component.formatearFechaHora('no-es-fecha')).toBe('no-es-fecha');
   });
+
+  it('dispararBackupCompleto dos veces seguidas envía un solo POST', async () => {
+    await configurar('ADMIN');
+    fixture.detectChanges();
+
+    httpMock.expectOne('http://localhost:8080/api/v1/configuracion').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/categorias-dano').flush([]);
+    httpMock.expectOne('http://localhost:8080/api/v1/tipos-dano').flush([]);
+
+    component.dispararBackupCompleto();
+    component.dispararBackupCompleto(); // segundo clic en vuelo: se ignora
+
+    const req = httpMock.expectOne('http://localhost:8080/api/v1/admin/respaldo-completo/trigger');
+    expect(req.request.method).toBe('POST');
+    req.flush({ mensaje: 'Backup completo iniciado', detalle: '' });
+
+    expect(component.disparandoRespaldo).toBeFalse();
+  });
 });

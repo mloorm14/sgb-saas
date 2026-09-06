@@ -420,7 +420,7 @@
           <span class="material-symbols-outlined text-[20px] text-primary">database</span> Volcado completo de base de datos
         </h3>
         <p class="font-body-sm text-body-sm text-on-surface-variant mb-md">Genera un volcado completo de toda la base de datos incluyendo estructura, datos, índices y restricciones. Recomendado para recuperación ante desastres.</p>
-        <button type="button" (click)="dispararBackupCompleto()" [disabled]="skeletonIds.size > 0"
+        <button type="button" (click)="dispararBackupCompleto()" [disabled]="skeletonIds.size > 0 || disparandoRespaldo"
           class="h-11 px-lg rounded-full bg-primary text-on-primary font-label-sm text-label-sm inline-flex items-center gap-sm hover:bg-primary/80 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
           @if (skeletonIds.size > 0) {
             <span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span> Ejecutando...
