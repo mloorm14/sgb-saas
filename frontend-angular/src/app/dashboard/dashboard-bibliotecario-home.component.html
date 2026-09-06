@@ -16,4 +16,76 @@
     [error]="errorReservacionesHoy"
     (marcarListaParaRetiro)="marcarListaParaRetiro($event)" />
 
+  <!-- Próximas reservaciones -->
+  <div class="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm p-lg">
+    <div class="flex items-center justify-between mb-md">
+      <h2 class="font-headline-md text-headline-md text-on-background flex items-center gap-xs">
+        <span class="material-symbols-outlined text-[22px] text-primary">event_available</span>
+        Próximas reservaciones
+      </h2>
+      <span class="font-label-sm text-[11px] text-on-surface-variant px-sm py-1 rounded-full bg-surface-container-low">
+        {{ reservacionesHoy.length }} total
+      </span>
+    </div>
+
+    @if (cargandoReservacionesHoy) {
+      <div class="space-y-sm">
+        @for (i of [1,2,3]; track i) {
+          <div class="h-12 bg-surface-container-high rounded animate-pulse"></div>
+        }
+      </div>
+    } @else if (errorReservacionesHoy) {
+      <p class="font-body-sm text-body-sm text-on-surface-variant text-center py-md">{{ errorReservacionesHoy }}</p>
+    } @else if (reservacionesHoy.length === 0) {
+      <p class="font-body-sm text-body-sm text-on-surface-variant text-center py-md">No hay reservaciones para hoy</p>
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="w-full text-left">
+          <caption class="sr-only">Próximas reservaciones</caption>
+          <thead>
+            <tr class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider border-b border-outline-variant">
+              <th class="pb-sm pr-md">Usuario</th>
+              <th class="pb-sm pr-md">Libro</th>
+              <th class="pb-sm">Estado</th>
+            </tr>
+          </thead>
+          <tbody class="font-body-sm text-body-sm text-on-surface">
+            @for (r of proximasPaginadas; track r.reservacionId) {
+              <tr class="border-b border-outline-variant/50">
+                <td class="py-sm pr-md">
+                  <p class="font-medium">{{ r.usuarioNombre }}</p>
+                  <p class="font-body-sm text-[11px] text-on-surface-variant">{{ r.usuarioCorreo }}</p>
+                </td>
+                <td class="py-sm pr-md">{{ r.libroTitulo }}</td>
+                <td class="py-sm">
+                  <span class="font-label-sm text-[11px] px-sm py-0.5 rounded-full"
+                    [class]="r.estadoNombre === 'LISTA_PARA_RETIRO' ? 'bg-secondary-container/30 text-secondary' : 'bg-warning/20 text-tertiary'">
+                    {{ r.estadoNombre === 'LISTA_PARA_RETIRO' ? 'Lista para retiro' : 'Pendiente' }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="flex flex-wrap justify-between items-center mt-lg gap-sm">
+        <div class="flex items-center gap-xs font-body-sm text-body-sm">
+          <span class="text-on-surface-variant">Mostrar</span>
+          <select [ngModel]="tamanoPaginaProximas" (ngModelChange)="cambiarTamanoProximas($event)" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-surface-container-lowest cursor-pointer appearance-none text-xs leading-tight py-1.5">
+            <option [ngValue]="10">10</option><option [ngValue]="20">20</option><option [ngValue]="30">30</option>
+          </select><span class="text-on-surface-variant">por página</span>
+        </div>
+        @if (paginasProximas.length > 1) {
+          <div class="flex items-center gap-xs">
+            <button (click)="paginaAnteriorProximas()" [disabled]="!puedeAnteriorProximas" class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs"><span class="material-symbols-outlined text-[18px]">chevron_left</span> Anterior</button>
+            @for (p of paginasProximas; track p) {
+              <button (click)="irAPaginaProximas(p)" class="w-8 h-8 min-h-[44px] min-w-[44px] rounded font-label-sm text-label-sm cursor-pointer" [class.bg-primary]="p===paginaProximas" [class.text-on-primary]="p===paginaProximas" [class.border]="p!==paginaProximas" [class.border-outline-variant]="p!==paginaProximas" [class.hover:bg-surface-container-low]="p!==paginaProximas">{{ p + 1 }}</button>
+            }
+            <button (click)="paginaSiguienteProximas()" [disabled]="!puedeSiguienteProximas" class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">Siguiente <span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
 </main>

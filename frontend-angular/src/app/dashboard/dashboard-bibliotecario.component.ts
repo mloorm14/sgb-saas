@@ -16,7 +16,7 @@ import { SeccionSidebar } from '../shared/dashboard-shell/seccion-sidebar.model'
 export class DashboardBibliotecarioComponent {
   private secciones: SeccionSidebar[] = [
     {
-      titulo: '',
+      titulo: 'INICIO',
       enlaces: [
         { ruta: '/dashboard-bibliotecario', etiqueta: 'Inicio', icono: 'home' },
       ]
