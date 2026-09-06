@@ -294,7 +294,7 @@ Targets disponibles: `up` `down` `test` `bench` `audit` `docs` `all` `clean`.
 
 ## 📄 Estado del proyecto
 
-**Entrega 1B (Junio 2026):** módulo de autenticación JWT + CRUD de `Libro` con Spring Data JPA, Flyway, Redis y Docker Compose. Ver `docs/` para el informe técnico completo.
+**Entrega Final / v1.0.0 (Septiembre 2026):** sistema completo — autenticación JWT, catálogo de libros, préstamos, reservaciones, multas, credencial QR, notificaciones, panel de administración y auditoría, configuración paramétrica, chatbot con Gemini, gestión de proveedores, sugerencias de adquisición y backups. Ver `docs/informe-final.pdf` para el detalle completo.
 
 ## Integridad del entregable
 
