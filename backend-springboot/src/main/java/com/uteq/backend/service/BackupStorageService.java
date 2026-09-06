@@ -50,6 +50,11 @@ public class BackupStorageService {
         if (isR2Configured()) s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());
         else { try { Files.deleteIfExists(resolveLocalBase().resolve(sanitize(key))); } catch (IOException e) { throw new RuntimeException("No se pudo eliminar respaldo local", e); } }
     }
+    /** Ruta que se guarda en registros_respaldo.ruta_r2 (compatible con Node: s3://bucket/key o ruta local). */
+    public String rutaPara(String key) {
+        if (isR2Configured()) return "s3://" + bucket + "/" + key;
+        return resolveLocalBase().resolve(sanitize(key)).toString();
+    }
     private Path resolveLocalBase() {
         if (storageUrl != null && !storageUrl.isBlank() && !storageUrl.startsWith("s3://")) return Paths.get(storageUrl);
         return Paths.get("./backups");

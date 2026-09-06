@@ -61,9 +61,13 @@ services:
         sync: false
       - key: BACKUP_ENCRYPTION_KEY
         sync: false
-      - key: BACKUP_SERVICE_URL
-        value: "http://backup-service:3000"
-      - key: INTERNAL_API_KEY
+      - key: R2_ENDPOINT
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
         sync: false
 
   # ---- Frontend Angular ----
@@ -76,34 +80,3 @@ services:
     plan: free
     buildCommand: npm ci && npm run build
     staticPublishPath: dist/frontend-angular/browser
-
-  # ---- Microservicio Node.js para Backup Completo ----
-  - name: backup-service
-    type: pserv
-    runtime: docker
-    plan: free
-    dockerfilePath: ./backup-service/Dockerfile
-    dockerContext: ./backup-service
-    envVars:
-      - key: DATABASE_URL
-        sync: false
-      - key: DB_URL
-        sync: false
-      - key: DB_USER
-        sync: false
-      - key: DB_PASSWORD
-        sync: false
-      - key: BACKUP_STORAGE_URL
-        sync: false
-      - key: BACKUP_ENCRYPTION_KEY
-        sync: false
-      - key: R2_ENDPOINT
-        sync: false
-      - key: R2_ACCESS_KEY_ID
-        sync: false
-      - key: R2_SECRET_ACCESS_KEY
-        sync: false
-      - key: R2_BUCKET_NAME
-        sync: false
-      - key: INTERNAL_API_KEY
-        sync: false

@@ -111,7 +111,21 @@ public class RespaldoCompletoService {
         return ruta;
     }
 
-    // ── Registro de ejecución (llamado desde el microservicio Node.js via token interno) ──
+    // ── Limpieza al arrancar: registros que quedaron en 'ejecutando' por un
+    // reinicio abrupto (Render free) se marcan 'fallido' para no dejar fantasmas.
+    @Transactional
+    public int marcarAtascadosComoFallidos() {
+        List<RegistroRespaldo> atascados = registroRepo.findByEstado("ejecutando");
+        for (RegistroRespaldo r : atascados) {
+            r.setEstado("fallido");
+            r.setMensajeError("Servicio reiniciado durante ejecución");
+            r.setFinalizadoEn(OffsetDateTime.now());
+            registroRepo.save(r);
+        }
+        return atascados.size();
+    }
+
+    // ── Registro de ejecución ─────────────────────────────────────────────────
     @Transactional
     public RegistroRespaldo registrarInicio(String tipo, Long ejecutadoPor) {
         RegistroRespaldo r = RegistroRespaldo.builder()

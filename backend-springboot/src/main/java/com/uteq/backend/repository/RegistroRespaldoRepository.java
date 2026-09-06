@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface RegistroRespaldoRepository extends JpaRepository<RegistroRespaldo, Long> {
     List<RegistroRespaldo> findByTipoOrderByIniciadoEnDesc(String tipo);
+    List<RegistroRespaldo> findByEstado(String estado);
 }

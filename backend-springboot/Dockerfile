@@ -28,7 +28,7 @@ COPY database/migrations database/migrations
 
 EXPOSE 8080
 
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl postgresql-client
 
 # OWASP A05 (Bloque C.2, checklist Módulo 10.2, REQ-NF-014): la imagen
 # base eclipse-temurin corre como root por defecto -- si el proceso Java
