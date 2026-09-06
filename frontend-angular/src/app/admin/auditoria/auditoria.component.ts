@@ -364,15 +364,15 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
   moduloLabel(modulo: string): string {
     const grupos: Record<string, string> = {
       'roles': 'Roles y permisos',
-      'usuario_roles': 'Usuario y roles',
+       'usuario_roles': 'Usuarios y Roles',
       'permisos': 'Roles y permisos',
       'rol_permisos': 'Roles y permisos',
       'roles_permisos': 'Roles y permisos',
       'backups': 'Respaldos',
-      'backups_tablas': 'Respaldos',
-      'backup_programacion': 'Respaldos',
-      'configuracion_respaldo': 'Respaldos',
-      'registros_respaldo': 'Respaldos',
+       'backups_tablas': 'Backups Personalizados',
+       'backup_programacion': 'Backups Programados',
+       'configuracion_respaldo': 'Configuración de Respaldos',
+       'registros_respaldo': 'Registros de Respaldos',
       'respaldos': 'Respaldos'
     };
     if (grupos[modulo]) return grupos[modulo];

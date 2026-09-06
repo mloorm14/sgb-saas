@@ -55,7 +55,7 @@ export class SugerenciasFormComponent implements OnInit {
     this.sugerenciaService.crear(this.form.value).subscribe({
       next: () => {
         this.cargando = false;
-        this.router.navigate(['/sugerencias']);
+        this.router.navigate(['/dashboard-lector/sugerencias']);
       },
       error: () => {
         this.cargando = false;

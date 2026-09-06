@@ -55,7 +55,7 @@ describe('SugerenciasFormComponent', () => {
       isbn: '9781449373320',
       justificacion: 'Muy usado en la carrera'
     });
-    expect(router.navigate).toHaveBeenCalledWith(['/sugerencias']);
+     expect(router.navigate).toHaveBeenCalledWith(['/dashboard-lector/sugerencias']);
   });
 
   it('rechaza un ISBN con formato inválido', () => {
