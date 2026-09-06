@@ -1,8 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { PrestamoService } from '../core/services/prestamo.service';
 import { LibroService } from '../core/services/libro.service';
@@ -22,7 +22,7 @@ import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.com
   imports: [CommonModule, FormsModule, PortadaLibroComponent],
   templateUrl: './prestamos-gestion.component.html'
 })
-export class PrestamosGestionComponent {
+export class PrestamosGestionComponent implements OnInit {
 
   showSinPermisosModal = false;
 
@@ -92,13 +92,22 @@ export class PrestamosGestionComponent {
     private prestamoService: PrestamoService,
     private libroService: LibroService,
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private route: ActivatedRoute
   ) {
     this.busquedaCorreo$.pipe(
       debounceTime(1300),
       distinctUntilChanged(),
       takeUntil(this.destroy$)
     ).subscribe(texto => this.buscarSugerenciasCorreo(texto));
+  }
+
+  ngOnInit(): void {
+    const q = this.route.snapshot.queryParamMap.get('q');
+    if (q) {
+      this.correoBusqueda = q;
+      this.buscarUsuario();
+    }
   }
 
   ngOnDestroy(): void {

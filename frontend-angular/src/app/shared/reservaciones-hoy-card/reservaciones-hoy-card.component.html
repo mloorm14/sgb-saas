@@ -24,7 +24,7 @@
     <p class="font-body-sm text-body-sm text-on-surface-variant text-center py-md">No hay reservaciones para hoy</p>
   } @else {
     <div class="space-y-sm">
-      @for (r of reservaciones(); track r.reservacionId) {
+      @for (r of paginadas(); track r.reservacionId) {
         @if (modoResponsivo()) {
           <div class="flex flex-col sm:flex-row sm:items-center gap-sm p-sm rounded-lg border border-outline-variant">
             <div class="flex-1 min-w-0">
@@ -37,9 +37,9 @@
                 {{ r.estadoNombre === 'LISTA_PARA_RETIRO' ? 'Lista para retiro' : 'Pendiente' }}
               </span>
               @if (r.estadoNombre === 'PENDIENTE') {
-                <button (click)="marcarListaParaRetiro.emit(r.reservacionId)"
+                <button (click)="irAReservarAhora(r.usuarioCorreo)"
                   class="h-8 px-sm rounded-lg bg-primary text-on-primary font-label-sm text-[12px] hover:opacity-90 transition-opacity">
-                  Marcar lista
+                  Reservar ahora
                 </button>
               }
             </div>
@@ -55,14 +55,29 @@
               {{ r.estadoNombre === 'LISTA_PARA_RETIRO' ? 'Lista para retiro' : 'Pendiente' }}
             </span>
             @if (r.estadoNombre === 'PENDIENTE') {
-              <button (click)="marcarListaParaRetiro.emit(r.reservacionId)"
+              <button (click)="irAReservarAhora(r.usuarioCorreo)"
                 class="shrink-0 h-8 px-sm rounded-lg bg-primary text-on-primary font-label-sm text-[12px] hover:opacity-90 transition-opacity">
-                Marcar lista
+                Reservar ahora
               </button>
             }
           </div>
         }
       }
     </div>
+    <div class="flex flex-wrap justify-between items-center mt-lg gap-sm">
+      <div class="flex items-center gap-xs font-body-sm text-body-sm">
+        <span class="text-on-surface-variant">Mostrar 10 por p?gina</span>
+      </div>
+      @if (paginas().length > 1) {
+        <div class="flex items-center gap-xs">
+          <button (click)="paginaAnterior()" [disabled]="!puedeAnterior()" class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs"><span class="material-symbols-outlined text-[18px]">chevron_left</span> Anterior</button>
+          @for (p of paginas(); track p) {
+            <button (click)="irAPagina(p)" class="w-8 h-8 min-h-[44px] min-w-[44px] rounded font-label-sm text-label-sm cursor-pointer" [class.bg-primary]="p===pagina()" [class.text-on-primary]="p===pagina()" [class.border]="p!==pagina()" [class.border-outline-variant]="p!==pagina()" [class.hover:bg-surface-container-low]="p!==pagina()">{{ p + 1 }}</button>
+          }
+          <button (click)="paginaSiguiente()" [disabled]="!puedeSiguiente()" class="h-8 min-h-[44px] min-w-[44px] px-3 rounded border border-outline-variant disabled:opacity-40 cursor-pointer font-body-sm text-body-sm flex items-center gap-xs">Siguiente <span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+        </div>
+      }
+    </div>
   }
 </div>
+
