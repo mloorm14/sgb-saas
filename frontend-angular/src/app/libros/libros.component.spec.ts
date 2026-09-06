@@ -191,7 +191,8 @@ describe('LibrosComponent', () => {
       component.form.get('isbn')!.setValue('9780132350884');
       tick(1000);
 
-      expect(component.lookupError).toContain('No se encontró información');
+      expect(toastService.warning).toHaveBeenCalledWith(
+        'Búsqueda ISBN', jasmine.stringContaining('No se encontró información'));
       expect(libroService.buscarPorIsbn).toHaveBeenCalledTimes(1);
 
       component.form.get('isbn')!.setValue('9780132350885');

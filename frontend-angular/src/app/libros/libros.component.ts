@@ -46,7 +46,6 @@ export class LibrosComponent implements OnInit, OnDestroy {
   // se marca cuando el lookup TRAJO datos; si falló, se puede reintentar
   // (el error ya avisa con mensaje). Se resetea al abrir/cerrar el form.
   private isbnLookupExitoso = false;
-  private lookupErrorTimer: ReturnType<typeof setTimeout> | null = null;
   portadaPreviewUrl: string | null = null;
   portadaPreviewBlob: Blob | null = null;
   portadaPreviewTipo: string | null = null;
@@ -196,7 +195,6 @@ export class LibrosComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.lookupErrorTimer) clearTimeout(this.lookupErrorTimer);
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -857,12 +855,9 @@ export class LibrosComponent implements OnInit, OnDestroy {
   }
 
   private mostrarLookupError(mensaje: string): void {
-    if (this.lookupErrorTimer) clearTimeout(this.lookupErrorTimer);
-    this.lookupError = mensaje;
-    this.lookupErrorTimer = setTimeout(() => {
-      this.lookupError = '';
-      this.lookupErrorTimer = null;
-    }, 3000);
+    // Toast amarillo (no inline): el <p> bajo el ISBN queda solo para
+    // errores de portada; el lookup avisa flotante y no se auto-borra.
+    this.toast.warning('Búsqueda ISBN', mensaje);
   }
 
   private ejecutarLookupIsbn(isbn: string): void {
