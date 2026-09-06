@@ -235,4 +235,14 @@ class SugerenciaAdquisicionControllerSecurityTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
     }
+
+    @Test
+    @WithMockUser(roles = "LECTOR")
+    void listarPropias_conRolLector_sePermite() throws Exception {
+        org.springframework.data.domain.Page<com.uteq.backend.dto.SugerenciaAdquisicionResponseDTO> page = new org.springframework.data.domain.PageImpl<>(java.util.List.of());
+        when(sugerenciaService.listarPropias(any(), any())).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/sugerencias-adquisicion/mias"))
+                .andExpect(status().isOk());
+    }
 }

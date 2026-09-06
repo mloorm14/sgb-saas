@@ -166,4 +166,13 @@ class UsuarioAdminControllerSecurityTest {
         mockMvc.perform(delete("/api/v1/admin/usuarios/{id}", 5L))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void eliminar_conRolAdmin_sePermite() throws Exception {
+        org.mockito.Mockito.doNothing().when(usuarioAdminService).eliminarUsuario(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any());
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/v1/admin/usuarios/1").param("motivo", "test"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isNoContent());
+    }
 }

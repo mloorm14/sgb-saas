@@ -256,4 +256,49 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/auth/logout").header("Authorization", "Bearer cualquier-valor"))
                 .andExpect(status().is4xxClientError());
     }
+
+    @Test
+    void reenviarCodigo_devuelve204() throws Exception {
+        com.uteq.backend.dto.ReenviarCodigoRequestDTO dto = new com.uteq.backend.dto.ReenviarCodigoRequestDTO("test@correo.com");
+        doNothing().when(authService).reenviarCodigo(anyString());
+
+        mockMvc.perform(post("/api/auth/reenviar-codigo")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void solicitarReset_devuelve204() throws Exception {
+        com.uteq.backend.dto.SolicitarResetRequestDTO dto = new com.uteq.backend.dto.SolicitarResetRequestDTO("test@correo.com");
+        doNothing().when(authService).solicitarReset(anyString());
+
+        mockMvc.perform(post("/api/auth/solicitar-reset")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void reset_devuelve204() throws Exception {
+        com.uteq.backend.dto.ResetPasswordRequestDTO dto = new com.uteq.backend.dto.ResetPasswordRequestDTO("test@correo.com", "123456", "Nueva123!");
+        doNothing().when(authService).resetPassword(anyString(), anyString(), anyString());
+
+        mockMvc.perform(post("/api/auth/reset")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void verificarCorreo_devuelve200() throws Exception {
+        com.uteq.backend.dto.CodigoVerificacionRequestDTO dto = new com.uteq.backend.dto.CodigoVerificacionRequestDTO("test@correo.com", "123456");
+        when(authService.verificarCorreo(anyString(), anyString(), anyString())).thenReturn(new com.uteq.backend.dto.UsuarioResponseDTO(1L, "Juan", "Perez", java.util.List.of("LECTOR")));
+
+        mockMvc.perform(post("/api/auth/verificar-correo")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1));
+    }
 }
