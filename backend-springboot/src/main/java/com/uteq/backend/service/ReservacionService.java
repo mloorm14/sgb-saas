@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -95,7 +96,8 @@ public class ReservacionService {
                 .orElseThrow(() -> new EstadoReservacionInicialNoConfiguradoException(
                         "Catálogo estados_reservacion sin fila '" + ESTADO_INICIAL + "'"));
 
-        OffsetDateTime ahora = OffsetDateTime.now();
+        ZoneId zone = ZoneId.of("America/Guayaquil");
+        OffsetDateTime ahora = OffsetDateTime.now(zone);
 
         Reservacion r = new Reservacion();
         r.setUsuarioId(dto.usuarioId());
@@ -109,11 +111,14 @@ public class ReservacionService {
               // best-effort: se usa la hora por defecto si falla la config
           }
         LocalTime horaLimite = LocalTime.parse(horaLimiteStr.length()==5?horaLimiteStr+":00":horaLimiteStr);
-        if (dto.fechaRetiro() != null && dto.fechaRetiro().toLocalDate().isBefore(LocalDate.from(ahora))) {
+        
+        if (dto.fechaRetiro() != null) {
+            OffsetDateTime fechaRetiroLocal = dto.fechaRetiro().withOffsetSameInstant(zone.getRules().getOffset(ahora.toInstant()));
+            if (fechaRetiroLocal.toLocalDate().isBefore(ahora.toLocalDate())) {
                 throw new IllegalArgumentException(
                         "La fecha de retiro no puede ser anterior a la fecha actual.");
             }
-            OffsetDateTime limite = dto.fechaRetiro().withHour(horaLimite.getHour()).withMinute(horaLimite.getMinute()).withSecond(0).withNano(0);
+            OffsetDateTime limite = fechaRetiroLocal.withHour(horaLimite.getHour()).withMinute(horaLimite.getMinute()).withSecond(0).withNano(0);
             r.setFechaLimiteRetiro(limite);
         } else {
             OffsetDateTime limite = ahora.withHour(horaLimite.getHour()).withMinute(horaLimite.getMinute()).withSecond(0).withNano(0);
@@ -148,7 +153,8 @@ public class ReservacionService {
         // RF-10, documentado en el resumen de la rama).
         EstadoReservacion estadoInicial = estadoReservacionRepo.findByNombre(ESTADO_INICIAL)
                 .orElseThrow(() -> new EstadoReservacionInicialNoConfiguradoException(
-                        CATALOGO_SIN_FILA + ESTADO_INICIAL + "'"));if (!estadoInicial.getId().equals(reservacion.getEstadoReservacionId())) {
+                        CATALOGO_SIN_FILA + ESTADO_INICIAL + "'"));
+        if (!estadoInicial.getId().equals(reservacion.getEstadoReservacionId())) {
             throw new IllegalStateException(
                     "Solo se puede aceptar o rechazar una reservación pendiente.");
         }

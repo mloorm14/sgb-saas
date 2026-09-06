@@ -66,6 +66,32 @@ class ReservacionServiceTest {
         assertThat(resultado.fechaLimiteRetiro()).isAfter(resultado.fechaReserva());
     }
 
+    // ── Test 1.1: creación con fechaRetiro válida (respeta el límite de hora) ──
+    @Test
+    void crear_conFechaRetiroValida_asignaFechaLimiteCorrecta() {
+        Authentication auth = authComoRol("lector@correo.com", "LECTOR");
+        given(usuarioRepo.findByCorreo("lector@correo.com"))
+                .willReturn(Optional.of(usuarioConId(1L)));
+        given(estadoReservacionRepo.findByNombre("PENDIENTE"))
+                .willReturn(Optional.of(estadoConId(1)));
+        given(reservacionRepo.save(any())).willAnswer(inv -> {
+            Reservacion r = inv.getArgument(0);
+            r.setId(51L);
+            return r;
+        });
+
+        // Simulamos una fecha de retiro para "hoy" pero al inicio del día con un offset específico
+        java.time.ZoneId zone = java.time.ZoneId.of("America/Guayaquil");
+        java.time.OffsetDateTime ahoraLocal = java.time.OffsetDateTime.now(zone);
+        java.time.OffsetDateTime fechaRetiro = ahoraLocal;
+
+        ReservacionResponseDTO resultado = reservacionService.crear(
+                new ReservacionRequestDTO(1L, 3L, fechaRetiro), auth);
+
+        assertThat(resultado.id()).isEqualTo(51L);
+        assertThat(resultado.fechaLimiteRetiro().getHour()).isEqualTo(18); // Por defecto es 18:00
+    }
+
     // ── Test 2: LECTOR intenta reservar para OTRO usuario -> denegado ──
     @Test
     void crear_lectorReservaParaOtroUsuario_lanzaAccesoDenegado() {
