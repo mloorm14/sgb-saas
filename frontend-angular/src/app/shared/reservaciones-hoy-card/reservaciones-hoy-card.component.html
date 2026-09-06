@@ -37,6 +37,10 @@
                 {{ r.estadoNombre === 'LISTA_PARA_RETIRO' ? 'Lista para retiro' : 'Pendiente' }}
               </span>
               @if (r.estadoNombre === 'PENDIENTE') {
+                <button (click)="marcarListaParaRetiro.emit(r.reservacionId)"
+                  class="h-8 px-sm rounded-lg bg-secondary text-on-secondary font-label-sm text-[12px] hover:opacity-90 transition-opacity">
+                  Marcar lista para retiro
+                </button>
                 <button (click)="irAReservarAhora(r.usuarioCorreo)"
                   class="h-8 px-sm rounded-lg bg-primary text-on-primary font-label-sm text-[12px] hover:opacity-90 transition-opacity">
                   Reservar ahora
@@ -55,6 +59,10 @@
               {{ r.estadoNombre === 'LISTA_PARA_RETIRO' ? 'Lista para retiro' : 'Pendiente' }}
             </span>
             @if (r.estadoNombre === 'PENDIENTE') {
+              <button (click)="marcarListaParaRetiro.emit(r.reservacionId)"
+                class="shrink-0 h-8 px-sm rounded-lg bg-secondary text-on-secondary font-label-sm text-[12px] hover:opacity-90 transition-opacity">
+                Marcar lista para retiro
+              </button>
               <button (click)="irAReservarAhora(r.usuarioCorreo)"
                 class="shrink-0 h-8 px-sm rounded-lg bg-primary text-on-primary font-label-sm text-[12px] hover:opacity-90 transition-opacity">
                 Reservar ahora

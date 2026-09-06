@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ActivatedRoute } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { MultasComponent } from './multas.component';
 import { MultaService } from '../core/services/multa.service';
@@ -88,7 +89,8 @@ describe('MultasComponent', () => {
       providers: [
         { provide: MultaService, useValue: multaService },
         { provide: PrestamoService, useValue: prestamoService },
-        { provide: AuthService, useValue: authService }
+        { provide: AuthService, useValue: authService },
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } }
       ]
     }).compileComponents();
 

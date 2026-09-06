@@ -13,8 +13,8 @@ describe('DashboardBibliotecarioHomeComponent', () => {
   let reservacionServiceSpy: jasmine.SpyObj<ReservacionService>;
 
   const mockReservaciones: ReservacionHoy[] = [
-    { reservacionId: 1, usuarioNombre: 'Ana Garcia', usuarioCorreo: 'ana@test.com', libroTitulo: 'El Principito', estadoNombre: 'PENDIENTE', fechaLimiteRetiro: '2026-08-24T23:59:59Z' },
-    { reservacionId: 2, usuarioNombre: 'Luis Lopez', usuarioCorreo: 'luis@test.com', libroTitulo: 'Cien Anos', estadoNombre: 'LISTA_PARA_RETIRO', fechaLimiteRetiro: '2026-08-24T23:59:59Z' },
+    { reservacionId: 1, usuarioNombre: 'Ana Garcia', usuarioCorreo: 'ana@test.com', libroTitulo: 'El Principito', libroIsbn: '978-3-16-148410-0', estadoNombre: 'PENDIENTE', fechaLimiteRetiro: '2026-08-24T23:59:59Z' },
+    { reservacionId: 2, usuarioNombre: 'Luis Lopez', usuarioCorreo: 'luis@test.com', libroTitulo: 'Cien Anos', libroIsbn: '978-0-307-47472-8', estadoNombre: 'LISTA_PARA_RETIRO', fechaLimiteRetiro: '2026-08-24T23:59:59Z' },
   ];
 
   beforeEach(async () => {

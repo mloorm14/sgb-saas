@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ActivatedRoute } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { PrestamosGestionComponent } from './prestamos-gestion.component';
@@ -44,7 +45,8 @@ describe('PrestamosGestionComponent', () => {
       providers: [
         { provide: PrestamoService, useValue: prestamoService },
         { provide: LibroService, useValue: libroService },
-        { provide: Router, useValue: router }
+        { provide: Router, useValue: router },
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } }
       ]
     }).compileComponents();
 

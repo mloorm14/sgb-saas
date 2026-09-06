@@ -25,7 +25,7 @@ describe('DashboardGerenteAdminHomeComponent', () => {
   ];
 
   const mockReservaciones: ReservacionHoy[] = [
-    { reservacionId: 1, usuarioNombre: 'Ana Garcia', usuarioCorreo: 'ana@test.com', libroTitulo: 'El Principito', estadoNombre: 'PENDIENTE', fechaLimiteRetiro: '2026-08-24T23:59:59Z' },
+    { reservacionId: 1, usuarioNombre: 'Ana Garcia', usuarioCorreo: 'ana@test.com', libroTitulo: 'El Principito', libroIsbn: '978-3-16-148410-0', estadoNombre: 'PENDIENTE', fechaLimiteRetiro: '2026-08-24T23:59:59Z' },
   ];
 
   beforeEach(async () => {
