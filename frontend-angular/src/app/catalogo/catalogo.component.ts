@@ -266,7 +266,9 @@ export class CatalogoComponent implements OnInit, OnDestroy {
   private cargarCategorias(): void {
     this.categoriaService.listar().subscribe({
       next: (c) => (this.categorias = c),
-      error: () => {}
+      error: () => {
+        this.toast.error('Error', 'No se pudieron cargar las categorías');
+      }
     });
   }
 
@@ -380,6 +382,7 @@ export class CatalogoComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.errorMsg = 'Error al cargar el catalogo';
+        this.toast.error('Error', this.errorMsg);
         this.cargando = false;
       }
     });

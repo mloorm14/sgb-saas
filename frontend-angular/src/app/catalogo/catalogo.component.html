@@ -93,10 +93,6 @@
     </select>
   </div>
 
-  @if (errorMsg) {
-    <p role="alert" class="font-body-sm text-body-sm text-error mb-md">{{ errorMsg }}</p>
-  }
-
   @if (cargando && libros.length === 0) {
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-md">
       @for (i of [1,2,3,4,5,6,7,8,9,10]; track i) {

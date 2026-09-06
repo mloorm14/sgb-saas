@@ -73,11 +73,15 @@ export class LibroDetalleComponent implements OnInit {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     if (!id) {
       this.errorMsg = 'Libro no encontrado';
+      this.toast.error('Error', this.errorMsg);
       return;
     }
     this.libroService.obtener(id).subscribe({
       next: (libro) => (this.libro = libro),
-      error: () => (this.errorMsg = 'Error al cargar el libro')
+      error: () => {
+        this.errorMsg = 'Error al cargar el libro';
+        this.toast.error('Error', this.errorMsg);
+      }
     });
     this.favoritoService.listar().subscribe({
       next: (favoritos) => {
