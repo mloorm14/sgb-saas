@@ -13,6 +13,7 @@ public interface ReservacionHoyProjection {
     String getUsuarioNombre();
     String getUsuarioCorreo();
     String getLibroTitulo();
+    String getLibroIsbn();
     String getEstadoNombre();
     OffsetDateTime getFechaLimiteRetiro();
 }

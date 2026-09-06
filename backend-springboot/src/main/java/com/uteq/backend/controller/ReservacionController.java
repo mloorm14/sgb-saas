@@ -46,6 +46,12 @@ public class ReservacionController {
         return ResponseEntity.ok(reservacionService.buscarReservacionesDeHoy());
     }
 
+    @GetMapping("/proximas")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    public ResponseEntity<List<ReservacionHoyResponseDTO>> reservacionesProximas() {
+        return ResponseEntity.ok(reservacionService.buscarReservacionesProximas());
+    }
+
     // ── PATCH /api/v1/reservaciones/{id}/estado ────────────
     // El staff acepta (PENDIENTE -> LISTA_PARA_RETIRO) o rechaza
     // (PENDIENTE -> CANCELADA) la reservación de un lector. Es la acción

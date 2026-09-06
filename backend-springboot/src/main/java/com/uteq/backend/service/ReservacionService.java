@@ -207,6 +207,21 @@ public class ReservacionService {
                         p.getUsuarioNombre(),
                         p.getUsuarioCorreo(),
                         p.getLibroTitulo(),
+                        p.getLibroIsbn(),
+                        p.getEstadoNombre(),
+                        p.getFechaLimiteRetiro()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReservacionHoyResponseDTO> buscarReservacionesProximas() {
+        return reservacionRepo.buscarReservacionesProximas().stream()
+                .map(p -> new ReservacionHoyResponseDTO(
+                        p.getReservacionId(),
+                        p.getUsuarioNombre(),
+                        p.getUsuarioCorreo(),
+                        p.getLibroTitulo(),
+                        p.getLibroIsbn(),
                         p.getEstadoNombre(),
                         p.getFechaLimiteRetiro()))
                 .toList();

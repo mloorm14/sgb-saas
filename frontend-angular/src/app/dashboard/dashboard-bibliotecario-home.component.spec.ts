@@ -18,8 +18,9 @@ describe('DashboardBibliotecarioHomeComponent', () => {
   ];
 
   beforeEach(async () => {
-    reservacionServiceSpy = jasmine.createSpyObj('ReservacionService', ['reservacionesDeHoy', 'cambiarEstado']);
+    reservacionServiceSpy = jasmine.createSpyObj('ReservacionService', ['reservacionesDeHoy', 'reservacionesProximas', 'cambiarEstado']);
     reservacionServiceSpy.reservacionesDeHoy.and.returnValue(of(mockReservaciones));
+    reservacionServiceSpy.reservacionesProximas.and.returnValue(of([]));
     reservacionServiceSpy.cambiarEstado.and.returnValue(of({} as any));
 
     await TestBed.configureTestingModule({

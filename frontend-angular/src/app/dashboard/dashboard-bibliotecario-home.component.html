@@ -24,20 +24,20 @@
         Próximas reservaciones
       </h2>
       <span class="font-label-sm text-[11px] text-on-surface-variant px-sm py-1 rounded-full bg-surface-container-low">
-        {{ reservacionesHoy.length }} total
+        {{ reservacionesProximasLista.length }} total
       </span>
     </div>
 
-    @if (cargandoReservacionesHoy) {
+    @if (cargandoReservacionesProximas) {
       <div class="space-y-sm">
         @for (i of [1,2,3]; track i) {
           <div class="h-12 bg-surface-container-high rounded animate-pulse"></div>
         }
       </div>
-    } @else if (errorReservacionesHoy) {
-      <p class="font-body-sm text-body-sm text-on-surface-variant text-center py-md">{{ errorReservacionesHoy }}</p>
-    } @else if (reservacionesHoy.length === 0) {
-      <p class="font-body-sm text-body-sm text-on-surface-variant text-center py-md">No hay reservaciones para hoy</p>
+    } @else if (errorReservacionesProximas) {
+      <p class="font-body-sm text-body-sm text-on-surface-variant text-center py-md">{{ errorReservacionesProximas }}</p>
+    } @else if (reservacionesProximasLista.length === 0) {
+      <p class="font-body-sm text-body-sm text-on-surface-variant text-center py-md">No hay reservaciones próximas</p>
     } @else {
       <div class="overflow-x-auto">
         <table class="w-full text-left">
@@ -46,6 +46,8 @@
             <tr class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider border-b border-outline-variant">
               <th class="pb-sm pr-md">Usuario</th>
               <th class="pb-sm pr-md">Libro</th>
+              <th class="pb-sm pr-md">ISBN</th>
+              <th class="pb-sm pr-md">Fecha Retiro</th>
               <th class="pb-sm">Estado</th>
             </tr>
           </thead>
@@ -57,6 +59,8 @@
                   <p class="font-body-sm text-[11px] text-on-surface-variant">{{ r.usuarioCorreo }}</p>
                 </td>
                 <td class="py-sm pr-md">{{ r.libroTitulo }}</td>
+                <td class="py-sm pr-md text-on-surface-variant">{{ r.libroIsbn }}</td>
+                <td class="py-sm pr-md text-on-surface-variant">{{ r.fechaLimiteRetiro | date:'dd/MM/yyyy HH:mm' }}</td>
                 <td class="py-sm">
                   <span class="font-label-sm text-[11px] px-sm py-0.5 rounded-full"
                     [class]="r.estadoNombre === 'LISTA_PARA_RETIRO' ? 'bg-secondary-container/30 text-secondary' : 'bg-warning/20 text-tertiary'">

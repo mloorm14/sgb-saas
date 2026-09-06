@@ -85,4 +85,10 @@ export class ReservacionService {
       catchError(err => this.manejarError(err))
     );
   }
+
+  reservacionesProximas(): Observable<ReservacionHoy[]> {
+    return this.http.get<ReservacionHoy[]>(`${this.apiUrl}/proximas`).pipe(
+      catchError(err => this.manejarError(err))
+    );
+  }
 }

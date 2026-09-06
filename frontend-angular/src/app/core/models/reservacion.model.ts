@@ -26,6 +26,7 @@ export interface ReservacionHoy {
   usuarioNombre: string;
   usuarioCorreo: string;
   libroTitulo: string;
+  libroIsbn: string;
   estadoNombre: string;
   fechaLimiteRetiro: string;
 }

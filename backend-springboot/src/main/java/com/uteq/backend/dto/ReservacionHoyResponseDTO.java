@@ -7,6 +7,7 @@ public record ReservacionHoyResponseDTO(
         String usuarioNombre,
         String usuarioCorreo,
         String libroTitulo,
+        String libroIsbn,
         String estadoNombre,
         OffsetDateTime fechaLimiteRetiro
 ) {}

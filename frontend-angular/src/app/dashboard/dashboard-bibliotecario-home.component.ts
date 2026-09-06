@@ -16,18 +16,22 @@ export class DashboardBibliotecarioHomeComponent implements OnInit {
   cargandoReservacionesHoy = true;
   errorReservacionesHoy = '';
 
+  reservacionesProximasLista: ReservacionHoy[] = [];
+  cargandoReservacionesProximas = true;
+  errorReservacionesProximas = '';
+
   paginaProximas = 0;
   tamanoPaginaProximas = 10;
 
   get proximasPaginadas(): ReservacionHoy[] {
     const inicio = this.paginaProximas * this.tamanoPaginaProximas;
-    return this.reservacionesHoy.slice(inicio, inicio + this.tamanoPaginaProximas);
+    return this.reservacionesProximasLista.slice(inicio, inicio + this.tamanoPaginaProximas);
   }
   get paginasProximas(): number[] {
     return Array.from({ length: this.totalPaginasProximas }, (_, i) => i);
   }
   get totalPaginasProximas(): number {
-    return Math.max(1, Math.ceil(this.reservacionesHoy.length / this.tamanoPaginaProximas));
+    return Math.max(1, Math.ceil(this.reservacionesProximasLista.length / this.tamanoPaginaProximas));
   }
   get puedeAnteriorProximas(): boolean { return this.paginaProximas > 0; }
   get puedeSiguienteProximas(): boolean { return this.paginaProximas < this.totalPaginasProximas - 1; }
@@ -42,6 +46,11 @@ export class DashboardBibliotecarioHomeComponent implements OnInit {
   constructor(private reservacionService: ReservacionService) {}
 
   ngOnInit(): void {
+    this.cargarHoy();
+    this.cargarProximas();
+  }
+
+  cargarHoy(): void {
     this.reservacionService.reservacionesDeHoy().subscribe({
       next: (reservas) => {
         this.reservacionesHoy = reservas;
@@ -54,13 +63,24 @@ export class DashboardBibliotecarioHomeComponent implements OnInit {
     });
   }
 
+  cargarProximas(): void {
+    this.reservacionService.reservacionesProximas().subscribe({
+      next: (reservas) => {
+        this.reservacionesProximasLista = reservas;
+        this.cargandoReservacionesProximas = false;
+      },
+      error: () => {
+        this.errorReservacionesProximas = 'No se pudieron cargar las reservaciones próximas.';
+        this.cargandoReservacionesProximas = false;
+      }
+    });
+  }
+
   marcarListaParaRetiro(id: number): void {
     this.reservacionService.cambiarEstado(id, { nuevoEstado: 'LISTA_PARA_RETIRO' }).subscribe({
       next: () => {
-        this.reservacionService.reservacionesDeHoy().subscribe({
-          next: (reservas) => { this.reservacionesHoy = reservas; },
-          error: () => {}
-        });
+        this.cargarHoy();
+        this.cargarProximas();
       },
       error: () => {}
     });

@@ -28,7 +28,7 @@
         @if (modoResponsivo()) {
           <div class="flex flex-col sm:flex-row sm:items-center gap-sm p-sm rounded-lg border border-outline-variant">
             <div class="flex-1 min-w-0">
-              <p class="font-body-sm text-[13px] text-on-surface truncate">{{ r.libroTitulo }}</p>
+              <p class="font-body-sm text-[13px] text-on-surface truncate">{{ r.libroTitulo }} <span class="text-on-surface-variant font-normal">({{ r.libroIsbn }})</span></p>
               <p class="font-label-sm text-[11px] text-on-surface-variant truncate">{{ r.usuarioNombre }} · {{ r.usuarioCorreo }}</p>
             </div>
             <div class="flex items-center gap-sm shrink-0">
@@ -47,7 +47,7 @@
         } @else {
           <div class="flex items-center gap-md p-sm rounded-lg border border-outline-variant">
             <div class="flex-1 min-w-0">
-              <p class="font-body-sm text-[13px] text-on-surface truncate">{{ r.libroTitulo }}</p>
+              <p class="font-body-sm text-[13px] text-on-surface truncate">{{ r.libroTitulo }} <span class="text-on-surface-variant font-normal">({{ r.libroIsbn }})</span></p>
               <p class="font-label-sm text-[11px] text-on-surface-variant truncate">{{ r.usuarioNombre }} · {{ r.usuarioCorreo }}</p>
             </div>
             <span class="font-label-sm text-[11px] px-sm py-0.5 rounded-full shrink-0"
