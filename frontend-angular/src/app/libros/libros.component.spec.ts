@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
 import { LibrosComponent } from './libros.component';
@@ -38,7 +38,8 @@ describe('LibrosComponent', () => {
 
   beforeEach(async () => {
     libroService = jasmine.createSpyObj('LibroService', [
-      'listar', 'crear', 'actualizar', 'eliminar', 'subirPortada', 'obtenerPortada'
+      'listar', 'crear', 'actualizar', 'eliminar', 'subirPortada', 'obtenerPortada',
+      'buscarPorIsbn', 'portadaPorIsbn'
     ]);
     categoriaService = jasmine.createSpyObj('CategoriaService', ['listar']);
     autorService = jasmine.createSpyObj('AutorService', ['listar']);
@@ -135,6 +136,37 @@ describe('LibrosComponent', () => {
     expect(component.modoEdicion).toBeFalse();
     expect(component.lookupError).toBe('');
     expect(component.portadaPreviewUrl).toBeNull();
+  });
+
+  describe('ISBN lookup solo al crear', () => {
+    it('en edición NO dispara el auto-lookup aunque el ISBN tenga 13 dígitos', fakeAsync(() => {
+      libroService.buscarPorIsbn.and.returnValue(of({} as any));
+
+      component.abrirFormularioEditar(libroBase as any);
+      component.form.get('isbn')!.setValue('9780132350884');
+      tick(1000);
+
+      expect(libroService.buscarPorIsbn).not.toHaveBeenCalled();
+    }));
+
+    it('en edición el botón Buscar no dispara el lookup', () => {
+      libroService.buscarPorIsbn.and.returnValue(of({} as any));
+
+      component.abrirFormularioEditar(libroBase as any);
+      component.buscarPorIsbn();
+
+      expect(libroService.buscarPorIsbn).not.toHaveBeenCalled();
+    });
+
+    it('al crear SÍ dispara el auto-lookup al completar 13 dígitos', fakeAsync(() => {
+      libroService.buscarPorIsbn.and.returnValue(of({ titulo: 'X' } as any));
+
+      component.abrirFormularioCrear();
+      component.form.get('isbn')!.setValue('9780132350884');
+      tick(1000);
+
+      expect(libroService.buscarPorIsbn).toHaveBeenCalledWith('9780132350884');
+    }));
   });
 
   describe('guardarLibro', () => {

@@ -160,14 +160,16 @@ export class LibrosComponent implements OnInit, OnDestroy {
     takeUntil(this.destroy$)
   ).subscribe(() => { this.currentPage = 0; this.cargarLibros(); });
 
-    // H3: debounce ISBN — auto-lookup al completar 13 dígitos
+    // H3: debounce ISBN — auto-lookup al completar 13 dígitos, SOLO al
+    // crear. En edición (modoEdicion) el ISBN se digita a mano para no
+    // pisar los datos existentes con el fallback Google Books/OpenLibrary/IA.
     this.form.get('isbn')!.valueChanges.pipe(
       debounceTime(300),
       distinctUntilChanged(),
       takeUntil(this.destroy$)
     ).subscribe(valor => {
       const isbn = (valor ?? '').trim();
-      if (/^[0-9]{13}$/.test(isbn)) {
+      if (!this.modoEdicion && /^[0-9]{13}$/.test(isbn)) {
         this.ejecutarLookupIsbn(isbn);
       }
     });
@@ -839,9 +841,11 @@ export class LibrosComponent implements OnInit, OnDestroy {
     this.lookupError = '';
   }
 
-  // ── ISBN lookup (solo manual + editorial) ──
+  // ── ISBN lookup (solo al crear: botón manual + auto-debounce) ──
+  // En edición no se usa: el formulario se rellena a mano.
 
   buscarPorIsbn(): void {
+    if (this.modoEdicion) return;
     const isbn = (this.form.get('isbn')?.value as string ?? '').trim();
     this.ejecutarLookupIsbn(isbn);
   }
