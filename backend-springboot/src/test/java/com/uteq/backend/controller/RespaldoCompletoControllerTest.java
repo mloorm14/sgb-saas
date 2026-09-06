@@ -126,4 +126,11 @@ class RespaldoCompletoControllerTest extends WebMvcControllerTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value("EXITOSO"));
     }
+
+    @Test
+    void triggerBackupCompleto_devuelve503SiNodeNoResponde() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/respaldo-completo/trigger")
+                        .principal(new org.springframework.security.authentication.TestingAuthenticationToken("admin@correo.com", null, "ROLE_ADMIN")))
+                .andExpect(status().isServiceUnavailable());
+    }
 }
