@@ -14,6 +14,7 @@ import com.uteq.backend.service.RefreshTokenInvalidoException;
 import com.uteq.backend.service.ServicioTemporalmenteNoDisponibleException;
 import com.uteq.backend.service.SesionChatNoEncontradaException;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -144,6 +145,11 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleAuthorizationDenied(AuthorizationDeniedException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,
                 "No tiene permisos para realizar esta acción.");
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ProblemDetail handleConstraintViolation(ConstraintViolationException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

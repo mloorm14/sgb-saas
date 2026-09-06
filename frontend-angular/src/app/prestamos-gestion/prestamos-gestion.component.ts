@@ -374,7 +374,7 @@ export class PrestamosGestionComponent implements OnInit {
     } else {
       ruta = ['/multas'];
     }
-    this.router.navigate(ruta, { queryParams: { usuarioId: this.usuario.id } });
+    this.router.navigate(ruta, { queryParams: { q: this.usuario.correo } });
   }
 
   cerrarSinPermisosModal(): void {

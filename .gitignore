@@ -44,5 +44,8 @@ graphify-out/
 graph.json
 graph.html
 
+# Guia local de roles (solo lectura local, no versionar)
+GUIA_ROLES_GUION/
+
 # SonarQube scanner local
 .scannerwork/

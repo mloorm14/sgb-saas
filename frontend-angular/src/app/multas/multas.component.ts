@@ -1,6 +1,7 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { MultaService } from '../core/services/multa.service';
 import { PrestamoService } from '../core/services/prestamo.service';
@@ -55,19 +56,22 @@ export class MultasComponent implements OnInit {
   constructor(
     private multaService: MultaService,
     private prestamoService: PrestamoService,
-    private authService: AuthService
+    private authService: AuthService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
+    const correo = this.route.snapshot.queryParamMap.get('q');
+
     if (this.authService.hasRole('LECTOR')) {
       this.esLector = true;
       const userId = this.authService.getUserId();
-      const correo = this.authService.getCorreo();
+      const correoAuth = this.authService.getCorreo();
       if (userId) {
         this.usuarioSeleccionado = {
           id: userId,
-          nombreCompleto: correo ?? 'Lector',
-          correo: correo ?? '',
+          nombreCompleto: correoAuth ?? 'Lector',
+          correo: correoAuth ?? '',
           cedula: null,
           tiposUsuario: ['LECTOR'],
           estadoCuenta: 'ACTIVO',
@@ -77,6 +81,8 @@ export class MultasComponent implements OnInit {
         };
         this.cargarMultas(userId);
       }
+    } else if (correo) {
+      this.buscarUsuario(correo);
     }
   }
 
