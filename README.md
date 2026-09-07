@@ -115,6 +115,16 @@ Autenticación stateless basada en **JWT (HS256)**: `accessToken` de corta durac
    ```bash
    docker compose up --build -d
    ```
+   
+   NOTA: `docker compose up --build` sin argumentos compila el frontend
+   con la configuración `production` de Angular por defecto (apunta al
+   backend de Render, no al local, y falla el login por CORS). Para
+   desarrollo local, compilar antes el frontend en modo `development`:
+   
+   ```bash
+   docker compose build --build-arg CONFIGURATION=development frontend
+   docker compose up -d
+   ```
 1. Verificar que todos los servicios estén en estado `healthy`:
    
    ```bash

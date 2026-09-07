@@ -3,10 +3,15 @@
 # obtenido con `docker pull` + `docker inspect` el 2026-07-22.
 FROM node@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS build
 WORKDIR /app
+# CONFIGURATION selecciona la configuration de Angular (angular.json) a
+# compilar. Default "production" para no romper Render/CI, que no pasa
+# --build-arg. Desarrollo local es opt-in explícito:
+#   docker compose build --build-arg CONFIGURATION=development frontend
+ARG CONFIGURATION=production
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN npm run build
+RUN npx ng build --configuration=$CONFIGURATION
 
 # Stage 2: serve with nginx
 # Pinado por digest sha256 (ver docs/DIGESTS-LOG.md): nginx:1.25-alpine,

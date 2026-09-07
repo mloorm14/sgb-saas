@@ -407,6 +407,33 @@ estar bloqueada por el firewall de una red institucional — un fallo ahí
 antes hacía fallar `npm ci` completo (bloqueando también `ng build`), no
 solo los tests.
 
+### 6.4 Hallazgo: `frontend-angular/Dockerfile` ignoraba la configuración de desarrollo
+
+El fix de §6.2 resuelve el intercambio `environment.ts`/`environment.prod.ts`
+a nivel de `angular.json`, pero `frontend-angular/Dockerfile` ejecutaba
+`RUN npm run build`, que resuelve a `ng build` **sin** `--configuration`
+explícito. Como el target `build` de `angular.json` tiene
+`defaultConfiguration: "production"`, **cualquier** build de ese Dockerfile
+—incluido un `docker compose up --build` en local— terminaba usando
+`environment.prod.ts` (`https://sgb-backend-b058.onrender.com`) y el login
+local fallaba por CORS al hablar con Render en vez de con el backend local.
+
+**Corregido**: el Dockerfile ahora acepta `ARG CONFIGURATION=production` y
+ejecuta `RUN npx ng build --configuration=$CONFIGURATION`. El default sigue
+siendo `production` (no rompe el build de Render/CI, que no pasa
+`--build-arg`); para desarrollo local con Docker hay que pasarlo
+explícitamente:
+
+```bash
+docker compose build --build-arg CONFIGURATION=development frontend
+docker compose up -d
+```
+
+Verificado con `grep` sobre el bundle servido: con `CONFIGURATION=development`
+aparece `localhost:8080` y no aparece `onrender.com` en ningún archivo `.js`;
+sin `--build-arg` (default) el resultado es el mismo de siempre (apunta a
+Render), confirmando que no cambió el comportamiento del build de producción.
+
 ## 7. Referencias
 
 - [RUNBOOK.md](RUNBOOK.md) — operación, rotación de secretos y redeploys.
