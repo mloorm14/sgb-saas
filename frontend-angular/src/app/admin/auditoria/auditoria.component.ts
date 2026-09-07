@@ -28,7 +28,12 @@ const MODULOS: ModuloOpcion[] = [
   { valor: 'tipos_dano', etiqueta: 'Tipos de daño' },
   { valor: 'categorias_dano', etiqueta: 'Categorías de daño' },
   { valor: 'respaldos', etiqueta: 'Respaldos' },
-  { valor: 'roles_permisos', etiqueta: 'Roles y permisos' }
+  { valor: 'roles_permisos', etiqueta: 'Roles y permisos' },
+  { valor: 'backup_programacion', etiqueta: 'Programación de respaldos' },
+  { valor: 'backups_tablas', etiqueta: 'Tablas de respaldo' },
+  { valor: 'configuracion_respaldo', etiqueta: 'Configuración de respaldo' },
+  { valor: 'registros_respaldo', etiqueta: 'Registros de respaldo' },
+  { valor: 'usuario_roles', etiqueta: 'Roles de usuario' }
 ];
 
 @Component({
