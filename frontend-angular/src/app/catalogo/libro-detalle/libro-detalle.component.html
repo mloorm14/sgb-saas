@@ -19,8 +19,8 @@
         </button>
 
         @if (reservaCreada) {
-          <!-- Estado B (mockup 17): confirmación tras reservar, con la
-               fechaLimiteRetiro real que devuelve ReservacionResponseDTO -->
+          <!-- Confirmación tras reservar: muestra la fechaLimiteRetiro real de ReservacionResponseDTO.
+               Si vence sin retiro, la reserva se libera automáticamente. -->
           <div class="mt-sm rounded-lg bg-secondary-container text-on-secondary-container p-sm">
             <p class="font-label-md text-label-sm flex items-center gap-xs">
               <span class="material-symbols-outlined text-[18px]">check_circle</span> Reservado

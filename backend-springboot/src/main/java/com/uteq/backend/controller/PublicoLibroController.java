@@ -30,9 +30,8 @@ import java.util.List;
  * la superficie pública es angosta y de solo lectura (ver
  * {@code PublicoLibroControllerTest}).
  * <p>
- * El endpoint {@code /sugerencias} es el mismo {@code LibroService.sugerir}
- * del autocompletado predictivo del catálogo autenticado: el buscador del
- * portal público (mockup 12) necesita esa búsqueda por título, y el DTO
+ * El endpoint {@code /sugerencias} reusa el autocompletado del catálogo
+ * autenticado: el buscador del portal necesita búsqueda por título, y el DTO
  * {@link LibroSugerenciaDTO} solo expone id/titulo/disponible.
  */
 @RestController

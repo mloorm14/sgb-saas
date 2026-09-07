@@ -10,9 +10,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// Solo ADMIN (Modulo 9.4/5.3 del roadmap: separacion entre quien administra
-// permisos/parametros del sistema -ADMIN- y quien administra la operacion
-// diaria -GERENTE-, ver Modulo 5).
+// Solo ADMIN: separa quién administra parámetros del sistema (ADMIN)
+// de quién opera el día a día (GERENTE).
 @RestController
 @RequestMapping("/api/v1/configuracion")
 @PreAuthorize("hasRole('ADMIN')")

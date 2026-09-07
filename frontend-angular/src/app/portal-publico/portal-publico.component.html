@@ -1,4 +1,4 @@
-<!-- Nav pública (mockup 12): sin menú de rol, sin campana, sin avatar.
+<!-- Nav pública: sin menú de rol, sin campana, sin avatar.
      El logo lleva al portal y los accesos son Iniciar sesión / Crear cuenta. -->
 <nav class="sticky top-0 z-40 bg-surface/90 backdrop-blur border-b border-outline-variant">
   <div class="max-w-container-max mx-auto px-md md:px-lg h-16 flex items-center justify-between">
@@ -63,15 +63,10 @@
     <p class="font-body-sm text-body-sm text-error mb-md text-center">{{ errorMsg }}</p>
   }
 
-  <!-- Grid: SIN boton de favorito, SIN boton de reservar (mockup 12).
-       Mientras carga la primera página (cargando && libros vacío) se
-       rinden skeletonSlots.length tarjetas esqueleto con la misma
-       estructura (aspect-[3/4] + 2 líneas de texto) para reservar el
-       alto real del grid -- antes, una sola línea de texto ("Cargando
-       catálogo…") ocupaba ese lugar y el grid completo aparecía de
-       golpe al llegar los datos, el layout shift dominante medido en
-       producción (CLS ~0.23 de 0.231 total, ver
-       docs/mediciones/lighthouse/REPORT.md). -->
+  <!-- Grid sin acciones de cuenta (sin favorito ni reservar, solo lectura).
+       Mientras carga la primera página se rinden tarjetas esqueleto con la misma
+       estructura (portada 3/4 + 2 líneas) para reservar el alto real del grid y
+       evitar el salto de layout cuando llegan los datos. -->
   <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-md mb-xl">
     @if (cargando && libros.length === 0) {
       @for (slot of skeletonSlots; track slot) {
@@ -136,7 +131,7 @@
     </div>
   }
 
-  <!-- CTA de conversion al fondo (mockup 12) -->
+  <!-- CTA de conversión al fondo: invita a crear cuenta para reservar y guardar favoritos. -->
   <div class="rounded-xl glass-panel p-xl text-center max-w-2xl mx-auto">
     <span class="material-symbols-outlined text-[36px] text-primary mb-sm">lock_open</span>
     <h2 class="font-headline-md text-headline-md text-on-background mb-xs">¿Quieres reservar o guardar favoritos?</h2>

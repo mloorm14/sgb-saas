@@ -1,6 +1,6 @@
 <main class="max-w-container-max mx-auto px-md md:px-lg py-lg">
 
-  <!-- Toast de confirmación de reserva (mockup 16) -->
+  <!-- Toast de confirmación de reserva -->
   @if (toastMsg) {
     <div role="status" aria-live="polite" class="fixed top-20 left-1/2 -translate-x-1/2 bg-success text-white px-md py-sm rounded shadow-lg flex items-center gap-sm z-50">
       <span class="material-symbols-outlined text-[18px]">event_available</span>
@@ -156,7 +156,7 @@
     }
   </div>
 
-  <!-- Paginacion numerada (mockup 04) -->
+  <!-- Paginación numerada (solo si hay más de una página) -->
   @if (totalPages > 1) {
     <div class="flex justify-center mt-lg gap-xs">
       <button (click)="paginaAnterior()" [disabled]="currentPage === 0" aria-label="Página anterior"

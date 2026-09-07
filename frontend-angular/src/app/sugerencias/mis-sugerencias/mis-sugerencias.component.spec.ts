@@ -42,7 +42,7 @@ describe('MisSugerenciasComponent', () => {
     expect(component.sugerencias.length).toBe(1);
   });
 
-  it('formatea la fecha como los mockups', () => {
+  it('formatea la fecha en español', () => {
     expect(component.formatearFecha('2026-08-10T10:00:00')).toBe('10 ago 2026');
   });
 

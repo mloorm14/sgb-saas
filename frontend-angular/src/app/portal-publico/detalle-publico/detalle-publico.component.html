@@ -1,4 +1,4 @@
-<!-- Nav pública (mockup 13): misma identidad que el portal, sin badge -->
+<!-- Nav pública: misma identidad que el portal, sin badge de rol. -->
 <nav class="sticky top-0 z-40 bg-surface/90 backdrop-blur border-b border-outline-variant">
   <div class="max-w-container-max mx-auto px-md md:px-lg h-16 flex items-center justify-between">
     <a routerLink="/" class="flex items-center gap-sm">
@@ -57,7 +57,7 @@
           <p class="font-body-md text-body-md text-on-surface leading-relaxed mb-lg">{{ libro.resumen }}</p>
         }
 
-        <!-- Bloqueo de acciones de cuenta (mockup 13) -->
+        <!-- Bloqueo de acciones de cuenta: reservar, favoritos y asistente requieren login. -->
         <div class="rounded-lg border border-outline-variant p-md bg-surface-container-low flex items-center justify-between flex-wrap gap-sm">
           <div class="flex items-center gap-sm text-on-surface-variant">
             <span class="material-symbols-outlined text-[20px]">lock</span>
