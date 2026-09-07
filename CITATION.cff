@@ -29,15 +29,12 @@ keywords:
   - Angular
   - PostgreSQL
   - RBAC
-# El DOI de abajo corresponde al depósito de v0.9.0-rc y se mantiene
-# deliberadamente para v1.0.0: no se generó un depósito Zenodo nuevo para
-# el cierre de la Entrega Final (decisión tomada para este cierre, ver
-# docs/VERSIONING.md, sección de re-archivado). No es un valor pendiente
-# ni un placeholder -- es el DOI real y vigente del software, mismo
-# criterio que OBS-05 en docs/observaciones/OBSERVACIONES.md: mejor un
-# DOI existente declarado como tal que uno inventado o un re-archivado
-# apurado sin verificar antes que el commit archivado sea el final real.
-doi: 10.5281/zenodo.21712467
+# DOI del depósito real de v1.0.0 en Zenodo, generado el 2026-09-07 a
+# partir del Release de GitHub sobre el tag v1.0.0. Zenodo lo vinculó
+# automáticamente como nueva versión del mismo registro que v0.9.0-rc
+# (10.5281/zenodo.21712467, DOI de la versión anterior, ver historial
+# de versiones en https://zenodo.org/records/22636466).
+doi: 10.5281/zenodo.22636466
 # ---
 # Digests reales de las imágenes v1.0.0 (docker pull + docker inspect,
 # mismos valores que la tabla "Imágenes Docker publicadas" del README.md):

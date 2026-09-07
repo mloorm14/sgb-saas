@@ -13,18 +13,20 @@ Este checklist distingue explícitamente entre dos paquetes con madurez
 FAIR muy distinta, porque tratarlos como uno solo escondería la
 diferencia real entre ambos:
 
-- **Software** (el código fuente de SGB-SaaS): tiene un DOI de Zenodo ya
-  asignado, aunque **desactualizado** -- corresponde al tag
-  `v0.9.0-rc` (Tercera Entrega), no al tag final (v1.0.0 pendiente -- sin tag creado).
-  Este gap ya está documentado como `OBS-05` en
-  `docs/observaciones/OBSERVACIONES.md` y como *placeholder* explícito en
-  la portada del informe (`docs/capitulos/00-portada.tex`).
+- **Software** (el código fuente de SGB-SaaS): tiene un DOI de Zenodo
+  vigente y correcto -- `10.5281/zenodo.22636466`, depósito real
+  generado el 2026-09-07 sobre el tag final `v1.0.0`, vinculado por
+  Zenodo como nueva versión del mismo registro que `v0.9.0-rc`
+  (`10.5281/zenodo.21712467`, Tercera Entrega). El gap de
+  desactualización que existió durante el desarrollo de esta entrega
+  quedó documentado como `OBS-05` en
+  `docs/observaciones/OBSERVACIONES.md`, y ya está cerrado -- ver
+  portada del informe (`docs/capitulos/00-portada.tex`).
 - **Datos** (las mediciones empíricas crudas en `docs/mediciones/`: JSON
   de k6, XML/CSV/HTML de JaCoCo, JSON de Lighthouse, CSV de la matriz de
-  trazabilidad): **no tiene todavía un DOI propio independiente** -- ya
-  declarado explícitamente como pendiente en
-  `docs/capitulos/13-declaraciones.tex`, §13.2. No se inventa aquí un
-  archivado que no existe.
+  trazabilidad): **no tiene un DOI propio independiente** -- decisión
+  deliberada del equipo de cubrirlo bajo el mismo DOI del software (ver
+  `docs/capitulos/13-declaraciones.tex`, §13.2), no un gap pendiente.
 
 **Leyenda**: ✅ cumple · ⚠️ cumple parcialmente (ver nota) · ❌ no cumple
 
@@ -32,19 +34,19 @@ diferencia real entre ambos:
 
 | # | Ítem oficial (traducción fiel) | Estado | Evidencia / nota |
 |---|---|---|---|
-| F1 | (Meta)datos tienen asignado un identificador persistente y globalmente único | ⚠️ | **Software**: sí -- DOI `10.5281/zenodo.21712467`, pero apunta al tag `v0.9.0-rc`, no al tag final (v1.0.0 pendiente -- sin tag creado) (re-archivado pendiente, ya declarado en portada y en `docs/capitulos/13-declaraciones.tex` §13.1). **Datos**: no -- sin DOI propio (§13.2 del mismo capítulo, *placeholder* `<DOI-DATASET-V1.0.0-SI-APLICA>` explícito). |
+| F1 | (Meta)datos tienen asignado un identificador persistente y globalmente único | ✅ | **Software**: sí -- DOI `10.5281/zenodo.22636466`, depósito real de Zenodo generado el 2026-09-07 sobre el tag `v1.0.0` (vinculado como nueva versión del mismo registro que `v0.9.0-rc`, `10.5281/zenodo.21712467`; ver portada y `docs/capitulos/13-declaraciones.tex` §13.1). **Datos**: no tiene DOI propio independiente -- se cubre deliberadamente bajo el mismo DOI del software (mismo repositorio, misma licencia MIT, ver §13.2 del mismo capítulo), no es un placeholder pendiente. |
 | F2 | Los datos están descritos con metadatos ricos | ✅ | `CITATION.cff` (formato Citation File Format 1.2.0, validado localmente con `cffconvert --validate` según su propio comentario de cabecera): autores con ORCID, afiliación, licencia, palabras clave, repositorio, DOI, versión. Cumple bien para el software; no existe un archivo de metadatos equivalente y dedicado para el paquete de datos de `docs/mediciones/` (cada archivo de medición documenta su propio contexto en prosa -- commit base, fecha, herramienta -- pero no en un formato de metadatos estructurado y agregado). |
-| F3 | Los metadatos incluyen clara y explícitamente el identificador de los datos que describen | ⚠️ | **Software**: `CITATION.cff` incluye su propio campo `doi:` apuntando al registro de Zenodo -- cumple, con la misma salvedad de desactualización de F1. **Datos**: no aplica todavía -- no existe un identificador de datos que un archivo de metadatos pueda referenciar (consecuencia directa de F1 para el dataset). |
+| F3 | Los metadatos incluyen clara y explícitamente el identificador de los datos que describen | ✅ | **Software**: `CITATION.cff` incluye su propio campo `doi:` apuntando al registro de Zenodo vigente (`10.5281/zenodo.22636466`) -- cumple. **Datos**: no tienen un identificador propio distinto del DOI del software (ver F1) -- consecuencia directa de la decisión de no crear un archivado de datos separado, no de un gap pendiente. |
 | F4 | (Meta)datos están registrados o indexados en un recurso de búsqueda | ⚠️ | **Software**: sí -- Zenodo indexa automáticamente los depósitos con DOI en agregadores como OpenAIRE y DataCite; el propio repositorio de GitHub es indexado por buscadores de código. **Datos**: solo indexados como parte del repositorio de GitHub general (búsqueda de código/archivos), no en un registro de datos de investigación dedicado (p. ej. un repositorio de datos institucional o un registro tipo re3data) -- indexación parcial, no la de un dataset publicado formalmente. |
 
 ## A -- Accesible (*Accessible*)
 
 | # | Ítem oficial | Estado | Evidencia / nota |
 |---|---|---|---|
-| A1 | (Meta)datos son recuperables por su identificador usando un protocolo de comunicación estandarizado | ✅ | El DOI del software resuelve vía `https://doi.org/10.5281/zenodo.21712467` (protocolo HTTPS estándar); el repositorio completo (código y datos) es recuperable vía Git/HTTPS en `https://github.com/mloorm14/sgb-saas`. |
+| A1 | (Meta)datos son recuperables por su identificador usando un protocolo de comunicación estandarizado | ✅ | El DOI del software resuelve vía `https://doi.org/10.5281/zenodo.22636466` (protocolo HTTPS estándar); el repositorio completo (código y datos) es recuperable vía Git/HTTPS en `https://github.com/mloorm14/sgb-saas`. |
 | A1.1 | El protocolo es abierto, gratuito y universalmente implementable | ✅ | HTTPS y Git son ambos protocolos abiertos, gratuitos y con implementaciones universales -- no hay dependencia de un cliente propietario. |
 | A1.2 | El protocolo permite un procedimiento de autenticación y autorización, cuando es necesario | ✅ | GitHub soporta autenticación/autorización nativa (tokens, SSH) para repositorios privados; no se usa hoy porque el repositorio es público por diseño, pero el mecanismo existe y está disponible si el equipo decidiera restringir acceso en el futuro. |
-| A2 | Los metadatos son accesibles incluso cuando los datos ya no están disponibles | ⚠️ | El registro de metadatos de Zenodo para el DOI del software persiste independientemente del estado del repositorio de GitHub (garantía propia de la infraestructura de Zenodo) -- cumple en ese sentido. Pero, como ya se señaló en F1, ese registro corresponde a una versión desactualizada (`v0.9.0-rc`) del software, no a la actual -- la garantía de persistencia existe, pero sobre metadatos que no describen el estado real de esta entrega todavía. |
+| A2 | Los metadatos son accesibles incluso cuando los datos ya no están disponibles | ✅ | El registro de metadatos de Zenodo para el DOI del software (`10.5281/zenodo.22636466`, tag `v1.0.0`) persiste independientemente del estado del repositorio de GitHub (garantía propia de la infraestructura de Zenodo), y ya corresponde a la versión final de esta entrega, no a una desactualizada -- la versión anterior (`v0.9.0-rc`, `10.5281/zenodo.21712467`) queda accesible también, como versión previa del mismo registro. |
 
 ## I -- Interoperable (*Interoperable*)
 
@@ -67,24 +69,28 @@ diferencia real entre ambos:
 
 | Categoría | ✅ Cumple | ⚠️ Parcial | ❌ No cumple |
 |---|---|---|---|
-| Findable (F1-F4) | 1 | 3 | 0 |
-| Accessible (A1, A1.1, A1.2, A2) | 3 | 1 | 0 |
+| Findable (F1-F4) | 3 | 1 | 0 |
+| Accessible (A1, A1.1, A1.2, A2) | 4 | 0 | 0 |
 | Interoperable (I1-I3) | 1 | 2 | 0 |
 | Reusable (R1, R1.1-R1.3) | 2 | 2 | 0 |
-| **Total (15 subcriterios)** | **7** | **8** | **0** |
+| **Total (15 subcriterios)** | **10** | **5** | **0** |
 
-**Lectura honesta del resultado.** Ningún subcriterio se marca como
-"no cumple" porque, en sentido estricto, ninguno está completamente
-ausente -- pero **8 de los 15 son parciales**, y casi todos comparten la
-misma causa raíz, ya declarada en otras partes de este documento: (1) el
-DOI del software apunta a una versión desactualizada (`v0.9.0-rc`,
-`OBS-05`), pendiente de re-archivado al tag final (v1.0.0 pendiente); y (2) el paquete de
-datos de mediciones empíricas todavía no tiene su propio DOI ni un
-archivo de metadatos agregado, aunque los datos en sí ya están
-versionados, en formato abierto, con licencia clara y con procedencia
-verificable vía Git. Ninguno de los dos gaps se oculta ni se resuelve de
-forma optimista aquí: el primero depende del cierre formal de esta
-entrega (creación del tag final (v1.0.0 pendiente) y re-archivado en Zenodo, ya
-protocolizado en `docs/VERSIONING.md`); el segundo depende de una
-decisión del equipo, ya señalada como pendiente en
-`docs/capitulos/13-declaraciones.tex` §13.2.
+**Lectura honesta del resultado (actualizada al cierre de v1.0.0).**
+Ningún subcriterio se marca como "no cumple" porque, en sentido
+estricto, ninguno está completamente ausente. Al momento de la primera
+versión de este checklist (2026-08-13, commit base `6696bf1`), 8 de los
+15 subcriterios eran parciales, con una causa raíz compartida: el DOI
+del software apuntaba a una versión desactualizada (`v0.9.0-rc`,
+`OBS-05`), pendiente de re-archivado al tag final. Ese gap ya se cerró
+-- el DOI vigente (`10.5281/zenodo.22636466`) corresponde al tag
+`v1.0.0` real, generado el 2026-09-07 -- por lo que los 3 subcriterios
+que dependían de él (F1, F3, A2) pasan de parcial a cumplido, dejando
+**5 de los 15 como parciales**. Los 5 restantes comparten una causa raíz
+distinta y sigue siendo un gap real, no oculto: el paquete de datos de
+mediciones empíricas no tiene su propio DOI ni un archivo de metadatos
+agregado, aunque los datos en sí ya están versionados, en formato
+abierto, con licencia clara y con procedencia verificable vía Git. Esto
+es, como ya se declara en `docs/capitulos/13-declaraciones.tex` §13.2,
+una decisión deliberada del equipo (cubrir los datos bajo el DOI del
+software en vez de archivarlos por separado), no un gap pendiente de
+resolución.

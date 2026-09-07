@@ -1,7 +1,7 @@
 # Sistema de Gestión Bibliotecaria Web (SGB - SaaS) 📚
 
 [![CI](https://github.com/mloorm14/sgb-saas/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mloorm14/sgb-saas/actions/workflows/ci.yml)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21712467.svg)](https://doi.org/10.5281/zenodo.21712467)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22636466.svg)](https://doi.org/10.5281/zenodo.22636466)
 
 Plataforma 100% web diseñada para la modernización de bibliotecas institucionales y municipales, desarrollada como Proyecto Fin de Curso para la asignatura de Aplicaciones Web (2026-2027).
 
@@ -305,5 +305,5 @@ Targets disponibles: `up` `down` `test` `bench` `audit` `docs` `all` `clean`.
 Digest SHA256 de `docs/informe-final.pdf` (compilado 2026-09-07, 113 páginas):
 
 ```
-27fd7e1e8c4058018a0418a766a294d9be09d827e55141101022f594a60a4e89
+1738e2c96700b71e59a072ea322da00dd8760282e670f6a470070cfc12dd7dd0
 ```
