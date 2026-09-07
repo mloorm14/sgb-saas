@@ -3,6 +3,8 @@
 -- trg_auditoria_* en db/auditoria-triggers.sql (que solo cubria 12 tablas).
 -- Idempotente: DROP IF EXISTS antes de CREATE (Flyway baseline + docker-entrypoint).
 -- Reutiliza fn_auditoria_generica() existente (SECURITY DEFINER, search_path=public).
+-- La funcion la crea V39_2__fn_auditoria_generica.sql (corre antes que esta migracion
+-- en BDs nuevas); no asumir que ya existe de antes sin esa referencia.
 
 -- ── Proveedores (V35) ──────────────────────────────
 DROP TRIGGER IF EXISTS trg_auditoria_proveedores ON proveedores;
