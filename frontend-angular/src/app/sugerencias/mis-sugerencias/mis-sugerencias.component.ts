@@ -5,9 +5,8 @@ import { RouterLink } from '@angular/router';
 import { SugerenciaAdquisicionService } from '../../core/services/sugerencia-adquisicion.service';
 import { SugerenciaAdquisicion } from '../../core/models/sugerencia-adquisicion.model';
 
-// Mis solicitudes de adquisición (Rama B, mockup 08). listarMias es
-// paginado (Page<SugerenciaAdquisicion>, sort por creadoEn). Los badges de
-// estado usan los 3 colores exactos del mockup: Pendiente (ámbar),
+// Mis solicitudes de adquisición: lista paginada por creadoEn.
+// Estados por color: Pendiente (ámbar),
 // Aprobada (verde) y Rechazada (rojo error-container).
 @Component({
   standalone: true,

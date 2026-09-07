@@ -5,12 +5,8 @@ import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { LibroService } from '../../core/services/libro.service';
 import { LibroSugerencia } from '../../core/models/libro.model';
 
-// Buscador predictivo de libros compartido (Rama B): mismo patrón del
-// buscador del catálogo — debounceTime(300) + distinctUntilChanged +
-// LibroService.sugerencias(texto). Emite el libro elegido; si el texto
-// cambia después de elegir, emite null para que el padre invalide su
-// selección (el libroId ya no corresponde). Rama E lo reutilizará en
-// prestamos-gestion para elegir el libro al crear un préstamo.
+// Buscador predictivo compartido: debounce + LibroService.sugerencias(texto).
+// Emite el libro elegido; si el texto cambia, emite null para invalidar la selección.
 @Component({
   standalone: true,
   selector: 'app-buscador-libro',

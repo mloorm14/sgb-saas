@@ -7,12 +7,7 @@ import { LibroPublicoService } from '../core/services/libro-publico.service';
 import { Libro, LibroSugerencia } from '../core/models/libro.model';
 import { Categoria } from '../core/models/categoria.model';
 
-// Portal público de catálogo (Rama C, mockup 12). Es la raíz de la app y NO
-// pide sesión: navega sin authGuard y usa LibroPublicoService (/api/publico).
-// Sin botones de favorito ni de reservar (requieren cuenta): el grid es el
-// del mockup 04 sin esas acciones, con <img> directo a la portada pública.
-// TODO(frontend/estudiante-chatbot): la Rama D montara el widget de chatbot
-// flotante sobre este componente raiz.
+// Portal público: raíz sin sesión, solo lectura del catálogo.
 @Component({
   standalone: true,
   selector: 'app-portal-publico',
@@ -37,11 +32,7 @@ export class PortalPublicoComponent implements OnInit, OnDestroy {
   cargando: boolean = true;
   errorMsg: string = '';
 
-  // Tarjetas esqueleto mientras carga la primera página (misma cantidad
-  // que pageSize): reservan el alto real del grid para evitar el layout
-  // shift medido en producción (CLS ~0.23, ver
-  // docs/mediciones/lighthouse/REPORT.md) cuando "Cargando catálogo…"
-  // (una sola línea) era reemplazado de golpe por el grid completo.
+  // Tarjetas esqueleto: reservan el alto del grid mientras carga la primera página.
   readonly skeletonSlots: number[] = Array.from({ length: this.pageSize }, (_, i) => i);
 
   textoBusqueda: string = '';

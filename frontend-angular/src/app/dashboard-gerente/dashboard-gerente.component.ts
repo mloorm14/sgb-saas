@@ -8,18 +8,8 @@ import { ResumenFinancieroMultas } from '../core/models/multa.model';
 import { AuditoriaService } from '../core/services/auditoria.service';
 import { EventoAuditoria } from '../core/models/evento-auditoria.model';
 
-// Dashboard del GERENTE (mockup docs/mockups/rama-b/24-dashboard-gerente.html).
-// Secciones con datos reales detrás: "Bienvenida, Gerencia" + "Libros más
-// prestados" (GET /prestamos/reportes/libros-mas-prestados, reutiliza
-// ReporteService) + "Accesos rápidos" + 3 widgets agregados a pedido de
-// Cajas (dashboard GERENTE/ADMIN ampliado, priorizado a 4 métricas
-// alcanzables de una lista más larga por el plazo de 2 días):
-// resumen financiero (nuevo GET /multas/reportes/resumen-financiero),
-// morosidad (reutiliza ReporteService.morosidad(), ya existente) y
-// actividad de auditoría reciente (reutiliza AuditoriaService, ya
-// existente). Los KPIs numéricos del mockup original ($142.50, 7, 4, 312)
-// seguían sin endpoint real hasta ahora; el de recaudado/pendiente sí
-// queda cubierto por el nuevo endpoint.
+// Dashboard del GERENTE: bienvenida, libros más prestados,
+// accesos rápidos, resumen financiero, morosidad y actividad reciente.
 @Component({
   selector: 'app-dashboard-gerente',
   standalone: true,
@@ -36,13 +26,7 @@ export class DashboardGerenteComponent implements OnInit {
   cargandoFinanciero = true;
   errorFinanciero = '';
 
-  // Morosidad: la guía original hablaba de una "tasa" de morosidad, pero
-  // el endpoint real (verificado en ReporteMorosidadResponseDTO/
-  // ReporteMorosidad) no devuelve un porcentaje -- devuelve una lista de
-  // usuarios con multas pendientes (top 10 por defecto en el backend, ver
-  // PrestamoService.LIMITE_REPORTE_DEFAULT). Se deriva acá un resumen real
-  // a partir de esa lista (cantidad + monto total adeudado) en vez de
-  // inventar un porcentaje que el backend no respalda.
+  // Morosidad: el endpoint devuelve usuarios con multas pendientes; acá se deriva cantidad + monto total.
   usuariosEnMora: ReporteMorosidad[] = [];
   cargandoMorosidad = true;
   errorMorosidad = '';
@@ -68,7 +52,7 @@ export class DashboardGerenteComponent implements OnInit {
     if (this.authService.hasRole('GERENTE')) {
       this.reporteService.librosMasPrestados().subscribe({
         next: (libros) => {
-          this.librosMasPrestados = libros.slice(0, 5); // top 5, igual que el mockup
+          this.librosMasPrestados = libros.slice(0, 5); // Top 5.
           this.cargando = false;
         },
         error: () => {

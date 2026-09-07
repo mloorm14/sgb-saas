@@ -202,7 +202,7 @@ export class UsuariosComponent implements OnInit {
     return ESTADO_LABEL[estado] ?? estado;
   }
 
-  // Acción contextual por estado (mockup 20): ACTIVO -> bloquear (INACTIVO),
+  // Acción contextual por estado: ACTIVO -> bloquear (INACTIVO),
   // INACTIVO -> activar (ACTIVO). BLOQUEADO_POR_MULTA es automático (no se
   // puede cambiar a mano) y PENDIENTE_VERIFICACION no tiene acción.
   esBloqueable(usuario: UsuarioAdmin): boolean {

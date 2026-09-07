@@ -84,10 +84,8 @@ export class LoginComponent implements OnInit {
             this.errorMsg = detail || 'Correo o contraseña incorrectos';
             break;
           case 403:
-            // DisabledException del backend: cuenta inactiva o correo sin
-            // verificar (hallazgo eta). No hay forma de distinguir cual de
-            // las dos sin parsear el texto, asi que ademas del mensaje
-            // ofrecemos el link a verificar-correo por si aplica.
+            // Cuenta inactiva o correo sin verificar: el backend no distingue
+            // entre ambas, así que se ofrece el link a verificar-correo por si aplica.
             this.errorMsg = detail || 'Tu cuenta no está activa';
             this.correoPendienteVerificar = correo;
             break;

@@ -5,9 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import { LibroPublicoService } from '../../core/services/libro-publico.service';
 import { Libro } from '../../core/models/libro.model';
 
-// Detalle de libro del portal público (Rama C, mockup 13). Sin sesión:
-// portada directa en <img>, y las acciones que requieren cuenta se
-// bloquean con el cartel "requieren una cuenta" + Crear cuenta.
+// Detalle de libro del portal público: sin sesión, las acciones con cuenta muestran el cartel correspondiente.
 @Component({
   standalone: true,
   selector: 'app-detalle-publico',

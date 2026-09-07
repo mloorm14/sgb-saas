@@ -50,7 +50,7 @@ export class AppComponent {
       this.enRutaAdmin = url.startsWith('/dashboard-admin');
       this.enRutaLector = url.startsWith('/dashboard-lector');
       this.enRutaPublica = url.startsWith('/no-autorizado');
-      // Portal público ('/' y '/portal/*') ya trae su propio nav (mockup 12/13) — el header global no debe duplicar h-16.
+      // Portal público ('/' y '/portal/*') trae su propio nav: el header global no se muestra ahí.
       this.enRutaCatalogoPublico = url.startsWith('/catalogo');
       this.cargandoRuta = false;
       this.rutaAnnouncement = this.obtenerNombreRuta(url);
@@ -65,10 +65,7 @@ export class AppComponent {
     }
   }
 
-  // Rama B completada: /catalogo, /favoritos, /sugerencias y /notificaciones ya son reales
-  // y salen de la lista de futuros. Mi Credencial (rama frontend/estudiante-cuenta, no integrada)
-  // NO se lista: el LECTOR no debe ver enlaces a rutas inexistentes, ni siquiera con
-  // opacity -- se agregan cuando la rama de cuenta se integre.
+  // Enlaces del LECTOR: solo rutas existentes, sin placeholders futuros.
   enlacesLector: EnlaceNav[] = [
     // Entrada al panel con sidebar del LECTOR (mismo patron que Cajas).
     { ruta: '/dashboard-lector', etiqueta: 'Panel', icono: 'dashboard' },
@@ -81,24 +78,7 @@ export class AppComponent {
     { ruta: '/notificaciones', etiqueta: 'Notificaciones', icono: 'notifications' }
   ];
 
-  // Navbar compartido del staff (mockup 23: SGB · Staff). roles por enlace
-  // con hasRole(), espejo de los roleGuard de app.routes y de los
-  // @PreAuthorize reales de cada controller:
-  // - /prestamos/gestion, /reservaciones, /multas: BIBLIOTECARIO/GERENTE
-  //   (ADMIN no tiene endpoints en esos controllers).
-  // - /reportes: GERENTE/ADMIN (PrestamoController).
-  // - /sugerencias/gestion, /admin/usuarios: GERENTE/ADMIN.
-  // - /auditoria: solo ADMIN.
-  // - /admin/configuracion: solo ADMIN (ConfiguracionSistemaController,
-  //   @PreAuthorize a nivel de clase) -- antes vivía como botón ad-hoc
-  //   dentro de LibrosComponent (no había navbar compartido todavía);
-  //   se movió acá al traer este navbar de otra rama, mismo criterio que
-  //   el resto de enlaces de staff.
-  // - /libros: todo el staff (inventario).
-  // - /dashboard-gerente: Dashboard real del GERENTE (mockup 24, rama fix/sincronizar-despliegue-y-dashboard-gerente).
-  //   Reemplaza al placeholder futuro:true de /dashboard, que prometía la
-  //   pantalla a todo el staff sin ruta real detrás. BIBLIOTECARIO y ADMIN
-  //   no la ven (tienen /reportes y el resto del panel respectivamente).
+  // Navbar compartido del staff: roles por enlace con hasRole(), espejo de los guards y @PreAuthorize.
   enlacesStaff: EnlaceNav[] = [
     // Entrada al panel con sidebar GERENTE/ADMIN (mismo patron que Cajas).
     { ruta: '/dashboard-admin', etiqueta: 'Panel', icono: 'dashboard', roles: ['GERENTE', 'ADMIN'] },

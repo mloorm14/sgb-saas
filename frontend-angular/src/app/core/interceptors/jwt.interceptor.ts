@@ -8,15 +8,7 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  // Hallazgo δ del reporte: el refresh solo se disparaba con 401, pero un
-  // accessToken vencido también produce 403 en endpoints protegidos
-  // (25519/spring security responde 403 para tokens expirados en el filtro,
-  // y el backend sin AuthenticationEntryPoint no distingue). Además, sin
-  // guardia anti-bucle un 403 real por falta de rol (no por token vencido)
-  // reintentaría indefinidamente tras cada refresh. La recursión pasa la
-  // request clonada con el header interno X-Retry: el segundo 401/403 ya
-  // con esa marca se propaga tal cual -- se refresca UNA sola vez y si
-  // sigue fallando es legítimamente "no autorizado", no "sesión vencida".
+  // Adjunta el Bearer; ante 401/403 por token vencido reintenta una sola vez con token refrescado (marca X-Retry).
   const enviar = (solicitud: HttpRequest<unknown>): Observable<HttpEvent<unknown>> => {
     const token = authService.getAccessToken();
     const authReq = token
@@ -28,11 +20,7 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
         const isAuthEndpoint = solicitud.url.includes('/auth/');
         const yaReintentada = solicitud.headers.has('X-Retry');
         if ((error.status === 401 || error.status === 403) && !isAuthEndpoint && !yaReintentada) {
-          // Antes de desloguear: intentamos refrescar el accessToken con
-          // el refreshToken de la cookie HttpOnly. Si funciona,
-          // reintentamos la request original una sola vez con el token
-          // nuevo y la marca X-Retry puesta. Si el refresh falla, la
-          // sesión sí venció: logout + redirección a login.
+          // Refresca el token y reintenta una vez con X-Retry; si falla, logout a /login.
           return authService.refresh().pipe(
             switchMap((refreshResp) => {
               const nuevoToken = refreshResp?.accessToken ?? authService.getAccessToken();

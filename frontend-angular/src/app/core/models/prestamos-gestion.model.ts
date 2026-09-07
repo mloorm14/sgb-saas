@@ -1,6 +1,5 @@
-// Contratos exactos de PrestamosGestionController (/api/v1/prestamos/gestion),
-// ver los DTOs en backend-springboot. Módulo de ventanilla del bibliotecario:
-// buscar usuario por cédula, reserva vigente e historial reciente.
+// Contratos de PrestamosGestionController (/api/v1/prestamos/gestion).
+// Modelos de la gestión de préstamos en ventanilla: búsqueda por cédula, reserva vigente e historial.
 
 // UsuarioPrestamosGestionDTO: tarjeta de identificación del usuario
 // encontrado. "cedula" es usuarios.identificacion_usuario; "tiposUsuario"

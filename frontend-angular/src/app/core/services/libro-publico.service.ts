@@ -7,10 +7,8 @@ import { Page } from '../models/pagina.model';
 import { ProblemDetail } from '../models/problem-detail.model';
 import { Categoria } from '../models/categoria.model';
 
-// Rama C (portal público): solo lectura contra /api/publico/libros, que
-// SecurityConfig deja pasar sin JWT (permitAll sobre /api/publico/**).
-// Los DTO son exactamente los mismos que /api/v1/libros (LibroResponseDTO,
-// LibroSugerenciaDTO), por eso se reutilizan Libro y LibroSugerencia.
+// Catálogo público: solo lectura contra /api/publico/libros (sin JWT).
+// Reutiliza Libro y LibroSugerencia (mismos DTOs que /api/v1/libros).
 export interface LibroPublicoListarParams {
   page?: number;
   size?: number;

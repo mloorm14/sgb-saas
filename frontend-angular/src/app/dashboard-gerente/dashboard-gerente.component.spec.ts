@@ -78,7 +78,7 @@ describe('DashboardGerenteComponent', () => {
     fixture.detectChanges(); // ngOnInit
 
     expect(reporteService.librosMasPrestados).toHaveBeenCalled();
-    expect(component.librosMasPrestados.length).toBe(5); // slice(0,5) igual que el mockup
+    expect(component.librosMasPrestados.length).toBe(5); // Top 5.
     expect(component.librosMasPrestados[0].titulo).toBe('Libro 1');
     expect(component.cargando).toBeFalse();
     expect(component.error).toBe('');

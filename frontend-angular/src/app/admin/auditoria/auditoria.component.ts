@@ -524,7 +524,7 @@ export class AuditoriaComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Semáforo de acciones del mockup 21: INSERT/LOGIN_OK en verde,
+  // Semáforo de acciones: INSERT/LOGIN_OK en verde,
   // DELETE/LOGIN_FAIL en rojo, UPDATE/LOGOUT en gris.
   claseAccion(accion: string): string {
     switch (accion) {

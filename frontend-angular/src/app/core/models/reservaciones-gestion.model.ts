@@ -1,7 +1,5 @@
-// Contratos exactos de ReservacionesGestionController
-// (/api/v1/reservaciones/gestion), ver los DTOs en backend-springboot.
-// Módulo de ventanilla del bibliotecario: buscar usuario por correo
-// y ver su historial de reservaciones.
+// Contratos de ReservacionesGestionController (/api/v1/reservaciones/gestion).
+// Modelos de la gestión de reservaciones en ventanilla: búsqueda por correo e historial.
 
 // UsuarioReservacionesGestionDTO: tarjeta de identificación del usuario
 // encontrado. Incluye cantidad de reservas activas y el límite permitido

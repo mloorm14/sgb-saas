@@ -23,12 +23,7 @@ export class PrestamosLectorComponent implements OnInit {
   errorMsgActivos: string = '';
   renovandoId: number | null = null;
 
-  // Mapa local de estados: EstadoPrestamo existe como entidad + repository
-  // en el backend, pero ningún controller expone el catálogo (gap del
-  // roadmap, mismo criterio que se usó con tipoNotificacionId). Workaround
-  // temporal hasta que exista un endpoint de catálogo. IDs/nombres
-  // confirmados contra db/seed.sql y V10__seed_catalogos_y_admin.sql
-  // (inserts en orden SERIAL: 1 ACTIVO, 2 RENOVADO, 3 DEVUELTO, 4 VENCIDO).
+  // Mapa local de estados (sin endpoint de catálogo en el backend).
   readonly estadosPrestamo: Record<number, string> = {
     1: 'Activo',
     2: 'Renovado',

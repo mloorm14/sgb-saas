@@ -23,15 +23,9 @@ import { SuscripcionDisponibilidadService } from '../../core/services/suscripcio
 import { ToastService } from '../../shared/toast/toast.service';
 import { ConfirmDialogService } from '../../shared/confirm-dialog/confirm-dialog.service';
 
-// Detalle de libro del consumidor (Rama B). El estado de favoritos se
-// resuelve con FavoritoService.listar al montar, igual que en el catálogo.
-// El link "Sugerir adquisición" va siempre visible (el mockup 05 corrigió
-// que solo aparezca con stock 0) y prellena el título del formulario.
-// Reservar (mockup 17): el estado "Ya reservado" sale del mismo
-// ReservacionPendienteService que el catálogo (sin duplicar la lógica) y
-// tras reservar se muestra el bloque de confirmación con la
-// fechaLimiteRetiro que devuelve ReservacionService.crear (campo real de
-// ReservacionResponseDTO).
+// Detalle de libro: el estado de favoritos se resuelve al montar.
+// Link "Sugerir adquisición" siempre visible.
+// Reservar: el estado "Ya reservado" sale del mismo servicio que el catálogo.
 @Component({
   standalone: true,
   selector: 'app-libro-detalle',

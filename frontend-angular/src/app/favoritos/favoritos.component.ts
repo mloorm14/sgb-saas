@@ -6,10 +6,7 @@ import { FavoritoService } from '../core/services/favorito.service';
 import { Favorito } from '../core/models/favorito.model';
 import { PortadaLibroComponent } from '../shared/portada-libro/portada-libro.component';
 
-// Mis favoritos (Rama B, mockup 06). FavoritoService.listar devuelve array
-// plano sin paginación. Gap real documentado: FavoritoResponseDTO no trae
-// tienePortada/portadaNombre, así que la portada se intenta cargar igual y
-// PortadaLibroComponent cae al placeholder si el backend responde 404.
+// Mis favoritos: lista plana sin paginación del backend; la portada cae al placeholder si responde 404.
 @Component({
   standalone: true,
   selector: 'app-favoritos',
@@ -81,8 +78,7 @@ export class FavoritosComponent implements OnInit {
     });
   }
 
-  // "12 ago 2026": el backend envía ISO (LocalDateTime). Formato corto en
-  // español, igual que en los mockups 06 y 08.
+  // Fecha corta en español: "12 ago 2026".
   formatearFecha(iso: string): string {
     if (!iso) return '';
     const fecha = new Date(iso);

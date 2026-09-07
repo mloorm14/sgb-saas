@@ -4,11 +4,8 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { SugerenciaAdquisicionService } from '../../core/services/sugerencia-adquisicion.service';
 
-// Formulario de sugerencia de adquisición (Rama B, mockup 07). Las
-// validaciones replican EXACTAS a SugerenciaAdquisicionRequestDTO del
-// backend (verificado en backend-springboot): titulo requerido max 255,
-// autor opcional max 150, isbn opcional de 13 dígitos numéricos sin
-// guiones (^[0-9]{13}$), justificacion opcional max 1000.
+// Formulario de sugerencia de adquisición: validaciones espejo de
+// SugerenciaAdquisicionRequestDTO del backend.
 @Component({
   standalone: true,
   selector: 'app-sugerencias-form',

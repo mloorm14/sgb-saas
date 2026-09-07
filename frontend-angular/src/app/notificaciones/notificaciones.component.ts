@@ -1,4 +1,4 @@
-// Mis notificaciones (Rama B, mockup 10). El backend devuelve Page<NotificacionResponseDTO>
+// Mis notificaciones: el backend devuelve Page<NotificacionResponseDTO>
 // con paginación (page/size). La LECTOR ve solo las suyas (enforced server-side).
 // tipoNotificacionId: catálogo local (ids desde db/migrations/V6__notificaciones.sql: 1=VENCIMIENTO, 2=MULTA, 3=RESERVA_CADUCADA).
 import { Component, OnInit } from '@angular/core';

@@ -48,7 +48,7 @@ export interface DevolucionResponse {
   montoMulta: number;
 }
 
-// Reportes (Rama F los consume): GET /v1/prestamos/reportes/*
+// Reportes: GET /v1/prestamos/reportes/*
 export interface LibroMasPrestado {
   libroId: number;
   titulo: string;
