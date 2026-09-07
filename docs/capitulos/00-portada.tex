@@ -44,23 +44,27 @@ Dr. Gleiston Cicerón Guerrero Ulloa, Ph.D.\\
 {\normalsize\bfseries Repositorio:}\\
 \url{https://github.com/mloorm14/sgb-saas} \quad --- \quad Rama: \texttt{main}\\[0.5cm]
 
-{\normalsize\bfseries Tag de esta entrega:} \texttt{v0.9.0-rc (pre-release, v1.0.0 pendiente de correcciones finales)}\\[0.2cm]
-{\small Commit base (HEAD de demo/interfaces-completas):}\\
-% NOTA: hash estático al momento de este commit -- no hay mecanismo
-% \gitHash de resolución en build time en este proyecto. Actualizar a
-% mano antes de crear el tag v1.0.0 (ver docs/VERSIONING.md).
-{\small\texttt{88f9daf}}\\[0.5cm]
+{\normalsize\bfseries Tag de esta entrega:} \texttt{v1.0.0}\\[0.2cm]
+{\small Commit base:}\\
+% NOTA: no se fija un hash estático a mano acá -- el commit exacto de
+% cierre es el que apunta el tag v1.0.0, resoluble en cualquier
+% momento con `git rev-list -n 1 v1.0.0` contra el repositorio. Fijar
+% un hash literal en este archivo obligaría a editarlo de nuevo cada
+% vez que se regenera este PDF después de crear el tag -- y citar el
+% commit que agrega este mismo párrafo sería una autorreferencia
+% circular (ver criterio ya aplicado en OBS-21).
+{\small\texttt{commit de cierre etiquetado como v1.0.0 (resoluble con \texttt{git rev-list -n 1 v1.0.0})}}\\[0.5cm]
 
 {\normalsize\bfseries DOI:}\\
-% PENDIENTE: no hubo tiempo de re-archivar en Zenodo sobre el tag
-% v1.0.0 (commit 8610ab0 arriba) antes del cierre de la Entrega
-% Final. El DOI de abajo sigue siendo el de v0.9.0-rc (Tercera
-% Entrega) -- no se fabrica un DOI nuevo (ver docs/VERSIONING.md,
-% sección de re-archivado, y OBS-05 en
-% docs/observaciones/OBSERVACIONES.md sobre el gap ya detectado de
-% un tag archivado desactualizado, mismo criterio aplicado acá:
-% mejor un DOI viejo declarado como tal que uno inventado).
-{\small \texttt{10.5281/zenodo.21712467 (v0.9.0-rc -- pendiente re-archivar sobre v1.0.0)}}\\[1cm]
+% El DOI de abajo corresponde al depósito de v0.9.0-rc (Tercera
+% Entrega) y se declara así deliberadamente: no se generó un depósito
+% Zenodo nuevo para v1.0.0 (decisión tomada para el cierre de la
+% Entrega Final, ver docs/VERSIONING.md, sección de re-archivado). No
+% es un DOI "pendiente" ni un placeholder -- es el DOI real y vigente
+% del software, coherente con el criterio de OBS-05 en
+% docs/observaciones/OBSERVACIONES.md: mejor declarar honestamente el
+% DOI existente que fabricar uno nuevo sin depósito real detrás.
+{\small \texttt{10.5281/zenodo.21712467 (depósito de v0.9.0-rc, usado deliberadamente para v1.0.0)}}\\[1cm]
 
 \vfill
 {\small SOFT-R-A --- 5to Nivel --- Proyecto Fin de Curso (PFC), Entrega Final}

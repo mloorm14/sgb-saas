@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ConsultarMultasTool.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.chatbot.tool</a> &gt; <span class="el_source">ConsultarMultasTool.java</span></div><h1>ConsultarMultasTool.java</h1><pre class="source lang-java linenums">package com.uteq.backend.chatbot.tool;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.uteq.backend.repository.MultaRepository;
+import com.uteq.backend.repository.EstadoMultaRepository;
+import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+
+/**
+ * Tool que consulta las multas pendientes de pago de un usuario.
+ * Incluye saldo total adeudado y cantidad de multas.
+ */
+@Component
+public class ConsultarMultasTool extends AbstractUsuarioAwareTool {
+
+    private final MultaRepository multaRepo;
+    private final EstadoMultaRepository estadoMultaRepo;
+
+<span class="fc" id="L21">    public ConsultarMultasTool(MultaRepository multaRepo, EstadoMultaRepository estadoMultaRepo) {</span>
+<span class="fc" id="L22">        this.multaRepo = multaRepo;</span>
+<span class="fc" id="L23">        this.estadoMultaRepo = estadoMultaRepo;</span>
+<span class="fc" id="L24">    }</span>
+
+    @Override
+    public String getName() {
+<span class="fc" id="L28">        return &quot;consultar_multas&quot;;</span>
+    }
+
+    @Override
+    public String getDescription() {
+<span class="fc" id="L33">        return &quot;Consulta las multas pendientes de pago de un usuario de la biblioteca. &quot;</span>
+                + &quot;Devuelve el saldo total adeudado y la cantidad de multas pendientes.&quot;;
+    }
+
+    @Override
+    public JsonNode execute(JsonNode args) {
+<span class="nc" id="L39">        Long usuarioId = resolverUsuarioId(args);</span>
+<span class="nc bnc" id="L40" title="All 2 branches missed.">        if (usuarioId == null) {</span>
+<span class="nc" id="L41">            return errorNode(&quot;Se requiere usuario_id&quot;);</span>
+        }
+
+<span class="nc" id="L44">        Integer estadoPendienteId = estadoMultaRepo.findByNombre(&quot;PENDIENTE&quot;)</span>
+<span class="nc" id="L45">                .map(e -&gt; e.getId())</span>
+<span class="nc" id="L46">                .orElse(null);</span>
+
+<span class="nc bnc" id="L48" title="All 2 branches missed.">        if (estadoPendienteId == null) {</span>
+<span class="nc" id="L49">            return errorNode(&quot;Estado PENDIENTE no encontrado en catálogo&quot;);</span>
+        }
+
+<span class="nc" id="L52">        long cantidad = multaRepo.countByUsuarioIdAndEstadoMultaId(usuarioId, estadoPendienteId);</span>
+<span class="nc" id="L53">        BigDecimal saldoTotal = multaRepo.sumSaldoByUsuarioIdAndEstadoMultaId(usuarioId, estadoPendienteId);</span>
+
+<span class="nc" id="L55">        ObjectNode respuesta = mapper.createObjectNode();</span>
+<span class="nc" id="L56">        respuesta.put(USUARIO_ID, usuarioId);</span>
+<span class="nc" id="L57">        respuesta.put(&quot;multas_pendientes&quot;, cantidad);</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">        respuesta.put(&quot;saldo_total_pendiente&quot;, saldoTotal != null ? saldoTotal.doubleValue() : 0.0);</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        respuesta.put(&quot;tiene_multas_pendientes&quot;, cantidad &gt; 0);</span>
+<span class="nc" id="L60">        return respuesta;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

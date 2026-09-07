@@ -2,98 +2,156 @@
 
 import com.uteq.backend.dto.SugerenciaAdquisicionRequestDTO;
 import com.uteq.backend.dto.SugerenciaAdquisicionResponseDTO;
+import com.uteq.backend.dto.SugerenciaAgrupadaDTO;
+import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.SugerenciaAdquisicion;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.SugerenciaAdquisicionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// Módulo 9.3 del roadmap. crear() resuelve el usuarioId siempre desde el
-// Authentication autenticado (mismo criterio que FavoritoService): un
-// LECTOR no puede sugerir a nombre de otro usuario. cambiarEstado() no
-// valida rol acá -- eso vive en @PreAuthorize del controller -- pero sí
-// registra quién revisó (revisadoPor), tomado también del Authentication,
-// nunca de un campo que venga en el body.
+import java.time.OffsetDateTime;
+import java.util.List;
+
+// crear() resuelve el usuarioId desde el Authentication; cambiarEstado() registra quién revisó.
 @Service
 public class SugerenciaAdquisicionService {
 
     private static final String SUGERENCIA_NO_ENCONTRADA = &quot;Sugerencia de adquisición no encontrada con id: &quot;;
     private static final String USUARIO_NO_ENCONTRADO = &quot;Usuario no encontrado con correo: &quot;;
+    private static final String TABLA_SUGERENCIAS = &quot;sugerencias_adquisicion&quot;;
 
     private final SugerenciaAdquisicionRepository sugerenciaRepo;
     private final UsuarioRepository usuarioRepo;
+    private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     public SugerenciaAdquisicionService(SugerenciaAdquisicionRepository sugerenciaRepo,
-<span class="fc" id="L31">                                         UsuarioRepository usuarioRepo) {</span>
-<span class="fc" id="L32">        this.sugerenciaRepo = sugerenciaRepo;</span>
-<span class="fc" id="L33">        this.usuarioRepo = usuarioRepo;</span>
-<span class="fc" id="L34">    }</span>
+                                         UsuarioRepository usuarioRepo,
+<span class="fc" id="L36">                                         BitacoraAuditoriaRepository bitacoraAuditoriaRepo) {</span>
+<span class="fc" id="L37">        this.sugerenciaRepo = sugerenciaRepo;</span>
+<span class="fc" id="L38">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L39">        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;</span>
+<span class="fc" id="L40">    }</span>
 
     @Transactional
     public SugerenciaAdquisicionResponseDTO crear(SugerenciaAdquisicionRequestDTO dto, Authentication authentication) {
-<span class="fc" id="L38">        Long usuarioId = resolverIdPorCorreo(authentication.getName());</span>
+<span class="fc" id="L44">        Long usuarioId = resolverIdPorCorreo(authentication.getName());</span>
 
-<span class="fc" id="L40">        SugerenciaAdquisicion sugerencia = new SugerenciaAdquisicion();</span>
-<span class="fc" id="L41">        sugerencia.setUsuarioId(usuarioId);</span>
-<span class="fc" id="L42">        sugerencia.setTitulo(dto.titulo());</span>
-<span class="fc" id="L43">        sugerencia.setAutor(dto.autor());</span>
-<span class="fc" id="L44">        sugerencia.setIsbn(dto.isbn());</span>
-<span class="fc" id="L45">        sugerencia.setJustificacion(dto.justificacion());</span>
-<span class="fc" id="L46">        sugerencia.setEstado(SugerenciaAdquisicion.PENDIENTE);</span>
+<span class="fc" id="L46">        SugerenciaAdquisicion sugerencia = new SugerenciaAdquisicion();</span>
+<span class="fc" id="L47">        sugerencia.setUsuarioId(usuarioId);</span>
+<span class="fc" id="L48">        sugerencia.setTitulo(dto.titulo());</span>
+<span class="fc" id="L49">        sugerencia.setAutor(dto.autor());</span>
+        // ISBN opcional: &quot;&quot; se guarda como null para no chocar con el @Pattern del DTO.
+<span class="pc bpc" id="L51" title="3 of 4 branches missed.">        String isbn = dto.isbn() == null || dto.isbn().isBlank() ? null : dto.isbn();</span>
+<span class="fc" id="L52">        sugerencia.setIsbn(isbn);</span>
+<span class="fc" id="L53">        sugerencia.setJustificacion(dto.justificacion());</span>
+<span class="fc" id="L54">        sugerencia.setEstado(SugerenciaAdquisicion.PENDIENTE);</span>
 
-<span class="fc" id="L48">        return toDTO(sugerenciaRepo.save(sugerencia));</span>
+<span class="fc" id="L56">        return toDTO(sugerenciaRepo.save(sugerencia));</span>
     }
 
     @Transactional(readOnly = true)
     public Page&lt;SugerenciaAdquisicionResponseDTO&gt; listarPropias(Authentication authentication, Pageable pageable) {
-<span class="fc" id="L53">        Long usuarioId = resolverIdPorCorreo(authentication.getName());</span>
-<span class="fc" id="L54">        return sugerenciaRepo.findByUsuarioId(usuarioId, pageable).map(this::toDTO);</span>
+<span class="fc" id="L61">        Long usuarioId = resolverIdPorCorreo(authentication.getName());</span>
+<span class="fc" id="L62">        return sugerenciaRepo.findByUsuarioId(usuarioId, pageable).map(this::toDTO);</span>
     }
 
-    // Solo GERENTE/ADMIN llegan acá (ver @PreAuthorize en
-    // SugerenciaAdquisicionController) -- listado sin filtrar por dueño,
-    // a diferencia de listarPropias().
+    // Solo GERENTE/ADMIN llegan acá: listado sin filtrar por dueño.
     @Transactional(readOnly = true)
     public Page&lt;SugerenciaAdquisicionResponseDTO&gt; listarTodas(String estado, Pageable pageable) {
-<span class="pc bpc" id="L62" title="3 of 4 branches missed.">        if (estado == null || estado.isBlank()) {</span>
-<span class="fc" id="L63">            return sugerenciaRepo.findAll(pageable).map(this::toDTO);</span>
+<span class="pc bpc" id="L68" title="3 of 4 branches missed.">        if (estado == null || estado.isBlank()) {</span>
+<span class="fc" id="L69">            return sugerenciaRepo.findAll(pageable).map(this::toDTO);</span>
         }
-<span class="nc" id="L65">        return sugerenciaRepo.findByEstado(estado, pageable).map(this::toDTO);</span>
+<span class="nc" id="L71">        return sugerenciaRepo.findByEstado(estado, pageable).map(this::toDTO);</span>
     }
 
     @Transactional
     public SugerenciaAdquisicionResponseDTO cambiarEstado(Long id, String nuevoEstado, Authentication authentication) {
-<span class="fc" id="L70">        SugerenciaAdquisicion sugerencia = sugerenciaRepo.findById(id)</span>
-<span class="fc" id="L71">                .orElseThrow(() -&gt; new EntityNotFoundException(SUGERENCIA_NO_ENCONTRADA + id));</span>
+<span class="fc" id="L76">        SugerenciaAdquisicion sugerencia = sugerenciaRepo.findById(id)</span>
+<span class="fc" id="L77">                .orElseThrow(() -&gt; new EntityNotFoundException(SUGERENCIA_NO_ENCONTRADA + id));</span>
 
-<span class="fc" id="L73">        Long revisorId = resolverIdPorCorreo(authentication.getName());</span>
-<span class="fc" id="L74">        sugerencia.setEstado(nuevoEstado);</span>
-<span class="fc" id="L75">        sugerencia.setRevisadoPor(revisorId);</span>
+<span class="fc" id="L79">        Long revisorId = resolverIdPorCorreo(authentication.getName());</span>
+<span class="fc" id="L80">        sugerencia.setEstado(nuevoEstado);</span>
+<span class="fc" id="L81">        sugerencia.setRevisadoPor(revisorId);</span>
 
-<span class="fc" id="L77">        return toDTO(sugerenciaRepo.save(sugerencia));</span>
+<span class="fc" id="L83">        SugerenciaAdquisicionResponseDTO resultado = toDTO(sugerenciaRepo.save(sugerencia));</span>
+<span class="fc" id="L84">        registrarAuditoria(revisorId, id, &quot;Cambio de estado de sugerencia &quot; + id + &quot; a &quot; + nuevoEstado);</span>
+<span class="fc" id="L85">        return resultado;</span>
     }
 
+    // ── Gestión por demanda: lo más pedido primero ──
+    // El orden vive en el JPQL; el sort del Pageable se ignora a propósito.
+    @Transactional(readOnly = true)
+    public Page&lt;SugerenciaAgrupadaDTO&gt; getMasPedidos(Pageable pageable) {
+<span class="fc" id="L92">        Pageable efectivo = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());</span>
+<span class="fc" id="L93">        return sugerenciaRepo.findMasPedidosAgrupados(efectivo);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;SugerenciaAgrupadaDTO&gt; getMasPedidosList() {
+<span class="nc" id="L98">        return sugerenciaRepo</span>
+<span class="nc" id="L99">                .findMasPedidosAgrupados(PageRequest.of(0, Integer.MAX_VALUE))</span>
+<span class="nc" id="L100">                .getContent();</span>
+    }
+
+    /**
+     * Confirma la adquisición de un ISBN: todas sus sugerencias PENDIENTE
+     * pasan a APROBADA (que acá significa &quot;adquirido&quot;) y salen del agrupado.
+     * La llama el botón de gestión, el reporte no la usa, y LibroService al
+     * crear un libro con ese ISBN (validación automática).
+     */
+    @Transactional
+    public int confirmarAdquisicion(String isbn, Long revisorId) {
+<span class="fc" id="L111">        List&lt;SugerenciaAdquisicion&gt; pendientes = sugerenciaRepo.findByIsbnAndEstado(isbn, SugerenciaAdquisicion.PENDIENTE);</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        for (SugerenciaAdquisicion s : pendientes) {</span>
+<span class="fc" id="L113">            s.setEstado(SugerenciaAdquisicion.APROBADA);</span>
+<span class="fc" id="L114">            s.setRevisadoPor(revisorId);</span>
+<span class="fc" id="L115">            sugerenciaRepo.save(s);</span>
+<span class="fc" id="L116">            registrarAuditoria(revisorId, s.getId(),</span>
+<span class="fc" id="L117">                    &quot;Sugerencia &quot; + s.getId() + &quot; confirmada por adquisición del ISBN &quot; + isbn);</span>
+<span class="fc" id="L118">        }</span>
+<span class="fc" id="L119">        return pendientes.size();</span>
+    }
+
+<span class="fc" id="L122">    private void registrarAuditoria(Long ejecutorId, Long registroId, String detalles) {        BitacoraAuditoria evento = BitacoraAuditoria.builder()</span>
+<span class="fc" id="L123">                .usuarioId(ejecutorId)</span>
+<span class="fc" id="L124">                .tipoOperacion(&quot;UPDATE&quot;)</span>
+<span class="fc" id="L125">                .tablaAfectada(TABLA_SUGERENCIAS)</span>
+<span class="fc" id="L126">                .registroId(registroId)</span>
+<span class="fc" id="L127">                .detalles(detalles)</span>
+<span class="fc" id="L128">                .fechaHora(OffsetDateTime.now())</span>
+<span class="fc" id="L129">                .build();</span>
+<span class="fc" id="L130">        bitacoraAuditoriaRepo.save(evento);</span>
+<span class="fc" id="L131">    }</span>
+
     private Long resolverIdPorCorreo(String correo) {
-<span class="fc" id="L81">        return usuarioRepo.findByCorreo(correo)</span>
-<span class="pc" id="L82">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo))</span>
-<span class="fc" id="L83">                .getId();</span>
+<span class="fc" id="L134">        return usuarioRepo.findByCorreo(correo)</span>
+<span class="pc" id="L135">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo))</span>
+<span class="fc" id="L136">                .getId();</span>
+    }
+
+    /** Versión pública para el controller (confirmar-adquisicion). */
+    public Long resolverIdPorCorreoPublico(String correo) {
+<span class="nc" id="L141">        return resolverIdPorCorreo(correo);</span>
     }
 
     private SugerenciaAdquisicionResponseDTO toDTO(SugerenciaAdquisicion s) {
-<span class="fc" id="L87">        return new SugerenciaAdquisicionResponseDTO(</span>
-<span class="fc" id="L88">                s.getId(),</span>
-<span class="fc" id="L89">                s.getUsuarioId(),</span>
-<span class="fc" id="L90">                s.getTitulo(),</span>
-<span class="fc" id="L91">                s.getAutor(),</span>
-<span class="fc" id="L92">                s.getIsbn(),</span>
-<span class="fc" id="L93">                s.getJustificacion(),</span>
-<span class="fc" id="L94">                s.getEstado(),</span>
-<span class="fc" id="L95">                s.getRevisadoPor(),</span>
-<span class="fc" id="L96">                s.getCreadoEn()</span>
+<span class="fc" id="L145">        return new SugerenciaAdquisicionResponseDTO(</span>
+<span class="fc" id="L146">                s.getId(),</span>
+<span class="fc" id="L147">                s.getUsuarioId(),</span>
+<span class="fc" id="L148">                s.getTitulo(),</span>
+<span class="fc" id="L149">                s.getAutor(),</span>
+<span class="fc" id="L150">                s.getIsbn(),</span>
+<span class="fc" id="L151">                s.getJustificacion(),</span>
+<span class="fc" id="L152">                s.getEstado(),</span>
+<span class="fc" id="L153">                s.getRevisadoPor(),</span>
+<span class="fc" id="L154">                s.getCreadoEn()</span>
         );
     }
 }

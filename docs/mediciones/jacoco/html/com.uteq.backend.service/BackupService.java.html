@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BackupService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.service</a> &gt; <span class="el_source">BackupService.java</span></div><h1>BackupService.java</h1><pre class="source lang-java linenums">package com.uteq.backend.service;
+
+import com.uteq.backend.entity.Backup;
+import com.uteq.backend.repository.BackupRepository;
+import com.uteq.backend.repository.UsuarioRepository;
+import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+@Service
+public class BackupService {
+
+    private static final int MAX_DIAS = 30;
+    private static final String TABLA_RESERVAS = &quot;reservas&quot;;
+    private static final String TABLA_RESERVACIONES = &quot;reservaciones&quot;;
+    private static final String TABLA_BITACORA = &quot;bitacora_auditoria&quot;;
+    private static final String TABLA_AUDITORIA = &quot;auditoria&quot;;
+<span class="fc" id="L32">    private static final Set&lt;String&gt; TABLAS_PERMITIDAS = Set.of(</span>
+            &quot;prestamos&quot;, TABLA_RESERVAS, TABLA_RESERVACIONES, &quot;multas&quot;, &quot;libros&quot;, &quot;usuarios&quot;,
+            TABLA_BITACORA, TABLA_AUDITORIA, &quot;configuracion_sistema&quot;,
+            &quot;notificaciones&quot;, &quot;favoritos&quot;, &quot;sugerencias_adquisicion&quot;, &quot;categorias&quot;, &quot;autores&quot;
+    );
+
+<span class="fc" id="L38">    private static final Map&lt;String, String&gt; TABLA_COL = Map.ofEntries(</span>
+<span class="fc" id="L39">            Map.entry(&quot;prestamos&quot;, &quot;fecha_prestamo&quot;),</span>
+<span class="fc" id="L40">            Map.entry(TABLA_RESERVAS, &quot;fecha_reserva&quot;),</span>
+<span class="fc" id="L41">            Map.entry(TABLA_RESERVACIONES, &quot;fecha_reserva&quot;),</span>
+<span class="fc" id="L42">            Map.entry(&quot;multas&quot;, &quot;fecha_generada&quot;),</span>
+<span class="fc" id="L43">            Map.entry(TABLA_BITACORA, &quot;fecha_hora&quot;),</span>
+<span class="fc" id="L44">            Map.entry(TABLA_AUDITORIA, &quot;fecha_hora&quot;),</span>
+<span class="fc" id="L45">            Map.entry(&quot;libros&quot;, &quot;fecha_registro&quot;),</span>
+<span class="fc" id="L46">            Map.entry(&quot;usuarios&quot;, &quot;fecha_registro&quot;),</span>
+<span class="fc" id="L47">            Map.entry(&quot;notificaciones&quot;, &quot;creado_en&quot;),</span>
+<span class="fc" id="L48">            Map.entry(&quot;favoritos&quot;, &quot;agregado_en&quot;),</span>
+<span class="fc" id="L49">            Map.entry(&quot;sugerencias_adquisicion&quot;, &quot;creado_en&quot;)</span>
+            // categorias, autores, configuracion_sistema -&gt; sin fecha, volcado completo
+    );
+
+    private static final int MAX_DETALLE_CHARS = 500;
+
+    private final BackupRepository backupRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final JdbcTemplate jdbcTemplate;
+    private final BackupStorageService storageService;
+
+    @Value(&quot;${app.backup.r2.bucket:}&quot;)
+    private String bucket;
+
+<span class="fc" id="L63">    public BackupService(BackupRepository backupRepository, UsuarioRepository usuarioRepository, JdbcTemplate jdbcTemplate, BackupStorageService storageService) {</span>
+<span class="fc" id="L64">        this.backupRepository = backupRepository;</span>
+<span class="fc" id="L65">        this.usuarioRepository = usuarioRepository;</span>
+<span class="fc" id="L66">        this.jdbcTemplate = jdbcTemplate;</span>
+<span class="fc" id="L67">        this.storageService = storageService;</span>
+<span class="fc" id="L68">    }</span>
+
+    private void validarRango(OffsetDateTime desde, OffsetDateTime hasta) {
+<span class="nc bnc" id="L71" title="All 4 branches missed.">        if (desde == null || hasta == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;desde y hasta son obligatorios&quot;);</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">        if (desde.isAfter(hasta)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;desde debe ser anterior a hasta&quot;);</span>
+<span class="nc" id="L73">        long dias = ChronoUnit.DAYS.between(desde, hasta);</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        if (dias &gt; MAX_DIAS) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Rango max 30 dias, solicitados: &quot; + dias);</span>
+        // No se valida &quot;hasta no puede ser futuro&quot; para evitar problemas de zona horaria:
+        // un usuario en -05:00 que selecciona &quot;31 Aug 22:00&quot; envía 2026-09-01T03:00Z,
+        // que el servidor en UTC ve como futuro aunque localmente no lo es.
+        // Si &quot;hasta&quot; está en el futuro, la consulta SQL simplemente devuelve todos los
+        // registros hasta &quot;ahora&quot;, que es el comportamiento correcto.
+<span class="nc" id="L80">    }</span>
+
+    private void validarTablas(Set&lt;String&gt; tablas) {
+<span class="nc bnc" id="L83" title="All 4 branches missed.">        if (tablas == null || tablas.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Debe seleccionar al menos una tabla&quot;);</span>
+<span class="nc bnc" id="L84" title="All 4 branches missed.">        for (String t : tablas) if (!TABLAS_PERMITIDAS.contains(t)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Tabla no permitida: &quot; + t);</span>
+<span class="nc" id="L85">    }</span>
+
+    @Transactional
+    public Backup generarBackup(OffsetDateTime desde, OffsetDateTime hasta, Set&lt;String&gt; tablas, String formato, String tipo) {
+<span class="nc" id="L89">        validarRango(desde, hasta);</span>
+<span class="nc" id="L90">        validarTablas(tablas);</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        String fmt = formato == null ? &quot;sql&quot; : formato.toLowerCase();</span>
+<span class="nc bnc" id="L92" title="All 4 branches missed.">        if (!fmt.equals(&quot;sql&quot;) &amp;&amp; !fmt.equals(&quot;csv&quot;)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;formato debe ser sql o csv&quot;);</span>
+
+<span class="nc" id="L94">        byte[] zipBytes = generarZip(desde, hasta, tablas, fmt);</span>
+<span class="nc" id="L95">        String key = &quot;backups/backup_&quot; + System.currentTimeMillis() + &quot;.zip&quot;;</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">        if (storageService.isEncryptionEnabled()) key += &quot;.enc&quot;;</span>
+<span class="nc" id="L97">        storageService.upload(key, zipBytes);</span>
+
+<span class="nc" id="L99">        Backup backup = Backup.builder()</span>
+<span class="nc" id="L100">                .creadoPor(obtenerUsuarioActualId())</span>
+<span class="nc" id="L101">                .desde(desde)</span>
+<span class="nc" id="L102">                .hasta(hasta)</span>
+<span class="nc" id="L103">                .tablas(new HashSet&lt;&gt;(tablas))</span>
+<span class="nc" id="L104">                .formato(fmt)</span>
+<span class="nc" id="L105">                .ruta(key)</span>
+<span class="nc" id="L106">                .tamanoBytes((long) zipBytes.length)</span>
+<span class="nc" id="L107">                .estado(&quot;COMPLETADO&quot;)</span>
+<span class="nc" id="L108">                .tipo(tipo)</span>
+<span class="nc" id="L109">                .creadoEn(OffsetDateTime.now())</span>
+<span class="nc" id="L110">                .build();</span>
+<span class="nc" id="L111">        return backupRepository.save(backup);</span>
+    }
+
+    private byte[] generarZip(OffsetDateTime desde, OffsetDateTime hasta, Set&lt;String&gt; tablas, String formato) {
+<span class="nc" id="L115">        try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); ZipOutputStream zos = new ZipOutputStream(baos, StandardCharsets.UTF_8)) {</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">            for (String tabla : tablas) {</span>
+<span class="nc" id="L117">                String col = TABLA_COL.get(tabla);</span>
+<span class="nc" id="L118">                String phys = physTable(tabla);</span>
+                List&lt;Map&lt;String, Object&gt;&gt; rows;
+                try {
+<span class="nc bnc" id="L121" title="All 2 branches missed.">                    if (col != null) {</span>
+<span class="nc" id="L122">                        rows = jdbcTemplate.queryForList(&quot;SELECT * FROM &quot; + phys + &quot; WHERE &quot; + col + &quot; &gt;= ? AND &quot; + col + &quot; &lt;= ?&quot;, desde, hasta);</span>
+                    } else {
+                        // sin columna de fecha (categorias, autores, configuracion_sistema) -&gt; volcado completo
+<span class="nc" id="L125">                        rows = jdbcTemplate.queryForList(&quot;SELECT * FROM &quot; + phys);</span>
+                    }
+<span class="nc" id="L127">                } catch (org.springframework.dao.DataAccessException e) {</span>
+                    // Convertir el 500 por columna inexistente en 400 legible (B10: categorias, multas, autores).
+<span class="nc" id="L129">                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,</span>
+<span class="nc" id="L130">                            &quot;No se pudo filtrar la tabla &quot; + tabla + &quot; por columna &quot; + col + &quot;: &quot; + e.getMostSpecificCause().getMessage());</span>
+<span class="nc" id="L131">                }</span>
+<span class="nc" id="L132">                String ext = fmtExt(formato);</span>
+<span class="nc" id="L133">                zos.putNextEntry(new ZipEntry(tabla + &quot;.&quot; + ext));</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">                String content = formato.equals(&quot;sql&quot;) ? toSql(physTable(tabla), rows) : toCsv(rows);</span>
+<span class="nc" id="L135">                zos.write(content.getBytes(StandardCharsets.UTF_8));</span>
+<span class="nc" id="L136">                zos.closeEntry();</span>
+<span class="nc" id="L137">            }</span>
+<span class="nc" id="L138">            zos.finish();</span>
+<span class="nc" id="L139">            return baos.toByteArray();</span>
+<span class="nc" id="L140">        } catch (Exception e) {</span>
+<span class="nc" id="L141">            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, &quot;Error generando zip&quot;, e);</span>
+        }
+    }
+
+    private String physName(String logical) {
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        if (logical.equals(&quot;reservas&quot;)) return &quot;reservaciones&quot;;</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">        if (logical.equals(&quot;auditoria&quot;)) return &quot;bitacora_auditoria&quot;;</span>
+<span class="nc" id="L148">        return logical;</span>
+    }
+    private String physTable(String logical) {
+<span class="nc bnc" id="L151" title="All 4 branches missed.">        if (logical.equals(&quot;reservas&quot;) || logical.equals(&quot;reservaciones&quot;)) return &quot;reservaciones&quot;;</span>
+<span class="nc bnc" id="L152" title="All 4 branches missed.">        if (logical.equals(&quot;auditoria&quot;) || logical.equals(&quot;bitacora_auditoria&quot;)) return &quot;bitacora_auditoria&quot;;</span>
+<span class="nc" id="L153">        return logical;</span>
+    }
+<span class="nc bnc" id="L155" title="All 2 branches missed.">    private String fmtExt(String f) { return f.equals(&quot;sql&quot;) ? &quot;sql&quot; : &quot;csv&quot;; }</span>
+
+    private String toCsv(List&lt;Map&lt;String, Object&gt;&gt; rows) {
+<span class="nc bnc" id="L158" title="All 2 branches missed.">        if (rows.isEmpty()) return &quot;&quot;;</span>
+<span class="nc" id="L159">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L160">        sb.append(String.join(&quot;,&quot;, rows.get(0).keySet())).append(&quot;\n&quot;);</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">        for (Map&lt;String, Object&gt; r : rows) {</span>
+<span class="nc" id="L162">            sb.append(r.values().stream().map(v -&gt; {</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">                if (v == null) return &quot;&quot;;</span>
+<span class="nc" id="L164">                String s = truncarTexto(v.toString());</span>
+<span class="nc" id="L165">                s = s.replace(&quot;\&quot;&quot;, &quot;\&quot;\&quot;&quot;);</span>
+<span class="nc bnc" id="L166" title="All 6 branches missed.">                if (s.contains(&quot;,&quot;) || s.contains(&quot;\n&quot;) || s.contains(&quot;\&quot;&quot;)) return &quot;\&quot;&quot; + s + &quot;\&quot;&quot;;</span>
+<span class="nc" id="L167">                return s;</span>
+<span class="nc" id="L168">            }).collect(Collectors.joining(&quot;,&quot;))).append(&quot;\n&quot;);</span>
+<span class="nc" id="L169">        }</span>
+<span class="nc" id="L170">        return sb.toString();</span>
+    }
+
+    private String toSql(String tabla, List&lt;Map&lt;String, Object&gt;&gt; rows) {
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        if (rows.isEmpty()) return &quot;-- sin filas &quot; + tabla + &quot;\n&quot;;</span>
+<span class="nc" id="L175">        StringBuilder sb = new StringBuilder(&quot;-- tabla &quot; + tabla + &quot;\n&quot;);</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">        for (Map&lt;String, Object&gt; r : rows) {</span>
+<span class="nc" id="L177">            String cols = String.join(&quot;, &quot;, r.keySet());</span>
+<span class="nc" id="L178">            String vals = r.values().stream().map(v -&gt; {</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">                if (v == null) return &quot;NULL&quot;;</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">                if (v instanceof Number) return v.toString();</span>
+<span class="nc bnc" id="L181" title="All 4 branches missed.">                if (v instanceof Boolean) return (Boolean) v ? &quot;TRUE&quot; : &quot;FALSE&quot;;</span>
+<span class="nc" id="L182">                return &quot;'&quot; + truncarTexto(v.toString()).replace(&quot;'&quot;, &quot;''&quot;) + &quot;'&quot;;</span>
+<span class="nc" id="L183">            }).collect(Collectors.joining(&quot;, &quot;));</span>
+<span class="nc" id="L184">            sb.append(&quot;INSERT INTO &quot;).append(tabla).append(&quot; (&quot;).append(cols).append(&quot;) VALUES (&quot;).append(vals).append(&quot;);\n&quot;);</span>
+<span class="nc" id="L185">        }</span>
+<span class="nc" id="L186">        return sb.toString();</span>
+    }
+
+<span class="nc" id="L189">    public List&lt;Backup&gt; listarTodos() { return backupRepository.findAllOrderByCreatedDesc(); }</span>
+<span class="nc" id="L190">    public List&lt;Backup&gt; listarPorRango(OffsetDateTime desde, OffsetDateTime hasta) { return backupRepository.findByFechaRange(desde, hasta); }</span>
+<span class="nc" id="L191">    public Backup obtenerPorId(Long id) { return backupRepository.findById(id).orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Backup no encontrado &quot; + id)); }</span>
+
+    /**
+     * Trunca textos largos para evitar que la bitacora de auditoria genere zips gigantes.
+     * El campo detalles puede traer dumps previos de 10k caracteres que luego se encriptan
+     * y rompen la visualización del frontend.
+     */
+    private String truncarTexto(String texto) {
+<span class="nc bnc" id="L199" title="All 4 branches missed.">        if (texto != null &amp;&amp; texto.length() &gt; MAX_DETALLE_CHARS) {</span>
+<span class="nc" id="L200">            return texto.substring(0, MAX_DETALLE_CHARS) + &quot;...(truncado)&quot;;</span>
+        }
+<span class="nc" id="L202">        return texto;</span>
+    }
+
+    @Transactional
+    public void eliminar(Long id) {
+<span class="nc" id="L207">        Backup b = obtenerPorId(id);</span>
+<span class="nc" id="L208">          try { storageService.delete(b.getRuta()); } catch (Exception ignored) {</span>
+              // best-effort: el registro se elimina aunque falle el storage
+<span class="nc" id="L210">          }</span>
+<span class="nc" id="L211">        backupRepository.delete(b);</span>
+<span class="nc" id="L212">    }</span>
+
+    public byte[] descargar(Long id) {
+<span class="nc" id="L215">        Backup b = obtenerPorId(id);</span>
+<span class="nc" id="L216">        return storageService.download(b.getRuta());</span>
+    }
+
+    private Long obtenerUsuarioActualId() {
+<span class="nc" id="L220">        Authentication auth = SecurityContextHolder.getContext().getAuthentication();</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">        if (auth == null) return 1L;</span>
+<span class="nc" id="L222">        Object p = auth.getPrincipal();</span>
+        try {
+<span class="nc" id="L224">            var f = p.getClass().getDeclaredField(&quot;id&quot;);</span>
+<span class="nc" id="L225">            f.setAccessible(true);</span>
+<span class="nc" id="L226">            return (Long) f.get(p);</span>
+<span class="nc" id="L227">        } catch (Exception e) {</span>
+<span class="nc" id="L228">            try { return usuarioRepository.findByCorreo(auth.getName()).map(u -&gt; u.getId()).orElse(1L); } catch (Exception ex) { return 1L; }</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

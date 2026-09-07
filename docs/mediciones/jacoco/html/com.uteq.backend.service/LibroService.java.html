@@ -3,16 +3,22 @@
 import com.uteq.backend.dto.LibroRequestDTO;
 import com.uteq.backend.dto.LibroResponseDTO;
 import com.uteq.backend.dto.LibroSugerenciaDTO;
+import com.uteq.backend.dto.PortadaImagenDTO;
 import com.uteq.backend.entity.Autor;
+import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.Categoria;
 import com.uteq.backend.entity.EstadoLibro;
 import com.uteq.backend.entity.Libro;
+import com.uteq.backend.entity.Proveedor;
 import com.uteq.backend.repository.AutorRepository;
+import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.CategoriaRepository;
 import com.uteq.backend.repository.EditorialRepository;
 import com.uteq.backend.repository.EstadoLibroRepository;
 import com.uteq.backend.repository.IdiomaRepository;
 import com.uteq.backend.repository.LibroRepository;
+import com.uteq.backend.repository.ProveedorRepository;
+import jakarta.persistence.EntityGraph;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -20,229 +26,499 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
 public class LibroService {
 
+<span class="fc" id="L44">    private static final Logger log = LoggerFactory.getLogger(LibroService.class);</span>
+
     private static final String LIBRO_NO_ENCONTRADO = &quot;Libro no encontrado con id: &quot;;
+    private static final String TABLA_LIBROS = &quot;libros&quot;;
     private static final String ESTADO_ACTIVO = &quot;ACTIVO&quot;;
     private static final String ESTADO_DADO_DE_BAJA = &quot;DADO_DE_BAJA&quot;;
+    private static final String ESTADO_PENDIENTE = &quot;PENDIENTE&quot;;
+    // Límite de portada (MB) en configuracion_sistema; el Admin lo ajusta sin despliegue.
+    private static final String CLAVE_MAX_TAMANO_PORTADA_MB = &quot;max_tamano_portada_mb&quot;;
+<span class="fc" id="L53">    private static final List&lt;String&gt; TIPOS_PORTADA_PERMITIDOS =</span>
+<span class="fc" id="L54">            List.of(&quot;image/png&quot;, &quot;image/jpeg&quot;, &quot;image/webp&quot;, &quot;image/avif&quot;);</span>
 
     private final LibroRepository libroRepo;
     private final EditorialRepository editorialRepo;
     private final IdiomaRepository idiomaRepo;
     private final EstadoLibroRepository estadoRepo;
-    // Módulo 9.1/3: repos nuevos de la rama E, mismo criterio que
-    // editorialRepo/idiomaRepo/estadoRepo -- inyectados directo porque
-    // categorias/autores son catálogos de solo lectura desde este service
-    // (no tienen reglas de negocio propias que ameriten un service
-    // intermedio, a diferencia de LibroService en sí).
+    // Categorías/autores/proveedor: catálogos inyectados directo (solo lectura desde este service).
     private final CategoriaRepository categoriaRepo;
     private final AutorRepository autorRepo;
+    private final ProveedorRepository proveedorRepo;
+    // Lee max_tamano_portada_mb con cache en memoria.
+    private final ConfiguracionSistemaService configuracionSistemaService;
+    private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
+    private final SuscripcionDisponibilidadService suscripcionDisponibilidadService;
+    private final SugerenciaAdquisicionService sugerenciaAdquisicionService;
 
     public LibroService(LibroRepository libroRepo,
                         EditorialRepository editorialRepo,
                         IdiomaRepository idiomaRepo,
                         EstadoLibroRepository estadoRepo,
                         CategoriaRepository categoriaRepo,
-<span class="fc" id="L52">                        AutorRepository autorRepo) {</span>
-<span class="fc" id="L53">        this.libroRepo     = libroRepo;</span>
-<span class="fc" id="L54">        this.editorialRepo = editorialRepo;</span>
-<span class="fc" id="L55">        this.idiomaRepo    = idiomaRepo;</span>
-<span class="fc" id="L56">        this.estadoRepo    = estadoRepo;</span>
-<span class="fc" id="L57">        this.categoriaRepo = categoriaRepo;</span>
-<span class="fc" id="L58">        this.autorRepo     = autorRepo;</span>
-<span class="fc" id="L59">    }</span>
+                        AutorRepository autorRepo,
+                        ProveedorRepository proveedorRepo,
+                        ConfiguracionSistemaService configuracionSistemaService,
+                        BitacoraAuditoriaRepository bitacoraAuditoriaRepo,
+                        @org.springframework.beans.factory.annotation.Autowired(required = false) SuscripcionDisponibilidadService suscripcionDisponibilidadService,
+<span class="fc" id="L80">                        @org.springframework.beans.factory.annotation.Autowired(required = false) SugerenciaAdquisicionService sugerenciaAdquisicionService) {</span>
+<span class="fc" id="L81">        this.libroRepo     = libroRepo;</span>
+<span class="fc" id="L82">        this.editorialRepo = editorialRepo;</span>
+<span class="fc" id="L83">        this.idiomaRepo    = idiomaRepo;</span>
+<span class="fc" id="L84">        this.estadoRepo    = estadoRepo;</span>
+<span class="fc" id="L85">        this.categoriaRepo = categoriaRepo;</span>
+<span class="fc" id="L86">        this.autorRepo     = autorRepo;</span>
+<span class="fc" id="L87">        this.proveedorRepo = proveedorRepo;</span>
+<span class="fc" id="L88">        this.configuracionSistemaService = configuracionSistemaService;</span>
+<span class="fc" id="L89">        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;</span>
+<span class="fc" id="L90">        this.suscripcionDisponibilidadService = suscripcionDisponibilidadService;</span>
+<span class="fc" id="L91">        this.sugerenciaAdquisicionService = sugerenciaAdquisicionService;</span>
+<span class="fc" id="L92">    }</span>
+
+    private void registrarAuditoria(Long usuarioId, String tipoOperacion, Long registroId, String detalles) {
+<span class="fc" id="L95">        BitacoraAuditoria evento = BitacoraAuditoria.builder()</span>
+<span class="fc" id="L96">                .usuarioId(usuarioId)</span>
+<span class="fc" id="L97">                .tipoOperacion(tipoOperacion)</span>
+<span class="fc" id="L98">                .tablaAfectada(TABLA_LIBROS)</span>
+<span class="fc" id="L99">                .registroId(registroId)</span>
+<span class="fc" id="L100">                .detalles(detalles)</span>
+<span class="fc" id="L101">                .fechaHora(OffsetDateTime.now())</span>
+<span class="fc" id="L102">                .build();</span>
+<span class="fc" id="L103">        bitacoraAuditoriaRepo.save(evento);</span>
+<span class="fc" id="L104">    }</span>
 
     @Cacheable(&quot;libros&quot;)
     @Transactional(readOnly = true)
     public Page&lt;LibroResponseDTO&gt; listar(Pageable pageable) {
-<span class="fc" id="L64">        return libroRepo.findByEstado_Nombre(ESTADO_ACTIVO, pageable)</span>
-<span class="fc" id="L65">                .map(this::toDTO);</span>
+<span class="fc" id="L109">        return libroRepo.findByEstado_Nombre(ESTADO_ACTIVO, pageable)</span>
+<span class="fc" id="L110">                .map(this::toDTO);</span>
     }
 
-    // Módulo 9.1: filtros de catálogo por categoría/autor
-    // (LibroController ?categoriaId=/?autorId=). No lleva @Cacheable a
-    // propósito: el cache &quot;libros&quot; ya cachea el listado sin filtro
-    // (RedisCacheManager con una sola config por nombre de cache, ver
-    // RedisConfig) y combinarlo con parámetros de filtro exigiría una key
-    // compuesta que no está en el alcance de esta rama -- filtrar sin
-    // cache es aceptable porque, a diferencia del listado general, no es
-    // el path más transitado del catálogo.
+    @Transactional(readOnly = true)
+    public Page&lt;LibroResponseDTO&gt; listarConFiltros(String q, Integer estadoLibroId, Integer categoriaId, Long autorId, Boolean disponible, Pageable pageable) {
+<span class="nc" id="L115">        Integer estadoId = resolverEstadoId(estadoLibroId);</span>
+
+        // Con disponible y/o q, usar queries nativas con filtro stock
+<span class="nc bnc" id="L118" title="All 4 branches missed.">        if (q != null &amp;&amp; !q.isBlank()) {</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">            if (categoriaId != null) {</span>
+<span class="nc" id="L120">                return libroRepo.buscarPorTextoOIsbnYCategoria(q, categoriaId, estadoId, disponible, pageable).map(this::toDTO);</span>
+            }
+<span class="nc" id="L122">            return libroRepo.buscarPorTextoOIsbn(q, estadoId, disponible, pageable).map(this::toDTO);</span>
+        }
+
+<span class="nc bnc" id="L125" title="All 2 branches missed.">        if (disponible != null) {</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">            if (categoriaId != null) {</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">                if (disponible) {</span>
+<span class="nc" id="L128">                    return libroRepo.findByCategorias_IdAndEstadoIdAndStockDisponibleGreaterThan(categoriaId, estadoId, 0, pageable).map(this::toDTO);</span>
+                } else {
+<span class="nc" id="L130">                    return libroRepo.findByCategorias_IdAndEstadoIdAndStockDisponibleEquals(categoriaId, estadoId, 0, pageable).map(this::toDTO);</span>
+                }
+            }
+<span class="nc bnc" id="L133" title="All 2 branches missed.">            if (disponible) {</span>
+<span class="nc" id="L134">                return libroRepo.findByEstadoIdAndStockDisponibleGreaterThan(estadoId, 0, pageable).map(this::toDTO);</span>
+            } else {
+<span class="nc" id="L136">                return libroRepo.findByEstadoIdAndStockDisponibleEquals(estadoId, 0, pageable).map(this::toDTO);</span>
+            }
+        }
+
+<span class="nc bnc" id="L140" title="All 4 branches missed.">        if (categoriaId != null &amp;&amp; autorId != null) {</span>
+<span class="nc" id="L141">            return libroRepo.findByCategorias_IdAndAutores_IdAndEstadoId(categoriaId, autorId, estadoId, pageable).map(this::toDTO);</span>
+        }
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        if (categoriaId != null) {</span>
+<span class="nc" id="L144">            return libroRepo.findByCategorias_IdAndEstadoId(categoriaId, estadoId, pageable).map(this::toDTO);</span>
+        }
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        if (autorId != null) {</span>
+<span class="nc" id="L147">            return libroRepo.findByAutores_IdAndEstadoId(autorId, estadoId, pageable).map(this::toDTO);</span>
+        }
+<span class="nc" id="L149">        return libroRepo.findByEstadoId(estadoId, pageable).map(this::toDTO);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Page&lt;LibroResponseDTO&gt; listarConFiltros(String q, Integer estadoLibroId, Integer categoriaId, Long autorId, Pageable pageable) {
+<span class="nc" id="L154">        return listarConFiltros(q, estadoLibroId, categoriaId, autorId, null, pageable);</span>
+    }
+
+    private Integer resolverEstadoId(Integer estadoLibroId) {
+<span class="nc bnc" id="L158" title="All 2 branches missed.">        if (estadoLibroId != null) {</span>
+<span class="nc" id="L159">            return estadoLibroId;</span>
+        }
+<span class="nc" id="L161">        return estadoRepo.findByNombre(ESTADO_ACTIVO)</span>
+<span class="nc" id="L162">                .orElseThrow(() -&gt; new IllegalStateException(</span>
+                        &quot;Catálogo estados_libro sin fila '&quot; + ESTADO_ACTIVO + &quot;'&quot;))
+<span class="nc" id="L164">                .getId();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Page&lt;LibroResponseDTO&gt; listarPendientes(String q, Integer anioPublicacion, List&lt;Integer&gt; estadoIds, Pageable pageable) {
+<span class="nc" id="L169">        List&lt;Integer&gt; estados = resolverEstadosPendientes(estadoIds);</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        if (estados.isEmpty()) {</span>
+<span class="nc" id="L171">            log.warn(&quot;listarPendientes: lista vacía - estadoIds={}&quot;, estadoIds);</span>
+<span class="nc" id="L172">            return Page.empty(pageable);</span>
+        }
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        Short anioShort = anioPublicacion != null ? anioPublicacion.shortValue() : null;</span>
+        try {
+<span class="nc" id="L176">            return libroRepo.buscarPorEstados(estados, q, anioShort, pageable).map(this::toDTO);</span>
+<span class="nc" id="L177">        } catch (Exception e) {</span>
+<span class="nc" id="L178">            log.error(&quot;listarPendientes error consultando {} libros con estados {}&quot;, estados.size(), q, e);</span>
+<span class="nc" id="L179">            throw new RuntimeException(&quot;Error interno al listar libros pendientes&quot;, e);</span>
+        }
+    }
+
+    private List&lt;Integer&gt; resolverEstadosPendientes(List&lt;Integer&gt; estadoIds) {
+<span class="nc bnc" id="L184" title="All 4 branches missed.">        if (estadoIds != null &amp;&amp; !estadoIds.isEmpty()) {</span>
+<span class="nc" id="L185">            return estadoIds;</span>
+        }
+<span class="nc" id="L187">        List&lt;Integer&gt; defaults = List.of(2, 3, 4, 5); // IDs por defecto: DADO_DE_BAJA, PENDIENTE, EN_REPARACION, PERDIDO</span>
+<span class="nc" id="L188">        log.warn(&quot;listarPendientes: usando estados por defecto, estadoIds={}&quot;, estadoIds);</span>
+<span class="nc" id="L189">        return defaults;</span>
+    }
+
+    // Filtros de catálogo por categoría/autor (?categoriaId=/?autorId=). Sin @Cacheable: solo el listado general usa cache.
     @Transactional(readOnly = true)
     public Page&lt;LibroResponseDTO&gt; listarPorCategoria(Integer categoriaId, Pageable pageable) {
-<span class="nc" id="L78">        return libroRepo.findByCategorias_IdAndEstado_Nombre(categoriaId, ESTADO_ACTIVO, pageable)</span>
-<span class="nc" id="L79">                .map(this::toDTO);</span>
+<span class="nc" id="L195">        return libroRepo.findByCategorias_IdAndEstado_Nombre(categoriaId, ESTADO_ACTIVO, pageable)</span>
+<span class="nc" id="L196">                .map(this::toDTO);</span>
     }
 
     @Transactional(readOnly = true)
     public Page&lt;LibroResponseDTO&gt; listarPorAutor(Long autorId, Pageable pageable) {
-<span class="nc" id="L84">        return libroRepo.findByAutores_IdAndEstado_Nombre(autorId, ESTADO_ACTIVO, pageable)</span>
-<span class="nc" id="L85">                .map(this::toDTO);</span>
+<span class="nc" id="L201">        return libroRepo.findByAutores_IdAndEstado_Nombre(autorId, ESTADO_ACTIVO, pageable)</span>
+<span class="nc" id="L202">                .map(this::toDTO);</span>
     }
 
     @Transactional(readOnly = true)
     public LibroResponseDTO buscarPorId(Long id) {
-<span class="pc" id="L90">        return libroRepo.findById(id)</span>
-<span class="pc bnc" id="L91" title="All 4 branches missed.">                .filter(l -&gt; l.getEstado() != null &amp;&amp; ESTADO_ACTIVO.equals(l.getEstado().getNombre()))</span>
-<span class="fc" id="L92">                .map(this::toDTO)</span>
-<span class="pc" id="L93">                .orElseThrow(() -&gt; new EntityNotFoundException(</span>
+<span class="pc" id="L207">        return libroRepo.findById(id)</span>
+<span class="fc" id="L208">                .map(this::toDTO)</span>
+<span class="pc" id="L209">                .orElseThrow(() -&gt; new EntityNotFoundException(</span>
                         LIBRO_NO_ENCONTRADO + id));
     }
 
-    // Módulo 3 (RF-09/CU-08): autocompletado de catálogo. LibroSugerenciaDTO
-    // (no LibroResponseDTO) a propósito: versión ligera para no mandar el
-    // objeto completo en cada tecla presionada en el frontend. &quot;disponible&quot;
-    // se deriva de stockDisponible &gt; 0, no es una columna propia.
-    // @Cacheable(&quot;sugerencias-libros&quot;): cache propio, TTL corto (5-10s vía
-    // app.cache.sugerencias.ttl-seconds, ver RedisConfig/application.yml)
-    // -- separado del cache &quot;libros&quot; porque este necesita expirar mucho
-    // más rápido (autocompletado por tecla, no un listado que cambia poco)
-    // y porque la key acá es el texto de búsqueda, no la paginación.
+    @Transactional(readOnly = true)
+    public LibroResponseDTO buscarPorIdPublico(Long id) {
+<span class="nc" id="L215">        return libroRepo.findById(id)</span>
+<span class="nc bnc" id="L216" title="All 4 branches missed.">                .filter(l -&gt; l.getEstado() != null &amp;&amp; ESTADO_ACTIVO.equals(l.getEstado().getNombre()))</span>
+<span class="nc" id="L217">                .map(this::toDTO)</span>
+<span class="nc" id="L218">                .orElseThrow(() -&gt; new EntityNotFoundException(</span>
+                        LIBRO_NO_ENCONTRADO + id));
+    }
+
+    // Autocompletado: DTO ligero y &quot;disponible&quot; derivado de stockDisponible &gt; 0. Cache propio de TTL corto.
     @Cacheable(&quot;sugerencias-libros&quot;)
     @Transactional(readOnly = true)
     public List&lt;LibroSugerenciaDTO&gt; sugerir(String texto) {
-<span class="fc" id="L109">        EstadoLibro estadoActivo = estadoRepo.findByNombre(ESTADO_ACTIVO)</span>
-<span class="pc" id="L110">                .orElseThrow(() -&gt; new IllegalStateException(</span>
+<span class="fc" id="L226">        EstadoLibro estadoActivo = estadoRepo.findByNombre(ESTADO_ACTIVO)</span>
+<span class="pc" id="L227">                .orElseThrow(() -&gt; new IllegalStateException(</span>
                         &quot;Catálogo estados_libro sin fila '&quot; + ESTADO_ACTIVO + &quot;'&quot;));
-<span class="fc" id="L112">        return libroRepo.sugerirPorTitulo(texto, estadoActivo.getId()).stream()</span>
-<span class="fc" id="L113">                .map(l -&gt; new LibroSugerenciaDTO(</span>
-<span class="fc" id="L114">                        l.getId(),</span>
-<span class="fc" id="L115">                        l.getTitulo(),</span>
-<span class="pc bpc" id="L116" title="2 of 4 branches missed.">                        l.getStockDisponible() != null &amp;&amp; l.getStockDisponible() &gt; 0))</span>
-<span class="fc" id="L117">                .toList();</span>
+<span class="fc" id="L229">        return libroRepo.sugerirPorTitulo(texto, estadoActivo.getId()).stream()</span>
+<span class="fc" id="L230">                .map(l -&gt; new LibroSugerenciaDTO(</span>
+<span class="fc" id="L231">                        l.getId(),</span>
+<span class="fc" id="L232">                        l.getTitulo(),</span>
+<span class="pc bpc" id="L233" title="2 of 4 branches missed.">                        l.getStockDisponible() != null &amp;&amp; l.getStockDisponible() &gt; 0))</span>
+<span class="fc" id="L234">                .toList();</span>
     }
 
     @CacheEvict(value = &quot;libros&quot;, allEntries = true)
     @Transactional
     public LibroResponseDTO crear(LibroRequestDTO dto) {
-<span class="fc bfc" id="L123" title="All 2 branches covered.">        if (libroRepo.existsByIsbn(dto.isbn())) {</span>
-<span class="fc" id="L124">            throw new IllegalArgumentException(</span>
-<span class="fc" id="L125">                    &quot;ISBN ya registrado: &quot; + dto.isbn());</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">        if (libroRepo.existsByIsbn(dto.isbn())) {</span>
+<span class="fc" id="L241">            throw new IllegalArgumentException(</span>
+<span class="fc" id="L242">                    &quot;ISBN ya registrado: &quot; + dto.isbn());</span>
         }
-<span class="fc" id="L127">        validarStock(dto.stockTotal(), dto.stockDisponible());</span>
-<span class="fc" id="L128">        return toDTO(libroRepo.save(fromDTO(dto)));</span>
+<span class="fc" id="L244">        validarAnio(dto.anioPublicacion());</span>
+<span class="fc" id="L245">        validarResumen(dto.resumen());</span>
+<span class="fc" id="L246">        validarStock(dto.stockTotal(), dto.stockDisponible());</span>
+<span class="pc bpc" id="L247" title="3 of 4 branches missed.">        if (dto.numeroPaginas() != null &amp;&amp; dto.numeroPaginas() &lt;= 0) {</span>
+<span class="nc" id="L248">            throw new IllegalArgumentException(&quot;El número de páginas debe ser mayor a 0&quot;);</span>
+        }
+<span class="pc bpc" id="L250" title="3 of 4 branches missed.">        if (dto.precioBase() != null &amp;&amp; dto.precioBase().signum() &lt; 0) {</span>
+<span class="nc" id="L251">            throw new IllegalArgumentException(&quot;El precio base no puede ser negativo&quot;);</span>
+        }
+<span class="fc" id="L253">        Libro libro = fromDTO(dto);</span>
+<span class="pc bpc" id="L254" title="3 of 4 branches missed.">        if (esGerenteOAdmin() &amp;&amp; dto.precioBase() != null) {</span>
+            // precio ya seteado en fromDTO; mantenerlo
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">        } else if (esGerenteOAdmin()) {</span>
+            // gerente/admin creando sin precio también va a pendiente según regla
+        }
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">        if (esGerenteOAdmin()) {</span>
+<span class="nc" id="L260">            EstadoLibro pendiente = estadoRepo.findByNombre(ESTADO_PENDIENTE).orElse(null);</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">            if (pendiente != null) {</span>
+<span class="nc" id="L262">                libro.setEstado(pendiente);</span>
+            }
+        }
+<span class="pc bpc" id="L265" title="3 of 4 branches missed.">        if (esBibliotecarioSolo() &amp;&amp; libro.getPrecioBase() != null) {</span>
+<span class="nc" id="L266">            libro.setPrecioBase(null);</span>
+        }
+<span class="fc" id="L268">        LibroResponseDTO resultado = toDTO(libroRepo.save(libro));</span>
+<span class="fc" id="L269">        registrarAuditoria(null, &quot;INSERT&quot;, resultado.id(), &quot;Libro creado: &quot; + dto.titulo());</span>
+        // Al crear con ISBN pedido en sugerencias, esas quedan confirmadas (solo al crear).
+<span class="pc bpc" id="L271" title="3 of 6 branches missed.">        if (sugerenciaAdquisicionService != null &amp;&amp; dto.isbn() != null &amp;&amp; !dto.isbn().isBlank()) {</span>
+<span class="fc" id="L272">            sugerenciaAdquisicionService.confirmarAdquisicion(dto.isbn(), null);</span>
+        }
+<span class="fc" id="L274">        return resultado;</span>
     }
 
     @CacheEvict(value = &quot;libros&quot;, allEntries = true)
     @Transactional
     public LibroResponseDTO actualizar(Long id, LibroRequestDTO dto) {
-<span class="nc" id="L134">        Libro libro = libroRepo.findById(id)</span>
-<span class="nc" id="L135">                .orElseThrow(() -&gt; new EntityNotFoundException(</span>
+<span class="fc" id="L280">        Libro libro = libroRepo.findById(id)</span>
+<span class="pc" id="L281">                .orElseThrow(() -&gt; new EntityNotFoundException(</span>
                         LIBRO_NO_ENCONTRADO + id));
-<span class="nc bnc" id="L137" title="All 2 branches missed.">        if (libroRepo.existsByIsbnAndIdNot(dto.isbn(), id)) {</span>
-<span class="nc" id="L138">            throw new IllegalArgumentException(</span>
-<span class="nc" id="L139">                    &quot;ISBN ya usado por otro libro: &quot; + dto.isbn());</span>
+<span class="pc bpc" id="L283" title="1 of 2 branches missed.">        int stockAntes = libro.getStockDisponible() != null ? libro.getStockDisponible() : 0;</span>
+<span class="pc bpc" id="L284" title="1 of 2 branches missed.">        if (libroRepo.existsByIsbnAndIdNot(dto.isbn(), id)) {</span>
+<span class="nc" id="L285">            throw new IllegalArgumentException(</span>
+<span class="nc" id="L286">                    &quot;ISBN ya usado por otro libro: &quot; + dto.isbn());</span>
         }
-<span class="nc" id="L141">        validarStock(dto.stockTotal(), dto.stockDisponible());</span>
+<span class="fc" id="L288">        validarAnio(dto.anioPublicacion());</span>
+<span class="fc" id="L289">        validarResumen(dto.resumen());</span>
+<span class="fc" id="L290">        validarStock(dto.stockTotal(), dto.stockDisponible());</span>
+<span class="pc bpc" id="L291" title="3 of 4 branches missed.">        if (dto.numeroPaginas() != null &amp;&amp; dto.numeroPaginas() &lt;= 0) {</span>
+<span class="nc" id="L292">            throw new IllegalArgumentException(&quot;El número de páginas debe ser mayor a 0&quot;);</span>
+        }
 
-<span class="nc" id="L143">        libro.setTitulo(dto.titulo());</span>
-<span class="nc" id="L144">        libro.setIsbn(dto.isbn());</span>
-<span class="nc" id="L145">        libro.setResumen(dto.resumen());</span>
-<span class="nc" id="L146">        libro.setPortadaUrl(dto.portadaUrl());</span>
-<span class="nc" id="L147">        libro.setAnioPublicacion(dto.anioPublicacion().shortValue());</span>
-<span class="nc" id="L148">        libro.setStockTotal(dto.stockTotal().shortValue());</span>
-<span class="nc" id="L149">        libro.setStockDisponible(dto.stockDisponible().shortValue());</span>
-<span class="nc bnc" id="L150" title="All 2 branches missed.">        libro.setEditorial(dto.editorialId() != null ? editorialRepo.getReferenceById(dto.editorialId()) : null);</span>
-<span class="nc bnc" id="L151" title="All 2 branches missed.">        libro.setIdioma(dto.idiomaId() != null ? idiomaRepo.getReferenceById(dto.idiomaId()) : null);</span>
-<span class="nc bnc" id="L152" title="All 2 branches missed.">        libro.setEstado(dto.estadoId() != null ? estadoRepo.getReferenceById(dto.estadoId()) : null);</span>
-<span class="nc" id="L153">        libro.setCategorias(resolverCategorias(dto.categoriaIds()));</span>
-<span class="nc" id="L154">        libro.setAutores(resolverAutores(dto.autorIds()));</span>
+<span class="fc" id="L295">        libro.setTitulo(dto.titulo());</span>
+<span class="fc" id="L296">        libro.setIsbn(dto.isbn());</span>
+<span class="fc" id="L297">        libro.setResumen(dto.resumen());</span>
+<span class="fc" id="L298">        libro.setPortadaUrl(dto.portadaUrl());</span>
+<span class="fc" id="L299">        libro.setUbicacionFisica(dto.ubicacionFisica());</span>
+<span class="fc" id="L300">        libro.setAnioPublicacion(dto.anioPublicacion().shortValue());</span>
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">        if (dto.numeroPaginas() != null) libro.setNumeroPaginas(dto.numeroPaginas().shortValue());</span>
+<span class="fc" id="L302">        else libro.setNumeroPaginas(null);</span>
+<span class="fc" id="L303">        libro.setStockTotal(dto.stockTotal().shortValue());</span>
+<span class="fc" id="L304">        libro.setStockDisponible(dto.stockDisponible().shortValue());</span>
+<span class="pc bpc" id="L305" title="1 of 2 branches missed.">        libro.setEditorial(dto.editorialId() != null ? editorialRepo.getReferenceById(dto.editorialId()) : null);</span>
+<span class="pc bpc" id="L306" title="1 of 2 branches missed.">        libro.setIdioma(dto.idiomaId() != null ? idiomaRepo.getReferenceById(dto.idiomaId()) : null);</span>
+<span class="pc bpc" id="L307" title="1 of 2 branches missed.">        libro.setEstado(dto.estadoId() != null ? estadoRepo.getReferenceById(dto.estadoId()) : null);</span>
+<span class="fc" id="L308">        libro.setCategorias(resolverCategorias(dto.categoriaIds()));</span>
+<span class="fc" id="L309">        libro.setAutores(resolverAutores(dto.autorIds()));</span>
+        // Proveedor opcional: solo GERENTE/ADMIN pueden vincular (BIBLIOTECARIO -&gt; S/P).
+<span class="pc bpc" id="L311" title="3 of 4 branches missed.">        if (dto.proveedorId() != null &amp;&amp; esGerenteOAdmin()) {</span>
+<span class="nc" id="L312">            libro.setProveedor(proveedorRepo.getReferenceById(dto.proveedorId()));</span>
+        } else {
+<span class="fc" id="L314">            libro.setProveedor(null);</span>
+        }
+        // precioBase solo GERENTE/ADMIN puede modificar
+<span class="pc bpc" id="L317" title="1 of 2 branches missed.">        if (esGerenteOAdmin()) {</span>
+<span class="nc bnc" id="L318" title="All 4 branches missed.">            if (dto.precioBase() != null &amp;&amp; dto.precioBase().signum() &lt; 0) {</span>
+<span class="nc" id="L319">                throw new IllegalArgumentException(&quot;El precio base no puede ser negativo&quot;);</span>
+            }
+<span class="nc" id="L321">            libro.setPrecioBase(dto.precioBase());</span>
+        }
+        // si es bibliotecario solo, ignorar dto.precioBase (no se modifica)
 
-<span class="nc" id="L156">        return toDTO(libroRepo.save(libro));</span>
+<span class="fc" id="L325">        LibroResponseDTO resultado = toDTO(libroRepo.save(libro));</span>
+<span class="fc" id="L326">        registrarAuditoria(null, &quot;UPDATE&quot;, id, &quot;Libro actualizado: &quot; + dto.titulo());</span>
+<span class="pc bpc" id="L327" title="7 of 8 branches missed.">        if (stockAntes == 0 &amp;&amp; dto.stockDisponible() != null &amp;&amp; dto.stockDisponible() &gt; 0 &amp;&amp; suscripcionDisponibilidadService != null) {</span>
+<span class="nc" id="L328">              try { suscripcionDisponibilidadService.notificarDisponibles(id); } catch (Exception ignored) {</span>
+                  // best-effort: la actualización del libro ya se guardó
+<span class="nc" id="L330">              }</span>
+        }
+<span class="fc" id="L332">        return resultado;</span>
     }
 
     @CacheEvict(value = &quot;libros&quot;, allEntries = true)
     @Transactional
     public void eliminar(Long id) {
-<span class="fc" id="L162">        Libro libro = libroRepo.findById(id)</span>
-<span class="pc" id="L163">                .orElseThrow(() -&gt; new EntityNotFoundException(</span>
+<span class="fc" id="L338">        Libro libro = libroRepo.findById(id)</span>
+<span class="pc" id="L339">                .orElseThrow(() -&gt; new EntityNotFoundException(</span>
                         LIBRO_NO_ENCONTRADO + id));
-<span class="fc" id="L165">        EstadoLibro estadoDadoDeBaja = estadoRepo.findByNombre(ESTADO_DADO_DE_BAJA)</span>
-<span class="pc" id="L166">                .orElseThrow(() -&gt; new IllegalStateException(</span>
+<span class="fc" id="L341">        EstadoLibro estadoDadoDeBaja = estadoRepo.findByNombre(ESTADO_DADO_DE_BAJA)</span>
+<span class="pc" id="L342">                .orElseThrow(() -&gt; new IllegalStateException(</span>
                         &quot;Catalogo estados_libro sin fila '&quot; + ESTADO_DADO_DE_BAJA + &quot;'&quot;));
-<span class="fc" id="L168">        libro.setEstado(estadoDadoDeBaja);</span>
-<span class="fc" id="L169">        libroRepo.save(libro);</span>
-<span class="fc" id="L170">    }</span>
+<span class="fc" id="L344">        libro.setEstado(estadoDadoDeBaja);</span>
+<span class="fc" id="L345">        libroRepo.save(libro);</span>
+<span class="fc" id="L346">        registrarAuditoria(null, &quot;DELETE&quot;, id, &quot;Libro dado de baja: &quot; + libro.getTitulo());</span>
+<span class="fc" id="L347">    }</span>
+
+    // ── Portada binaria ──
+    // POST portada (multipart): guarda el binario en BD y limpia portadaUrl para una sola fuente vigente.
+    @CacheEvict(value = &quot;libros&quot;, allEntries = true)
+    @Transactional
+    public LibroResponseDTO actualizarPortada(Long libroId, MultipartFile archivo) {
+<span class="fc" id="L354">        Libro libro = libroRepo.findById(libroId)</span>
+<span class="fc" id="L355">                .orElseThrow(() -&gt; new EntityNotFoundException(</span>
+                        LIBRO_NO_ENCONTRADO + libroId));
+<span class="fc" id="L357">        validarPortada(archivo);</span>
+        try {
+<span class="fc" id="L359">            libro.setPortadaImagen(archivo.getBytes());</span>
+<span class="nc" id="L360">        } catch (IOException ex) {</span>
+            // Fallo de lectura del archivo subido → 400, no 500.
+<span class="nc" id="L362">            throw new IllegalArgumentException(</span>
+<span class="nc" id="L363">                    &quot;No se pudo leer el archivo de portada: &quot; + ex.getMessage());</span>
+<span class="fc" id="L364">        }</span>
+<span class="fc" id="L365">        libro.setPortadaNombre(archivo.getOriginalFilename());</span>
+<span class="fc" id="L366">        libro.setPortadaTipo(archivo.getContentType());</span>
+<span class="fc" id="L367">        libro.setPortadaTamanio((int) archivo.getSize());</span>
+<span class="fc" id="L368">        libro.setPortadaUrl(null);</span>
+<span class="fc" id="L369">        return toDTO(libroRepo.save(libro));</span>
+    }
+
+    // GET portada: 404 si no existe o no tiene portada (el placeholder lo resuelve el frontend).
+    @Transactional(readOnly = true)
+    public PortadaImagenDTO obtenerPortada(Long libroId) {
+<span class="fc" id="L375">        Libro libro = libroRepo.findById(libroId)</span>
+<span class="pc" id="L376">                .orElseThrow(() -&gt; new EntityNotFoundException(</span>
+                        LIBRO_NO_ENCONTRADO + libroId));
+<span class="pc bpc" id="L378" title="1 of 4 branches missed.">        if (libro.getPortadaImagen() == null || libro.getPortadaTipo() == null) {</span>
+<span class="fc" id="L379">            throw new EntityNotFoundException(&quot;El libro con id: &quot; + libroId + &quot; no tiene portada&quot;);</span>
+        }
+<span class="fc" id="L381">        return new PortadaImagenDTO(libro.getPortadaImagen(), libro.getPortadaTipo());</span>
+    }
+
+    private void validarPortada(MultipartFile archivo) {
+<span class="pc bpc" id="L385" title="2 of 4 branches missed.">        if (archivo == null || archivo.isEmpty()) {</span>
+<span class="nc" id="L386">            throw new IllegalArgumentException(&quot;Debe adjuntar un archivo de imagen&quot;);</span>
+        }
+<span class="fc" id="L388">        String contentType = archivo.getContentType();</span>
+<span class="pc bpc" id="L389" title="1 of 4 branches missed.">        if (contentType == null || !TIPOS_PORTADA_PERMITIDOS.contains(contentType)) {</span>
+<span class="fc" id="L390">            throw new IllegalArgumentException(</span>
+                    &quot;Tipo de imagen no permitido: &quot; + contentType
+                            + &quot;. Solo se admiten PNG, JPEG, WEBP y AVIF.&quot;);
+        }
+<span class="fc" id="L394">        int maxTamanoMb = configuracionSistemaService</span>
+<span class="fc" id="L395">                .obtenerValorEntero(CLAVE_MAX_TAMANO_PORTADA_MB);</span>
+<span class="fc" id="L396">        long maxTamanoBytes = maxTamanoMb * 1024L * 1024L;</span>
+<span class="fc bfc" id="L397" title="All 2 branches covered.">        if (archivo.getSize() &gt; maxTamanoBytes) {</span>
+<span class="fc" id="L398">            throw new IllegalArgumentException(</span>
+                    &quot;La imagen excede el tamaño máximo permitido de &quot;
+                            + maxTamanoMb + &quot; MB&quot;);
+        }
+<span class="fc" id="L402">    }</span>
 
     private void validarStock(Integer stockTotal, Integer stockDisponible) {
-<span class="pc bpc" id="L173" title="2 of 4 branches missed.">        if (stockTotal == null || stockDisponible == null) return;</span>
-<span class="pc bpc" id="L174" title="1 of 2 branches missed.">        if (stockDisponible &gt; stockTotal) {</span>
-<span class="nc" id="L175">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L405" title="2 of 4 branches missed.">        if (stockTotal == null || stockDisponible == null) return;</span>
+<span class="pc bpc" id="L406" title="1 of 2 branches missed.">        if (stockDisponible &gt; stockTotal) {</span>
+<span class="nc" id="L407">            throw new IllegalArgumentException(</span>
                     &quot;El stock disponible no puede ser mayor al stock total&quot;);
         }
-<span class="fc" id="L178">    }</span>
+<span class="fc" id="L410">    }</span>
+
+    private void validarAnio(Integer anio) {
+<span class="pc bpc" id="L413" title="1 of 2 branches missed.">        if (anio == null) return;</span>
+<span class="fc" id="L414">        int max = java.time.Year.now().getValue() + 1;</span>
+<span class="pc bpc" id="L415" title="2 of 4 branches missed.">        if (anio &lt; 1950 || anio &gt; max) {</span>
+<span class="nc" id="L416">            throw new IllegalArgumentException(&quot;El año debe estar entre 1950 y &quot; + max);</span>
+        }
+<span class="fc" id="L418">    }</span>
+
+    private void validarResumen(String resumen) {
+<span class="pc bpc" id="L421" title="3 of 4 branches missed.">        if (resumen != null &amp;&amp; resumen.length() &gt; 2000) {</span>
+<span class="nc" id="L422">            throw new IllegalArgumentException(&quot;El resumen no puede superar 2000 caracteres&quot;);</span>
+        }
+<span class="fc" id="L424">    }</span>
+
+    private boolean esGerenteOAdmin() {
+<span class="fc" id="L427">        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();</span>
+<span class="pc bpc" id="L428" title="1 of 2 branches missed.">        if (auth == null) return false;</span>
+<span class="nc bnc" id="L429" title="All 4 branches missed.">        return auth.getAuthorities().stream().anyMatch(a -&gt; a.getAuthority().equals(&quot;ROLE_GERENTE&quot;) || a.getAuthority().equals(&quot;ROLE_ADMIN&quot;));</span>
+    }
+
+    private boolean esBibliotecarioSolo() {
+<span class="fc" id="L433">        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();</span>
+<span class="pc bpc" id="L434" title="1 of 2 branches missed.">        if (auth == null) return false;</span>
+<span class="nc" id="L435">        boolean isBiblio = auth.getAuthorities().stream().anyMatch(a -&gt; a.getAuthority().equals(&quot;ROLE_BIBLIOTECARIO&quot;));</span>
+<span class="nc bnc" id="L436" title="All 4 branches missed.">        boolean isGerenteAdmin = auth.getAuthorities().stream().anyMatch(a -&gt; a.getAuthority().equals(&quot;ROLE_GERENTE&quot;) || a.getAuthority().equals(&quot;ROLE_ADMIN&quot;));</span>
+<span class="nc bnc" id="L437" title="All 4 branches missed.">        return isBiblio &amp;&amp; !isGerenteAdmin;</span>
+    }
 
     // getReferenceById por cada id, sin validar existencia una por una:
     // mismo criterio que editorialRepo.getReferenceById(...) arriba -- si
     // el id no existe, Hibernate lanza EntityNotFoundException recién al
     // hacer flush/save, no acá (referencia perezosa).
     private Set&lt;Categoria&gt; resolverCategorias(Set&lt;Integer&gt; categoriaIds) {
-<span class="pc bpc" id="L185" title="3 of 4 branches missed.">        if (categoriaIds == null || categoriaIds.isEmpty()) {</span>
-<span class="fc" id="L186">            return new HashSet&lt;&gt;();</span>
+<span class="pc bpc" id="L445" title="3 of 4 branches missed.">        if (categoriaIds == null || categoriaIds.isEmpty()) {</span>
+<span class="fc" id="L446">            return new HashSet&lt;&gt;();</span>
         }
-<span class="nc" id="L188">        Set&lt;Categoria&gt; categorias = new HashSet&lt;&gt;();</span>
-<span class="nc bnc" id="L189" title="All 2 branches missed.">        for (Integer id : categoriaIds) {</span>
-<span class="nc" id="L190">            categorias.add(categoriaRepo.getReferenceById(id));</span>
-<span class="nc" id="L191">        }</span>
-<span class="nc" id="L192">        return categorias;</span>
+<span class="nc" id="L448">        Set&lt;Categoria&gt; categorias = new HashSet&lt;&gt;();</span>
+<span class="nc bnc" id="L449" title="All 2 branches missed.">        for (Integer id : categoriaIds) {</span>
+<span class="nc" id="L450">            categorias.add(categoriaRepo.getReferenceById(id));</span>
+<span class="nc" id="L451">        }</span>
+<span class="nc" id="L452">        return categorias;</span>
     }
 
-    private Set&lt;Autor&gt; resolverAutores(Set&lt;Long&gt; autorIds) {
-<span class="pc bpc" id="L196" title="3 of 4 branches missed.">        if (autorIds == null || autorIds.isEmpty()) {</span>
-<span class="fc" id="L197">            return new HashSet&lt;&gt;();</span>
+    private Set&lt;Autor&gt; resolverAutores(Set&lt;Integer&gt; autorIds) {
+<span class="pc bpc" id="L456" title="3 of 4 branches missed.">        if (autorIds == null || autorIds.isEmpty()) {</span>
+<span class="fc" id="L457">            return new HashSet&lt;&gt;();</span>
         }
-<span class="nc" id="L199">        Set&lt;Autor&gt; autores = new HashSet&lt;&gt;();</span>
-<span class="nc bnc" id="L200" title="All 2 branches missed.">        for (Long id : autorIds) {</span>
-<span class="nc" id="L201">            autores.add(autorRepo.getReferenceById(id));</span>
-<span class="nc" id="L202">        }</span>
-<span class="nc" id="L203">        return autores;</span>
+<span class="nc" id="L459">        Set&lt;Autor&gt; autores = new HashSet&lt;&gt;();</span>
+<span class="nc bnc" id="L460" title="All 2 branches missed.">        for (Integer id : autorIds) {</span>
+<span class="nc" id="L461">            autores.add(autorRepo.getReferenceById(id.longValue()));</span>
+<span class="nc" id="L462">        }</span>
+<span class="nc" id="L463">        return autores;</span>
     }
 
     private LibroResponseDTO toDTO(Libro l) {
-<span class="fc" id="L207">        return new LibroResponseDTO(</span>
-<span class="fc" id="L208">                l.getId(),</span>
-<span class="fc" id="L209">                l.getTitulo(),</span>
-<span class="fc" id="L210">                l.getIsbn(),</span>
-<span class="fc" id="L211">                l.getResumen(),</span>
-<span class="fc" id="L212">                l.getPortadaUrl(),</span>
-<span class="pc bpc" id="L213" title="1 of 2 branches missed.">                l.getAnioPublicacion() != null ? l.getAnioPublicacion().intValue() : null,</span>
-<span class="pc bpc" id="L214" title="1 of 2 branches missed.">                l.getEditorial()  != null ? l.getEditorial().getId()     : null,</span>
-<span class="pc bpc" id="L215" title="1 of 2 branches missed.">                l.getEditorial()  != null ? l.getEditorial().getNombre() : null,</span>
-<span class="pc bpc" id="L216" title="1 of 2 branches missed.">                l.getIdioma()     != null ? l.getIdioma().getId()        : null,</span>
-<span class="pc bpc" id="L217" title="1 of 2 branches missed.">                l.getIdioma()     != null ? l.getIdioma().getNombre()    : null,</span>
-<span class="pc bpc" id="L218" title="1 of 2 branches missed.">                l.getEstado()     != null ? l.getEstado().getId()        : null,</span>
-<span class="pc bpc" id="L219" title="1 of 2 branches missed.">                l.getEstado()     != null ? l.getEstado().getNombre()    : null,</span>
-<span class="pc bpc" id="L220" title="1 of 2 branches missed.">                l.getStockTotal()      != null ? l.getStockTotal().intValue()      : null,</span>
-<span class="pc bpc" id="L221" title="1 of 2 branches missed.">                l.getStockDisponible() != null ? l.getStockDisponible().intValue() : null,</span>
-<span class="fc" id="L222">                l.getUbicacionFisica(),</span>
-<span class="fc" id="L223">                l.getFechaRegistro(),</span>
-<span class="pc bpc" id="L224" title="1 of 2 branches missed.">                l.getCategorias() == null ? List.of() :</span>
-<span class="fc" id="L225">                        l.getCategorias().stream().map(Categoria::getNombre).toList(),</span>
-<span class="pc bpc" id="L226" title="1 of 2 branches missed.">                l.getAutores() == null ? List.of() :</span>
-<span class="fc" id="L227">                        l.getAutores().stream().map(Autor::getNombre).toList()</span>
+<span class="fc" id="L467">        return new LibroResponseDTO(</span>
+<span class="fc" id="L468">                l.getId(),</span>
+<span class="fc" id="L469">                l.getTitulo(),</span>
+<span class="fc" id="L470">                l.getIsbn(),</span>
+<span class="fc" id="L471">                l.getResumen(),</span>
+<span class="fc" id="L472">                l.getPortadaUrl(),</span>
+<span class="fc bfc" id="L473" title="All 2 branches covered.">                l.getPortadaImagen() != null,</span>
+<span class="fc" id="L474">                l.getPortadaNombre(),</span>
+<span class="fc" id="L475">                l.getPortadaTipo(),</span>
+<span class="fc bfc" id="L476" title="All 2 branches covered.">                l.getAnioPublicacion() != null ? l.getAnioPublicacion().intValue() : null,</span>
+<span class="pc bpc" id="L477" title="1 of 2 branches missed.">                l.getNumeroPaginas() != null ? l.getNumeroPaginas().intValue() : null,</span>
+<span class="fc" id="L478">                l.getPrecioBase(),</span>
+<span class="fc bfc" id="L479" title="All 2 branches covered.">                l.getEditorial()  != null ? l.getEditorial().getId()     : null,</span>
+<span class="fc bfc" id="L480" title="All 2 branches covered.">                l.getEditorial()  != null ? l.getEditorial().getNombre() : null,</span>
+<span class="fc bfc" id="L481" title="All 2 branches covered.">                l.getIdioma()     != null ? l.getIdioma().getId()        : null,</span>
+<span class="fc bfc" id="L482" title="All 2 branches covered.">                l.getIdioma()     != null ? l.getIdioma().getNombre()    : null,</span>
+<span class="fc bfc" id="L483" title="All 2 branches covered.">                l.getEstado()     != null ? l.getEstado().getId()        : null,</span>
+<span class="fc bfc" id="L484" title="All 2 branches covered.">                l.getEstado()     != null ? l.getEstado().getNombre()    : null,</span>
+<span class="pc bpc" id="L485" title="1 of 2 branches missed.">                l.getStockTotal()      != null ? l.getStockTotal().intValue()      : null,</span>
+<span class="pc bpc" id="L486" title="1 of 2 branches missed.">                l.getStockDisponible() != null ? l.getStockDisponible().intValue() : null,</span>
+<span class="fc" id="L487">                l.getUbicacionFisica(),</span>
+<span class="fc" id="L488">                l.getFechaRegistro(),</span>
+<span class="pc bpc" id="L489" title="1 of 2 branches missed.">                l.getCategorias() == null ? List.of() :</span>
+<span class="fc" id="L490">                        l.getCategorias().stream().map(Categoria::getNombre).toList(),</span>
+<span class="pc bpc" id="L491" title="1 of 2 branches missed.">                l.getAutores() == null ? List.of() :</span>
+<span class="fc" id="L492">                        l.getAutores().stream().map(Autor::getNombre).toList(),</span>
+<span class="pc bpc" id="L493" title="1 of 2 branches missed.">                l.getProveedor() != null ? l.getProveedor().getId() : null,</span>
+<span class="pc bpc" id="L494" title="1 of 2 branches missed.">                l.getProveedor() != null ? l.getProveedor().getNombre() : null</span>
         );
     }
 
     private Libro fromDTO(LibroRequestDTO dto) {
-<span class="fc" id="L232">        Libro l = new Libro();</span>
-<span class="fc" id="L233">        l.setTitulo(dto.titulo());</span>
-<span class="fc" id="L234">        l.setIsbn(dto.isbn());</span>
-<span class="fc" id="L235">        l.setResumen(dto.resumen());</span>
-<span class="fc" id="L236">        l.setPortadaUrl(dto.portadaUrl());</span>
-<span class="fc" id="L237">        l.setAnioPublicacion(dto.anioPublicacion().shortValue());</span>
-<span class="fc" id="L238">        l.setStockTotal(dto.stockTotal().shortValue());</span>
-<span class="fc" id="L239">        l.setStockDisponible(dto.stockDisponible().shortValue());</span>
-<span class="fc" id="L240">        l.setEditorial(editorialRepo.getReferenceById(dto.editorialId()));</span>
-<span class="fc" id="L241">        l.setIdioma(idiomaRepo.getReferenceById(dto.idiomaId()));</span>
-<span class="fc" id="L242">        l.setEstado(estadoRepo.getReferenceById(dto.estadoId()));</span>
-<span class="fc" id="L243">        l.setCategorias(resolverCategorias(dto.categoriaIds()));</span>
-<span class="fc" id="L244">        l.setAutores(resolverAutores(dto.autorIds()));</span>
-<span class="fc" id="L245">        return l;</span>
+<span class="fc" id="L499">        Libro l = new Libro();</span>
+<span class="fc" id="L500">        l.setTitulo(dto.titulo());</span>
+<span class="fc" id="L501">        l.setIsbn(dto.isbn());</span>
+<span class="fc" id="L502">        l.setResumen(dto.resumen());</span>
+<span class="fc" id="L503">        l.setPortadaUrl(dto.portadaUrl());</span>
+<span class="fc" id="L504">        l.setUbicacionFisica(dto.ubicacionFisica());</span>
+<span class="fc" id="L505">        l.setAnioPublicacion(dto.anioPublicacion().shortValue());</span>
+<span class="pc bpc" id="L506" title="1 of 2 branches missed.">        if (dto.numeroPaginas() != null) l.setNumeroPaginas(dto.numeroPaginas().shortValue());</span>
+<span class="fc" id="L507">        l.setPrecioBase(dto.precioBase());</span>
+<span class="fc" id="L508">        l.setStockTotal(dto.stockTotal().shortValue());</span>
+<span class="fc" id="L509">        l.setStockDisponible(dto.stockDisponible().shortValue());</span>
+<span class="fc" id="L510">        l.setEditorial(editorialRepo.getReferenceById(dto.editorialId()));</span>
+<span class="fc" id="L511">        l.setIdioma(idiomaRepo.getReferenceById(dto.idiomaId()));</span>
+<span class="fc" id="L512">        l.setEstado(estadoRepo.getReferenceById(dto.estadoId()));</span>
+<span class="fc" id="L513">        l.setCategorias(resolverCategorias(dto.categoriaIds()));</span>
+<span class="fc" id="L514">        l.setAutores(resolverAutores(dto.autorIds()));</span>
+        // Proveedor opcional: solo GERENTE/ADMIN pueden vincular (BIBLIOTECARIO -&gt; S/P).
+<span class="pc bpc" id="L516" title="3 of 4 branches missed.">        if (dto.proveedorId() != null &amp;&amp; esGerenteOAdmin()) {</span>
+<span class="nc" id="L517">            l.setProveedor(proveedorRepo.getReferenceById(dto.proveedorId()));</span>
+        } else {
+<span class="fc" id="L519">            l.setProveedor(null);</span>
+        }
+<span class="fc" id="L521">        return l;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

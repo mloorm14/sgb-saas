@@ -4,10 +4,10 @@ import com.uteq.backend.entity.EstadoPrestamo;
 import com.uteq.backend.entity.Prestamo;
 import com.uteq.backend.repository.EstadoPrestamoRepository;
 import com.uteq.backend.repository.PrestamoRepository;
+import com.uteq.backend.service.ConfiguracionSistemaService;
 import com.uteq.backend.service.NotificacionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -15,62 +15,56 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * Job periódico del Módulo 2: detecta préstamos vigentes (ACTIVO/RENOVADO)
- * cuya {@code fecha_devolucion_estimada} cae dentro de la ventana de
- * anticipación configurada, y dispara
- * {@link NotificacionService#generarAlertaVencimiento(Prestamo)} por cada
- * uno. La deduplicación (no reenviar la misma alerta si el préstamo sigue
- * dentro de la ventana en la siguiente corrida) vive en el propio
- * {@code NotificacionService}, no aquí.
+ * Job periódico que alerta préstamos vigentes próximos a vencer.
+ * La deduplicación vive en NotificacionService, no aquí.
  */
 @Component
 public class NotificacionVencimientoScheduler {
 
-<span class="fc" id="L29">    private static final Logger log = LoggerFactory.getLogger(NotificacionVencimientoScheduler.class);</span>
-<span class="fc" id="L30">    private static final List&lt;String&gt; ESTADOS_PRESTAMO_VIGENTE = List.of(&quot;ACTIVO&quot;, &quot;RENOVADO&quot;);</span>
+<span class="fc" id="L24">    private static final Logger log = LoggerFactory.getLogger(NotificacionVencimientoScheduler.class);</span>
+<span class="fc" id="L25">    private static final List&lt;String&gt; ESTADOS_PRESTAMO_VIGENTE = List.of(&quot;ACTIVO&quot;, &quot;RENOVADO&quot;);</span>
 
     private final PrestamoRepository prestamoRepo;
     private final EstadoPrestamoRepository estadoPrestamoRepo;
     private final NotificacionService notificacionService;
-
-    @Value(&quot;${notificaciones.minutos-anticipacion-vencimiento}&quot;)
-    private int minutosAnticipacion;
+    private final ConfiguracionSistemaService configuracionSistemaService;
 
     public NotificacionVencimientoScheduler(PrestamoRepository prestamoRepo,
                                              EstadoPrestamoRepository estadoPrestamoRepo,
-<span class="fc" id="L41">                                             NotificacionService notificacionService) {</span>
-<span class="fc" id="L42">        this.prestamoRepo = prestamoRepo;</span>
-<span class="fc" id="L43">        this.estadoPrestamoRepo = estadoPrestamoRepo;</span>
-<span class="fc" id="L44">        this.notificacionService = notificacionService;</span>
-<span class="fc" id="L45">    }</span>
+                                             NotificacionService notificacionService,
+<span class="fc" id="L35">                                             ConfiguracionSistemaService configuracionSistemaService) {</span>
+<span class="fc" id="L36">        this.prestamoRepo = prestamoRepo;</span>
+<span class="fc" id="L37">        this.estadoPrestamoRepo = estadoPrestamoRepo;</span>
+<span class="fc" id="L38">        this.notificacionService = notificacionService;</span>
+<span class="fc" id="L39">        this.configuracionSistemaService = configuracionSistemaService;</span>
+<span class="fc" id="L40">    }</span>
 
-    // Cada minuto -- la ventana de anticipación típica (15 min, ver
-    // application.yml) exige una granularidad fina; correrlo cada 15
-    // minutos como ReservacionScheduler dejaría préstamos sin alertar si
-    // caen justo entre dos corridas.
     @Scheduled(fixedRate = 60 * 1000)
     public void notificarProximosAVencer() {
-<span class="fc" id="L53">        List&lt;Integer&gt; estadoIds = ESTADOS_PRESTAMO_VIGENTE.stream()</span>
-<span class="fc" id="L54">                .map(this::idDelEstado)</span>
-<span class="fc" id="L55">                .toList();</span>
+<span class="fc" id="L44">        int diasAnticipacion = configuracionSistemaService.obtenerValorEntero(&quot;dias_anticipacion_vencimiento&quot;);</span>
+<span class="fc" id="L45">        int minutosAnticipacion = diasAnticipacion * 24 * 60;</span>
 
-<span class="fc" id="L57">        OffsetDateTime ahora = OffsetDateTime.now();</span>
-<span class="fc" id="L58">        OffsetDateTime limite = ahora.plusMinutes(minutosAnticipacion);</span>
+<span class="fc" id="L47">        List&lt;Integer&gt; estadoIds = ESTADOS_PRESTAMO_VIGENTE.stream()</span>
+<span class="fc" id="L48">                .map(this::idDelEstado)</span>
+<span class="fc" id="L49">                .toList();</span>
 
-<span class="fc" id="L60">        List&lt;Prestamo&gt; proximosAVencer = prestamoRepo</span>
-<span class="fc" id="L61">                .findByEstadoPrestamoIdInAndFechaDevolucionEstimadaBetween(estadoIds, ahora, limite);</span>
+<span class="fc" id="L51">        OffsetDateTime ahora = OffsetDateTime.now();</span>
+<span class="fc" id="L52">        OffsetDateTime limite = ahora.plusMinutes(minutosAnticipacion);</span>
 
-<span class="fc bfc" id="L63" title="All 2 branches covered.">        for (Prestamo prestamo : proximosAVencer) {</span>
-<span class="fc" id="L64">            notificacionService.generarAlertaVencimiento(prestamo);</span>
-<span class="fc" id="L65">        }</span>
+<span class="fc" id="L54">        List&lt;Prestamo&gt; proximosAVencer = prestamoRepo</span>
+<span class="fc" id="L55">                .findByEstadoPrestamoIdInAndFechaDevolucionEstimadaBetween(estadoIds, ahora, limite);</span>
 
-<span class="fc" id="L67">        log.info(&quot;Job de notificación de vencimiento: {} préstamos evaluados&quot;, proximosAVencer.size());</span>
-<span class="fc" id="L68">    }</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        for (Prestamo prestamo : proximosAVencer) {</span>
+<span class="fc" id="L58">            notificacionService.generarAlertaVencimiento(prestamo);</span>
+<span class="fc" id="L59">        }</span>
+
+<span class="fc" id="L61">        log.info(&quot;Job de notificación de vencimiento: {} préstamos evaluados (ventana: {} días)&quot;, proximosAVencer.size(), diasAnticipacion);</span>
+<span class="fc" id="L62">    }</span>
 
     private Integer idDelEstado(String nombre) {
-<span class="fc" id="L71">        return estadoPrestamoRepo.findByNombre(nombre)</span>
-<span class="fc" id="L72">                .map(EstadoPrestamo::getId)</span>
-<span class="fc" id="L73">                .orElseThrow(() -&gt; new IllegalStateException(&quot;Catalogo estados_prestamo sin fila '&quot; + nombre + &quot;'&quot;));</span>
+<span class="fc" id="L65">        return estadoPrestamoRepo.findByNombre(nombre)</span>
+<span class="fc" id="L66">                .map(EstadoPrestamo::getId)</span>
+<span class="pc" id="L67">                .orElseThrow(() -&gt; new IllegalStateException(&quot;Catalogo estados_prestamo sin fila '&quot; + nombre + &quot;'&quot;));</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

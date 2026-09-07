@@ -8,14 +8,14 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+
 import java.util.List;
 
-// Módulo 9.2 del roadmap. Solo LECTOR: favoritos es un concepto de
-// &quot;mi propia lista&quot;, BIBLIOTECARIO/GERENTE/ADMIN no marcan libros propios
-// desde acá (a diferencia de PrestamoController, donde varios roles
-// operan sobre préstamos ajenos). El usuarioId nunca viaja en la URL/body:
-// siempre se resuelve del Authentication en FavoritoService, así que no
-// hace falta un endpoint &quot;de otro usuario&quot; ni su chequeo de acceso.
+// Favoritos del propio LECTOR; el usuarioId se resuelve del
+// Authentication en FavoritoService.
 @RestController
 @RequestMapping(&quot;/api/v1/favoritos&quot;)
 public class FavoritoController {
@@ -31,8 +31,8 @@ public class FavoritoController {
     @PreAuthorize(&quot;hasRole('LECTOR')&quot;)
     public ResponseEntity&lt;FavoritoResponseDTO&gt; agregar(
             @PathVariable Long libroId, Authentication authentication) {
-<span class="nc" id="L34">        return ResponseEntity.status(HttpStatus.CREATED)</span>
-<span class="nc" id="L35">                .body(favoritoService.agregar(libroId, authentication));</span>
+<span class="fc" id="L34">        return ResponseEntity.status(HttpStatus.CREATED)</span>
+<span class="fc" id="L35">                .body(favoritoService.agregar(libroId, authentication));</span>
     }
 
     // ── DELETE /api/v1/favoritos/{libroId} ────────────────
@@ -40,8 +40,8 @@ public class FavoritoController {
     @PreAuthorize(&quot;hasRole('LECTOR')&quot;)
     public ResponseEntity&lt;Void&gt; quitar(
             @PathVariable Long libroId, Authentication authentication) {
-<span class="nc" id="L43">        favoritoService.quitar(libroId, authentication);</span>
-<span class="nc" id="L44">        return ResponseEntity.noContent().build();</span>
+<span class="fc" id="L43">        favoritoService.quitar(libroId, authentication);</span>
+<span class="fc" id="L44">        return ResponseEntity.noContent().build();</span>
     }
 
     // ── GET /api/v1/favoritos ──────────────────────────────
@@ -54,8 +54,16 @@ public class FavoritoController {
     // de tal usuarioId&quot;.
     @GetMapping
     @PreAuthorize(&quot;hasRole('LECTOR')&quot;)
-    public ResponseEntity&lt;List&lt;FavoritoResponseDTO&gt;&gt; listarPropios(Authentication authentication) {
-<span class="nc" id="L58">        return ResponseEntity.ok(favoritoService.listarPropios(authentication));</span>
+    public ResponseEntity&lt;Page&lt;FavoritoResponseDTO&gt;&gt; listarPropios(
+            Authentication authentication,
+            @PageableDefault(size = 10, sort = &quot;agregadoEn&quot;) Pageable pageable) {
+<span class="fc" id="L60">        return ResponseEntity.ok(favoritoService.listarPropiosPaginado(authentication, pageable));</span>
+    }
+
+    @GetMapping(&quot;/todo&quot;)
+    @PreAuthorize(&quot;hasRole('LECTOR')&quot;)
+    public ResponseEntity&lt;List&lt;FavoritoResponseDTO&gt;&gt; listarPropiosTodo(Authentication authentication) {
+<span class="fc" id="L66">        return ResponseEntity.ok(favoritoService.listarPropios(authentication));</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

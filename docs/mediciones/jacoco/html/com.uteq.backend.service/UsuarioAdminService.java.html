@@ -6,7 +6,9 @@ import com.uteq.backend.entity.EstadoUsuario;
 import com.uteq.backend.entity.Rol;
 import com.uteq.backend.entity.Usuario;
 import com.uteq.backend.repository.BitacoraAuditoriaRepository;
+import com.uteq.backend.repository.EstadoMultaRepository;
 import com.uteq.backend.repository.EstadoUsuarioRepository;
+import com.uteq.backend.repository.MultaRepository;
 import com.uteq.backend.repository.RolRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -20,23 +22,12 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
- * Panel de administración de usuarios (Módulo 5 del roadmap): listado
- * paginado con filtro, cambio de rol y cambio de estado (bloqueo/activación
- * manual). Corresponde a RF-01 y al actor &quot;Gerente/Admin&quot; del documento de
- * requisitos original.
- * &lt;p&gt;
- * Separación ADMIN vs GERENTE (ver {@code docs/adr/adr-014-separacion-admin-gerente.md}):
- * este service asume que quien invoca {@link #cambiarRol} y
- * {@link #cambiarEstado} ya fue autorizado como ADMIN por
- * {@code @PreAuthorize} en {@code UsuarioAdminController} -- no repite la
- * comprobación de rol acá (a diferencia de {@code MultaService}, donde el
- * mismo endpoint admite dos roles distintos y el service necesita saber
- * cuál de los dos ejecuta la acción). Acá cada método del controller ya
- * tiene un único rol fijo requerido, así que no hay ambigüedad que resolver
- * en tiempo de ejecución.
+ * Panel de administración de usuarios: listado paginado, cambio de rol y de estado.
+ * GERENTE solo opera usuarios creados por él; DELETE sigue solo ADMIN.
  */
 @Service
 public class UsuarioAdminService {
@@ -45,120 +36,197 @@ public class UsuarioAdminService {
     private static final String ROL_NO_ENCONTRADO = &quot;Rol no válido: &quot;;
     private static final String ESTADO_NO_ENCONTRADO = &quot;Estado no válido: &quot;;
     private static final String TABLA_USUARIOS = &quot;usuarios&quot;;
+    // GERENTE solo opera LECTOR/BIBLIOTECARIO creados por él.
+<span class="fc" id="L40">    private static final Set&lt;String&gt; ROLES_GERENTE_PERMITIDOS = Set.of(&quot;LECTOR&quot;, &quot;BIBLIOTECARIO&quot;);</span>
+<span class="fc" id="L41">    private static final Set&lt;String&gt; ESTADOS_GERENTE_PERMITIDOS = Set.of(&quot;ACTIVO&quot;, &quot;INACTIVO&quot;);</span>
 
     private final UsuarioRepository usuarioRepo;
     private final RolRepository rolRepo;
     private final EstadoUsuarioRepository estadoUsuarioRepo;
     private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
+    private final MultaRepository multaRepo;
+    private final EstadoMultaRepository estadoMultaRepo;
 
     public UsuarioAdminService(UsuarioRepository usuarioRepo,
                                 RolRepository rolRepo,
                                 EstadoUsuarioRepository estadoUsuarioRepo,
-<span class="fc" id="L57">                                BitacoraAuditoriaRepository bitacoraAuditoriaRepo) {</span>
-<span class="fc" id="L58">        this.usuarioRepo = usuarioRepo;</span>
-<span class="fc" id="L59">        this.rolRepo = rolRepo;</span>
-<span class="fc" id="L60">        this.estadoUsuarioRepo = estadoUsuarioRepo;</span>
-<span class="fc" id="L61">        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;</span>
+                                BitacoraAuditoriaRepository bitacoraAuditoriaRepo,
+                                MultaRepository multaRepo,
+<span class="fc" id="L55">                                EstadoMultaRepository estadoMultaRepo) {</span>
+<span class="fc" id="L56">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L57">        this.rolRepo = rolRepo;</span>
+<span class="fc" id="L58">        this.estadoUsuarioRepo = estadoUsuarioRepo;</span>
+<span class="fc" id="L59">        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;</span>
+<span class="fc" id="L60">        this.multaRepo = multaRepo;</span>
+<span class="fc" id="L61">        this.estadoMultaRepo = estadoMultaRepo;</span>
 <span class="fc" id="L62">    }</span>
 
     @Transactional(readOnly = true)
     public Page&lt;UsuarioListadoResponseDTO&gt; listar(String filtro, Pageable pageable) {
-<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        String texto = filtro == null ? &quot;&quot; : filtro.trim();</span>
-<span class="fc" id="L67">        return usuarioRepo</span>
-<span class="fc" id="L68">                .findByNombreContainingIgnoreCaseOrCorreoContainingIgnoreCase(texto, texto, pageable)</span>
-<span class="fc" id="L69">                .map(this::toListadoDTO);</span>
+<span class="fc" id="L66">        return listar(filtro, pageable, null, false);</span>
+    }
+
+    // GERENTE filtra por creado_por = miId; ADMIN ve todo.
+    @Transactional(readOnly = true)
+    public Page&lt;UsuarioListadoResponseDTO&gt; listar(String filtro, Pageable pageable,
+                                                  Authentication authentication, boolean soloMios) {
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        String texto = filtro == null ? &quot;&quot; : filtro.trim();</span>
+<span class="fc" id="L74">        Long creadoPor = null;</span>
+<span class="pc bpc" id="L75" title="5 of 6 branches missed.">        if (authentication != null &amp;&amp; (soloMios || esGerente(authentication))) {</span>
+<span class="nc" id="L76">            creadoPor = resolverIdPorCorreo(authentication.getName());</span>
+        }
+<span class="fc" id="L78">        Page&lt;Usuario&gt; pagina = usuarioRepo.buscarConFiltros(texto, creadoPor, pageable);</span>
+
+        // Batch query: multas pendientes de la página en una sola consulta (evita N+1).
+<span class="fc" id="L81">        List&lt;Long&gt; ids = pagina.getContent().stream().map(Usuario::getId).toList();</span>
+<span class="fc" id="L82">        Integer estadoPendienteId = estadoMultaRepo.findByNombre(&quot;PENDIENTE&quot;)</span>
+<span class="fc" id="L83">                .map(e -&gt; e.getId())</span>
+<span class="fc" id="L84">                .orElse(null);</span>
+<span class="fc" id="L85">        Set&lt;Long&gt; idsConMultas = Set.copyOf(</span>
+<span class="pc bpc" id="L86" title="2 of 4 branches missed.">                (estadoPendienteId != null &amp;&amp; !ids.isEmpty())</span>
+<span class="fc" id="L87">                        ? multaRepo.findUsuarioIdsConMultasPendientes(ids, estadoPendienteId)</span>
+<span class="nc" id="L88">                        : List.of());</span>
+
+<span class="fc" id="L90">        return pagina.map(u -&gt; toListadoDTO(u, idsConMultas.contains(u.getId())));</span>
     }
 
     /**
-     * Reemplaza el conjunto de roles del usuario por uno solo (
-     * {@code nuevoRol}). No es un &quot;agregar rol&quot; -- simplifica el modelo de
-     * administración a &quot;cada usuario tiene un rol operativo vigente&quot;,
-     * consistente con que hoy {@code AuthService.registrar} también asigna
-     * un único rol (LECTOR) al crear la cuenta.
+     * Reemplaza los roles del usuario por uno solo ({@code nuevoRol}).
      */
     @Transactional
     public void cambiarRol(Long usuarioId, String nuevoRol, Authentication authentication) {
-<span class="fc" id="L81">        Usuario usuario = usuarioRepo.findById(usuarioId)</span>
-<span class="fc" id="L82">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));</span>
-<span class="fc" id="L83">        Rol rol = rolRepo.findByNombre(nuevoRol)</span>
-<span class="fc" id="L84">                .orElseThrow(() -&gt; new IllegalArgumentException(ROL_NO_ENCONTRADO + nuevoRol));</span>
+<span class="fc" id="L98">        Usuario usuario = usuarioRepo.findByIdWithEstadoAndRoles(usuarioId)</span>
+<span class="fc" id="L99">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));</span>
+<span class="fc" id="L100">        Rol rol = rolRepo.findByNombre(nuevoRol)</span>
+<span class="fc" id="L101">                .orElseThrow(() -&gt; new IllegalArgumentException(ROL_NO_ENCONTRADO + nuevoRol));</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">        Long ejecutorId = resolverIdPorCorreo(authentication == null ? null : authentication.getName());</span>
+        // GERENTE solo cambia rol a sus creados y solo LECTOR/BIBLIOTECARIO.
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (esGerente(authentication)) {</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">            if (!ROLES_GERENTE_PERMITIDOS.contains(nuevoRol)) {</span>
+<span class="nc" id="L106">                throw new org.springframework.security.access.AccessDeniedException(</span>
+                        &quot;GERENTE solo puede asignar roles LECTOR o BIBLIOTECARIO&quot;);
+            }
+<span class="pc bpc" id="L109" title="2 of 4 branches missed.">            if (usuario.getCreadoPor() == null || !usuario.getCreadoPor().equals(ejecutorId)) {</span>
+<span class="fc" id="L110">                throw new org.springframework.security.access.AccessDeniedException(</span>
+                        &quot;GERENTE solo puede modificar usuarios creados por él&quot;);
+            }
+        }
 
-<span class="fc" id="L86">        Set&lt;Rol&gt; roles = new HashSet&lt;&gt;();</span>
-<span class="fc" id="L87">        roles.add(rol);</span>
-<span class="fc" id="L88">        usuario.setRoles(roles);</span>
-<span class="fc" id="L89">        usuario.setActualizadoEn(Instant.now());</span>
-<span class="fc" id="L90">        usuarioRepo.save(usuario);</span>
+<span class="fc" id="L115">        Set&lt;Rol&gt; roles = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L116">        roles.add(rol);</span>
+<span class="fc" id="L117">        usuario.setRoles(roles);</span>
+<span class="fc" id="L118">        usuario.setActualizadoEn(Instant.now());</span>
+<span class="fc" id="L119">        usuarioRepo.save(usuario);</span>
 
-<span class="fc" id="L92">        Long ejecutorId = resolverIdPorCorreo(authentication.getName());</span>
-<span class="fc" id="L93">        registrarAuditoria(ejecutorId, usuario.getId(),</span>
-<span class="fc" id="L94">                &quot;Cambio de rol del usuario &quot; + usuario.getCorreo() + &quot; a &quot; + nuevoRol);</span>
-<span class="fc" id="L95">    }</span>
+<span class="fc" id="L121">        registrarAuditoria(ejecutorId, usuario.getId(),</span>
+<span class="fc" id="L122">                &quot;Cambio de rol del usuario &quot; + usuario.getCorreo() + &quot; a &quot; + nuevoRol);</span>
+<span class="fc" id="L123">    }</span>
 
     /**
-     * Cambia el estado del usuario (p.ej. ACTIVO -&gt; INACTIVO para dar de
-     * baja, o INACTIVO -&gt; ACTIVO para reactivar). {@code motivo} es
-     * obligatorio a nivel de DTO ({@link com.uteq.backend.dto.CambioEstadoUsuarioRequestDTO})
-     * y queda registrado en la bitácora -- distinto del bloqueo automático
-     * por multas impagas, que lo aplica {@code sp_pagar_multa}/
-     * {@code sp_anular_multa} sin intervención de un ADMIN.
+     * Cambia el estado del usuario (bloqueo/activación manual).
+     * {@code motivo} queda registrado en la bitácora.
      */
-    @Transactional
+     @Transactional
     public void cambiarEstado(Long usuarioId, String nuevoEstado, String motivo, Authentication authentication) {
-<span class="fc" id="L107">        Usuario usuario = usuarioRepo.findById(usuarioId)</span>
-<span class="fc" id="L108">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));</span>
-<span class="fc" id="L109">        EstadoUsuario estado = estadoUsuarioRepo.findByNombre(nuevoEstado)</span>
-<span class="fc" id="L110">                .orElseThrow(() -&gt; new IllegalArgumentException(ESTADO_NO_ENCONTRADO + nuevoEstado));</span>
+<span class="fc" id="L131">        Usuario usuario = usuarioRepo.findByIdWithEstadoAndRoles(usuarioId)</span>
+<span class="fc" id="L132">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));</span>
+<span class="fc" id="L133">        EstadoUsuario estado = estadoUsuarioRepo.findByNombre(nuevoEstado)</span>
+<span class="fc" id="L134">                .orElseThrow(() -&gt; new IllegalArgumentException(ESTADO_NO_ENCONTRADO + nuevoEstado));</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        Long ejecutorId = resolverIdPorCorreo(authentication == null ? null : authentication.getName());</span>
+        // GERENTE solo bloquea/reactiva (ACTIVO/INACTIVO) a sus creados.
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        if (esGerente(authentication)) {</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">            if (!ESTADOS_GERENTE_PERMITIDOS.contains(nuevoEstado)) {</span>
+<span class="nc" id="L139">                throw new org.springframework.security.access.AccessDeniedException(</span>
+                        &quot;GERENTE solo puede bloquear o reactivar usuarios&quot;);
+            }
+<span class="pc bpc" id="L142" title="2 of 4 branches missed.">            if (usuario.getCreadoPor() == null || !usuario.getCreadoPor().equals(ejecutorId)) {</span>
+<span class="nc" id="L143">                throw new org.springframework.security.access.AccessDeniedException(</span>
+                        &quot;GERENTE solo puede modificar usuarios creados por él&quot;);
+            }
+        }
 
-<span class="fc" id="L112">        usuario.setEstado(estado);</span>
-<span class="fc" id="L113">        usuario.setActualizadoEn(Instant.now());</span>
-<span class="fc" id="L114">        usuarioRepo.save(usuario);</span>
+<span class="fc" id="L148">        usuario.setEstado(estado);</span>
+<span class="fc" id="L149">        usuario.setActualizadoEn(Instant.now());</span>
+<span class="fc" id="L150">        usuarioRepo.save(usuario);</span>
 
-<span class="fc" id="L116">        Long ejecutorId = resolverIdPorCorreo(authentication.getName());</span>
-<span class="fc" id="L117">        registrarAuditoria(ejecutorId, usuario.getId(),</span>
-<span class="fc" id="L118">                &quot;Cambio de estado del usuario &quot; + usuario.getCorreo() + &quot; a &quot; + nuevoEstado</span>
+<span class="fc" id="L152">        registrarAuditoria(ejecutorId, usuario.getId(),</span>
+<span class="fc" id="L153">                &quot;Cambio de estado del usuario &quot; + usuario.getCorreo() + &quot; a &quot; + nuevoEstado</span>
                         + &quot;. Motivo: &quot; + motivo);
-<span class="fc" id="L120">    }</span>
+<span class="fc" id="L155">    }</span>
 
-    // Mismo patrón que MultaService/PrestamoService: el ejecutor real
-    // (quién hizo el cambio) se resuelve desde el JWT autenticado, nunca
-    // desde un campo del body -- evita que alguien falsifique &quot;quién&quot;
-    // aparece en la bitácora.
-    private Long resolverIdPorCorreo(String correo) {
-<span class="fc" id="L127">        return usuarioRepo.findByCorreo(correo)</span>
-<span class="pc" id="L128">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo))</span>
-<span class="fc" id="L129">                .getId();</span>
+    // El ejecutor se resuelve desde el JWT autenticado, nunca desde el body.
+    @Transactional
+    public com.uteq.backend.dto.UsuarioResponseDTO crearUsuario(com.uteq.backend.dto.CrearUsuarioAdminRequestDTO dto, Authentication authentication) {
+<span class="pc" id="L160">        usuarioRepo.findByCorreo(dto.correo()).ifPresent(u -&gt; { throw new com.uteq.backend.service.CorreoYaRegistradoException(&quot;El correo ya está registrado: &quot; + dto.correo()); });</span>
+        // GERENTE solo crea LECTOR o BIBLIOTECARIO.
+<span class="pc bpc" id="L162" title="1 of 4 branches missed.">        if (esGerente(authentication) &amp;&amp; !ROLES_GERENTE_PERMITIDOS.contains(dto.rol())) {</span>
+<span class="fc" id="L163">            throw new org.springframework.security.access.AccessDeniedException(</span>
+                    &quot;GERENTE solo puede crear usuarios LECTOR o BIBLIOTECARIO&quot;);
+        }
+<span class="pc" id="L166">        Rol rol = rolRepo.findByNombre(dto.rol()).orElseThrow(() -&gt; new IllegalArgumentException(ROL_NO_ENCONTRADO + dto.rol()));</span>
+<span class="pc" id="L167">        EstadoUsuario estadoActivo = estadoUsuarioRepo.findByNombre(&quot;ACTIVO&quot;).orElseThrow(() -&gt; new IllegalStateException(&quot;Estado ACTIVO no existe&quot;));</span>
+<span class="fc" id="L168">        java.util.Set&lt;Rol&gt; roles = new java.util.HashSet&lt;&gt;(); roles.add(rol);</span>
+<span class="fc" id="L169">        Long ejecutorId = resolverIdPorCorreo(authentication.getName());</span>
+<span class="fc" id="L170">        Usuario usuario = Usuario.builder().nombre(dto.nombre()).apellido(dto.apellido()).correo(dto.correo()).passwordHash(new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(12).encode(dto.password())).estado(estadoActivo).correoVerificado(true).roles(roles).fechaRegistro(Instant.now()).actualizadoEn(Instant.now()).creadoPor(ejecutorId).build();</span>
+<span class="fc" id="L171">        Usuario guardado = usuarioRepo.save(usuario);</span>
+<span class="fc" id="L172">        registrarAuditoria(ejecutorId, guardado.getId(), &quot;Creación admin de usuario &quot; + dto.correo() + &quot; rol &quot; + dto.rol());</span>
+<span class="fc" id="L173">        java.util.List&lt;String&gt; rolesStr = guardado.getRoles().stream().map(Rol::getNombre).toList();</span>
+<span class="fc" id="L174">        return new com.uteq.backend.dto.UsuarioResponseDTO(guardado.getId(), guardado.getNombre(), guardado.getCorreo(), rolesStr);</span>
     }
 
-    // Mismo criterio que AuthService.registrarAuditoria(): INSERT plano de
-    // una sola tabla, sin lógica cruzada -- no justifica un procedimiento
-    // almacenado (ver adr-013-acceso-datos-orm-sp.md). usuarioId acá es el
-    // ejecutor (el ADMIN que hizo el cambio), no el usuario afectado --
-    // ese va en registroId, para poder distinguir &quot;quién hizo qué a quién&quot;
-    // al leer la bitácora.
-    private void registrarAuditoria(Long ejecutorId, Long usuarioAfectadoId, String detalles) {
-<span class="fc" id="L139">        BitacoraAuditoria evento = BitacoraAuditoria.builder()</span>
-<span class="fc" id="L140">                .usuarioId(ejecutorId)</span>
-<span class="fc" id="L141">                .tipoOperacion(&quot;UPDATE&quot;)</span>
-<span class="fc" id="L142">                .tablaAfectada(TABLA_USUARIOS)</span>
-<span class="fc" id="L143">                .registroId(usuarioAfectadoId)</span>
-<span class="fc" id="L144">                .detalles(detalles)</span>
-<span class="fc" id="L145">                .fechaHora(OffsetDateTime.now())</span>
-<span class="fc" id="L146">                .build();</span>
-<span class="fc" id="L147">        bitacoraAuditoriaRepo.save(evento);</span>
-<span class="fc" id="L148">    }</span>
+    @Transactional
+    public void eliminarUsuario(Long usuarioId, String motivo, Authentication authentication) {
+<span class="nc" id="L179">        Usuario usuario = usuarioRepo.findByIdWithEstadoAndRoles(usuarioId).orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));</span>
+<span class="nc" id="L180">        EstadoUsuario inactivo = estadoUsuarioRepo.findByNombre(&quot;INACTIVO&quot;).orElseThrow(() -&gt; new IllegalStateException(&quot;Estado INACTIVO no existe&quot;));</span>
+<span class="nc" id="L181">        usuario.setEstado(inactivo);</span>
+<span class="nc" id="L182">        usuario.setActualizadoEn(Instant.now());</span>
+<span class="nc" id="L183">        usuarioRepo.save(usuario);</span>
+<span class="nc" id="L184">        Long ejecutorId = resolverIdPorCorreo(authentication.getName());</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">        registrarAuditoria(ejecutorId, usuarioId, &quot;Eliminación soft usuario &quot; + usuario.getCorreo() + &quot; motivo: &quot; + (motivo != null ? motivo : &quot;no especificado&quot;));</span>
+<span class="nc" id="L186">    }</span>
 
-    private UsuarioListadoResponseDTO toListadoDTO(Usuario usuario) {
-<span class="fc" id="L151">        List&lt;String&gt; roles = usuario.getRoles().stream()</span>
-<span class="fc" id="L152">                .map(Rol::getNombre)</span>
-<span class="fc" id="L153">                .toList();</span>
-<span class="fc" id="L154">        boolean multasPendientes = &quot;BLOQUEADO_POR_MULTA&quot;.equals(usuario.getEstado().getNombre());</span>
-<span class="fc" id="L155">        return new UsuarioListadoResponseDTO(</span>
-<span class="fc" id="L156">                usuario.getId(),</span>
-<span class="fc" id="L157">                usuario.getNombre(),</span>
-<span class="fc" id="L158">                usuario.getApellido(),</span>
-<span class="fc" id="L159">                usuario.getCorreo(),</span>
+    private Long resolverIdPorCorreo(String correo) {
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">        if (correo == null) throw new EntityNotFoundException(USUARIO_NO_ENCONTRADO + &quot;null&quot;);</span>
+<span class="fc" id="L190">        String normalizado = correo.trim().toLowerCase();</span>
+        // Usa IgnoreCase para evitar 404 por mayúsculas en el JWT.
+<span class="fc" id="L192">        Optional&lt;Usuario&gt; opt = usuarioRepo.findByCorreoIgnoreCase(normalizado);</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">        if (opt.isPresent()) return opt.get().getId();</span>
+<span class="fc" id="L194">        return usuarioRepo.findByCorreo(correo)</span>
+<span class="pc" id="L195">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo))</span>
+<span class="fc" id="L196">                .getId();</span>
+    }
+
+    // GERENTE opera solo sobre sus creados; ADMIN sin restricción.
+    private boolean esGerente(Authentication authentication) {
+<span class="pc bpc" id="L201" title="2 of 4 branches missed.">        if (authentication == null || authentication.getAuthorities() == null) return false;</span>
+<span class="fc" id="L202">        return authentication.getAuthorities().stream()</span>
+<span class="fc" id="L203">                .anyMatch(a -&gt; &quot;ROLE_GERENTE&quot;.equals(a.getAuthority()));</span>
+    }
+
+    // INSERT plano de una sola tabla: usuarioId es el ejecutor, registroId el afectado.
+    private void registrarAuditoria(Long ejecutorId, Long usuarioAfectadoId, String detalles) {
+<span class="fc" id="L208">        BitacoraAuditoria evento = BitacoraAuditoria.builder()</span>
+<span class="fc" id="L209">                .usuarioId(ejecutorId)</span>
+<span class="fc" id="L210">                .tipoOperacion(&quot;UPDATE&quot;)</span>
+<span class="fc" id="L211">                .tablaAfectada(TABLA_USUARIOS)</span>
+<span class="fc" id="L212">                .registroId(usuarioAfectadoId)</span>
+<span class="fc" id="L213">                .detalles(detalles)</span>
+<span class="fc" id="L214">                .fechaHora(OffsetDateTime.now())</span>
+<span class="fc" id="L215">                .build();</span>
+<span class="fc" id="L216">        bitacoraAuditoriaRepo.save(evento);</span>
+<span class="fc" id="L217">    }</span>
+
+    private UsuarioListadoResponseDTO toListadoDTO(Usuario usuario, boolean multasPendientes) {
+<span class="fc" id="L220">        List&lt;String&gt; roles = usuario.getRoles().stream()</span>
+<span class="fc" id="L221">                .map(Rol::getNombre)</span>
+<span class="fc" id="L222">                .toList();</span>
+<span class="fc" id="L223">        return new UsuarioListadoResponseDTO(</span>
+<span class="fc" id="L224">                usuario.getId(),</span>
+<span class="fc" id="L225">                usuario.getNombre(),</span>
+<span class="fc" id="L226">                usuario.getApellido(),</span>
+<span class="fc" id="L227">                usuario.getCorreo(),</span>
                 roles,
-<span class="fc" id="L161">                usuario.getEstado().getNombre(),</span>
+<span class="fc" id="L229">                usuario.getEstado().getNombre(),</span>
                 multasPendientes);
     }
 }

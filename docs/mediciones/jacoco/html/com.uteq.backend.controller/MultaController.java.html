@@ -2,53 +2,120 @@
 
 import com.uteq.backend.dto.AnulacionMultaRequestDTO;
 import com.uteq.backend.dto.MultaAccionResponseDTO;
+import com.uteq.backend.dto.MultaDetalleResponseDTO;
 import com.uteq.backend.dto.MultaResponseDTO;
+import com.uteq.backend.dto.PagoMultaRequestDTO;
+import com.uteq.backend.dto.ResumenFinancieroMultasResponseDTO;
 import com.uteq.backend.service.MultaService;
+import com.uteq.backend.service.NotificacionService;
+import com.uteq.backend.service.ReportePdfService;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.Map;
 
 @RestController
 @RequestMapping(&quot;/api/v1/multas&quot;)
 public class MultaController {
 
     private final MultaService multaService;
+    private final NotificacionService notificacionService;
+    private final ReportePdfService reportePdfService;
 
-<span class="fc" id="L22">    public MultaController(MultaService multaService) {</span>
-<span class="fc" id="L23">        this.multaService = multaService;</span>
-<span class="fc" id="L24">    }</span>
+<span class="fc" id="L36">    public MultaController(MultaService multaService, NotificacionService notificacionService, ReportePdfService reportePdfService) {</span>
+<span class="fc" id="L37">        this.multaService = multaService;</span>
+<span class="fc" id="L38">        this.notificacionService = notificacionService;</span>
+<span class="fc" id="L39">        this.reportePdfService = reportePdfService;</span>
+<span class="fc" id="L40">    }</span>
 
-    // ── GET /api/v1/multas/usuario/{usuarioId} ────────────
     @GetMapping(&quot;/usuario/{usuarioId}&quot;)
-    @PreAuthorize(&quot;hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE')&quot;)
+    @PreAuthorize(&quot;hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')&quot;)
     public ResponseEntity&lt;Page&lt;MultaResponseDTO&gt;&gt; listarPorUsuario(
             @PathVariable Long usuarioId,
             Authentication authentication,
             @PageableDefault(size = 10, sort = &quot;fechaGenerada&quot;) Pageable pageable) {
-<span class="nc" id="L33">        return ResponseEntity.ok(</span>
-<span class="nc" id="L34">                multaService.listarPorUsuario(usuarioId, authentication, pageable));</span>
+<span class="fc" id="L48">        return ResponseEntity.ok(</span>
+<span class="fc" id="L49">                multaService.listarPorUsuario(usuarioId, authentication, pageable));</span>
     }
 
-    // ── POST /api/v1/multas/{id}/pago ─────────────────────
+    @GetMapping(&quot;/usuario/{usuarioId}/detalle&quot;)
+    @PreAuthorize(&quot;hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;Page&lt;MultaDetalleResponseDTO&gt;&gt; listarDetallePorUsuario(
+            @PathVariable Long usuarioId,
+            Authentication authentication,
+            @PageableDefault(size = 10, sort = &quot;estadoMultaId&quot;) Pageable pageable) {
+<span class="fc" id="L58">        return ResponseEntity.ok(</span>
+<span class="fc" id="L59">                multaService.listarDetallePorUsuario(usuarioId, authentication, pageable));</span>
+    }
+
     @PostMapping(&quot;/{id}/pago&quot;)
-    @PreAuthorize(&quot;hasAnyRole('BIBLIOTECARIO','GERENTE')&quot;)
-    public ResponseEntity&lt;MultaAccionResponseDTO&gt; pagar(@PathVariable Long id) {
-<span class="nc" id="L41">        return ResponseEntity.ok(multaService.pagar(id));</span>
+    @PreAuthorize(&quot;hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; pagar(
+            @PathVariable Long id,
+            @RequestBody(required = false) PagoMultaRequestDTO body) {
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        BigDecimal montoPagado = body != null ? body.montoPagado() : null;</span>
+
+        Map&lt;String, Object&gt; resultado;
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        if (montoPagado != null) {</span>
+<span class="fc" id="L71">            resultado = multaService.pagoParcial(id, montoPagado);</span>
+        } else {
+<span class="fc" id="L73">            var accion = multaService.pagar(id);</span>
+<span class="fc" id="L74">            resultado = Map.of(</span>
+<span class="fc" id="L75">                    &quot;o_multa_id&quot;, accion.multaId(),</span>
+<span class="fc" id="L76">                    &quot;o_usuario_desbloqueado&quot;, accion.usuarioDesbloqueado(),</span>
+                    &quot;o_estado&quot;, &quot;PAGADA&quot;,
+                    &quot;o_saldo_restante&quot;, BigDecimal.ZERO);
+        }
+
+<span class="fc" id="L81">        Long usuarioId = multaService.resolverUsuarioIdDeMulta(id);</span>
+<span class="fc" id="L82">        notificacionService.notificarComprobantePago(usuarioId, id, montoPagado);</span>
+
+<span class="fc" id="L84">        return ResponseEntity.ok(resultado);</span>
     }
 
-    // ── POST /api/v1/multas/{id}/anulacion ────────────────
     @PostMapping(&quot;/{id}/anulacion&quot;)
     @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
     public ResponseEntity&lt;MultaAccionResponseDTO&gt; anular(
             @PathVariable Long id,
             @Valid @RequestBody AnulacionMultaRequestDTO dto,
             Authentication authentication) {
-<span class="nc" id="L51">        return ResponseEntity.ok(multaService.anular(id, dto.motivo(), authentication));</span>
+<span class="fc" id="L93">        return ResponseEntity.ok(multaService.anular(id, dto.motivo(), authentication));</span>
+    }
+
+    @GetMapping(&quot;/reportes/resumen-financiero&quot;)
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;ResumenFinancieroMultasResponseDTO&gt; reporteResumenFinanciero(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta) {
+<span class="fc" id="L103">        return ResponseEntity.ok(multaService.reporteResumenFinanciero(desde, hasta));</span>
+    }
+
+    @GetMapping(value = &quot;/reportes/resumen-financiero/pdf&quot;, produces = MediaType.APPLICATION_PDF_VALUE)
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;byte[]&gt; reporteResumenFinancieroPdf(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime desde,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime hasta) {
+<span class="fc" id="L113">        ResumenFinancieroMultasResponseDTO dto = multaService.reporteResumenFinanciero(desde, hasta);</span>
+<span class="fc" id="L114">        byte[] pdf = reportePdfService.generarReporteResumenFinanciero(dto);</span>
+<span class="fc" id="L115">        return ResponseEntity.ok()</span>
+<span class="fc" id="L116">                .header(HttpHeaders.CONTENT_DISPOSITION, &quot;attachment; filename=reporte-resumen-financiero.pdf&quot;)</span>
+<span class="fc" id="L117">                .contentType(MediaType.APPLICATION_PDF)</span>
+<span class="fc" id="L118">                .body(pdf);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

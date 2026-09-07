@@ -25,11 +25,11 @@ en:
 \url{https://github.com/mloorm14/sgb-saas}
 \end{center}
 
-El software citable de esta entrega corresponde al commit HEAD de \texttt{demo/interfaces-completas} (sin tag v1.0.0 todavía)
-(ver portada de este documento para el hash de commit exacto, fijado al
-cierre). Los metadatos de citación siguen el formato Citation File
-Format 1.2.0 (\texttt{CITATION.cff}, raíz del repositorio), con ORCID
-verificado de los 3 autores.
+El software citable de esta entrega corresponde al commit etiquetado
+como \texttt{v1.0.0} (resoluble con \texttt{git rev-list -n 1 v1.0.0};
+ver portada de este documento). Los metadatos de citación siguen el
+formato Citation File Format 1.2.0 (\texttt{CITATION.cff}, raíz del
+repositorio), con ORCID verificado de los 3 autores.
 
 \section{Disponibilidad de datos}
 \label{sec:decl-datos}
@@ -47,18 +47,14 @@ licencia de datos separada (p.~ej.\ CC-BY) para este material, algo que
 podría formalizarse en una futura revisión de \texttt{LICENSE} si el
 equipo lo considera necesario.
 
-A diferencia del software (con DOI de Zenodo, ver más abajo), este
-conjunto de datos empíricos \textbf{no cuenta todavía con un DOI propio
-independiente} -- no se ha creado un archivado separado en un
-repositorio de datos (Zenodo permite archivar datasets con su propio
-DOI, distinto del DOI del software). El campo queda como
-\emph{placeholder} explícito hasta que el equipo decida si amerita un
-archivado independiente o si basta con el DOI único del software
-(criterio también pendiente de decisión del equipo):
-
-\begin{center}
-\texttt{<DOI-DATASET-V1.0.0-SI-APLICA>}
-\end{center}
+Este conjunto de datos empíricos \textbf{no cuenta con un DOI propio
+independiente} -- el equipo decidió no crear un archivado separado en
+un repositorio de datos (Zenodo permite archivar datasets con su
+propio DOI, distinto del DOI del software), y en su lugar lo cubre
+bajo el mismo DOI del software citado en la portada de este documento
+(\texttt{10.5281/zenodo.21712467}), ya que ambos se versionan juntos
+en el mismo repositorio y bajo la misma licencia MIT
+(\autoref{sec:decl-codigo}).
 
 Los formularios de consentimiento informado firmados por participantes
 reales de las pruebas de usabilidad (cuando se ejecuten,

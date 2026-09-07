@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SuscripcionDisponibilidadController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.controller</a> &gt; <span class="el_source">SuscripcionDisponibilidadController.java</span></div><h1>SuscripcionDisponibilidadController.java</h1><pre class="source lang-java linenums">package com.uteq.backend.controller;
+
+import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.service.SuscripcionDisponibilidadService;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping(&quot;/api/v1/libros&quot;)
+public class SuscripcionDisponibilidadController {
+
+    private final SuscripcionDisponibilidadService service;
+    private final UsuarioRepository usuarioRepo;
+
+<span class="fc" id="L20">    public SuscripcionDisponibilidadController(SuscripcionDisponibilidadService service, UsuarioRepository usuarioRepo) {</span>
+<span class="fc" id="L21">        this.service = service;</span>
+<span class="fc" id="L22">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L23">    }</span>
+
+    @PostMapping(&quot;/{libroId}/suscripciones&quot;)
+    @PreAuthorize(&quot;isAuthenticated()&quot;)
+    public ResponseEntity&lt;Void&gt; suscribir(@PathVariable Long libroId, Authentication auth) {
+<span class="fc" id="L28">        Long usuarioId = resolverUsuarioId(auth);</span>
+<span class="fc" id="L29">        service.suscribir(usuarioId, libroId);</span>
+<span class="fc" id="L30">        return ResponseEntity.ok().build();</span>
+    }
+
+    @DeleteMapping(&quot;/{libroId}/suscripciones&quot;)
+    @PreAuthorize(&quot;isAuthenticated()&quot;)
+    public ResponseEntity&lt;Void&gt; desuscribir(@PathVariable Long libroId, Authentication auth) {
+<span class="fc" id="L36">        Long usuarioId = resolverUsuarioId(auth);</span>
+<span class="fc" id="L37">        service.desuscribir(usuarioId, libroId);</span>
+<span class="fc" id="L38">        return ResponseEntity.noContent().build();</span>
+    }
+
+    @GetMapping(&quot;/suscripciones/mias&quot;)
+    @PreAuthorize(&quot;isAuthenticated()&quot;)
+    public ResponseEntity&lt;List&lt;Long&gt;&gt; misSuscripciones(Authentication auth) {
+<span class="fc" id="L44">        Long usuarioId = resolverUsuarioId(auth);</span>
+<span class="fc" id="L45">        return ResponseEntity.ok(service.listarLibrosIds(usuarioId));</span>
+    }
+
+    private Long resolverUsuarioId(Authentication auth) {
+<span class="fc" id="L49">        String correo = auth.getName();</span>
+        try {
+<span class="fc" id="L51">            return Long.parseLong(correo);</span>
+<span class="fc" id="L52">        } catch (NumberFormatException e) {</span>
+<span class="fc" id="L53">            return usuarioRepo.findByCorreo(correo)</span>
+<span class="fc" id="L54">                    .orElseThrow(() -&gt; new EntityNotFoundException(&quot;Usuario no encontrado: &quot; + correo))</span>
+<span class="fc" id="L55">                    .getId();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

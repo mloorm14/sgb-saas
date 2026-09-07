@@ -18,8 +18,8 @@ authors:
     given-names: "Moises Antonio"
     affiliation: "Universidad Técnica Estatal de Quevedo"
     orcid: "https://orcid.org/0009-0009-8113-242X"
-version: "0.0.0-unreleased"
-# date-released: (no release yet)
+version: "1.0.0"
+date-released: 2026-09-07
 license: MIT
 repository-code: "https://github.com/mloorm14/sgb-saas"
 keywords:
@@ -29,14 +29,14 @@ keywords:
   - Angular
   - PostgreSQL
   - RBAC
-# El DOI de abajo sigue siendo el de v0.9.0-rc: no hubo tiempo de
-# re-archivar en Zenodo antes del cierre de la Entrega Final, y
-# docs/VERSIONING.md ya advierte explícitamente contra re-archivar sobre
-# un tag desactualizado sin verificar primero que el commit archivado sea
-# el commit final real. No se fabrica un DOI nuevo. Pendiente: re-archivar
-# sobre el tag v1.0.0 (commit 8610ab0, build verde, informe y evidencia ya
-# incluidos en el árbol) y reemplazar este valor por el DOI real que
-# Zenodo asigne a esa versión.
+# El DOI de abajo corresponde al depósito de v0.9.0-rc y se mantiene
+# deliberadamente para v1.0.0: no se generó un depósito Zenodo nuevo para
+# el cierre de la Entrega Final (decisión tomada para este cierre, ver
+# docs/VERSIONING.md, sección de re-archivado). No es un valor pendiente
+# ni un placeholder -- es el DOI real y vigente del software, mismo
+# criterio que OBS-05 en docs/observaciones/OBSERVACIONES.md: mejor un
+# DOI existente declarado como tal que uno inventado o un re-archivado
+# apurado sin verificar antes que el commit archivado sea el final real.
 doi: 10.5281/zenodo.21712467
 # ---
 # Digests reales de las imágenes v1.0.0 (docker pull + docker inspect,

@@ -3,6 +3,8 @@
 import com.uteq.backend.dto.CambioEstadoSugerenciaRequestDTO;
 import com.uteq.backend.dto.SugerenciaAdquisicionRequestDTO;
 import com.uteq.backend.dto.SugerenciaAdquisicionResponseDTO;
+import com.uteq.backend.dto.SugerenciaAgrupadaDTO;
+import com.uteq.backend.service.ReportePdfService;
 import com.uteq.backend.service.SugerenciaAdquisicionService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -14,21 +16,19 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-// Módulo 9.3 del roadmap. &quot;lector crea, gerente lista y cambia estado&quot;:
-// GERENTE/ADMIN pueden ver TODAS las sugerencias (listarTodas), LECTOR
-// solo las suyas (listarPropias) -- mismo patrón de separación que
-// PrestamoController.listarPorUsuario vs listarActivosPorUsuario, pero acá
-// son dos endpoints distintos en vez de uno con chequeo de acceso interno,
-// porque el filtro (propias vs todas) cambia según el rol, no según un
-// parámetro que el cliente elige.
+// Lector crea, gerente lista y cambia estado. LECTOR ve solo las
+// suyas; GERENTE/ADMIN ven todas.
 @RestController
 @RequestMapping(&quot;/api/v1/sugerencias-adquisicion&quot;)
 public class SugerenciaAdquisicionController {
 
     private final SugerenciaAdquisicionService sugerenciaService;
+    private final ReportePdfService reportePdfService;
 
-<span class="fc" id="L30">    public SugerenciaAdquisicionController(SugerenciaAdquisicionService sugerenciaService) {</span>
-<span class="fc" id="L31">        this.sugerenciaService = sugerenciaService;</span>
+    public SugerenciaAdquisicionController(SugerenciaAdquisicionService sugerenciaService,
+<span class="fc" id="L29">                                           ReportePdfService reportePdfService) {</span>
+<span class="fc" id="L30">        this.sugerenciaService = sugerenciaService;</span>
+<span class="fc" id="L31">        this.reportePdfService = reportePdfService;</span>
 <span class="fc" id="L32">    }</span>
 
     // ── POST /api/v1/sugerencias-adquisicion ──────────────
@@ -47,7 +47,7 @@ public class SugerenciaAdquisicionController {
     public ResponseEntity&lt;Page&lt;SugerenciaAdquisicionResponseDTO&gt;&gt; listarPropias(
             Authentication authentication,
             @PageableDefault(size = 10, sort = &quot;creadoEn&quot;) Pageable pageable) {
-<span class="nc" id="L50">        return ResponseEntity.ok(sugerenciaService.listarPropias(authentication, pageable));</span>
+<span class="fc" id="L50">        return ResponseEntity.ok(sugerenciaService.listarPropias(authentication, pageable));</span>
     }
 
     // ── GET /api/v1/sugerencias-adquisicion?estado=PENDIENTE ──
@@ -68,6 +68,43 @@ public class SugerenciaAdquisicionController {
             Authentication authentication) {
 <span class="fc" id="L69">        return ResponseEntity.ok(</span>
 <span class="fc" id="L70">                sugerenciaService.cambiarEstado(id, dto.nuevoEstado(), authentication));</span>
+    }
+
+    // ── GET /api/v1/sugerencias-adquisicion/mas-pedidos ──
+    // Gestión por demanda (GERENTE/ADMIN): PENDIENTE agrupadas por ISBN.
+    // Importante: va ANTES de que alguien agregue un @GetMapping(&quot;/{id}&quot;)
+    // para que &quot;mas-pedidos&quot; no se confunda con un id.
+    @GetMapping(&quot;/mas-pedidos&quot;)
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;Page&lt;SugerenciaAgrupadaDTO&gt;&gt; masPedidos(
+            @PageableDefault(size = 10) Pageable pageable) {
+<span class="fc" id="L81">        return ResponseEntity.ok(sugerenciaService.getMasPedidos(pageable));</span>
+    }
+
+    // ── POST /api/v1/sugerencias-adquisicion/confirmar-adquisicion?isbn= ──
+    // Marca adquiridas todas las PENDIENTE de ese ISBN (salen del agrupado).
+    @PostMapping(&quot;/confirmar-adquisicion&quot;)
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;java.util.Map&lt;String, Object&gt;&gt; confirmarAdquisicion(
+            @RequestParam String isbn,
+            Authentication authentication) {
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        Long revisorId = authentication == null ? null</span>
+<span class="fc" id="L92">                : sugerenciaService.resolverIdPorCorreoPublico(authentication.getName());</span>
+<span class="fc" id="L93">        int confirmadas = sugerenciaService.confirmarAdquisicion(isbn, revisorId);</span>
+<span class="fc" id="L94">        return ResponseEntity.ok(java.util.Map.of(&quot;isbn&quot;, isbn, &quot;confirmadas&quot;, confirmadas));</span>
+    }
+
+    // ── GET /api/v1/sugerencias-adquisicion/reporte-pdf ──
+    @GetMapping(&quot;/reporte-pdf&quot;)
+    @PreAuthorize(&quot;hasAnyRole('GERENTE','ADMIN')&quot;)
+    public ResponseEntity&lt;byte[]&gt; reportePdf() {
+<span class="fc" id="L101">        byte[] pdf = reportePdfService.generarReporteSugerenciasMasPedidas(</span>
+<span class="fc" id="L102">                sugerenciaService.getMasPedidosList());</span>
+<span class="fc" id="L103">        return ResponseEntity.ok()</span>
+<span class="fc" id="L104">                .contentType(org.springframework.http.MediaType.APPLICATION_PDF)</span>
+<span class="fc" id="L105">                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,</span>
+                        &quot;attachment; filename=reporte-sugerencias-mas-pedidas.pdf&quot;)
+<span class="fc" id="L107">                .body(pdf);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

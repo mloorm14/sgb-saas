@@ -1,28 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ChatbotRateLimiter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.security</a> &gt; <span class="el_source">ChatbotRateLimiter.java</span></div><h1>ChatbotRateLimiter.java</h1><pre class="source lang-java linenums">package com.uteq.backend.security;
 
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 
 /**
- * Contador de mensajes del chatbot por usuario en Redis (Módulo H). Mismo
- * mecanismo que {@link LoginRateLimiter} (ver su Javadoc para la lógica de
- * TTL fijado solo en el primer incremento).
- * &lt;p&gt;
- * A diferencia de login, la clave es SOLO {@code &quot;chatbot-mensajes:&quot; +
- * usuarioId} y no incluye IP: el chatbot no es un vector de fuerza bruta
- * contra la CUENTA de otro usuario (nadie escribe &quot;su&quot; correo en el chat
- * de otra persona), sino un control de costo por usuario autenticado --
- * cuántas llamadas a la API de Gemini puede disparar un LECTOR en una
- * ventana. Combinar la IP acá no aportaría y castigaría a usuarios legítimos
- * detrás de NAT compartido.
+ * Contador de mensajes del chatbot por usuario en Redis. Clave solo por
+ * usuarioId (control de costo); ante caída de Redis degrada a fail-open.
  */
 @Component
 @RequiredArgsConstructor
 public class ChatbotRateLimiter {
+
+<span class="fc" id="L21">    private static final Logger log = LoggerFactory.getLogger(ChatbotRateLimiter.class);</span>
 
     private static final String KEY_PREFIX = &quot;chatbot-mensajes:&quot;;
 
@@ -35,8 +31,13 @@ public class ChatbotRateLimiter {
     private long rateLimitWindowSeconds;
 
     public boolean estaBloqueado(Long usuarioId) {
-<span class="fc" id="L38">        String valor = redisTemplate.opsForValue().get(key(usuarioId));</span>
-<span class="fc bfc" id="L39" title="All 4 branches covered.">        return valor != null &amp;&amp; Long.parseLong(valor) &gt;= maxMensajes;</span>
+        try {
+<span class="fc" id="L35">            String valor = redisTemplate.opsForValue().get(key(usuarioId));</span>
+<span class="fc bfc" id="L36" title="All 4 branches covered.">            return valor != null &amp;&amp; Long.parseLong(valor) &gt;= maxMensajes;</span>
+<span class="nc" id="L37">        } catch (DataAccessException e) {</span>
+<span class="nc" id="L38">            log.warn(&quot;Redis no disponible en estaBloqueado (fail-open, sin bloqueo): usuarioId={}&quot;, usuarioId, e);</span>
+<span class="nc" id="L39">            return false;</span>
+        }
     }
 
     /**
@@ -45,15 +46,19 @@ public class ChatbotRateLimiter {
      * ventana fija que LoginRateLimiter.registrarFallo.
      */
     public void registrarMensaje(Long usuarioId) {
-<span class="fc" id="L48">        String llave = key(usuarioId);</span>
-<span class="fc" id="L49">        Long nuevoValor = redisTemplate.opsForValue().increment(llave);</span>
-<span class="pc bpc" id="L50" title="1 of 4 branches missed.">        if (nuevoValor != null &amp;&amp; nuevoValor == 1L) {</span>
-<span class="fc" id="L51">            redisTemplate.expire(llave, Duration.ofSeconds(rateLimitWindowSeconds));</span>
-        }
-<span class="fc" id="L53">    }</span>
+        try {
+<span class="fc" id="L50">            String llave = key(usuarioId);</span>
+<span class="fc" id="L51">            Long nuevoValor = redisTemplate.opsForValue().increment(llave);</span>
+<span class="pc bpc" id="L52" title="1 of 4 branches missed.">            if (nuevoValor != null &amp;&amp; nuevoValor == 1L) {</span>
+<span class="fc" id="L53">                redisTemplate.expire(llave, Duration.ofSeconds(rateLimitWindowSeconds));</span>
+            }
+<span class="nc" id="L55">        } catch (DataAccessException e) {</span>
+<span class="nc" id="L56">            log.warn(&quot;Redis no disponible en registrarMensaje (contador no incrementado): usuarioId={}&quot;, usuarioId, e);</span>
+<span class="fc" id="L57">        }</span>
+<span class="fc" id="L58">    }</span>
 
     private String key(Long usuarioId) {
-<span class="fc" id="L56">        return KEY_PREFIX + usuarioId;</span>
+<span class="fc" id="L61">        return KEY_PREFIX + usuarioId;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AbstractBaseConocimientoTool.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.chatbot.tool</a> &gt; <span class="el_source">AbstractBaseConocimientoTool.java</span></div><h1>AbstractBaseConocimientoTool.java</h1><pre class="source lang-java linenums">package com.uteq.backend.chatbot.tool;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.uteq.backend.entity.BaseConocimiento;
+import com.uteq.backend.repository.BaseConocimientoRepository;
+
+import java.util.List;
+
+/**
+ * Template Method para tools de solo-lectura sobre la base de
+ * conocimiento (sin parámetros de entrada). Cada subclase aporta
+ * las categorías a filtrar, la clave de respuesta y el mapeo
+ * de cada entrada.
+ */
+public abstract class AbstractBaseConocimientoTool extends AbstractChatbotTool {
+
+    protected final BaseConocimientoRepository baseConocimientoRepo;
+
+<span class="fc" id="L21">    protected AbstractBaseConocimientoTool(BaseConocimientoRepository baseConocimientoRepo) {</span>
+<span class="fc" id="L22">        this.baseConocimientoRepo = baseConocimientoRepo;</span>
+<span class="fc" id="L23">    }</span>
+
+    @Override
+    public JsonNode getInputSchema() {
+<span class="fc" id="L27">        ObjectNode schema = mapper.createObjectNode();</span>
+<span class="fc" id="L28">        schema.put(&quot;type&quot;, &quot;object&quot;);</span>
+<span class="fc" id="L29">        schema.set(&quot;properties&quot;, mapper.createObjectNode());</span>
+<span class="fc" id="L30">        return schema;</span>
+    }
+
+    /** Categorías de BaseConocimiento a incluir (ej. HORARIOS). */
+    protected abstract List&lt;String&gt; getCategorias();
+
+    /** Clave del array en la respuesta (ej. &quot;horarios&quot;). */
+    protected abstract String getRespuestaKey();
+
+    /** Mapea una entrada de la base a su nodo JSON. */
+    protected abstract ObjectNode mapearEntrada(BaseConocimiento bc);
+
+    @Override
+    public JsonNode execute(JsonNode args) {
+<span class="fc" id="L44">        List&lt;String&gt; categorias = getCategorias().stream()</span>
+<span class="fc" id="L45">                .map(String::toUpperCase)</span>
+<span class="fc" id="L46">                .toList();</span>
+<span class="fc" id="L47">        List&lt;BaseConocimiento&gt; entradas = baseConocimientoRepo.findByActivoTrue().stream()</span>
+<span class="fc bfc" id="L48" title="All 4 branches covered.">                .filter(bc -&gt; bc.getCategoria() != null &amp;&amp; categorias.contains(bc.getCategoria().toUpperCase()))</span>
+<span class="fc" id="L49">                .toList();</span>
+
+<span class="fc" id="L51">        ArrayNode array = mapper.createArrayNode();</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        for (BaseConocimiento bc : entradas) {</span>
+<span class="fc" id="L53">            array.add(mapearEntrada(bc));</span>
+<span class="fc" id="L54">        }</span>
+
+<span class="fc" id="L56">        ObjectNode respuesta = mapper.createObjectNode();</span>
+<span class="fc" id="L57">        respuesta.set(getRespuestaKey(), array);</span>
+<span class="fc" id="L58">        respuesta.put(&quot;total&quot;, entradas.size());</span>
+<span class="fc" id="L59">        return respuesta;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

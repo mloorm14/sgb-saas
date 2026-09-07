@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReservacionesGestionService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.service</a> &gt; <span class="el_source">ReservacionesGestionService.java</span></div><h1>ReservacionesGestionService.java</h1><pre class="source lang-java linenums">package com.uteq.backend.service;
+
+import com.uteq.backend.dto.HistorialReservacionDTO;
+import com.uteq.backend.dto.UsuarioReservacionesGestionDTO;
+import com.uteq.backend.entity.EstadoReservacion;
+import com.uteq.backend.entity.Reservacion;
+import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.EstadoReservacionRepository;
+import com.uteq.backend.repository.LibroRepository;
+import com.uteq.backend.repository.ReservacionRepository;
+import com.uteq.backend.repository.UsuarioRepository;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/**
+ * Lecturas de la ventanilla de reservaciones del bibliotecario (módulo
+ * &quot;Reservaciones&quot; del sidebar): encontrar al usuario por correo y armar
+ * la pantalla -- tarjeta de identificación, historial de reservaciones.
+ *
+ * La CREACIÓN de la reservación se mantiene en ReservacionService.crear()
+ * (POST /api/v1/reservaciones), que ahora acepta fechaRetiro opcional.
+ */
+@Service
+public class ReservacionesGestionService {
+
+    private static final String USUARIO_NO_ENCONTRADO =
+            &quot;No se encontró ningún usuario con este correo&quot;;
+    private static final int LIMITE_RESERVAS_ACTIVAS = 3;
+
+<span class="fc" id="L35">    private static final List&lt;String&gt; ESTADOS_RESERVA_VIGENTE =</span>
+<span class="fc" id="L36">            List.of(&quot;PENDIENTE&quot;, &quot;LISTA_PARA_RETIRO&quot;);</span>
+
+    private final UsuarioRepository usuarioRepo;
+    private final ReservacionRepository reservacionRepo;
+    private final EstadoReservacionRepository estadoReservacionRepo;
+    private final LibroRepository libroRepo;
+
+    public ReservacionesGestionService(UsuarioRepository usuarioRepo,
+                                       ReservacionRepository reservacionRepo,
+                                       EstadoReservacionRepository estadoReservacionRepo,
+<span class="fc" id="L46">                                       LibroRepository libroRepo) {</span>
+<span class="fc" id="L47">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L48">        this.reservacionRepo = reservacionRepo;</span>
+<span class="fc" id="L49">        this.estadoReservacionRepo = estadoReservacionRepo;</span>
+<span class="fc" id="L50">        this.libroRepo = libroRepo;</span>
+<span class="fc" id="L51">    }</span>
+
+    // ── GET /gestion/buscar-usuario?correo= ──────────────────
+    @Transactional(readOnly = true)
+    public UsuarioReservacionesGestionDTO buscarPorCorreo(String correo) {
+<span class="nc" id="L56">        Usuario usuario = usuarioRepo.findByCorreo(correo)</span>
+<span class="nc" id="L57">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO));</span>
+
+<span class="nc" id="L59">        List&lt;Integer&gt; idsVigentes = ESTADOS_RESERVA_VIGENTE.stream()</span>
+<span class="nc" id="L60">                .map(this::idEstadoReservacion)</span>
+<span class="nc" id="L61">                .toList();</span>
+
+<span class="nc" id="L63">        long cantidadActivas = reservacionRepo.countByUsuarioIdAndEstadoReservacionIdIn(</span>
+<span class="nc" id="L64">                usuario.getId(), idsVigentes);</span>
+
+<span class="nc" id="L66">        return new UsuarioReservacionesGestionDTO(</span>
+<span class="nc" id="L67">                usuario.getId(),</span>
+<span class="nc" id="L68">                (usuario.getNombre() + &quot; &quot; + usuario.getApellido()).trim(),</span>
+<span class="nc" id="L69">                usuario.getCorreo(),</span>
+<span class="nc" id="L70">                usuario.getEstado().getNombre(),</span>
+                cantidadActivas,
+                LIMITE_RESERVAS_ACTIVAS);
+    }
+
+    // ── GET /gestion/historial-reservaciones?usuarioId= ───────
+    // Retorna las reservaciones del usuario con el título del libro
+    // resuelto en batch (3 queries: reservaciones, libros, estados).
+    @Transactional(readOnly = true)
+    public List&lt;HistorialReservacionDTO&gt; historialReservaciones(Long usuarioId) {
+        // Validar que el usuario exista
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        if (!usuarioRepo.existsById(usuarioId)) {</span>
+<span class="nc" id="L82">            throw new EntityNotFoundException(&quot;Usuario no encontrado: &quot; + usuarioId);</span>
+        }
+
+<span class="nc" id="L85">        List&lt;Reservacion&gt; reservaciones = reservacionRepo</span>
+<span class="nc" id="L86">                .findByUsuarioId(usuarioId,</span>
+<span class="nc" id="L87">                        org.springframework.data.domain.PageRequest.of(0, 50,</span>
+<span class="nc" id="L88">                                org.springframework.data.domain.Sort.by(</span>
+                                        org.springframework.data.domain.Sort.Direction.DESC,
+                                        &quot;fechaReserva&quot;)))
+<span class="nc" id="L91">                .getContent();</span>
+
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        if (reservaciones.isEmpty()) {</span>
+<span class="nc" id="L94">            return List.of();</span>
+        }
+
+<span class="nc" id="L97">        Map&lt;Long, String&gt; titulosPorLibro = libroRepo.findAllById(</span>
+<span class="nc" id="L98">                        reservaciones.stream().map(Reservacion::getLibroId).distinct().toList())</span>
+<span class="nc" id="L99">                .stream()</span>
+<span class="nc" id="L100">                .collect(Collectors.toMap(</span>
+                        com.uteq.backend.entity.Libro::getId,
+                        com.uteq.backend.entity.Libro::getTitulo));
+
+<span class="nc" id="L104">        Map&lt;Integer, String&gt; nombresPorEstado = estadoReservacionRepo.findAllById(</span>
+<span class="nc" id="L105">                        reservaciones.stream().map(Reservacion::getEstadoReservacionId).distinct().toList())</span>
+<span class="nc" id="L106">                .stream()</span>
+<span class="nc" id="L107">                .collect(Collectors.toMap(EstadoReservacion::getId, EstadoReservacion::getNombre));</span>
+
+<span class="nc" id="L109">        return reservaciones.stream()</span>
+<span class="nc" id="L110">                .map(r -&gt; new HistorialReservacionDTO(</span>
+<span class="nc" id="L111">                        r.getId(),</span>
+<span class="nc" id="L112">                        titulosPorLibro.getOrDefault(r.getLibroId(), &quot;Libro #&quot; + r.getLibroId()),</span>
+<span class="nc" id="L113">                        nombresPorEstado.getOrDefault(r.getEstadoReservacionId(), &quot;&quot;),</span>
+<span class="nc" id="L114">                        r.getEstadoReservacionId(),</span>
+<span class="nc" id="L115">                        r.getFechaReserva(),</span>
+<span class="nc" id="L116">                        r.getFechaLimiteRetiro()))</span>
+<span class="nc" id="L117">                .toList();</span>
+    }
+
+    private Integer idEstadoReservacion(String nombre) {
+<span class="nc" id="L121">        return estadoReservacionRepo.findByNombre(nombre)</span>
+<span class="nc" id="L122">                .orElseThrow(() -&gt; new IllegalStateException(</span>
+                        &quot;Catálogo estados_reservacion sin fila '&quot; + nombre + &quot;'&quot;))
+<span class="nc" id="L124">                .getId();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

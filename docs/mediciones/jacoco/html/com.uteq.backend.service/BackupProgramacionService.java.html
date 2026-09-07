@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BackupProgramacionService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.service</a> &gt; <span class="el_source">BackupProgramacionService.java</span></div><h1>BackupProgramacionService.java</h1><pre class="source lang-java linenums">package com.uteq.backend.service;
+
+import com.uteq.backend.entity.Backup;
+import com.uteq.backend.entity.BackupProgramacion;
+import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.repository.BackupProgramacionRepository;
+import com.uteq.backend.repository.UsuarioRepository;
+import jakarta.annotation.PostConstruct;
+import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.*;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.ScheduledFuture;
+
+@Service
+public class BackupProgramacionService {
+
+    private final BackupProgramacionRepository progRepo;
+    private final UsuarioRepository usuarioRepo;
+    private final TaskScheduler taskScheduler;
+    private final BackupService backupService;
+
+    @Value(&quot;${app.backup.r2.bucket:}&quot;)
+    private String bucket;
+
+<span class="fc" id="L34">    private final Map&lt;Long, ScheduledFuture&lt;?&gt;&gt; programacionesActivas = new HashMap&lt;&gt;();</span>
+
+    public BackupProgramacionService(BackupProgramacionRepository progRepo,
+                                      UsuarioRepository usuarioRepo,
+                                      TaskScheduler taskScheduler,
+<span class="fc" id="L39">                                      BackupService backupService) {</span>
+<span class="fc" id="L40">        this.progRepo = progRepo;</span>
+<span class="fc" id="L41">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L42">        this.taskScheduler = taskScheduler;</span>
+<span class="fc" id="L43">        this.backupService = backupService;</span>
+<span class="fc" id="L44">    }</span>
+
+    /**
+     * Revive las programaciones activas al arrancar el servidor.
+     * Sin esto, un reinicio/suspensión (Render free) borra los
+     * TaskScheduler en memoria y los automáticos dejan de correr.
+     */
+    @PostConstruct
+    public void inicializarTareasProgramadas() {
+<span class="fc" id="L53">        progRepo.findByActivoTrueOrderByUltimaEjecucionDesc().forEach(p -&gt; {</span>
+            try {
+<span class="nc" id="L55">                programarEjecucion(p.getId());</span>
+<span class="nc" id="L56">            } catch (Exception e) {</span>
+<span class="nc" id="L57">                System.err.println(&quot;No se pudo reprogramar backup id=&quot; + p.getId() + &quot;: &quot; + e.getMessage());</span>
+<span class="nc" id="L58">            }</span>
+<span class="nc" id="L59">        });</span>
+<span class="fc" id="L60">    }</span>
+
+    // ---------- CRUD simples ----------
+
+    public List&lt;BackupProgramacion&gt; listarActivas() {
+<span class="nc" id="L65">        return progRepo.findByActivoTrueOrderByUltimaEjecucionDesc();</span>
+    }
+
+    public BackupProgramacion obtener(Long id) {
+<span class="nc" id="L69">        return progRepo.findById(id)</span>
+<span class="nc" id="L70">                .filter(prog -&gt; Boolean.TRUE.equals(prog.getActivo()))</span>
+<span class="nc" id="L71">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Programación no encontrada &quot; + id));</span>
+    }
+
+    public BackupProgramacion crear(BackupProgramacion dto) {
+<span class="nc" id="L75">        validarXorCampos(dto);</span>
+<span class="nc" id="L76">        Long userId = obtenerUsuarioActualId();</span>
+<span class="nc" id="L77">        dto.setCreadoPor(userId);</span>
+<span class="nc" id="L78">        dto.setCreadoEn(OffsetDateTime.now());</span>
+<span class="nc" id="L79">        dto.setActivo(true);</span>
+<span class="nc" id="L80">        return progRepo.save(dto);</span>
+    }
+
+    public void actualizarUltimaEjecucion(Long id, OffsetDateTime fecha) {
+<span class="nc" id="L84">        BackupProgramacion existing = progRepo.findById(id)</span>
+<span class="nc" id="L85">                .filter(prog -&gt; Boolean.TRUE.equals(prog.getActivo()))</span>
+<span class="nc" id="L86">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Programación no encontrada &quot; + id));</span>
+<span class="nc" id="L87">        existing.setUltimaEjecucion(fecha);</span>
+<span class="nc" id="L88">        progRepo.save(existing);</span>
+<span class="nc" id="L89">    }</span>
+
+    public void eliminar(Long id) {
+<span class="nc" id="L92">        BackupProgramacion p = progRepo.findById(id)</span>
+<span class="nc" id="L93">                .filter(prog -&gt; Boolean.TRUE.equals(prog.getActivo()))</span>
+<span class="nc" id="L94">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Programación no encontrada &quot; + id));</span>
+<span class="nc" id="L95">        p.setActivo(false);</span>
+<span class="nc" id="L96">        progRepo.save(p);</span>
+        // Cancelar el scheduler activo para que deje de ejecutarse de inmediato.
+<span class="nc" id="L98">        cancelarProgramacion(id);</span>
+<span class="nc" id="L99">    }</span>
+
+    // ---------- Validación XOR ----------
+
+    private void validarXorCampos(BackupProgramacion dto) {
+<span class="nc bnc" id="L104" title="All 4 branches missed.">        long count = ((dto.getCadaHoras() != null) ? 1L : 0L) + ((dto.getCadaDias() != null) ? 1L : 0L);</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        if (count != 1) {</span>
+<span class="nc" id="L106">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;Debe definirse exactamente uno de: cada_horas o cada_dias&quot;);</span>
+        }
+<span class="nc bnc" id="L108" title="All 6 branches missed.">        if (dto.getCadaHoras() != null &amp;&amp; (dto.getCadaHoras() &lt; 1 || dto.getCadaHoras() &gt; 23)) {</span>
+<span class="nc" id="L109">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;cada_horas debe estar entre 1 y 23&quot;);</span>
+        }
+<span class="nc bnc" id="L111" title="All 6 branches missed.">        if (dto.getCadaDias() != null &amp;&amp; (dto.getCadaDias() &lt; 1 || dto.getCadaDias() &gt; 30)) {</span>
+<span class="nc" id="L112">            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, &quot;cada_dias debe estar entre 1 y 30&quot;);</span>
+        }
+<span class="nc" id="L114">    }</span>
+
+    // ---------- Utilidades ----------
+
+    private Long obtenerUsuarioActualId() {
+<span class="nc" id="L119">        Authentication auth = SecurityContextHolder.getContext().getAuthentication();</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">        if (auth == null) return 1L;</span>
+        // Sin reflexión: el principal es User de Spring (sin campo id).
+        // Se resuelve por correo, igual que el resto de services.
+        try {
+<span class="nc" id="L124">            return usuarioRepo.findByCorreo(auth.getName()).map(Usuario::getId).orElse(1L);</span>
+<span class="nc" id="L125">        } catch (Exception ex) {</span>
+<span class="nc" id="L126">            return 1L;</span>
+        }
+    }
+
+    // ---------- Programación automática ----------
+
+    /**
+     * Programa o reprograma una tarea de respaldo automático.
+     * Si ya había un scheduler activo para este id, se cancela y se crea uno nuevo.
+     */
+    public ScheduledFuture&lt;?&gt; programarEjecucion(Long id) {
+<span class="nc" id="L137">        BackupProgramacion p = progRepo.findById(id)</span>
+<span class="nc" id="L138">                .filter(prog -&gt; Boolean.TRUE.equals(prog.getActivo()))</span>
+<span class="nc" id="L139">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Programación no encontrada &quot; + id));</span>
+
+<span class="nc bnc" id="L141" title="All 2 branches missed.">        if (!Boolean.TRUE.equals(p.getActivo())) return null;</span>
+
+        long intervalSeconds;
+<span class="nc bnc" id="L144" title="All 2 branches missed.">        if (p.getCadaHoras() != null) {</span>
+<span class="nc" id="L145">            intervalSeconds = p.getCadaHoras() * 3600L;</span>
+        } else {
+<span class="nc" id="L147">            intervalSeconds = p.getCadaDias() * 86400L;</span>
+        }
+
+        // Calcular delay inicial hasta la próxima ejecución
+<span class="nc" id="L151">        long initialDelay = calcularDelayHastaProximoEjecucion(p);</span>
+
+        // Cancelar cualquier scheduler previo para este id
+<span class="nc" id="L154">        cancelarProgramacion(id);</span>
+
+        // Programar con fixedDelay
+<span class="nc" id="L157">        long delayMs = initialDelay * 1000L;</span>
+<span class="nc" id="L158">        ScheduledFuture&lt;?&gt; sf = taskScheduler.scheduleAtFixedRate(</span>
+<span class="nc" id="L159">                () -&gt; ejecutarBackupProgramado(id),</span>
+<span class="nc" id="L160">                Instant.now().plusMillis(delayMs),</span>
+<span class="nc" id="L161">                java.time.Duration.ofSeconds(intervalSeconds)</span>
+        );
+
+<span class="nc" id="L164">        programacionesActivas.put(id, sf);</span>
+        // Actualizar última ejecución programada
+<span class="nc" id="L166">        p.setUltimaEjecucion(OffsetDateTime.now());</span>
+<span class="nc" id="L167">        progRepo.save(p);</span>
+<span class="nc" id="L168">        return sf;</span>
+    }
+
+    private long calcularDelayHastaProximoEjecucion(BackupProgramacion p) {
+        // Retorna segundos hasta la próxima ejecución usando java.time.Duration.
+        // Antes retornaba minutos pero el llamador multiplicaba por 1000 como si fueran
+        // segundos, lo que dejaba el scheduler 60 veces desfasado.
+<span class="nc" id="L175">        OffsetDateTime ahora = OffsetDateTime.now();</span>
+        long segundos;
+<span class="nc bnc" id="L177" title="All 2 branches missed.">        if (p.getCadaHoras() != null) {</span>
+            // Próxima hora en punto: si son las 14:32, ejecutar a las 15:00.
+<span class="nc" id="L179">            OffsetDateTime proximaHora = ahora.truncatedTo(ChronoUnit.HOURS).plusHours(1);</span>
+<span class="nc" id="L180">            segundos = Duration.between(ahora, proximaHora).getSeconds();</span>
+<span class="nc" id="L181">        } else {</span>
+            // Cada X días: próxima medianoche local.
+<span class="nc" id="L183">            OffsetDateTime proximaMedianoche = ahora.toLocalDate().plusDays(1)</span>
+<span class="nc" id="L184">                    .atStartOfDay().atOffset(ahora.getOffset());</span>
+<span class="nc" id="L185">            segundos = Duration.between(ahora, proximaMedianoche).getSeconds();</span>
+        }
+<span class="nc" id="L187">        return Math.max(segundos, 1L);</span>
+    }
+
+    private void cancelarProgramacion(Long id) {
+<span class="nc" id="L191">        ScheduledFuture&lt;?&gt; sf = programacionesActivas.remove(id);</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">        if (sf != null) {</span>
+<span class="nc" id="L193">            sf.cancel(false);</span>
+        }
+<span class="nc" id="L195">    }</span>
+
+    /**
+     * Ejecuta el backup inmediato según la programación configurada.
+     * Genera el zip y lo sube a R2, guarda registro en tabla 'backups'.
+     */
+    private void ejecutarBackupProgramado(Long id) {
+<span class="nc" id="L202">        BackupProgramacion p = progRepo.findById(id)</span>
+<span class="nc" id="L203">                .filter(prog -&gt; Boolean.TRUE.equals(prog.getActivo()))</span>
+<span class="nc" id="L204">                .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND, &quot;Programación no encontrada &quot; + id));</span>
+
+<span class="nc bnc" id="L206" title="All 2 branches missed.">        if (!Boolean.TRUE.equals(p.getActivo())) {</span>
+<span class="nc" id="L207">            cancelarProgramacion(id);</span>
+<span class="nc" id="L208">            return;</span>
+        }
+
+        // Usar tablas configuradas en la programación; si no hay, usar el set por defecto
+<span class="nc bnc" id="L212" title="All 4 branches missed.">        Set&lt;String&gt; tablasDefault = (p.getTablas() != null &amp;&amp; !p.getTablas().isEmpty())</span>
+<span class="nc" id="L213">                ? p.getTablas()</span>
+<span class="nc" id="L214">                : Set.of(</span>
+                        &quot;prestamos&quot;, &quot;reservas&quot;, &quot;reservaciones&quot;, &quot;multas&quot;, &quot;libros&quot;, &quot;usuarios&quot;,
+                        &quot;bitacora_auditoria&quot;, &quot;auditoria&quot;, &quot;configuracion_sistema&quot;,
+                        &quot;notificaciones&quot;, &quot;favoritos&quot;, &quot;sugerencias_adquisicion&quot;, &quot;categorias&quot;, &quot;autores&quot;
+                );
+
+        try {
+            // Usar horario fijo 00:00-23:59 del día calculado
+            // Para cadaHoras: usamos el rango desde la hora actual hasta + cadaHoras
+            // Para cadaDias: usamos desde 00:00 hace X días hasta ahora
+<span class="nc" id="L224">            OffsetDateTime ahora = OffsetDateTime.now();</span>
+            OffsetDateTime desde;
+            OffsetDateTime hasta;
+
+<span class="nc bnc" id="L228" title="All 2 branches missed.">            if (p.getCadaHoras() != null) {</span>
+                // Cada X horas: desde hace X horas hasta ahora
+<span class="nc" id="L230">                desde = ahora.minusHours(p.getCadaHoras());</span>
+<span class="nc" id="L231">                hasta = ahora;</span>
+            } else {
+                // Cada X días: desde hace X días hasta ahora (siempre empieza en 00:00 del día actual-ish)
+<span class="nc" id="L234">                long dias = p.getCadaDias();</span>
+<span class="nc" id="L235">                desde = ahora.minusDays(dias).withHour(0).withMinute(0).withSecond(0).withNano(0);</span>
+<span class="nc" id="L236">                hasta = ahora.withHour(23).withMinute(59).withSecond(59);</span>
+            }
+
+<span class="nc" id="L239">            Backup backup = backupService.generarBackup(desde, hasta, tablasDefault, p.getFormato(), &quot;automatico&quot;);</span>
+            // Registrar programación última ejecución
+<span class="nc" id="L241">            p.setUltimaEjecucion(backup.getCreadoEn());</span>
+<span class="nc" id="L242">            progRepo.save(p);</span>
+<span class="nc" id="L243">        } catch (Exception e) {</span>
+            // Log error pero no fallar el scheduler
+<span class="nc" id="L245">            System.err.println(&quot;Error executing programmed backup id=&quot; + id + &quot;: &quot; + e.getMessage());</span>
+<span class="nc" id="L246">        }</span>
+<span class="nc" id="L247">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

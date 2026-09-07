@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UsuarioScheduler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.scheduling</a> &gt; <span class="el_source">UsuarioScheduler.java</span></div><h1>UsuarioScheduler.java</h1><pre class="source lang-java linenums">package com.uteq.backend.scheduling;
+
+import com.uteq.backend.repository.UsuarioRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+
+/**
+ * Job periódico que elimina cuentas de usuarios cuyo correo no fue
+ * verificado dentro de las últimas 24 horas. Sigue el patrón de
+ * {@link ReservacionScheduler}.
+ */
+@Component
+public class UsuarioScheduler {
+
+<span class="fc" id="L21">    private static final Logger log = LoggerFactory.getLogger(UsuarioScheduler.class);</span>
+    private static final long HORAS_EXPIRACION = 24;
+
+    private final UsuarioRepository usuarioRepo;
+
+<span class="fc" id="L26">    public UsuarioScheduler(UsuarioRepository usuarioRepo) {</span>
+<span class="fc" id="L27">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L28">    }</span>
+
+    @Scheduled(fixedRate = 60 * 60 * 1000) // cada 1 hora
+    @Transactional
+    public void eliminarNoVerificadosVencidos() {
+<span class="fc" id="L33">        Instant cutoff = Instant.now().minus(HORAS_EXPIRACION, ChronoUnit.HOURS);</span>
+<span class="fc" id="L34">        int eliminados = usuarioRepo.deleteNoVerificadosBefore(cutoff);</span>
+<span class="pc bpc" id="L35" title="1 of 2 branches missed.">        if (eliminados &gt; 0) {</span>
+<span class="nc" id="L36">            log.info(&quot;Auto-eliminación de usuarios no verificados: {} cuentas eliminadas&quot;, eliminados);</span>
+        }
+<span class="fc" id="L38">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

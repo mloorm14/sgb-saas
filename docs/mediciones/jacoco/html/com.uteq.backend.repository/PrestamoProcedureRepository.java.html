@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PrestamoProcedureRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.repository</a> &gt; <span class="el_source">PrestamoProcedureRepository.java</span></div><h1>PrestamoProcedureRepository.java</h1><pre class="source lang-java linenums">package com.uteq.backend.repository;
+
+import com.uteq.backend.entity.Prestamo;
+import com.uteq.backend.repository.projection.LibroMasPrestadoDetalladoProjection;
+import com.uteq.backend.repository.projection.LibroMasPrestadoProjection;
+import com.uteq.backend.repository.projection.PrestamoActivoProjection;
+import com.uteq.backend.repository.projection.ReporteCategoriasDemandadasProjection;
+import com.uteq.backend.repository.projection.ReporteInventarioProjection;
+import com.uteq.backend.repository.projection.ReporteMorosidadProjection;
+import com.uteq.backend.repository.projection.ReporteUsoPorPeriodoProjection;
+import com.uteq.backend.repository.projection.ReporteVencidosProjection;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.query.Procedure;
+import org.springframework.data.repository.Repository;
+import org.springframework.data.repository.query.Param;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+
+/**
+ * Invocación de los procedimientos/funciones de db/procs/ relacionados con
+ * préstamos. No extiende JpaRepository a propósito: es un repositorio
+ * &quot;solo procedimientos&quot; (patrón documentado de Spring Data JPA), por lo que
+ * solo necesita el marcador {@link Repository}.
+ */
+@org.springframework.stereotype.Repository
+public interface PrestamoProcedureRepository extends Repository&lt;Prestamo, Long&gt; {
+
+    // Mecanismo exigido @Procedure (habilitado para cumplir guía Cordero) — rutina principal sp_crear_prestamo
+    @Procedure(procedureName = &quot;sp_crear_prestamo&quot;)
+    Long spCrearPrestamoProcedure(
+            @Param(&quot;p_usuario_id&quot;) Long usuarioId,
+            @Param(&quot;p_libro_id&quot;) Long libroId,
+            @Param(&quot;p_bibliotecario_id&quot;) Long bibliotecarioId,
+            @Param(&quot;p_dias_prestamo&quot;) Integer diasPrestamo
+    );
+
+    /**
+     * sp_crear_prestamo: retorno escalar único (BIGINT). Antes usaba
+     * @Procedure(procedureName=...) (ver bloque comentado arriba) -- fallaba
+     * en runtime con &quot;syntax error at or near '=&gt;'&quot; porque Hibernate genera
+     * sintaxis de parámetros nombrados de PostgreSQL dentro del escape JDBC
+     * {call ...}, que pgjdbc no soporta. @Query nativa con SELECT evita el
+     * CallableStatement por completo (mismo patrón que ya usaba este
+     * repositorio para las 2 funciones TABLE de abajo).
+     */
+    @Query(value = &quot;SELECT sp_crear_prestamo(:p_usuario_id, :p_libro_id, :p_bibliotecario_id, :p_dias_prestamo)&quot;,
+            nativeQuery = true)
+    Long spCrearPrestamo(
+            @Param(&quot;p_usuario_id&quot;) Long usuarioId,
+            @Param(&quot;p_libro_id&quot;) Long libroId,
+            @Param(&quot;p_bibliotecario_id&quot;) Long bibliotecarioId,
+            @Param(&quot;p_dias_prestamo&quot;) Integer diasPrestamo
+    );
+
+    @Procedure(name = &quot;Prestamo.registrarDevolucion&quot;)
+    java.util.Map&lt;String, Object&gt; spRegistrarDevolucionProcedure(@Param(&quot;p_prestamo_id&quot;) Long prestamoId);
+
+    /**
+     * sp_registrar_devolucion: función con 3 parámetros OUT (o_prestamo_id,
+     * o_hubo_multa, o_monto_multa). Antes resuelto vía
+     * @NamedStoredProcedureQuery en {@link Prestamo} (ver bloque comentado
+     * arriba y el @NamedStoredProcedureQuery comentado en Prestamo.java) --
+     * mismo fallo de sintaxis &quot;=&gt;&quot; que sp_crear_prestamo. @Query nativa con
+     * &quot;SELECT * FROM ...&quot; expande el tipo compuesto de los OUT params en
+     * columnas, y Map&lt;String,Object&gt; como tipo de retorno de un @Query
+     * nativeQuery SÍ está soportado por Spring Data JPA (&quot;native query
+     * returning raw column name/value pairs&quot;, docs.spring.io) -- las keys
+     * del Map son los nombres de columna (o_prestamo_id, o_hubo_multa,
+     * o_monto_multa), igual que antes.
+     */
+    @Query(value = &quot;SELECT * FROM sp_registrar_devolucion(:p_prestamo_id)&quot;, nativeQuery = true)
+    java.util.Map&lt;String, Object&gt; spRegistrarDevolucion(@Param(&quot;p_prestamo_id&quot;) Long prestamoId);
+
+    /**
+     * fn_listar_prestamos_activos_por_usuario: función PostgreSQL con
+     * RETURNS TABLE (varias filas). NO se pudo mapear con @Procedure ni
+     * con @NamedStoredProcedureQuery: la API de stored procedures de JPA
+     * 2.1 está construida sobre JDBC CallableStatement, que en PostgreSQL
+     * solo expone resultados vía un valor escalar/OUT o un parámetro
+     * REF_CURSOR — no vía RETURNS TABLE/SETOF invocado como función. Para
+     * usar REF_CURSOR habría que reescribir la función para que abra y
+     * retorne un cursor, lo cual le impediría seguir siendo invocable
+     * directamente como &quot;SELECT * FROM fn_...(...)&quot; desde psql/otras
+     * herramientas. Se usa en su lugar una @Query nativa (patrón estándar
+     * de Spring Data para funciones PostgreSQL que retornan tabla).
+     */
+    @Query(value = &quot;SELECT * FROM fn_listar_prestamos_activos_por_usuario(:p_usuario_id)&quot;, nativeQuery = true)
+    List&lt;PrestamoActivoProjection&gt; fnListarPrestamosActivosPorUsuario(@Param(&quot;p_usuario_id&quot;) Long usuarioId);
+
+    /**
+     * fn_reporte_libros_mas_prestados: misma situación que
+     * fn_listar_prestamos_activos_por_usuario (RETURNS TABLE de varias
+     * filas) — @Query nativa por la misma razón documentada arriba.
+     */
+    @Query(value = &quot;SELECT * FROM fn_reporte_libros_mas_prestados(:p_limite, :p_desde, :p_hasta)&quot;, nativeQuery = true)
+    List&lt;LibroMasPrestadoProjection&gt; fnReporteLibrosMasPrestados(
+            @Param(&quot;p_limite&quot;) Integer limite,
+            @Param(&quot;p_desde&quot;) OffsetDateTime desde,
+            @Param(&quot;p_hasta&quot;) OffsetDateTime hasta
+    );
+
+    // Reporte de índice de morosidad (función RETURNS TABLE vía @Query nativa).
+    @Query(value = &quot;SELECT * FROM fn_reporte_indice_morosidad(:p_limite)&quot;, nativeQuery = true)
+    List&lt;ReporteMorosidadProjection&gt; fnReporteIndiceMorosidad(@Param(&quot;p_limite&quot;) Integer limite);
+
+    // Reporte de uso por periodo (función RETURNS TABLE vía @Query nativa).
+    @Query(value = &quot;SELECT * FROM fn_reporte_uso_por_periodo(:p_granularidad, :p_desde, :p_hasta)&quot;,
+            nativeQuery = true)
+    List&lt;ReporteUsoPorPeriodoProjection&gt; fnReporteUsoPorPeriodo(
+            @Param(&quot;p_granularidad&quot;) String granularidad,
+            @Param(&quot;p_desde&quot;) OffsetDateTime desde,
+            @Param(&quot;p_hasta&quot;) OffsetDateTime hasta
+    );
+
+    /**
+     * fn_reporte_libros_mas_prestados_detallado: versión extendida con
+     * autor, categoría y porcentaje del total.
+     */
+    @Query(value = &quot;SELECT * FROM fn_reporte_libros_mas_prestados_detallado(:p_limite, :p_desde, :p_hasta, :p_categoria_id)&quot;,
+            nativeQuery = true)
+    List&lt;LibroMasPrestadoDetalladoProjection&gt; fnReporteLibrosMasPrestadosDetallado(
+            @Param(&quot;p_limite&quot;) Integer limite,
+            @Param(&quot;p_desde&quot;) OffsetDateTime desde,
+            @Param(&quot;p_hasta&quot;) OffsetDateTime hasta,
+            @Param(&quot;p_categoria_id&quot;) Integer categoriaId
+    );
+
+    @Query(value = &quot;SELECT * FROM fn_reporte_inventario(:p_categoria_id, :p_estado_stock, :p_busqueda, :p_editorial_id, :p_proveedor_id, :p_estado_libro_id, :p_idioma_id, :p_anio_desde, :p_anio_hasta, :p_stock_total_min, :p_stock_total_max, :p_stock_disp_min, :p_stock_disp_max, :p_ubicacion)&quot;,
+            nativeQuery = true)
+    List&lt;ReporteInventarioProjection&gt; fnReporteInventario(
+            @Param(&quot;p_categoria_id&quot;) Integer categoriaId,
+            @Param(&quot;p_estado_stock&quot;) String estadoStock,
+            @Param(&quot;p_busqueda&quot;) String busqueda,
+            @Param(&quot;p_editorial_id&quot;) Integer editorialId,
+            @Param(&quot;p_proveedor_id&quot;) Integer proveedorId,
+            @Param(&quot;p_estado_libro_id&quot;) Integer estadoLibroId,
+            @Param(&quot;p_idioma_id&quot;) Integer idiomaId,
+            @Param(&quot;p_anio_desde&quot;) Short anioDesde,
+            @Param(&quot;p_anio_hasta&quot;) Short anioHasta,
+            @Param(&quot;p_stock_total_min&quot;) Short stockTotalMin,
+            @Param(&quot;p_stock_total_max&quot;) Short stockTotalMax,
+            @Param(&quot;p_stock_disp_min&quot;) Short stockDispMin,
+            @Param(&quot;p_stock_disp_max&quot;) Short stockDispMax,
+            @Param(&quot;p_ubicacion&quot;) String ubicacion
+    );
+
+    @Query(value = &quot;SELECT * FROM fn_reporte_inventario(:p_categoria_id, :p_estado_stock, :p_busqueda, :p_editorial_id, :p_proveedor_id, :p_estado_libro_id, :p_idioma_id, :p_anio_desde, :p_anio_hasta, :p_stock_total_min, :p_stock_total_max, :p_stock_disp_min, :p_stock_disp_max, :p_ubicacion) LIMIT :limit OFFSET :offset&quot;,
+            nativeQuery = true)
+    List&lt;ReporteInventarioProjection&gt; fnReporteInventarioPaginado(
+            @Param(&quot;p_categoria_id&quot;) Integer categoriaId,
+            @Param(&quot;p_estado_stock&quot;) String estadoStock,
+            @Param(&quot;p_busqueda&quot;) String busqueda,
+            @Param(&quot;p_editorial_id&quot;) Integer editorialId,
+            @Param(&quot;p_proveedor_id&quot;) Integer proveedorId,
+            @Param(&quot;p_estado_libro_id&quot;) Integer estadoLibroId,
+            @Param(&quot;p_idioma_id&quot;) Integer idiomaId,
+            @Param(&quot;p_anio_desde&quot;) Short anioDesde,
+            @Param(&quot;p_anio_hasta&quot;) Short anioHasta,
+            @Param(&quot;p_stock_total_min&quot;) Short stockTotalMin,
+            @Param(&quot;p_stock_total_max&quot;) Short stockTotalMax,
+            @Param(&quot;p_stock_disp_min&quot;) Short stockDispMin,
+            @Param(&quot;p_stock_disp_max&quot;) Short stockDispMax,
+            @Param(&quot;p_ubicacion&quot;) String ubicacion,
+            @Param(&quot;limit&quot;) int limit,
+            @Param(&quot;offset&quot;) int offset
+    );
+
+    @Query(value = &quot;SELECT COUNT(*) FROM fn_reporte_inventario(:p_categoria_id, :p_estado_stock, :p_busqueda, :p_editorial_id, :p_proveedor_id, :p_estado_libro_id, :p_idioma_id, :p_anio_desde, :p_anio_hasta, :p_stock_total_min, :p_stock_total_max, :p_stock_disp_min, :p_stock_disp_max, :p_ubicacion)&quot;,
+            nativeQuery = true)
+    long countReporteInventario(
+            @Param(&quot;p_categoria_id&quot;) Integer categoriaId,
+            @Param(&quot;p_estado_stock&quot;) String estadoStock,
+            @Param(&quot;p_busqueda&quot;) String busqueda,
+            @Param(&quot;p_editorial_id&quot;) Integer editorialId,
+            @Param(&quot;p_proveedor_id&quot;) Integer proveedorId,
+            @Param(&quot;p_estado_libro_id&quot;) Integer estadoLibroId,
+            @Param(&quot;p_idioma_id&quot;) Integer idiomaId,
+            @Param(&quot;p_anio_desde&quot;) Short anioDesde,
+            @Param(&quot;p_anio_hasta&quot;) Short anioHasta,
+            @Param(&quot;p_stock_total_min&quot;) Short stockTotalMin,
+            @Param(&quot;p_stock_total_max&quot;) Short stockTotalMax,
+            @Param(&quot;p_stock_disp_min&quot;) Short stockDispMin,
+            @Param(&quot;p_stock_disp_max&quot;) Short stockDispMax,
+            @Param(&quot;p_ubicacion&quot;) String ubicacion
+    );
+
+    @Query(value = &quot;SELECT * FROM fn_reporte_prestamos_vencidos(CAST(:p_dias_atraso_min AS INTEGER), CAST(:p_busqueda AS TEXT), CAST(:p_dias_atraso_max AS INTEGER))&quot;,
+            nativeQuery = true)
+    List&lt;ReporteVencidosProjection&gt; fnReportePrestamosVencidos(
+            @Param(&quot;p_dias_atraso_min&quot;) Integer diasAtrasoMin,
+            @Param(&quot;p_busqueda&quot;) String busqueda,
+            @Param(&quot;p_dias_atraso_max&quot;) Integer diasAtrasoMax
+    );
+
+    // Compat 2 params (existente): delega a 3 params con null en max (evita romper callers)
+    default List&lt;ReporteVencidosProjection&gt; fnReportePrestamosVencidos(Integer diasAtrasoMin, String busqueda) {
+<span class="nc" id="L198">        return fnReportePrestamosVencidos(diasAtrasoMin, busqueda, null);</span>
+    }
+
+    @Query(value = &quot;SELECT * FROM fn_reporte_prestamos_vencidos(CAST(:p_dias_atraso_min AS INTEGER), CAST(:p_busqueda AS TEXT), CAST(:p_dias_atraso_max AS INTEGER)) LIMIT :limit OFFSET :offset&quot;,
+            nativeQuery = true)
+    List&lt;ReporteVencidosProjection&gt; fnReportePrestamosVencidosPaginado(
+            @Param(&quot;p_dias_atraso_min&quot;) Integer diasAtrasoMin,
+            @Param(&quot;p_busqueda&quot;) String busqueda,
+            @Param(&quot;p_dias_atraso_max&quot;) Integer diasAtrasoMax,
+            @Param(&quot;limit&quot;) int limit,
+            @Param(&quot;offset&quot;) int offset
+    );
+
+    default List&lt;ReporteVencidosProjection&gt; fnReportePrestamosVencidosPaginado(Integer diasAtrasoMin, String busqueda, int limit, int offset) {
+<span class="nc" id="L212">        return fnReportePrestamosVencidosPaginado(diasAtrasoMin, busqueda, null, limit, offset);</span>
+    }
+
+    @Query(value = &quot;SELECT COUNT(*) FROM fn_reporte_prestamos_vencidos(CAST(:p_dias_atraso_min AS INTEGER), CAST(:p_busqueda AS TEXT), CAST(:p_dias_atraso_max AS INTEGER))&quot;,
+            nativeQuery = true)
+    long countReportePrestamosVencidos(
+            @Param(&quot;p_dias_atraso_min&quot;) Integer diasAtrasoMin,
+            @Param(&quot;p_busqueda&quot;) String busqueda,
+            @Param(&quot;p_dias_atraso_max&quot;) Integer diasAtrasoMax
+    );
+
+    default long countReportePrestamosVencidos(Integer diasAtrasoMin, String busqueda) {
+<span class="nc" id="L224">        return countReportePrestamosVencidos(diasAtrasoMin, busqueda, null);</span>
+    }
+
+    @Query(value = &quot;SELECT * FROM fn_reporte_categorias_demandadas(:p_limite, :p_desde, :p_hasta)&quot;,
+            nativeQuery = true)
+    List&lt;ReporteCategoriasDemandadasProjection&gt; fnReporteCategoriasDemandadas(
+            @Param(&quot;p_limite&quot;) Integer limite,
+            @Param(&quot;p_desde&quot;) OffsetDateTime desde,
+            @Param(&quot;p_hasta&quot;) OffsetDateTime hasta
+    );
+
+    // Paginados restantes (wrapper LIMIT/OFFSET + COUNT) — codigo legible, una query por reporte
+    @Query(value = &quot;SELECT * FROM fn_reporte_categorias_demandadas(:p_limite, :p_desde, :p_hasta) LIMIT :limit OFFSET :offset&quot;,
+            nativeQuery = true)
+    List&lt;ReporteCategoriasDemandadasProjection&gt; fnReporteCategoriasDemandadasPaginado(
+            @Param(&quot;p_limite&quot;) Integer limite, @Param(&quot;p_desde&quot;) OffsetDateTime desde, @Param(&quot;p_hasta&quot;) OffsetDateTime hasta,
+            @Param(&quot;limit&quot;) int limit, @Param(&quot;offset&quot;) int offset);
+
+    @Query(value = &quot;SELECT COUNT(*) FROM fn_reporte_categorias_demandadas(:p_limite, :p_desde, :p_hasta)&quot;, nativeQuery = true)
+    long countReporteCategoriasDemandadas(@Param(&quot;p_limite&quot;) Integer limite, @Param(&quot;p_desde&quot;) OffsetDateTime desde, @Param(&quot;p_hasta&quot;) OffsetDateTime hasta);
+
+    @Query(value = &quot;SELECT * FROM fn_reporte_indice_morosidad(:p_limite) LIMIT :limit OFFSET :offset&quot;, nativeQuery = true)
+    List&lt;ReporteMorosidadProjection&gt; fnReporteIndiceMorosidadPaginado(@Param(&quot;p_limite&quot;) Integer limite, @Param(&quot;limit&quot;) int limit, @Param(&quot;offset&quot;) int offset);
+
+    @Query(value = &quot;SELECT COUNT(*) FROM fn_reporte_indice_morosidad(:p_limite)&quot;, nativeQuery = true)
+    long countReporteIndiceMorosidad(@Param(&quot;p_limite&quot;) Integer limite);
+
+    @Query(value = &quot;SELECT * FROM fn_reporte_libros_mas_prestados_detallado(:p_limite, :p_desde, :p_hasta, :p_categoria_id) LIMIT :limit OFFSET :offset&quot;, nativeQuery = true)
+    List&lt;LibroMasPrestadoDetalladoProjection&gt; fnReporteLibrosDetalladoPaginado(
+            @Param(&quot;p_limite&quot;) Integer limite, @Param(&quot;p_desde&quot;) OffsetDateTime desde, @Param(&quot;p_hasta&quot;) OffsetDateTime hasta,
+            @Param(&quot;p_categoria_id&quot;) Integer categoriaId, @Param(&quot;limit&quot;) int limit, @Param(&quot;offset&quot;) int offset);
+
+    @Query(value = &quot;SELECT COUNT(*) FROM fn_reporte_libros_mas_prestados_detallado(:p_limite, :p_desde, :p_hasta, :p_categoria_id)&quot;, nativeQuery = true)
+    long countReporteLibrosDetallado(@Param(&quot;p_limite&quot;) Integer limite, @Param(&quot;p_desde&quot;) OffsetDateTime desde, @Param(&quot;p_hasta&quot;) OffsetDateTime hasta, @Param(&quot;p_categoria_id&quot;) Integer categoriaId);
+
+    @Query(value = &quot;SELECT * FROM fn_reporte_uso_por_periodo(:p_granularidad, :p_desde, :p_hasta) LIMIT :limit OFFSET :offset&quot;, nativeQuery = true)
+    List&lt;ReporteUsoPorPeriodoProjection&gt; fnReporteUsoPorPeriodoPaginado(
+            @Param(&quot;p_granularidad&quot;) String granularidad, @Param(&quot;p_desde&quot;) OffsetDateTime desde, @Param(&quot;p_hasta&quot;) OffsetDateTime hasta,
+            @Param(&quot;limit&quot;) int limit, @Param(&quot;offset&quot;) int offset);
+
+    @Query(value = &quot;SELECT COUNT(*) FROM fn_reporte_uso_por_periodo(:p_granularidad, :p_desde, :p_hasta)&quot;, nativeQuery = true)
+    long countReporteUsoPorPeriodo(@Param(&quot;p_granularidad&quot;) String granularidad, @Param(&quot;p_desde&quot;) OffsetDateTime desde, @Param(&quot;p_hasta&quot;) OffsetDateTime hasta);
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

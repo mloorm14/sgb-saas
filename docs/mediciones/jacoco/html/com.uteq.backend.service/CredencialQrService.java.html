@@ -16,12 +16,8 @@ import java.io.IOException;
 import java.util.UUID;
 
 /**
- * Genera y resuelve la credencial QR de un usuario (Módulo 8). Decisión de
- * diseño: el QR NO reemplaza el login por correo, es un método adicional de
- * identificación rápida en ventanilla -- el bibliotecario escanea la
- * credencial del estudiante para agilizar el registro de un préstamo (ver
- * PrestamoService.crear()), y el ingreso manual de usuarioId se mantiene
- * siempre disponible como contingencia.
+ * Genera y resuelve la credencial QR del usuario: identificación rápida en
+ * ventanilla para agilizar préstamos (el ingreso manual sigue disponible).
  */
 @Service
 public class CredencialQrService {
@@ -33,61 +29,48 @@ public class CredencialQrService {
 
     private final UsuarioRepository usuarioRepo;
 
-<span class="fc" id="L36">    public CredencialQrService(UsuarioRepository usuarioRepo) {</span>
-<span class="fc" id="L37">        this.usuarioRepo = usuarioRepo;</span>
-<span class="fc" id="L38">    }</span>
+<span class="fc" id="L32">    public CredencialQrService(UsuarioRepository usuarioRepo) {</span>
+<span class="fc" id="L33">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L34">    }</span>
 
     /**
-     * Genera la imagen PNG del QR del usuario autenticado (GET
-     * /mi-credencial). No recibe un usuarioId por parámetro a propósito:
-     * cada usuario solo puede pedir SU propio QR, nunca el de otro.
+     * Genera el QR del usuario autenticado: cada usuario solo puede pedir el suyo.
      */
     public byte[] generarImagenQrPropio(Authentication authentication) {
-<span class="fc" id="L46">        Usuario usuario = usuarioRepo.findByCorreo(authentication.getName())</span>
-<span class="fc" id="L47">                .orElseThrow(() -&gt; new EntityNotFoundException(</span>
-<span class="fc" id="L48">                        &quot;Usuario no encontrado: &quot; + authentication.getName()));</span>
-<span class="fc" id="L49">        return generarImagenQr(usuario);</span>
+<span class="fc" id="L40">        Usuario usuario = usuarioRepo.findByCorreo(authentication.getName())</span>
+<span class="fc" id="L41">                .orElseThrow(() -&gt; new EntityNotFoundException(</span>
+<span class="fc" id="L42">                        &quot;Usuario no encontrado: &quot; + authentication.getName()));</span>
+<span class="fc" id="L43">        return generarImagenQr(usuario);</span>
     }
 
     /**
-     * Codifica ÚNICAMENTE el {@code credencialQrToken} (UUID) dentro del QR
-     * -- nunca el correo ni la identificación en claro, para que el QR
-     * físico/impreso no filtre datos personales por sí solo si se pierde o
-     * lo ve alguien más.
+     * Codifica ÚNICAMENTE el token (UUID): el QR no expone datos personales si se pierde.
      */
     private byte[] generarImagenQr(Usuario usuario) {
         try {
-<span class="fc" id="L60">            BitMatrix matriz = new QRCodeWriter().encode(</span>
-<span class="fc" id="L61">                    usuario.getCredencialQrToken().toString(),</span>
+<span class="fc" id="L51">            BitMatrix matriz = new QRCodeWriter().encode(</span>
+<span class="fc" id="L52">                    usuario.getCredencialQrToken().toString(),</span>
                     BarcodeFormat.QR_CODE, TAMANO_PX, TAMANO_PX);
-<span class="fc" id="L63">            ByteArrayOutputStream salida = new ByteArrayOutputStream();</span>
-<span class="fc" id="L64">            MatrixToImageWriter.writeToStream(matriz, &quot;PNG&quot;, salida);</span>
-<span class="fc" id="L65">            return salida.toByteArray();</span>
-<span class="nc" id="L66">        } catch (WriterException | IOException ex) {</span>
-            // No debería ocurrir con un UUID.toString() como contenido (36
-            // caracteres ASCII, muy por debajo de la capacidad de un QR) --
-            // si pasa, es un problema del entorno (encoder/IO), no del dato.
-<span class="nc" id="L70">            throw new IllegalStateException(&quot;No se pudo generar el código QR.&quot;, ex);</span>
+<span class="fc" id="L54">            ByteArrayOutputStream salida = new ByteArrayOutputStream();</span>
+<span class="fc" id="L55">            MatrixToImageWriter.writeToStream(matriz, &quot;PNG&quot;, salida);</span>
+<span class="fc" id="L56">            return salida.toByteArray();</span>
+<span class="nc" id="L57">        } catch (WriterException | IOException ex) {</span>
+            // Si pasa, es un problema del entorno (encoder/IO), no del dato.
+<span class="nc" id="L59">            throw new IllegalStateException(&quot;No se pudo generar el código QR.&quot;, ex);</span>
         }
     }
 
     /**
-     * Resuelve el usuario a partir del token leído del QR escaneado en
-     * ventanilla. Rechaza tanto un token inexistente como un usuario que no
-     * esté en estado ACTIVO (bloqueado por multa, inactivo, pendiente de
-     * verificación) con el MISMO mensaje genérico: el bibliotecario ve
-     * &quot;credencial no reconocida&quot; en ambos casos, sin filtrar por qué (evita
-     * que escanear credenciales ajenas sirva para enumerar qué usuarios
-     * existen o están bloqueados), y usa el ingreso manual de cédula como
-     * contingencia.
+     * Resuelve el usuario desde el token escaneado en ventanilla.
+     * Token inexistente o usuario no ACTIVO → mismo mensaje genérico (no filtra existencia).
      */
     public Usuario resolverPorToken(UUID token) {
-<span class="fc" id="L85">        Usuario usuario = usuarioRepo.findByCredencialQrToken(token)</span>
-<span class="fc" id="L86">                .orElseThrow(() -&gt; new EntityNotFoundException(CREDENCIAL_NO_RECONOCIDA));</span>
-<span class="fc bfc" id="L87" title="All 2 branches covered.">        if (!ESTADO_ACTIVO.equals(usuario.getEstado().getNombre())) {</span>
-<span class="fc" id="L88">            throw new EntityNotFoundException(CREDENCIAL_NO_RECONOCIDA);</span>
+<span class="fc" id="L68">        Usuario usuario = usuarioRepo.findByCredencialQrToken(token)</span>
+<span class="fc" id="L69">                .orElseThrow(() -&gt; new EntityNotFoundException(CREDENCIAL_NO_RECONOCIDA));</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        if (!ESTADO_ACTIVO.equals(usuario.getEstado().getNombre())) {</span>
+<span class="fc" id="L71">            throw new EntityNotFoundException(CREDENCIAL_NO_RECONOCIDA);</span>
         }
-<span class="fc" id="L90">        return usuario;</span>
+<span class="fc" id="L73">        return usuario;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

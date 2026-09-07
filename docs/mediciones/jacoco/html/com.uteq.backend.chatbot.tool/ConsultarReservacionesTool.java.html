@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ConsultarReservacionesTool.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.chatbot.tool</a> &gt; <span class="el_source">ConsultarReservacionesTool.java</span></div><h1>ConsultarReservacionesTool.java</h1><pre class="source lang-java linenums">package com.uteq.backend.chatbot.tool;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.uteq.backend.entity.EstadoReservacion;
+import com.uteq.backend.entity.Libro;
+import com.uteq.backend.repository.EstadoReservacionRepository;
+import com.uteq.backend.repository.LibroRepository;
+import com.uteq.backend.repository.ReservacionRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Component;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Tool que consulta las reservas vigentes de un usuario.
+ * &quot;Vigente&quot; = estado PENDIENTE o LISTA_PARA_RETIRO.
+ * El usuario_id se inyecta automáticamente desde el orchestrator.
+ */
+@Component
+public class ConsultarReservacionesTool extends AbstractUsuarioAwareTool {
+
+    private final ReservacionRepository reservacionRepo;
+    private final EstadoReservacionRepository estadoReservacionRepo;
+    private final LibroRepository libroRepo;
+
+    public ConsultarReservacionesTool(ReservacionRepository reservacionRepo,
+                                      EstadoReservacionRepository estadoReservacionRepo,
+<span class="fc" id="L33">                                      LibroRepository libroRepo) {</span>
+<span class="fc" id="L34">        this.reservacionRepo = reservacionRepo;</span>
+<span class="fc" id="L35">        this.estadoReservacionRepo = estadoReservacionRepo;</span>
+<span class="fc" id="L36">        this.libroRepo = libroRepo;</span>
+<span class="fc" id="L37">    }</span>
+
+    @Override
+    public String getName() {
+<span class="fc" id="L41">        return &quot;consultar_reservaciones&quot;;</span>
+    }
+
+    @Override
+    public String getDescription() {
+<span class="fc" id="L46">        return &quot;Consulta las reservas vigentes (PENDIENTE o LISTA_PARA_RETIRO) de un usuario de la biblioteca. &quot;</span>
+                + &quot;Devuelve el listado con libro, fechas y estado.&quot;;
+    }
+
+    @Override
+    public JsonNode execute(JsonNode args) {
+<span class="nc" id="L52">        Long usuarioId = resolverUsuarioId(args);</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">        if (usuarioId == null) {</span>
+<span class="nc" id="L54">            return errorNode(&quot;Se requiere usuario_id&quot;);</span>
+        }
+
+        // Resolver IDs de estados vigentes
+<span class="nc" id="L58">        Integer estadoPendienteId = estadoReservacionRepo.findByNombre(&quot;PENDIENTE&quot;)</span>
+<span class="nc" id="L59">                .map(EstadoReservacion::getId)</span>
+<span class="nc" id="L60">                .orElse(null);</span>
+<span class="nc" id="L61">        Integer estadoListaParaRetiroId = estadoReservacionRepo.findByNombre(&quot;LISTA_PARA_RETIRO&quot;)</span>
+<span class="nc" id="L62">                .map(EstadoReservacion::getId)</span>
+<span class="nc" id="L63">                .orElse(null);</span>
+
+<span class="nc bnc" id="L65" title="All 4 branches missed.">        if (estadoPendienteId == null &amp;&amp; estadoListaParaRetiroId == null) {</span>
+<span class="nc" id="L66">            return errorNode(&quot;Estados de reserva vigentes no encontrados en catálogo&quot;);</span>
+        }
+
+<span class="nc" id="L69">        Page&lt;com.uteq.backend.entity.Reservacion&gt; pagina = reservacionRepo.findByUsuarioId(</span>
+<span class="nc" id="L70">                usuarioId, PageRequest.of(0, 20));</span>
+
+<span class="nc" id="L72">        List&lt;com.uteq.backend.entity.Reservacion&gt; vigentes = pagina.getContent().stream()</span>
+<span class="nc bnc" id="L73" title="All 6 branches missed.">                .filter(r -&gt; (estadoPendienteId != null &amp;&amp; estadoPendienteId.equals(r.getEstadoReservacionId()))</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">                        || (estadoListaParaRetiroId != null &amp;&amp; estadoListaParaRetiroId.equals(r.getEstadoReservacionId())))</span>
+<span class="nc" id="L75">                .toList();</span>
+
+<span class="nc" id="L77">        ArrayNode reservasArray = mapper.createArrayNode();</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">        for (com.uteq.backend.entity.Reservacion r : vigentes) {</span>
+<span class="nc" id="L79">            Optional&lt;Libro&gt; libroOpt = libroRepo.findById(r.getLibroId());</span>
+<span class="nc" id="L80">            Optional&lt;EstadoReservacion&gt; estadoOpt = estadoReservacionRepo.findById(r.getEstadoReservacionId());</span>
+
+<span class="nc bnc" id="L82" title="All 4 branches missed.">            if (libroOpt.isEmpty() || estadoOpt.isEmpty()) {</span>
+<span class="nc" id="L83">                continue; // saltar si falta dato relacionado</span>
+            }
+
+<span class="nc" id="L86">            Libro libro = libroOpt.get();</span>
+<span class="nc" id="L87">            EstadoReservacion estado = estadoOpt.get();</span>
+
+<span class="nc" id="L89">            ObjectNode nodo = mapper.createObjectNode();</span>
+<span class="nc" id="L90">            nodo.put(&quot;reservacion_id&quot;, r.getId());</span>
+<span class="nc" id="L91">            nodo.put(&quot;libro_id&quot;, libro.getId());</span>
+<span class="nc" id="L92">            nodo.put(&quot;titulo&quot;, libro.getTitulo());</span>
+<span class="nc" id="L93">            nodo.put(&quot;isbn&quot;, libro.getIsbn());</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">            nodo.put(&quot;fecha_reserva&quot;, r.getFechaReserva() != null ? r.getFechaReserva().toString() : null);</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">            nodo.put(&quot;fecha_limite_retiro&quot;, r.getFechaLimiteRetiro() != null ? r.getFechaLimiteRetiro().toString() : null);</span>
+<span class="nc" id="L96">            nodo.put(&quot;estado&quot;, estado.getNombre());</span>
+<span class="nc" id="L97">            reservasArray.add(nodo);</span>
+<span class="nc" id="L98">        }</span>
+
+<span class="nc" id="L100">        ObjectNode respuesta = mapper.createObjectNode();</span>
+<span class="nc" id="L101">        respuesta.set(&quot;reservas_vigentes&quot;, reservasArray);</span>
+<span class="nc" id="L102">        respuesta.put(&quot;total&quot;, vigentes.size());</span>
+<span class="nc" id="L103">        respuesta.put(USUARIO_ID, usuarioId);</span>
+<span class="nc" id="L104">        return respuesta;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

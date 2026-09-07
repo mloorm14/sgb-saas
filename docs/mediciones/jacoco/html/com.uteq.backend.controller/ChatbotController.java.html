@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ChatbotController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.controller</a> &gt; <span class="el_source">ChatbotController.java</span></div><h1>ChatbotController.java</h1><pre class="source lang-java linenums">package com.uteq.backend.controller;
 
+import com.uteq.backend.chatbot.ChatbotOrchestrator;
 import com.uteq.backend.dto.MensajeChatHistorialDTO;
 import com.uteq.backend.dto.MensajeChatRequestDTO;
 import com.uteq.backend.dto.MensajeChatResponseDTO;
-import com.uteq.backend.service.ChatbotService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -24,30 +24,27 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Asistente virtual (Módulo H, chatbot con Gemini). Restringido SOLO a
- * LECTOR a propósito: es el actor descrito para el chatbot en el roadmap
- * (un lector preguntando por horarios, multas, disponibilidad y reservas);
- * BIBLIOTECARIO/GERENTE/ADMIN no lo usan en esta fase y no tienen por qué
- * gastar cuota de la API ni aparecer en este endpoint.
+ * Asistente virtual con Gemini + function calling, solo LECTOR.
+ * Delega en {@link ChatbotOrchestrator} el loop herramienta-respuesta.
  */
 @RestController
 @RequestMapping(&quot;/api/v1/chatbot&quot;)
 @Validated
-@Tag(name = &quot;Chatbot&quot;, description = &quot;Asistente virtual con Gemini (Módulo H), solo LECTOR&quot;)
+@Tag(name = &quot;Chatbot&quot;, description = &quot;Asistente virtual con Gemini + function calling, solo LECTOR&quot;)
 public class ChatbotController {
 
-    private final ChatbotService chatbotService;
+    private final ChatbotOrchestrator chatbotOrchestrator;
 
-<span class="fc" id="L41">    public ChatbotController(ChatbotService chatbotService) {</span>
-<span class="fc" id="L42">        this.chatbotService = chatbotService;</span>
-<span class="fc" id="L43">    }</span>
+<span class="fc" id="L38">    public ChatbotController(ChatbotOrchestrator chatbotOrchestrator) {</span>
+<span class="fc" id="L39">        this.chatbotOrchestrator = chatbotOrchestrator;</span>
+<span class="fc" id="L40">    }</span>
 
     // ── POST /api/v1/chatbot/mensajes ──────────────────────
     @PostMapping(&quot;/mensajes&quot;)
     @PreAuthorize(&quot;hasRole('LECTOR')&quot;)
     @Operation(summary = &quot;Enviar mensaje al asistente&quot;,
-            description = &quot;Persiste el mensaje del LECTOR, lo envía a Gemini con grounding real &quot;
-                    + &quot;(base de conocimiento + disponibilidad de libros) y devuelve la respuesta del asistente. &quot;
+            description = &quot;Persiste el mensaje del LECTOR, lo envía a Gemini con function calling &quot;
+                    + &quot;(herramientas reales que consultan la BD) y devuelve la respuesta del asistente. &quot;
                     + &quot;Si sesionId es null se crea una sesión nueva; si viene poblado debe ser del propio usuario.&quot;)
     @ApiResponses({
             @ApiResponse(responseCode = &quot;200&quot;, description = &quot;Respuesta del asistente&quot;),
@@ -58,7 +55,7 @@ public class ChatbotController {
     })
     public ResponseEntity&lt;MensajeChatResponseDTO&gt; enviarMensaje(
             @Valid @RequestBody MensajeChatRequestDTO dto, Authentication authentication) {
-<span class="fc" id="L61">        return ResponseEntity.ok(chatbotService.enviarMensaje(dto, authentication));</span>
+<span class="fc" id="L58">        return ResponseEntity.ok(chatbotOrchestrator.enviarMensaje(dto, authentication));</span>
     }
 
     // ── GET /api/v1/chatbot/sesiones/{id}/historial ────────
@@ -74,7 +71,7 @@ public class ChatbotController {
     })
     public ResponseEntity&lt;List&lt;MensajeChatHistorialDTO&gt;&gt; historial(
             @PathVariable UUID id, Authentication authentication) {
-<span class="fc" id="L77">        return ResponseEntity.ok(chatbotService.obtenerHistorial(id, authentication));</span>
+<span class="fc" id="L74">        return ResponseEntity.ok(chatbotOrchestrator.obtenerHistorial(id, authentication));</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

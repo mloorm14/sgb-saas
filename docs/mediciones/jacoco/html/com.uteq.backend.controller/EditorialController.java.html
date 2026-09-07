@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EditorialController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report"></a> &gt; <a href="index.source.html" class="el_package">com.uteq.backend.controller</a> &gt; <span class="el_source">EditorialController.java</span></div><h1>EditorialController.java</h1><pre class="source lang-java linenums">package com.uteq.backend.controller;
+
+import com.uteq.backend.dto.EditorialRequestDTO;
+import com.uteq.backend.dto.EditorialResponseDTO;
+import com.uteq.backend.entity.Editorial;
+import com.uteq.backend.repository.EditorialRepository;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
+import java.util.List;
+
+// Catálogo editoriales (FIX 3): los &lt;select&gt; del formulario de libros
+// necesitan listar editoriales. Mismo patrón que CategoriaController/
+// AutorController (GET sin @PreAuthorize, array plano sin paginación).
+@RestController
+@RequestMapping(&quot;/api/v1/editoriales&quot;)
+public class EditorialController {
+
+    private final EditorialRepository editorialRepository;
+
+<span class="fc" id="L23">    public EditorialController(EditorialRepository editorialRepository) {</span>
+<span class="fc" id="L24">        this.editorialRepository = editorialRepository;</span>
+<span class="fc" id="L25">    }</span>
+
+    @GetMapping
+    public ResponseEntity&lt;List&lt;EditorialResponseDTO&gt;&gt; listar() {
+<span class="fc" id="L29">        List&lt;EditorialResponseDTO&gt; editoriales = editorialRepository.findAll().stream()</span>
+<span class="fc" id="L30">                .map(e -&gt; new EditorialResponseDTO(e.getId(), e.getNombre()))</span>
+<span class="fc" id="L31">                .toList();</span>
+<span class="fc" id="L32">        return ResponseEntity.ok(editoriales);</span>
+    }
+
+    @GetMapping(&quot;/buscar&quot;)
+    public ResponseEntity&lt;List&lt;EditorialResponseDTO&gt;&gt; buscar(@RequestParam String q) {
+<span class="fc" id="L37">        return ResponseEntity.ok(</span>
+<span class="fc" id="L38">                editorialRepository.findTop5ByNombreContainingIgnoreCase(q).stream()</span>
+<span class="fc" id="L39">                        .map(e -&gt; new EditorialResponseDTO(e.getId(), e.getNombre()))</span>
+<span class="fc" id="L40">                        .toList());</span>
+    }
+
+    @PostMapping
+    public ResponseEntity&lt;EditorialResponseDTO&gt; crear(@Valid @RequestBody EditorialRequestDTO dto) {
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        if (editorialRepository.existsByNombreIgnoreCase(dto.nombre())) {</span>
+<span class="fc" id="L46">            return ResponseEntity.unprocessableEntity().build();</span>
+        }
+<span class="fc" id="L48">        Editorial e = new Editorial();</span>
+<span class="fc" id="L49">        e.setNombre(dto.nombre());</span>
+<span class="fc" id="L50">        Editorial guardada = editorialRepository.save(e);</span>
+<span class="fc" id="L51">        return ResponseEntity.created(URI.create(&quot;/api/v1/editoriales/&quot; + guardada.getId()))</span>
+<span class="fc" id="L52">                .body(new EditorialResponseDTO(guardada.getId(), guardada.getNombre()));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

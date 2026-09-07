@@ -11,14 +11,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 
-// Módulo 9.2 del roadmap. Sin @PreAuthorize a nivel de método (eso vive en
-// FavoritoController, defensa en profundidad) -- acá solo se resuelve
-// &quot;de quién es este favorito&quot;: un LECTOR únicamente puede marcar/ver sus
-// propios favoritos, resuelto siempre desde el Authentication autenticado,
-// nunca de un usuarioId que venga en el request (mismo criterio que
-// PrestamoService.resolverIdPorCorreo/validarAccesoUsuario).
+// Favoritos del usuario autenticado: el dueño se resuelve siempre desde el Authentication.
 @Service
 public class FavoritoService {
 
@@ -32,63 +30,67 @@ public class FavoritoService {
 
     public FavoritoService(FavoritoRepository favoritoRepo,
                             LibroRepository libroRepo,
-<span class="fc" id="L35">                            UsuarioRepository usuarioRepo) {</span>
-<span class="fc" id="L36">        this.favoritoRepo = favoritoRepo;</span>
-<span class="fc" id="L37">        this.libroRepo = libroRepo;</span>
-<span class="fc" id="L38">        this.usuarioRepo = usuarioRepo;</span>
-<span class="fc" id="L39">    }</span>
+<span class="fc" id="L33">                            UsuarioRepository usuarioRepo) {</span>
+<span class="fc" id="L34">        this.favoritoRepo = favoritoRepo;</span>
+<span class="fc" id="L35">        this.libroRepo = libroRepo;</span>
+<span class="fc" id="L36">        this.usuarioRepo = usuarioRepo;</span>
+<span class="fc" id="L37">    }</span>
 
     @Transactional
     public FavoritoResponseDTO agregar(Long libroId, Authentication authentication) {
-<span class="fc" id="L43">        Long usuarioId = resolverIdPorCorreo(authentication.getName());</span>
-<span class="fc" id="L44">        Libro libro = libroRepo.findById(libroId)</span>
-<span class="fc" id="L45">                .orElseThrow(() -&gt; new EntityNotFoundException(LIBRO_NO_ENCONTRADO + libroId));</span>
+<span class="fc" id="L41">        Long usuarioId = resolverIdPorCorreo(authentication.getName());</span>
+<span class="fc" id="L42">        Libro libro = libroRepo.findById(libroId)</span>
+<span class="fc" id="L43">                .orElseThrow(() -&gt; new EntityNotFoundException(LIBRO_NO_ENCONTRADO + libroId));</span>
 
-<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (favoritoRepo.existsByUsuarioIdAndLibroId(usuarioId, libroId)) {</span>
-            // Idempotente a propósito: marcar dos veces el mismo libro no
-            // es un error del cliente (el botón &quot;★&quot; del frontend no tiene
-            // por qué saber si ya estaba marcado antes de hacer clic),
-            // simplemente devuelve el estado actual.
-<span class="fc" id="L52">            Favorito existente = favoritoRepo.findByUsuarioId(usuarioId).stream()</span>
-<span class="fc" id="L53">                    .filter(f -&gt; f.getLibroId().equals(libroId))</span>
-<span class="fc" id="L54">                    .findFirst()</span>
-<span class="fc" id="L55">                    .orElseThrow();</span>
-<span class="fc" id="L56">            return toDTO(existente, libro.getTitulo());</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        if (favoritoRepo.existsByUsuarioIdAndLibroId(usuarioId, libroId)) {</span>
+            // Idempotente: marcar dos veces devuelve el estado actual.
+<span class="fc" id="L47">            Favorito existente = favoritoRepo.findByUsuarioId(usuarioId).stream()</span>
+<span class="fc" id="L48">                    .filter(f -&gt; f.getLibroId().equals(libroId))</span>
+<span class="fc" id="L49">                    .findFirst()</span>
+<span class="fc" id="L50">                    .orElseThrow();</span>
+<span class="fc" id="L51">            return toDTO(existente, libro.getTitulo());</span>
         }
 
-<span class="fc" id="L59">        Favorito favorito = favoritoRepo.save(new Favorito(usuarioId, libroId));</span>
-<span class="fc" id="L60">        return toDTO(favorito, libro.getTitulo());</span>
+<span class="fc" id="L54">        Favorito favorito = favoritoRepo.save(new Favorito(usuarioId, libroId));</span>
+<span class="fc" id="L55">        return toDTO(favorito, libro.getTitulo());</span>
     }
 
     @Transactional
     public void quitar(Long libroId, Authentication authentication) {
-<span class="fc" id="L65">        Long usuarioId = resolverIdPorCorreo(authentication.getName());</span>
-<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        if (!favoritoRepo.existsByUsuarioIdAndLibroId(usuarioId, libroId)) {</span>
-<span class="fc" id="L67">            throw new EntityNotFoundException(String.format(FAVORITO_NO_ENCONTRADO, libroId));</span>
+<span class="fc" id="L60">        Long usuarioId = resolverIdPorCorreo(authentication.getName());</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">        if (!favoritoRepo.existsByUsuarioIdAndLibroId(usuarioId, libroId)) {</span>
+<span class="fc" id="L62">            throw new EntityNotFoundException(String.format(FAVORITO_NO_ENCONTRADO, libroId));</span>
         }
-<span class="nc" id="L69">        favoritoRepo.deleteByUsuarioIdAndLibroId(usuarioId, libroId);</span>
-<span class="nc" id="L70">    }</span>
+<span class="nc" id="L64">        favoritoRepo.deleteByUsuarioIdAndLibroId(usuarioId, libroId);</span>
+<span class="nc" id="L65">    }</span>
 
     @Transactional(readOnly = true)
     public List&lt;FavoritoResponseDTO&gt; listarPropios(Authentication authentication) {
-<span class="fc" id="L74">        Long usuarioId = resolverIdPorCorreo(authentication.getName());</span>
-<span class="fc" id="L75">        return favoritoRepo.findByUsuarioId(usuarioId).stream()</span>
-<span class="fc" id="L76">                .map(f -&gt; toDTO(f, tituloDe(f.getLibroId())))</span>
-<span class="fc" id="L77">                .toList();</span>
+<span class="fc" id="L69">        Long usuarioId = resolverIdPorCorreo(authentication.getName());</span>
+<span class="fc" id="L70">        return favoritoRepo.findByUsuarioId(usuarioId).stream()</span>
+<span class="fc" id="L71">                .map(f -&gt; toDTO(f, tituloDe(f.getLibroId())))</span>
+<span class="fc" id="L72">                .toList();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Page&lt;FavoritoResponseDTO&gt; listarPropiosPaginado(Authentication authentication, Pageable pageable) {
+<span class="nc" id="L77">        Long usuarioId = resolverIdPorCorreo(authentication.getName());</span>
+<span class="nc" id="L78">        return favoritoRepo.findByUsuarioId(usuarioId, pageable)</span>
+<span class="nc" id="L79">                .map(f -&gt; toDTO(f, tituloDe(f.getLibroId())));</span>
     }
 
     private String tituloDe(Long libroId) {
-<span class="fc" id="L81">        return libroRepo.findById(libroId).map(Libro::getTitulo).orElse(null);</span>
+<span class="fc" id="L83">        return libroRepo.findById(libroId).map(Libro::getTitulo).orElse(null);</span>
     }
 
     private Long resolverIdPorCorreo(String correo) {
-<span class="fc" id="L85">        return usuarioRepo.findByCorreo(correo)</span>
-<span class="pc" id="L86">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo))</span>
-<span class="fc" id="L87">                .getId();</span>
+<span class="fc" id="L87">        return usuarioRepo.findByCorreo(correo)</span>
+<span class="pc" id="L88">                .orElseThrow(() -&gt; new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo))</span>
+<span class="fc" id="L89">                .getId();</span>
     }
 
     private FavoritoResponseDTO toDTO(Favorito f, String tituloLibro) {
-<span class="fc" id="L91">        return new FavoritoResponseDTO(f.getUsuarioId(), f.getLibroId(), tituloLibro, f.getAgregadoEn());</span>
+<span class="fc" id="L93">        return new FavoritoResponseDTO(f.getUsuarioId(), f.getLibroId(), tituloLibro, f.getAgregadoEn());</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
