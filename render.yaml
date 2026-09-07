@@ -81,6 +81,9 @@ services:
     envVars:
       - key: DATABASE_URL
         sync: false
+      # Neon exige TLS: sin esto el Pool iria en plaintext y /health caeria.
+      - key: DB_SSL
+        value: "true"
       - key: DB_URL
         sync: false
       - key: DB_USER

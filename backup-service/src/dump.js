@@ -2,7 +2,7 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { upload } = require('./s3');
-const { pool, getConnectionString } = require('./db');
+const { pool, getConnectionString, isSslEnabled } = require('./db');
 
 let currentChildProcess = null;
 
@@ -24,11 +24,14 @@ async function runBackup(tipo, usuarioId = null) {
         tempFilePath = path.join(__dirname, '..', filename);
 
         // Env config is already set in db.js (PGUSER, PGPASSWORD)
+        // PGSSLMODE sincroniza pg_dump (libpq) con la decision SSL del Pool:
+        // si la URL ya trae ?sslmode=, libpq la prefiere sobre esta env (sin conflicto).
         const dbUrl = getConnectionString();
         const cmd = `pg_dump --format=c --file="${tempFilePath}" "${dbUrl}"`;
-        
+        const dumpEnv = { ...process.env, PGSSLMODE: isSslEnabled() ? 'require' : 'disable' };
+
         await new Promise((resolve, reject) => {
-            const child = exec(cmd, { timeout: 300000 }, (error, stdout, stderr) => {
+            const child = exec(cmd, { timeout: 300000, env: dumpEnv }, (error, stdout, stderr) => {
                 currentChildProcess = null;
                 if (error) {
                     console.error(`Error de pg_dump: ${stderr}`);
