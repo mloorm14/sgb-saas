@@ -121,6 +121,89 @@ gap con A4 (favoritos) y A5 (sugerencias de adquisición), ver Bloque 5.
 | UTEQ | Universidad Técnica Estatal de Quevedo |
 | SQLSTATE | Código de error de 5 caracteres devuelto por PostgreSQL (`LB404`/`LB409`/`LB422` son códigos custom de este proyecto, ver `GlobalExceptionHandler`) |
 
+### 1.3.1 Estados del dominio (catálogo cerrado y transiciones)
+
+Conjunto **cerrado** de valores por entidad, verificado línea por línea
+contra las sentencias `INSERT` de `db/seed.sql` (no se asume ningún valor
+no sembrado). Los nombres son los que exigen los procedimientos/funciones
+SQL y el código Java por igual (`db/seed.sql`, líneas 9-13: "cualquier
+cambio aquí debe reflejarse también allá").
+
+| Entidad | Estados (orden de inserción en `db/seed.sql`) |
+|---|---|
+| `usuarios` (`estados_usuario`) | `ACTIVO`, `BLOQUEADO_POR_MULTA`, `INACTIVO`, `PENDIENTE_VERIFICACION` |
+| `libros` (`estados_libro`) | `ACTIVO`, `DADO_DE_BAJA`, `EN_REPARACION`, `PERDIDO` |
+| `prestamos` (`estados_prestamo`) | `ACTIVO`, `RENOVADO`, `DEVUELTO`, `VENCIDO` |
+| `multas` (`estados_multa`) | `PENDIENTE`, `PAGADA`, `ANULADA` |
+| `reservaciones` (`estados_reservacion`) | `PENDIENTE`, `LISTA_PARA_RETIRO`, `RETIRADA`, `EXPIRADA`, `CANCELADA` |
+
+**Tabla de transiciones** (evento/actor real que dispara cada cambio,
+verificado en el código de los `*Service`/`*Scheduler` correspondientes;
+no existe un `UsuarioService` dedicado — las transiciones de `usuarios`
+viven repartidas entre `AuthService`, `VerificacionCorreoService`,
+`UsuarioAdminService` y los procedimientos SQL de multas):
+
+| Entidad | Transición | Disparador |
+|---|---|---|
+| usuario | (registro) → `PENDIENTE_VERIFICACION` | `AuthService.registrar` (`POST /api/auth/registro`) |
+| usuario | `PENDIENTE_VERIFICACION` → `ACTIVO` | `AuthService.verificarCorreo` tras código correcto (`POST /api/auth/verificar-correo`) |
+| usuario | `ACTIVO` → `BLOQUEADO_POR_MULTA` | `sp_registrar_devolucion` cuando la devolución genera multa por atraso |
+| usuario | `BLOQUEADO_POR_MULTA` → `ACTIVO` | `sp_pagar_multa`, solo si era la última multa `PENDIENTE` del usuario |
+| usuario | `ACTIVO`↔`INACTIVO` | `UsuarioAdminService.cambiarEstado` (`ADMIN` sin restricción de conjunto; `GERENTE` restringido a `ACTIVO`/`INACTIVO` y solo sobre usuarios que él mismo creó) |
+| usuario | cualquiera → `INACTIVO` | `UsuarioAdminService.eliminarUsuario` (baja lógica, `DELETE /api/v1/admin/usuarios/{id}`) |
+| libro | (creación) → `ACTIVO` | `LibroService.crear`, salvo la excepción de la fila siguiente |
+| libro | `ACTIVO` → `DADO_DE_BAJA` | `LibroService.eliminar` (baja lógica, nunca borrado físico) |
+| libro | `ACTIVO`/`DADO_DE_BAJA`/`EN_REPARACION`/`PERDIDO` (cualquier transición manual) | `LibroService.actualizar`, campo `estadoId` del request — quien edita elige el estado del catálogo directamente; **ningún flujo automático transiciona a `EN_REPARACION`/`PERDIDO`** (ver nota de honestidad abajo) |
+| préstamo | (creación) → `ACTIVO` | `PrestamoService.crear` (`sp_crear_prestamo`) |
+| préstamo | `ACTIVO`/`RENOVADO` → `DEVUELTO` | `sp_registrar_devolucion` (`POST /api/v1/prestamos/{id}/devolucion`) |
+| préstamo | `ACTIVO` → `RENOVADO` | `PrestamoService.renovar` (`POST /api/v1/prestamos/{id}/renovacion`) |
+| multa | (generación por atraso) → `PENDIENTE` | `sp_registrar_devolucion` |
+| multa | `PENDIENTE` → `PAGADA` | `sp_pagar_multa` (`POST /api/v1/multas/{id}/pago`) |
+| multa | `PENDIENTE` → `ANULADA` | `sp_anular_multa` (`POST /api/v1/multas/{id}/anulacion`, solo `GERENTE`/`ADMIN`) |
+| reservación | (creación) → `PENDIENTE` | `ReservacionService.crear` (`POST /api/v1/reservaciones`) |
+| reservación | `PENDIENTE` → `LISTA_PARA_RETIRO` | `ReservacionService` (aceptación del staff, `PATCH` de cambio de estado) |
+| reservación | `PENDIENTE` → `CANCELADA` | `ReservacionService` (rechazo del staff, mismo endpoint) |
+| reservación | `PENDIENTE`/`LISTA_PARA_RETIRO` → `RETIRADA` | `PrestamoService.crear` cuando el préstamo se vincula a una `reservacionId` |
+| reservación | `PENDIENTE`/`LISTA_PARA_RETIRO` → `EXPIRADA` | `ReservacionScheduler.expirarReservacionesVencidas` (job cada 15 min, `spExpirarReservacionesVencidas`) |
+
+**Notas de honestidad (verificadas en este commit, no asumidas)**:
+
+1. **`VENCIDO` (estados_prestamo) nunca se asigna en el código.** Es un
+   estado sembrado en el catálogo, pero "vencido" se calcula
+   **dinámicamente** comparando `fechaDevolucionEstimada` contra
+   `OffsetDateTime.now()` en el momento de la operación (ej.
+   `PrestamoService.renovar`, línea `if (prestamo.getFechaDevolucionEstimada().isBefore(OffsetDateTime.now()))`)
+   — ningún `UPDATE` ni procedimiento persiste `estado_prestamo_id` como
+   `VENCIDO`. Un préstamo atrasado sigue mostrando `ACTIVO`/`RENOVADO` en
+   la columna de estado hasta que se devuelve.
+2. **`EN_REPARACION`/`PERDIDO` (estados_libro) no tienen transición
+   automática.** El flujo de registro de daños al devolver un préstamo
+   (`DevolucionService.registrarDevolucion`, con `dto.estadoDevolucion()`
+   en `{CON_DANO, PERDIDO}`) crea un `RegistroDano` y, si aplica, una
+   multa adicional por daño — pero **no modifica** el
+   `estado_libro_id` del libro afectado. Los dos estados solo son
+   alcanzables editando el libro manualmente (`PUT /api/v1/libros/{id}`,
+   campo `estadoId`).
+3. **Referencia a un estado `PENDIENTE` de `estados_libro` que no existe
+   en el seed.** `LibroService.crear` busca
+   `estadoRepo.findByNombre("PENDIENTE")` (vía `.orElse(null)`, sin
+   lanzar excepción) para un flujo de "revisión pendiente" al crear un
+   libro como `GERENTE`/`ADMIN`; `db/seed.sql` **no siembra ninguna fila
+   `PENDIENTE` en `estados_libro`** (solo `ACTIVO`/`DADO_DE_BAJA`/
+   `EN_REPARACION`/`PERDIDO`), así que esa búsqueda siempre devuelve vacío
+   y la rama `if (pendiente != null)` nunca se ejecuta contra los datos
+   sembrados de este repositorio. Un comentario en el mismo archivo
+   (`LibroService.java`, cerca de la línea 187) asume una numeración de
+   IDs `2,3,4,5` para `DADO_DE_BAJA,PENDIENTE,EN_REPARACION,PERDIDO`, que
+   tampoco coincide con el orden real de 4 filas sembradas (`ACTIVO=1,
+   DADO_DE_BAJA=2, EN_REPARACION=3, PERDIDO=4`, sin id 5).
+   PENDIENTE_VERIFICAR_MARLON: confirmar si `estados_libro` debería tener
+   una quinta fila `PENDIENTE` (y agregarla a `db/seed.sql`) o si ese
+   código es vestigial de un diseño descartado.
+
+Ver también A24 (sección 3.1, Bloque 5 de esta actualización), que
+referencia esta misma tabla como anexo formal de trazabilidad.
+
 ### 1.4 Referencias
 
 - ISO/IEC/IEEE 29148:2018 — Requirements Engineering (estructura de este documento).
@@ -456,6 +539,13 @@ formato.
   3. Usuario `BLOQUEADO_POR_MULTA` → `422` ("multas pendientes"), sin
      crear registro.
   4. Usuario o libro inexistente → `404`.
+  5. El campo `diasPrestamo` del request es **obligatorio** (`@NotNull`) y
+     debe ser un entero ≥1 (`@Min(1)`, `PrestamoRequestDTO.java`); no hay
+     un máximo validado en el código. La interfaz sugiere como valor
+     inicial el contenido de la clave `dias_prestamo_default` de
+     `configuracion_sistema` (sembrada en `15` días, `db/seed.sql`;
+     `UsuarioPrestamosGestionDTO.diasPrestamoSugerido`), pero el backend no
+     lo aplica de oficio si el cliente envía otro valor válido.
 - **Método de verificación**: **Test**
   (`PrestamoServiceTest.crear_conDatosValidos_invocaProcedimientoYRetornaDTO`,
   `PrestamoMultaProcedureIntegrationTest` — 6 tests de integración reales
@@ -477,8 +567,20 @@ formato.
 - **Criterio de aceptación medible**:
   1. Devolución sin atraso → préstamo `DEVUELTO`, stock +1, sin multa.
   2. Devolución con atraso → préstamo `DEVUELTO`, multa `PENDIENTE`
-     generada, usuario pasa a `BLOQUEADO_POR_MULTA`.
+     generada, usuario pasa a `BLOQUEADO_POR_MULTA`. El monto se calcula
+     como `días_de_atraso × monto_multa_diaria` (`sp_registrar_devolucion.sql`),
+     donde `días_de_atraso = CEIL(diferencia_horaria_en_segundos / 86400)`
+     (cualquier atraso, aunque sea de horas, cuenta como mínimo 1 día
+     completo) y `monto_multa_diaria` es una clave de
+     `configuracion_sistema` sembrada en `0.50` (`db/seed.sql`), sin tope
+     máximo de monto en el procedimiento.
   3. Doble devolución del mismo préstamo → `409`.
+  4. Préstamo inexistente → `404`.
+  5. Falta la clave `monto_multa_diaria` en `configuracion_sistema` (solo
+     relevante con atraso) → `422`.
+  - Códigos de error del procedimiento (`sp_registrar_devolucion.sql`):
+    `LB404` (préstamo no existe), `LB409` (préstamo ya devuelto), `LB422`
+    (falta configurar `monto_multa_diaria`).
 - **Método de verificación**: **Test**
   (`PrestamoServiceTest.registrarDevolucion_sinAtraso_noGeneraMulta`,
   `.registrarDevolucion_conAtraso_generaMulta`,
@@ -543,7 +645,22 @@ formato.
   multas).
 - **Criterio de aceptación medible**:
   1. LECTOR reserva → reservación `PENDIENTE` a su propio nombre, con
-     fecha de reserva = ahora y fecha límite de retiro calculada.
+     fecha de reserva = ahora (zona `America/Guayaquil`) y fecha límite de
+     retiro calculada como la hora `hora_limite_retiro_reserva` (clave de
+     `configuracion_sistema`, default `"18:00"` si la clave no está
+     configurada) del día indicado en `fechaRetiro` del request, o del día
+     de hoy si no se envía `fechaRetiro` (`ReservacionService.fromDTO`,
+     `backend-springboot/.../ReservacionService.java:99-125`). **Nota de
+     honestidad (verificado en este commit)**: `configuracion_sistema`
+     también sembraba una clave `minutos_reserva` (`1440`, `db/seed.sql`)
+     que un enunciado previo de este SRS asumía como el mecanismo real de
+     plazo de retiro — se confirmó por búsqueda exhaustiva en
+     `backend-springboot/src/main/java` que **ningún código lee esa
+     clave**; es un parámetro sembrado sin efecto real, no el mecanismo
+     que calcula la fecha límite. PENDIENTE_VERIFICAR_MARLON: confirmar si
+     `minutos_reserva` es vestigial de un diseño anterior y debe eliminarse
+     de `configuracion_sistema`, o si estaba pensado para otro flujo que
+     todavía no lo consume.
   2. BIBLIOTECARIO/GERENTE reserva a nombre de otro usuario → reservación
      a nombre del usuario indicado.
   3. LECTOR que envía un `usuarioId` distinto al propio → el sistema lo
@@ -660,7 +777,8 @@ formato.
   solo la superficie de interacción.
 - **Criterio de aceptación medible**:
   1. Bibliotecario crea préstamo con usuario, libro y días → préstamo
-     registrado.
+     registrado (mismo campo `diasPrestamo` obligatorio ≥1 días y mismo
+     valor sugerido por defecto de 15 días, ver REQ-F-007).
   2. Bibliotecario registra devolución de un préstamo activo → fila se
      actualiza con fecha real, botón de devolución desaparece de esa fila.
   3. Préstamos ya devueltos no muestran botón de devolución.
@@ -691,7 +809,12 @@ formato.
   1. `ADMIN` autenticado → `GET /api/v1/configuracion` responde `200` con
      el listado de claves/valores.
   2. `ADMIN` actualiza una clave existente vía `PUT` → `200` con el valor
-     nuevo.
+     nuevo. **Nota de honestidad**: `ConfiguracionSistemaService.actualizar()`
+     no valida el nuevo valor contra ningún rango ni formato esperado por
+     la clave (acepta cualquier cadena, incluida una no numérica para una
+     clave que un consumidor espera como entero/decimal, ver REQ-F-018);
+     un valor inválido para su clave solo falla más tarde, al leerla
+     (`obtenerValorEntero`/`obtenerValorDecimal`), no al escribirla.
   3. Rol distinto de `ADMIN` → `403`.
 - **Método de verificación**: **Test**
   (`ConfiguracionSistemaServiceTest`, 6 tests;
@@ -714,11 +837,19 @@ formato.
   ni pisar la reserva de otro lector.
 - **Criterio de aceptación medible**:
   1. Préstamo activo, no vencido, bajo el límite y sin reserva de otro
-     usuario → renovación exitosa, fecha límite extendida, contador de
-     renovaciones `+1`.
+     usuario → renovación exitosa, fecha límite extendida `+dias_prestamo_default`
+     días (misma clave y mismo valor por defecto que REQ-F-007, `15`),
+     contador de renovaciones `+1`.
   2. Préstamo vencido → rechazo (`PrestamoVencidoException`).
   3. Préstamo que ya alcanzó el máximo de renovaciones → rechazo
-     (`LimiteRenovacionesExcedidoException`).
+     (`LimiteRenovacionesExcedidoException`). El máximo es la clave
+     `max_renovaciones_default` de `configuracion_sistema`, sembrada en
+     `2` (`db/seed.sql`). **Rango admisible**: ninguno validado en el
+     código — `ConfiguracionSistemaService.actualizar()` acepta cualquier
+     cadena para esta clave (incluida negativa, cero o no numérica); un
+     valor no numérico solo falla, en tiempo de uso, con
+     `IllegalStateException` al leer la clave (`obtenerValorEntero`), no
+     al escribirla vía `PUT /api/v1/configuracion/{clave}` (REQ-F-017).
   4. Libro con reserva vigente de otro usuario → rechazo
      (`MaterialReservadoException`).
   5. `LECTOR` que intenta renovar el préstamo de otro usuario → acceso
@@ -900,9 +1031,15 @@ formato.
   con granularidad seleccionable.
 - **Rationale**: **nota de honestidad** — mismo caso que REQ-F-010/025,
   sin HU/CU dedicada.
-- **Criterio de aceptación medible**: granularidad inválida → rechazo
-  explícito (no un `500` genérico); granularidad válida → invoca el
-  repositorio con el valor normalizado.
+- **Criterio de aceptación medible**: conjunto cerrado de valores admitidos
+  = `{dia, semana, mes}` (`PrestamoService.GRANULARIDADES_VALIDAS`); la
+  comparación es **insensible a mayúsculas** (el valor recibido se aplica
+  `.toLowerCase()` antes de validar, ej. `"MES"`/`"Mes"` se aceptan igual
+  que `"mes"`); un valor `null` **no se rechaza**, se normaliza al default
+  `"dia"`; cualquier otro valor no perteneciente al conjunto cerrado →
+  rechazo explícito (`IllegalArgumentException`, no un `500` genérico);
+  granularidad válida (o normalizada) → invoca el repositorio con el valor
+  ya en minúsculas.
 - **Método de verificación**: **Test**
   (`PrestamoServiceTest.reporteUsoPorPeriodo_conGranularidadValida_invocaRepositorioConValorNormalizado`,
   `.reporteUsoPorPeriodo_conGranularidadInvalida_lanzaExcepcion`).
@@ -951,7 +1088,11 @@ formato.
   2. Mensaje vacío o mayor a 500 caracteres → `400`.
   3. Rol distinto de `LECTOR` o no autenticado → `403`.
   4. Sesión inexistente o de otro usuario → `404`.
-  5. Límite de mensajes por minuto excedido → `429`.
+  5. Límite de mensajes excedido → `429`. Límite configurable
+     (`app.gemini.rate-limit-max-mensajes` / `app.gemini.rate-limit-window-seconds`,
+     `ChatbotRateLimiter.java`), sembrado por defecto en **10 mensajes por
+     usuario cada 60 segundos** (ventana fija, contador en Redis con TTL
+     fijado en el primer mensaje de la ventana).
 - **Método de verificación**: **Test** (`ChatbotServiceTest`, 8 tests;
   `ChatbotControllerSecurityTest`, 5 tests; `ChatbotRateLimiterTest`, 5
   tests). **Nota de honestidad**: `ChatbotServiceIntegrationTest`
@@ -1020,17 +1161,26 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 - **Descripción**: el `refreshToken` debe transportarse exclusivamente en
   una cookie `HttpOnly`, `Secure`, `SameSite=Strict`, con `path=/api/auth`,
   nunca en el cuerpo JSON.
-- **Rationale**: un secreto de vida larga (7 días) legible por JavaScript
-  es un vector directo de exfiltración vía XSS; migrarlo a cookie
-  `HttpOnly` lo hace inaccesible a JS por diseño del navegador (ADR-012,
-  OWASP A02). **Nota de honestidad heredada de ADR-012**: el
-  `accessToken` (de vida corta, 1h) **no** está migrado a cookie todavía
+- **Rationale**: un secreto de vida más larga que el `accessToken` legible
+  por JavaScript es un vector directo de exfiltración vía XSS; migrarlo a
+  cookie `HttpOnly` lo hace inaccesible a JS por diseño del navegador
+  (ADR-012, OWASP A02). **Corrección de cifra (hallazgo del Dr. Guerrero)**:
+  el rationale citaba "7 días" para el `refreshToken` en versiones
+  anteriores de este SRS; `application.yml` (`jwt.refresh-expiration-ms:
+  10800000`) fija su vida real en **3 horas** (10 800 000 ms), no 7 días —
+  se corrige aquí con el valor verificado directamente en la configuración.
+  **Nota de honestidad heredada de ADR-012**: el `accessToken` (vida
+  corta, `jwt.expiration-ms: 3600000` = 1 hora, cifra que sí coincidía con
+  versiones anteriores de este SRS) **no** está migrado a cookie todavía
   — sigue en el cuerpo JSON/memoria del frontend, decisión explícitamente
   diferida por el impacto en `jwt.interceptor.ts`/`auth.service.ts`.
 - **Criterio de aceptación medible**: la respuesta de login/refresh
   incluye el header `Set-Cookie: refreshToken=...; HttpOnly; Secure;
   SameSite=Strict; Path=/api/auth`; el campo `refreshToken` está ausente
-  del cuerpo JSON (`@JsonIgnore` en `TokenResponseDTO`).
+  del cuerpo JSON (`@JsonIgnore` en `TokenResponseDTO`); vida del
+  `accessToken` = 1 hora (`jwt.expiration-ms: 3600000`); vida del
+  `refreshToken` = 3 horas (`jwt.refresh-expiration-ms: 10800000`) —
+  ambos valores de `application.yml`, verificados en este commit.
 - **Método de verificación**: **Demonstration**
   (`docs/mediciones/sec/2026-07-21-cookie-refresh-token.md`, verificado
   con `curl --include` contra el stack real).
