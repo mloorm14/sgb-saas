@@ -968,36 +968,87 @@ formato.
   propias notificaciones (préstamo por vencer, multa generada, reserva
   caducada); un `LECTOR` solo ve las suyas, el resto de roles puede
   consultar cualquiera (mismo patrón que REQ-F-013).
-- **Rationale**: centraliza en la UI las alertas que también se envían por
-  correo (REQ-F-022), para que el usuario no dependa solo de su bandeja de
-  entrada.
+- **Rationale**: centraliza en la UI las alertas que también intentan
+  enviarse por correo (REQ-F-022a/b/c), para que el usuario no dependa
+  solo de su bandeja de entrada — particularmente relevante ahora que el
+  envío por correo de esas alertas está deshabilitado por defecto
+  (`OBS-23`) y la notificación in-app es, en la práctica, el único canal
+  que sí llega de forma consistente.
 - **Criterio de aceptación medible**: `LECTOR` que pide las notificaciones
   de otro usuario → acceso denegado (mismo patrón que
   REQ-F-009/012/013/019).
 - **Método de verificación**: **Test** (`NotificacionServiceTest`, 6
   tests; `NotificacionControllerSecurityTest`, 4 tests).
 
-#### REQ-F-022 — Generación automática de alertas (vencimiento, multa, reserva caducada)
+#### REQ-F-022a — Alerta de préstamo por vencer
 
 - **Prioridad**: Should
 - **Fuente**: **sin HU/CU dedicada** (matriz: `—`, `—`).
-- **Módulo/endpoint**: `NotificacionVencimientoScheduler`/`NotificacionService`/`PrestamoService` (`registrarDevolucion`)/`ReservacionScheduler` — job periódico + wiring interno, sin endpoint propio.
-- **Descripción**: el sistema genera y envía por correo, sin intervención
-  manual: (a) aviso de préstamo por vencer, job cada 60s con ventana de
-  anticipación configurable (default 15 min); (b) aviso de multa generada,
-  al registrar una devolución con atraso; (c) aviso de reserva caducada,
-  job de expiración de reservas cada 15 min.
-- **Rationale**: reduce préstamos vencidos por descuido y libera stock/
-  reservas caducadas sin depender de que el bibliotecario revise
-  manualmente.
+- **Módulo/endpoint**: `NotificacionVencimientoScheduler`/`NotificacionService` — job periódico, sin endpoint propio.
+- **Descripción**: el sistema genera una notificación de "préstamo por
+  vencer" mediante un job que corre cada 60 segundos, para todo préstamo
+  dentro de una ventana de anticipación configurable (default 15 minutos
+  antes de la fecha límite).
+- **Rationale**: reduce préstamos vencidos por descuido, sin depender de
+  que el bibliotecario o el lector revisen manualmente las fechas.
 - **Criterio de aceptación medible**: un préstamo dentro de la ventana de
-  anticipación configurada genera una notificación una sola vez (no
-  repetida en cada ejecución del job).
+  anticipación configurada genera una notificación **una sola vez** (no
+  repetida en cada ejecución del job, que corre cada 60s).
+- **Nota de honestidad (verificada en código, 2026-09-07)**: el envío
+  real por correo de esta alerta está **deshabilitado por defecto**
+  (`NotificacionService`, `@Value("${notificaciones.email.habilitado:false}")`,
+  causa raíz documentada en `OBS-23`: saturación del proveedor SMTP tras
+  el volumen sintético de la rúbrica ADB) — la notificación **sí** se
+  persiste en la tabla `notificaciones` (consultable vía REQ-F-021), pero
+  el correo no se envía salvo que se reactive explícitamente esa clave de
+  configuración. El criterio de aceptación de este requisito es sobre la
+  generación de la notificación, no sobre su entrega por correo, que
+  queda declarada pendiente de reactivación SMTP, no como si funcionara.
 - **Método de verificación**: **Test**
   (`NotificacionVencimientoSchedulerTest`, 3 tests;
-  `PrestamoServiceTest.registrarDevolucion_*`, 2 tests;
-  `NotificacionServiceTest.generarAlertaVencimiento_*`/`notificarMulta_*`/`notificarReservaCaducada_*`,
-  4 tests; `EmailServiceTest`, 2 tests).
+  `NotificacionServiceTest.generarAlertaVencimiento_*`; `EmailServiceTest`).
+
+#### REQ-F-022b — Alerta de multa generada
+
+- **Prioridad**: Should
+- **Fuente**: **sin HU/CU dedicada** (matriz: `—`, `—`).
+- **Módulo/endpoint**: `PrestamoService` (`registrarDevolucion`)/`NotificacionService` — disparado por evento, no por job periódico, sin endpoint propio.
+- **Descripción**: el sistema genera una notificación de "multa generada"
+  inmediatamente al registrar una devolución con atraso (no es un job
+  periódico — se dispara en la misma transacción de la devolución).
+- **Rationale**: informa al lector de inmediato que quedó
+  `BLOQUEADO_POR_MULTA`, sin depender de que consulte la app por su
+  cuenta.
+- **Criterio de aceptación medible**: toda devolución con atraso
+  (`sp_registrar_devolucion` con `o_hubo_multa = true`) genera exactamente
+  una notificación de multa.
+- **Nota de honestidad**: mismo estado que REQ-F-022a — la notificación se
+  persiste, pero el envío por correo depende de
+  `notificaciones.email.habilitado` (deshabilitado por defecto desde
+  `OBS-23`).
+- **Método de verificación**: **Test**
+  (`PrestamoServiceTest.registrarDevolucion_*`;
+  `NotificacionServiceTest.notificarMulta_*`; `EmailServiceTest`).
+
+#### REQ-F-022c — Alerta de reserva caducada
+
+- **Prioridad**: Should
+- **Fuente**: **sin HU/CU dedicada** (matriz: `—`, `—`).
+- **Módulo/endpoint**: `ReservacionScheduler`/`NotificacionService` — job periódico cada 15 minutos, sin endpoint propio.
+- **Descripción**: el sistema genera una notificación de "reserva
+  caducada" mediante `ReservacionScheduler.expirarReservacionesVencidas`,
+  que corre cada 15 minutos y notifica antes de expirar en lote las
+  reservaciones vencidas (ver sección 1.3.1).
+- **Rationale**: libera al lector de revisar manualmente si su reserva
+  seguía vigente.
+- **Criterio de aceptación medible**: toda reservación `PENDIENTE`/
+  `LISTA_PARA_RETIRO` cuya `fechaLimiteRetiro` ya pasó genera exactamente
+  una notificación antes de expirar.
+- **Nota de honestidad**: mismo estado que REQ-F-022a/b — envío por
+  correo condicionado a `notificaciones.email.habilitado` (deshabilitado
+  por defecto desde `OBS-23`).
+- **Método de verificación**: **Test**
+  (`NotificacionServiceTest.notificarReservaCaducada_*`; `EmailServiceTest`).
 
 #### REQ-F-023 — Administración de usuarios (rol y estado)
 
@@ -1420,62 +1471,90 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   documenta la ausencia de un test de regresión en vez de implicar que
   existe uno.
 
-##### REQ-NF-014 — Cabeceras de seguridad / Content-Security-Policy
+##### REQ-NF-014a — Content-Security-Policy (backend y frontend)
 
 - **Prioridad**: Should
 - **Fuente**: sin HU dedicada, OWASP A05
-- **Descripción**: el frontend/backend deberían enviar cabeceras de
-  seguridad estándar (incluyendo CSP) para mitigar XSS y clickjacking; el
-  backend en producción no debería exponer stacktraces ni Swagger, y su
-  contenedor no debería correr como `root`.
-- **Estado real — implementado en backend y frontend, actualizado
-  respecto a versiones anteriores de este SRS** (hallazgo del Dr.
-  Guerrero: el gap de CSP del lado frontend que declaraban versiones
-  previas ya no existe, verificado contra `frontend-angular/nginx.conf`
-  en este commit): esta versión anterior (`v0.9.0-rc`) declaraba este
-  requisito completamente pendiente; desde entonces se cerró vía
-  `feature/seguridad-transporte` y se **verificó contra el stack Docker
-  real**:
-  1. `Content-Security-Policy` presente en las respuestas del backend
-     (`SecurityConfig.java`, `contentSecurityPolicy(...)`) — confirmado
-     con `curl -I` contra `/actuator/health` real.
-  2. Perfil `prod` de `application.yml` deshabilita Swagger UI/OpenAPI
-     (`springdoc.*.enabled: false`) y suprime stacktraces/mensajes
-     internos en errores. **Nota de honestidad adicional**: la primera
-     verificación real detectó que `/swagger-ui.html` con `prod` activo
-     devolvía `500` en vez del `404` esperado (`GlobalExceptionHandler`
-     capturaba `NoResourceFoundException` en su catch-all genérico) — se
-     corrigió con un `@ExceptionHandler` específico y se reverificó `404`
-     real antes de cerrar este punto (ver evidencia empírica en la matriz;
-     el commit puntual de ese fix ya no es citable por hash, ver M24/A24).
-  3. El contenedor `backend` corre como usuario `spring` (no `root`) —
-     confirmado con `docker exec sgb_backend whoami`.
-  4. **Cerrado en esta revisión**: `frontend-angular/nginx.conf` (línea 10)
-     ya envía `Content-Security-Policy` con el modificador `always`
-     (`add_header Content-Security-Policy "..." always;`), verificado
-     leyendo el archivo directamente en este commit — el gap declarado en
-     versiones anteriores de este SRS **ya no existe**.
-  - Todo lo anterior (puntos 1-3) verificado en vivo en
-    `docs/mediciones/sec/owasp/2026-08-11-owasp-a05-verificacion-real.md`
-    (complementa, no reemplaza, el hallazgo original ni el cierre por
-    inspección de `feature/seguridad-transporte`); el punto 4 se verificó
-    por inspección directa del archivo en este commit, **sin**
-    `Demonstration` nueva contra el contenedor real (no se repitió el
-    `curl -I` contra el frontend servido).
+- **Descripción**: el backend y el frontend deben enviar la cabecera
+  `Content-Security-Policy` para mitigar XSS y clickjacking.
+- **Estado real — implementado en ambos lados**: `SecurityConfig.java`
+  (`contentSecurityPolicy(...)`) la envía en las respuestas del backend,
+  confirmado con `curl -I` contra `/actuator/health` real
+  (`docs/mediciones/sec/owasp/2026-08-11-owasp-a05-verificacion-real.md`).
+  `frontend-angular/nginx.conf:10` la envía también, con el modificador
+  `always` — verificado leyendo el archivo directamente en este commit
+  (**hallazgo del Dr. Guerrero**: el gap de CSP del lado frontend que
+  declaraban versiones anteriores de este SRS ya no existe).
 - **Criterio de aceptación medible**: las respuestas del backend incluyen
-  `Content-Security-Policy` (cumplido, verificado en vivo); las
-  respuestas del frontend vía Nginx incluyen `Content-Security-Policy`
-  (cumplido, verificado por inspección de `nginx.conf:10` en este commit).
-- **Método de verificación**: **Demonstration** (backend, puntos 1-3:
+  `Content-Security-Policy` (cumplido, verificado en vivo); las respuestas
+  del frontend vía Nginx incluyen `Content-Security-Policy` (cumplido,
+  verificado por inspección de `nginx.conf:10` en este commit, sin
+  `Demonstration` nueva contra el contenedor real).
+- **Método de verificación**: **Demonstration** (backend:
   `docs/mediciones/sec/owasp/2026-07-30-owasp-a05-mala-configuracion-seguridad.md`
   — hallazgo original;
   `docs/mediciones/sec/owasp/2026-08-10-owasp-a05-fix-csp-stacktrace-swagger-nonroot.md`
   — cierre por inspección;
   `docs/mediciones/sec/owasp/2026-08-11-owasp-a05-verificacion-real.md` —
-  verificación real contra Docker, incluyendo el fix de
-  `NoResourceFoundException`) + **Inspection** (frontend, punto 4: lectura
-  directa de `frontend-angular/nginx.conf:10` en este commit, sin
-  `Demonstration` nueva contra el contenedor real).
+  verificación real contra Docker) + **Inspection** (frontend: lectura
+  directa de `frontend-angular/nginx.conf:10` en este commit).
+
+##### REQ-NF-014b — Supresión de stacktraces y mensajes internos en producción
+
+- **Prioridad**: Should
+- **Fuente**: sin HU dedicada, OWASP A05
+- **Descripción**: el backend en producción no debe exponer stacktraces
+  ni mensajes internos del motor de base de datos en las respuestas de
+  error.
+- **Estado real — implementado**: el perfil `prod` de `application.yml`
+  suprime stacktraces/mensajes internos en errores; `GlobalExceptionHandler`
+  traduce toda excepción a `ProblemDetail` (RFC 7807) sin fuga de detalles
+  internos.
+- **Criterio de aceptación medible**: ninguna respuesta de error con
+  perfil `prod` activo incluye un stacktrace de Java ni un mensaje interno
+  de PostgreSQL/Hibernate en el cuerpo de la respuesta.
+- **Método de verificación**: **Demonstration**
+  (`docs/mediciones/sec/owasp/2026-08-10-owasp-a05-fix-csp-stacktrace-swagger-nonroot.md`;
+  `docs/mediciones/sec/owasp/2026-08-11-owasp-a05-verificacion-real.md`).
+
+##### REQ-NF-014c — Swagger UI/OpenAPI desactivado en producción
+
+- **Prioridad**: Should
+- **Fuente**: sin HU dedicada, OWASP A05
+- **Descripción**: el backend en producción no debe exponer Swagger
+  UI/OpenAPI.
+- **Estado real — implementado, con un fix intermedio real durante su
+  verificación**: el perfil `prod` de `application.yml` deshabilita
+  Swagger UI/OpenAPI (`springdoc.*.enabled: false`). **Nota de
+  honestidad**: la primera verificación real detectó que
+  `/swagger-ui.html` con `prod` activo devolvía `500` en vez del `404`
+  esperado (`GlobalExceptionHandler` capturaba `NoResourceFoundException`
+  en su catch-all genérico) — se corrigió con un `@ExceptionHandler`
+  específico y se reverificó `404` real antes de cerrar este punto (el
+  commit puntual de ese fix ya no es citable por hash, invalidado por la
+  reescritura de historia; ver `evidencia_empirica` de este requisito en
+  la matriz para el anclaje al tag `v1.0.0`).
+- **Criterio de aceptación medible**: `GET /swagger-ui.html` y
+  `GET /api-docs` con perfil `prod` activo responden `404`, no `500` ni
+  `200` con la documentación real.
+- **Método de verificación**: **Demonstration**
+  (`docs/mediciones/sec/owasp/2026-08-10-owasp-a05-fix-csp-stacktrace-swagger-nonroot.md`;
+  `docs/mediciones/sec/owasp/2026-08-11-owasp-a05-verificacion-real.md`,
+  incluye la verificación del fix de `NoResourceFoundException`).
+
+##### REQ-NF-014d — Contenedor del backend sin usuario root
+
+- **Prioridad**: Should
+- **Fuente**: sin HU dedicada, OWASP A05
+- **Descripción**: el contenedor del backend no debe correr como `root`.
+- **Estado real — implementado**: `backend-springboot/Dockerfile` crea el
+  grupo/usuario `spring` (`addgroup -S spring && adduser -S spring -G spring`)
+  y fija `USER spring:spring` antes del `CMD` — confirmado con
+  `docker exec sgb_backend whoami`.
+- **Criterio de aceptación medible**: `docker exec sgb_backend whoami`
+  responde `spring`, nunca `root`.
+- **Método de verificación**: **Demonstration**
+  (`docs/mediciones/sec/owasp/2026-08-11-owasp-a05-verificacion-real.md`).
 
 #### 3.2.3 Calidad de software / arquitectura
 
@@ -1681,19 +1760,21 @@ relación con los requisitos no funcionales de la sección 3.2:
 | Compatibilidad | Media | 3.3 (interfaz REST/JSON) |
 | Usabilidad | Alta | REQ-F-016, REQ-F-013 (mensajes explícitos en UI); evidencia empírica SUS todavía pendiente (OBS-08) |
 | Fiabilidad | Alta | REQ-NF-001 (riesgo fail-open/fail-closed de Redis, ver A15 para el detalle por servicio: `JwtAuthFilter`/`VerificacionCorreoService` fail-closed, `LoginRateLimiter`/`ChatbotRateLimiter` fail-open); mismo riesgo se extiende a `ChatbotRateLimiter` (REQ-F-028) y `VerificacionCorreoService` (REQ-F-020), ambos también respaldados por Redis |
-| Seguridad | Alta | REQ-NF-001, 002, 006, 007, 010, 011, 012 (implementado en producción real — ver nota abajo), 013, 014 (implementado backend y frontend — ver nota abajo); REQ-F-028 (manejo de la API key de Gemini: nunca se registra en logs la URL que la contiene, ver `GeminiClient`/ADR-016 y su análisis de qué datos se envían al proveedor externo) |
+| Seguridad | Alta | REQ-NF-001, 002, 006, 007, 010, 011, 012 (implementado en producción real — ver nota abajo), 013, 014a-d (los 4 sub-requisitos implementados — ver nota abajo); REQ-F-028 (manejo de la API key de Gemini: nunca se registra en logs la URL que la contiene, ver `GeminiClient`/ADR-016 y su análisis de qué datos se envían al proveedor externo) |
 | Mantenibilidad | Alta | 14 ADRs de `docs/adr/` (cifra recontada en este commit, 2026-09-07 — incluye `adr-029-v29-gap.md`, agregado después de la versión anterior de este SRS que citaba 13), `docs/basedatos/CATALOGO-SP.md`, REQ-NF-015 (CI/CD, `Makefile`) |
 | Portabilidad | Alta | REQ-NF-005, REQ-NF-009 |
 
-**Nota sobre REQ-NF-012/014** (actualizada respecto a versiones anteriores
-de este SRS, que los marcaban como completamente pendientes o parcialmente
-pendientes): esta revisión (hallazgo del Dr. Guerrero) confirma que ambos
-están **implementados** en lo que a este SRS le corresponde declarar —
-REQ-NF-012 en el despliegue real de producción (Render termina TLS en su
-borde; el stack Docker Compose local, fuera del alcance de este requisito,
-sigue en HTTP plano) y REQ-NF-014 tanto en backend como en frontend
-(`nginx.conf` ya trae CSP) — ver el detalle verificado en cada requisito,
-sección 3.2.2.
+**Nota sobre REQ-NF-012/REQ-NF-014a-d** (actualizada respecto a versiones
+anteriores de este SRS, que los marcaban como completamente pendientes o
+parcialmente pendientes; `REQ-NF-014` se dividió en `REQ-NF-014a`-`d` en
+esta misma revisión, ver Bloque 4/M14a): esta revisión (hallazgo del Dr.
+Guerrero) confirma que todos están **implementados** en lo que a este SRS
+le corresponde declarar — REQ-NF-012 en el despliegue real de producción
+(Render termina TLS en su borde; el stack Docker Compose local, fuera del
+alcance de este requisito, sigue en HTTP plano) y REQ-NF-014a-d (CSP
+backend+frontend, supresión de stacktraces, Swagger desactivado en
+producción, contenedor sin root) — ver el detalle verificado en cada
+requisito, sección 3.2.2.
 
 ## 6. Notas de honestidad y gaps conocidos (resumen)
 
@@ -1714,15 +1795,17 @@ por una:
    no un olvido.
 5. **REQ-NF-010**: asimetría real de roles entre `LibroController` (incluye
    ADMIN) y `PrestamoController`/`ReservacionController` (no lo incluyen).
-6. **REQ-NF-012 y REQ-NF-014**: versiones anteriores de este SRS los
+6. **REQ-NF-012 y REQ-NF-014a-d**: versiones anteriores de este SRS los
    declaraban primero **pendientes** y luego **parcialmente
    implementados** (TLS real end-to-end y CSP del `nginx.conf` seguían
-   sin cerrar). Esta revisión (hallazgo del Dr. Guerrero, quien pidió
-   distinguir el despliegue Docker local del despliegue real) verifica
-   ambos contra el estado real: REQ-NF-012 **sí** corre bajo HTTPS real en
-   producción (Render termina TLS en su borde para `sgb-backend`/
-   `biblora-sgb`, `render.yaml` sin dominio propio); REQ-NF-014 **sí**
-   tiene CSP en `frontend-angular/nginx.conf:10`. Ambos se declaran
+   sin cerrar; `REQ-NF-014` era un único requisito compuesto, dividido en
+   esta revisión en `REQ-NF-014a`-`d`, ver M14a). Esta revisión (hallazgo
+   del Dr. Guerrero, quien pidió distinguir el despliegue Docker local del
+   despliegue real) verifica todos contra el estado real: REQ-NF-012
+   **sí** corre bajo HTTPS real en producción (Render termina TLS en su
+   borde para `sgb-backend`/`biblora-sgb`, `render.yaml` sin dominio
+   propio); REQ-NF-014a **sí** tiene CSP en
+   `frontend-angular/nginx.conf:10` además del backend. Todos se declaran
    implementados en lo que corresponde a este sistema; lo que sigue sin
    TLS/certificado propio es exclusivamente el stack de Docker Compose
    local, que nunca fue el objetivo de estos requisitos.
@@ -1781,7 +1864,7 @@ por una:
     se actualizaron como parte de esta tarea — quedan fuera de su alcance,
     con el mismo tipo de desactualización que este SRS tenía antes de esta
     versión.
-15. **REQ-F-025, REQ-F-026, REQ-F-027, REQ-F-021, REQ-F-022, REQ-F-028**:
+15. **REQ-F-025, REQ-F-026, REQ-F-027, REQ-F-021, REQ-F-022a/b/c, REQ-F-028**:
     sin HU/CU en absoluto (la propia matriz los marca con `—` en ambas
     columnas, no una omisión de este SRS) — mismo criterio que REQ-F-010
     ya establecía en la versión anterior.

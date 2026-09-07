@@ -92,6 +92,21 @@ este mismo commit (no contra suposiciones):
 | — | Modificado (`scripts/validate-traceability.sh`) | Se agregaron 2 validaciones nuevas: (3) todo `id_requisito` de la matriz debe tener encabezado en el SRS y viceversa; (4) todo valor de `historia_usuario`/`caso_de_uso` con forma de ID debe corresponder a un archivo real (con caso especial para los IDs legados de Cajas, consolidados en `historias-usuario.md`/`casos-de-uso.md`). Corrida sobre el estado de este bloque: **3 errores esperados** (`REQ-F-029/030/031` sin encabezado en el SRS, gap ya identificado arriba y diferido al Bloque 5 a propósito, no una regresión de esta validación). | 2026-09-07 |
 | Múltiples (REQ-F-004 criterio 3; portada del documento; sección 4) | Modificado (M24, hashes muertos) | Se reemplazaron todas las referencias a hashes de commit invalidados por la reescritura de `git-filter-repo` (`adca044`, `51607f3`, `8ce7b9e`, `6c351cf`) por redacciones que anclan al tag `v1.0.0` (commit `16279881`) o que declaran explícitamente la invalidación sin inventar un hash nuevo. El hash de REQ-F-004 criterio 3 se trasladó de criterio de aceptación a `evidencia_empirica` en la matriz. | 2026-09-07 |
 
+## División de requisitos compuestos (Bloque 4, 2026-09-07)
+
+| ID anterior | IDs nuevos | Motivo |
+|---|---|---|
+| `REQ-NF-014` | `REQ-NF-014a` (CSP backend+frontend), `REQ-NF-014b` (supresión de stacktraces), `REQ-NF-014c` (Swagger desactivado en prod), `REQ-NF-014d` (contenedor sin root) | El ID único agrupaba 4 controles OWASP A05 independientes, cada uno con su propio criterio de aceptación y estado verificable por separado (los 4 están implementados, pero eso no siempre fue ni será necesariamente cierto a la vez para los 4). |
+| `REQ-F-022` | `REQ-F-022a` (alerta préstamo por vencer, job cada 60s), `REQ-F-022b` (alerta multa generada, disparada por evento en `sp_registrar_devolucion`), `REQ-F-022c` (alerta reserva caducada, job cada 15 min) | El ID único agrupaba 3 alertas con periodicidades y disparadores distintos (dos jobs con frecuencias distintas + un disparador por evento). Los 3 comparten el mismo estado real: notificación in-app persistida siempre, envío por correo deshabilitado por defecto desde `OBS-23` (saturación SMTP por el volumen sintético de la rúbrica ADB) — declarado explícitamente en cada sub-requisito, no como si el correo funcionara. |
+
+Matriz actualizada: cada fila única se reemplazó por N filas (una por
+sub-ID). Todas las referencias sueltas a `REQ-NF-014`/`REQ-F-022` en
+`SRS-v1.0.0.md` (sección 5, sección 6, REQ-F-021) se actualizaron al
+sub-ID correspondiente. `scripts/validate-traceability.sh` corrido tras
+cada división: mismos 3 errores esperados de `REQ-F-029/030/031`
+(identificados en el Bloque 3, pendientes de redactar en el Bloque 5), 0
+errores nuevos introducidos por las divisiones.
+
 ## Fecha de las entradas
 
 Todas las entradas de esta tabla corresponden a un único commit real,
