@@ -126,6 +126,9 @@ services:
     container_name: sgb_backup_service
     environment:
       DATABASE_URL: postgres://sgb_user:changeme@postgres:5432/sgb_db
+      # El Postgres local de compose corre con ssl=off: sin esto el Pool
+      # intentaria TLS y /health quedaria en 503 (unhealthy).
+      DB_SSL: "false"
       DB_URL: ${DB_URL:-}
       DB_USER: sgb_user
       DB_PASSWORD: changeme
