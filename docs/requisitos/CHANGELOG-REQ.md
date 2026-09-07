@@ -53,6 +53,25 @@ ocurrió.
 | REQ-NF-014 | Modificado | Estado cambia de "pendiente" a "implementado del lado backend": CSP/stacktraces/Swagger-en-prod/usuario-no-root verificados contra Docker real (incluyendo el fix de `NoResourceFoundException`, commit `951fae5`); CSP de `nginx.conf` en el frontend sigue pendiente | `4b5d09b` |
 | — | Eliminado | Ninguno — los 30 requisitos de v0.9.0-rc siguen presentes en v1.0.0, confirmado por comparación exhaustiva de IDs, no asumido | — |
 
+## Correcciones post-auditoría del Dr. Gleiston Guerrero (2026-09-07)
+
+El Dr. Guerrero (docente, ADB) auditó `SRS-v1.0.0.pdf` (enviado 2026-09-05)
+contra ISO/IEC/IEEE 29148:2018 y contra el repositorio real en el tag
+`v1.0.0`. Su hallazgo central: el documento entonces vigente documentaba 43
+requisitos, pero la matriz real (`docs/trazabilidad/matriz.csv`) ya tenía 46
+filas y el código real 31 controladores/143 rutas, frente a los 15/44 que
+citaba la sección 3.3 — "la mayoría son requisitos faltantes de REDACCIÓN,
+no desarrollo pendiente". Las siguientes entradas documentan las
+correcciones aplicadas en respuesta, verificadas contra el código real en
+este mismo commit (no contra suposiciones):
+
+| ID | Tipo de cambio | Descripción breve | Fecha |
+|---|---|---|---|
+| REQ-F-001 | Modificado (contradicción interna corregida) | El criterio 1 y la descripción decían que el usuario queda `ACTIVO` tras el registro; `AuthService.java:43` (`ESTADO_INICIAL = "PENDIENTE_VERIFICACION"`) y el test `registroExitoso_dejaAlUsuarioPendienteDeVerificacionYEnviaElCodigo` confirman que el estado real es `PENDIENTE_VERIFICACION`. Se corrige el requisito y se agrega el campo "Depende de: REQ-F-020". | 2026-09-07 |
+| REQ-F-020 | Modificado (prioridad) | Prioridad corregida de `Should` a `Must`: REQ-F-002 (Must) depende del estado `PENDIENTE_VERIFICACION` que solo existe porque REQ-F-020 lo introduce; un requisito Must no puede depender funcionalmente de uno Should. Actualizado también en `matriz.csv`. | 2026-09-07 |
+| REQ-F-005 | Modificado (alcance acotado) | Se aclara explícitamente que este requisito aplica solo al catálogo autenticado (`GET /api/v1/libros`); el portal público sin cuenta (`/api/publico/**`, `permitAll` en `SecurityConfig.java`) es un requisito distinto, ver A6. | 2026-09-07 |
+| — | Nota (sin cambio de ID todavía) | Secciones 1.2 y 2.2 ya mencionaban favoritos/sugerencias de adquisición sin requisito `REQ-F-XXX` formal; se agrega nota de referencia a A4/A5 (redactados en el Bloque 5 de esta misma tarea de corrección). | 2026-09-07 |
+
 ## Fecha de las entradas
 
 Todas las entradas de esta tabla corresponden a un único commit real,

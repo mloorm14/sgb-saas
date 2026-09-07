@@ -94,7 +94,11 @@ del modelo C4 por no existir en el código, ver
 `docs/arquitectura/workspace.dsl`), y los sub-bloques de evidencia empírica
 de usabilidad (SUS) que dependen de participantes humanos reales, no
 automatizables — ver OBS-08 en `docs/observaciones/OBSERVACIONES.md`,
-todavía pendiente al momento de este commit.
+todavía pendiente al momento de este commit. **Nota (hallazgo del Dr.
+Guerrero)**: este párrafo ya mencionaba favoritos y sugerencias de
+adquisición dentro de "Libros/Catálogo" sin que existiera un requisito
+`REQ-F-XXX` formal que los especificara — esta actualización cierra ese
+gap con A4 (favoritos) y A5 (sugerencias de adquisición), ver Bloque 5.
 
 ### 1.3 Definiciones, acrónimos y abreviaturas
 
@@ -172,7 +176,9 @@ A alto nivel (el detalle completo está en la sección 3):
   autenticación, control de acceso por rol en cada endpoint.
 - **Libros/Catálogo**: consulta paginada del catálogo, alta/edición/baja
   lógica de libros, favoritos por usuario, sugerencias de adquisición con
-  flujo de revisión.
+  flujo de revisión (`FavoritoController`, `SugerenciaAdquisicionController`
+  — funcionalidad real sin requisito formal propio hasta esta actualización;
+  ver A4 y A5).
 - **Préstamos**: creación (con validación de stock y estado del usuario),
   registro de devolución (con detección automática de atraso y generación
   de multa), renovación (con límite configurable de renovaciones y
@@ -283,30 +289,37 @@ formato.
 
 - **Prioridad**: Must
 - **Fuente**: HU-AUTH-01, CU-AUTH-01
+- **Depende de**: REQ-F-020 (el estado inicial tras el registro solo existe
+  porque REQ-F-020 introdujo el flujo obligatorio de verificación de
+  correo; sin REQ-F-020 el estado inicial sería `ACTIVO` directo).
 - **Módulo/endpoint**: `AuthController`/`AuthService` — `POST /api/auth/registro`
 - **Descripción**: el sistema debe permitir que un visitante sin cuenta se
   registre con nombre, apellido, correo institucional y contraseña,
-  quedando con rol `LECTOR` y estado `ACTIVO` por defecto.
+  quedando con rol `LECTOR` y estado `PENDIENTE_VERIFICACION` por defecto
+  (conforme a REQ-F-020: no puede iniciar sesión hasta verificar el código
+  enviado por correo).
 - **Rationale**: sin registro propio, cualquier acceso al sistema
   dependería de que un administrador cree cada cuenta manualmente, lo cual
   no escala para una comunidad universitaria (HU-AUTH-01).
 - **Criterio de aceptación medible**:
   1. Con correo no registrado y contraseña ≥8 caracteres, el sistema
-     responde `201` con el usuario creado, rol `LECTOR`, estado `ACTIVO`,
-     y la contraseña almacenada hasheada (nunca en texto plano).
+     responde `201` con el usuario creado, rol `LECTOR`, estado
+     `PENDIENTE_VERIFICACION` conforme a REQ-F-020, y la contraseña
+     almacenada hasheada (nunca en texto plano).
   2. Con un correo ya registrado, el sistema responde `409` y no crea
      ningún usuario nuevo.
   3. Con una contraseña de menos de 8 caracteres, el sistema responde
      `400`.
 - **Método de verificación**: **Test** parcial —
   `AuthServiceTest.registroCorreoDuplicado` cubre el criterio 2 (rechazo
-  por correo duplicado). **Nota de honestidad**: la matriz señala
-  explícitamente que este es "1 test, solo cubre el rechazo por correo
-  duplicado, no el flujo exitoso" — los criterios 1 y 3 **no tienen prueba
-  automatizada de regresión** en este repositorio a la fecha de este
-  documento; se documentan como parte del comportamiento especificado
-  (visible en el Gherkin de HU-AUTH-01) pero no como verificados por
-  test.
+  por correo duplicado); `AuthServiceTest.registroExitoso_dejaAlUsuarioPendienteDeVerificacionYEnviaElCodigo`
+  (compartido con REQ-F-020) cubre la parte de estado `PENDIENTE_VERIFICACION`
+  del criterio 1. **Nota de honestidad**: el resto del criterio 1 (código
+  `201`, contraseña hasheada) y el criterio 3 (rechazo por contraseña
+  corta) **no tienen prueba automatizada de regresión propia** en este
+  repositorio a la fecha de este documento; se documentan como parte del
+  comportamiento especificado (visible en el Gherkin de HU-AUTH-01) pero no
+  como verificados por test.
 
 #### REQ-F-002 — Inicio de sesión
 
@@ -380,6 +393,12 @@ formato.
 - **Módulo/endpoint**: `LibroController`/`LibroService` — `GET /api/v1/libros`, `GET /api/v1/libros/{id}`
 - **Descripción**: cualquier usuario autenticado (LECTOR o superior) debe
   poder ver el listado paginado del catálogo y el detalle de un libro.
+  **Alcance acotado (hallazgo del Dr. Guerrero)**: este requisito aplica
+  únicamente al catálogo **autenticado** (`GET /api/v1/libros`); existe un
+  segundo camino de consulta del catálogo **sin autenticación**, bajo
+  `/api/publico/**` (`PublicoLibroController`, `PublicoCategoriaController`,
+  `permitAll` en `SecurityConfig.java`), que es un requisito distinto — ver
+  A6 para el portal público sin cuenta.
 - **Rationale**: es la operación de lectura más frecuente del sistema
   (HU-LIB-01, `docs/arquitectura/ISO25010.md` — "Eficiencia de desempeño"),
   de ahí también su cache Redis (REQ-NF-003).
@@ -740,7 +759,7 @@ formato.
 
 #### REQ-F-020 — Verificación de correo tras el registro
 
-- **Prioridad**: Should
+- **Prioridad**: Must (corregida de `Should` — ver rationale)
 - **Fuente**: **sin HU/CU dedicada** — la matriz marca explícitamente
   `historia_usuario` y `caso_de_uso` como `—` para este requisito, mismo
   patrón que REQ-F-010.
@@ -751,12 +770,20 @@ formato.
   minutos, almacenado en Redis, sin tabla nueva en Postgres).
 - **Rationale**: confirma que el correo registrado existe y es controlado
   por quien se registró, antes de otorgar acceso — mitiga el registro con
-  correos ajenos o inválidos. **Nota de honestidad**: esto cambia el
-  comportamiento descrito en REQ-F-001 respecto a la versión anterior de
-  este SRS — el estado inicial tras el registro **ya no es** `ACTIVO`, es
-  `PENDIENTE_VERIFICACION`; este documento no reescribe REQ-F-001 (para no
-  perder la trazabilidad de lo verificado en la Tercera Entrega), solo
-  señala el cambio aquí y en la sección 6.
+  correos ajenos o inválidos. **Corrección de prioridad (hallazgo del Dr.
+  Guerrero)**: este requisito estaba marcado `Should` pese a que
+  REQ-F-002 (Must, "Inicio de sesión") depende de él en la práctica — el
+  criterio 4 de REQ-F-002 (`Usuario INACTIVO/PENDIENTE_VERIFICACION → 403`)
+  no tendría sentido si el estado `PENDIENTE_VERIFICACION` no existiera, y
+  ese estado solo existe porque REQ-F-020 lo introduce en el registro
+  (REQ-F-001). Un requisito `Must` no puede depender funcionalmente de uno
+  `Should`: se corrige REQ-F-020 a `Must` para que la prioridad refleje la
+  dependencia real, no solo el orden cronológico en que se agregó. **Nota
+  de honestidad**: esto cambia el comportamiento descrito en REQ-F-001
+  respecto a versiones anteriores de este SRS — el estado inicial tras el
+  registro **ya no es** `ACTIVO`, es `PENDIENTE_VERIFICACION`; esta versión
+  ya corrigió REQ-F-001 en consecuencia (ver su campo "Depende de", sección
+  6 y `CHANGELOG-REQ.md`).
 - **Criterio de aceptación medible**:
   1. Código correcto dentro del TTL → `200`, usuario pasa a `ACTIVO`.
   2. Código incorrecto o expirado → rechazo, usuario permanece
@@ -1450,11 +1477,12 @@ por una:
     (el QR es un mecanismo alterno de identificación para la misma acción
     de negocio), no como un error de la matriz asumido sin verificar.
 13. **REQ-F-020 vs. REQ-F-001**: el estado inicial de una cuenta tras el
-    registro cambió de `ACTIVO` (como documentaba REQ-F-001 en la versión
-    anterior de este SRS) a `PENDIENTE_VERIFICACION`. Este SRS no
-    reescribe REQ-F-001 para preservar la trazabilidad de lo verificado en
-    la Tercera Entrega; el cambio de comportamiento queda señalado en
-    REQ-F-020 y aquí, no oculto.
+    registro cambió de `ACTIVO` (como documentaba REQ-F-001 hasta la
+    versión anterior de este SRS) a `PENDIENTE_VERIFICACION`. Esta versión
+    **corrige REQ-F-001** para eliminar esa contradicción interna (hallazgo
+    del Dr. Guerrero, auditoría ISO/IEC/IEEE 29148:2018 sobre el tag
+    `v1.0.0`) — ver el campo "Depende de: REQ-F-020" agregado a REQ-F-001 y
+    `docs/requisitos/CHANGELOG-REQ.md` para el detalle del cambio.
 14. **Sección 3.3 (interfaz externa)**: la cifra de endpoints/controllers
     se actualizó (19→44 endpoints, 5→15 controllers) contando
     directamente sobre el código de este commit; `docs/informe-entrega-3.tex`
