@@ -8,8 +8,13 @@ Formato basado en ISO/IEC/IEEE 29148:2018 (Systems and software engineering
 - **Equipo**: Loor Medranda Marlon Taylor (Tech Lead / DevOps / Seguridad), Cajas Ibarra Irvin Marcelo (Backend), Panama Murillo Moises Antonio (Frontend)
 - **Versión**: v1.0.0 — Entrega Final. Versión anterior archivada en
   [`docs/requisitos/historico/SRS-v0.9.0-rc.md`](historico/SRS-v0.9.0-rc.md)
-  (estado de la Tercera Entrega, 30 requisitos, commit base `51607f3`).
-- **Commit base de este documento**: `adca044`
+  (estado de la Tercera Entrega, 30 requisitos; hash de commit base
+  original invalidado por una reescritura posterior de historia con
+  `git-filter-repo`, no resoluble en este repositorio).
+- **Commit base de este documento**: ancla histórica invalidada por la
+  misma reescritura de historia — esta revisión (2026-09-07) se ancla en
+  cambio al tag `v1.0.0` (commit `16279881`), verificado presente y
+  alcanzable en este repositorio.
 - **Repositorio**: <https://github.com/mloorm14/sgb-saas>
 - **Fuente de trazabilidad**: `docs/trazabilidad/matriz.csv` (43 requisitos, validada automáticamente en CI por `scripts/validate-traceability.sh`)
 
@@ -31,7 +36,8 @@ Formato basado en ISO/IEC/IEEE 29148:2018 (Systems and software engineering
 > requisitos (`REQ-F-017` a `REQ-F-028`, `REQ-NF-015`) que la matriz de
 > trazabilidad ya documentaba pero que no tenían entrada correspondiente en
 > el SRS — los 8 módulos construidos por Cajas después del commit base de
-> la versión anterior (`51607f3`, previo al merge de sus 8 ramas):
+> la versión anterior (hash de commit invalidado por la misma reescritura
+> de historia citada arriba; previo al merge de sus 8 ramas):
 > verificación de correo, credencial QR, notificaciones, favoritos/
 > sugerencias de adquisición, panel de administración y auditoría,
 > configuración paramétrica, reportes (morosidad/uso/PDF) y el chatbot con
@@ -47,6 +53,15 @@ Formato basado en ISO/IEC/IEEE 29148:2018 (Systems and software engineering
 > "pendiente" porque en ese momento lo estaban — ambos se cerraron
 > parcialmente después, vía `feature/seguridad-transporte`, y la matriz ya
 > lo refleja; ver el detalle en cada requisito.
+>
+> **Hallazgo pendiente de resolución, identificado en esta misma revisión
+> (Dr. Guerrero, 2026-09-07)**: `docs/trazabilidad/matriz.csv` tiene hoy
+> **46 filas**, no 43 — `REQ-F-029`, `REQ-F-030` y `REQ-F-031` existen en
+> la matriz (verificado leyendo el CSV completo) sin entrada
+> correspondiente todavía en la sección 3 de este documento. Se identifican
+> aquí para no perder el hallazgo; se redactan como A7, A8 y A9 más
+> adelante en esta misma tarea de corrección (ver
+> `docs/requisitos/CHANGELOG-REQ.md`), no en este punto del documento.
 
 ---
 
@@ -84,12 +99,14 @@ originales de la Tercera Entrega más los 13 de los módulos construidos
 después) — no se amplía el alcance funcional del sistema al redactar este
 documento, solo se formaliza su especificación. Explícitamente **fuera de
 alcance** de este documento (y del sistema, en esta entrega): integración
-con sistemas académicos institucionales externos, TLS real activo
-end-to-end (la decisión de dónde termina TLS y la preparación del backend
-para reconocerlo ya están cerradas, ver REQ-NF-012, pero ningún proxy de
-este stack activa `server.ssl.*` ni certificados todavía — verificado por
-ausencia de configuración TLS/443 en `docker-compose.yml` y
-`frontend-angular/nginx.conf`), integración con Google Books API (retirada
+con sistemas académicos institucionales externos, TLS gestionado por este
+propio repositorio (el sistema **sí corre bajo HTTPS real en producción**
+— Render termina TLS en su borde para `sgb-backend`/`biblora-sgb`, ver
+REQ-NF-012 — pero ningún certificado ni configuración `server.ssl.*` vive
+en este repositorio ni en el stack de Docker Compose local, que sigue
+siendo HTTP plano — verificado por ausencia de configuración TLS/443 en
+`docker-compose.yml` y `frontend-angular/nginx.conf`), integración con
+Google Books API (retirada
 del modelo C4 por no existir en el código, ver
 `docs/arquitectura/workspace.dsl`), y los sub-bloques de evidencia empírica
 de usabilidad (SUS) que dependen de participantes humanos reales, no
@@ -212,7 +229,7 @@ referencia esta misma tabla como anexo formal de trazabilidad.
 - RFC 7519 (JSON Web Token), RFC 7807 (Problem Details for HTTP APIs).
 - `docs/trazabilidad/matriz.csv` — fuente primaria de los 43 requisitos.
 - `docs/requisitos/historias/`, `docs/requisitos/casos-de-uso/`, `docs/requisitos/historias-usuario.md`, `docs/requisitos/casos-de-uso.md`.
-- `docs/adr/ADR-001-tecnologia.md`, `ADR-003-jwt-redis.md`, `adr-006` a `adr-016` (13 ADRs — cifra corregida respecto a la versión anterior de este SRS, que citaba 10; contada directamente sobre `docs/adr/` en este commit).
+- `docs/adr/ADR-001-tecnologia.md`, `ADR-003-jwt-redis.md`, `adr-006` a `adr-016`, `adr-029-v29-gap.md` (14 ADRs — cifra recontada el 2026-09-07 directamente sobre `docs/adr/`, excluyendo `README.md`; corrige la cifra de 13 de versiones anteriores de este SRS, desactualizada por la incorporación posterior de `adr-029`).
 - `docs/informe-entrega-3.tex` (resumen ejecutivo, estado del sistema, inventario de endpoints).
 - `docs/arquitectura/ISO25010.md`, `docs/arquitectura/workspace.dsl` (C4).
 - `docs/basedatos/CATALOGO-SP.md` (catálogo de los 7 procedimientos/funciones SQL).
@@ -331,10 +348,22 @@ REQ-NF-010):
   Compose instalados (única dependencia dura del entorno de ejecución,
   ver README).
 - Se asume disponibilidad de Redis para que el mecanismo de revocación de
-  tokens (REQ-NF-001) y rate limiting (REQ-NF-006) funcionen; si Redis cae,
-  `JwtAuthFilter` queda sin forma de verificar revocaciones — riesgo
-  documentado y aceptado como pendiente de resolver para producción
-  (ADR-003, `docs/arquitectura/ISO25010.md`, característica Fiabilidad).
+  tokens (REQ-NF-001) y rate limiting (REQ-NF-006) funcionen. **Corrección
+  (hallazgo del Dr. Guerrero, verificado leyendo `JwtAuthFilter.java`
+  directamente)**: este supuesto afirmaba en versiones anteriores de este
+  SRS que, si Redis cae, `JwtAuthFilter` "queda sin forma de verificar
+  revocaciones" — una política **fail-open** implícita. El código real
+  hace exactamente lo contrario: `JwtAuthFilter.doFilterInternal` captura
+  `DataAccessException` al consultar la blacklist y responde `401`
+  explícitamente (`SecurityContextHolder.clearContext()` + `401` +
+  `ProblemDetail` escrito a mano), es decir, **fail-closed** — ninguna
+  request pasa sin poder confirmar la revocación. Este comportamiento se
+  formaliza como requisito nuevo, ver A15 (Bloque 5 de esta actualización)
+  para el detalle completo, incluida la comparación con los otros tres
+  puntos de este sistema que sí dependen de Redis
+  (`LoginRateLimiter`/`ChatbotRateLimiter`, fail-open; `VerificacionCorreoService`,
+  fail-closed) — no todos se comportan igual, y A15 lo declara servicio
+  por servicio en vez de asumir una política uniforme.
 - Se asume un volumen de uso de biblioteca universitaria (bajo, no
   concurrencia tipo e-commerce) como base para las decisiones de
   rendimiento — ver REQ-NF-003 y la característica "Eficiencia de
@@ -461,10 +490,14 @@ formato.
   1. Cookie `refreshToken` válida presente → `200` con `accessToken`
      nuevo.
   2. Sin cookie `refreshToken` → `400`.
-  3. `refreshToken` inválido o expirado → no se emite token nuevo
-     (comportamiento verificado: responde `401`, no `500`, ver commit
-     `8ce7b9e` "fix(backend): refresh con token invalido responde 401 en
-     vez de 500").
+  3. `refreshToken` inválido o expirado → no se emite token nuevo,
+     responde `401`, no `500` (ver evidencia empírica en
+     `docs/trazabilidad/matriz.csv` para el detalle del fix que corrigió
+     este código de estado — hallazgo del Dr. Guerrero: el hash de commit
+     que documentaba este fix quedó invalidado por una reescritura
+     posterior de historia con `git-filter-repo`; se traslada al campo
+     `evidencia_empirica` de la matriz, anclado al tag `v1.0.0`, commit
+     `16279881`, en vez del criterio de aceptación).
 - **Método de verificación**: **Test**
   (`AuthServiceTest.refreshConTokenValido`) + **Demonstration**
   (`docs/mediciones/sec/2026-07-21-cookie-refresh-token.md`).
@@ -971,30 +1004,64 @@ formato.
 - **Prioridad**: Should
 - **Fuente**: la matriz cita `HU-ADM-01`/`CU-ADM-01`, que **no existen**
   como archivo en el repositorio (verificado) — gap declarado.
-- **Módulo/endpoint**: `UsuarioAdminController`/`UsuarioAdminService` — `GET /api/v1/admin/usuarios`; `PATCH .../{id}/rol`; `PATCH .../{id}/estado`
+- **Módulo/endpoint**: `UsuarioAdminController`/`UsuarioAdminService` — `GET /api/v1/admin/usuarios`; `PATCH .../{id}/rol`; `PATCH .../{id}/estado`; `POST /api/v1/admin/usuarios`; `DELETE /api/v1/admin/usuarios/{id}`
 - **Descripción**: `ADMIN` y `GERENTE` pueden listar el padrón de usuarios
-  (paginado, con filtro); solo `ADMIN` puede cambiar el rol o el estado de
-  una cuenta.
-- **Rationale**: separación deliberada entre quién opera el día a día
-  (`GERENTE`, solo lectura del padrón) y quién administra permisos/
-  parámetros de plataforma (`ADMIN`) — ver ADR-014.
+  (paginado, con filtro); ambos pueden crear cuentas y cambiar rol/estado,
+  pero `GERENTE` con restricciones reales aplicadas en `UsuarioAdminService`
+  (no un `403` en bloque); solo `ADMIN` puede dar de baja (soft-delete) una
+  cuenta.
+- **Rationale**: separación deliberada entre quién opera el día a día con
+  alcance acotado (`GERENTE`) y quién administra sin restricciones
+  (`ADMIN`) — ver ADR-014. **Corrección (hallazgo verificado en código al
+  redactar HU-ADM-01/CU-ADM-01, 2026-09-07)**: este requisito describía a
+  `GERENTE` como de solo lectura del padrón, con `403` en bloque al
+  intentar cambiar rol/estado. `UsuarioAdminController.java` muestra que
+  las tres rutas de escritura (`POST`, `PATCH .../rol`, `PATCH .../estado`)
+  tienen `@PreAuthorize("hasAnyRole('ADMIN','GERENTE')")` — `GERENTE` sí
+  puede ejecutarlas a nivel de endpoint. La restricción real vive en
+  `UsuarioAdminService`: `GERENTE` solo puede crear/asignar los roles
+  `LECTOR`/`BIBLIOTECARIO` (`ROLES_GERENTE_PERMITIDOS`), solo puede fijar
+  el estado a `ACTIVO`/`INACTIVO` (`ESTADOS_GERENTE_PERMITIDOS`), y en
+  ambos casos únicamente sobre usuarios que él mismo creó
+  (`usuario.getCreadoPor()`). Solo `DELETE` (baja lógica) es exclusivo de
+  `ADMIN` a nivel de `@PreAuthorize`. ADR-014 puede describir la intención
+  original de diseño ("solo lectura" para GERENTE); el código implementado
+  es más permisivo que esa descripción — no se corrige el ADR aquí, fuera
+  de alcance de esta tarea de documentación de requisitos.
 - **Criterio de aceptación medible**:
   1. `ADMIN`/`GERENTE` → `GET` listado responde `200`.
-  2. `ADMIN` cambia rol/estado → `204`.
-  3. `GERENTE` que intenta cambiar rol/estado → `403`.
+  2. `ADMIN` cambia rol/estado de cualquier usuario a cualquier valor
+     válido del catálogo → `204`.
+  3. `GERENTE` cambia rol de un usuario que él mismo creó, a `LECTOR` o
+     `BIBLIOTECARIO` → `204`. `GERENTE` cambia estado de un usuario que
+     él mismo creó, a `ACTIVO` o `INACTIVO` → `204`.
+  4. `GERENTE` que intenta asignar un rol distinto de `LECTOR`/
+     `BIBLIOTECARIO`, o un estado distinto de `ACTIVO`/`INACTIVO`, o
+     actuar sobre un usuario que no creó él mismo → rechazo de acceso
+     (no un `403` de `@PreAuthorize`, sino `AccessDeniedException` lanzada
+     desde el service tras pasar la verificación del endpoint).
+  5. Rol distinto de `ADMIN`/`GERENTE` (ej. `BIBLIOTECARIO`, `LECTOR`) en
+     cualquiera de las rutas → `403` en el `@PreAuthorize` del endpoint.
+  6. `DELETE /api/v1/admin/usuarios/{id}` (baja lógica a `INACTIVO`) con
+     rol `GERENTE` → `403` (única ruta exclusiva de `ADMIN`).
 - **Método de verificación**: **Test** (`UsuarioAdminServiceTest`, 9
-  tests; `UsuarioAdminControllerSecurityTest`, 8 tests).
+  tests; `UsuarioAdminControllerSecurityTest`, 8 tests) + **Inspection**
+  (lectura directa de `UsuarioAdminController.java`/`UsuarioAdminService.java`
+  en este commit para la corrección de rationale/criterio de arriba).
 
 #### REQ-F-024 — Consultar bitácora de auditoría
 
 - **Prioridad**: Should
 - **Fuente**: la matriz cita `HU-AUD-01`/`CU-AUD-01`, que **no existen**
   como archivo en el repositorio (verificado) — gap declarado.
-- **Módulo/endpoint**: `AuditoriaController`/`AuditoriaService` — `GET /api/v1/auditoria` (filtros `usuarioId`/`modulo`/`desde`/`hasta`)
-- **Descripción**: `GERENTE`/`ADMIN` pueden consultar de forma paginada y
-  filtrable los eventos registrados en `bitacora_auditoria` (mismo
-  mecanismo que ya alimenta REQ-NF-007 para autenticación, extendido a
-  otros módulos).
+- **Módulo/endpoint**: `AuditoriaController`/`AuditoriaService` — `GET /api/v1/auditoria` (filtros `usuarioId`/`modulo`/`desde`/`hasta`); `GET /api/v1/auditoria/resumen` (agregación por tabla afectada); `GET /api/v1/auditoria/export` (exportación CSV, mismos filtros) — **los dos últimos no estaban documentados en versiones anteriores de este SRS**, agregados en esta revisión tras verificar `AuditoriaController.java` completo.
+- **Descripción**: `GERENTE`/`ADMIN` (restricción a nivel de clase del
+  controller, `@PreAuthorize` sobre las tres rutas) pueden consultar de
+  forma paginada y filtrable los eventos registrados en
+  `bitacora_auditoria` (mismo mecanismo que ya alimenta REQ-NF-007 para
+  autenticación, extendido a otros módulos), consultar un resumen
+  agregado por tabla afectada, y exportar el mismo listado filtrado como
+  CSV.
 - **Rationale**: da visibilidad operativa a los mismos datos que hasta
   ahora solo existían como registro pasivo en la tabla, sin interfaz de
   consulta.
@@ -1290,24 +1357,38 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   observación de red (OWASP A02); terminar TLS en el proxy en vez del
   backend evita acoplar la gestión de certificados a la aplicación
   (ADR-015).
-- **Estado real — parcialmente implementado, actualizado respecto a la
-  versión anterior de este SRS**: esta versión anterior (`v0.9.0-rc`)
-  declaraba este requisito completamente pendiente; desde entonces se
-  cerraron dos de sus tres partes vía `feature/seguridad-transporte`: (1)
-  **la decisión de arquitectura** (dónde termina TLS) quedó documentada en
-  ADR-015, y (2) **la preparación del backend**
-  (`server.forward-headers-strategy: framework` en `application.yml`) para
-  confiar en `X-Forwarded-Proto` de un proxy real. **Lo que sigue sin
-  implementar, sin ambigüedad**: ningún proxy de este stack activa
-  `server.ssl.*` ni un certificado todavía — verificado por ausencia de
-  configuración TLS/443 en `docker-compose.yml` y
-  `frontend-angular/nginx.conf` al momento de este commit. No se fabrica
-  un criterio de aceptación "cumplido" para la parte que de verdad falta.
-- **Criterio de aceptación medible (para cuando se implemente TLS real)**:
-  toda petición HTTP sin TLS a un endpoint protegido debe redirigirse o
-  rechazarse; el certificado debe validarse sin advertencias en el
-  navegador; `curl -I https://<host>/actuator/health` debe incluir
-  `Strict-Transport-Security`.
+- **Estado real — implementado en el despliegue real de producción,
+  actualizado respecto a versiones anteriores de este SRS** (hallazgo del
+  Dr. Guerrero: versiones previas declaraban esto pendiente sin distinguir
+  el despliegue Docker local del despliegue real en Render): (1) **la
+  decisión de arquitectura** (dónde termina TLS) quedó documentada en
+  ADR-015; (2) **la preparación del backend**
+  (`server.forward-headers-strategy: framework`, `application.yml:61`)
+  para confiar en `X-Forwarded-Proto` de un proxy real; (3) **el
+  despliegue real** (`render.yaml`, verificado en este commit) publica
+  `sgb-backend` (Web Service Docker) y `biblora-sgb` (Static Site) sin
+  ningún bloque `domains:` de dominio propio — ambos corren bajo
+  subdominios `*.onrender.com`, donde Render **termina TLS
+  automáticamente en su borde/CDN** con certificados que administra la
+  plataforma (no hay `server.ssl.*` ni certificado propio configurado en
+  este repositorio porque no hace falta: el origen — el contenedor
+  backend — recibe tráfico HTTP plano del proxy de Render, y es
+  exactamente ese proxy el que agrega `X-Forwarded-Proto: https`, la
+  cabecera que el punto (2) ya prepara al backend para confiar). **Lo que
+  sigue sin TLS propio, sin ambigüedad**: el stack de **Docker Compose
+  local** (`docker-compose.yml`, `frontend-angular/nginx.conf`) no activa
+  `server.ssl.*` ni certificado alguno — ese entorno es solo para
+  desarrollo/evaluación local, nunca fue el objetivo de este requisito.
+- **Criterio de aceptación medible**: `https://sgb-backend-b058.onrender.com/actuator/health`
+  y `https://biblora-sgb.onrender.com` deben responder con certificado
+  válido (sin advertencias del navegador/`curl`), emitido y renovado por
+  Render, no por este repositorio; el backend debe reconocer esas
+  peticiones como seguras vía `X-Forwarded-Proto` (confirmado por
+  `server.forward-headers-strategy: framework`). **Sigue sin cumplirse,
+  sin ambigüedad**: no hay redirección automática HTTP→HTTPS configurada
+  por este repositorio (depende por completo de que Render la fuerce en
+  su borde, no verificado en este commit — PENDIENTE_VERIFICAR_MARLON), ni
+  cabecera `Strict-Transport-Security` propia emitida por el backend.
 - **Método de verificación**: **Analysis** (decisión de arquitectura y
   preparación del backend, revisadas por inspección) —
   `docs/mediciones/sec/owasp/2026-07-30-owasp-a02-fallo-criptografico.md`
@@ -1347,44 +1428,54 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   seguridad estándar (incluyendo CSP) para mitigar XSS y clickjacking; el
   backend en producción no debería exponer stacktraces ni Swagger, y su
   contenedor no debería correr como `root`.
-- **Estado real — implementado del lado backend, actualizado respecto a
-  la versión anterior de este SRS**: esta versión anterior (`v0.9.0-rc`)
-  declaraba este requisito completamente pendiente; desde entonces se
-  cerró vía `feature/seguridad-transporte` y se **verificó contra el stack
-  Docker real** (no solo por inspección de código, a diferencia de cuando
-  se escribió la versión anterior de este SRS):
-  1. `Content-Security-Policy: default-src 'self'; frame-ancestors 'none';
-     base-uri 'self'; object-src 'none'` presente en las respuestas del
-     backend (`SecurityConfig.java`) — confirmado con `curl -I` contra
-     `/actuator/health` real.
+- **Estado real — implementado en backend y frontend, actualizado
+  respecto a versiones anteriores de este SRS** (hallazgo del Dr.
+  Guerrero: el gap de CSP del lado frontend que declaraban versiones
+  previas ya no existe, verificado contra `frontend-angular/nginx.conf`
+  en este commit): esta versión anterior (`v0.9.0-rc`) declaraba este
+  requisito completamente pendiente; desde entonces se cerró vía
+  `feature/seguridad-transporte` y se **verificó contra el stack Docker
+  real**:
+  1. `Content-Security-Policy` presente en las respuestas del backend
+     (`SecurityConfig.java`, `contentSecurityPolicy(...)`) — confirmado
+     con `curl -I` contra `/actuator/health` real.
   2. Perfil `prod` de `application.yml` deshabilita Swagger UI/OpenAPI
      (`springdoc.*.enabled: false`) y suprime stacktraces/mensajes
      internos en errores. **Nota de honestidad adicional**: la primera
      verificación real detectó que `/swagger-ui.html` con `prod` activo
      devolvía `500` en vez del `404` esperado (`GlobalExceptionHandler`
      capturaba `NoResourceFoundException` en su catch-all genérico) — se
-     corrigió con un `@ExceptionHandler` específico (commit `951fae5`) y
-     se reverificó `404` real antes de cerrar este punto.
+     corrigió con un `@ExceptionHandler` específico y se reverificó `404`
+     real antes de cerrar este punto (ver evidencia empírica en la matriz;
+     el commit puntual de ese fix ya no es citable por hash, ver M24/A24).
   3. El contenedor `backend` corre como usuario `spring` (no `root`) —
      confirmado con `docker exec sgb_backend whoami`.
-  - Todo lo anterior verificado en vivo en
+  4. **Cerrado en esta revisión**: `frontend-angular/nginx.conf` (línea 10)
+     ya envía `Content-Security-Policy` con el modificador `always`
+     (`add_header Content-Security-Policy "..." always;`), verificado
+     leyendo el archivo directamente en este commit — el gap declarado en
+     versiones anteriores de este SRS **ya no existe**.
+  - Todo lo anterior (puntos 1-3) verificado en vivo en
     `docs/mediciones/sec/owasp/2026-08-11-owasp-a05-verificacion-real.md`
     (complementa, no reemplaza, el hallazgo original ni el cierre por
-    inspección de `feature/seguridad-transporte`).
-  - **Lo que sigue sin implementar, sin ambigüedad**: `Content-Security-Policy`
-    en `frontend-angular/nginx.conf` (lado frontend) — fuera de alcance de
-    la rama que cerró el lado backend, gap remanente real.
+    inspección de `feature/seguridad-transporte`); el punto 4 se verificó
+    por inspección directa del archivo en este commit, **sin**
+    `Demonstration` nueva contra el contenedor real (no se repitió el
+    `curl -I` contra el frontend servido).
 - **Criterio de aceptación medible**: las respuestas del backend incluyen
-  `Content-Security-Policy` (cumplido); las respuestas del frontend vía
-  Nginx incluyen `Content-Security-Policy` (**pendiente**).
-- **Método de verificación**: **Test** (no aplica, es configuración, no
-  lógica de negocio) + **Demonstration**
-  (`docs/mediciones/sec/owasp/2026-07-30-owasp-a05-mala-configuracion-seguridad.md`
+  `Content-Security-Policy` (cumplido, verificado en vivo); las
+  respuestas del frontend vía Nginx incluyen `Content-Security-Policy`
+  (cumplido, verificado por inspección de `nginx.conf:10` en este commit).
+- **Método de verificación**: **Demonstration** (backend, puntos 1-3:
+  `docs/mediciones/sec/owasp/2026-07-30-owasp-a05-mala-configuracion-seguridad.md`
   — hallazgo original;
   `docs/mediciones/sec/owasp/2026-08-10-owasp-a05-fix-csp-stacktrace-swagger-nonroot.md`
   — cierre por inspección;
   `docs/mediciones/sec/owasp/2026-08-11-owasp-a05-verificacion-real.md` —
-  verificación real contra Docker, incluyendo el fix de `NoResourceFoundException`).
+  verificación real contra Docker, incluyendo el fix de
+  `NoResourceFoundException`) + **Inspection** (frontend, punto 4: lectura
+  directa de `frontend-angular/nginx.conf:10` en este commit, sin
+  `Demonstration` nueva contra el contenedor real).
 
 #### 3.2.3 Calidad de software / arquitectura
 
@@ -1399,9 +1490,22 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 - **Rationale**: requisito explícito de la guía del PFC (Bloque A.2), no
   una preferencia de estilo — ver el análisis completo de alternativas
   descartadas (ORM puro, SP puro) en ADR-006.
-- **Criterio de aceptación medible**: los 7 objetos SQL catalogados en
-  `docs/basedatos/CATALOGO-SP.md` cubren exactamente las operaciones
-  multi-tabla; el resto del acceso a datos usa `JpaRepository` estándar.
+- **Criterio de aceptación medible**: **18 objetos SQL** (funciones;
+  ningún `PROCEDURE` nativo, ver nota de diseño de `CATALOGO-SP.md`),
+  contados directamente sobre `db/procs/*.sql` +
+  `database/migrations/*.sql` en este commit (`grep` por
+  `CREATE (OR REPLACE )?FUNCTION`, 2026-09-07 — cifra corregida
+  respecto a la versión anterior de este SRS, que citaba 7) cubren las
+  operaciones multi-tabla; el resto del acceso a datos usa
+  `JpaRepository` estándar. **Nota de honestidad sobre el alcance de
+  `CATALOGO-SP.md`**: ese catálogo documenta 17 de los 18 (16 rutinas +
+  el trigger `set_actualizado_en`) porque está **deliberadamente
+  acotado al módulo Préstamos** (su propio título); el objeto 18,
+  `fn_auditoria_generica` (trigger de auditoría genérica, ver
+  `database/migrations/V39_2__fn_auditoria_generica.sql`), es del módulo
+  de auditoría y por eso no aparece en ese catálogo — no es una omisión
+  de este SRS ni de `CATALOGO-SP.md`, es una diferencia de alcance entre
+  documentos.
 - **Método de verificación**: **Test**
   (`PrestamoMultaProcedureIntegrationTest`, 6 tests contra PostgreSQL
   real; `AuthServiceTest`, 8 tests contra el lado ORM) + **Demonstration**
@@ -1419,10 +1523,29 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   incremental, `db/schema.sql`+`db/seed.sql` es el snapshot de
   conveniencia para inicialización desde cero (ADR-013).
 - **Criterio de aceptación medible**: `docker compose down -v && make up`
-  reconstruye el stack completo (26 tablas, datos de ejemplo) desde un
-  volumen vacío, sin pasos manuales adicionales.
-- **Método de verificación**: **Demonstration** — verificado en vivo
-  repetidamente durante esta entrega (ver Status de ADR-013 y ADR-007).
+  debe reconstruir el stack completo (**44 tablas**, contadas por
+  `CREATE TABLE` distintos en `database/migrations/*.sql`, 2026-09-07 —
+  cifra corregida respecto a la versión anterior de este SRS, que citaba
+  26; `db/schema.sql` cita 31, pero ese snapshot está desactualizado
+  respecto al esquema real, ver `OBS-25`) desde un volumen vacío, sin
+  pasos manuales adicionales.
+- **Nota de honestidad (verificada en este commit, 2026-09-07)**: este
+  criterio **no se cumple hoy sin intervención adicional**.
+  `OBS-25` (`docs/observaciones/OBSERVACIONES.md`) documenta que un
+  `docker compose down -v && docker compose up` real, sobre un volumen
+  genuinamente vacío, rompe Flyway antes de llegar a la migración `V39`
+  (`db/init/01-consolidado.sql` es un snapshot generado solo hasta `V13`,
+  pero `application.yml` fija `flyway.baseline-version: 37`, así que
+  Flyway saltea `V14`-`V37` como si ya estuvieran aplicadas y `V39` falla
+  con `relation "proveedores" does not exist`). Es un bug real,
+  preexistente y ya documentado — no se corrige en esta tarea de
+  documentación de requisitos (fuera de su alcance), pero declararlo
+  "verificado en vivo repetidamente" sin esta salvedad sería inexacto.
+- **Método de verificación**: **Demonstration** — el mecanismo de
+  reconstrucción se verificó en vivo repetidamente durante entregas
+  anteriores; la nota de honestidad de arriba es una verificación **más
+  reciente** (2026-09-07) que contradice ese resultado bajo la condición
+  específica de volumen realmente vacío, ver `OBS-25`.
 
 ##### REQ-NF-008 — PostgreSQL como motor único de base de datos
 
@@ -1432,12 +1555,13 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   de datos, con Row Level Security para aislar datos por rol.
 - **Rationale**: RLS nativo (sin el cual el aislamiento por lector
   dependería de disciplina de código en cada endpoint), PL/pgSQL maduro
-  para los 7 objetos SQL, integridad referencial estricta sobre un
-  dominio intrínsecamente relacional — ver comparación completa contra
-  MySQL/MongoDB en ADR-011.
-- **Criterio de aceptación medible**: las 26 tablas, 7
-  procedimientos/funciones y las políticas RLS de
-  `db/roles-privilegios.sql` corren contra un contenedor
+  para los 18 objetos SQL (ver REQ-NF-004), integridad referencial
+  estricta sobre un dominio intrínsecamente relacional — ver comparación
+  completa contra MySQL/MongoDB en ADR-011.
+- **Criterio de aceptación medible**: las **44 tablas** (cifra corregida
+  respecto a la versión anterior de este SRS, que citaba 26 — ver
+  REQ-NF-005 para la fuente del conteo), 18 procedimientos/funciones y las
+  políticas RLS de `db/roles-privilegios.sql` corren contra un contenedor
   `postgres:16-alpine` real.
 - **Método de verificación**: **Test** (`PrestamoMultaProcedureIntegrationTest`
   corre contra PostgreSQL real, no un mock) + **Analysis** (revisión de la
@@ -1493,21 +1617,24 @@ en `/swagger-ui.html`, ver ADR-001) y consumida por el frontend Angular.
 No existen requisitos de interfaz externa con ID propio en
 `docs/trazabilidad/matriz.csv` — cada endpoint concreto ya está trazado
 como parte del requisito funcional que lo usa (columna `endpoint_api` de
-la matriz, sección 3.1 de este documento). **Cifra actualizada respecto a
-la versión anterior de este SRS** (que citaba 19 endpoints/5
-`@RestController`, estado de antes de mergear los 8 módulos nuevos): al
-momento de este commit hay **15 clases `@RestController`** con lógica de
-negocio real (se excluye `TestController`, un endpoint de humo sin lógica
-de negocio) y **44 combinaciones método+ruta** (`@GetMapping`/
-`@PostMapping`/`@PutMapping`/`@PatchMapping`/`@DeleteMapping`), contadas
-directamente sobre el código fuente de `backend-springboot/src/main/java/
-com/uteq/backend/controller/` en este commit, no inferidas. **Nota de
-honestidad**: esta cuenta no se propagó a `docs/informe-entrega-3.tex`
-(sección "Estado del sistema") ni a `docs/postman/coleccion.json` (que
-sigue citando 39 requests) — ambos quedan fuera del alcance de esta
-actualización del SRS, así que pueden estar desactualizados en la misma
-dirección que este documento lo estaba antes de esta versión; no se
-corrigen aquí para no tocar archivos fuera del alcance de esta tarea.
+la matriz, sección 3.1 de este documento). **Cifra recontada en esta
+revisión (hallazgo del Dr. Guerrero, 2026-09-07)** — versiones anteriores
+de este SRS citaban 19→44 endpoints y 5→15 `@RestController` en pasos
+sucesivos, ambas ya desactualizadas frente al código real de este commit:
+hay **31 clases `@*Controller`** en
+`backend-springboot/src/main/java/com/uteq/backend/controller/`
+(`find ... -name "*Controller.java" | wc -l`, 30 con lógica de negocio
+real + `TestController`, un endpoint de humo sin lógica de negocio) y
+**143 combinaciones método+ruta** (`@GetMapping`/`@PostMapping`/
+`@PutMapping`/`@PatchMapping`/`@DeleteMapping`: 86+37+7+4+9,
+`grep -rhoE` sobre el mismo directorio), contadas directamente sobre el
+código fuente en este commit, no inferidas. **Nota de honestidad**: esta
+cuenta no se propagó a `docs/informe-entrega-3.tex` (sección "Estado del
+sistema") ni a `docs/postman/coleccion.json` (que sigue citando 39
+requests) — ambos quedan fuera del alcance de esta actualización del SRS,
+así que pueden estar desactualizados en la misma dirección que este
+documento lo estaba antes de esta versión; no se corrigen aquí para no
+tocar archivos fuera del alcance de esta tarea.
 
 **Contrato general**: request/response en JSON; autenticación vía header
 `Authorization: Bearer <accessToken>` (excepto `/api/auth/refresh`, que
@@ -1523,9 +1650,13 @@ La trazabilidad completa de los 43 requisitos hacia historia de usuario,
 caso de uso, módulo/endpoint, prueba automatizada, tipo de acceso a datos,
 evidencia empírica y estado vive en
 **`docs/trazabilidad/matriz.csv`**, validada automáticamente en cada
-ejecución de CI por `scripts/validate-traceability.sh` (ver
-`ci(trazabilidad): agrega scripts/validate-traceability.sh y lo integra a
-CI`, commit `6c351cf`). Este SRS no reemplaza esa matriz — la expande en
+ejecución de CI por `scripts/validate-traceability.sh` (el commit que
+integró este script a CI ya no es citable por hash puntual, invalidado
+por la reescritura de historia con `git-filter-repo` señalada en la
+portada de este documento; el script está confirmado presente y
+funcional en el tag `v1.0.0`, commit `16279881`, y extendido en esta
+misma revisión — ver M23/`CHANGELOG-REQ.md`). Este SRS no reemplaza esa
+matriz — la expande en
 prosa formal IEEE 29148 (rationale, criterio de aceptación medible,
 método de verificación explícito) mientras la matriz sigue siendo la
 fuente machine-readable para validación automática. Si un requisito nuevo
@@ -1549,16 +1680,20 @@ relación con los requisitos no funcionales de la sección 3.2:
 | Eficiencia de desempeño | Media | REQ-NF-003; prueba de carga formal (k6, 5 corridas, comparación estadística Wilcoxon/Cliff's delta) en `docs/mediciones/perf/REPORT.md` |
 | Compatibilidad | Media | 3.3 (interfaz REST/JSON) |
 | Usabilidad | Alta | REQ-F-016, REQ-F-013 (mensajes explícitos en UI); evidencia empírica SUS todavía pendiente (OBS-08) |
-| Fiabilidad | Alta | REQ-NF-001 (riesgo fail-open/fail-closed de Redis); mismo riesgo se extiende ahora a `ChatbotRateLimiter` (REQ-F-028) y `VerificacionCorreoService` (REQ-F-020), ambos también respaldados por Redis sin fallback si el servicio cae |
-| Seguridad | Alta | REQ-NF-001, 002, 006, 007, 010, 011, 012 (parcial — ver nota abajo), 013, 014 (parcial, backend cerrado / frontend pendiente — ver nota abajo); REQ-F-028 (manejo de la API key de Gemini: nunca se registra en logs la URL que la contiene, ver `GeminiClient`/ADR-016 y su análisis de qué datos se envían al proveedor externo) |
-| Mantenibilidad | Alta | 13 ADRs de `docs/adr/` (cifra corregida respecto a la versión anterior de este SRS), `docs/basedatos/CATALOGO-SP.md`, REQ-NF-015 (CI/CD, `Makefile`) |
+| Fiabilidad | Alta | REQ-NF-001 (riesgo fail-open/fail-closed de Redis, ver A15 para el detalle por servicio: `JwtAuthFilter`/`VerificacionCorreoService` fail-closed, `LoginRateLimiter`/`ChatbotRateLimiter` fail-open); mismo riesgo se extiende a `ChatbotRateLimiter` (REQ-F-028) y `VerificacionCorreoService` (REQ-F-020), ambos también respaldados por Redis |
+| Seguridad | Alta | REQ-NF-001, 002, 006, 007, 010, 011, 012 (implementado en producción real — ver nota abajo), 013, 014 (implementado backend y frontend — ver nota abajo); REQ-F-028 (manejo de la API key de Gemini: nunca se registra en logs la URL que la contiene, ver `GeminiClient`/ADR-016 y su análisis de qué datos se envían al proveedor externo) |
+| Mantenibilidad | Alta | 14 ADRs de `docs/adr/` (cifra recontada en este commit, 2026-09-07 — incluye `adr-029-v29-gap.md`, agregado después de la versión anterior de este SRS que citaba 13), `docs/basedatos/CATALOGO-SP.md`, REQ-NF-015 (CI/CD, `Makefile`) |
 | Portabilidad | Alta | REQ-NF-005, REQ-NF-009 |
 
-**Nota sobre REQ-NF-012/014** (actualizada respecto a la versión anterior
-de este SRS, que los marcaba como completamente pendientes): ambos se
-cerraron **parcialmente** desde entonces — ver el detalle de qué parte
-específica quedó cerrada y cuál sigue pendiente en cada requisito, sección
-3.2.2.
+**Nota sobre REQ-NF-012/014** (actualizada respecto a versiones anteriores
+de este SRS, que los marcaban como completamente pendientes o parcialmente
+pendientes): esta revisión (hallazgo del Dr. Guerrero) confirma que ambos
+están **implementados** en lo que a este SRS le corresponde declarar —
+REQ-NF-012 en el despliegue real de producción (Render termina TLS en su
+borde; el stack Docker Compose local, fuera del alcance de este requisito,
+sigue en HTTP plano) y REQ-NF-014 tanto en backend como en frontend
+(`nginx.conf` ya trae CSP) — ver el detalle verificado en cada requisito,
+sección 3.2.2.
 
 ## 6. Notas de honestidad y gaps conocidos (resumen)
 
@@ -1579,15 +1714,18 @@ por una:
    no un olvido.
 5. **REQ-NF-010**: asimetría real de roles entre `LibroController` (incluye
    ADMIN) y `PrestamoController`/`ReservacionController` (no lo incluyen).
-6. **REQ-NF-012 y REQ-NF-014**: la versión anterior de este SRS (`v0.9.0-rc`)
-   los declaraba explícitamente **pendientes**; esta versión actualiza su
-   estado a **parcialmente implementados** (decisión de arquitectura +
-   preparación del backend para TLS; CSP/stacktraces/Swagger/non-root
-   cerrados y verificados en Docker real del lado backend), con la parte
-   que sigue sin cerrar declarada igual de explícitamente (TLS real
-   end-to-end; CSP del lado `nginx.conf`) — no se fabrica un cierre
-   completo que no ocurrió, pero tampoco se deja una versión vieja
-   contradiciendo lo que la matriz ya refleja como implementado.
+6. **REQ-NF-012 y REQ-NF-014**: versiones anteriores de este SRS los
+   declaraban primero **pendientes** y luego **parcialmente
+   implementados** (TLS real end-to-end y CSP del `nginx.conf` seguían
+   sin cerrar). Esta revisión (hallazgo del Dr. Guerrero, quien pidió
+   distinguir el despliegue Docker local del despliegue real) verifica
+   ambos contra el estado real: REQ-NF-012 **sí** corre bajo HTTPS real en
+   producción (Render termina TLS en su borde para `sgb-backend`/
+   `biblora-sgb`, `render.yaml` sin dominio propio); REQ-NF-014 **sí**
+   tiene CSP en `frontend-angular/nginx.conf:10`. Ambos se declaran
+   implementados en lo que corresponde a este sistema; lo que sigue sin
+   TLS/certificado propio es exclusivamente el stack de Docker Compose
+   local, que nunca fue el objetivo de estos requisitos.
 7. **REQ-NF-013**: verificado por inspección manual puntual durante la
    auditoría original, sin test de regresión permanente en el suite.
 8. **HU/CU de Cajas (HU-01 a HU-05, CU-01 a CU-05)**: viven consolidadas
@@ -1601,12 +1739,15 @@ por una:
 9. **ADRs**: la versión anterior de este SRS (Tercera Entrega) señalaba que
    el resumen ejecutivo de `docs/informe-entrega-3.tex` corregía una cifra
    de "13 ADRs" a los 10 reales existentes en `docs/adr/` en ese momento.
-   **Dato curioso, no un error de este documento**: tras agregar
-   ADR-014/015/016 tres módulos después, `docs/adr/` vuelve a tener
-   exactamente **13 ADRs reales** — la misma cifra que en su momento era
-   incorrecta, ahora es la correcta de nuevo, por coincidencia. Este SRS
-   usa la cifra verificada en este commit (13), sin asumir que coincidir
-   con el número antiguo significa que no cambió nada.
+   Tras agregar ADR-014/015/016 tres módulos después, `docs/adr/` llegó a
+   tener 13 ADRs reales — la misma cifra que en su momento era incorrecta,
+   coincidencia ya señalada por versiones previas de este SRS. **Recuento
+   de esta revisión (hallazgo del Dr. Guerrero, 2026-09-07)**:
+   `docs/adr/` tiene hoy **14 ADRs reales** (recontado con `ls docs/adr/`
+   excluyendo `README.md`) — se agregó `adr-029-v29-gap.md` (numeración de
+   migraciones Flyway, hueco `V29`) después de la última vez que este SRS
+   contó 13. Este SRS usa la cifra verificada en este commit (14), sin
+   asumir que el número anterior seguía vigente.
 10. **Diagrama de clases UML**: `docs/observaciones/OBSERVACIONES.md`
     (OBS-02) ya documenta que este diagrama sigue sin versionar como
     imagen en el repositorio — no es un gap de este SRS, es un gap
