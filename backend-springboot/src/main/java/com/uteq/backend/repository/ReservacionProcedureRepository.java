@@ -2,13 +2,7 @@ package com.uteq.backend.repository;
 
 import com.uteq.backend.entity.Reservacion;
 import org.springframework.data.jpa.repository.Query;
-// import org.springframework.data.jpa.repository.query.Procedure; -- ya no
-// se usa, ver bloques comentados abajo. Este era el caso de la Falla 1
-// documentada en
-// docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md:
-// Hibernate generaba "call sp_expirar_reservaciones_vencidas(...)" nativo,
-// que Postgres rechaza con "is not a procedure" porque el objeto es
-// FUNCTION, no PROCEDURE.
+// import org.springframework.data.jpa.repository.query.Procedure; -- no usado: el objeto es FUNCTION, no PROCEDURE.
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 

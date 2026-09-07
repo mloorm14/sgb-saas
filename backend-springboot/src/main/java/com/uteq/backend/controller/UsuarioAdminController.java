@@ -17,11 +17,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Panel de administración de usuarios (Módulo 5 + F8-gerente/V38). El
- * listado es ADMIN/GERENTE (GERENTE con ?mios=true ve solo sus creados);
- * crear/cambiar-rol/cambiar-estado admiten GERENTE con recorte a
- * LECTOR/BIBLIOTECARIO + ACTIVO/INACTIVO sobre sus creados (el service lo
- * verifica). Solo ADMIN crea GERENTE/ADMIN, ve todo y elimina (soft).
+ * Panel de administración de usuarios. GERENTE opera sobre sus creados;
+ * solo ADMIN crea GERENTE/ADMIN, ve todo y elimina (soft).
  */
 @RestController
 @RequestMapping("/api/v1/admin/usuarios")

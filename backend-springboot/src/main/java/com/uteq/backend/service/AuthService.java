@@ -39,10 +39,7 @@ public class AuthService {
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private static final String ROL_POR_DEFECTO = "LECTOR";
-    // Módulo 9.5: ya no ACTIVO directo -- UserDetailsServiceImpl marca
-    // disabled=true para PENDIENTE_VERIFICACION, así que el login queda
-    // bloqueado (403, ver GlobalExceptionHandler#handleDisabled) hasta que
-    // verificarCorreo() lo pase a ESTADO_VERIFICADO.
+    // Login bloqueado hasta verificar el correo → verificarCorreo() lo pasa a ACTIVO (403 mientras tanto).
     private static final String ESTADO_INICIAL = "PENDIENTE_VERIFICACION";
     private static final String ESTADO_VERIFICADO = "ACTIVO";
     private static final String TABLA_USUARIOS = "usuarios";
@@ -92,8 +89,7 @@ public class AuthService {
 
         Usuario guardado = usuarioRepository.save(usuario);
 
-        // Módulo 9.5: el usuario queda PENDIENTE_VERIFICACION (login
-        // bloqueado) hasta que confirme este código vía verificarCorreo().
+        // Queda PENDIENTE_VERIFICACION hasta confirmar el código vía verificarCorreo().
         verificacionCorreoService.generarYEnviarCodigo(guardado);
 
         return mapToUsuarioResponseDTO(guardado);
@@ -114,11 +110,8 @@ public class AuthService {
         }
     }
 
-    // ── POST /api/auth/reenviar-codigo ────────────────────────
-    // Sin autenticación: el usuario todavía no puede loguearse
-    // (PENDIENTE_VERIFICACION) así que no hay JWT. Permite regenerar el
-    // código cuando el TTL de Redis (10 min) ya expiró y el usuario quedó
-    // sin forma de verificar su correo salvo intervención manual en Postgres.
+    // ── POST /api/auth/reenviar-codigo ──
+    // Sin JWT (aún no puede loguearse): regenera el código cuando el TTL de Redis ya expiró.
     public void reenviarCodigo(String correo) {
         Usuario usuario = usuarioRepository.findByCorreo(correo)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo));
@@ -128,10 +121,8 @@ public class AuthService {
         verificacionCorreoService.generarYEnviarCodigo(usuario);
     }
 
-    // ── POST /api/auth/solicitar-reset ────────────────────────
-    // Flujo de recuperación de cuenta en 2 pasos: genera código de 6 dígitos
-    // con TTL 10 minutos (mismo que verificacion-correo), lo guarda en Redis
-    // y lo envía por correo via EmailService (SMTP/Brevo best-effort).
+    // ── POST /api/auth/solicitar-reset ──
+    // Recuperación en 2 pasos: código de 6 dígitos con TTL 10 min en Redis, enviado por correo.
     public void solicitarReset(String correo) {
         Usuario usuario = usuarioRepository.findByCorreo(correo)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo));
@@ -145,9 +136,7 @@ public class AuthService {
         String cuerpo = "<p>Hola " + usuario.getNombre() + ",</p>"
                 + "<p>Tu código para recuperar la cuenta es: <b>" + codigo + "</b></p>"
                 + "<p>Vence en 10 minutos.</p>";
-        // Reutiliza el mismo EmailService que crear-cuenta (SMTP + fallback Brevo).
-        // Es best-effort: si falla, el código queda en Redis y el error se loguea
-        // sin romper el flujo (el usuario puede reintentar).
+        // Envío best-effort: si falla, el código queda en Redis y el usuario puede reintentar.
         boolean enviado = emailService.enviarCorreo(correo, "Recuperar cuenta - SGB-SaaS", cuerpo);
         if (!enviado) {
             log.warn("No se pudo enviar correo de recuperacion a {} (codigo en Redis)", correo);
@@ -178,10 +167,8 @@ public class AuthService {
         log.info("Password reseteado para {}", correo);
     }
 
-    // ── POST /api/auth/verificar-correo ───────────────────────
-    // No requiere estar autenticado (el usuario todavía no puede loguearse
-    // -- ver ESTADO_INICIAL): la identidad se comprueba con el código de un
-    // solo uso, no con un JWT.
+    // ── POST /api/auth/verificar-correo ──
+    // Sin JWT: la identidad se comprueba con el código de un solo uso.
     public UsuarioResponseDTO verificarCorreo(String correo, String codigo, String ipOrigen) {
         verificacionCorreoService.validar(correo, codigo);
 
@@ -203,10 +190,7 @@ public class AuthService {
     }
 
     public TokenResponseDTO login(LoginRequestDTO dto, String ipOrigen) {
-        // OWASP A07 (Bloque C.2): verifica el contador ANTES de intentar
-        // autenticar -- si correo+IP ya agotaron el cupo, ni siquiera se
-        // llama a authenticationManager.authenticate(). Ver LoginRateLimiter
-        // para por qué la clave es correo+IP (no solo correo).
+        // Verifica el rate limit ANTES de autenticar → 429 si se agotó.
         if (loginRateLimiter.estaBloqueado(dto.correo(), ipOrigen)) {
             long segundosRestantes = loginRateLimiter.segundosRestantes(dto.correo(), ipOrigen);
             log.warn("Login bloqueado por rate limit: correo={} ip={} segundosRestantes={}",
@@ -229,9 +213,7 @@ public class AuthService {
         Usuario usuario = usuarioRepository.findByCorreo(dto.correo())
                 .orElseThrow(() -> new RuntimeException(USUARIO_NO_ENCONTRADO + dto.correo()));
 
-        // Login exitoso: resetea el contador de fallos de esta combinación
-        // correo+IP -- no se penaliza a alguien que se equivocó una vez y
-        // luego acertó.
+        // Login exitoso: resetea el contador de fallos de esta combinación correo+IP.
         loginRateLimiter.resetear(dto.correo(), ipOrigen);
         log.info("Login exitoso: sub={} correo={} ip={}", usuario.getId(), dto.correo(), ipOrigen);
         registrarAuditoria(usuario.getId(), "LOGIN_OK", usuario.getId(),
@@ -264,18 +246,8 @@ public class AuthService {
         registrarAuditoria(null, "LOGOUT", null, "Logout para correo: " + correo + " (jti=" + jti + ")", ipOrigen);
     }
 
-    // Bloque C.2 (OWASP A09): bitacora_auditoria ya preveía LOGIN_OK/
-    // LOGIN_FAIL/LOGOUT en su CHECK de tipo_operacion (db/schema.sql) --
-    // este es el primer código que efectivamente escribe ahí. INSERT
-    // trivial de una sola tabla (sin joins/lógica cruzada), consistente con
-    // la estrategia CRUD-ORM de adr-013-acceso-datos-orm-sp.md: no
-    // justifica un procedimiento almacenado. usuarioId se deja null cuando
-    // no se resolvió aún (login fallido, logout) para no pagar una consulta
-    // extra solo para la bitácora -- el correo intentado ya queda en
-    // "detalles" para correlación manual si hace falta.
-    // 2026-08: Separación de tablas: LOGIN_OK/LOGIN_FAIL/LOGOUT escriben
-    // en 'sesiones' (antes mezclados bajo 'usuarios'). CORREO_VERIFICADO
-    // sigue en 'usuarios' porque es una operación sobre la entidad usuario.
+    // Escribe LOGIN_OK/LOGIN_FAIL/LOGOUT en bitacora_auditoria.
+    // LOGIN_* van a 'sesiones'; CORREO_VERIFICADO a 'usuarios'.
     private void registrarAuditoria(Long usuarioId, String tipoOperacion, Long registroId,
                                     String detalles, String ipOrigen) {
         boolean esSesion = "LOGIN_OK".equals(tipoOperacion)
@@ -293,10 +265,7 @@ public class AuthService {
         try {
             bitacoraAuditoriaRepository.save(evento);
         } catch (org.springframework.dao.DataAccessException e) {
-            // La bitácora es best-effort: un corte de BD no debe convertir un
-            // login exitoso en un 500 ni un LOGIN_FAIL en un 500 -- el evento
-            // perdido queda en el log del servidor para correlación manual.
-            // Documentado en docs/mediciones/sec/2026-08-14-incidente-500-auth-redis-produccion.md.
+            // Bitácora best-effort: si falla no rompe el login; el evento queda en el log.
             log.error("No se pudo registrar evento de auditoría: tipo={} usuarioId={} ip={}",
                     tipoOperacion, usuarioId, ipOrigen, e);
         }

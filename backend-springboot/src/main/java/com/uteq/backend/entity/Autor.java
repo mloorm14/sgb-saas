@@ -6,10 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-// Mapea la tabla "autores" (Módulo 9.1 del roadmap). BIGSERIAL en el
-// schema (a diferencia de categorias, que es SERIAL) porque autores.id ya
-// se definió como BIGINT en db/schema.sql -- de ahí el Long en vez de
-// Integer, igual criterio que Libro.id.
+// Mapea la tabla "autores" (id BIGINT, por eso Long).
 @Data
 @NoArgsConstructor
 @Entity

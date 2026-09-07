@@ -20,12 +20,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Cliente HTTP directo de la API {@code generateContent} de Gemini (Módulo H).
- * Soporta function calling: puede enviar {@code tools} en el payload y
- * parsear respuestas con {@code functionCall} en vez de solo texto.
- * <p>
- * La lógica de ejecución de tools vive en {@code ChatbotOrchestrator}, no
- * acá. Este cliente solo transporta el payload y parsea la respuesta.
+ * Cliente HTTP de la API generateContent de Gemini con function calling.
+ * Solo transporta el payload y parsea la respuesta; las tools las ejecuta el orchestrator.
  */
 @Component
 public class GeminiClient {

@@ -15,13 +15,8 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * Job periódico del Módulo 2: detecta préstamos vigentes (ACTIVO/RENOVADO)
- * cuya {@code fecha_devolucion_estimada} cae dentro de la ventana de
- * anticipación configurada, y dispara
- * {@link NotificacionService#generarAlertaVencimiento(Prestamo)} por cada
- * uno. La deduplicación (no reenviar la misma alerta si el préstamo sigue
- * dentro de la ventana en la siguiente corrida) vive en el propio
- * {@code NotificacionService}, no aquí.
+ * Job periódico que alerta préstamos vigentes próximos a vencer.
+ * La deduplicación vive en NotificacionService, no aquí.
  */
 @Component
 public class NotificacionVencimientoScheduler {

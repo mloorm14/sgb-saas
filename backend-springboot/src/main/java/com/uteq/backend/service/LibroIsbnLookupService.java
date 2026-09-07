@@ -19,20 +19,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Autocompletar de inventario (Módulo inventario, mockup 14): consulta la
- * API pública de Google Books ({@code /volumes?q=isbn:...}) y mapea el
- * primer resultado a {@link LibroIsbnLookupDTO}. Mismo criterio de HTTP
- * directo que {@code integration/GeminiClient}: {@link RestClient} con
- * timeouts configurables, sin dependencias nuevas (verificado en pom.xml).
- * <p>
- * NUNCA se propagan errores de transporte al cliente HTTP: cualquier
- * fallo de red o 4xx/5xx de Google Books se traduce a
- * {@link EntityNotFoundException} (404 con ProblemDetail vía
- * GlobalExceptionHandler), igual que un ISBN sin resultados -- el
- * frontend muestra el mensaje "no se encontró información" en todos los
- * casos. La portada NO viaja en el DTO: se descarga por separado en
- * {@link #obtenerPortada(String)} (el frontend la sube con
- * LibroService.subirPortada al guardar el libro).
+ * Autocompletar de inventario: consulta Google Books por ISBN y mapea el
+ * primer resultado. Los fallos de red se traducen a 404; la portada se
+ * descarga por separado en {@link #obtenerPortada(String)}.
  */
 @Service
 public class LibroIsbnLookupService {
@@ -63,15 +52,12 @@ public class LibroIsbnLookupService {
         this.objectMapper = new ObjectMapper();
         this.geminiClient = geminiClient;
 
-        // Timeout de conexión/lectura configurable (app.google-books.timeout-ms),
-        // mismo criterio de configuración externa que app.gemini.
+        // Timeouts de conexión/lectura configurables por propiedad.
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout((int) timeoutMs);
         requestFactory.setReadTimeout((int) timeoutMs);
 
-        // RestClient propio (igual que GeminiClient): NO se inyecta
-        // RestClient.Builder porque Boot 4 modular de este proyecto no
-        // autoconfigura el bean (verificado: el context no arrancaba).
+        // RestClient propio con timeouts configurables.
         this.restClient = RestClient.builder()
                 .requestFactory(requestFactory)
                 .build();
@@ -95,8 +81,7 @@ public class LibroIsbnLookupService {
             String editorial = volumeInfo.path("publisher").asText(null);
             Integer numeroPaginas = volumeInfo.has("pageCount") ? volumeInfo.path("pageCount").asInt() : null;
 
-            // Solo titulo/resumen/anio son requeridos por el frontend; si Google trae alguno vacío,
-            // se intenta complementar con IA (traducción/generación de resumen en español neutro).
+            // Solo título/resumen/año son requeridos: si falta el resumen se complementa con IA.
             if ((resumen == null || resumen.isBlank()) && geminiClient != null) {
                 String iaResumen = generarResumenViaIA(titulo, autor, isbn);
                 if (iaResumen != null && !iaResumen.isBlank()) resumen = iaResumen;
@@ -104,7 +89,7 @@ public class LibroIsbnLookupService {
 
             return new LibroIsbnLookupDTO(titulo, autor, resumen, anio, portada, editorial, numeroPaginas);
         } catch (EntityNotFoundException ex) {
-            // Google no encontró (o 429): fallback a Open Library (gratis, sin key, mejor para fondo español).
+            // Fallback a Open Library cuando Google no encuentra o limita (429).
             LibroIsbnLookupDTO ol = buscarEnOpenLibrary(isbn);
             if (ol != null) {
                 // Si Open Library trae titulo pero sin resumen, complementar solo resumen con IA
@@ -216,15 +201,14 @@ public class LibroIsbnLookupService {
         throw new EntityNotFoundException(NO_ENCONTRADO);
     }
 
-    // El ISBN guardado admite guiones (misma regex que LibroRequestDTO);
-    // Google Books espera solo dígitos, así que se limpian acá.
+    // El ISBN admite guiones; Google Books espera solo dígitos, se limpian acá.
     private JsonNode buscarPrimerVolume(String isbn) {
         String url = urlBase + "/volumes?q=isbn:" + isbn.replace("-", "");
         String json = null;
         try {
             json = restClient.get().uri(url).retrieve().body(String.class);
         } catch (Exception ex) {
-            // 429 Too Many Requests de Google (cuota sin API key) es temporal: reintento una vez
+            // 429 de Google (cuota): reintento una vez.
             if (ex.getMessage() != null && ex.getMessage().contains("429")) {
                 try { Thread.sleep(1200); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
                 try {

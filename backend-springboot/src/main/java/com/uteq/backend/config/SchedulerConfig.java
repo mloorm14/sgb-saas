@@ -16,7 +16,6 @@ public class SchedulerConfig {
         scheduler.setPoolSize(4);
         scheduler.setThreadNamePrefix("sgb-backup-scheduler-");
         scheduler.setThreadPriority(Thread.NORM_PRIORITY);
-        // Reject if pool exhausted, to avoid silent drops
         scheduler.setDaemon(true);
         return scheduler;
     }

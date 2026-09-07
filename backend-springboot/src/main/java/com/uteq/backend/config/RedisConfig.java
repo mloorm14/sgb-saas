@@ -22,34 +22,8 @@ import java.util.Map;
 @EnableCaching
 public class RedisConfig {
 
-    // HALLAZGO (detectado al verificar TAREA 2 en vivo): el cache "libros"
-    // cachea Page<LibroResponseDTO> (LibroService.listar()). Se intentó con
-    // GenericJackson2JsonRedisSerializer + "default typing" + el módulo
-    // Jackson de Spring Data Web para Page, y aun así falló: PageImpl no
-    // expone un constructor que Jackson pueda usar para reconstruirlo al
-    // leer de vuelta (funciona para SERIALIZAR -- por eso la respuesta HTTP
-    // de LibroController nunca tuvo problema -- pero no para deserializar).
-    // En la práctica esto significa que, tal como estaba configurado antes,
-    // el cache "libros" nunca sirvió una lectura real: la escritura siempre
-    // funcionó, la lectura siempre lanzaba una excepción no controlada.
-    // Solución: no usar JSON para los valores de este cache. Se deja el
-    // serializador de valores SIN configurar explícitamente, con lo que
-    // RedisCacheConfiguration.defaultCacheConfig() aplica su propio default
-    // (serialización Java estándar, JdkSerializationRedisSerializer). Page,
-    // PageImpl, PageRequest y Sort de Spring Data ya son java.io.Serializable
-    // de fábrica; LibroResponseDTO se marcó Serializable explícitamente para
-    // completar el grafo (ver LibroResponseDTO). Las keys siguen siendo
-    // String vía el default de Spring Data Redis.
-    //
-    // Módulo 3 (rama E, búsqueda predictiva): mismo criterio aplicado al
-    // cache nuevo "sugerencias-libros" (LibroService.sugerir()) --
-    // List<LibroSugerenciaDTO> también serializado vía JDK estándar, por
-    // eso LibroSugerenciaDTO se marcó Serializable igual que
-    // LibroResponseDTO. TTL propio y mucho más corto que "libros"
-    // (app.cache.sugerencias.ttl-seconds, default 8s) porque la key acá es
-    // el texto de búsqueda tecleado letra por letra, no la paginación del
-    // catálogo completo -- un TTL de minutos dejaría resultados de
-    // autocompletado desactualizados frente a altas/bajas de libros.
+    // Caches con serialización JDK estándar (PageImpl no deserializa en JSON).
+    // "libros": paginado del catálogo. "sugerencias-libros": autocompletado con TTL corto.
     @Bean
     public CacheManager cacheManager(
             RedisConnectionFactory connectionFactory,
@@ -58,19 +32,10 @@ public class RedisConfig {
         RedisCacheConfiguration baseConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .disableCachingNullValues();
 
-        // TTL del cache "libros" (GET /api/v1/libros, ver LibroService) viene
-        // de configuracion externa -- app.cache.libros.ttl-seconds en
-        // application.yml, resuelto desde CACHE_LIBROS_TTL_SECONDS en .env --
-        // nunca hardcodeado en Java (requisito A.1 de la guia). Antes de este
-        // cambio RedisCacheConfiguration.defaultCacheConfig() no tenia
-        // entryTtl(): las entradas no expiraban nunca (TTL infinito), solo se
-        // invalidaban via @CacheEvict en las mutaciones de LibroService.
+        // TTL externo (application.yml), nunca hardcodeado en Java.
         RedisCacheConfiguration librosConfig = baseConfig.entryTtl(Duration.ofSeconds(librosTtlSeconds));
 
-        // TTL del cache "sugerencias-libros" (GET /api/v1/libros/sugerencias,
-        // Módulo 3) -- mismo mecanismo, pero configuracion propia
-        // (app.cache.sugerencias.ttl-seconds / CACHE_SUGERENCIAS_TTL_SECONDS)
-        // porque su TTL correcto es de segundos, no de minutos como "libros".
+        // TTL propio en segundos: el autocompletado se teclea letra por letra.
         RedisCacheConfiguration sugerenciasConfig = baseConfig.entryTtl(Duration.ofSeconds(sugerenciasTtlSeconds));
 
         return RedisCacheManager.builder(connectionFactory)

@@ -26,17 +26,8 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Panel de administración de usuarios (Módulo 5 del roadmap): listado
- * paginado con filtro, cambio de rol y cambio de estado (bloqueo/activación
- * manual). Corresponde a RF-01 y al actor "Gerente/Admin" del documento de
- * requisitos original.
- * <p>
- * Separación ADMIN vs GERENTE (ver {@code docs/adr/adr-014-separacion-admin-gerente.md},
- * ampliada por F8-gerente/V38): el controller admite ADMIN y GERENTE en
- * listar/crear/cambiar-rol/cambiar-estado, y este service aplica el recorte
- * fino — GERENTE solo ve y opera usuarios con creado_por propio y solo
- * roles LECTOR/BIBLIOTECARIO + estados ACTIVO/INACTIVO. Solo ADMIN crea
- * GERENTE/ADMIN y ve todo. DELETE sigue solo ADMIN en el controller.
+ * Panel de administración de usuarios: listado paginado, cambio de rol y de estado.
+ * GERENTE solo opera usuarios creados por él; DELETE sigue solo ADMIN.
  */
 @Service
 public class UsuarioAdminService {
@@ -45,8 +36,7 @@ public class UsuarioAdminService {
     private static final String ROL_NO_ENCONTRADO = "Rol no válido: ";
     private static final String ESTADO_NO_ENCONTRADO = "Estado no válido: ";
     private static final String TABLA_USUARIOS = "usuarios";
-    // F8-gerente: GERENTE solo opera LECTOR/BIBLIOTECARIO creados por él.
-    // Solo ADMIN crea GERENTE/ADMIN (ver UsuarioAdminController).
+    // GERENTE solo opera LECTOR/BIBLIOTECARIO creados por él.
     private static final Set<String> ROLES_GERENTE_PERMITIDOS = Set.of("LECTOR", "BIBLIOTECARIO");
     private static final Set<String> ESTADOS_GERENTE_PERMITIDOS = Set.of("ACTIVO", "INACTIVO");
 
@@ -76,8 +66,7 @@ public class UsuarioAdminService {
         return listar(filtro, pageable, null, false);
     }
 
-    // F8-gerente: si authentication es GERENTE (o soloMios=true), filtra por
-    // creado_por = miId. ADMIN con soloMios=false ve todo como antes.
+    // GERENTE filtra por creado_por = miId; ADMIN ve todo.
     @Transactional(readOnly = true)
     public Page<UsuarioListadoResponseDTO> listar(String filtro, Pageable pageable,
                                                   Authentication authentication, boolean soloMios) {
@@ -88,8 +77,7 @@ public class UsuarioAdminService {
         }
         Page<Usuario> pagina = usuarioRepo.buscarConFiltros(texto, creadoPor, pageable);
 
-        // Batch query: una sola consulta para saber qué usuarios de la
-        // página tienen multas pendientes (evita N+1).
+        // Batch query: multas pendientes de la página en una sola consulta (evita N+1).
         List<Long> ids = pagina.getContent().stream().map(Usuario::getId).toList();
         Integer estadoPendienteId = estadoMultaRepo.findByNombre("PENDIENTE")
                 .map(e -> e.getId())
@@ -103,11 +91,7 @@ public class UsuarioAdminService {
     }
 
     /**
-     * Reemplaza el conjunto de roles del usuario por uno solo (
-     * {@code nuevoRol}). No es un "agregar rol" -- simplifica el modelo de
-     * administración a "cada usuario tiene un rol operativo vigente",
-     * consistente con que hoy {@code AuthService.registrar} también asigna
-     * un único rol (LECTOR) al crear la cuenta.
+     * Reemplaza los roles del usuario por uno solo ({@code nuevoRol}).
      */
     @Transactional
     public void cambiarRol(Long usuarioId, String nuevoRol, Authentication authentication) {
@@ -116,7 +100,7 @@ public class UsuarioAdminService {
         Rol rol = rolRepo.findByNombre(nuevoRol)
                 .orElseThrow(() -> new IllegalArgumentException(ROL_NO_ENCONTRADO + nuevoRol));
         Long ejecutorId = resolverIdPorCorreo(authentication == null ? null : authentication.getName());
-        // F8-gerente: GERENTE solo cambia rol a sus creados y solo LECTOR/BIBLIOTECARIO.
+        // GERENTE solo cambia rol a sus creados y solo LECTOR/BIBLIOTECARIO.
         if (esGerente(authentication)) {
             if (!ROLES_GERENTE_PERMITIDOS.contains(nuevoRol)) {
                 throw new org.springframework.security.access.AccessDeniedException(
@@ -139,12 +123,8 @@ public class UsuarioAdminService {
     }
 
     /**
-     * Cambia el estado del usuario (p.ej. ACTIVO -> INACTIVO para dar de
-     * baja, o INACTIVO -> ACTIVO para reactivar). {@code motivo} es
-     * obligatorio a nivel de DTO ({@link com.uteq.backend.dto.CambioEstadoUsuarioRequestDTO})
-     * y queda registrado en la bitácora -- distinto del bloqueo automático
-     * por multas impagas, que lo aplica {@code sp_pagar_multa}/
-     * {@code sp_anular_multa} sin intervención de un ADMIN.
+     * Cambia el estado del usuario (bloqueo/activación manual).
+     * {@code motivo} queda registrado en la bitácora.
      */
      @Transactional
     public void cambiarEstado(Long usuarioId, String nuevoEstado, String motivo, Authentication authentication) {
@@ -153,7 +133,7 @@ public class UsuarioAdminService {
         EstadoUsuario estado = estadoUsuarioRepo.findByNombre(nuevoEstado)
                 .orElseThrow(() -> new IllegalArgumentException(ESTADO_NO_ENCONTRADO + nuevoEstado));
         Long ejecutorId = resolverIdPorCorreo(authentication == null ? null : authentication.getName());
-        // F8-gerente: GERENTE solo bloquea/reactiva (ACTIVO/INACTIVO) a sus creados.
+        // GERENTE solo bloquea/reactiva (ACTIVO/INACTIVO) a sus creados.
         if (esGerente(authentication)) {
             if (!ESTADOS_GERENTE_PERMITIDOS.contains(nuevoEstado)) {
                 throw new org.springframework.security.access.AccessDeniedException(
@@ -174,14 +154,11 @@ public class UsuarioAdminService {
                         + ". Motivo: " + motivo);
     }
 
-    // Mismo patrón que MultaService/PrestamoService: el ejecutor real
-    // (quién hizo el cambio) se resuelve desde el JWT autenticado, nunca
-    // desde un campo del body -- evita que alguien falsifique "quién"
-    // aparece en la bitácora.
+    // El ejecutor se resuelve desde el JWT autenticado, nunca desde el body.
     @Transactional
     public com.uteq.backend.dto.UsuarioResponseDTO crearUsuario(com.uteq.backend.dto.CrearUsuarioAdminRequestDTO dto, Authentication authentication) {
         usuarioRepo.findByCorreo(dto.correo()).ifPresent(u -> { throw new com.uteq.backend.service.CorreoYaRegistradoException("El correo ya está registrado: " + dto.correo()); });
-        // F8-gerente: solo ADMIN crea GERENTE/ADMIN.
+        // GERENTE solo crea LECTOR o BIBLIOTECARIO.
         if (esGerente(authentication) && !ROLES_GERENTE_PERMITIDOS.contains(dto.rol())) {
             throw new org.springframework.security.access.AccessDeniedException(
                     "GERENTE solo puede crear usuarios LECTOR o BIBLIOTECARIO");
@@ -211,28 +188,22 @@ public class UsuarioAdminService {
     private Long resolverIdPorCorreo(String correo) {
         if (correo == null) throw new EntityNotFoundException(USUARIO_NO_ENCONTRADO + "null");
         String normalizado = correo.trim().toLowerCase();
-        // Usa IgnoreCase para evitar 404 fantasma por mayúsculas en JWT; tolera mock sin stub
+        // Usa IgnoreCase para evitar 404 por mayúsculas en el JWT.
         Optional<Usuario> opt = usuarioRepo.findByCorreoIgnoreCase(normalizado);
-        // Optional nunca es null (Mockito retorna Optional.empty() por defecto).
         if (opt.isPresent()) return opt.get().getId();
         return usuarioRepo.findByCorreo(correo)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo))
                 .getId();
     }
 
-    // F8-gerente: GERENTE opera solo sobre sus creados; ADMIN sin restricción.
+    // GERENTE opera solo sobre sus creados; ADMIN sin restricción.
     private boolean esGerente(Authentication authentication) {
         if (authentication == null || authentication.getAuthorities() == null) return false;
         return authentication.getAuthorities().stream()
                 .anyMatch(a -> "ROLE_GERENTE".equals(a.getAuthority()));
     }
 
-    // Mismo criterio que AuthService.registrarAuditoria(): INSERT plano de
-    // una sola tabla, sin lógica cruzada -- no justifica un procedimiento
-    // almacenado (ver adr-013-acceso-datos-orm-sp.md). usuarioId acá es el
-    // ejecutor (el ADMIN que hizo el cambio), no el usuario afectado --
-    // ese va en registroId, para poder distinguir "quién hizo qué a quién"
-    // al leer la bitácora.
+    // INSERT plano de una sola tabla: usuarioId es el ejecutor, registroId el afectado.
     private void registrarAuditoria(Long ejecutorId, Long usuarioAfectadoId, String detalles) {
         BitacoraAuditoria evento = BitacoraAuditoria.builder()
                 .usuarioId(ejecutorId)

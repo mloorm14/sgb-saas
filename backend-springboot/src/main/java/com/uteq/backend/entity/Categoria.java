@@ -6,10 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-// Mapea la tabla "categorias", ya existente en db/schema.sql (Módulo 9.1
-// del roadmap: tabla huérfana sin entidad detrás hasta esta rama). Mismo
-// patrón simple que Editorial.java: catálogo plano, id SERIAL, sin campos
-// adicionales.
+// Mapea la tabla "categorias".
 @Data
 @NoArgsConstructor
 @Entity

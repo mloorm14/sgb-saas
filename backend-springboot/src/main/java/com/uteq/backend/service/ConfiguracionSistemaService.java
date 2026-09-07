@@ -15,20 +15,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Parámetros del sistema (tabla {@code configuracion_sistema}), pensados
- * para leerse en cada préstamo/reserva/multa sin ir a la base de datos cada
- * vez (Módulo 9.4 del roadmap). Cache en memoria simple (no Redis): un
- * {@link ConcurrentHashMap} por instancia de la app, invalidado clave por
- * clave al escribir — suficiente porque este valor cambia con muy poca
- * frecuencia (un Admin ajustando un parámetro puntual), a diferencia del
- * cache "libros" (ver RedisConfig), que sí necesita compartirse entre
- * instancias e invalidarse por TTL.
- *
- * IMPORTANTE para consumidores futuros (Ramas C/D/E del roadmap: límite de
- * renovaciones, caducidad de reservas, etc.): usar
- * {@link #obtenerValor(String)}/{@link #obtenerValorEntero(String)}/
- * {@link #obtenerValorDecimal(String)} en vez de inyectar
- * {@link ConfiguracionSistemaRepository} directo, para no perder el cache.
+ * Parámetros del sistema con cache en memoria (invalidado por clave al escribir).
+ * Consumidores: usar {@code obtenerValor*} en vez del repositorio directo para no perder el cache.
  */
 @Service
 public class ConfiguracionSistemaService {
@@ -54,11 +42,7 @@ public class ConfiguracionSistemaService {
     }
 
     /**
-     * Actualiza el valor de una clave que YA existe. A propósito no crea
-     * claves nuevas por esta vía: el catálogo de parámetros válidos lo
-     * define el dominio (ver seed.sql / migraciones), no quien llama al
-     * endpoint — evita que quede una clave suelta que ningún consumidor
-     * real lee.
+     * Actualiza una clave que YA existe; no crea claves nuevas por esta vía.
      */
     @Transactional
     public ConfiguracionSistemaResponseDTO actualizar(String clave, String nuevoValor) {

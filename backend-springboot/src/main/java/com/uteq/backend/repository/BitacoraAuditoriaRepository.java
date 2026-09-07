@@ -12,17 +12,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * CRUD elemental sobre {@code bitacora_auditoria}, más el filtro paginado
- * que consume {@code AuditoriaService} (Módulo 6). Los 4 filtros son
- * opcionales e independientes entre sí (usuario, módulo, rango de fecha).
- *
- * Query NATIVA con casts explícitos de PostgreSQL: la versión JPQL con
- * "(:param IS NULL OR columna = :param)" falla con 500 cuando TODOS los
- * filtros vienen vacíos (caso real: abrir la pantalla sin filtrar) --
- * Hibernate envía los parámetros NULL sin tipo y PostgreSQL no puede
- * inferirlo para la comparación ("could not determine data type of
- * parameter"). Los CAST(:param AS tipo) fijan el tipo en el SQL y el
- * planificador resuelve siempre.
+ * CRUD de {@code bitacora_auditoria} más filtro paginado (query nativa con casts para parámetros NULL).
  */
 @Repository
 public interface BitacoraAuditoriaRepository extends JpaRepository<BitacoraAuditoria, Long> {

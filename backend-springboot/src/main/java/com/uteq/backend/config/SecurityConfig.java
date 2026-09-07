@@ -79,17 +79,7 @@ public class SecurityConfig {
                 .headers(headers -> headers
                         .contentTypeOptions(contentTypeOptions -> {})
                         .frameOptions(frameOptions -> frameOptions.deny())
-                        // OWASP A05 (Bloque C.2, REQ-NF-014): gap identificado en
-                        // docs/mediciones/sec/2026-07-30-owasp-a05-mala-configuracion-seguridad.md
-                        // ("Content-Security-Policy ausente en ambos" -- backend y
-                        // frontend, causa independiente del gap de TLS). Se cierra
-                        // acá para el backend: la única superficie HTML que sirve
-                        // hoy es Swagger UI (deshabilitado en el perfil `prod`, ver
-                        // application.yml y adr-015-tls-transporte.md), así que una
-                        // política restrictiva no rompe ningún flujo de la API JSON.
-                        // Si Swagger UI llegase a necesitar estilos/scripts inline en
-                        // algún perfil de desarrollo, ampliar acá explícitamente en
-                        // vez de relajar por defecto.
+                        // CSP restrictiva: la única superficie HTML es Swagger UI.
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
                                 "default-src 'self'; "
                                         + "script-src 'self'; "
@@ -111,11 +101,7 @@ public class SecurityConfig {
     private CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("http://localhost:4200", "https://biblora-sgb.onrender.com"));
-        // PATCH incluido desde el fix de CORS: los 3 endpoints PATCH
-        // (sugerencias-adquisicion/{id}/estado, admin/usuarios/{id}/rol,
-        // admin/usuarios/{id}/estado) morían en el preflight OPTIONS
-        // cross-origin sin él -- un 403 de CORS antes de llegar al
-        // @PreAuthorize, imposible de arreglar desde el frontend.
+        // PATCH incluido: los endpoints PATCH mueren en el preflight sin él.
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

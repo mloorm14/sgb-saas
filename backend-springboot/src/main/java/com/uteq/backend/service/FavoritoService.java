@@ -16,12 +16,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
-// Módulo 9.2 del roadmap. Sin @PreAuthorize a nivel de método (eso vive en
-// FavoritoController, defensa en profundidad) -- acá solo se resuelve
-// "de quién es este favorito": un LECTOR únicamente puede marcar/ver sus
-// propios favoritos, resuelto siempre desde el Authentication autenticado,
-// nunca de un usuarioId que venga en el request (mismo criterio que
-// PrestamoService.resolverIdPorCorreo/validarAccesoUsuario).
+// Favoritos del usuario autenticado: el dueño se resuelve siempre desde el Authentication.
 @Service
 public class FavoritoService {
 
@@ -48,10 +43,7 @@ public class FavoritoService {
                 .orElseThrow(() -> new EntityNotFoundException(LIBRO_NO_ENCONTRADO + libroId));
 
         if (favoritoRepo.existsByUsuarioIdAndLibroId(usuarioId, libroId)) {
-            // Idempotente a propósito: marcar dos veces el mismo libro no
-            // es un error del cliente (el botón "★" del frontend no tiene
-            // por qué saber si ya estaba marcado antes de hacer clic),
-            // simplemente devuelve el estado actual.
+            // Idempotente: marcar dos veces devuelve el estado actual.
             Favorito existente = favoritoRepo.findByUsuarioId(usuarioId).stream()
                     .filter(f -> f.getLibroId().equals(libroId))
                     .findFirst()

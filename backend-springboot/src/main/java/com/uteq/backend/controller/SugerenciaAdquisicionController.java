@@ -16,13 +16,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-// Módulo 9.3 del roadmap. "lector crea, gerente lista y cambia estado":
-// GERENTE/ADMIN pueden ver TODAS las sugerencias (listarTodas), LECTOR
-// solo las suyas (listarPropias) -- mismo patrón de separación que
-// PrestamoController.listarPorUsuario vs listarActivosPorUsuario, pero acá
-// son dos endpoints distintos en vez de uno con chequeo de acceso interno,
-// porque el filtro (propias vs todas) cambia según el rol, no según un
-// parámetro que el cliente elige.
+// Lector crea, gerente lista y cambia estado. LECTOR ve solo las
+// suyas; GERENTE/ADMIN ven todas.
 @RestController
 @RequestMapping("/api/v1/sugerencias-adquisicion")
 public class SugerenciaAdquisicionController {

@@ -25,12 +25,8 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * Genera y envía las 3 alertas del Módulo 2 (VENCIMIENTO, MULTA,
- * RESERVA_CADUCADA), y expone el listado por usuario para
- * {@code NotificacionController}. Cada método público corresponde a un
- * disparador distinto -- ver {@code NotificacionVencimientoScheduler},
- * {@code PrestamoService#registrarDevolucion} y
- * {@code ReservacionScheduler} para dónde se invocan.
+ * Genera las alertas VENCIMIENTO, MULTA y RESERVA_CADUCADA, y expone el
+ * listado por usuario. Cada método público corresponde a un disparador distinto.
  */
 @Service
 public class NotificacionService {
@@ -51,9 +47,7 @@ public class NotificacionService {
     private final LibroRepository libroRepo;
     private final EmailService emailService;
 
-    // Flag de configuración (default: desactivado). Los correos automáticos
-    // se desactivaron por volumen en producción (2026-08-30); reactivar
-    // solo cambiando configuración, nunca código.
+    // Correos automáticos desactivados por defecto; solo se reactivan por configuración.
     @Value("${notificaciones.email.habilitado:false}")
     private boolean emailHabilitado;
 
@@ -70,11 +64,7 @@ public class NotificacionService {
     }
 
     /**
-     * Invocado por {@code NotificacionVencimientoScheduler}. No hace nada
-     * si ya existe una notificación VENCIMIENTO para este préstamo (ver
-     * {@code NotificacionRepository#existsByPrestamoIdAndTipoNotificacionId})
-     * -- el scheduler corre cada minuto y un préstamo puede seguir dentro
-     * de la ventana de anticipación en varias ejecuciones consecutivas.
+     * No hace nada si ya existe una notificación VENCIMIENTO para este préstamo.
      */
     @Transactional
     public void generarAlertaVencimiento(Prestamo prestamo) {
@@ -92,11 +82,7 @@ public class NotificacionService {
     }
 
     /**
-     * Invocado por {@code PrestamoService#registrarDevolucion} cuando el
-     * resultado de {@code sp_registrar_devolucion} reporta
-     * {@code o_hubo_multa = true}. No hay deduplicación aquí (a diferencia
-     * de {@code generarAlertaVencimiento}): una devolución con atraso
-     * genera la multa una sola vez, nunca dos veces para el mismo préstamo.
+     * Notifica la multa recién creada por una devolución con atraso (sin deduplicación).
      */
     @Transactional
     public void notificarMulta(Long usuarioId, Long prestamoId, BigDecimal monto) {
@@ -106,10 +92,7 @@ public class NotificacionService {
     }
 
     /**
-     * Invocado por {@code ReservacionScheduler} para cada reservación que
-     * va a expirar en la corrida actual (resuelta ANTES de invocar
-     * {@code sp_expirar_reservaciones_vencidas}, que solo devuelve un
-     * conteo -- ver Javadoc de {@code ReservacionScheduler}).
+     * Notifica cada reservación que va a expirar en la corrida actual del scheduler.
      */
     @Transactional
     public void notificarReservaCaducada(Reservacion reservacion) {
@@ -119,8 +102,8 @@ public class NotificacionService {
                 "Tu reserva caducó");
     }
 
-    // ── GET /notificaciones/usuario/{id} -- "propio vs cualquiera", mismo
-    // patrón que MultaService/PrestamoService/ReservacionService. ──
+    // ── GET /notificaciones/usuario/{id} ──
+    // Propio vs cualquiera: LECTOR solo sus propias notificaciones.
     @Transactional(readOnly = true)
     public Page<NotificacionResponseDTO> listarPorUsuario(Long usuarioId, Authentication authentication, Pageable pageable) {
         validarAccesoUsuario(usuarioId, authentication);
@@ -129,8 +112,6 @@ public class NotificacionService {
 
     /**
      * Envía comprobante de pago de multa por correo al usuario dueño.
-     * Incluye formato profesional: nombre del sistema, fecha/hora, datos
-     * del usuario, detalle del pago con monto pagado y saldo.
      */
     @Transactional
     public void notificarComprobantePago(Long usuarioId, Long multaId, BigDecimal montoPagado) {
@@ -173,7 +154,7 @@ public class NotificacionService {
     public void notificarLibroDisponible(Long usuarioId, Long libroId, String titulo) {
         String mensaje = "El libro \"" + titulo + "\" esta disponible ahora — reservalo antes que otros.";
         Integer tipoId = idDelTipo(TIPO_DISPONIBLE);
-        // Notificacion manual: si permite envio, se intenta correo
+        // Notificación manual: si permite envío, se intenta correo.
         crearYEnviarDisponible(usuarioId, null, tipoId, mensaje, "Libro disponible");
     }
 
@@ -206,13 +187,8 @@ public class NotificacionService {
         notificacionRepo.save(notificacion);
     }
 
-    // 2026-08-30: correos automáticos DESACTIVADOS por volumen en producción
-    // (~100k registros, ~1k+ reservas caducadas) — SMTP generaba 1k+ intentos
-    // por corrida (ReservacionScheduler cada 15 min + NotificacionVencimientoScheduler
-    // cada 60s) con Authentication failed en EmailService. Se mantiene solo el
-    // correo manual de verificación de cuenta (VerificacionCorreoService).
-    // La notificación in-app (tabla notificaciones) sigue creándose.
-    // Para DISPONIBLE (manual Notificarme) se usa crearYEnviarDisponible con email activo.
+    // Correos automáticos desactivados: solo se crea la notificación in-app.
+    // Para DISPONIBLE (manual) se usa crearYEnviarDisponible con email activo.
     private void crearYEnviar(Long usuarioId, Long prestamoId, Integer tipoNotificacionId, String mensaje, String asunto) {
         Usuario usuario = usuarioRepo.findById(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));

@@ -20,10 +20,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Consulta de {@code bitacora_auditoria} para GERENTE/ADMIN (Módulo 6). La
- * tabla y el repositorio ya existían (escritos desde el Módulo de
- * autenticación y, desde el Módulo 5, por {@code UsuarioAdminService}) --
- * lo que faltaba era exponerlos de lectura.
+ * Consulta de {@code bitacora_auditoria} para GERENTE/ADMIN.
  */
 @Service
 public class AuditoriaService {
@@ -48,11 +45,7 @@ public class AuditoriaService {
         Page<BitacoraAuditoria> pagina = bitacoraAuditoriaRepo.buscarConFiltros(
                 usuarioId, modulo, desde, hasta, pageable);
 
-        // Resolver correo por id en un solo IN (...) en vez de una consulta
-        // por fila -- evita N+1 sobre una página de hasta N eventos.
-        // BitacoraAuditoria.usuarioId no es una relación @ManyToOne (ver
-        // Javadoc de la entidad: "columnas planas, sin joins"), así que
-        // este mapeo se resuelve acá, no con un JOIN FETCH en el repositorio.
+        // Resuelve correo por id con un solo IN (...) para evitar N+1.
         Set<Long> idsUsuarios = pagina.getContent().stream()
                 .map(BitacoraAuditoria::getUsuarioId)
                 .filter(Objects::nonNull)

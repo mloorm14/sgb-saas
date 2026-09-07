@@ -24,14 +24,13 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Asistente virtual (Módulo H, chatbot con Gemini + function calling).
- * Restringido SOLO a LECTOR. Usa {@link ChatbotOrchestrator} que gestiona
- * el loop de function calling (Gemini → tool → resultado → Gemini → respuesta final).
+ * Asistente virtual con Gemini + function calling, solo LECTOR.
+ * Delega en {@link ChatbotOrchestrator} el loop herramienta-respuesta.
  */
 @RestController
 @RequestMapping("/api/v1/chatbot")
 @Validated
-@Tag(name = "Chatbot", description = "Asistente virtual con Gemini + function calling (Módulo H), solo LECTOR")
+@Tag(name = "Chatbot", description = "Asistente virtual con Gemini + function calling, solo LECTOR")
 public class ChatbotController {
 
     private final ChatbotOrchestrator chatbotOrchestrator;

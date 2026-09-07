@@ -10,11 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Mapea la tabla {@code base_conocimiento} (migración V9, Módulo H): pares
- * pregunta/respuesta curados por el equipo (HORARIOS, POLITICAS, MULTAS) que
- * ChatbotService inyecta al prompt de sistema de Gemini como grounding -- el
- * modelo solo responde con este contexto real, nunca inventa datos. Sin
- * lógica de negocio, mismo criterio que el resto de entidades del repo.
+ * Pares pregunta/respuesta curados que ChatbotService inyecta como contexto a Gemini.
  */
 @Data
 @NoArgsConstructor

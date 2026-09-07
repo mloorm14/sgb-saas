@@ -13,20 +13,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 /**
- * Mapea la tabla {@code sesiones_chat} (migración V9, Módulo H) 1:1, sin
- * lógica de negocio -- mismo criterio que {@link Notificacion}/
- * {@link Prestamo}: {@code usuarioId} se expone como identificador plano,
- * sin {@code @ManyToOne}.
- * <p>
- * Decisión del {@code id}: {@code @GeneratedValue(strategy = GenerationType.UUID)}
- * (Hibernate genera el UUID en la app) en vez de dejar que la BD lo genere
- * con {@code gen_random_uuid()} ({@code insertable = false}). Motivo:
- * ChatbotService necesita {@code sesion.getId()} INMEDIATAMENTE después de
- * crear la sesión para persistir los {@link MensajeChat} asociados en la
- * misma transacción. Con generación por BD, el id no quedaría poblado tras
- * {@code save()} y habría que forzar un flush+refresh. El default de la
- * columna se conserva como respaldo para inserts SQL directos, es
- * funcionalmente equivalente y no rompe la migración.
+ * Sesiones de chat del lector (1:1, sin relaciones JPA).
  */
 @Data
 @NoArgsConstructor

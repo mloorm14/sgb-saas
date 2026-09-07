@@ -3,12 +3,7 @@ package com.uteq.backend.dto;
 import java.util.List;
 
 /**
- * Fila del listado paginado de {@code GET /api/v1/admin/usuarios}
- * (Módulo 5). No reutiliza {@link UsuarioResponseDTO} (el DTO que ya
- * devuelve AuthService en login/registro) porque ese es la identidad del
- * usuario autenticado consigo mismo, mientras que este es una vista de
- * administración: agrega {@code apellido}, {@code estado} y
- * {@code multasPendientes}, que no tienen sentido en el contexto de login.
+ * Fila del listado paginado de {@code GET /api/v1/admin/usuarios} (vista de administración, no identidad de login).
  * <p>
  * {@code multasPendientes} se deriva de {@code estado} (¿el usuario está en
  * {@code BLOQUEADO_POR_MULTA}?) en vez de una consulta aparte a

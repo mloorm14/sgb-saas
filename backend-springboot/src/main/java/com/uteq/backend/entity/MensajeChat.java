@@ -13,12 +13,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 /**
- * Mapea la tabla {@code mensajes_chat} (migración V9, Módulo H) 1:1, sin
- * lógica de negocio. {@code rol} es {@code "USUARIO"} (lo que escribió el
- * lector) o {@code "ASISTENTE"} (la respuesta de Gemini), constraint CHECK
- * en la BD (migración V9). {@code sesionId} se guarda como identificador
- * plano, sin {@code @ManyToOne}, mismo criterio que el resto de entidades
- * del repo.
+ * Mensajes de una sesión de chat (rol USUARIO/ASISTENTE, FK plano sin relaciones JPA).
  */
 @Data
 @NoArgsConstructor

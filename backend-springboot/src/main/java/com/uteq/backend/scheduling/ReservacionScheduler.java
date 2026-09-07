@@ -15,22 +15,8 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * Job periódico que expira en lote las reservaciones vencidas no
- * retiradas, invocando sp_expirar_reservaciones_vencidas (ver
- * docs/basedatos/CATALOGO-SP.md #6). No hay endpoint manual de
- * expiración a propósito -- ver Javadoc de ReservacionService.
- * <p>
- * Módulo 2 (notificaciones): {@code sp_expirar_reservaciones_vencidas}
- * solo devuelve un conteo de filas actualizadas, no CUÁLES -- no alcanza
- * para notificar individualmente después del UPDATE. Por eso este
- * scheduler consulta primero, con el mismo filtro exacto que usa la
- * función (ver {@code ReservacionRepository
- * #findByEstadoReservacionIdInAndFechaLimiteRetiroBefore}), notifica cada
- * una, y solo entonces invoca la función para el UPDATE masivo real. Se
- * acepta como riesgo menor (no resuelto acá) que, en la ventana entre la
- * consulta y el UPDATE, otro proceso pudiera alterar alguna fila -- este
- * proyecto corre una sola instancia del scheduler, así que en la práctica
- * no ocurre.
+ * Job periódico que expira en lote las reservaciones vencidas no retiradas.
+ * Notifica cada una antes del UPDATE masivo; corre en una sola instancia.
  */
 @Component
 public class ReservacionScheduler {

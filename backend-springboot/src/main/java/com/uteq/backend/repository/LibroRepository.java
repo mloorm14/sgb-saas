@@ -27,11 +27,7 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
 
     boolean existsByIsbnAndIdNot(String isbn, Long id);
 
-    // Módulo 9.1: filtros de catálogo por categoría/autor (LibroController
-    // ?categoriaId=/?autorId=). "Categorias_Id"/"Autores_Id" navega la
-    // colección @ManyToMany de Libro (ver Libro.categorias/Libro.autores),
-    // mismo mecanismo de "propiedad anidada" que ya usa findByEstado_Nombre
-    // con la relación @ManyToOne.
+    // Filtros de catálogo por categoría/autor (navega las colecciones @ManyToMany de Libro).
     Page<Libro> findByCategorias_IdAndEstado_Nombre(Integer categoriaId, String estadoNombre, Pageable pageable);
 
     Page<Libro> findByAutores_IdAndEstado_Nombre(Long autorId, String estadoNombre, Pageable pageable);
@@ -106,15 +102,7 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
             nativeQuery = true)
     Page<Libro> buscarPorTextoOIsbnYAutor(@Param("q") String q, @Param("autorId") Long autorId, @Param("estadoId") Integer estadoId, Pageable pageable);
 
-    // Módulo 3 (búsqueda predictiva, RF-09/CU-08): similarity(...) es una
-    // función de la extensión pg_trgm (ver
-    // database/migrations/V6__busqueda_predictiva.sql), sin equivalente en
-    // JPQL -- por eso va como @Query nativa, mismo patrón que las
-    // funciones de PrestamoProcedureRepository. p_estado_id se resuelve en
-    // LibroService (vía EstadoLibroRepository) en vez de hardcodear
-    // 'ACTIVO' acá, siguiendo el mismo criterio que el resto del service
-    // (ej. PrestamoService.idEstadoPrestamo). LIMIT 10 fijo: el resultado
-    // es para un dropdown de autocompletado, no un listado paginado.
+    // Búsqueda por similitud con pg_trgm (top 10 por similarity de título, para autocompletado).
     @Query(value = "SELECT * FROM libros "
             + "WHERE estado_id = :p_estado_id AND similarity(titulo, :p_texto) > 0.1 "
             + "ORDER BY similarity(titulo, :p_texto) DESC "

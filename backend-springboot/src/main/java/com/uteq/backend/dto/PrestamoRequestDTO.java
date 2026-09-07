@@ -5,26 +5,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.UUID;
 
-// bibliotecarioId NO viaja en el body: se resuelve en el service a partir
-// del Authentication (mismo principio de seguridad que p_rol_ejecutor en
-// MultaService.anular — no confiar en el cliente para atribuir quién
-// ejecuta la acción).
-//
-// usuarioId es NULLABLE a propósito (Módulo 8, credencial QR): el
-// bibliotecario puede identificar al lector escaneando su QR
-// (credencialQrToken) en vez de escribir el id a mano. Exactamente uno de
-// los dos debe venir; se valida en PrestamoService.crear() y no aquí con
-// Bean Validation porque un "exactamente uno de estos dos campos" necesita
-// una anotación @AssertTrue adicional que complica más de lo que
-// simplifica para un caso tan puntual. El ingreso manual (usuarioId) se
-// mantiene siempre disponible como contingencia obligatoria para cuando el
-// dispositivo del estudiante falla.
-//
-// reservacionId es OPCIONAL (ventanilla de préstamos): cuando viene, el
-// préstamo nace de una reserva vigente del usuario (PENDIENTE o
-// LISTA_PARA_RETIRO) y, además de crearse vinculado a ella
-// (prestamos.reservacion_id), la marca RETIRADA para que no quede colgada
-// como pendiente. Cuando no viene, es un préstamo directo de siempre.
+// Crea un préstamo (usuarioId o credencialQrToken, exactamente uno; reservacionId opcional la vincula y marca RETIRADA).
 public record PrestamoRequestDTO(
 
         Long usuarioId,

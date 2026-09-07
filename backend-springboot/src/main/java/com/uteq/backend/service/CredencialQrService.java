@@ -16,12 +16,8 @@ import java.io.IOException;
 import java.util.UUID;
 
 /**
- * Genera y resuelve la credencial QR de un usuario (Módulo 8). Decisión de
- * diseño: el QR NO reemplaza el login por correo, es un método adicional de
- * identificación rápida en ventanilla -- el bibliotecario escanea la
- * credencial del estudiante para agilizar el registro de un préstamo (ver
- * PrestamoService.crear()), y el ingreso manual de usuarioId se mantiene
- * siempre disponible como contingencia.
+ * Genera y resuelve la credencial QR del usuario: identificación rápida en
+ * ventanilla para agilizar préstamos (el ingreso manual sigue disponible).
  */
 @Service
 public class CredencialQrService {
@@ -38,9 +34,7 @@ public class CredencialQrService {
     }
 
     /**
-     * Genera la imagen PNG del QR del usuario autenticado (GET
-     * /mi-credencial). No recibe un usuarioId por parámetro a propósito:
-     * cada usuario solo puede pedir SU propio QR, nunca el de otro.
+     * Genera el QR del usuario autenticado: cada usuario solo puede pedir el suyo.
      */
     public byte[] generarImagenQrPropio(Authentication authentication) {
         Usuario usuario = usuarioRepo.findByCorreo(authentication.getName())
@@ -50,10 +44,7 @@ public class CredencialQrService {
     }
 
     /**
-     * Codifica ÚNICAMENTE el {@code credencialQrToken} (UUID) dentro del QR
-     * -- nunca el correo ni la identificación en claro, para que el QR
-     * físico/impreso no filtre datos personales por sí solo si se pierde o
-     * lo ve alguien más.
+     * Codifica ÚNICAMENTE el token (UUID): el QR no expone datos personales si se pierde.
      */
     private byte[] generarImagenQr(Usuario usuario) {
         try {
@@ -64,22 +55,14 @@ public class CredencialQrService {
             MatrixToImageWriter.writeToStream(matriz, "PNG", salida);
             return salida.toByteArray();
         } catch (WriterException | IOException ex) {
-            // No debería ocurrir con un UUID.toString() como contenido (36
-            // caracteres ASCII, muy por debajo de la capacidad de un QR) --
-            // si pasa, es un problema del entorno (encoder/IO), no del dato.
+            // Si pasa, es un problema del entorno (encoder/IO), no del dato.
             throw new IllegalStateException("No se pudo generar el código QR.", ex);
         }
     }
 
     /**
-     * Resuelve el usuario a partir del token leído del QR escaneado en
-     * ventanilla. Rechaza tanto un token inexistente como un usuario que no
-     * esté en estado ACTIVO (bloqueado por multa, inactivo, pendiente de
-     * verificación) con el MISMO mensaje genérico: el bibliotecario ve
-     * "credencial no reconocida" en ambos casos, sin filtrar por qué (evita
-     * que escanear credenciales ajenas sirva para enumerar qué usuarios
-     * existen o están bloqueados), y usa el ingreso manual de cédula como
-     * contingencia.
+     * Resuelve el usuario desde el token escaneado en ventanilla.
+     * Token inexistente o usuario no ACTIVO → mismo mensaje genérico (no filtra existencia).
      */
     public Usuario resolverPorToken(UUID token) {
         Usuario usuario = usuarioRepo.findByCredencialQrToken(token)

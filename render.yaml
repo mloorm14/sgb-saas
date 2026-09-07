@@ -1,7 +1,5 @@
-# ============================================================
-# render.yaml — Blueprint de despliegue en Render (Bloque A.4.2)
-# Prod real: biblora-sgb es Static Site (no Docker) — ver nota en servicio frontend.
-# ============================================================
+# render.yaml — Blueprint de despliegue en Render.
+# Prod real: biblora-sgb es Static Site (no Docker).
 
 services:
   # ---- Backend Spring Boot ----
@@ -66,11 +64,7 @@ services:
       - key: INTERNAL_API_KEY
         sync: false
 
-  # ---- Frontend Angular ----
-  # Prod real: Static Site (no Docker) — biblora-sgb en Render está como Static Site con
-  # Root Directory: frontend-angular, Build Command: npm ci && npm run build,
-  # Publish Directory: dist/frontend-angular/browser. Este bloque documenta el estado real
-  # Static y no fuerza runtime docker (ver histórico bcb3baf7 que proponía Docker para 404 SPA).
+  # ---- Frontend Angular (Static Site real) ----
   - name: biblora-sgb
     type: static
     plan: free

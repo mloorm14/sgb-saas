@@ -32,10 +32,7 @@ public interface PrestamoRepository extends JpaRepository<Prestamo, Long> {
     List<Prestamo> findByEstadoPrestamoIdInAndFechaDevolucionEstimadaBetween(
             List<Integer> estadoPrestamoIds, OffsetDateTime desde, OffsetDateTime hasta);
 
-    // Módulo de préstamos (ventanilla): historial reciente del usuario,
-    // más nuevo primero. Sin paginación a propósito -- el frontend muestra
-    // una línea de tiempo acotada (el service recorta al tope definido),
-    // no una tabla paginada.
+    // Historial reciente del usuario, más nuevo primero (línea de tiempo acotada, sin paginación).
     List<Prestamo> findByUsuarioIdOrderByIdDesc(Long usuarioId);
 
     // Préstamos activos del LECTOR: misma lógica que

@@ -54,9 +54,7 @@ public class LibroController {
     }
 
     // ── GET /api/v1/libros/sugerencias?texto= ─────────────
-    // Módulo 3 (RF-09/CU-08): autocompletado de catálogo. isAuthenticated()
-    // sin restricción de rol -- cualquier usuario logueado puede buscar,
-    // a diferencia del resto de endpoints de este controller.
+    // Autocompletado de catálogo. Cualquier usuario autenticado puede buscar.
     @GetMapping("/sugerencias")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<LibroSugerenciaDTO>> sugerencias(
@@ -78,9 +76,8 @@ public class LibroController {
     }
 
     // ── GET /api/v1/libros/lookup-isbn?isbn= ─────────────
-    // Módulo inventario (mockup 14): autocompletar desde Google Books.
-    // La ruta literal /lookup-isbn gana sobre /{id} (Spring elige el
-    // patrón más específico). 404 con ProblemDetail si no hay resultado.
+    // Autocompletar desde Google Books. La ruta literal gana sobre /{id};
+    // 404 con ProblemDetail si no hay resultado.
     @GetMapping("/lookup-isbn")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<LibroIsbnLookupDTO> lookupIsbn(
@@ -138,11 +135,8 @@ public class LibroController {
     }
 
     // ── POST /api/v1/libros/{id}/portada ───────────────────
-    // Módulo portada binaria (V13__portada_imagen.sql): multipart con un
-    // solo campo "archivo". La validación (tipo/tamaño) vive en
-    // LibroService.actualizarPortada y responde 400 con ProblemDetail vía
-    // GlobalExceptionHandler, no acá. Admin/Gerente heredan el rol de
-    // bibliotecario, mismo criterio que el resto del controller.
+    // Subida multipart con campo "archivo". La validación de tipo/tamaño
+    // vive en LibroService y responde 400 vía GlobalExceptionHandler.
     @PostMapping(value = "/{id}/portada", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<LibroResponseDTO> subirPortada(

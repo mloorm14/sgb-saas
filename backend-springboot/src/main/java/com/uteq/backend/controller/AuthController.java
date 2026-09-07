@@ -64,10 +64,8 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
-    // Módulo 9.5: sin @PreAuthorize / sin JWT -- el usuario recién
-    // registrado todavía no puede loguearse (ver AuthService.ESTADO_INICIAL),
-    // así que no hay token que exigir aquí. La identidad se prueba con el
-    // código de un solo uso, no con autenticación.
+    // Sin JWT: el recién registrado aún no puede loguearse.
+    // La identidad se prueba con el código de un solo uso.
     @PostMapping("/verificar-correo")
     public ResponseEntity<UsuarioResponseDTO> verificarCorreo(
             @Valid @RequestBody CodigoVerificacionRequestDTO dto, HttpServletRequest request) {
@@ -94,14 +92,8 @@ public class AuthController {
                 .build();
     }
 
-    // Bloque C.2 (OWASP A07/A09): IP real del cliente, usada para el rate
-    // limiter de login y el logging de eventos de autenticación. Se lee
-    // directo de request.getRemoteAddr() -- NO de X-Forwarded-For, que
-    // cualquier cliente puede falsificar libremente; este entorno no tiene
-    // un proxy reverso de confianza delante que lo sobreescriba con un
-    // valor fiable. Si en el futuro se agrega uno, este método es el único
-    // punto a ajustar (validar contra una lista de proxies de confianza
-    // antes de usarlo, no confiar en el header a ciegas).
+    // IP real del cliente para rate limit y auditoría. Lee getRemoteAddr();
+    // no usa X-Forwarded-For por ser falsificable sin proxy de confianza.
     private String obtenerIpOrigen(HttpServletRequest request) {
         return request.getRemoteAddr();
     }

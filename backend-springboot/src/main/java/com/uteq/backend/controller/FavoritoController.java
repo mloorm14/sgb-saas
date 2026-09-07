@@ -14,12 +14,8 @@ import org.springframework.data.web.PageableDefault;
 
 import java.util.List;
 
-// Módulo 9.2 del roadmap. Solo LECTOR: favoritos es un concepto de
-// "mi propia lista", BIBLIOTECARIO/GERENTE/ADMIN no marcan libros propios
-// desde acá (a diferencia de PrestamoController, donde varios roles
-// operan sobre préstamos ajenos). El usuarioId nunca viaja en la URL/body:
-// siempre se resuelve del Authentication en FavoritoService, así que no
-// hace falta un endpoint "de otro usuario" ni su chequeo de acceso.
+// Favoritos del propio LECTOR; el usuarioId se resuelve del
+// Authentication en FavoritoService.
 @RestController
 @RequestMapping("/api/v1/favoritos")
 public class FavoritoController {

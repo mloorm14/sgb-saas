@@ -26,25 +26,11 @@ import java.util.Locale;
 import java.util.UUID;
 
 /**
- * Módulo H: orquesta el chatbot asistente virtual (solo LECTOR, ver
- * ChatbotController). Flujo de {@code enviarMensaje}: resuelve el usuario
- * desde el {@code Authentication} (mismo patrón que
- * {@code PrestamoService}/{@code ReservacionService}: {@code findByCorreo}),
- * valida el rate limit, resuelve/valida la sesión, persiste el mensaje del
- * usuario, arma el prompt de sistema con grounding real (base_conocimiento
- * + resultados de {@code LibroService.sugerir} si el texto sugiere
- * disponibilidad), pide la respuesta a {@link GeminiClient}, la persiste y
- * actualiza la sesión.
+ * Orquesta el chatbot asistente virtual (solo LECTOR): persiste el mensaje,
+ * arma el prompt con grounding real y pide la respuesta a Gemini.
  * <p>
- * DECISIÓN (reservas desde el chat): {@code ReservacionService} se inyecta
- * como punto de integración previsto, pero {@code reservacionService.crear()}
- * NO se ejecuta desde el chat en esta primera versión. El modelo no tiene
- * forma confiable de mapear "ese libro" a un {@code libroId} real sin
- * riesgo de inventarlo, y el grounding solo garantiza disponibilidad, no
- * identidad exacta del título. Un "reservar" desde el chat se atiende con
- * instrucciones de cómo hacerlo (catálogo/ventanilla) y pedido de
- * confirmación; la ejecución directa queda para una versión 2 con un paso
- * de confirmación explícita y selección del libro por id.
+ * No ejecuta reservas desde el chat: solo indica cómo reservar; la ejecución
+ * directa queda para v2 con confirmación explícita y selección por id.
  */
 @Service
 @RequiredArgsConstructor
@@ -64,8 +50,7 @@ public class ChatbotService {
     private final BaseConocimientoRepository baseConocimientoRepo;
     private final UsuarioRepository usuarioRepo;
     private final LibroService libroService;
-    // Punto de integración reservado para v2 (reservas confirmadas desde el
-    // chat) -- ver la DECISIÓN en el Javadoc de la clase. No se invoca aún.
+    // Integración reservada para v2 (reservas desde el chat); aún no se invoca.
     private final ReservacionService reservacionService;
     private final GeminiClient geminiClient;
     private final ChatbotRateLimiter chatbotRateLimiter;
@@ -81,9 +66,7 @@ public class ChatbotService {
 
         SesionChat sesion = resolverSesion(dto.sesionId(), usuarioId);
 
-        // El mensaje del usuario se persiste ANTES de llamar a Gemini: si la
-        // API falla o responde el mensaje amigable, el intento del usuario
-        // queda registrado en el historial igualmente.
+        // Persiste el mensaje del usuario ANTES de llamar a Gemini para no perder el intento.
         MensajeChat msgUsuario = new MensajeChat();
         msgUsuario.setSesionId(sesion.getId());
         msgUsuario.setRol(ROL_USUARIO);
@@ -121,9 +104,8 @@ public class ChatbotService {
                 .toList();
     }
 
-    // ── Prompt de sistema con grounding real ────────────────────────────────
-    // Instruye al modelo a responder SOLO con el contexto que se le pasa y a
-    // nunca inventar disponibilidad de libros (ver GeminiClient).
+    // ── Prompt de sistema con grounding real ──
+    // Instruye al modelo a responder SOLO con el contexto provisto, sin inventar disponibilidad.
     private String construirPromptSistema(String textoUsuario) {
         StringBuilder sb = new StringBuilder();
         sb.append("Eres el asistente virtual de la biblioteca SGB-SaaS. ")
@@ -188,9 +170,7 @@ public class ChatbotService {
         SesionChat sesion = sesionChatRepo.findById(sesionId)
                 .orElseThrow(() -> new SesionChatNoEncontradaException(
                         "Sesión de chat no encontrada: " + sesionId));
-        // Un LECTOR solo puede escribir/leer en sus propias sesiones. Mismo
-        // criterio de no filtrar existencia que el resto del repo: una sesión
-        // ajena se reporta igual que una inexistente (404 genérico).
+        // Sesión ajena se reporta igual que inexistente (404 genérico).
         if (!sesion.getUsuarioId().equals(usuarioId)) {
             throw new SesionChatNoEncontradaException(
                     "Sesión de chat no encontrada: " + sesionId);

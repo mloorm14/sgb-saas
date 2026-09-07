@@ -16,16 +16,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Envuelve {@link JavaMailSender} para los Módulos 2 (alertas de
- * vencimiento/multa/reserva caducada) y 9.5 (código de verificación de
- * correo). Un fallo de SMTP (host caído, credenciales inválidas, timeout)
- * <b>nunca</b> debe romper el flujo que lo origina -- registrar una
- * devolución, generar una multa, o el registro de un usuario nuevo son
- * operaciones válidas por sí mismas, con o sin correo. Por eso este método
- * atrapa {@link MailException}/{@link MessagingException} y devuelve
- * {@code boolean} en vez de relanzar: el llamador decide qué hacer con el
- * resultado (p.ej. {@code NotificacionService} lo persiste en
- * {@code notificaciones.enviado_ok}/{@code error_envio}).
+ * Envuelve {@link JavaMailSender} para alertas y verificación de correo.
+ * Un fallo de SMTP nunca rompe el flujo que lo origina: devuelve
+ * {@code boolean} y el llamador decide (ej. {@code NotificacionService}
+ * lo persiste en {@code enviado_ok}/{@code error_envio}).
  */
 @Service
 public class EmailService {
@@ -48,17 +42,11 @@ public class EmailService {
     }
 
     /**
-     * @param cuerpoHtml se envía como HTML (segundo parámetro {@code true}
-     *                   de {@link MimeMessageHelper#setText}) para permitir
-     *                   énfasis simple (ej. negrita en el título del libro
-     *                   o el código de verificación) sin depender de una
-     *                   plantilla externa.
-     * @return {@code true} si el envío se despachó sin error; {@code false}
-     *         si falló -- en cuyo caso ya quedó registrado en el log de la
-     *         aplicación, el llamador no necesita loguearlo de nuevo.
+     * @param cuerpoHtml se envía como HTML para énfasis simple, sin plantilla externa.
+     * @return {@code true} si se despachó sin error; {@code false} si falló (ya quedó en el log).
      */
     public boolean enviarCorreo(String destinatario, String asunto, String cuerpoHtml) {
-        // 1) Intento SMTP clásico (respeta SMTP_* de Render)
+        // 1) Intento SMTP clásico
         try {
             MimeMessage mensaje = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, "UTF-8");
@@ -70,7 +58,7 @@ public class EmailService {
             return true;
         } catch (MessagingException | MailException ex) {
             log.warn("SMTP falló para {} (asunto: \"{}\"): {} — probando fallback Brevo API", destinatario, asunto, ex.getMessage());
-            // 2) Fallback HTTP Brevo API (no usa puerto SMTP, no depende de Render SMTP_PORT)
+            // 2) Fallback HTTP Brevo API
             if (brevoApiKey != null && !brevoApiKey.isBlank()) {
                 boolean ok = enviarViaBrevoApi(destinatario, asunto, cuerpoHtml);
                 if (ok) return true;

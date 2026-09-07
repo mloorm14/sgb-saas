@@ -34,10 +34,7 @@ public interface MultaRepository extends JpaRepository<Multa, Long> {
     BigDecimal sumSaldoByUsuarioIdAndEstadoMultaId(@Param("usuarioId") Long usuarioId,
                                                    @Param("estadoMultaId") Integer estadoMultaId);
 
-    // ── Módulo de préstamos (ventanilla) ─────────────────────
-    // Las 3 consultas siguientes comparten el mismo join ad hoc de arriba.
-    // estadoMultaId SIEMPRE llega resuelto por nombre desde
-    // EstadoMultaRepository (PENDIENTE), nunca hardcodeado.
+    // Consultas de ventanilla (mismo join ad hoc a Prestamo; estado resuelto por nombre).
 
     // Monto total adeudado por el usuario: alimenta la tarjeta "Usuario
     // Bloqueado" del Caso C ("...multas pendientes de pago ($X.XX)") y la

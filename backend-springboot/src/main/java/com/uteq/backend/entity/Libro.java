@@ -108,15 +108,7 @@ public class Libro {
     @Column(name = "actualizado_en")
     private OffsetDateTime actualizadoEn;
 
-    // Módulo 9.1 del roadmap: categorias/autores ya existían como tablas
-    // huérfanas (libro_categorias/libro_autores) sin entidad ni relación
-    // detrás. LAZY (default de @ManyToMany, se deja explícito por
-    // consistencia con editorial/idioma/estado arriba) -- a diferencia de
-    // esos tres, esta relación es una colección, no una FK simple, así que
-    // toDTO()/fromDTO() en LibroService deben forzar su inicialización
-    // dentro de la transacción @Transactional(readOnly = true) de
-    // buscarPorId()/listar(), o lanzará LazyInitializationException fuera
-    // de sesión.
+    // Categorías/autores (@ManyToMany LAZY): inicializar dentro de la transacción o lanza LazyInitializationException.
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "libro_categorias",

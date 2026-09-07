@@ -11,35 +11,9 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 
 /**
- * Contador de intentos fallidos de login en Redis, para OWASP A07 (Bloque
- * C.2 -- ver docs/mediciones/sec/owasp/2026-07-30-owasp-a07-fallo-identificacion-autenticacion.md
- * para el gap original que esto cierra).
- * <p>
- * Clave compuesta por {@code correo + ip} (no solo {@code correo}) a
- * propósito: si la clave fuera solo el correo, un atacante podría agotar el
- * cupo de intentos de la CUENTA DE OTRA PERSONA fallando login repetidas
- * veces contra su correo desde IPs propias, bloqueando al dueño legítimo de
- * esa cuenta sin necesidad de conocer su contraseña -- un vector de
- * denegación de servicio nuevo, peor que el problema que se está
- * resolviendo. Con la clave combinada, el contador de la IP real del
- * usuario legítimo nunca se ve afectado por intentos fallidos originados en
- * IPs ajenas contra el mismo correo.
- * <p>
- * Limitación aceptada y documentada (no resuelta acá): un atacante que
- * controle múltiples IPs (proxies/botnet) puede seguir intentando fuerza
- * bruta contra un mismo correo rotando de IP cada {@code maxAttempts}
- * intentos -- cada combinación correo+IP tiene su propio cupo independiente.
- * Mitigar esto requeriría una capa adicional (reputación de IP, CAPTCHA,
- * límite global por correo con ventana más laxa) fuera del alcance de esta
- * entrega; se documenta como riesgo aceptado, no como algo resuelto.
- * <p>
- * Degradación ante caída de Redis: todos los métodos envuelven las
- * operaciones Redis en try/catch y degradan a un comportamiento que NO rompe
- * el flujo de login (fail-open: sin bloqueo ni contadores). Preferible a
- * devolver 500 en cada intento de login durante un corte -- el login es el
- * flujo central de la demo y su indisponibilidad total es peor que un rate
- * limit momentáneamente ciego. El corte se registra en warn. Ver
- * docs/mediciones/sec/2026-08-14-incidente-500-auth-redis-produccion.md.
+ * Contador de intentos fallidos de login en Redis. Clave por correo+IP
+ * para no bloquear al dueño por intentos ajenos; ante caída de Redis
+ * degrada a fail-open sin romper el login.
  */
 @Component
 @RequiredArgsConstructor

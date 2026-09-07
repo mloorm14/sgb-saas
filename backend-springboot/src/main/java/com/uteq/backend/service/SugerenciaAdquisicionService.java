@@ -19,12 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-// Módulo 9.3 del roadmap. crear() resuelve el usuarioId siempre desde el
-// Authentication autenticado (mismo criterio que FavoritoService): un
-// LECTOR no puede sugerir a nombre de otro usuario. cambiarEstado() no
-// valida rol acá -- eso vive en @PreAuthorize del controller -- pero sí
-// registra quién revisó (revisadoPor), tomado también del Authentication,
-// nunca de un campo que venga en el body.
+// crear() resuelve el usuarioId desde el Authentication; cambiarEstado() registra quién revisó.
 @Service
 public class SugerenciaAdquisicionService {
 
@@ -52,9 +47,7 @@ public class SugerenciaAdquisicionService {
         sugerencia.setUsuarioId(usuarioId);
         sugerencia.setTitulo(dto.titulo());
         sugerencia.setAutor(dto.autor());
-        // ISBN opcional: "" (form vacío) se guarda como null para no
-        // chocar con el @Pattern ^[0-9]{13}$ del DTO (Bean Validation
-        // ignora null pero no ""). Sin esto, sugerir sin ISBN da 400.
+        // ISBN opcional: "" se guarda como null para no chocar con el @Pattern del DTO.
         String isbn = dto.isbn() == null || dto.isbn().isBlank() ? null : dto.isbn();
         sugerencia.setIsbn(isbn);
         sugerencia.setJustificacion(dto.justificacion());
@@ -69,9 +62,7 @@ public class SugerenciaAdquisicionService {
         return sugerenciaRepo.findByUsuarioId(usuarioId, pageable).map(this::toDTO);
     }
 
-    // Solo GERENTE/ADMIN llegan acá (ver @PreAuthorize en
-    // SugerenciaAdquisicionController) -- listado sin filtrar por dueño,
-    // a diferencia de listarPropias().
+    // Solo GERENTE/ADMIN llegan acá: listado sin filtrar por dueño.
     @Transactional(readOnly = true)
     public Page<SugerenciaAdquisicionResponseDTO> listarTodas(String estado, Pageable pageable) {
         if (estado == null || estado.isBlank()) {
@@ -94,11 +85,8 @@ public class SugerenciaAdquisicionService {
         return resultado;
     }
 
-    // ── Gestión por demanda: lo más pedido primero ──────────────────────────
-    // El orden vive en el JPQL (ORDER BY COUNT(s) DESC, isbn ASC). El sort
-    // del Pageable se ignora a propósito: Sort.by("cantidad") lo califica
-    // Spring contra la entidad (s.cantidad) y revienta con
-    // UnknownPathException porque cantidad es alias del SELECT, no campo.
+    // ── Gestión por demanda: lo más pedido primero ──
+    // El orden vive en el JPQL; el sort del Pageable se ignora a propósito.
     @Transactional(readOnly = true)
     public Page<SugerenciaAgrupadaDTO> getMasPedidos(Pageable pageable) {
         Pageable efectivo = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());

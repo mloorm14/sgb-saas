@@ -22,10 +22,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * Módulo 6: consulta de bitácora de auditoría, solo GERENTE/ADMIN (mismo
- * criterio de acceso que {@code MultaController.anular} y los reportes
- * gerenciales -- ver también {@code UsuarioAdminController.listar}, que
- * comparte los dos mismos roles para lectura).
+ * Consulta de bitácora de auditoría, solo GERENTE/ADMIN.
  */
 @RestController
 @RequestMapping("/api/v1/auditoria")

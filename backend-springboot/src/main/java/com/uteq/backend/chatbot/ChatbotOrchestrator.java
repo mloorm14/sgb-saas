@@ -35,19 +35,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Orquestador del chatbot con function calling (reemplaza a ChatbotService).
- * <p>
- * Flujo:
- * <ol>
- *   <li>Resuelve usuario, valida rate limit, resuelve sesión</li>
- *   <li>Persiste el mensaje del usuario</li>
- *   <li>Construye el system prompt con grounding (base_conocimiento)</li>
- *   <li>Obtiene las tools del {@link ChatbotToolRegistry}</li>
- *   <li>Llama a Gemini con tools habilitados</li>
- *   <li>Si Gemini responde con functionCall → ejecuta la tool real → devuelve resultado a Gemini</li>
- *   <li>Repite hasta obtener respuesta de texto</li>
- *   <li>Persiste la respuesta y retorna</li>
- * </ol>
+ * Orquestador del chatbot con function calling.
+ * Flujo: valida rate limit → persiste mensaje → system prompt con base de
+ * conocimiento → loop Gemini (functionCall → ejecuta tool → reinyecta) → persiste respuesta.
  */
 @Service
 public class ChatbotOrchestrator {

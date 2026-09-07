@@ -12,13 +12,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
 
-// Mapea la tabla "sugerencias_adquisicion" (Módulo 9.3 del roadmap). El
-// propio schema modela "estado" como VARCHAR con CHECK
-// (PENDIENTE/APROBADA/RECHAZADA), no como catálogo FK aparte (a diferencia
-// de estados_libro/estados_prestamo/etc.) -- se respeta tal cual está en
-// db/schema.sql en vez de normalizarlo, no es parte del alcance de esta
-// rama. FKs planos (usuarioId, revisadoPor), mismo criterio que
-// Prestamo/Multa/Favorito.
+// Sugerencias de adquisición (estado VARCHAR con CHECK, FKs planos sin relaciones JPA).
 @Data
 @NoArgsConstructor
 @Entity

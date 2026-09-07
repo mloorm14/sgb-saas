@@ -56,11 +56,7 @@ public record LibroRequestDTO(
         @Min(0)
         Integer stockDisponible,
 
-        // Módulo 9.1: asociación con categorias/autores existentes. null o
-        // vacío es válido (un libro puede no tener categoría/autor
-        // asignado todavía) -- por eso sin @NotNull/@NotEmpty, a
-        // diferencia de editorialId/idiomaId/estadoId que sí son
-        // obligatorios.
+        // Ids de categorías/autores existentes (opcionales, un libro puede no tenerlos).
         Set<Integer> categoriaIds,
 
         Set<Integer> autorIds,

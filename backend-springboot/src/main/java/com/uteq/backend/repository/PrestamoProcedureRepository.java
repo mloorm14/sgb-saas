@@ -100,17 +100,11 @@ public interface PrestamoProcedureRepository extends Repository<Prestamo, Long> 
             @Param("p_hasta") OffsetDateTime hasta
     );
 
-    /**
-     * fn_reporte_indice_morosidad (Módulo 7): misma situación que
-     * fn_reporte_libros_mas_prestados (RETURNS TABLE de varias filas) --
-     * @Query nativa por la misma razón documentada arriba.
-     */
+    // Reporte de índice de morosidad (función RETURNS TABLE vía @Query nativa).
     @Query(value = "SELECT * FROM fn_reporte_indice_morosidad(:p_limite)", nativeQuery = true)
     List<ReporteMorosidadProjection> fnReporteIndiceMorosidad(@Param("p_limite") Integer limite);
 
-    /**
-     * fn_reporte_uso_por_periodo (Módulo 7): idem, RETURNS TABLE.
-     */
+    // Reporte de uso por periodo (función RETURNS TABLE vía @Query nativa).
     @Query(value = "SELECT * FROM fn_reporte_uso_por_periodo(:p_granularidad, :p_desde, :p_hasta)",
             nativeQuery = true)
     List<ReporteUsoPorPeriodoProjection> fnReporteUsoPorPeriodo(

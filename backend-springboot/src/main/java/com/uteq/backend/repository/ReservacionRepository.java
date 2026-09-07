@@ -28,27 +28,15 @@ public interface ReservacionRepository extends JpaRepository<Reservacion, Long> 
     boolean existsByLibroIdAndEstadoReservacionIdInAndUsuarioIdNot(
             Long libroId, List<Integer> estadosReservacionIds, Long usuarioId);
 
-    // Módulo 2: usada por ReservacionScheduler para saber CUÁLES
-    // reservaciones va a expirar sp_expirar_reservaciones_vencidas en la
-    // corrida actual -- la función solo devuelve un conteo (ver su
-    // Javadoc), así que esta consulta se ejecuta con el mismo filtro
-    // (estado IN (PENDIENTE, LISTA_PARA_RETIRO) AND fecha_limite_retiro <
-    // ahora) justo ANTES de invocar la función, para poder notificar
-    // individualmente antes de que el UPDATE masivo las marque EXPIRADA.
+    // Reservaciones a expirar en la corrida actual (mismo filtro que la función masiva, para notificar antes del UPDATE).
     List<Reservacion> findByEstadoReservacionIdInAndFechaLimiteRetiroBefore(
             List<Integer> estadosReservacionIds, OffsetDateTime ahora);
 
-    // Módulo de préstamos (ventanilla): reserva vigente más reciente del
-    // usuario (PENDIENTE o LISTA_PARA_RETIRO -- ids resueltos por el
-    // llamador desde EstadoReservacionRepository, mismo criterio que
-    // PrestamoService.existeReservaVigenteDeOtroUsuario). Es la reserva que
-    // la tarjeta "Reserva Encontrada" convierte en préstamo.
+    // Reserva vigente más reciente del usuario (la que se convierte en préstamo).
     Optional<Reservacion> findFirstByUsuarioIdAndEstadoReservacionIdInOrderByFechaReservaDesc(
             Long usuarioId, List<Integer> estadosReservacionIds);
 
-    // Módulo de reservaciones (ventanilla): contar reservas activas del
-    // usuario para el badge "X/3 Reservas activas". "Vigente" = PENDIENTE
-    // o LISTA_PARA_RETIRO, mismo criterio que findFirst...YEstadoReservacionIdIn.
+    // Conteo de reservas vigentes del usuario (badge de activas).
     long countByUsuarioIdAndEstadoReservacionIdIn(
             Long usuarioId, List<Integer> estadosReservacionIds);
 

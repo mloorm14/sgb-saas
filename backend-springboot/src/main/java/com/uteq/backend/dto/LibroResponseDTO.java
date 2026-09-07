@@ -37,10 +37,7 @@ public record LibroResponseDTO(
         Integer stockDisponible,
         String ubicacionFisica,
         OffsetDateTime fechaRegistro,
-        // Módulo 9.1: solo nombres, no el objeto Categoria/Autor completo
-        // -- este DTO se cachea en Redis con serialización Java (ver
-        // RedisConfig), y List<String> es trivialmente Serializable sin
-        // depender de que Categoria/Autor también lo sean.
+        // Solo nombres de categorías/autores (List<String> serializable para el cache).
         List<String> categorias,
         List<String> autores,
         // Proveedor opcional — null = S/P

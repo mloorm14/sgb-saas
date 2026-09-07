@@ -11,8 +11,7 @@ export const authGuard: CanActivateFn = () => {
     return true;
   }
 
-  // Sin accessToken (F5) o con JWT vencido: la cookie de refresh sigue
-  // viva. Pedir uno nuevo en vez de logout, que borraría esa cookie.
+  // Sin token o vencido: intenta refresh con la cookie antes de ir a /login.
   return authService.refresh().pipe(
     map(() => true),
     catchError(() => {

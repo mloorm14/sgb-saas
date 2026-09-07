@@ -11,21 +11,8 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 
 /**
- * Contador de mensajes del chatbot por usuario en Redis (Módulo H). Mismo
- * mecanismo que {@link LoginRateLimiter} (ver su Javadoc para la lógica de
- * TTL fijado solo en el primer incremento).
- * <p>
- * A diferencia de login, la clave es SOLO {@code "chatbot-mensajes:" +
- * usuarioId} y no incluye IP: el chatbot no es un vector de fuerza bruta
- * contra la CUENTA de otro usuario (nadie escribe "su" correo en el chat
- * de otra persona), sino un control de costo por usuario autenticado --
- * cuántas llamadas a la API de Gemini puede disparar un LECTOR en una
- * ventana. Combinar la IP acá no aportaría y castigaría a usuarios legítimos
- * detrás de NAT compartido.
- * <p>
- * Degradación ante caída de Redis: fail-open igual que {@link LoginRateLimiter}
- * (no romper el chat durante un corte de la dependencia, y el fallo queda en
- * warn). Ver docs/mediciones/sec/2026-08-14-incidente-500-auth-redis-produccion.md.
+ * Contador de mensajes del chatbot por usuario en Redis. Clave solo por
+ * usuarioId (control de costo); ante caída de Redis degrada a fail-open.
  */
 @Component
 @RequiredArgsConstructor

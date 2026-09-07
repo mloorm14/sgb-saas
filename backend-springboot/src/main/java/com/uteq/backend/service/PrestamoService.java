@@ -55,13 +55,10 @@ public class PrestamoService {
     private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado: ";
     private static final String ROL_LECTOR = "LECTOR";
 
-    // ── Constantes de renovar() ─────────────────────────────
+    // ── Constantes de renovar() ──
     private static final String ESTADO_DEVUELTO = "DEVUELTO";
     private static final String ESTADO_RENOVADO = "RENOVADO";
-    // "Vigente" para efectos de bloquear una renovación: cualquier reserva
-    // que todavía pueda terminar en un retiro (no RETIRADA/EXPIRADA/
-    // CANCELADA). No existe un estado literal "ACTIVA" en estados_reservacion
-    // (ver db/seed.sql) -- son estos dos los que cuentan como "en curso".
+    // "Vigente": reserva que aún puede terminar en retiro (no RETIRADA/EXPIRADA/CANCELADA).
     private static final List<String> ESTADOS_RESERVA_VIGENTE = List.of("PENDIENTE", "LISTA_PARA_RETIRO");
     private static final String ESTADO_RESERVA_RETIRADA = "RETIRADA";
     private static final String CLAVE_DIAS_PRESTAMO_DEFAULT = "dias_prestamo_default";
@@ -109,12 +106,7 @@ public class PrestamoService {
 
         validarLimitePrestamos(usuarioId);
 
-        // Ventanilla: si el préstamo nace de una reserva, se valida ANTES de
-        // tocar stock (falla rápido, sin efectos secundarios) y se vincula
-        // DESPUÉS del SP -- sp_crear_prestamo no conoce reservaciones (no
-        // acepta ese parámetro) y la conversión reserva->préstamo son dos
-        // UPDATEs simples sobre filas ya cargadas, sin la atomicidad multi-
-        // tabla que sí justifica un procedimiento.
+        // Ventanilla: si nace de una reserva, se valida ANTES de tocar stock y se vincula DESPUÉS del SP.
         Reservacion reservaOrigen = validarReservaSiAplica(dto, usuarioId);
         Long prestamoId = prestamoProcRepo.spCrearPrestamo(
                 usuarioId, dto.libroId(), bibliotecarioId, dto.diasPrestamo());
@@ -130,10 +122,7 @@ public class PrestamoService {
         return toDTO(prestamo);
     }
 
-    // Valida que la reservacionId del body sea una reserva VIGENTE del mismo
-    // usuario y sobre el MISMO libro del préstamo. Devuelve la entidad para
-    // reutilizarla en crear() (vincular + marcar RETIRADA), o null cuando el
-    // préstamo es directo (sin reservacionId).
+    // Valida que la reservacionId sea una reserva VIGENTE del mismo usuario y libro; o null si es directo.
     private Reservacion validarReservaSiAplica(PrestamoRequestDTO dto, Long usuarioId) {
         if (dto.reservacionId() == null) {
             return null;
@@ -164,11 +153,7 @@ public class PrestamoService {
         return reservacion;
     }
 
-    // Módulo 8 (credencial QR): resuelve el usuario del préstamo por
-    // credencialQrToken si vino en el body, o usa usuarioId directo si no.
-    // "tieneToken == tieneUsuarioId" cubre ambos casos inválidos con una
-    // sola condición: los dos presentes (true == true) Y los dos ausentes
-    // (false == false) son igual de inválidos -- debe venir EXACTAMENTE uno.
+    // Resuelve el usuario por credencialQrToken o usuarioId directo; debe venir EXACTAMENTE uno.
     private Long resolverUsuarioId(PrestamoRequestDTO dto) {
         boolean tieneToken = dto.credencialQrToken() != null;
         boolean tieneUsuarioId = dto.usuarioId() != null;
@@ -188,10 +173,7 @@ public class PrestamoService {
         Boolean huboMulta = (Boolean) resultado.get("o_hubo_multa");
         BigDecimal montoMulta = (BigDecimal) resultado.get("o_monto_multa");
 
-        // Módulo 2: multas se crean dentro de sp_registrar_devolucion (no
-        // en MultaService -- ver Javadoc de MultaService, que solo lista/
-        // paga/anula multas ya existentes), así que este es el único punto
-        // de la aplicación donde se sabe, recién creada, que hubo una.
+        // Las multas se crean dentro de sp_registrar_devolucion: este es el único punto donde se sabe que hubo una.
         if (Boolean.TRUE.equals(huboMulta)) {
             Prestamo prestamo = prestamoRepo.findById(prestamoId)
                     .orElseThrow(() -> new EntityNotFoundException(PRESTAMO_NO_ENCONTRADO + prestamoId));
@@ -204,25 +186,10 @@ public class PrestamoService {
                 (Long) resultado.get("o_prestamo_id"), huboMulta, montoMulta);
     }
 
-    // ── POST /{id}/renovacion ────────────────────────────────
-    // Validaciones en Java (no un stored procedure nuevo, a diferencia de
-    // crear()/registrarDevolucion()): a esta altura del proyecto ya existe
-    // ConfiguracionSistemaService (dias_prestamo_default,
-    // max_renovaciones_default) y las 4 reglas de negocio son consultas y un
-    // UPDATE simple sobre una sola fila -- no requiere la atomicidad
-    // multi-tabla que sí justifica un SP como sp_registrar_devolucion
-    // (préstamo + multa + posible desbloqueo de usuario en una transacción).
-    //
-    // Orden de validación (cada una lanza una excepción distinta para que
-    // el cliente pueda distinguir el motivo del rechazo):
-    //   1. Préstamo no existe -> 404 (EntityNotFoundException)
-    //   2. Autorización: LECTOR solo sobre su propio préstamo -> 403
-    //   3. Ya devuelto -> 400 (no es "vencido" ni las otras 3 reglas
-    //      explícitas del alcance original, pero renovar algo ya cerrado no
-    //      tiene sentido de negocio y se rechaza igual)
-    //   4. Vencido (fecha_devolucion_estimada ya pasó) -> 409
-    //   5. Límite de renovaciones alcanzado -> 409
-    //   6. Reserva vigente de OTRO usuario sobre el mismo libro -> 409
+    // ── POST /{id}/renovacion ──
+    // Validaciones en Java (consultas + UPDATE simple): cada rechazo lanza una excepción distinta.
+    // Orden: 1. no existe → 404 / 2. LECTOR ajeno → 403 / 3. devuelto → 400
+    //   4. vencido → 409 / 5. límite de renovaciones → 409 / 6. reserva vigente de otro → 409
     @Transactional
     public RenovacionResponseDTO renovar(Long prestamoId, Authentication authentication) {
         Prestamo prestamo = prestamoRepo.findById(prestamoId)
@@ -279,9 +246,7 @@ public class PrestamoService {
                 libroId, idsEstadosVigentes, usuarioIdDuenoPrestamo);
     }
 
-    // Se usa IllegalStateException para "fila de catálogo faltante": es un
-    // problema de seed/configuración del sistema, no un error del cliente
-    // -- mismo criterio que ReservacionService.fromDTO() con estados_reservacion.
+    // Fila de catálogo faltante = problema de seed/configuración, no error del cliente.
     private String nombreEstadoPrestamo(Integer estadoId) {
         return estadoPrestamoRepo.findById(estadoId)
                 .map(EstadoPrestamo::getNombre)
@@ -296,8 +261,7 @@ public class PrestamoService {
                 .getId();
     }
 
-    // Ventanilla: conversión de reserva en préstamo (crear() marca la
-    // reserva origen como RETIRADA para que no quede pendiente).
+    // Conversión de reserva en préstamo: la reserva origen queda RETIRADA.
     private Integer idEstadoReservacion(String nombre) {
         return estadoReservacionRepo.findByNombre(nombre)
                 .orElseThrow(() -> new IllegalStateException(
@@ -324,23 +288,15 @@ public class PrestamoService {
     @Transactional(readOnly = true)
     public List<LibroMasPrestadoResponseDTO> reporteLibrosMasPrestados(
             Integer limite, OffsetDateTime desde, OffsetDateTime hasta) {
-        // El DEFAULT 10 de fn_reporte_libros_mas_prestados solo se activa
-        // cuando el parámetro se omite POR COMPLETO de la llamada SQL. La
-        // @Query nativeQuery de PrestamoProcedureRepository siempre envía
-        // los 3 parámetros nombrados, así que un null explícito produce
-        // "LIMIT NULL" en Postgres = sin límite, no el default esperado.
-        // Se aplica el default aquí para que el comportamiento.
+        // El default 10 se aplica en Java: la @Query siempre envía p_limite explícito y null daría LIMIT NULL.
         Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
         return prestamoProcRepo.fnReporteLibrosMasPrestados(limiteEfectivo, desde, hasta).stream()
                 .map(this::toDTO)
                 .toList();
     }
 
-    // ── GET /reportes/morosidad (Módulo 7) ──────────────────
-    // Mismo motivo del default aplicado en Java (no en el parámetro SQL)
-    // que reporteLibrosMasPrestados: la @Query nativeQuery siempre envía
-    // p_limite explícito, así que un null produce "LIMIT NULL" (sin
-    // límite) en vez de activar el DEFAULT 10 de la función SQL.
+    // ── GET /reportes/morosidad ──
+    // Default 10 aplicado en Java por el mismo motivo que reporteLibrosMasPrestados.
     @Transactional(readOnly = true)
     public List<ReporteMorosidadResponseDTO> reporteMorosidad(Integer limite) {
         Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
@@ -360,13 +316,8 @@ public class PrestamoService {
         return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
     }
 
-    // ── GET /reportes/uso (Módulo 7) ────────────────────────
-    // Validación de p_granularidad en Java (400 vía IllegalArgumentException
-    // -> GlobalExceptionHandler) en vez de dejar que un valor no reconocido
-    // caiga silenciosamente al "ELSE 'day'" de fn_reporte_uso_por_periodo:
-    // el fallback en SQL es defensa en profundidad, no la validación
-    // primaria -- un cliente que manda "dias" (typo) debe recibir un 400
-    // explicando el valor esperado, no un reporte diario silencioso.
+    // ── GET /reportes/uso ──
+    // granularidad inválida → 400; el fallback en SQL es solo defensa en profundidad.
     private static final List<String> GRANULARIDADES_VALIDAS = List.of("dia", "semana", "mes");
 
     @Transactional(readOnly = true)
@@ -398,10 +349,8 @@ public class PrestamoService {
         return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
     }
 
-    // ── "Propio vs cualquiera": LECTOR solo puede pedir su propio
-    // usuarioId; BIBLIOTECARIO/GERENTE no tienen restricción (mismo
-    // patrón descrito en docs/reparto-entrega-3/cajas-backend/INSTRUCCIONES.md,
-    // sección 1). ──
+    // ── Propio vs cualquiera ──
+    // LECTOR solo su propio usuarioId; BIBLIOTECARIO/GERENTE sin restricción.
     private void validarAccesoUsuario(Long usuarioIdSolicitado, Authentication authentication) {
         boolean esLector = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
@@ -512,7 +461,7 @@ public class PrestamoService {
         return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
     }
 
-    // Sobrecarga con 8 filtros gerenciales (V44)
+    // Sobrecarga con 8 filtros gerenciales.
     @Transactional(readOnly = true)
     public List<ReporteInventarioResponseDTO> reporteInventario(
             Integer categoriaId, String estadoStock, String busqueda,

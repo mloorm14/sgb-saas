@@ -17,41 +17,20 @@ spring:
         default_schema: public
   flyway:
     enabled: true
-    # Fuente única: database/migrations/ en la raíz del repo (ya no una
-    # copia duplicada en src/main/resources/db/migration/). Ruta relativa
-    # al cwd del proceso: backend-springboot/ para `mvnw`/jar local (de ahí
-    # "../"), o /app en el contenedor Docker, donde docker-compose.yml
-    # sobreescribe este valor vía SPRING_FLYWAY_LOCATIONS (ver Dockerfile,
-    # que copia database/migrations a /app/database/migrations).
+    # Fuente única de migraciones (raíz del repo). El contenedor la recibe vía SPRING_FLYWAY_LOCATIONS.
     locations: filesystem:../database/migrations
     baseline-on-migrate: true
-    # IMPORTANTE (mantenimiento): baseline-on-migrate SOLO se activa cuando
-    # el schema ya tiene tablas pero no existe flyway_schema_history (caso
-    # real: DB creada desde db/schema.sql vía docker-entrypoint-initdb.d,
-    # que ya nace en el estado final). Sin baseline-version explícito,
-    # Flyway bautiza en la versión 1 por defecto y luego SÍ intenta
-    # ejecutar V2+, chocando contra tablas que ya existen. baseline-version
-    # debe ser siempre la migración más alta cuyos cambios ya estén
-    # reflejados en db/schema.sql — subirlo cada vez que se agregue una
-    # migración nueva Y se regenere el snapshot para incluirla (ver
-    # docs/adr/adr-006-estrategia-schema-reproducible.md). Actualmente: V37 (V29 nunca existio salto V28->V30; V37__indices_optimizacion.sql)
+    # baseline-version = migración más alta ya incluida en db/schema.sql. Subirla al agregar una migración nueva.
     baseline-version: 37
   data:
     redis:
-      # Upstash (Redis gestionado del despliegue en Render) exige
-      # autenticación por password y conexión TLS; los defaults vacíos/false
-      # mantienen el comportamiento actual en desarrollo local (Redis de
-      # Docker Compose sin password ni TLS).
+      # En local sin password ni TLS; en prod (Upstash) con ambos.
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       ssl:
         enabled: ${REDIS_SSL:false}
-  # Módulo 2/9.5: SMTP_HOST/PORT/USER/PASS ya existían como variables de
-  # entorno desde la rama feature/ci-infraestructura (ci.yml, .env.example,
-  # docker-compose.yml), a la espera de esta configuración. Defaults
-  # razonables para dev local sin .env (igual criterio que DB_URL arriba);
-  # en CI, ci.yml sobreescribe SMTP_PORT a 3025 (puerto de GreenMail).
+  # Módulo 2/9.5: SMTP y Brevo. En local funcionan sin .env; en CI el puerto lo pone GreenMail.
   mail:
     host: ${SMTP_HOST:localhost}
     port: ${SMTP_PORT:587}
@@ -70,12 +49,7 @@ spring:
   brevo:
     api-key: ${BREVO_API_KEY:}
     api-url: ${BREVO_API_URL:https://api.brevo.com/v3/smtp/email}
-  # Módulo portada binaria (POST /api/v1/libros/{id}/portada). Límites del
-  # contenedor de servlets para uploads multipart, SIEMPRE por encima del
-  # límite de negocio (max_tamano_portada_mb, default 2 MB, en
-  # configuracion_sistema): si el archivo excede el límite de negocio lo
-  # frena LibroService.actualizarPortada con un 400+ProblemDetail legible,
-  # no el contenedor con un error genérico de multipart.
+  # Uploads multipart (5MB). El límite de negocio de portadas (2MB) lo aplica LibroService con 400 legible.
   servlet:
     multipart:
       max-file-size: 5MB
@@ -83,78 +57,46 @@ spring:
 
 server:
   port: ${PORT:8080}
-  # REQ-NF-012 / ADR-015 (Módulo 10.1): el backend nunca termina TLS él
-  # mismo -- eso queda del lado del proxy (frontend-angular/nginx.conf en
-  # dev, o el balanceador en producción). 'framework' activa el
-  # ForwardedHeaderFilter de Spring, que confía en X-Forwarded-Proto/-For/
-  # -Host enviados por ese proxy. Sin esto, request.isSecure() siempre da
-  # false y el header Strict-Transport-Security (que Spring Security ya
-  # emite por defecto vía HstsHeaderWriter) nunca se escribe, aunque el
-  # cliente final sí esté en HTTPS -- ver
-  # docs/mediciones/sec/2026-07-30-owasp-a05-mala-configuracion-seguridad.md.
+  # El TLS lo termina el proxy; Spring solo confía en X-Forwarded-*.
   forward-headers-strategy: framework
 
-# Módulo 2: notificaciones por correo.
+# Notificaciones por correo (desactivadas por defecto; activar solo con SMTP listo).
 notificaciones:
   remitente: ${MAIL_FROM:no-reply@sgb-saas.local}
-  # Correos automáticos desactivados por defecto (volumen en producción,
-  # 2026-08-30). Activar solo por configuración cuando SMTP esté listo.
   email:
     habilitado: ${NOTIF_EMAIL_HABILITADO:false}
-  # Ventana de anticipación con la que NotificacionVencimientoScheduler
-  # detecta préstamos por vencer (minutos antes de
-  # fecha_devolucion_estimada). Config externa, mismo criterio que
-  # app.cache.libros.ttl-seconds.
+  # Minutos antes de fecha_devolucion_estimada para avisar vencimientos.
   minutos-anticipacion-vencimiento: ${NOTIF_MINUTOS_ANTICIPACION_VENCIMIENTO:15}
 
 app:
   cache:
     libros:
-      # TTL del cache Redis del listado de libros (@Cacheable("libros") en
-      # LibroService.listar(), GET /api/v1/libros), en segundos. Config
-      # externa (no hardcodeada en Java) -- ver RedisConfig y
-      # docs/adr/adr-008-ttl-cache-libros.md. Se invalida antes de tiempo
-      # via @CacheEvict en crear/actualizar/eliminar de LibroService.
+      # TTL del listado de libros (GET /api/v1/libros). Se invalida con @CacheEvict al mutar.
       ttl-seconds: ${CACHE_LIBROS_TTL_SECONDS:300}
     sugerencias:
-      # TTL corto (segundos) del cache del autocompletado de catálogo
-      # (@Cacheable("sugerencias-libros") en LibroService.sugerir(),
-      # GET /api/v1/libros/sugerencias, Módulo 3 del roadmap). A
-      # diferencia de app.cache.libros.ttl-seconds (minutos, invalidado
-      # por @CacheEvict), este cache no tiene evict explícito -- se apoya
-      # solo en que el TTL es corto (5-10s sugeridos por el roadmap,
-      # default 8) para no servir resultados desactualizados frente a
-      # altas/bajas de libros.
+      # TTL del autocompletado (GET /api/v1/libros/sugerencias). Sin evict: expira solo por TTL corto.
       ttl-seconds: ${CACHE_SUGERENCIAS_TTL_SECONDS:8}
   security:
     login:
-      # OWASP A07 (Bloque C.2): ventana de tiempo (segundos) y maximo de
-      # intentos fallidos de login por combinacion correo+IP antes de
-      # responder 429 -- ver LoginRateLimiter. Config externa, mismo
-      # criterio que app.cache.libros.ttl-seconds.
+      # Ventana e intentos máximos de login antes del 429.
       rate-limit-window-seconds: ${LOGIN_RATE_LIMIT_WINDOW_SECONDS:900}
       max-attempts: ${LOGIN_MAX_ATTEMPTS:5}
   verificacion-correo:
-    # Módulo 9.5: TTL del código de 6 dígitos en Redis, mismo mecanismo que
-    # app.security.login (ver VerificacionCorreoService/LoginRateLimiter).
+    # TTL del código de 6 dígitos en Redis.
     ttl-minutes: ${VERIFICACION_CORREO_TTL_MINUTES:10}
   google-books:
-    # Módulo inventario (autocompletar por ISBN, mockup 14). La API
-    # pública de Google Books no requiere API key para /volumes?q=isbn:.
+    # API pública sin key para /volumes?q=isbn:.
     url-base: ${GOOGLE_BOOKS_URL_BASE:https://www.googleapis.com/books/v1}
     timeout-ms: ${GOOGLE_BOOKS_TIMEOUT_MS:8000}
   open-library:
     url-base: ${OPEN_LIBRARY_URL_BASE:https://openlibrary.org}
   gemini:
-    # Módulo H (chatbot asistente virtual). API key de Google AI Studio --
-    # ver .env.example y docker-compose.yml, ya declaraban GEMINI_API_KEY
-    # desde la rama de infraestructura, a la espera de esta configuración.
+    # Chatbot asistente virtual (API key de Google AI Studio).
     api-key: ${GEMINI_API_KEY:}
     modelo: ${GEMINI_MODELO:gemini-3.5-flash-lite}
     url-base: ${GEMINI_URL_BASE:https://generativelanguage.googleapis.com/v1beta}
     timeout-ms: ${GEMINI_TIMEOUT_MS:8000}
-    # Máximo de mensajes por usuario por minuto antes de responder 429
-    # (ChatbotRateLimiter), mismo criterio que app.security.login.
+    # Máximo de mensajes por usuario por minuto antes del 429.
     rate-limit-max-mensajes: ${CHATBOT_RATE_LIMIT_MAX_MENSAJES:10}
     rate-limit-window-seconds: ${CHATBOT_RATE_LIMIT_WINDOW_SECONDS:60}
   backup:
@@ -169,7 +111,7 @@ app:
 
 security:
   jwt:
-    # Fallback dev placeholder — prod debe setear JWT_SECRET real (64 hex via Render Dashboard, render.yaml sync:false). Ver RUNBOOK.md
+    # En prod usar JWT_SECRET real de 256 bits (Render Dashboard).
     secret: ${JWT_SECRET:CAMBIAR_EN_PRODUCCION_MIN_256_BITS}
     expiration-ms: 3600000
     refresh-expiration-ms: 10800000
@@ -187,20 +129,11 @@ management:
         include: health, info, metrics
   health:
     mail:
-      # spring-boot-starter-mail (EmailService) trae de forma automatica un
-      # MailHealthIndicator que abre una conexion SMTP real para /actuator/health.
-      # En entornos sin SMTP configurado (dev local, CI) eso tumba el healthcheck
-      # aunque la app funcione bien -- EmailService.enviarCorreo() ya atrapa el
-      # fallo de SMTP y nunca rompe el flujo que lo origina (ver su Javadoc), asi
-      # que el correo no es un componente critico para considerar la app "unhealthy".
+      # El correo no define el health: SMTP caído no marca la app como unhealthy.
       enabled: false
 
 ---
-# Perfil 'prod' (Módulo 10.2 del roadmap, checklist OWASP A05, REQ-NF-014).
-# Se activa con SPRING_PROFILES_ACTIVE=prod (no es el default: en dev/test
-# se mantiene Swagger accesible y los stacktraces visibles para depuración
-# local). Ver
-# docs/mediciones/sec/2026-08-10-owasp-a05-fix-csp-stacktrace-swagger-nonroot.md.
+# Perfil 'prod': sin stacktraces ni Swagger (solo depuración en dev).
 spring:
   config:
     activate:
@@ -208,20 +141,13 @@ spring:
 
 server:
   error:
-    # Explícito en vez de confiar solo en el default de Spring Boot: la
-    # capa de dominio ya devuelve ProblemDetail sin detalle interno para
-    # toda excepción de negocio (ver GlobalExceptionHandler.handleGenerica),
-    # esto cubre además el path por defecto /error para lo que caiga fuera
-    # del DispatcherServlet (p.ej. errores a nivel de filtro/contenedor).
+    # Sin detalle interno en /error (el dominio ya responde ProblemDetail limpio).
     include-stacktrace: never
     include-message: never
     include-binding-errors: never
 
 springdoc:
-  # Swagger UI/OpenAPI expone el mapa completo de la API (rutas, DTOs,
-  # esquemas) -- en producción es superficie de ataque gratuita para
-  # cualquiera, sin aportar nada a un usuario final. Se deja accesible
-  # solo fuera de este perfil.
+  # En producción Swagger expone el mapa de la API: solo fuera de este perfil.
   swagger-ui:
     enabled: false
   api-docs:

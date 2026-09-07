@@ -11,11 +11,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 /**
- * Fija app.current_user_id (via set_config, equivalente a SET LOCAL)
- * antes de cada servicio transaccional que modifica tablas auditadas.
- * El trigger fn_auditoria_generica() lee
- * current_setting('app.current_user_id', true) en la misma transaccion/
- * conexion y deja de insertar usuario_id=NULL (bug "Sistema" robot).
+ * Fija app.current_user_id antes de cada servicio transaccional de escritura.
+ * El trigger de auditoría lo lee y evita grabar usuario NULL.
  */
 @Aspect
 @Component

@@ -11,11 +11,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
 
-// Mapea la tabla "favoritos" (Módulo 9.2 del roadmap), PK compuesta
-// (usuario_id, libro_id) -- un usuario no puede marcar el mismo libro dos
-// veces, la propia tabla ya lo garantiza a nivel de constraint. FKs planos
-// (Long), sin relaciones @ManyToOne, mismo criterio que Prestamo/Multa
-// para no meter joins en el repositorio.
+// Favoritos del lector (PK compuesta usuario+libro, FKs planos sin joins).
 @Data
 @NoArgsConstructor
 @Entity

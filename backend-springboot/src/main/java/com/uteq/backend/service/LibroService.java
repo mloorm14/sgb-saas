@@ -48,9 +48,7 @@ public class LibroService {
     private static final String ESTADO_ACTIVO = "ACTIVO";
     private static final String ESTADO_DADO_DE_BAJA = "DADO_DE_BAJA";
     private static final String ESTADO_PENDIENTE = "PENDIENTE";
-    // Módulo portada binaria: límite de tamaño (MB) en configuracion_sistema
-    // (misma clave que inserta V13__portada_imagen.sql), no hardcodeada acá
-    // -- el Admin la ajusta sin despliegue nuevo vía ConfiguracionSistema.
+    // Límite de portada (MB) en configuracion_sistema; el Admin lo ajusta sin despliegue.
     private static final String CLAVE_MAX_TAMANO_PORTADA_MB = "max_tamano_portada_mb";
     private static final List<String> TIPOS_PORTADA_PERMITIDOS =
             List.of("image/png", "image/jpeg", "image/webp", "image/avif");
@@ -59,17 +57,11 @@ public class LibroService {
     private final EditorialRepository editorialRepo;
     private final IdiomaRepository idiomaRepo;
     private final EstadoLibroRepository estadoRepo;
-    // Módulo 9.1/3: repos nuevos de la rama E, mismo criterio que
-    // editorialRepo/idiomaRepo/estadoRepo -- inyectados directo porque
-    // categorias/autores son catálogos de solo lectura desde este service
-    // (no tienen reglas de negocio propias que ameriten un service
-    // intermedio, a diferencia de LibroService en sí).
+    // Categorías/autores/proveedor: catálogos inyectados directo (solo lectura desde este service).
     private final CategoriaRepository categoriaRepo;
     private final AutorRepository autorRepo;
     private final ProveedorRepository proveedorRepo;
-    // Módulo portada binaria: para leer max_tamano_portada_mb con cache en
-    // memoria (ver ConfiguracionSistemaService), mismo patrón que
-    // PrestamoService con dias_prestamo_default/max_renovaciones_default.
+    // Lee max_tamano_portada_mb con cache en memoria.
     private final ConfiguracionSistemaService configuracionSistemaService;
     private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
     private final SuscripcionDisponibilidadService suscripcionDisponibilidadService;
@@ -197,14 +189,7 @@ public class LibroService {
         return defaults;
     }
 
-    // Módulo 9.1: filtros de catálogo por categoría/autor
-    // (LibroController ?categoriaId=/?autorId=). No lleva @Cacheable a
-    // propósito: el cache "libros" ya cachea el listado sin filtro
-    // (RedisCacheManager con una sola config por nombre de cache, ver
-    // RedisConfig) y combinarlo con parámetros de filtro exigiría una key
-    // compuesta que no está en el alcance de esta rama -- filtrar sin
-    // cache es aceptable porque, a diferencia del listado general, no es
-    // el path más transitado del catálogo.
+    // Filtros de catálogo por categoría/autor (?categoriaId=/?autorId=). Sin @Cacheable: solo el listado general usa cache.
     @Transactional(readOnly = true)
     public Page<LibroResponseDTO> listarPorCategoria(Integer categoriaId, Pageable pageable) {
         return libroRepo.findByCategorias_IdAndEstado_Nombre(categoriaId, ESTADO_ACTIVO, pageable)
@@ -234,15 +219,7 @@ public class LibroService {
                         LIBRO_NO_ENCONTRADO + id));
     }
 
-    // Módulo 3 (RF-09/CU-08): autocompletado de catálogo. LibroSugerenciaDTO
-    // (no LibroResponseDTO) a propósito: versión ligera para no mandar el
-    // objeto completo en cada tecla presionada en el frontend. "disponible"
-    // se deriva de stockDisponible > 0, no es una columna propia.
-    // @Cacheable("sugerencias-libros"): cache propio, TTL corto (5-10s vía
-    // app.cache.sugerencias.ttl-seconds, ver RedisConfig/application.yml)
-    // -- separado del cache "libros" porque este necesita expirar mucho
-    // más rápido (autocompletado por tecla, no un listado que cambia poco)
-    // y porque la key acá es el texto de búsqueda, no la paginación.
+    // Autocompletado: DTO ligero y "disponible" derivado de stockDisponible > 0. Cache propio de TTL corto.
     @Cacheable("sugerencias-libros")
     @Transactional(readOnly = true)
     public List<LibroSugerenciaDTO> sugerir(String texto) {
@@ -290,9 +267,7 @@ public class LibroService {
         }
         LibroResponseDTO resultado = toDTO(libroRepo.save(libro));
         registrarAuditoria(null, "INSERT", resultado.id(), "Libro creado: " + dto.titulo());
-        // Validación automática: si el ISBN estaba pedido en sugerencias,
-        // esas quedan confirmadas (salen del agrupado de gestión/reportes).
-        // Solo al crear, nunca al editar.
+        // Al crear con ISBN pedido en sugerencias, esas quedan confirmadas (solo al crear).
         if (sugerenciaAdquisicionService != null && dto.isbn() != null && !dto.isbn().isBlank()) {
             sugerenciaAdquisicionService.confirmarAdquisicion(dto.isbn(), null);
         }
@@ -371,12 +346,8 @@ public class LibroService {
         registrarAuditoria(null, "DELETE", id, "Libro dado de baja: " + libro.getTitulo());
     }
 
-    // ── Portada binaria (V13__portada_imagen.sql) ─────────────
-    // POST /api/v1/libros/{id}/portada (multipart/form-data). Guarda el
-    // binario dentro de la BD y limpia portadaUrl a null: una vez que la
-    // portada vive en la base, una URL externa que el sistema no controla
-    // ya no tiene razón de ser -- si quedara, el frontend no sabría cuál
-    // es la fuente vigente.
+    // ── Portada binaria ──
+    // POST portada (multipart): guarda el binario en BD y limpia portadaUrl para una sola fuente vigente.
     @CacheEvict(value = "libros", allEntries = true)
     @Transactional
     public LibroResponseDTO actualizarPortada(Long libroId, MultipartFile archivo) {
@@ -387,9 +358,7 @@ public class LibroService {
         try {
             libro.setPortadaImagen(archivo.getBytes());
         } catch (IOException ex) {
-            // MultipartFile.getBytes() sobre un archivo ya transferido no
-            // debería fallar; si lo hace, es un problema de la request, no
-            // del libro -- 400, no 500.
+            // Fallo de lectura del archivo subido → 400, no 500.
             throw new IllegalArgumentException(
                     "No se pudo leer el archivo de portada: " + ex.getMessage());
         }
@@ -400,10 +369,7 @@ public class LibroService {
         return toDTO(libroRepo.save(libro));
     }
 
-    // GET /api/v1/libros/{id}/portada. Devuelve el binario junto al
-    // Content-Type dinámico (portada_tipo) para que el controller defina
-    // el header de la respuesta. 404 si el libro no existe O no tiene
-    // portada -- el placeholder lo resuelve el frontend, no el backend.
+    // GET portada: 404 si no existe o no tiene portada (el placeholder lo resuelve el frontend).
     @Transactional(readOnly = true)
     public PortadaImagenDTO obtenerPortada(Long libroId) {
         Libro libro = libroRepo.findById(libroId)
