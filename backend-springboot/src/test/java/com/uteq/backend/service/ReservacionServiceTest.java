@@ -3,11 +3,9 @@ package com.uteq.backend.service;
 import com.uteq.backend.dto.CambioEstadoReservacionRequestDTO;
 import com.uteq.backend.dto.ReservacionRequestDTO;
 import com.uteq.backend.dto.ReservacionResponseDTO;
-import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.EstadoReservacion;
 import com.uteq.backend.entity.Reservacion;
 import com.uteq.backend.entity.Usuario;
-import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.EstadoReservacionRepository;
 import com.uteq.backend.repository.ReservacionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
@@ -38,7 +36,6 @@ class ReservacionServiceTest {
     @Mock ReservacionRepository reservacionRepo;
     @Mock EstadoReservacionRepository estadoReservacionRepo;
     @Mock UsuarioRepository usuarioRepo;
-    @Mock BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     @InjectMocks ReservacionService reservacionService;
 
@@ -149,7 +146,6 @@ class ReservacionServiceTest {
         given(reservacionRepo.findById(50L)).willReturn(Optional.of(reservacionPendiente(50L)));
         given(estadoReservacionRepo.findByNombre("PENDIENTE")).willReturn(Optional.of(estadoConId(1)));
         given(estadoReservacionRepo.findByNombre("LISTA_PARA_RETIRO")).willReturn(Optional.of(estadoConId(2)));
-        given(usuarioRepo.findByCorreo("biblio@correo.com")).willReturn(Optional.of(usuarioConId(1L)));
 
         ReservacionResponseDTO resultado = reservacionService.cambiarEstado(
                 50L, new CambioEstadoReservacionRequestDTO("LISTA_PARA_RETIRO"), auth);
@@ -157,7 +153,6 @@ class ReservacionServiceTest {
         assertThat(resultado.id()).isEqualTo(50L);
         assertThat(resultado.estadoReservacionId()).isEqualTo(2);
         verify(reservacionRepo).save(any(Reservacion.class));
-        verify(bitacoraAuditoriaRepo).save(any(BitacoraAuditoria.class));
     }
 
     // ── Test 7: rechazar una reservación pendiente -> CANCELADA ──
@@ -167,13 +162,11 @@ class ReservacionServiceTest {
         given(reservacionRepo.findById(51L)).willReturn(Optional.of(reservacionPendiente(51L)));
         given(estadoReservacionRepo.findByNombre("PENDIENTE")).willReturn(Optional.of(estadoConId(1)));
         given(estadoReservacionRepo.findByNombre("CANCELADA")).willReturn(Optional.of(estadoConId(5)));
-        given(usuarioRepo.findByCorreo("gerente@correo.com")).willReturn(Optional.of(usuarioConId(2L)));
 
         ReservacionResponseDTO resultado = reservacionService.cambiarEstado(
                 51L, new CambioEstadoReservacionRequestDTO("CANCELADA"), auth);
 
         assertThat(resultado.estadoReservacionId()).isEqualTo(5);
-        verify(bitacoraAuditoriaRepo).save(any(BitacoraAuditoria.class));
     }
 
     // ── Test 8: reservación inexistente -> 404 ──

@@ -4,7 +4,6 @@ import com.uteq.backend.dto.DevolucionCompletaResponseDTO;
 import com.uteq.backend.dto.DevolucionHistorialDTO;
 import com.uteq.backend.dto.DevolucionRequestDTO;
 import com.uteq.backend.dto.TipoDanoDTO;
-import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.EstadoMulta;
 import com.uteq.backend.entity.Libro;
 import com.uteq.backend.entity.Multa;
@@ -12,7 +11,6 @@ import com.uteq.backend.entity.Prestamo;
 import com.uteq.backend.entity.RegistroDano;
 import com.uteq.backend.entity.TipoDano;
 import com.uteq.backend.entity.Usuario;
-import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.EvidenciaDanoRepository;
 import com.uteq.backend.repository.EstadoMultaRepository;
 import com.uteq.backend.repository.EstadoPrestamoRepository;
@@ -58,7 +56,6 @@ class DevolucionServiceTest {
     @Mock RegistroDanoRepository registroDanoRepo;
     @Mock RegistroDanoDetalleRepository registroDanoDetalleRepo;
     @Mock EvidenciaDanoRepository evidenciaDanoRepo;
-    @Mock BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     @InjectMocks DevolucionService devolucionService;
 

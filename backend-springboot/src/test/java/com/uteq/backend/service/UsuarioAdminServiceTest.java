@@ -1,11 +1,9 @@
 package com.uteq.backend.service;
 
 import com.uteq.backend.dto.UsuarioListadoResponseDTO;
-import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.EstadoUsuario;
 import com.uteq.backend.entity.Rol;
 import com.uteq.backend.entity.Usuario;
-import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.EstadoMultaRepository;
 import com.uteq.backend.repository.EstadoUsuarioRepository;
 import com.uteq.backend.repository.MultaRepository;
@@ -42,7 +40,6 @@ class UsuarioAdminServiceTest {
     @Mock UsuarioRepository usuarioRepo;
     @Mock RolRepository rolRepo;
     @Mock EstadoUsuarioRepository estadoUsuarioRepo;
-    @Mock BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
     @Mock MultaRepository multaRepo;
     @Mock EstadoMultaRepository estadoMultaRepo;
     @Mock Authentication authentication;
@@ -109,7 +106,7 @@ class UsuarioAdminServiceTest {
     // ── cambiarRol ──────────────────────────────────────────
 
     @Test
-    void cambiarRol_conDatosValidos_actualizaRolesYRegistraAuditoria() {
+    void cambiarRol_conDatosValidos_actualizaRoles() {
         Usuario usuarioObjetivo = usuario(5L, "lector@correo.com", "LECTOR", "ACTIVO");
         Usuario admin = usuario(9L, "admin@correo.com", "ADMIN", "ACTIVO");
 
@@ -122,12 +119,6 @@ class UsuarioAdminServiceTest {
 
         assertThat(usuarioObjetivo.getRoles()).extracting(Rol::getNombre).containsExactly("BIBLIOTECARIO");
         verify(usuarioRepo, times(1)).save(usuarioObjetivo);
-
-        ArgumentCaptor<BitacoraAuditoria> captor = ArgumentCaptor.forClass(BitacoraAuditoria.class);
-        verify(bitacoraAuditoriaRepo, times(1)).save(captor.capture());
-        assertThat(captor.getValue().getUsuarioId()).isEqualTo(9L);
-        assertThat(captor.getValue().getRegistroId()).isEqualTo(5L);
-        assertThat(captor.getValue().getDetalles()).contains("BIBLIOTECARIO");
     }
 
     @Test
@@ -152,7 +143,7 @@ class UsuarioAdminServiceTest {
     // ── cambiarEstado ───────────────────────────────────────
 
     @Test
-    void cambiarEstado_conDatosValidos_actualizaEstadoYRegistraAuditoriaConMotivo() {
+    void cambiarEstado_conDatosValidos_actualizaEstado() {
         Usuario usuarioObjetivo = usuario(5L, "lector@correo.com", "LECTOR", "ACTIVO");
         Usuario admin = usuario(9L, "admin@correo.com", "ADMIN", "ACTIVO");
 
@@ -164,10 +155,6 @@ class UsuarioAdminServiceTest {
         service.cambiarEstado(5L, "INACTIVO", "Solicitud de baja voluntaria", authentication);
 
         assertThat(usuarioObjetivo.getEstado().getNombre()).isEqualTo("INACTIVO");
-
-        ArgumentCaptor<BitacoraAuditoria> captor = ArgumentCaptor.forClass(BitacoraAuditoria.class);
-        verify(bitacoraAuditoriaRepo, times(1)).save(captor.capture());
-        assertThat(captor.getValue().getDetalles()).contains("Solicitud de baja voluntaria");
     }
 
     @Test

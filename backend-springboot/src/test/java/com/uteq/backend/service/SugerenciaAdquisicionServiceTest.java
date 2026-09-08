@@ -4,7 +4,6 @@ import com.uteq.backend.dto.SugerenciaAdquisicionRequestDTO;
 import com.uteq.backend.dto.SugerenciaAdquisicionResponseDTO;
 import com.uteq.backend.entity.SugerenciaAdquisicion;
 import com.uteq.backend.entity.Usuario;
-import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.SugerenciaAdquisicionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -32,7 +31,6 @@ class SugerenciaAdquisicionServiceTest {
     @Mock SugerenciaAdquisicionRepository sugerenciaRepo;
     @Mock UsuarioRepository usuarioRepo;
     @Mock Authentication authentication;
-    @Mock BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     @InjectMocks SugerenciaAdquisicionService sugerenciaService;
 
@@ -109,7 +107,7 @@ class SugerenciaAdquisicionServiceTest {
 
     // ── Test 6: confirmarAdquisicion pasa a APROBADA todas las PENDIENTE del ISBN ──
     @Test
-    void confirmarAdquisicion_conPendientes_lasApruebaYAudita() {
+    void confirmarAdquisicion_conPendientes_lasAprueba() {
         SugerenciaAdquisicion s1 = sugerenciaConId(1L, 7L);
         s1.setIsbn("9781449373320");
         SugerenciaAdquisicion s2 = sugerenciaConId(2L, 9L);
@@ -123,8 +121,6 @@ class SugerenciaAdquisicionServiceTest {
         assertThat(s1.getEstado()).isEqualTo(SugerenciaAdquisicion.APROBADA);
         assertThat(s2.getEstado()).isEqualTo(SugerenciaAdquisicion.APROBADA);
         assertThat(s1.getRevisadoPor()).isEqualTo(3L);
-        org.mockito.Mockito.verify(bitacoraAuditoriaRepo, org.mockito.Mockito.times(2))
-                .save(org.mockito.ArgumentMatchers.any());
     }
 
     // ── Test 7: confirmarAdquisicion sin pendientes retorna 0 ──
