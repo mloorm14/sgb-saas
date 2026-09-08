@@ -645,21 +645,24 @@ reescribieron a forma "debe".
 - **Descripción**: un BIBLIOTECARIO/GERENTE debe poder registrar el
   préstamo de un libro con stock disponible a un usuario `ACTIVO`,
   decrementando el stock en la misma transacción atómica.
-- **Corrección de rol (hallazgo del Dr. Guerrero, verificado en código al
-  construir A23 — matriz de permisos)**: `PrestamoController.crear`
-  (`POST /api/v1/prestamos`) tiene
-  `@PreAuthorize("hasAnyRole('GERENTE','ADMIN')")` — **`BIBLIOTECARIO` NO
-  está en la lista**, pese a que esta misma descripción y REQ-F-016 (la
-  UI de gestión de préstamos) asumen que un BIBLIOTECARIO puede registrar
-  préstamos. Esto es una contradicción real entre lo documentado
-  (incluido en versiones anteriores de este SRS) y el código actual, no
-  una corrección de redacción menor — un usuario únicamente
-  `BIBLIOTECARIO` recibe `403` al intentar crear un préstamo hoy. Se deja
-  la descripción original arriba (sin reescribirla) para no ocultar la
-  intención de diseño original, y se documenta la discrepancia aquí en
-  vez de asumir que el código está mal o que la descripción está mal sin
-  que el equipo lo decida — ver A23 para el detalle completo de la matriz
-  de permisos y la comparación con el resto de endpoints del módulo.
+- **Corrección de rol — RESUELTA (hallazgo del Dr. Guerrero, verificado en
+  código al construir A23 — matriz de permisos; corregida el 2026-09-07,
+  ver OBS-27)**: `PrestamoController.crear` (`POST /api/v1/prestamos`)
+  tenía `@PreAuthorize("hasAnyRole('GERENTE','ADMIN')")` — **`BIBLIOTECARIO`
+  no estaba en la lista**, pese a que esta misma descripción y REQ-F-016
+  (la UI de gestión de préstamos) asumen que un BIBLIOTECARIO puede
+  registrar préstamos. Era una contradicción real entre lo documentado
+  (incluido en versiones anteriores de este SRS) y el código, no una
+  corrección de redacción menor — un usuario únicamente `BIBLIOTECARIO`
+  recibía `403` al intentar crear un préstamo. Confirmado con Marlon
+  (tech lead) que se trataba de un bug y no de una decisión de diseño; el
+  `@PreAuthorize` se corrigió a
+  `hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')` y quedó verificado con
+  tests reales (`PrestamoControllerSecurityTest.crear_conRolBibliotecario_sePermite`,
+  más `crear_conRolLector_seRechaza` confirmando que el resto de roles sin
+  permiso sigue recibiendo `403`) — ver A23 para el detalle completo de la
+  matriz de permisos y la comparación con el resto de endpoints del
+  módulo.
 - **Rationale**: núcleo del dominio bibliotecario — llevar control de qué
   ejemplares están fuera y cuándo deben devolverse (HU-01). La atomicidad
   de "crear préstamo + decrementar stock" está garantizada por el motor
@@ -689,19 +692,22 @@ reescribieron a forma "debe".
 - **Prioridad**: Must
 - **Estado**: verificado
 - **Fuente**: HU-02 (Cajas), CU-02
-- **Módulo/endpoint**: `PrestamoController`/`PrestamoService` — `POST /api/v1/prestamos/{id}/devolucion` (SP `sp_registrar_devolucion`, `@PreAuthorize("hasAnyRole('GERENTE','ADMIN')")`); **existe una segunda ruta real** para el mismo caso de uso, `DevolucionController` — `POST /api/v1/devoluciones/prestamo/{prestamoId}` (`@PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")`, invoca el mismo `sp_registrar_devolucion` y además soporta registrar daño/pérdida, ver REQ-F-038).
+- **Módulo/endpoint**: `PrestamoController`/`PrestamoService` — `POST /api/v1/prestamos/{id}/devolucion` (SP `sp_registrar_devolucion`, `@PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")`); **existe una segunda ruta real** para el mismo caso de uso, `DevolucionController` — `POST /api/v1/devoluciones/prestamo/{prestamoId}` (`@PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")`, invoca el mismo `sp_registrar_devolucion` y además soporta registrar daño/pérdida, ver REQ-F-038).
 - **Descripción**: registrar la devolución de un préstamo activo,
   incrementando el stock del libro y generando una multa automáticamente
   si hubo atraso.
-- **Corrección de rol (hallazgo del Dr. Guerrero, verificado al construir
-  A23)**: la ruta simple de `PrestamoController` excluye a
-  `BIBLIOTECARIO`, pero la ruta de `DevolucionController` (la que en la
-  práctica usa el flujo de gestión con posible registro de daño, ver
-  REQ-F-038) sí lo incluye — a diferencia de REQ-F-007 (crear préstamo),
-  donde no se encontró ninguna ruta alterna accesible para
-  `BIBLIOTECARIO`, aquí el caso de uso de devolución **sí** tiene un
-  camino real para ese rol, solo que no es el endpoint más simple que
-  esta sección citaba originalmente.
+- **Corrección de rol — RESUELTA (hallazgo del Dr. Guerrero, verificado al
+  construir A23; corregida el 2026-09-07, ver OBS-27)**: la ruta simple de
+  `PrestamoController` excluía a `BIBLIOTECARIO` (la ruta de
+  `DevolucionController` — la que en la práctica usa el flujo de gestión
+  con posible registro de daño, ver REQ-F-038 — ya lo incluía, a
+  diferencia de REQ-F-007/crear préstamo, donde no existía ninguna ruta
+  alterna accesible para `BIBLIOTECARIO`). Confirmado con Marlon que era
+  un bug; el `@PreAuthorize` de la ruta simple se corrigió a
+  `hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')`, verificado con
+  `PrestamoControllerSecurityTest.registrarDevolucion_conRolBibliotecario_sePermite`
+  y `registrarDevolucion_conRolLector_seRechaza`. Ambas rutas quedan hoy
+  con el mismo conjunto de roles permitidos.
 - **Rationale**: liberar stock y detectar atraso sin intervención manual
   del bibliotecario (HU-02); la atomicidad de hasta 4 tablas en una sola
   transacción es exactamente el caso que justifica usar un SP en vez de
@@ -926,20 +932,23 @@ reescribieron a forma "debe".
 - **Descripción**: el bibliotecario debe poder crear un préstamo y
   registrar su devolución desde la interfaz web, sin depender de
   anotaciones manuales.
-- **Contradicción real sin resolver, declarada explícitamente (hallazgo
-  del Dr. Guerrero, verificado al construir A23)**: esta descripción
-  asume que un `BIBLIOTECARIO` puede crear préstamos vía esta interfaz,
-  pero el endpoint que REQ-F-007 documenta para creación
-  (`POST /api/v1/prestamos`) excluye `BIBLIOTECARIO` a nivel de
-  `@PreAuthorize` — si `PrestamosGestionComponent` llama a ese mismo
-  endpoint, un `BIBLIOTECARIO` recibiría `403` al intentar crear un
-  préstamo desde esta pantalla, contradiciendo el propio criterio de
-  aceptación #1 de este requisito. Para devolución sí existe una ruta
-  real accesible a `BIBLIOTECARIO` (`DevolucionController`, ver
-  REQ-F-008). No se asume cuál de los dos (la descripción o el
-  `@PreAuthorize` de creación) es el comportamiento "correcto" — se
-  declara la contradicción para que el equipo la resuelva, no se oculta
-  ni se inventa una resolución.
+- **Contradicción real — RESUELTA (hallazgo del Dr. Guerrero, verificado
+  al construir A23; corregida el 2026-09-07, ver OBS-27)**: esta
+  descripción asume que un `BIBLIOTECARIO` puede crear préstamos vía esta
+  interfaz; el endpoint que REQ-F-007 documenta para creación
+  (`POST /api/v1/prestamos`) excluía `BIBLIOTECARIO` a nivel de
+  `@PreAuthorize`, por lo que un `BIBLIOTECARIO` recibía `403` al intentar
+  crear un préstamo desde esta pantalla, contradiciendo el propio
+  criterio de aceptación #1 de este requisito. Confirmado con Marlon que
+  el comportamiento correcto es el que ya asumía esta descripción y el
+  frontend (`prestamos-gestion.component.ts`, que ya trataba a
+  `BIBLIOTECARIO` como actor válido antes de este fix): se corrigió el
+  `@PreAuthorize` de `PrestamoController.crear` (ver REQ-F-007) en vez de
+  la descripción o el frontend. Para devolución ya existía una ruta real
+  accesible a `BIBLIOTECARIO` (`DevolucionController`, ver REQ-F-008), y
+  la ruta simple de devolución se corrigió igual (ver REQ-F-008). Los 4
+  criterios de aceptación de este requisito se cumplen hoy para
+  `BIBLIOTECARIO` sin excepción.
 - **Rationale**: capa de UI sobre la lógica ya especificada en
   REQ-F-007/REQ-F-008 (HU-F04) — no introduce reglas de negocio nuevas,
   solo la superficie de interacción.
@@ -1453,21 +1462,29 @@ reescribieron a forma "debe".
      parciales insensibles a mayúsculas (`findTop5ByNombreContainingIgnoreCase`
      o equivalente).
   3. `POST` (todos salvo `estados-libro`) → `201` con la entidad creada.
-- **Nota de honestidad (hallazgo verificado en código al redactar esta
-  actualización, 2026-09-07)**: `EditorialController`, `IdiomaController`,
-  `AutorController` y `CategoriaController` **no tienen ningún
-  `@PreAuthorize`** — ni en el `GET` ni en el `POST`. Por el
-  comportamiento por defecto de `SecurityConfig`
-  (`.anyRequest().authenticated()` para todo lo que no está en la lista
-  `permitAll()`), esto significa que **cualquier usuario autenticado,
-  incluido `LECTOR`, puede crear un editorial/idioma/autor/categoría
-  nuevo** vía `POST`. No se documenta esto como si fuera una decisión
-  deliberada sin evidencia que lo respalde — es un hallazgo real de la
-  auditoría de este SRS, ver A23 (matriz de permisos) para el detalle
-  completo y la comparación con el resto de catálogos del sistema.
+- **Nota de honestidad — RESUELTA (hallazgo verificado en código al
+  redactar la actualización del 2026-09-07; corregida el mismo día, ver
+  OBS-27)**: `EditorialController`, `IdiomaController`, `AutorController`
+  y `CategoriaController` no tenían ningún `@PreAuthorize` — ni en el
+  `GET` ni en el `POST`. Por el comportamiento por defecto de
+  `SecurityConfig` (`.anyRequest().authenticated()` para todo lo que no
+  está en la lista `permitAll()`), esto significaba que cualquier usuario
+  autenticado, incluido `LECTOR`, podía crear un
+  editorial/idioma/autor/categoría nuevo vía `POST`. Confirmado que no fue
+  una decisión deliberada (ningún ADR ni comentario en el código lo
+  respaldaba); se agregó `@PreAuthorize("hasAnyRole('GERENTE','ADMIN')")`
+  a los 4 métodos `crear()`, sin tocar los `GET` (`listar`/`buscar`), que
+  siguen intencionalmente abiertos a cualquier autenticado — ver A23
+  (matriz de permisos) para el detalle completo.
 - **Método de verificación**: **Test** (`CatalogosLibroControllerTest`, 4
-  tests) + **Inspection** (ausencia de `@PreAuthorize` verificada
-  directamente en el código fuente de los 4 controllers en este commit).
+  tests de `listar`/`buscar`, sin `@PreAuthorize` de por medio; más
+  `AutorControllerSecurityTest`/`CategoriaControllerSecurityTest`/
+  `EditorialControllerSecurityTest`/`IdiomaControllerSecurityTest`, 4
+  tests cada uno, que sí cargan `SecurityConfig` real y verifican
+  `GERENTE`/`ADMIN` → `201`, `LECTOR`/`BIBLIOTECARIO` → `403`) +
+  **Inspection** (presencia de `@PreAuthorize("hasAnyRole('GERENTE','ADMIN')")`
+  verificada directamente en el código fuente de los 4 controllers en este
+  commit).
 
 #### REQ-F-032 — Solicitud de restablecimiento de contraseña
 
@@ -2737,13 +2754,13 @@ autenticación (`permitAll`), `auth.` = cualquier rol autenticado
 | `LibroController` | pendientes/lookup-isbn (GET) | — | Sí | Sí | Sí |
 | `LibroController` | crear/editar/eliminar/subir portada | — | Sí | Sí | Sí |
 | 4 catálogos maestros (REQ-F-031) | listar/buscar (GET) | auth. | auth. | auth. | auth. |
-| 4 catálogos maestros (REQ-F-031) | crear (POST) — nota 1 | auth. (!) | auth. | auth. | auth. |
+| 4 catálogos maestros (REQ-F-031) | crear (POST) — nota 1 (corregido 2026-09-07) | — | — | Sí | Sí |
 | `EstadoLibroController` | listar (GET, sin POST) | auth. | auth. | auth. | auth. |
 | `FavoritoController` | agregar/quitar/listar propios | Sí | — | — | — |
 | `SugerenciaAdquisicionController` | crear/listar propias | Sí | — | — | — |
 | `SugerenciaAdquisicionController` | listar todas/cambiar estado/más-pedidos/confirmar/PDF | — | — | Sí | Sí |
 | `SuscripcionDisponibilidadController` | suscribir/cancelar/listar propias | auth. | auth. | auth. | auth. |
-| `PrestamoController` | **crear / devolución simple (ver nota 2)** | — | **—** | Sí | Sí |
+| `PrestamoController` | crear / devolución simple (ver nota 2, corregido 2026-09-07) | — | Sí | Sí | Sí |
 | `DevolucionController` | registrar devolución completa (con daño), historial | — | Sí | Sí | Sí |
 | `PrestamoController` | renovación | Sí (solo propio) | Sí | Sí | Sí |
 | `PrestamoController` | **listar por usuario / activos (ver nota 3)** | Sí (solo propio) | Sí | Sí | **—** |
@@ -2774,20 +2791,36 @@ autenticación (`permitAll`), `auth.` = cualquier rol autenticado
 
 **Notas de esta matriz (asimetrías reales encontradas, ninguna oculta)**:
 
-1. **Hueco real, no decisión de negocio documentada**: `POST` en
+1. **Hueco real, RESUELTO el 2026-09-07 (ver OBS-27)**: `POST` en
    `AutorController`/`CategoriaController`/`EditorialController`/
-   `IdiomaController` no tiene ningún `@PreAuthorize` — cualquier usuario
-   autenticado, **incluido `LECTOR`**, puede crear entradas en estos
-   catálogos maestros. No se encontró ningún ADR ni comentario en el
-   código que declare esto como intencional. Se documenta como gap real
-   (ver también REQ-F-031), no como asimetría aceptada.
-2. **Contradicción real entre documentación y código**: `PrestamoController.crear`/
-   `.registrarDevolucion` (la ruta simple) excluyen `BIBLIOTECARIO`,
+   `IdiomaController` no tenía ningún `@PreAuthorize` — cualquier usuario
+   autenticado, incluido `LECTOR`, podía crear entradas en estos catálogos
+   maestros. No se encontró ningún ADR ni comentario en el código que
+   declarara esto como intencional (ver también REQ-F-031). Se corrigió
+   agregando `@PreAuthorize("hasAnyRole('GERENTE','ADMIN')")` a los 4
+   métodos `crear()` — mismo conjunto de roles que ya usa
+   `PrestamoController` para operaciones administrativas de catálogo —
+   verificado con tests reales (`AutorControllerSecurityTest`,
+   `CategoriaControllerSecurityTest`, `EditorialControllerSecurityTest`,
+   `IdiomaControllerSecurityTest`, 4 tests cada uno: `GERENTE`/`ADMIN`
+   `201`, `LECTOR`/`BIBLIOTECARIO` `403`). Los `GET` (`listar`/`buscar`) de
+   estos 4 controllers siguen abiertos a cualquier autenticado — eso sí es
+   intencional, no se tocó.
+2. **Contradicción real entre documentación y código, RESUELTA el
+   2026-09-07 (ver OBS-27)**: `PrestamoController.crear`/
+   `.registrarDevolucion` (la ruta simple) excluían `BIBLIOTECARIO`,
    mientras que REQ-F-007/REQ-F-008/REQ-F-016 (y `HU-01`/`HU-02`/`HU-F04`)
    describen a `BIBLIOTECARIO` como actor principal de ambas operaciones.
-   Para devolución existe una ruta alterna real (`DevolucionController`)
-   que sí incluye `BIBLIOTECARIO`; para creación de préstamo **no se
-   encontró ninguna ruta alterna** — ver el detalle en REQ-F-007/016.
+   Confirmado con Marlon que era un bug, no una decisión de diseño; se
+   corrigió el `@PreAuthorize` de ambos métodos a
+   `hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')`, verificado con tests
+   reales (`PrestamoControllerSecurityTest`,
+   `crear_conRolBibliotecario_sePermite`/
+   `registrarDevolucion_conRolBibliotecario_sePermite`, más
+   `crear_conRolLector_seRechaza`/
+   `registrarDevolucion_conRolLector_seRechaza` confirmando que `LECTOR`
+   sigue sin acceso). La ruta simple y `DevolucionController` quedan hoy
+   con el mismo conjunto de roles permitidos para devolución.
 3. **Confirma, con evidencia adicional, la asimetría que REQ-NF-010 ya
    reconocía** (antes solo documentada para `LibroController` vs
    `Prestamo`/`ReservacionController` respecto a `ADMIN`): `PrestamoController`
