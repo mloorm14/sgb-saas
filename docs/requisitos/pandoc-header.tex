@@ -1,0 +1,7 @@
+\usepackage{seqsplit}
+\let\oldtexttt\texttt
+\renewcommand{\texttt}[1]{\seqsplit{#1}}
+\usepackage[margin=0.65in]{geometry}
+\let\oldlongtable\longtable
+\let\endoldlongtable\endlongtable
+\renewenvironment{longtable}{\scriptsize\oldlongtable}{\endoldlongtable}

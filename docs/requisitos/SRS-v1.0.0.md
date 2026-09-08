@@ -199,7 +199,7 @@ viven repartidas entre `AuthService`, `VerificacionCorreoService`,
 | usuario | `PENDIENTE_VERIFICACION` → `ACTIVO` | `AuthService.verificarCorreo` tras código correcto (`POST /api/auth/verificar-correo`) |
 | usuario | `ACTIVO` → `BLOQUEADO_POR_MULTA` | `sp_registrar_devolucion` cuando la devolución genera multa por atraso |
 | usuario | `BLOQUEADO_POR_MULTA` → `ACTIVO` | `sp_pagar_multa`, solo si era la última multa `PENDIENTE` del usuario |
-| usuario | `ACTIVO`↔`INACTIVO` | `UsuarioAdminService.cambiarEstado` (`ADMIN` sin restricción de conjunto; `GERENTE` restringido a `ACTIVO`/`INACTIVO` y solo sobre usuarios que él mismo creó) |
+| usuario | `ACTIVO`<->`INACTIVO` | `UsuarioAdminService.cambiarEstado` (`ADMIN` sin restricción de conjunto; `GERENTE` restringido a `ACTIVO`/`INACTIVO` y solo sobre usuarios que él mismo creó) |
 | usuario | cualquiera → `INACTIVO` | `UsuarioAdminService.eliminarUsuario` (baja lógica, `DELETE /api/v1/admin/usuarios/{id}`) |
 | libro | (creación) → `ACTIVO` | `LibroService.crear`, salvo la excepción de la fila siguiente |
 | libro | `ACTIVO` → `DADO_DE_BAJA` | `LibroService.eliminar` (baja lógica, nunca borrado físico) |
@@ -492,7 +492,7 @@ reescribieron a forma "debe".
   dependería de que un administrador cree cada cuenta manualmente, lo cual
   no escala para una comunidad universitaria (HU-AUTH-01).
 - **Criterio de aceptación medible**:
-  1. Con correo no registrado y contraseña ≥8 caracteres, el sistema
+  1. Con correo no registrado y contraseña >=8 caracteres, el sistema
      responde `201` con el usuario creado, rol `LECTOR`, estado
      `PENDIENTE_VERIFICACION` conforme a REQ-F-020, y la contraseña
      almacenada hasheada (nunca en texto plano).
@@ -672,7 +672,7 @@ reescribieron a forma "debe".
      crear registro.
   4. Usuario o libro inexistente → `404`.
   5. El campo `diasPrestamo` del request es **obligatorio** (`@NotNull`) y
-     debe ser un entero ≥1 (`@Min(1)`, `PrestamoRequestDTO.java`); no hay
+     debe ser un entero >=1 (`@Min(1)`, `PrestamoRequestDTO.java`); no hay
      un máximo validado en el código. La interfaz sugiere como valor
      inicial el contenido de la clave `dias_prestamo_default` de
      `configuracion_sistema` (sembrada en `15` días, `db/seed.sql`;
@@ -945,7 +945,7 @@ reescribieron a forma "debe".
   solo la superficie de interacción.
 - **Criterio de aceptación medible**:
   1. Bibliotecario crea préstamo con usuario, libro y días → préstamo
-     registrado (mismo campo `diasPrestamo` obligatorio ≥1 días y mismo
+     registrado (mismo campo `diasPrestamo` obligatorio >=1 días y mismo
      valor sugerido por defecto de 15 días, ver REQ-F-007).
   2. Bibliotecario registra devolución de un préstamo activo → fila se
      actualiza con fecha real, botón de devolución desaparece de esa fila.
@@ -2400,7 +2400,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   corridas, `docs/mediciones/perf/REPORT.md`)**:
   1. p95 `cache_caliente` < 200ms — real: **19.49ms** (9929 peticiones).
   2. p95 `cache_frio` < 500ms — real: **7.50ms** (10074 peticiones).
-  3. Tasa de error HTTP ≥500: 0% — real: **0.00%** (0 de 20003
+  3. Tasa de error HTTP >=500: 0% — real: **0.00%** (0 de 20003
      peticiones).
 - **Método de verificación**: **Demonstration**
   (`docs/mediciones/perf/REPORT.md`, `k6/libros-listado-test.js`, 5
@@ -2431,7 +2431,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   la regla de oro de esta tarea de no inventar/asumir un dato que el
   repositorio mismo retractó.
 - **Criterio de aceptación medible (para cuando exista una muestra real)**:
-  media SUS ≥ 75 (umbral convencional de "buena" usabilidad en la
+  media SUS >= 75 (umbral convencional de "buena" usabilidad en la
   literatura SUS) sobre una muestra declarada de participantes reales con
   consentimiento informado (`docs/etica/consentimientos/plantilla.md`),
   con export crudo del instrumento versionado y trazable.
@@ -2459,7 +2459,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   Este requisito no asume WCAG 2.1 AA porque el reporte que lo respalda
   no lo declara.
 - **Criterio de aceptación medible (cifra real, `lhci-20260731-0300.json`)**:
-  categoría Accessibility ≥90 — real: **95**, cumple. Auditoría específica
+  categoría Accessibility >=90 — real: **95**, cumple. Auditoría específica
   que sí resta puntos dentro de esa categoría: `color-contrast` (score 0,
   "Background and foreground colors do not have a sufficient contrast
   ratio" en al menos un elemento) — hallazgo real no corregido en esta
@@ -2479,7 +2479,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   cuenta) — sin indexabilidad razonable, el portal público pierde parte
   de su propósito de atraer usuarios antes del registro.
 - **Estado real — NO cumple el umbral, declarado sin ambigüedad**:
-  categoría SEO ≥90 exigido — real: **82**, no cumple.
+  categoría SEO >=90 exigido — real: **82**, no cumple.
 - **Causas identificadas (extraídas del propio JSON del reporte, no
   interpretadas a mano)**:
   1. `meta-description` (score 0): `index.html` del build de Angular no
@@ -2488,7 +2488,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   2. `robots-txt` (score 0): `GET /robots.txt` responde `200` pero con el
      `index.html` de la SPA (por el fallback de rutas de Angular/nginx),
      no un `robots.txt` real — Lighthouse lo rechaza como inválido.
-- **Criterio de aceptación medible**: categoría SEO ≥90 (no cumplido
+- **Criterio de aceptación medible**: categoría SEO >=90 (no cumplido
   hoy); ambas causas identificadas arriba son corregibles sin cambios de
   arquitectura (agregar `<meta name="description">` al `index.html`;
   servir un `robots.txt` real desde `nginx.conf` antes del fallback
@@ -2724,52 +2724,52 @@ sin duplicar el contenido ya redactado allí.
 
 Construida leyendo directamente el `@PreAuthorize` (o su ausencia) de los
 31 controladores, 2026-09-07 — no inferida de la documentación de cada
-requisito. `✓` = permitido, `—` = rechazado (`403`), `pub.` = sin
+requisito. `Sí` = permitido, `—` = rechazado (`403`), `pub.` = sin
 autenticación (`permitAll`), `auth.` = cualquier rol autenticado
 (`isAuthenticated()` o sin anotación, mismo efecto por el default de
 `SecurityConfig`).
 
 | Controller | Operación(es) | LECTOR | BIBLIOTECARIO | GERENTE | ADMIN |
 |---|---|:-:|:-:|:-:|:-:|
-| `AuthController` | registro/login/refresh/reset/verificar-correo/logout | pub. | pub. | pub. | pub. |
+| `AuthController` | registro, login, refresh, reset, verificar correo, logout | pub. | pub. | pub. | pub. |
 | `PublicoLibroController`/`PublicoCategoriaController` | todo (A6) | pub. | pub. | pub. | pub. |
-| `LibroController` | listar/detalle/portada (GET) | ✓ | ✓ | ✓ | ✓ |
-| `LibroController` | pendientes/lookup-isbn (GET) | — | ✓ | ✓ | ✓ |
-| `LibroController` | crear/editar/eliminar/subir portada | — | ✓ | ✓ | ✓ |
-| `AutorController`/`CategoriaController`/`EditorialController`/`IdiomaController` | listar/buscar (GET) | auth. | auth. | auth. | auth. |
-| `AutorController`/`CategoriaController`/`EditorialController`/`IdiomaController` | **crear (POST)** | **auth. (⚠️ ver nota 1)** | auth. | auth. | auth. |
+| `LibroController` | listar/detalle/portada (GET) | Sí | Sí | Sí | Sí |
+| `LibroController` | pendientes/lookup-isbn (GET) | — | Sí | Sí | Sí |
+| `LibroController` | crear/editar/eliminar/subir portada | — | Sí | Sí | Sí |
+| 4 catálogos maestros (REQ-F-031) | listar/buscar (GET) | auth. | auth. | auth. | auth. |
+| 4 catálogos maestros (REQ-F-031) | crear (POST) — nota 1 | auth. (!) | auth. | auth. | auth. |
 | `EstadoLibroController` | listar (GET, sin POST) | auth. | auth. | auth. | auth. |
-| `FavoritoController` | agregar/quitar/listar propios | ✓ | — | — | — |
-| `SugerenciaAdquisicionController` | crear/listar propias | ✓ | — | — | — |
-| `SugerenciaAdquisicionController` | listar todas/cambiar estado/más-pedidos/confirmar/PDF | — | — | ✓ | ✓ |
+| `FavoritoController` | agregar/quitar/listar propios | Sí | — | — | — |
+| `SugerenciaAdquisicionController` | crear/listar propias | Sí | — | — | — |
+| `SugerenciaAdquisicionController` | listar todas/cambiar estado/más-pedidos/confirmar/PDF | — | — | Sí | Sí |
 | `SuscripcionDisponibilidadController` | suscribir/cancelar/listar propias | auth. | auth. | auth. | auth. |
-| `PrestamoController` | **crear / devolución simple (⚠️ ver nota 2)** | — | **—** | ✓ | ✓ |
-| `DevolucionController` | registrar devolución completa (con daño), historial | — | ✓ | ✓ | ✓ |
-| `PrestamoController` | renovación | ✓ (solo propio) | ✓ | ✓ | ✓ |
-| `PrestamoController` | **listar por usuario / activos (⚠️ ver nota 3)** | ✓ (solo propio) | ✓ | ✓ | **—** |
-| `PrestamoController` | reportes (morosidad/uso/inventario/vencidos/categorías, JSON y PDF) | — | — | ✓ | ✓ |
-| `PrestamosGestionController` | buscar-usuario/sugerencias/reserva-activa/historial | — | ✓ | ✓ | ✓ |
-| `ReservacionController` | **crear (⚠️ ver nota 3)** | ✓ (propio) | ✓ | ✓ | **—** |
-| `ReservacionController` | hoy/próximas | — | ✓ | ✓ | ✓ |
-| `ReservacionController` | cambiar estado (aceptar/rechazar) | ✓ | ✓ | ✓ | ✓ |
-| `ReservacionController` | **listar por usuario (⚠️ ver nota 3)** | ✓ (propio) | ✓ | ✓ | **—** |
-| `ReservacionesGestionController` | buscar-usuario/historial | — | ✓ | ✓ | ✓ |
-| `MultaController` | ver por usuario/detalle | ✓ (propio) | ✓ | ✓ | ✓ |
-| `MultaController` | pago | — | ✓ | ✓ | ✓ |
-| `MultaController` | anulación, reportes | — | — | ✓ | ✓ |
-| `CredencialQrController` | mi-credencial | ✓ | — | — | — |
-| `ChatbotController` | mensajes/historial | ✓ | — | — | — |
-| `NotificacionController` | ver por usuario | ✓ (propio) | ✓ | ✓ | ✓ |
-| `ConfiguracionSistemaController` | listar/actualizar (REQ-F-017) | — | — | — | ✓ |
-| `UsuarioAdminController` | listar padrón | — | — | ✓ | ✓ |
-| `UsuarioAdminController` | crear/cambiar rol/cambiar estado (con alcance limitado para GERENTE, ver REQ-F-023) | — | — | ✓ (acotado) | ✓ |
-| `UsuarioAdminController` | eliminar (baja lógica) | — | — | — | ✓ |
-| `AuditoriaController` | listar/resumen/export (REQ-F-024) | — | — | ✓ | ✓ |
-| `TipoDanoController`/`CategoriaDanoController` | listar (GET) | — | ✓ | ✓ | ✓ |
-| `TipoDanoController`/`CategoriaDanoController` | crear/editar/eliminar | — | — | — | ✓ |
-| `EvidenciaDanoController` | subir/consultar evidencia | — | ✓ | ✓ | ✓ |
-| `ProveedorController` | todo (CRUD) | — | — | ✓ | ✓ |
-| `BackupController`/`RespaldoCompletoController` | todo | — | — | — | ✓ |
+| `PrestamoController` | **crear / devolución simple (ver nota 2)** | — | **—** | Sí | Sí |
+| `DevolucionController` | registrar devolución completa (con daño), historial | — | Sí | Sí | Sí |
+| `PrestamoController` | renovación | Sí (solo propio) | Sí | Sí | Sí |
+| `PrestamoController` | **listar por usuario / activos (ver nota 3)** | Sí (solo propio) | Sí | Sí | **—** |
+| `PrestamoController` | reportes (morosidad/uso/inventario/vencidos/categorías, JSON y PDF) | — | — | Sí | Sí |
+| `PrestamosGestionController` | buscar-usuario/sugerencias/reserva-activa/historial | — | Sí | Sí | Sí |
+| `ReservacionController` | **crear (ver nota 3)** | Sí (propio) | Sí | Sí | **—** |
+| `ReservacionController` | hoy/próximas | — | Sí | Sí | Sí |
+| `ReservacionController` | cambiar estado (aceptar/rechazar) | Sí | Sí | Sí | Sí |
+| `ReservacionController` | **listar por usuario (ver nota 3)** | Sí (propio) | Sí | Sí | **—** |
+| `ReservacionesGestionController` | buscar-usuario/historial | — | Sí | Sí | Sí |
+| `MultaController` | ver por usuario/detalle | Sí (propio) | Sí | Sí | Sí |
+| `MultaController` | pago | — | Sí | Sí | Sí |
+| `MultaController` | anulación, reportes | — | — | Sí | Sí |
+| `CredencialQrController` | mi-credencial | Sí | — | — | — |
+| `ChatbotController` | mensajes/historial | Sí | — | — | — |
+| `NotificacionController` | ver por usuario | Sí (propio) | Sí | Sí | Sí |
+| `ConfiguracionSistemaController` | listar/actualizar (REQ-F-017) | — | — | — | Sí |
+| `UsuarioAdminController` | listar padrón | — | — | Sí | Sí |
+| `UsuarioAdminController` | crear/cambiar rol/cambiar estado (con alcance limitado para GERENTE, ver REQ-F-023) | — | — | Sí (acotado) | Sí |
+| `UsuarioAdminController` | eliminar (baja lógica) | — | — | — | Sí |
+| `AuditoriaController` | listar/resumen/export (REQ-F-024) | — | — | Sí | Sí |
+| `TipoDanoController`/`CategoriaDanoController` | listar (GET) | — | Sí | Sí | Sí |
+| `TipoDanoController`/`CategoriaDanoController` | crear/editar/eliminar | — | — | — | Sí |
+| `EvidenciaDanoController` | subir/consultar evidencia | — | Sí | Sí | Sí |
+| `ProveedorController` | todo (CRUD) | — | — | Sí | Sí |
+| `BackupController`/`RespaldoCompletoController` | todo | — | — | — | Sí |
 | `TestController` | `/protegido` (endpoint de humo, sin lógica de negocio) | auth. | auth. | auth. | auth. |
 
 **Notas de esta matriz (asimetrías reales encontradas, ninguna oculta)**:
