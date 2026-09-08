@@ -6,6 +6,7 @@ import com.uteq.backend.entity.Autor;
 import com.uteq.backend.repository.AutorRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -38,6 +39,7 @@ public class AutorController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<AutorResponseDTO> crear(@Valid @RequestBody AutorRequestDTO dto) {
         Autor autor = new Autor();
         autor.setNombre(dto.nombre());

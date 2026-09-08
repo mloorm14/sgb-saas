@@ -6,6 +6,7 @@ import com.uteq.backend.entity.Idioma;
 import com.uteq.backend.repository.IdiomaRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -41,6 +42,7 @@ public class IdiomaController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<IdiomaResponseDTO> crear(@Valid @RequestBody IdiomaRequestDTO dto) {
         if (idiomaRepository.existsByNombreIgnoreCase(dto.nombre())) {
             return ResponseEntity.unprocessableEntity().build();
