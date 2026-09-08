@@ -21,7 +21,7 @@ spring:
     locations: filesystem:../database/migrations
     baseline-on-migrate: true
     # baseline-version = migración más alta ya incluida en db/schema.sql. Subirla al agregar una migración nueva.
-    baseline-version: 37
+    baseline-version: 48
   data:
     redis:
       # En local sin password ni TLS; en prod (Upstash) con ambos.
