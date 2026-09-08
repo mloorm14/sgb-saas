@@ -107,6 +107,56 @@ cada división: mismos 3 errores esperados de `REQ-F-029/030/031`
 (identificados en el Bloque 3, pendientes de redactar en el Bloque 5), 0
 errores nuevos introducidos por las divisiones.
 
+## Requisitos nuevos, funcionalidad implementada sin especificar (Bloque 5, 2026-09-07)
+
+25 requisitos nuevos (`REQ-F-032`-`042`, `REQ-NF-016`-`024`) más la
+redacción de 3 ya existentes en la matriz sin entrada en el SRS
+(`REQ-F-029/030/031`, identificados en el Bloque 3). Todos corresponden a
+funcionalidad **ya implementada** en el código, verificada contra el
+código fuente en este commit antes de redactar cada uno — ninguno agrega
+alcance funcional nuevo al sistema.
+
+| ID | Título | Hallazgo relevante |
+|---|---|---|
+| REQ-F-029 | Carga y consulta de portada de libro | — |
+| REQ-F-030 | Dashboard gerencial | — |
+| REQ-F-031 | Catálogos maestros | Ampliado a `AutorController`/`CategoriaController`; **hueco real**: `POST` sin `@PreAuthorize`, cualquier autenticado (incl. LECTOR) puede escribir |
+| REQ-F-032 | Solicitud de restablecimiento de contraseña | Responde distinto (404 vs 204) para correo existente/inexistente — permite enumeración |
+| REQ-F-033 | Restablecimiento efectivo de contraseña | No invalida sesiones/tokens activos al resetear |
+| REQ-F-034 | Reenvío de código de verificación | Sin límite de reenvíos ni ventana — hallazgo de seguridad pendiente |
+| REQ-F-035 | Favoritos por usuario | — |
+| REQ-F-036 | Sugerencias de adquisición | — |
+| REQ-F-037 | Portal público de consulta sin cuenta | Confirmado: no expone datos personales ni stock por usuario |
+| REQ-F-038 | Registro de daños de ejemplares | `EN_REPARACION`/`PERDIDO` sin transición automática (ya en 1.3.1) |
+| REQ-F-039 | Gestión de proveedores | — |
+| REQ-F-040 | Suscripción a disponibilidad | — |
+| REQ-F-041 | Pago parcial de multa | Complementa REQ-F-014 |
+| REQ-F-042 | Respaldo y restauración | Restauración desde `backup-service` NO existe todavía (brecha conocida en `BACKUP.md`) |
+| REQ-NF-016 | Redis fail-open/closed por servicio | `JwtAuthFilter`/`VerificacionCorreoService` fail-closed; `LoginRateLimiter`/`ChatbotRateLimiter` fail-open |
+| REQ-NF-017 | Umbral de rendimiento (p95) | p95 caliente 19.49ms, p95 frío 7.50ms, 50 VUs |
+| REQ-NF-018 | Usabilidad SUS | N=0 (muestra anterior retractada, OBS-08) — no se usa la cifra 82.17 |
+| REQ-NF-019 | Accesibilidad (Lighthouse) | 95/100, cumple; reporte no cita nivel WCAG específico |
+| REQ-NF-020 | SEO del portal público (Lighthouse) | 82/100, **no cumple** el umbral ≥90; causas: meta-description y robots.txt |
+| REQ-NF-021 | Objetivos de backup/recovery | PITR Neon 6h/1GB; retención proyecto hasta 2026-09-16; RPO/RTO formales no declarados |
+| REQ-NF-022 | Protección de datos personales | Minimización verificada; retención de bitácora y supresión a solicitud del titular **sin política definida** |
+| REQ-NF-023 | Política de contraseñas | Solo longitud mínima (8, sin composición); sin endpoint de cambio autenticado |
+| REQ-NF-024 | Interfaces externas consumidas (SMTP/Gemini) | Ambas con manejo de error real y fallback |
+
+**Hallazgo transversal más significativo de este bloque**: al construir
+A23 (matriz de permisos), se encontró que `PrestamoController.crear`/
+`.registrarDevolucion` (ruta simple) excluyen `BIBLIOTECARIO` de
+`@PreAuthorize`, contradiciendo la descripción de REQ-F-007/REQ-F-008/
+REQ-F-016 (que documentan a `BIBLIOTECARIO` como actor principal). Para
+devolución existe una ruta alterna real accesible (`DevolucionController`);
+para creación de préstamo no se encontró ninguna. Se corrigieron
+REQ-F-007/008/016 con esta nota; el hallazgo no se resuelve en código en
+esta tarea (es una tarea de documentación de requisitos, no de
+desarrollo) — queda declarado para que el equipo decida.
+
+`scripts/validate-traceability.sh` corrido tras completar el bloque:
+**71 filas, 0 problemas** (confirma que los 3 pendientes del Bloque 3 ya
+quedaron resueltos).
+
 ## Fecha de las entradas
 
 Todas las entradas de esta tabla corresponden a un único commit real,

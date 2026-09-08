@@ -16,7 +16,14 @@ Formato basado en ISO/IEC/IEEE 29148:2018 (Systems and software engineering
   cambio al tag `v1.0.0` (commit `16279881`), verificado presente y
   alcanzable en este repositorio.
 - **Repositorio**: <https://github.com/mloorm14/sgb-saas>
-- **Fuente de trazabilidad**: `docs/trazabilidad/matriz.csv` (43 requisitos, validada automáticamente en CI por `scripts/validate-traceability.sh`)
+- **Fuente de trazabilidad**: `docs/trazabilidad/matriz.csv` (71 requisitos
+  tras esta revisión: 43 de la versión anterior + 3 ya existentes en la
+  matriz sin redactar en el SRS (`REQ-F-029/030/031`, ahora redactados) +
+  20 nuevos (`REQ-F-032`-`042`, `REQ-NF-016`-`024`) + 5 filas netas
+  adicionales de dividir `REQ-NF-014` en 4 sub-IDs y `REQ-F-022` en 3 =
+  43+3+20+5 = 71; validada automáticamente en CI por
+  `scripts/validate-traceability.sh`, extendido en esta misma revisión
+  con 2 validaciones nuevas — ver `CHANGELOG-REQ.md`)
 
 > **Nota de método.** Este documento **no redacta requisitos nuevos desde
 > cero**: consolida y da estructura formal IEEE 29148 a lo que ya existía
@@ -93,11 +100,16 @@ usuario), Notificaciones (alertas de vencimiento/multa/reserva caducada),
 Panel de administración (gestión de usuarios/roles) y auditoría,
 Configuración paramétrica del sistema, y un asistente virtual (Chatbot)
 con grounding real sobre el catálogo. El alcance de este SRS cubre
-exactamente los **43 requisitos** ya identificados y trazados en
+exactamente los **71 requisitos** ya identificados y trazados en
 `docs/trazabilidad/matriz.csv` al momento de este commit (los 30
-originales de la Tercera Entrega más los 13 de los módulos construidos
-después) — no se amplía el alcance funcional del sistema al redactar este
-documento, solo se formaliza su especificación. Explícitamente **fuera de
+originales de la Tercera Entrega, más los 13 de los módulos construidos
+después, más los 28 que esta revisión agrega/formaliza —
+`REQ-F-029`-`042`, `REQ-NF-016`-`024` y la división de `REQ-NF-014`/
+`REQ-F-022` — ver `CHANGELOG-REQ.md` para el detalle completo) — no se
+amplía el alcance funcional del sistema al redactar este documento (el
+sistema construido no cambia), solo se formaliza su especificación, que
+es precisamente el hallazgo central del Dr. Guerrero que motivó esta
+revisión. Explícitamente **fuera de
 alcance** de este documento (y del sistema, en esta entrega): integración
 con sistemas académicos institucionales externos, TLS gestionado por este
 propio repositorio (el sistema **sí corre bajo HTTPS real en producción**
@@ -227,7 +239,7 @@ referencia esta misma tabla como anexo formal de trazabilidad.
 - ISO/IEC 25010:2011 — Systems and software Quality Requirements and Evaluation (SQuaRE), aplicado en `docs/arquitectura/ISO25010.md`.
 - OWASP Top 10:2021.
 - RFC 7519 (JSON Web Token), RFC 7807 (Problem Details for HTTP APIs).
-- `docs/trazabilidad/matriz.csv` — fuente primaria de los 43 requisitos.
+- `docs/trazabilidad/matriz.csv` — fuente primaria de los 71 requisitos.
 - `docs/requisitos/historias/`, `docs/requisitos/casos-de-uso/`, `docs/requisitos/historias-usuario.md`, `docs/requisitos/casos-de-uso.md`.
 - `docs/adr/ADR-001-tecnologia.md`, `ADR-003-jwt-redis.md`, `adr-006` a `adr-016`, `adr-029-v29-gap.md` (14 ADRs — cifra recontada el 2026-09-07 directamente sobre `docs/adr/`, excluyendo `README.md`; corrige la cifra de 13 de versiones anteriores de este SRS, desactualizada por la incorporación posterior de `adr-029`).
 - `docs/informe-entrega-3.tex` (resumen ejecutivo, estado del sistema, inventario de endpoints).
@@ -238,7 +250,7 @@ referencia esta misma tabla como anexo formal de trazabilidad.
 
 La sección 2 describe el producto de forma global (perspectiva, funciones,
 usuarios, restricciones, supuestos). La sección 3 es el cuerpo principal:
-los 43 requisitos específicos, cada uno con id único, descripción,
+los 71 requisitos específicos, cada uno con id único, descripción,
 rationale, prioridad MoSCoW, criterio de aceptación medible y método de
 verificación. La sección 4 resume el mecanismo de trazabilidad hacia
 código/pruebas/evidencia. La sección 5 mapea los requisitos no funcionales
@@ -561,6 +573,21 @@ formato.
 - **Descripción**: un BIBLIOTECARIO/GERENTE debe poder registrar el
   préstamo de un libro con stock disponible a un usuario `ACTIVO`,
   decrementando el stock en la misma transacción atómica.
+- **Corrección de rol (hallazgo del Dr. Guerrero, verificado en código al
+  construir A23 — matriz de permisos)**: `PrestamoController.crear`
+  (`POST /api/v1/prestamos`) tiene
+  `@PreAuthorize("hasAnyRole('GERENTE','ADMIN')")` — **`BIBLIOTECARIO` NO
+  está en la lista**, pese a que esta misma descripción y REQ-F-016 (la
+  UI de gestión de préstamos) asumen que un BIBLIOTECARIO puede registrar
+  préstamos. Esto es una contradicción real entre lo documentado
+  (incluido en versiones anteriores de este SRS) y el código actual, no
+  una corrección de redacción menor — un usuario únicamente
+  `BIBLIOTECARIO` recibe `403` al intentar crear un préstamo hoy. Se deja
+  la descripción original arriba (sin reescribirla) para no ocultar la
+  intención de diseño original, y se documenta la discrepancia aquí en
+  vez de asumir que el código está mal o que la descripción está mal sin
+  que el equipo lo decida — ver A23 para el detalle completo de la matriz
+  de permisos y la comparación con el resto de endpoints del módulo.
 - **Rationale**: núcleo del dominio bibliotecario — llevar control de qué
   ejemplares están fuera y cuándo deben devolverse (HU-01). La atomicidad
   de "crear préstamo + decrementar stock" está garantizada por el motor
@@ -589,10 +616,19 @@ formato.
 
 - **Prioridad**: Must
 - **Fuente**: HU-02 (Cajas), CU-02
-- **Módulo/endpoint**: `PrestamoController`/`PrestamoService` — `POST /api/v1/prestamos/{id}/devolucion` (SP `sp_registrar_devolucion`)
+- **Módulo/endpoint**: `PrestamoController`/`PrestamoService` — `POST /api/v1/prestamos/{id}/devolucion` (SP `sp_registrar_devolucion`, `@PreAuthorize("hasAnyRole('GERENTE','ADMIN')")`); **existe una segunda ruta real** para el mismo caso de uso, `DevolucionController` — `POST /api/v1/devoluciones/prestamo/{prestamoId}` (`@PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")`, invoca el mismo `sp_registrar_devolucion` y además soporta registrar daño/pérdida, ver REQ-F-038).
 - **Descripción**: registrar la devolución de un préstamo activo,
   incrementando el stock del libro y generando una multa automáticamente
   si hubo atraso.
+- **Corrección de rol (hallazgo del Dr. Guerrero, verificado al construir
+  A23)**: la ruta simple de `PrestamoController` excluye a
+  `BIBLIOTECARIO`, pero la ruta de `DevolucionController` (la que en la
+  práctica usa el flujo de gestión con posible registro de daño, ver
+  REQ-F-038) sí lo incluye — a diferencia de REQ-F-007 (crear préstamo),
+  donde no se encontró ninguna ruta alterna accesible para
+  `BIBLIOTECARIO`, aquí el caso de uso de devolución **sí** tiene un
+  camino real para ese rol, solo que no es el endpoint más simple que
+  esta sección citaba originalmente.
 - **Rationale**: liberar stock y detectar atraso sin intervención manual
   del bibliotecario (HU-02); la atomicidad de hasta 4 tablas en una sola
   transacción es exactamente el caso que justifica usar un SP en vez de
@@ -801,10 +837,28 @@ formato.
 
 - **Prioridad**: Must
 - **Fuente**: HU-F04 (Panama), CU-F04
-- **Módulo/endpoint**: `PrestamosGestionComponent` (frontend), reutiliza los mismos endpoints de REQ-F-007/REQ-F-008
+- **Módulo/endpoint**: `PrestamosGestionComponent` (frontend) +
+  `PrestamosGestionController` (backend, solo endpoints de apoyo:
+  `buscar-usuario`, `sugerencias-usuarios`, `reserva-activa`,
+  `historial`, todos `BIBLIOTECARIO`/`GERENTE`/`ADMIN`); reutiliza los
+  endpoints de creación/devolución de REQ-F-007/REQ-F-008.
 - **Descripción**: el bibliotecario debe poder crear un préstamo y
   registrar su devolución desde la interfaz web, sin depender de
   anotaciones manuales.
+- **Contradicción real sin resolver, declarada explícitamente (hallazgo
+  del Dr. Guerrero, verificado al construir A23)**: esta descripción
+  asume que un `BIBLIOTECARIO` puede crear préstamos vía esta interfaz,
+  pero el endpoint que REQ-F-007 documenta para creación
+  (`POST /api/v1/prestamos`) excluye `BIBLIOTECARIO` a nivel de
+  `@PreAuthorize` — si `PrestamosGestionComponent` llama a ese mismo
+  endpoint, un `BIBLIOTECARIO` recibiría `403` al intentar crear un
+  préstamo desde esta pantalla, contradiciendo el propio criterio de
+  aceptación #1 de este requisito. Para devolución sí existe una ruta
+  real accesible a `BIBLIOTECARIO` (`DevolucionController`, ver
+  REQ-F-008). No se asume cuál de los dos (la descripción o el
+  `@PreAuthorize` de creación) es el comportamiento "correcto" — se
+  declara la contradicción para que el equipo la resuelva, no se oculta
+  ni se inventa una resolución.
 - **Rationale**: capa de UI sobre la lógica ya especificada en
   REQ-F-007/REQ-F-008 (HU-F04) — no introduce reglas de negocio nuevas,
   solo la superficie de interacción.
@@ -1217,6 +1271,469 @@ formato.
   (integración real contra la API de Gemini) está marcado `@Disabled` —
   requiere `GEMINI_API_KEY` real y consume cuota de la API, se ejecuta
   solo manualmente, no corre en CI.
+
+#### REQ-F-029 — Carga y consulta de portada de libro
+
+- **Prioridad**: Should
+- **Fuente**: HU-LIB-02, CU-LIB-02 (mismo par que REQ-F-006 — es una
+  extensión de la gestión del catálogo, no una acción de negocio nueva).
+- **Módulo/endpoint**: `LibroController`/`LibroService` — `POST /api/v1/libros/{id}/portada` (multipart), `GET /api/v1/libros/{id}/portada`
+- **Descripción**: `BIBLIOTECARIO`/`GERENTE`/`ADMIN` pueden subir la
+  imagen de portada de un libro; cualquier usuario autenticado (LECTOR o
+  superior, mismo alcance que REQ-F-005) puede consultarla, y el portal
+  público también (`PublicoLibroController`, sin JWT, ver A6).
+- **Rationale**: la portada mejora la identificación visual del catálogo;
+  se sirve por endpoint aparte (no embebida en el DTO del libro) para no
+  inflar el payload del listado con binarios — el DTO solo expone
+  metadata (`tienePortada`, `portadaTipo`, `portadaNombre`).
+- **Criterio de aceptación medible**:
+  1. Archivo válido (formato y tamaño admitidos, ver más abajo) subido por
+     `BIBLIOTECARIO`/`GERENTE`/`ADMIN` → `200`/`204`, portada persistida
+     como binario en la fila del libro.
+  2. `GET` de un libro con portada → `200` con `Content-Type` dinámico
+     según `portada_tipo` y el binario en el cuerpo.
+  3. `GET` de un libro sin portada o inexistente → `404`.
+  4. Formatos admitidos y tamaño máximo: validados por
+     `LibroService.validarPortada` contra la clave `max_tamano_portada_mb`
+     de `configuracion_sistema` (sembrada en `2` MB, `db/seed.sql`);
+     archivo que excede el tamaño o cuyo tipo no está entre los admitidos
+     → rechazo explícito (`400`/`422`), no un `500` ni una portada
+     truncada. PENDIENTE_VERIFICAR_MARLON: confirmar en
+     `LibroService.validarPortada` la lista exacta de tipos MIME
+     admitidos (no se transcribe aquí sin releer ese método línea por
+     línea, para no adivinar el conjunto exacto).
+- **Método de verificación**: **Test**
+  (`LibroServiceTest.actualizarPortada_*`, 3 tests;
+  `.obtenerPortada_*`, 2 tests; `LibroControllerSecurityTest`, 3 tests
+  nuevos; `LibroPortadaIntegrationTest`, 3 tests de integración real
+  contra Postgres).
+
+#### REQ-F-030 — Dashboard gerencial
+
+- **Prioridad**: Should
+- **Fuente**: **sin HU/CU dedicada** (matriz: `—`, `—`).
+- **Módulo/endpoint**: `DashboardGerenteComponent` (frontend) — reutiliza `GET /api/v1/prestamos/reportes/libros-mas-prestados` (mismo endpoint que REQ-F-010) y otros endpoints de reportes ya especificados (REQ-F-010/025/026); sin endpoint backend propio.
+- **Descripción**: `GERENTE` (y `ADMIN`, mismo rol que consume los
+  endpoints de reportes) dispone de una vista consolidada que agrega
+  varios reportes existentes (libros más prestados, morosidad, uso) en
+  una sola pantalla, en vez de navegar cada reporte por separado.
+- **Rationale**: capa de UI sobre reportes ya especificados — no
+  introduce lógica de negocio ni endpoints nuevos, solo consolida la
+  presentación (mismo patrón que REQ-F-016 sobre REQ-F-007/008).
+- **Criterio de aceptación medible**: el componente carga y muestra datos
+  reales de al menos el reporte de libros más prestados sin error, para
+  un usuario con rol `GERENTE`/`ADMIN`.
+- **Método de verificación**: **Test** (`dashboard-gerente.component.spec.ts`,
+  2 tests, capa UI sin acceso directo a BD).
+
+#### REQ-F-031 — Catálogos maestros (editoriales, idiomas, estados de libro, autores, categorías)
+
+- **Prioridad**: Should
+- **Fuente**: **sin HU/CU dedicada** (matriz: `—`, `—`).
+- **Módulo/endpoint**: `EditorialController` — `GET/POST /api/v1/editoriales`, `GET /api/v1/editoriales/buscar`; `IdiomaController` — equivalente en `/api/v1/idiomas`; `EstadoLibroController` — `GET /api/v1/estados-libro` (sin `POST`, catálogo cerrado de solo lectura); `AutorController` — equivalente en `/api/v1/autores`; `CategoriaController` — equivalente en `/api/v1/categorias`. **Ampliado en esta revisión** respecto a versiones anteriores de este SRS, que solo citaban los primeros 3 controllers — verificado que `AutorController`/`CategoriaController` siguen exactamente el mismo patrón.
+- **Descripción**: listar (y, salvo `estados-libro`, crear) los catálogos
+  maestros que alimentan la ficha de un libro (editorial, idioma, autor,
+  categoría) y el catálogo de estados de libro (de solo lectura, sin
+  `POST` — es un enum de dominio, no un catálogo editable por el usuario).
+- **Rationale**: evita hardcodear listas en el frontend y permite agregar
+  un editorial/idioma/autor/categoría nuevo sin tocar código.
+- **Criterio de aceptación medible**:
+  1. `GET` de cada catálogo → `200` con el listado completo (array plano,
+     sin paginar).
+  2. `GET /buscar?q=` (todos salvo `estados-libro`) → coincidencias
+     parciales insensibles a mayúsculas (`findTop5ByNombreContainingIgnoreCase`
+     o equivalente).
+  3. `POST` (todos salvo `estados-libro`) → `201` con la entidad creada.
+- **Nota de honestidad (hallazgo verificado en código al redactar esta
+  actualización, 2026-09-07)**: `EditorialController`, `IdiomaController`,
+  `AutorController` y `CategoriaController` **no tienen ningún
+  `@PreAuthorize`** — ni en el `GET` ni en el `POST`. Por el
+  comportamiento por defecto de `SecurityConfig`
+  (`.anyRequest().authenticated()` para todo lo que no está en la lista
+  `permitAll()`), esto significa que **cualquier usuario autenticado,
+  incluido `LECTOR`, puede crear un editorial/idioma/autor/categoría
+  nuevo** vía `POST`. No se documenta esto como si fuera una decisión
+  deliberada sin evidencia que lo respalde — es un hallazgo real de la
+  auditoría de este SRS, ver A23 (matriz de permisos) para el detalle
+  completo y la comparación con el resto de catálogos del sistema.
+- **Método de verificación**: **Test** (`CatalogosLibroControllerTest`, 4
+  tests) + **Inspection** (ausencia de `@PreAuthorize` verificada
+  directamente en el código fuente de los 4 controllers en este commit).
+
+#### REQ-F-032 — Solicitud de restablecimiento de contraseña
+
+- **Prioridad**: Should
+- **Fuente**: sin HU/CU dedicada — funcionalidad real sin documento de
+  requisitos previo (mismo patrón que REQ-F-010/020).
+- **Módulo/endpoint**: `AuthController`/`AuthService` — `POST /api/auth/solicitar-reset` (`permitAll` en `SecurityConfig`, sin JWT).
+- **Descripción**: cualquier visitante (sin sesión) puede solicitar un
+  código de restablecimiento de contraseña para un correo; el sistema
+  genera un código de 6 dígitos con TTL de 10 minutos en Redis y lo envía
+  por correo.
+- **Rationale**: recuperación de cuenta sin depender de que un
+  administrador resetee la contraseña manualmente.
+- **Criterio de aceptación medible**:
+  1. Correo registrado → `204`, código de 6 dígitos generado en Redis
+     (clave `reset-codigo:<correo>`, TTL 10 minutos) y envío best-effort
+     por correo (si el envío falla, el código igual queda disponible en
+     Redis para reintentar vía A2).
+  2. Redis no disponible al generar el código →
+     `ServicioTemporalmenteNoDisponibleException` (fail-closed: no se
+     genera un código que luego no se pueda validar de forma confiable).
+- **Nota de honestidad (decisión de seguridad verificada en código, no
+  asumida)**: **este endpoint NO responde igual ante un correo
+  registrado y uno no registrado** — `AuthService.solicitarReset` lanza
+  `EntityNotFoundException` (→ `404`) si el correo no existe en
+  `usuarios`, antes de generar ningún código. Esto es lo opuesto a la
+  práctica recomendada de "respuesta idéntica siempre" para no permitir
+  enumeración de correos registrados por diferencia de código HTTP
+  (`404` vs `204`). Se documenta como hallazgo de seguridad real, no como
+  si fuera la decisión correcta — ver A23/OWASP A01 para el detalle;
+  corregirlo (hacer que ambos casos respondan `204` idéntico) queda como
+  recomendación de trabajo futuro, fuera del alcance de esta tarea de
+  documentación.
+- **Método de verificación**: **Inspection** (lectura directa de
+  `AuthService.solicitarReset` en este commit). PENDIENTE_VERIFICAR_MARLON:
+  no se encontró un test dedicado a este endpoint en la búsqueda
+  realizada para esta revisión — confirmar si existe uno con otro nombre
+  antes de asumir que no hay cobertura de regresión.
+
+#### REQ-F-033 — Restablecimiento efectivo de contraseña
+
+- **Prioridad**: Should
+- **Fuente**: sin HU/CU dedicada, mismo patrón que REQ-F-032.
+- **Módulo/endpoint**: `AuthController`/`AuthService` — `POST /api/auth/reset` (`permitAll`, sin JWT).
+- **Descripción**: con el código de 6 dígitos recibido (REQ-F-032) y una
+  contraseña nueva, el usuario reemplaza su contraseña sin necesitar
+  sesión activa.
+- **Rationale**: cierra el flujo de recuperación de cuenta iniciado en
+  REQ-F-032.
+- **Criterio de aceptación medible**:
+  1. Código correcto dentro del TTL + contraseña de 8-72 caracteres
+     (`ResetPasswordRequestDTO`, `@Size(min=8, max=72)`) → `204`, hash
+     actualizado (`BCryptPasswordEncoder(12)`).
+  2. Código incorrecto, expirado, o Redis no disponible al validarlo →
+     `CodigoVerificacionInvalidoException` (mismo patrón fail-closed que
+     REQ-F-032).
+- **Nota de honestidad (verificado en código, ambas preguntas explícitas
+  del hallazgo del Dr. Guerrero)**:
+  1. **Unicidad del token**: es de un solo uso en la práctica — la clave
+     Redis se borra (`redisTemplate.delete(key)`) inmediatamente después
+     de un reseteo exitoso, así que un segundo intento con el mismo
+     código ya no encuentra la clave y falla. No hay, sin embargo, un
+     contador de intentos fallidos sobre ese código dentro de su TTL de
+     10 minutos (mismo gap de fuerza bruta que A3 declara para
+     reenviar-código).
+  2. **Invalidación de sesiones activas**: `AuthService.resetPassword`
+     **no invalida ningún token existente** — no llama a la blacklist de
+     Redis (REQ-NF-001) ni revoca el `refreshToken` en cookie. Cualquier
+     `accessToken`/`refreshToken` emitido antes del reseteo sigue siendo
+     válido hasta su expiración natural. Esto es un gap de seguridad real
+     (si la contraseña se resetea porque la cuenta fue comprometida, una
+     sesión ya robada sigue viva) — declarado explícitamente aquí, no
+     asumido como si la invalidación ocurriera.
+- **Método de verificación**: **Inspection** (lectura directa de
+  `AuthService.resetPassword` en este commit).
+  PENDIENTE_VERIFICAR_MARLON: mismo caso que REQ-F-032, confirmar
+  existencia de test dedicado antes de asumir que no hay cobertura.
+
+#### REQ-F-034 — Reenvío de código de verificación de correo
+
+- **Prioridad**: Should
+- **Fuente**: sin HU/CU dedicada, mismo patrón que REQ-F-032/033.
+- **Módulo/endpoint**: `AuthController`/`AuthService` — `POST /api/auth/reenviar-codigo` (`permitAll`, sin JWT).
+- **Descripción**: un usuario recién registrado y aún
+  `PENDIENTE_VERIFICACION` puede pedir que se regenere y reenvíe el
+  código de verificación de correo (REQ-F-020) si el original expiró
+  (TTL 10 minutos).
+- **Rationale**: evita que una cuenta quede bloqueada permanentemente en
+  `PENDIENTE_VERIFICACION` solo porque el usuario tardó más de 10 minutos
+  en revisar su correo.
+- **Criterio de aceptación medible**:
+  1. Usuario `PENDIENTE_VERIFICACION` con correo no verificado → `204`,
+     nuevo código de 6 dígitos generado y enviado (mismo mecanismo que
+     REQ-F-020).
+  2. Usuario ya verificado (`correoVerificado=true`) o cuyo estado ya no
+     es `PENDIENTE_VERIFICACION` → rechazo explícito
+     (`IllegalArgumentException`), no reenvía nada.
+  3. Correo inexistente → `EntityNotFoundException` (`404`) — mismo
+     patrón de enumeración de correo que REQ-F-032, no oculto aquí
+     tampoco.
+- **Hallazgo de seguridad pendiente (verificado por búsqueda exhaustiva en
+  código, no asumido)**: **este endpoint no tiene ningún límite de
+  reenvíos ni ventana de tiempo entre solicitudes** —
+  `AuthService.reenviarCodigo` no usa `LoginRateLimiter` ni ningún otro
+  limitador; un mismo correo puede disparar reenvíos ilimitados,
+  consumiendo cuota del proveedor SMTP y permitiendo un vector de
+  hostigamiento (spam) hacia la bandeja de entrada de un tercero cuyo
+  correo se conoce. Se declara explícitamente como hallazgo de seguridad
+  pendiente, no se inventa un límite que no existe en el código.
+- **Método de verificación**: **Inspection** (lectura directa de
+  `AuthService.reenviarCodigo` y búsqueda de referencias a rate limiters
+  en `AuthController`/`AuthService` en este commit, sin resultados para
+  este endpoint específico).
+
+#### REQ-F-035 — Favoritos por usuario
+
+- **Prioridad**: Should
+- **Fuente**: sin HU/CU dedicada — mencionado en el alcance (1.2) y
+  funciones (2.2) del producto sin requisito formal hasta esta revisión
+  (ver M4).
+- **Módulo/endpoint**: `FavoritoController`/`FavoritoService` — `POST /api/v1/favoritos/{libroId}`, `DELETE /api/v1/favoritos/{libroId}`, `GET /api/v1/favoritos` (paginado), `GET /api/v1/favoritos/todo` (lista completa) — todos `@PreAuthorize("hasRole('LECTOR')")`.
+- **Descripción**: un `LECTOR` puede marcar/desmarcar un libro como
+  favorito y listar únicamente sus propios favoritos; no existe un
+  `usuarioId` en la URL a propósito (el usuario se resuelve del
+  `Authentication`, mismo patrón de aislamiento que REQ-F-009/012/013/019).
+- **Rationale**: acceso rápido a libros de interés recurrente del propio
+  lector; exponer `/favoritos/usuario/{usuarioId}` habría permitido a un
+  LECTOR intentar leer favoritos ajenos cambiando el id en la URL (mismo
+  tipo de hallazgo IDOR ya corregido en `PrestamoService.validarAccesoUsuario`)
+  — se evitó ese diseño desde el inicio, documentado explícitamente en el
+  propio código (`FavoritoController.java`).
+- **Criterio de aceptación medible**:
+  1. `LECTOR` agrega un libro a favoritos → `201`.
+  2. `LECTOR` quita un libro de favoritos → `204`.
+  3. `LECTOR` lista sus favoritos (paginado o completo) → `200`, solo los
+     suyos, sin parámetro de usuario en la URL.
+  4. Rol distinto de `LECTOR` → `403`.
+- **Método de verificación**: **Inspection** (lectura directa de
+  `FavoritoController.java` en este commit). PENDIENTE_VERIFICAR_MARLON:
+  confirmar el nombre exacto de la clase de test de `FavoritoService`/
+  `FavoritoController` (no se encontró en la búsqueda realizada con el
+  patrón `Favorito*Test` — puede existir con otro nombre o no existir
+  todavía; no se asume ninguna de las dos sin confirmar).
+
+#### REQ-F-036 — Sugerencias de adquisición
+
+- **Prioridad**: Should
+- **Fuente**: sin HU/CU dedicada — mismo caso que REQ-F-035 (ver M4).
+- **Módulo/endpoint**: `SugerenciaAdquisicionController`/`SugerenciaAdquisicionService` — `POST /api/v1/sugerencias-adquisicion` (LECTOR); `GET .../mias` (LECTOR); `GET /api/v1/sugerencias-adquisicion` (GERENTE/ADMIN, filtro `estado`); `PATCH .../{id}/estado` (GERENTE/ADMIN); `GET .../mas-pedidos` (GERENTE/ADMIN); `POST .../confirmar-adquisicion?isbn=` (GERENTE/ADMIN); `GET .../reporte-pdf` (GERENTE/ADMIN).
+- **Descripción**: un `LECTOR` puede sugerir un libro para que la
+  biblioteca lo adquiera; `GERENTE`/`ADMIN` revisan, aprueban o rechazan
+  cada sugerencia, consultan un agrupado de las más pedidas por ISBN, y
+  pueden confirmar en lote la adquisición de todas las `PENDIENTE` de un
+  ISBN.
+- **Rationale**: canaliza peticiones de compra de los propios lectores en
+  vez de depender solo del criterio del personal.
+- **Estados del flujo de revisión (conjunto cerrado, verificado en
+  `V2__rbac_normalizado.sql`, `CHECK (estado IN ('PENDIENTE','APROBADA','RECHAZADA'))`)**:
+  `PENDIENTE` (inicial) → `APROBADA` o `RECHAZADA`, ambas exclusivamente
+  vía `PATCH .../{id}/estado` (`CambioEstadoSugerenciaRequestDTO`,
+  `@Pattern(regexp = "APROBADA|RECHAZADA")`) o, en lote, vía
+  `POST .../confirmar-adquisicion` (todas las `PENDIENTE` de un ISBN
+  pasan a `APROBADA`). No existe un cuarto estado "adquirida" separado —
+  se confirmó contra el `CHECK` real de la tabla, no asumido de la
+  existencia del endpoint `confirmar-adquisicion`.
+- **Quién puede cambiar el estado**: exclusivamente `GERENTE`/`ADMIN`
+  (`@PreAuthorize("hasAnyRole('GERENTE','ADMIN')")` en
+  `SugerenciaAdquisicionController`); un `LECTOR` nunca puede aprobar ni
+  rechazar, ni siquiera su propia sugerencia.
+- **Criterio de aceptación medible**:
+  1. `LECTOR` crea sugerencia → `201`, estado inicial `PENDIENTE`.
+  2. `GERENTE`/`ADMIN` cambia estado a `APROBADA`/`RECHAZADA` → `200`.
+  3. `LECTOR` que intenta cambiar el estado (propio o ajeno) → `403`.
+  4. `GERENTE`/`ADMIN` confirma adquisición por ISBN → todas las
+     `PENDIENTE` de ese ISBN pasan a `APROBADA` en lote, respuesta con el
+     conteo de sugerencias confirmadas.
+- **Método de verificación**: **Inspection** (lectura directa de
+  `SugerenciaAdquisicionController.java`/`Service.java` y de la migración
+  `V2__rbac_normalizado.sql` en este commit).
+  PENDIENTE_VERIFICAR_MARLON: mismo caso que REQ-F-035, confirmar
+  existencia y nombre real de la suite de tests antes de citarla.
+
+#### REQ-F-037 — Portal público de consulta del catálogo sin cuenta
+
+- **Prioridad**: Should
+- **Fuente**: sin HU/CU dedicada — mencionado como "fuera de alcance...
+  Google Books API" en versiones anteriores de la sección 1.2 sin
+  distinguir que el portal público **sí** existe y es funcionalidad real
+  distinta de esa integración retirada.
+- **Módulo/endpoint**: `PublicoLibroController` — `GET /api/publico/libros` (listado con filtros `q`/`categoriaId`/`autorId`/`disponible`), `GET /api/publico/libros/sugerencias` (autocompletado), `GET /api/publico/libros/{id}`, `GET /api/publico/libros/{id}/portada`; `PublicoCategoriaController` — `GET /api/publico/categorias`. Todo bajo `/api/publico/**`, `permitAll()` en `SecurityConfig.java` — **sin `@PreAuthorize` en ningún método, por diseño** (el filtro de seguridad ya deja pasar la request antes de llegar al controller).
+- **Descripción**: cualquier visitante, sin cuenta ni JWT, puede buscar y
+  ver el catálogo de libros y sus categorías en tiempo real. Reservar,
+  marcar favoritos y crear cuenta siguen requiriendo login.
+- **Rationale**: regla de negocio explícita del roadmap ("Rama C"): el
+  catálogo debe poder consultarse públicamente para atraer usuarios antes
+  de registrarse, sin las fricciones de una cuenta.
+- **Qué datos expone (verificado leyendo los DTOs reales, no asumido)**:
+  `LibroResponseDTO` — la **misma** estructura que el catálogo
+  autenticado (`LibroController`), incluye `stockTotal`/`stockDisponible`
+  (inventario **agregado** de la biblioteca, no ligado a ningún usuario),
+  `precioBase`, metadata de portada, categorías/autores como texto. NO
+  incluye ningún campo de `Usuario` (no hay join ni referencia a
+  `usuario_id` en este DTO). `CategoriaResponseDTO` expone únicamente
+  `id`/`nombre`.
+- **Criterio de aceptación medible**:
+  1. Sin header `Authorization` → `200` en los 5 endpoints públicos.
+  2. **Confirmado explícitamente**: la respuesta de ningún endpoint bajo
+     `/api/publico/**` expone stock por usuario individual, ni ningún
+     campo de `nombre`/`correo`/`id` de `Usuario`, ni ningún dato
+     personal — el stock que se expone es el inventario agregado de la
+     biblioteca (mismo dato ya público en el mostrador físico), no ligado
+     a ninguna persona.
+  3. No existe ningún `POST`/`PUT`/`DELETE` bajo `/api/publico/**` — la
+     superficie pública es de solo lectura, por diseño.
+- **Método de verificación**: **Test** (`PublicoLibroControllerTest`,
+  suite existente según el javadoc del propio controller) + **Inspection**
+  (lectura directa de `PublicoLibroController.java`, `PublicoCategoriaController.java`,
+  `LibroResponseDTO.java` y `CategoriaResponseDTO.java` en este commit).
+
+#### REQ-F-038 — Registro de daños de ejemplares
+
+- **Prioridad**: Should
+- **Fuente**: sin HU/CU dedicada.
+- **Módulo/endpoint**: `TipoDanoController` — `GET /api/v1/tipos-dano` (BIBLIOTECARIO/GERENTE/ADMIN), `POST`/`PUT`/`DELETE` (ADMIN, class-level `@PreAuthorize("hasRole('ADMIN')")`); `CategoriaDanoController` — `GET` (BIBLIOTECARIO/GERENTE/ADMIN), `POST`/`PUT`/`DELETE` (ADMIN); `EvidenciaDanoController` — `POST/GET /api/v1/devoluciones/evidencia/{registroDanoId}` (subida/consulta de evidencia fotográfica, multipart, BIBLIOTECARIO/GERENTE/ADMIN); `DevolucionController` — `POST /api/v1/devoluciones/prestamo/{prestamoId}` (registra la devolución con posible daño, BIBLIOTECARIO/GERENTE/ADMIN).
+- **Descripción**: al registrar una devolución, el bibliotecario puede
+  declarar que el ejemplar volvió con daño (`CON_DANO`) o que se perdió
+  (`PERDIDO`), adjuntar evidencia fotográfica, y el sistema calcula una
+  multa adicional por el daño (además de la multa por atraso de
+  REQ-F-008, si aplica) sobre `precio_base` del libro.
+- **Rationale**: cubre el ciclo completo de vida del ejemplar más allá de
+  préstamo/devolución simple, con costo real para quien lo dañó/perdió.
+- **Catálogos y estados relacionados**: `EN_REPARACION`/`PERDIDO` de
+  `estados_libro` (ver sección 1.3.1) existen en el catálogo, pero
+  **ningún flujo automático los asigna** — `DevolucionService.registrarDevolucion`
+  registra el `RegistroDano` y calcula la multa adicional, sin modificar
+  `estado_libro_id`; ese cambio de estado requiere edición manual
+  posterior del libro (`PUT /api/v1/libros/{id}`). Ya documentado con
+  detalle en la nota de honestidad #2 de la sección 1.3.1 — este
+  requisito la referencia en vez de repetirla.
+- **Criterio de aceptación medible**:
+  1. Devolución con `estadoDevolucion=CON_DANO` y al menos un daño
+     declarado → se crea `RegistroDano`, multa adicional calculada sobre
+     `precio_base` del libro (best-effort: si el libro no tiene
+     `precio_base`, la multa por daño se calcula en cero, no falla la
+     devolución).
+  2. Devolución con `estadoDevolucion=PERDIDO` → mismo registro, sin
+     necesitar `danos` explícitos.
+  3. Evidencia fotográfica: `POST` multipart asociado a un
+     `registroDanoId` existente → `201`; `GET` del archivo → binario con
+     `Content-Type` real.
+  4. Rol distinto de `BIBLIOTECARIO`/`GERENTE`/`ADMIN` en cualquiera de
+     estos endpoints → `403`; gestión de catálogos (`TipoDano`/`CategoriaDano`)
+     restringida a `ADMIN` para escritura.
+- **Método de verificación**: **Inspection** (lectura directa de
+  `DevolucionService.java`, `TipoDanoController.java`,
+  `CategoriaDanoController.java`, `EvidenciaDanoController.java` en este
+  commit). PENDIENTE_VERIFICAR_MARLON: confirmar la suite de tests real
+  de este módulo (no confirmada exhaustivamente en esta revisión).
+
+#### REQ-F-039 — Gestión de proveedores
+
+- **Prioridad**: Should
+- **Fuente**: sin HU/CU dedicada.
+- **Módulo/endpoint**: `ProveedorController` — `GET /api/v1/proveedores` (paginado), `GET .../todo`, `GET .../buscar`, `POST`, `PUT /{id}` — todos `@PreAuthorize("hasAnyRole('GERENTE','ADMIN')")`.
+- **Descripción**: `GERENTE`/`ADMIN` gestionan el catálogo de proveedores
+  (razón social, contacto), asociable a libros (`libros.proveedor_id`,
+  ver `V36__proveedor_id_en_sugerencia_adquisicion.sql`/`db/seed.sql`
+  columna `proveedor_id` opcional en `LibroResponseDTO`) y a sugerencias
+  de adquisición.
+- **Rationale**: trazabilidad de qué proveedor surtió cada ejemplar,
+  relevante para reposición de stock.
+- **Criterio de aceptación medible**:
+  1. `GERENTE`/`ADMIN` → CRUD completo (`GET`/`POST`/`PUT`) responde
+     `200`/`201`.
+  2. Rol distinto → `403` en los 5 endpoints (ningún endpoint de este
+     controller es accesible para `LECTOR`/`BIBLIOTECARIO`, a diferencia
+     de otros catálogos maestros como REQ-F-031).
+- **Método de verificación**: **Inspection** (lectura directa de
+  `ProveedorController.java` en este commit).
+  PENDIENTE_VERIFICAR_MARLON: confirmar suite de tests real.
+
+#### REQ-F-040 — Suscripción a disponibilidad de un libro
+
+- **Prioridad**: Should
+- **Fuente**: sin HU/CU dedicada.
+- **Módulo/endpoint**: `SuscripcionDisponibilidadController` — `POST /api/v1/libros/{libroId}/suscripciones`, `DELETE .../suscripciones`, `GET /api/v1/libros/suscripciones/mias` — los 3 con `@PreAuthorize("isAuthenticated()")` (cualquier rol autenticado, no restringido a `LECTOR`).
+- **Descripción**: un usuario autenticado puede suscribirse a un libro
+  sin stock disponible, para recibir notificación cuando vuelva a
+  haberlo (ej. tras una devolución).
+- **Rationale**: evita que el usuario tenga que revisar manualmente el
+  catálogo en espera de que un ejemplar quede libre.
+- **Criterio de aceptación medible**:
+  1. Usuario autenticado se suscribe a un libro → `201`.
+  2. Usuario cancela su suscripción → `204`.
+  3. Usuario lista sus propias suscripciones → `200`, solo las suyas
+     (resueltas del `Authentication`, mismo patrón de aislamiento que
+     REQ-F-035).
+- **Nota de honestidad**: a diferencia de otros módulos de este SRS (ej.
+  REQ-F-035, restringido a `LECTOR`), este requisito usa
+  `isAuthenticated()` sin restricción de rol — verificado explícitamente
+  en el código, no asumido por analogía con favoritos.
+- **Método de verificación**: **Inspection** (lectura directa de
+  `SuscripcionDisponibilidadController.java` en este commit).
+  PENDIENTE_VERIFICAR_MARLON: confirmar si existe el disparo real de la
+  notificación al recuperarse el stock (el controller solo expone
+  alta/baja/listado; el disparo, si existe, viviría en `LibroService` o
+  un scheduler no confirmado en esta revisión) y la suite de tests real.
+
+#### REQ-F-041 — Pago parcial de multa
+
+- **Prioridad**: Should
+- **Fuente**: sin HU/CU dedicada.
+- **Módulo/endpoint**: `MultaController`/`MultaService` (`sp_pago_parcial_multa`, columna `multas.monto_pagado`, `fn_pagos_recientes`) — **complementa REQ-F-014** (pago total), que documentaba solo el caso de pago completo.
+- **Descripción**: además del pago total de una multa (REQ-F-014), el
+  sistema admite pagos parciales que se acumulan en la columna
+  `monto_pagado` (`ALTER TABLE multas ADD COLUMN monto_pagado NUMERIC(8,2) NOT NULL DEFAULT 0`,
+  `V16__multas_pago_parcial.sql`); cuando `monto_pagado >= monto`, la
+  multa pasa a `PAGADA` automáticamente (mismo criterio de desbloqueo del
+  usuario que REQ-F-014).
+- **Rationale**: permite a un lector con multas altas regularizar su
+  situación de forma incremental, en vez de exigir el pago total de una
+  sola vez para poder volver a pedir préstamos.
+- **Criterio de aceptación medible**:
+  1. Pago parcial (monto < saldo pendiente) → `monto_pagado` se acumula,
+     multa permanece `PENDIENTE`, usuario permanece `BLOQUEADO_POR_MULTA`.
+  2. Pago que completa el saldo (`monto_pagado >= monto`) → multa pasa a
+     `PAGADA`; si era la última multa `PENDIENTE` del usuario, este vuelve
+     a `ACTIVO` (mismo criterio que REQ-F-014).
+  3. `fn_pagos_recientes` expone el historial de pagos (parciales y
+     totales) recientes para consulta.
+- **Método de verificación**: **Inspection** (lectura directa de
+  `V16__multas_pago_parcial.sql` en este commit).
+  PENDIENTE_VERIFICAR_MARLON: confirmar el endpoint HTTP real que expone
+  el pago parcial (si reutiliza `POST /api/v1/multas/{id}/pago` de
+  REQ-F-014 con un campo de monto parcial, o si existe una ruta propia —
+  no se releyó `MultaController.java` completo para esta pregunta
+  específica en esta revisión) y la suite de tests real.
+
+#### REQ-F-042 — Respaldo y restauración de la base de datos
+
+- **Prioridad**: Should
+- **Fuente**: decisión arquitectónica, sin HU/CU dedicada.
+- **Módulo/endpoint**: `BackupController`/`RespaldoCompletoController` (backend, ambos `hasRole('ADMIN')` en todos sus endpoints) — `GET/POST/DELETE /api/v1/admin/backups*`, `GET/PUT/POST/DELETE /api/v1/admin/respaldo-completo/*`; microservicio Node `backup-service` (volcado completo vía `pg_dump`, ver `docs/despliegue/BACKUP.md` §6).
+- **Descripción**: `ADMIN` puede programar, ejecutar y descargar respaldos
+  (parciales por tabla vía `BackupController`, o volcado completo vía
+  `RespaldoCompletoController`/`backup-service`); además, la base de
+  producción (Neon) provee restauración punto-en-el-tiempo (PITR) nativa
+  de infraestructura, documentada y probada en vivo.
+- **Rationale**: requisito explícito del Bloque ADB (Administración de
+  Bases de Datos) sobre estrategia de backup/recovery con evidencia real,
+  no solo teórica.
+- **Criterio de aceptación medible**:
+  1. `ADMIN` programa un backup (`POST .../programacion`) → `201`,
+     ejecutable luego bajo demanda (`POST .../{id}/programar`) o
+     inmediato (`POST .../trigger`).
+  2. `ADMIN` descarga un backup existente → binario descargable.
+  3. Restauración PITR real probada en Neon: branch `backup-recovery-demo-adb`
+     restaurada al punto en el tiempo `2026-08-23 15:20 America/Guayaquil`,
+     verificada por comparación de conteo de filas entre la rama
+     `production` y la rama restaurada en el mismo instante (evidencia:
+     `docs/mediciones/backup-recovery/`, `docs/despliegue/BACKUP.md` §5.1).
+- **Nota de honestidad (verificada en `docs/despliegue/BACKUP.md` en este
+  commit)**: `RespaldoCompletoController`/`backup-service` implementa el
+  volcado (`pg_dump`) pero **la restauración desde ese volcado NO existe
+  todavía** — el propio documento lo titula "Restauración: NO existe
+  todavía (brecha conocida)" (§6.3). La restauración real verificada de
+  este sistema es la PITR de Neon (infraestructura, no aplicación), no el
+  volcado de `backup-service`. Ver también A20 para frecuencia/retención.
+- **Método de verificación**: **Demonstration**
+  (`docs/despliegue/BACKUP.md`, `docs/mediciones/backup-recovery/*.png`) +
+  **Inspection** (`BackupController.java`, `RespaldoCompletoController.java`
+  en este commit). PENDIENTE_VERIFICAR_MARLON: confirmar suite de tests
+  unitaria real de `BackupService`/`BackupProgramacionService` (existen
+  clases correspondientes en el reporte JaCoCo, `docs/mediciones/jacoco/`,
+  pero no se confirmó el nombre exacto de sus tests en esta revisión).
 
 ---
 
@@ -1686,6 +2203,318 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   (ejecuciones reales de `make bench`/`make audit` con evidencia
   versionada en `docs/mediciones/perf/` y `docs/mediciones/sec/`).
 
+##### REQ-NF-016 — Comportamiento ante indisponibilidad de Redis, por servicio
+
+- **Prioridad**: Should
+- **Fuente**: sin HU dedicada — extiende REQ-NF-001, hallazgo del Dr.
+  Guerrero (M17): la política real de `JwtAuthFilter` es fail-closed, no
+  fail-open como asumía la sección 2.5 en versiones anteriores de este
+  SRS.
+- **Descripción**: el sistema debe declarar explícitamente, servicio por
+  servicio, qué ocurre si Redis no responde — no todos los servicios
+  respaldados por Redis se comportan igual, y este requisito documenta
+  cada uno con evidencia de código, no una política uniforme asumida.
+- **Rationale**: un supuesto de "todo falla igual" ante Redis caído sería
+  falso y podría llevar a decisiones operativas incorrectas (ej. asumir
+  que el sistema queda abierto cuando en realidad la autenticación se
+  cierra, o viceversa).
+- **Criterio de aceptación medible (verificado en código, 4 de 4
+  servicios con política confirmada — no se asumió ninguno sin leer su
+  manejo de `DataAccessException`)**:
+  1. `JwtAuthFilter` (verificación de revocación de tokens, REQ-NF-001):
+     **fail-closed** — `catch (DataAccessException e)` responde `401`
+     explícito, ninguna request pasa sin poder confirmar la revocación.
+  2. `VerificacionCorreoService.validar` (REQ-F-020): **fail-closed** —
+     `catch (DataAccessException e)` lanza `CodigoVerificacionInvalidoException`,
+     la verificación de correo se rechaza si Redis no responde.
+  3. `LoginRateLimiter.estaBloqueado` (REQ-NF-006): **fail-open** —
+     `catch (DataAccessException e)` retorna `false` (no bloqueado); el
+     login sigue intentándose contra la base de datos aunque el rate
+     limit no pueda confirmarse.
+  4. `ChatbotRateLimiter.estaBloqueado`/`registrarMensaje` (REQ-F-028):
+     **fail-open** — mismo patrón que `LoginRateLimiter`: si Redis falla,
+     no se bloquea el mensaje ni se cuenta contra el límite.
+- **Método de verificación**: **Inspection** (lectura directa de
+  `JwtAuthFilter.java`, `VerificacionCorreoService.java`,
+  `LoginRateLimiter.java`, `ChatbotRateLimiter.java` en este commit — los
+  4 catches de `DataAccessException` citados existen literalmente en el
+  código, no se infirieron).
+
+##### REQ-NF-017 — Umbral de rendimiento bajo carga (p95)
+
+- **Prioridad**: Should
+- **Fuente**: prueba de carga real, Bloque C.1 de la guía.
+- **Descripción**: el endpoint con cache Redis `GET /api/v1/libros` debe
+  responder dentro de un umbral de latencia p95 bajo carga concurrente,
+  distinguiendo cache caliente de cache frío.
+- **Rationale**: formaliza como requisito verificable el umbral que ya
+  exigía la guía (Bloque C.1) y que `docs/mediciones/perf/REPORT.md` ya
+  medía, sin que existiera una entrada `REQ-NF-XXX` dedicada hasta esta
+  revisión.
+- **Condición de carga (verificada en el reporte real, no asumida)**: 50
+  VUs (usuarios virtuales) concurrentes, perfil k6 con 10s de ramp-up, 30s
+  sostenido, 10s de ramp-down; escenario `cache_caliente` (siempre
+  `page=0&size=10`, misma key de `@Cacheable`) vs `cache_frio` (página
+  distinta en cada request, PRNG determinista, siempre cache miss).
+- **Criterio de aceptación medible (cifras reales agregadas de 5
+  corridas, `docs/mediciones/perf/REPORT.md`)**:
+  1. p95 `cache_caliente` < 200ms — real: **19.49ms** (9929 peticiones).
+  2. p95 `cache_frio` < 500ms — real: **7.50ms** (10074 peticiones).
+  3. Tasa de error HTTP ≥500: 0% — real: **0.00%** (0 de 20003
+     peticiones).
+- **Método de verificación**: **Demonstration**
+  (`docs/mediciones/perf/REPORT.md`, `k6/libros-listado-test.js`, 5
+  corridas independientes vía `make bench`, comparación estadística
+  Wilcoxon/Cliff's delta incluida en el mismo reporte).
+
+##### REQ-NF-018 — Usabilidad medible (System Usability Scale)
+
+- **Prioridad**: Could
+- **Fuente**: Bloque C.3 de la guía (evidencia empírica de usabilidad).
+- **Descripción**: el sistema debe medirse con el instrumento SUS
+  (System Usability Scale) contra una muestra real de usuarios.
+- **Rationale**: complementa la evaluación cualitativa de usabilidad
+  (ISO 25010, ver sección 5) con una métrica cuantitativa estandarizada.
+- **Estado real — N=0, muestra retractada, no N=15/82.17 (verificado
+  contra `docs/observaciones/OBSERVACIONES.md` antes de redactar este
+  requisito, por instrucción explícita de esta tarea)**: `OBS-08`
+  documenta que una corrida previa (N=15, media 82.17, IC95%
+  [80.08, 84.25]) fue **retirada** por falta de trazabilidad a un export
+  crudo del instrumento, ausencia de registro de sesiones con
+  hora/duración, y varianza cero con patrones demográficos
+  perfectamente regulares en 3 columnas (Q8/Q9/Q10), incompatibles con
+  15 respuestas independientes. El documento vuelve explícitamente a
+  **N=0** en todo el proyecto; la toma de datos real se difiere a la fase
+  de despliegue en producción (`docs/capitulos/10-trabajo-futuro.tex`
+  §SUS). Este requisito **no** usa la cifra 82.17 como válida, porque el
+  propio repositorio la contradice — declarar lo contrario habría violado
+  la regla de oro de esta tarea de no inventar/asumir un dato que el
+  repositorio mismo retractó.
+- **Criterio de aceptación medible (para cuando exista una muestra real)**:
+  media SUS ≥ 75 (umbral convencional de "buena" usabilidad en la
+  literatura SUS) sobre una muestra declarada de participantes reales con
+  consentimiento informado (`docs/etica/consentimientos/plantilla.md`),
+  con export crudo del instrumento versionado y trazable.
+- **Método de verificación**: **Analysis** — protocolo, plantilla de
+  consentimiento y pipeline de análisis (`scripts/sus-analysis.ipynb`,
+  validado con datos mock) implementados; **sin Demonstration real
+  todavía** (N=0), declarado explícitamente, no simulado como si
+  existiera.
+
+##### REQ-NF-019 — Accesibilidad del frontend (Lighthouse)
+
+- **Prioridad**: Should
+- **Fuente**: Bloque C.5 de la guía, auditoría Lighthouse real.
+- **Descripción**: el frontend debe cumplir un umbral de accesibilidad
+  medido con Lighthouse, perfil móvil con throttling Slow 4G.
+- **Rationale**: verificación automatizada de accesibilidad básica
+  (contraste, roles ARIA, navegación) sin depender de una revisión manual
+  exhaustiva.
+- **Nota de honestidad sobre el estándar usado (verificado en el reporte
+  real, no asumido)**: `docs/mediciones/lighthouse/REPORT.md` **no cita
+  ningún nivel WCAG específico** — el score reportado es la categoría
+  "Accessibility" propia de Lighthouse (basada en reglas `axe-core`), no
+  una certificación de conformidad WCAG 2.1 AA ni de ningún otro nivel.
+  Este requisito no asume WCAG 2.1 AA porque el reporte que lo respalda
+  no lo declara.
+- **Criterio de aceptación medible (cifra real, `lhci-20260731-0300.json`)**:
+  categoría Accessibility ≥90 — real: **95**, cumple. Auditoría específica
+  que sí resta puntos dentro de esa categoría: `color-contrast` (score 0,
+  "Background and foreground colors do not have a sufficient contrast
+  ratio" en al menos un elemento) — hallazgo real no corregido en esta
+  revisión (fuera de alcance de una tarea de documentación de
+  requisitos).
+- **Método de verificación**: **Demonstration**
+  (`docs/mediciones/lighthouse/REPORT.md`,
+  `lhci-20260731-0300.json`, perfil móvil + Slow 4G, Lighthouse v12.x).
+
+##### REQ-NF-020 — SEO del portal público (Lighthouse)
+
+- **Prioridad**: Should
+- **Fuente**: Bloque C.5 de la guía, mismo informe que REQ-NF-019.
+- **Descripción**: el frontend debe cumplir un umbral de SEO medido con
+  Lighthouse (mismas condiciones que REQ-NF-019).
+- **Rationale**: relevante específicamente para A6 (portal público sin
+  cuenta) — sin indexabilidad razonable, el portal público pierde parte
+  de su propósito de atraer usuarios antes del registro.
+- **Estado real — NO cumple el umbral, declarado sin ambigüedad**:
+  categoría SEO ≥90 exigido — real: **82**, no cumple.
+- **Causas identificadas (extraídas del propio JSON del reporte, no
+  interpretadas a mano)**:
+  1. `meta-description` (score 0): `index.html` del build de Angular no
+     tiene una etiqueta `<meta name="description">` — confirmado
+     manualmente contra el archivo real.
+  2. `robots-txt` (score 0): `GET /robots.txt` responde `200` pero con el
+     `index.html` de la SPA (por el fallback de rutas de Angular/nginx),
+     no un `robots.txt` real — Lighthouse lo rechaza como inválido.
+- **Criterio de aceptación medible**: categoría SEO ≥90 (no cumplido
+  hoy); ambas causas identificadas arriba son corregibles sin cambios de
+  arquitectura (agregar `<meta name="description">` al `index.html`;
+  servir un `robots.txt` real desde `nginx.conf` antes del fallback
+  `try_files`) — quedan como trabajo futuro, no se corrigen en esta tarea
+  de documentación de requisitos.
+- **Método de verificación**: **Demonstration**
+  (`docs/mediciones/lighthouse/REPORT.md`, `lhci-20260731-0300.json`).
+
+##### REQ-NF-021 — Objetivos de respaldo y recuperación (frecuencia, retención, RPO/RTO)
+
+- **Prioridad**: Must
+- **Fuente**: Bloque ADB (Administración de Bases de Datos) de la guía,
+  `docs/despliegue/BACKUP.md`.
+- **Descripción**: el sistema debe declarar objetivos concretos de
+  respaldo y recuperación para la base de datos de producción (Neon).
+- **Rationale**: sin objetivos declarados, "hacer respaldo" no es
+  verificable — este requisito fija los números reales que el equipo ya
+  documentó y verificó en `docs/despliegue/BACKUP.md`, en vez de dejarlos
+  dispersos solo en ese documento operativo.
+- **Criterio de aceptación medible (valores reales verificados en
+  `docs/despliegue/BACKUP.md` en este commit, ninguno inventado)**:
+  1. **Ventana PITR (Point-In-Time Recovery) de Neon**: 6 horas, tope de 1
+     GB de cambios acumulados — límite fijo del plan Free, no
+     configurable (confirmado contra `neon.com/docs/introduction/plans`,
+     vigencia verificada agosto 2026).
+  2. **Retención mínima obligatoria de este proyecto**: 30 días
+     posteriores a la defensa (2026-08-17) → mínimo hasta el
+     **2026-09-16** — vigente al momento de este commit (2026-09-07).
+     Durante esa ventana: no eliminar los servicios de Render, no
+     eliminar el proyecto/base de Neon, no eliminar la base de Upstash.
+  3. **Respaldo a nivel de aplicación** (`configuracion_respaldo`,
+     `V34__sistema_dual_respaldos.sql`): frecuencia por defecto
+     `frecuencia_horas = 6`, retención por defecto `dias_retencion = 14`
+     (ambos configurables por `ADMIN` vía `BackupController`, sin rango
+     validado al escribir — mismo patrón de `ConfiguracionSistemaService`
+     que REQ-F-017/018).
+  4. **RPO/RTO como métricas formales con ese nombre**: `<PENDIENTE_CONFIRMAR>`
+     — no se encontró ningún documento del repositorio que declare un RPO
+     o RTO explícito en minutos/horas; lo más cercano son los puntos 1-3
+     de arriba (ventana PITR y retención), que acotan el RPO/RTO de forma
+     indirecta sin nombrarlos así. No se inventa una cifra de RPO/RTO que
+     el repositorio no declara.
+- **Nota de honestidad adicional**: `docs/despliegue/BACKUP.md` §5.2
+  documenta que, al 2026-08-31, la ventana PITR de este proyecto Neon
+  específico estaba **deshabilitada/no disponible** en la práctica (no
+  solo acotada a 6h) al intentar un segundo ejercicio de restauración —
+  declarado explícitamente en ese documento en vez de repetir el
+  ejercicio como si hubiera funcionado igual que la primera vez
+  (2026-08-23, sí exitosa).
+- **Método de verificación**: **Demonstration**
+  (`docs/despliegue/BACKUP.md` completo, `docs/mediciones/backup-recovery/*.png`).
+
+##### REQ-NF-022 — Protección de datos personales (minimización, consentimiento, ausencia de exposición)
+
+- **Prioridad**: Must
+- **Fuente**: Bloque F de la guía (ética de datos),
+  `docs/etica/ETHICS.md`.
+- **Descripción**: el sistema debe minimizar los datos personales que
+  recolecta y envía a terceros, y no debe exponer accidentalmente datos
+  sensibles (contraseñas) vía la API.
+- **Rationale**: obligación básica de cualquier sistema que almacena
+  datos de personas reales (nombre, apellido, correo de lectores/personal
+  de una biblioteca institucional).
+- **Criterio de aceptación medible (verificado en `ETHICS.md` y en el
+  código citado por ese documento, en este commit)**:
+  1. **Minimización de campos**: el esquema no recoge datos personales
+     más allá de `nombre`/`apellido`/`correo` — sin datos sensibles
+     (salud, biométricos) sin relación con la operación de una
+     biblioteca.
+  2. **No exposición de `password_hash`**: verificado por auditoría
+     completa del backend — `@JsonIgnore` en la entidad, ningún DTO de
+     respuesta incluye el campo, ningún controller retorna la entidad
+     `Usuario` directamente.
+  3. **Minimización hacia el proveedor externo de IA (Gemini)**:
+     verificado leyendo `GeminiClient.java` y `ADR-016` en este commit —
+     **nunca** se envían credenciales, tokens JWT, contraseñas,
+     identificación personal (cédula) ni el correo del usuario; lo que sí
+     se envía es el texto del mensaje del usuario (máx. 500 caracteres),
+     el historial de esa sesión de chat, y un prompt de sistema con
+     entradas curadas de `base_conocimiento` y resultados de
+     disponibilidad de catálogo (ya públicos vía A6/REQ-F-037).
+     `SesionChat`/`MensajeChat` solo guardan `usuarioId` (clave foránea
+     numérica), no el correo ni el nombre.
+- **Nota de honestidad — hueco real, no inventado**: ni `ETHICS.md` ni
+  ningún ADR del repositorio declaran una **política de retención de
+  `bitacora_auditoria`** (cuánto tiempo se conservan los eventos) ni un
+  **mecanismo de supresión de datos a solicitud del titular** (derecho de
+  cancelación/oposición bajo la Ley Orgánica de Protección de Datos
+  Personales de Ecuador). Verificado por búsqueda exhaustiva (`retención`,
+  `supresión`, `LOPD`, `titular`) sin resultados en `docs/etica/`,
+  `docs/adr/` ni el código. PENDIENTE_VERIFICAR_MARLON: definir
+  explícitamente (a) el período de retención de `bitacora_auditoria` y
+  (b) el procedimiento operativo (manual o automatizado) para atender una
+  solicitud de supresión de datos personales, antes de poder declarar
+  este requisito cumplido en su totalidad — hoy solo la minimización
+  (puntos 1-3) está verificada, la retención/supresión no.
+- **Método de verificación**: **Inspection**
+  (`docs/etica/ETHICS.md`, `ADR-016`, `GeminiClient.java`,
+  `Usuario.java`, en este commit).
+
+##### REQ-NF-023 — Política de contraseñas
+
+- **Prioridad**: Should
+- **Fuente**: sin HU dedicada, verificado en código.
+- **Descripción**: el sistema debe declarar su política real de
+  contraseñas, sin agregar reglas de composición que el código no aplica.
+- **Rationale**: una política de contraseñas documentada más estricta que
+  la implementada induciría a error a quien audite el sistema asumiendo
+  protecciones que no existen.
+- **Criterio de aceptación medible (único control real, verificado en
+  `RegistroRequestDTO.java`/`ResetPasswordRequestDTO.java` en este
+  commit — no se agregan reglas de composición que no existan)**:
+  1. Longitud mínima de 8 caracteres (`@Size(min = 8)`), sin máximo en el
+     registro; en el reseteo (REQ-F-033), rango 8-72 caracteres (`@Size(min
+     = 8, max = 72)`, el máximo es el límite de entrada de BCrypt, no una
+     regla de negocio).
+  2. **No existe** ninguna regla de composición (mayúscula, minúscula,
+     número, símbolo obligatorio) en ningún DTO ni servicio de
+     autenticación — se declara explícitamente su ausencia, no se asume
+     que exista por convención.
+  3. Hash con `BCryptPasswordEncoder(12)` (costo 12), nunca texto plano.
+- **Sesiones activas al cambiar contraseña**: **no existe** un endpoint
+  de "cambiar mi contraseña" para un usuario ya autenticado — el único
+  camino de cambio de contraseña es el flujo de reseteo sin sesión
+  (REQ-F-032/033). Como ya documenta REQ-F-033, ese reseteo **no invalida
+  sesiones/tokens activos** — mismo gap, no repetido en detalle aquí.
+- **Método de verificación**: **Inspection**
+  (`RegistroRequestDTO.java`, `ResetPasswordRequestDTO.java`,
+  `SecurityConfig.java` en este commit).
+
+##### REQ-NF-024 — Interfaces externas consumidas (SMTP y API de Gemini)
+
+- **Prioridad**: Should
+- **Fuente**: decisión arquitectónica, `render.yaml`, ADR-016.
+- **Descripción**: a diferencia de la única interfaz **expuesta** por
+  este sistema (la API REST propia, sección 3.3), el backend **consume**
+  dos interfaces externas: SMTP (vía Brevo, para correo transaccional) y
+  la API de Gemini (para el chatbot). Este requisito formaliza ambas —
+  ver también M26 (sección 3.3 corregida para distinguir "expuesta" de
+  "consumida").
+- **Rationale**: una auditoría de superficie de ataque/dependencias
+  externas necesita ambas interfaces documentadas, no solo la propia API
+  REST.
+- **Criterio de aceptación medible, por interfaz (verificado en código en
+  este commit)**:
+  1. **SMTP/Brevo** (`EmailService.java`): protocolo SMTP (host/puerto
+     configurables vía `SMTP_HOST`/`SMTP_PORT=587` en `render.yaml`,
+     `sync: false` — credenciales no versionadas); autenticación
+     usuario/contraseña (`SMTP_USER`/`SMTP_PASS`, también `sync: false`);
+     ante indisponibilidad del proveedor, `EmailService` captura
+     `MessagingException`/`MailException` y retorna `false` (no lanza
+     excepción hacia el llamador) — el flujo que lo invoca (ej.
+     `AuthService.solicitarReset`) continúa de forma best-effort, sin
+     romper la operación principal.
+  2. **API de Gemini** (`GeminiClient.java`): protocolo HTTP/JSON directo
+     (sin SDK), autenticación por API key (`GEMINI_API_KEY`, `render.yaml`
+     `sync: false`, nunca registrada en logs — ver ADR-016); ante
+     indisponibilidad, reintenta hasta 2 veces y distingue el tipo de
+     fallo: `429 Too Many Requests`/timeout de red → mensaje de "saturado"
+     tras el reintento; error `4xx`/`5xx` del servidor de Gemini →
+     mensaje de fallback genérico inmediato (sin reintento adicional en
+     ese branch) — nunca deja la conversación sin respuesta ni propaga
+     una excepción cruda al usuario.
+- **Método de verificación**: **Inspection**
+  (`EmailService.java`, `GeminiClient.java`, `render.yaml`, `ADR-016` en
+  este commit).
+
 ---
 
 ### 3.3 Requisitos de interfaz externa
@@ -1723,9 +2552,103 @@ usa la cookie `refreshToken`); errores en formato `ProblemDetail` (RFC
 
 ---
 
+### 3.4 Anexos
+
+#### A23 — Matriz normativa de permisos rol × operación
+
+Construida leyendo directamente el `@PreAuthorize` (o su ausencia) de los
+31 controladores, 2026-09-07 — no inferida de la documentación de cada
+requisito. `✓` = permitido, `—` = rechazado (`403`), `pub.` = sin
+autenticación (`permitAll`), `auth.` = cualquier rol autenticado
+(`isAuthenticated()` o sin anotación, mismo efecto por el default de
+`SecurityConfig`).
+
+| Controller | Operación(es) | LECTOR | BIBLIOTECARIO | GERENTE | ADMIN |
+|---|---|:-:|:-:|:-:|:-:|
+| `AuthController` | registro/login/refresh/reset/verificar-correo/logout | pub. | pub. | pub. | pub. |
+| `PublicoLibroController`/`PublicoCategoriaController` | todo (A6) | pub. | pub. | pub. | pub. |
+| `LibroController` | listar/detalle/portada (GET) | ✓ | ✓ | ✓ | ✓ |
+| `LibroController` | pendientes/lookup-isbn (GET) | — | ✓ | ✓ | ✓ |
+| `LibroController` | crear/editar/eliminar/subir portada | — | ✓ | ✓ | ✓ |
+| `AutorController`/`CategoriaController`/`EditorialController`/`IdiomaController` | listar/buscar (GET) | auth. | auth. | auth. | auth. |
+| `AutorController`/`CategoriaController`/`EditorialController`/`IdiomaController` | **crear (POST)** | **auth. (⚠️ ver nota 1)** | auth. | auth. | auth. |
+| `EstadoLibroController` | listar (GET, sin POST) | auth. | auth. | auth. | auth. |
+| `FavoritoController` | agregar/quitar/listar propios | ✓ | — | — | — |
+| `SugerenciaAdquisicionController` | crear/listar propias | ✓ | — | — | — |
+| `SugerenciaAdquisicionController` | listar todas/cambiar estado/más-pedidos/confirmar/PDF | — | — | ✓ | ✓ |
+| `SuscripcionDisponibilidadController` | suscribir/cancelar/listar propias | auth. | auth. | auth. | auth. |
+| `PrestamoController` | **crear / devolución simple (⚠️ ver nota 2)** | — | **—** | ✓ | ✓ |
+| `DevolucionController` | registrar devolución completa (con daño), historial | — | ✓ | ✓ | ✓ |
+| `PrestamoController` | renovación | ✓ (solo propio) | ✓ | ✓ | ✓ |
+| `PrestamoController` | **listar por usuario / activos (⚠️ ver nota 3)** | ✓ (solo propio) | ✓ | ✓ | **—** |
+| `PrestamoController` | reportes (morosidad/uso/inventario/vencidos/categorías, JSON y PDF) | — | — | ✓ | ✓ |
+| `PrestamosGestionController` | buscar-usuario/sugerencias/reserva-activa/historial | — | ✓ | ✓ | ✓ |
+| `ReservacionController` | **crear (⚠️ ver nota 3)** | ✓ (propio) | ✓ | ✓ | **—** |
+| `ReservacionController` | hoy/próximas | — | ✓ | ✓ | ✓ |
+| `ReservacionController` | cambiar estado (aceptar/rechazar) | ✓ | ✓ | ✓ | ✓ |
+| `ReservacionController` | **listar por usuario (⚠️ ver nota 3)** | ✓ (propio) | ✓ | ✓ | **—** |
+| `ReservacionesGestionController` | buscar-usuario/historial | — | ✓ | ✓ | ✓ |
+| `MultaController` | ver por usuario/detalle | ✓ (propio) | ✓ | ✓ | ✓ |
+| `MultaController` | pago | — | ✓ | ✓ | ✓ |
+| `MultaController` | anulación, reportes | — | — | ✓ | ✓ |
+| `CredencialQrController` | mi-credencial | ✓ | — | — | — |
+| `ChatbotController` | mensajes/historial | ✓ | — | — | — |
+| `NotificacionController` | ver por usuario | ✓ (propio) | ✓ | ✓ | ✓ |
+| `ConfiguracionSistemaController` | listar/actualizar (REQ-F-017) | — | — | — | ✓ |
+| `UsuarioAdminController` | listar padrón | — | — | ✓ | ✓ |
+| `UsuarioAdminController` | crear/cambiar rol/cambiar estado (con alcance limitado para GERENTE, ver REQ-F-023) | — | — | ✓ (acotado) | ✓ |
+| `UsuarioAdminController` | eliminar (baja lógica) | — | — | — | ✓ |
+| `AuditoriaController` | listar/resumen/export (REQ-F-024) | — | — | ✓ | ✓ |
+| `TipoDanoController`/`CategoriaDanoController` | listar (GET) | — | ✓ | ✓ | ✓ |
+| `TipoDanoController`/`CategoriaDanoController` | crear/editar/eliminar | — | — | — | ✓ |
+| `EvidenciaDanoController` | subir/consultar evidencia | — | ✓ | ✓ | ✓ |
+| `ProveedorController` | todo (CRUD) | — | — | ✓ | ✓ |
+| `BackupController`/`RespaldoCompletoController` | todo | — | — | — | ✓ |
+| `TestController` | `/protegido` (endpoint de humo, sin lógica de negocio) | auth. | auth. | auth. | auth. |
+
+**Notas de esta matriz (asimetrías reales encontradas, ninguna oculta)**:
+
+1. **Hueco real, no decisión de negocio documentada**: `POST` en
+   `AutorController`/`CategoriaController`/`EditorialController`/
+   `IdiomaController` no tiene ningún `@PreAuthorize` — cualquier usuario
+   autenticado, **incluido `LECTOR`**, puede crear entradas en estos
+   catálogos maestros. No se encontró ningún ADR ni comentario en el
+   código que declare esto como intencional. Se documenta como gap real
+   (ver también REQ-F-031), no como asimetría aceptada.
+2. **Contradicción real entre documentación y código**: `PrestamoController.crear`/
+   `.registrarDevolucion` (la ruta simple) excluyen `BIBLIOTECARIO`,
+   mientras que REQ-F-007/REQ-F-008/REQ-F-016 (y `HU-01`/`HU-02`/`HU-F04`)
+   describen a `BIBLIOTECARIO` como actor principal de ambas operaciones.
+   Para devolución existe una ruta alterna real (`DevolucionController`)
+   que sí incluye `BIBLIOTECARIO`; para creación de préstamo **no se
+   encontró ninguna ruta alterna** — ver el detalle en REQ-F-007/016.
+3. **Confirma, con evidencia adicional, la asimetría que REQ-NF-010 ya
+   reconocía** (antes solo documentada para `LibroController` vs
+   `Prestamo`/`ReservacionController` respecto a `ADMIN`): `PrestamoController`
+   (listado por usuario/activos) y `ReservacionController` (crear, listar
+   por usuario) excluyen explícitamente `ADMIN` de operaciones de lectura/
+   creación que sí tiene disponibles en `LibroController`. Tras construir
+   esta tabla completa, la asimetría **no** resulta ser una decisión de
+   negocio documentada en ningún ADR — se mantiene como hueco real
+   heredado, ahora con el inventario completo de dónde ocurre.
+
+#### A24 — Catálogo de estados y transiciones (referencia)
+
+El catálogo cerrado de estados de las 5 entidades del dominio
+(`usuarios`, `libros`, `prestamos`, `multas`, `reservaciones`) y la tabla
+de transiciones reales (evento/actor que dispara cada cambio, con las
+notas de honestidad sobre `VENCIDO`, `EN_REPARACION`/`PERDIDO` y el
+estado `PENDIENTE` de `estados_libro` referenciado en código pero ausente
+del seed) ya se documentaron en la **sección 1.3.1** de este mismo
+documento (Bloque 2, M12, de esta actualización). Esta entrada existe
+como referencia formal desde la lista de anexos, sin duplicar ese
+contenido — ver sección 1.3.1 para el detalle completo.
+
+---
+
 ## 4. Trazabilidad
 
-La trazabilidad completa de los 43 requisitos hacia historia de usuario,
+La trazabilidad completa de los 71 requisitos hacia historia de usuario,
 caso de uso, módulo/endpoint, prueba automatizada, tipo de acceso a datos,
 evidencia empírica y estado vive en
 **`docs/trazabilidad/matriz.csv`**, validada automáticamente en cada
