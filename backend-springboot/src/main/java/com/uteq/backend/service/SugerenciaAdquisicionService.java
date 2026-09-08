@@ -3,9 +3,7 @@ package com.uteq.backend.service;
 import com.uteq.backend.dto.SugerenciaAdquisicionRequestDTO;
 import com.uteq.backend.dto.SugerenciaAdquisicionResponseDTO;
 import com.uteq.backend.dto.SugerenciaAgrupadaDTO;
-import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.SugerenciaAdquisicion;
-import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.SugerenciaAdquisicionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -16,27 +14,24 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 
 // crear() resuelve el usuarioId desde el Authentication; cambiarEstado() registra quién revisó.
+// La auditoria de esta tabla ya no se hace aqui: trg_auditoria_sugerencias_adquisicion
+// (V49__auditoria_triggers_negocio.sql) audita INSERT/UPDATE/DELETE a nivel de motor.
 @Service
 public class SugerenciaAdquisicionService {
 
     private static final String SUGERENCIA_NO_ENCONTRADA = "Sugerencia de adquisición no encontrada con id: ";
     private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado con correo: ";
-    private static final String TABLA_SUGERENCIAS = "sugerencias_adquisicion";
 
     private final SugerenciaAdquisicionRepository sugerenciaRepo;
     private final UsuarioRepository usuarioRepo;
-    private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
     public SugerenciaAdquisicionService(SugerenciaAdquisicionRepository sugerenciaRepo,
-                                         UsuarioRepository usuarioRepo,
-                                         BitacoraAuditoriaRepository bitacoraAuditoriaRepo) {
+                                         UsuarioRepository usuarioRepo) {
         this.sugerenciaRepo = sugerenciaRepo;
         this.usuarioRepo = usuarioRepo;
-        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
     }
 
     @Transactional
@@ -80,9 +75,7 @@ public class SugerenciaAdquisicionService {
         sugerencia.setEstado(nuevoEstado);
         sugerencia.setRevisadoPor(revisorId);
 
-        SugerenciaAdquisicionResponseDTO resultado = toDTO(sugerenciaRepo.save(sugerencia));
-        registrarAuditoria(revisorId, id, "Cambio de estado de sugerencia " + id + " a " + nuevoEstado);
-        return resultado;
+        return toDTO(sugerenciaRepo.save(sugerencia));
     }
 
     // ── Gestión por demanda: lo más pedido primero ──
@@ -113,21 +106,8 @@ public class SugerenciaAdquisicionService {
             s.setEstado(SugerenciaAdquisicion.APROBADA);
             s.setRevisadoPor(revisorId);
             sugerenciaRepo.save(s);
-            registrarAuditoria(revisorId, s.getId(),
-                    "Sugerencia " + s.getId() + " confirmada por adquisición del ISBN " + isbn);
         }
         return pendientes.size();
-    }
-
-    private void registrarAuditoria(Long ejecutorId, Long registroId, String detalles) {        BitacoraAuditoria evento = BitacoraAuditoria.builder()
-                .usuarioId(ejecutorId)
-                .tipoOperacion("UPDATE")
-                .tablaAfectada(TABLA_SUGERENCIAS)
-                .registroId(registroId)
-                .detalles(detalles)
-                .fechaHora(OffsetDateTime.now())
-                .build();
-        bitacoraAuditoriaRepo.save(evento);
     }
 
     private Long resolverIdPorCorreo(String correo) {

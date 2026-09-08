@@ -5,13 +5,11 @@ import com.uteq.backend.dto.LibroResponseDTO;
 import com.uteq.backend.dto.LibroSugerenciaDTO;
 import com.uteq.backend.dto.PortadaImagenDTO;
 import com.uteq.backend.entity.Autor;
-import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.Categoria;
 import com.uteq.backend.entity.EstadoLibro;
 import com.uteq.backend.entity.Libro;
 import com.uteq.backend.entity.Proveedor;
 import com.uteq.backend.repository.AutorRepository;
-import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.CategoriaRepository;
 import com.uteq.backend.repository.EditorialRepository;
 import com.uteq.backend.repository.EstadoLibroRepository;
@@ -32,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -44,7 +41,6 @@ public class LibroService {
     private static final Logger log = LoggerFactory.getLogger(LibroService.class);
 
     private static final String LIBRO_NO_ENCONTRADO = "Libro no encontrado con id: ";
-    private static final String TABLA_LIBROS = "libros";
     private static final String ESTADO_ACTIVO = "ACTIVO";
     private static final String ESTADO_DADO_DE_BAJA = "DADO_DE_BAJA";
     private static final String ESTADO_PENDIENTE = "PENDIENTE";
@@ -63,10 +59,11 @@ public class LibroService {
     private final ProveedorRepository proveedorRepo;
     // Lee max_tamano_portada_mb con cache en memoria.
     private final ConfiguracionSistemaService configuracionSistemaService;
-    private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
     private final SuscripcionDisponibilidadService suscripcionDisponibilidadService;
     private final SugerenciaAdquisicionService sugerenciaAdquisicionService;
 
+    // La auditoria de esta tabla ya no se hace aqui: trg_auditoria_libros
+    // (V49__auditoria_triggers_negocio.sql) audita INSERT/UPDATE/DELETE a nivel de motor.
     public LibroService(LibroRepository libroRepo,
                         EditorialRepository editorialRepo,
                         IdiomaRepository idiomaRepo,
@@ -75,7 +72,6 @@ public class LibroService {
                         AutorRepository autorRepo,
                         ProveedorRepository proveedorRepo,
                         ConfiguracionSistemaService configuracionSistemaService,
-                        BitacoraAuditoriaRepository bitacoraAuditoriaRepo,
                         @org.springframework.beans.factory.annotation.Autowired(required = false) SuscripcionDisponibilidadService suscripcionDisponibilidadService,
                         @org.springframework.beans.factory.annotation.Autowired(required = false) SugerenciaAdquisicionService sugerenciaAdquisicionService) {
         this.libroRepo     = libroRepo;
@@ -86,21 +82,8 @@ public class LibroService {
         this.autorRepo     = autorRepo;
         this.proveedorRepo = proveedorRepo;
         this.configuracionSistemaService = configuracionSistemaService;
-        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
         this.suscripcionDisponibilidadService = suscripcionDisponibilidadService;
         this.sugerenciaAdquisicionService = sugerenciaAdquisicionService;
-    }
-
-    private void registrarAuditoria(Long usuarioId, String tipoOperacion, Long registroId, String detalles) {
-        BitacoraAuditoria evento = BitacoraAuditoria.builder()
-                .usuarioId(usuarioId)
-                .tipoOperacion(tipoOperacion)
-                .tablaAfectada(TABLA_LIBROS)
-                .registroId(registroId)
-                .detalles(detalles)
-                .fechaHora(OffsetDateTime.now())
-                .build();
-        bitacoraAuditoriaRepo.save(evento);
     }
 
     @Cacheable("libros")
@@ -266,7 +249,6 @@ public class LibroService {
             libro.setPrecioBase(null);
         }
         LibroResponseDTO resultado = toDTO(libroRepo.save(libro));
-        registrarAuditoria(null, "INSERT", resultado.id(), "Libro creado: " + dto.titulo());
         // Al crear con ISBN pedido en sugerencias, esas quedan confirmadas (solo al crear).
         if (sugerenciaAdquisicionService != null && dto.isbn() != null && !dto.isbn().isBlank()) {
             sugerenciaAdquisicionService.confirmarAdquisicion(dto.isbn(), null);
@@ -323,7 +305,6 @@ public class LibroService {
         // si es bibliotecario solo, ignorar dto.precioBase (no se modifica)
 
         LibroResponseDTO resultado = toDTO(libroRepo.save(libro));
-        registrarAuditoria(null, "UPDATE", id, "Libro actualizado: " + dto.titulo());
         if (stockAntes == 0 && dto.stockDisponible() != null && dto.stockDisponible() > 0 && suscripcionDisponibilidadService != null) {
               try { suscripcionDisponibilidadService.notificarDisponibles(id); } catch (Exception ignored) {
                   // best-effort: la actualización del libro ya se guardó
@@ -343,7 +324,6 @@ public class LibroService {
                         "Catalogo estados_libro sin fila '" + ESTADO_DADO_DE_BAJA + "'"));
         libro.setEstado(estadoDadoDeBaja);
         libroRepo.save(libro);
-        registrarAuditoria(null, "DELETE", id, "Libro dado de baja: " + libro.getTitulo());
     }
 
     // ── Portada binaria ──

@@ -7,7 +7,6 @@ import com.uteq.backend.dto.DevolucionRequestDTO;
 import com.uteq.backend.dto.EvidenciaDanoArchivoDTO;
 import com.uteq.backend.dto.EvidenciaDanoResponseDTO;
 import com.uteq.backend.dto.TipoDanoDTO;
-import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.EstadoMulta;
 import com.uteq.backend.entity.EvidenciaDano;
 import com.uteq.backend.entity.Libro;
@@ -17,7 +16,6 @@ import com.uteq.backend.entity.RegistroDano;
 import com.uteq.backend.entity.RegistroDanoDetalle;
 import com.uteq.backend.entity.TipoDano;
 import com.uteq.backend.entity.Usuario;
-import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.EvidenciaDanoRepository;
 import com.uteq.backend.repository.EstadoMultaRepository;
 import com.uteq.backend.repository.LibroRepository;
@@ -53,7 +51,6 @@ public class DevolucionService {
 
     private static final String PRESTAMO_NO_ENCONTRADO = "Prestamo no encontrado: ";
     private static final String ESTADO_MULTA_PENDIENTE = "PENDIENTE";
-    private static final String TABLA_REGISTRO_DANOS = "registro_danos";
     private static final String NOMBRE_DESCONOCIDO = "Desconocido";
     private static final int LIMITE_HISTORIAL = 10;
     private static final String CLAVE_MAX_TAMANO_EVIDENCIA_MB = "max_tamano_evidencia_mb";
@@ -70,9 +67,13 @@ public class DevolucionService {
     private final RegistroDanoRepository registroDanoRepo;
     private final RegistroDanoDetalleRepository registroDanoDetalleRepo;
     private final EvidenciaDanoRepository evidenciaDanoRepo;
-    private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
     private final ConfiguracionSistemaService configuracionSistemaService;
 
+    // La auditoria de registro_danos ya no se hace aqui: trg_auditoria_registro_danos
+    // (V49__auditoria_triggers_negocio.sql) audita INSERT/UPDATE/DELETE a nivel de motor.
+    // El resumen humano de la devolucion completa (estado + multa atraso + multa
+    // dano + cantidad de danos en una sola linea) desaparece como vista consolidada:
+    // ver detalle en OBS-28.
     public DevolucionService(PrestamoRepository prestamoRepo,
                              PrestamoProcedureRepository prestamoProcRepo,
                              UsuarioRepository usuarioRepo,
@@ -83,7 +84,6 @@ public class DevolucionService {
                              RegistroDanoRepository registroDanoRepo,
                              RegistroDanoDetalleRepository registroDanoDetalleRepo,
                              EvidenciaDanoRepository evidenciaDanoRepo,
-                             BitacoraAuditoriaRepository bitacoraAuditoriaRepo,
                              ConfiguracionSistemaService configuracionSistemaService) {
         this.prestamoRepo = prestamoRepo;
         this.prestamoProcRepo = prestamoProcRepo;
@@ -95,7 +95,6 @@ public class DevolucionService {
         this.registroDanoRepo = registroDanoRepo;
         this.registroDanoDetalleRepo = registroDanoDetalleRepo;
         this.evidenciaDanoRepo = evidenciaDanoRepo;
-        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
         this.configuracionSistemaService = configuracionSistemaService;
     }
 
@@ -212,24 +211,6 @@ public class DevolucionService {
 
                 // (lookup de usuario removido: su resultado se descartaba sin uso)
             }
-
-            registrarAuditoria(bibliotecarioId, registro.getId(),
-                    "Devolucion prestamo " + prestamoId
-                            + " - Estado: " + dto.estadoDevolucion()
-                            + " - Multa atraso: $" + (montoMultaAtraso != null ? montoMultaAtraso : "0.00")
-                            + " - Multa dano: $" + montoMultaDano
-                            + " - Danos: " + danosRegistrados.size());
-        } else {
-            Usuario bibliotecario = usuarioRepo.findById(bibliotecarioId).orElse(null);
-            String nombreBiblio = bibliotecario != null
-                    ? (bibliotecario.getNombre() + " " + bibliotecario.getApellido()).trim()
-                    : NOMBRE_DESCONOCIDO;
-
-            registrarAuditoria(bibliotecarioId, prestamoId,
-                    "Devolucion prestamo " + prestamoId
-                            + " - Estado: " + dto.estadoDevolucion()
-                            + " - Multa atraso: $" + (montoMultaAtraso != null ? montoMultaAtraso : "0.00")
-                            + " - Sin danos - Bibliotecario: " + nombreBiblio);
         }
 
         BigDecimal montoTotal = BigDecimal.ZERO;
@@ -316,18 +297,6 @@ public class DevolucionService {
         // registran sueltas, sin vínculo al registro). Si a futuro se
         // vinculan, poblar aquí agrupando por registro.
         return Map.of();
-    }
-
-    private void registrarAuditoria(Long ejecutorId, Long registroId, String detalles) {
-        BitacoraAuditoria evento = BitacoraAuditoria.builder()
-                .usuarioId(ejecutorId)
-                .tipoOperacion("INSERT")
-                .tablaAfectada(TABLA_REGISTRO_DANOS)
-                .registroId(registroId)
-                .detalles(detalles)
-                .fechaHora(OffsetDateTime.now())
-                .build();
-        bitacoraAuditoriaRepo.save(evento);
     }
 
     // ── Evidencia fotográfica ──────────────────────────────

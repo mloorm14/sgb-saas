@@ -4,12 +4,10 @@ import com.uteq.backend.dto.MultaAccionResponseDTO;
 import com.uteq.backend.dto.MultaDetalleResponseDTO;
 import com.uteq.backend.dto.MultaResponseDTO;
 import com.uteq.backend.dto.ResumenFinancieroMultasResponseDTO;
-import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.Libro;
 import com.uteq.backend.entity.Multa;
 import com.uteq.backend.entity.Prestamo;
 import com.uteq.backend.entity.Usuario;
-import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.LibroRepository;
 import com.uteq.backend.repository.MultaProcedureRepository;
 import com.uteq.backend.repository.MultaRepository;
@@ -36,7 +34,6 @@ public class MultaService {
 
     private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado: ";
     private static final String ROL_LECTOR = "LECTOR";
-    private static final String TABLA_MULTAS = "multas";
     private static final String PREFIJO_ROL = "ROLE_";
     private static final Set<String> ROLES_ANULACION = Set.of("GERENTE", "ADMIN");
 
@@ -45,20 +42,23 @@ public class MultaService {
     private final UsuarioRepository usuarioRepo;
     private final LibroRepository libroRepo;
     private final PrestamoRepository prestamoRepo;
-    private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
 
+    // La auditoria de esta tabla ya no se hace aqui: trg_auditoria_multas
+    // (V49__auditoria_triggers_negocio.sql) audita INSERT/UPDATE/DELETE a nivel de motor.
+    // sp_anular_multa (db/procs/sp_anular_multa.sql) sigue con su propio INSERT
+    // manual interno -- eso es SQL dentro del procedimiento, no Java, y ya
+    // estaba documentado como duplicacion aceptada en db/auditoria-triggers.sql
+    // seccion 3; no se toca aqui.
     public MultaService(MultaRepository multaRepo,
                         MultaProcedureRepository multaProcRepo,
                         UsuarioRepository usuarioRepo,
                         LibroRepository libroRepo,
-                        PrestamoRepository prestamoRepo,
-                        BitacoraAuditoriaRepository bitacoraAuditoriaRepo) {
+                        PrestamoRepository prestamoRepo) {
         this.multaRepo = multaRepo;
         this.multaProcRepo = multaProcRepo;
         this.usuarioRepo = usuarioRepo;
         this.libroRepo = libroRepo;
         this.prestamoRepo = prestamoRepo;
-        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
     }
 
     @Transactional(readOnly = true)
@@ -75,15 +75,12 @@ public class MultaService {
 
     @Transactional
     public Map<String, Object> pagoParcial(Long multaId, BigDecimal montoPagado) {
-        Map<String, Object> resultado = multaProcRepo.spPagoParcialMulta(multaId, montoPagado);
-        registrarAuditoria(null, multaId, "Pago parcial de la multa " + multaId + " por monto " + montoPagado);
-        return resultado;
+        return multaProcRepo.spPagoParcialMulta(multaId, montoPagado);
     }
 
     @Transactional
     public MultaAccionResponseDTO pagar(Long multaId) {
         Map<String, Object> resultado = multaProcRepo.spPagarMulta(multaId);
-        registrarAuditoria(null, multaId, "Pago total de la multa " + multaId);
         return new MultaAccionResponseDTO(
                 (Long) resultado.get("o_multa_id"),
                 (Boolean) resultado.get("o_usuario_desbloqueado"));
@@ -93,8 +90,6 @@ public class MultaService {
     public MultaAccionResponseDTO anular(Long multaId, String motivo, Authentication authentication) {
         String rolEjecutor = resolverRolAnulacion(authentication);
         Map<String, Object> resultado = multaProcRepo.spAnularMulta(multaId, motivo, rolEjecutor);
-        Long ejecutorId = resolverIdPorCorreo(authentication.getName());
-        registrarAuditoria(ejecutorId, multaId, "Anulación de la multa " + multaId + ": " + motivo);
         return new MultaAccionResponseDTO(
                 (Long) resultado.get("o_multa_id"),
                 (Boolean) resultado.get("o_usuario_desbloqueado"));
@@ -166,18 +161,6 @@ public class MultaService {
         Usuario usuario = usuarioRepo.findByCorreo(correo)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo));
         return usuario.getId();
-    }
-
-    private void registrarAuditoria(Long ejecutorId, Long registroId, String detalles) {
-        BitacoraAuditoria evento = BitacoraAuditoria.builder()
-                .usuarioId(ejecutorId)
-                .tipoOperacion("UPDATE")
-                .tablaAfectada(TABLA_MULTAS)
-                .registroId(registroId)
-                .detalles(detalles)
-                .fechaHora(OffsetDateTime.now())
-                .build();
-        bitacoraAuditoriaRepo.save(evento);
     }
 
     private MultaResponseDTO toDTO(Multa m) {

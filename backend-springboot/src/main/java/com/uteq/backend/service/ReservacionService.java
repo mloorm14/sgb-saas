@@ -4,11 +4,9 @@ import com.uteq.backend.dto.CambioEstadoReservacionRequestDTO;
 import com.uteq.backend.dto.ReservacionHoyResponseDTO;
 import com.uteq.backend.dto.ReservacionRequestDTO;
 import com.uteq.backend.dto.ReservacionResponseDTO;
-import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.EstadoReservacion;
 import com.uteq.backend.entity.Reservacion;
 import com.uteq.backend.entity.Usuario;
-import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.EstadoReservacionRepository;
 import com.uteq.backend.repository.ReservacionRepository;
 import com.uteq.backend.repository.UsuarioRepository;
@@ -27,6 +25,8 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 
+// La auditoria de esta tabla ya no se hace aqui: trg_auditoria_reservaciones
+// (V49__auditoria_triggers_negocio.sql) audita INSERT/UPDATE/DELETE a nivel de motor.
 @Service
 public class ReservacionService {
 
@@ -34,24 +34,20 @@ public class ReservacionService {
     private static final String RESERVACION_NO_ENCONTRADA = "Reservación no encontrada: ";
     private static final String ESTADO_INICIAL = "PENDIENTE";
     private static final String ROL_LECTOR = "LECTOR";
-    private static final String TABLA_RESERVACIONES = "reservaciones";
     private static final String CATALOGO_SIN_FILA = "Catálogo estados_reservacion sin fila '";
 
     private final ReservacionRepository reservacionRepo;
     private final EstadoReservacionRepository estadoReservacionRepo;
     private final UsuarioRepository usuarioRepo;
-    private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
     private final ConfiguracionSistemaService configuracionSistemaService;
 
     public ReservacionService(ReservacionRepository reservacionRepo,
                               EstadoReservacionRepository estadoReservacionRepo,
                               UsuarioRepository usuarioRepo,
-                              BitacoraAuditoriaRepository bitacoraAuditoriaRepo,
                               ConfiguracionSistemaService configuracionSistemaService) {
         this.reservacionRepo = reservacionRepo;
         this.estadoReservacionRepo = estadoReservacionRepo;
         this.usuarioRepo = usuarioRepo;
-        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
         this.configuracionSistemaService = configuracionSistemaService;
     }
 
@@ -166,30 +162,7 @@ public class ReservacionService {
         reservacion.setEstadoReservacionId(estadoDestino.getId());
         reservacionRepo.save(reservacion);
 
-        Long ejecutorId = resolverIdPorCorreo(authentication.getName());
-        String accion = "LISTA_PARA_RETIRO".equals(dto.nuevoEstado()) ? "Aceptación" : "Rechazo";
-        registrarAuditoria(ejecutorId, reservacion.getId(),
-                accion + " de la reservación " + reservacion.getId()
-                        + " del usuario " + reservacion.getUsuarioId()
-                        + " para el libro " + reservacion.getLibroId()
-                        + " (" + ESTADO_INICIAL + " -> " + dto.nuevoEstado() + ")");
-
         return toDTO(reservacion);
-    }
-
-    // Mismo patrón que UsuarioAdminService.registrarAuditoria(): el ejecutor
-    // se resuelve desde el JWT autenticado (nunca del body) y el registro
-    // afectado va en registroId para distinguir "quién hizo qué a quién".
-    private void registrarAuditoria(Long ejecutorId, Long reservacionAfectadaId, String detalles) {
-        BitacoraAuditoria evento = BitacoraAuditoria.builder()
-                .usuarioId(ejecutorId)
-                .tipoOperacion("UPDATE")
-                .tablaAfectada(TABLA_RESERVACIONES)
-                .registroId(reservacionAfectadaId)
-                .detalles(detalles)
-                .fechaHora(OffsetDateTime.now())
-                .build();
-        bitacoraAuditoriaRepo.save(evento);
     }
 
     @Transactional(readOnly = true)

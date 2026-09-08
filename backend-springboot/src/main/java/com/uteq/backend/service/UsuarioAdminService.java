@@ -1,11 +1,9 @@
 package com.uteq.backend.service;
 
 import com.uteq.backend.dto.UsuarioListadoResponseDTO;
-import com.uteq.backend.entity.BitacoraAuditoria;
 import com.uteq.backend.entity.EstadoUsuario;
 import com.uteq.backend.entity.Rol;
 import com.uteq.backend.entity.Usuario;
-import com.uteq.backend.repository.BitacoraAuditoriaRepository;
 import com.uteq.backend.repository.EstadoMultaRepository;
 import com.uteq.backend.repository.EstadoUsuarioRepository;
 import com.uteq.backend.repository.MultaRepository;
@@ -19,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -35,7 +32,6 @@ public class UsuarioAdminService {
     private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado: ";
     private static final String ROL_NO_ENCONTRADO = "Rol no válido: ";
     private static final String ESTADO_NO_ENCONTRADO = "Estado no válido: ";
-    private static final String TABLA_USUARIOS = "usuarios";
     // GERENTE solo opera LECTOR/BIBLIOTECARIO creados por él.
     private static final Set<String> ROLES_GERENTE_PERMITIDOS = Set.of("LECTOR", "BIBLIOTECARIO");
     private static final Set<String> ESTADOS_GERENTE_PERMITIDOS = Set.of("ACTIVO", "INACTIVO");
@@ -43,20 +39,17 @@ public class UsuarioAdminService {
     private final UsuarioRepository usuarioRepo;
     private final RolRepository rolRepo;
     private final EstadoUsuarioRepository estadoUsuarioRepo;
-    private final BitacoraAuditoriaRepository bitacoraAuditoriaRepo;
     private final MultaRepository multaRepo;
     private final EstadoMultaRepository estadoMultaRepo;
 
     public UsuarioAdminService(UsuarioRepository usuarioRepo,
                                 RolRepository rolRepo,
                                 EstadoUsuarioRepository estadoUsuarioRepo,
-                                BitacoraAuditoriaRepository bitacoraAuditoriaRepo,
                                 MultaRepository multaRepo,
                                 EstadoMultaRepository estadoMultaRepo) {
         this.usuarioRepo = usuarioRepo;
         this.rolRepo = rolRepo;
         this.estadoUsuarioRepo = estadoUsuarioRepo;
-        this.bitacoraAuditoriaRepo = bitacoraAuditoriaRepo;
         this.multaRepo = multaRepo;
         this.estadoMultaRepo = estadoMultaRepo;
     }
@@ -117,9 +110,6 @@ public class UsuarioAdminService {
         usuario.setRoles(roles);
         usuario.setActualizadoEn(Instant.now());
         usuarioRepo.save(usuario);
-
-        registrarAuditoria(ejecutorId, usuario.getId(),
-                "Cambio de rol del usuario " + usuario.getCorreo() + " a " + nuevoRol);
     }
 
     /**
@@ -148,10 +138,12 @@ public class UsuarioAdminService {
         usuario.setEstado(estado);
         usuario.setActualizadoEn(Instant.now());
         usuarioRepo.save(usuario);
-
-        registrarAuditoria(ejecutorId, usuario.getId(),
-                "Cambio de estado del usuario " + usuario.getCorreo() + " a " + nuevoEstado
-                        + ". Motivo: " + motivo);
+        // NOTA: "motivo" ya no se persiste en ningún lado (no es columna de
+        // usuarios, y el INSERT manual que lo guardaba como texto libre en
+        // bitacora_auditoria.detalles se retiró junto con V49 -- ver OBS-28).
+        // trg_auditoria_usuarios sí audita este cambio de estado, pero solo
+        // ve las columnas de la fila (antes/después), no puede reconstruir
+        // el motivo que el llamante pasó como parámetro suelto.
     }
 
     // El ejecutor se resuelve desde el JWT autenticado, nunca desde el body.
@@ -169,7 +161,6 @@ public class UsuarioAdminService {
         Long ejecutorId = resolverIdPorCorreo(authentication.getName());
         Usuario usuario = Usuario.builder().nombre(dto.nombre()).apellido(dto.apellido()).correo(dto.correo()).passwordHash(new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(12).encode(dto.password())).estado(estadoActivo).correoVerificado(true).roles(roles).fechaRegistro(Instant.now()).actualizadoEn(Instant.now()).creadoPor(ejecutorId).build();
         Usuario guardado = usuarioRepo.save(usuario);
-        registrarAuditoria(ejecutorId, guardado.getId(), "Creación admin de usuario " + dto.correo() + " rol " + dto.rol());
         java.util.List<String> rolesStr = guardado.getRoles().stream().map(Rol::getNombre).toList();
         return new com.uteq.backend.dto.UsuarioResponseDTO(guardado.getId(), guardado.getNombre(), guardado.getCorreo(), rolesStr);
     }
@@ -181,8 +172,10 @@ public class UsuarioAdminService {
         usuario.setEstado(inactivo);
         usuario.setActualizadoEn(Instant.now());
         usuarioRepo.save(usuario);
-        Long ejecutorId = resolverIdPorCorreo(authentication.getName());
-        registrarAuditoria(ejecutorId, usuarioId, "Eliminación soft usuario " + usuario.getCorreo() + " motivo: " + (motivo != null ? motivo : "no especificado"));
+        // NOTA: mismo caso que cambiarEstado() -- "motivo" no es columna de
+        // usuarios y ya no se persiste en ningún lado tras retirar el INSERT
+        // manual (ver OBS-28); trg_auditoria_usuarios audita el cambio de
+        // estado pero no el motivo suelto que llega como parámetro.
     }
 
     private Long resolverIdPorCorreo(String correo) {
@@ -201,19 +194,6 @@ public class UsuarioAdminService {
         if (authentication == null || authentication.getAuthorities() == null) return false;
         return authentication.getAuthorities().stream()
                 .anyMatch(a -> "ROLE_GERENTE".equals(a.getAuthority()));
-    }
-
-    // INSERT plano de una sola tabla: usuarioId es el ejecutor, registroId el afectado.
-    private void registrarAuditoria(Long ejecutorId, Long usuarioAfectadoId, String detalles) {
-        BitacoraAuditoria evento = BitacoraAuditoria.builder()
-                .usuarioId(ejecutorId)
-                .tipoOperacion("UPDATE")
-                .tablaAfectada(TABLA_USUARIOS)
-                .registroId(usuarioAfectadoId)
-                .detalles(detalles)
-                .fechaHora(OffsetDateTime.now())
-                .build();
-        bitacoraAuditoriaRepo.save(evento);
     }
 
     private UsuarioListadoResponseDTO toListadoDTO(Usuario usuario, boolean multasPendientes) {
