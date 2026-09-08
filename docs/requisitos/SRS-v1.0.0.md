@@ -61,14 +61,35 @@ Formato basado en ISO/IEC/IEEE 29148:2018 (Systems and software engineering
 > parcialmente después, vía `feature/seguridad-transporte`, y la matriz ya
 > lo refleja; ver el detalle en cada requisito.
 >
-> **Hallazgo pendiente de resolución, identificado en esta misma revisión
-> (Dr. Guerrero, 2026-09-07)**: `docs/trazabilidad/matriz.csv` tiene hoy
-> **46 filas**, no 43 — `REQ-F-029`, `REQ-F-030` y `REQ-F-031` existen en
-> la matriz (verificado leyendo el CSV completo) sin entrada
-> correspondiente todavía en la sección 3 de este documento. Se identifican
-> aquí para no perder el hallazgo; se redactan como A7, A8 y A9 más
-> adelante en esta misma tarea de corrección (ver
-> `docs/requisitos/CHANGELOG-REQ.md`), no en este punto del documento.
+> **Hallazgo identificado y ya resuelto dentro de esta misma revisión
+> (Dr. Guerrero, 2026-09-07)**: en un punto intermedio de esta tarea de
+> corrección, `docs/trazabilidad/matriz.csv` tenía 46 filas, no 43 —
+> `REQ-F-029`, `REQ-F-030` y `REQ-F-031` existían en la matriz sin entrada
+> correspondiente en la sección 3 de este documento. Quedaron identificados
+> primero (para no perder el hallazgo) y redactados después, en la misma
+> tarea, junto con 20 requisitos nuevos más — ver
+> `docs/requisitos/CHANGELOG-REQ.md` para la cronología completa por
+> bloque. La matriz y este documento quedan sincronizados al cierre de
+> esta revisión: **71 filas, 0 problemas** en
+> `scripts/validate-traceability.sh`.
+
+---
+
+## Historial de revisiones
+
+**Fecha de emisión de esta revisión**: 2026-09-07.
+
+Esta tabla resume el historial a nivel de versión del documento; el
+detalle línea por línea de cada requisito modificado/agregado/dividido en
+esta revisión vive en
+[`docs/requisitos/CHANGELOG-REQ.md`](CHANGELOG-REQ.md), que esta tabla
+referencia en vez de duplicar.
+
+| Versión | Fecha | Requisitos | Cambio principal |
+|---|---|---|---|
+| v0.9.0-rc | Tercera Entrega (histórico) | 30 | Versión inicial, ver [`historico/SRS-v0.9.0-rc.md`](historico/SRS-v0.9.0-rc.md) |
+| v1.0.0 (Entrega Final, previo a esta revisión) | 2026-08-12 (commit histórico, hash invalidado por `git-filter-repo`) | 43 | Agrega los 13 requisitos de los 8 módulos de Cajas (`REQ-F-017`-`028`, `REQ-NF-015`); corrige estado de `REQ-NF-012`/`REQ-NF-014` |
+| v1.0.0 (esta revisión) | 2026-09-07 | 71 | Auditoría completa contra ISO/IEC/IEEE 29148:2018 (Dr. Gleiston Guerrero): corrige contradicciones internas (M1-M4), sincroniza cifras y estados con el código real (M5-M24), divide 2 requisitos compuestos (M14), agrega 25 requisitos nuevos para funcionalidad ya implementada sin especificar (A1-A25), y ajustes de forma/lenguaje vinculante (M13, M15, M25-M29) — ver `CHANGELOG-REQ.md` para el detalle completo por bloque |
 
 ---
 
@@ -257,6 +278,37 @@ código/pruebas/evidencia. La sección 5 mapea los requisitos no funcionales
 contra ISO/IEC 25010. La sección 6 declara explícitamente los gaps y
 limitaciones honestas encontradas al consolidar este documento.
 
+### 1.6 Correspondencia con el Anexo C de ISO/IEC/IEEE 29148:2018
+
+Agregada en esta revisión (M25, hallazgo del Dr. Guerrero). Este documento
+sigue la estructura clásica **IEEE 830** (Introducción / Descripción
+general / Requisitos específicos / Trazabilidad / Anexos), heredada de
+versiones anteriores del SRS y ya aceptada explícitamente por el docente
+como válida en vez de exigir una reestructuración completa a la plantilla
+informativa de SRS del Anexo C de 29148:2018 — **no se reordena el
+documento** en esta revisión, solo se deja constancia de la
+correspondencia y se justifica cada desviación.
+
+**Nota de honestidad sobre el alcance de esta tabla**: este repositorio no
+tiene una copia versionada del texto completo de ISO/IEC/IEEE 29148:2018
+(es un estándar con licencia, no de acceso libre) contra la cual verificar
+la numeración exacta de cláusulas del Anexo C carácter por carácter. La
+correspondencia de abajo usa la estructura de la plantilla informativa de
+SRS de ese anexo tal como es de conocimiento público y ya la cita la
+sección 1 de este propio documento ("Formato basado en ISO/IEC/IEEE
+29148:2018") — a nivel de categorías de contenido, no de número de
+cláusula certificado.
+
+| Sección de este SRS | Categoría equivalente, Anexo C (SRS) de 29148:2018 | Desviación / justificación |
+|---|---|---|
+| 1. Introducción (1.1-1.6) | Introduction (Purpose, Scope, Definitions, References, Overview) | Sin desviación de fondo — mismo contenido, con 1.6 (esta sección) y 1.3.1 (catálogo de estados, M12) como extensiones propias de este proyecto, no parte del template. |
+| 2. Descripción global | System/Product overview (perspectiva, funciones, usuarios, restricciones, supuestos) | Sin desviación de fondo. |
+| 3. Requisitos específicos (3.1-3.4) | Specific requirements (funcionales, interfaces, no funcionales) | **Desviación real**: 29148 no exige un formato de cuerpo por requisito específico; este documento usa un formato propio (Descripción + Rationale + Criterio de aceptación + Método de verificación), documentado y justificado en la sección 3.0, más cercano a un híbrido Volere/Cockburn/Gherkin que a una cláusula EARS de una sola oración — ver `docs/checklists/incose2023-req.md`, nota sistémica [S], para el análisis completo de esta desviación desde la óptica INCOSE (no redactado aquí para no duplicarlo). |
+| 3.4 Anexos (A23 matriz de permisos, A24 referencia a estados) | Podría vivir en Appendices | Se mantiene dentro de la sección 3 por cercanía temática con los requisitos que referencia (RBAC, catálogo de estados), en vez de moverlo al final del documento — decisión de legibilidad, no de conformidad. |
+| 4. Trazabilidad | No tiene equivalente directo en el template informativo de Anexo C (29148 trata trazabilidad como un proceso transversal, no una sección fija del SRS) | Sección propia de este proyecto, exigida por la guía del PFC (matriz de trazabilidad obligatoria), no por el estándar. |
+| 5. ISO/IEC 25010 | Fuera del alcance del Anexo C de 29148 (25010 es un estándar de calidad de producto distinto, con su propio documento en este repositorio) | Sección propia, cross-referencia deliberada entre dos estándares distintos usados en este proyecto. |
+| 6. Notas de honestidad y gaps | No tiene equivalente en el template — es una práctica de este proyecto, no del estándar | Agregada por criterio propio del equipo para no dejar gaps implícitos; ver también `docs/checklists/incose2023-req.md` para el análisis de conformidad complementario. |
+
 ---
 
 ## 2. Descripción global
@@ -407,11 +459,25 @@ con menor exhaustividad cuando la fuente original (matriz/ADR) ya era
 menos detallada — no se rellena con contenido inventado para emparejar el
 formato.
 
+**Convención de lenguaje vinculante (agregada en esta revisión, hallazgo
+del Dr. Guerrero, M13)**: en el enunciado de todo requisito, **"debe"** es
+vinculante — el sistema tiene que cumplirlo para que el requisito se
+considere satisfecho. **"Debería" no se usa en el enunciado de ningún
+requisito** de este documento: donde antes aparecía (`REQ-NF-012`,
+`REQ-NF-014a`-`d`), se reescribió a "debe"; el matiz de cumplimiento
+parcial que "debería" insinuaba se expresa ahora en el campo explícito
+**Estado** (M28) y en la narrativa de "Estado real" de cada requisito
+afectado, no en el verbo del enunciado. Del mismo modo, `REQ-NF-008` y
+`REQ-NF-009` — que describían una decisión ya tomada en presente
+indicativo ("el sistema usa...") en vez de como requisito vinculante — se
+reescribieron a forma "debe".
+
 ### 3.1 Requisitos funcionales
 
 #### REQ-F-001 — Registro de nuevo usuario
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-AUTH-01, CU-AUTH-01
 - **Depende de**: REQ-F-020 (el estado inicial tras el registro solo existe
   porque REQ-F-020 introdujo el flujo obligatorio de verificación de
@@ -448,6 +514,7 @@ formato.
 #### REQ-F-002 — Inicio de sesión
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-AUTH-02, CU-AUTH-02
 - **Módulo/endpoint**: `AuthController`/`AuthService` — `POST /api/auth/login`
 - **Descripción**: el sistema debe autenticar a un usuario registrado con
@@ -469,6 +536,7 @@ formato.
 #### REQ-F-003 — Cierre de sesión
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-AUTH-03, CU-AUTH-03
 - **Módulo/endpoint**: `AuthController`/`AuthService` — `POST /api/auth/logout`
 - **Descripción**: el sistema debe invalidar de inmediato el
@@ -490,6 +558,7 @@ formato.
 #### REQ-F-004 — Refresco de sesión
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-AUTH-04, CU-AUTH-04
 - **Módulo/endpoint**: `AuthController`/`AuthService` — `POST /api/auth/refresh`
 - **Descripción**: el sistema debe emitir un `accessToken` nuevo a partir
@@ -517,6 +586,7 @@ formato.
 #### REQ-F-005 — Consultar el catálogo de libros
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-LIB-01, CU-LIB-01
 - **Módulo/endpoint**: `LibroController`/`LibroService` — `GET /api/v1/libros`, `GET /api/v1/libros/{id}`
 - **Descripción**: cualquier usuario autenticado (LECTOR o superior) debe
@@ -545,6 +615,7 @@ formato.
 #### REQ-F-006 — Gestionar el catálogo de libros
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-LIB-02, CU-LIB-02
 - **Módulo/endpoint**: `LibroController`/`LibroService` — `POST/PUT/DELETE /api/v1/libros{,/id}`
 - **Descripción**: BIBLIOTECARIO/GERENTE/ADMIN deben poder crear, editar
@@ -568,6 +639,7 @@ formato.
 #### REQ-F-007 — Registrar préstamo
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-01 (Cajas, en `docs/requisitos/historias-usuario.md`), CU-01 (`docs/requisitos/casos-de-uso.md`)
 - **Módulo/endpoint**: `PrestamoController`/`PrestamoService` — `POST /api/v1/prestamos` (SP `sp_crear_prestamo`)
 - **Descripción**: un BIBLIOTECARIO/GERENTE debe poder registrar el
@@ -615,6 +687,7 @@ formato.
 #### REQ-F-008 — Registrar devolución
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-02 (Cajas), CU-02
 - **Módulo/endpoint**: `PrestamoController`/`PrestamoService` — `POST /api/v1/prestamos/{id}/devolucion` (SP `sp_registrar_devolucion`, `@PreAuthorize("hasAnyRole('GERENTE','ADMIN')")`); **existe una segunda ruta real** para el mismo caso de uso, `DevolucionController` — `POST /api/v1/devoluciones/prestamo/{prestamoId}` (`@PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")`, invoca el mismo `sp_registrar_devolucion` y además soporta registrar daño/pérdida, ver REQ-F-038).
 - **Descripción**: registrar la devolución de un préstamo activo,
@@ -659,6 +732,7 @@ formato.
 #### REQ-F-009 — Ver préstamos propios
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-F02 (Panama), CU-F02
 - **Módulo/endpoint**: `PrestamoController`/`PrestamoService` + `PrestamosLectorComponent` — `GET /api/v1/prestamos/usuario/{id}`, `.../activos`
 - **Descripción**: un LECTOR debe poder ver sus propios préstamos
@@ -681,6 +755,7 @@ formato.
 #### REQ-F-010 — Reporte de libros más prestados
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: **sin HU/CU dedicada** — la matriz marca explícitamente `historia_usuario` y `caso_de_uso` como `—` para este requisito.
 - **Módulo/endpoint**: `PrestamoController`/`PrestamoService` — `GET /api/v1/prestamos/reportes/libros-mas-prestados` (función `fn_reporte_libros_mas_prestados`)
 - **Descripción**: exponer un reporte de los libros con más préstamos
@@ -701,6 +776,7 @@ formato.
 #### REQ-F-011 — Crear reservación
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-03 (Cajas) + HU-F03 (Panama), CU-03 (Cajas) + CU-F03 (Panama)
 - **Módulo/endpoint**: `ReservacionController`/`ReservacionService` + `ReservacionesComponent` — `POST /api/v1/reservaciones`
 - **Descripción**: un usuario autenticado debe poder reservar un libro; si
@@ -743,6 +819,7 @@ formato.
 #### REQ-F-012 — Listar reservaciones propias
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-F03 (Panama, **inferida** — la matriz señala explícitamente que el mismo componente cubre creación y listado, sin una HU dedicada solo a listar), CU-F03
 - **Módulo/endpoint**: `ReservacionController`/`ReservacionService` — `GET /api/v1/reservaciones/usuario/{id}`
 - **Descripción**: un usuario debe poder listar sus propias
@@ -764,6 +841,7 @@ formato.
 #### REQ-F-013 — Ver multas propias
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-F01 (Panama), CU-F01
 - **Módulo/endpoint**: `MultaController`/`MultaService` + `MultasComponent` — `GET /api/v1/multas/usuario/{id}`
 - **Descripción**: un LECTOR debe poder ver el detalle de sus multas
@@ -785,6 +863,7 @@ formato.
 #### REQ-F-014 — Pagar multa
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-04 (Cajas), CU-04
 - **Módulo/endpoint**: `MultaController`/`MultaService` — `POST /api/v1/multas/{id}/pago` (SP `sp_pagar_multa`)
 - **Descripción**: un BIBLIOTECARIO/GERENTE debe poder registrar el pago
@@ -808,6 +887,7 @@ formato.
 #### REQ-F-015 — Anular multa
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-05 (Cajas), CU-05
 - **Módulo/endpoint**: `MultaController`/`MultaService` — `POST /api/v1/multas/{id}/anulacion` (SP `sp_anular_multa`)
 - **Descripción**: solo GERENTE/ADMIN pueden anular una multa registrada
@@ -836,6 +916,7 @@ formato.
 #### REQ-F-016 — Gestión de préstamos y devoluciones desde la interfaz
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-F04 (Panama), CU-F04
 - **Módulo/endpoint**: `PrestamosGestionComponent` (frontend) +
   `PrestamosGestionController` (backend, solo endpoints de apoyo:
@@ -879,6 +960,7 @@ formato.
 #### REQ-F-017 — Configuración paramétrica del sistema
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: la matriz cita `HU-CFG-01`/`CU-CFG-01`, que **no existen**
   como archivo en `docs/requisitos/historias/` ni
   `docs/requisitos/casos-de-uso/` (verificado por búsqueda exhaustiva en
@@ -910,9 +992,14 @@ formato.
 #### REQ-F-018 — Renovación de préstamo
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: la matriz cita `HU-PRE-03`/`CU-07`, que **no existen** como
   archivo en el repositorio (verificado) — gap declarado.
-- **Módulo/endpoint**: `PrestamoController`/`PrestamoService` (`renovar`) — `POST /api/v1/prestamos/{id}/renovacion`
+- **Módulo/endpoint**: `PrestamoController`/`PrestamoService` (`renovar`,
+  internamente `PrestamoVencidoException`/`LimiteRenovacionesExcedidoException`/
+  `MaterialReservadoException` — ver **Método de verificación** para el
+  detalle de clase; movidos aquí desde el criterio de aceptación por
+  M15) — `POST /api/v1/prestamos/{id}/renovacion`
 - **Descripción**: un `LECTOR` (solo su propio préstamo) o
   `BIBLIOTECARIO`/`GERENTE`/`ADMIN` (cualquiera) puede renovar un préstamo
   activo, siempre que no esté vencido, no haya alcanzado el máximo de
@@ -922,31 +1009,39 @@ formato.
   prestar, con 3 controles de negocio reales (verificados en
   `PrestamoService.renovar`) para no perpetuar un préstamo indefinidamente
   ni pisar la reserva de otro lector.
-- **Criterio de aceptación medible**:
+- **Criterio de aceptación medible (en términos de respuesta HTTP
+  observable, no de nombre de excepción Java — corregido por M15,
+  verificado contra `GlobalExceptionHandler.java` en este commit)**:
   1. Préstamo activo, no vencido, bajo el límite y sin reserva de otro
-     usuario → renovación exitosa, fecha límite extendida `+dias_prestamo_default`
+     usuario → `200`, fecha límite extendida `+dias_prestamo_default`
      días (misma clave y mismo valor por defecto que REQ-F-007, `15`),
      contador de renovaciones `+1`.
-  2. Préstamo vencido → rechazo (`PrestamoVencidoException`).
-  3. Préstamo que ya alcanzó el máximo de renovaciones → rechazo
-     (`LimiteRenovacionesExcedidoException`). El máximo es la clave
-     `max_renovaciones_default` de `configuracion_sistema`, sembrada en
-     `2` (`db/seed.sql`). **Rango admisible**: ninguno validado en el
-     código — `ConfiguracionSistemaService.actualizar()` acepta cualquier
-     cadena para esta clave (incluida negativa, cero o no numérica); un
-     valor no numérico solo falla, en tiempo de uso, con
-     `IllegalStateException` al leer la clave (`obtenerValorEntero`), no
-     al escribirla vía `PUT /api/v1/configuracion/{clave}` (REQ-F-017).
-  4. Libro con reserva vigente de otro usuario → rechazo
-     (`MaterialReservadoException`).
+  2. Préstamo vencido → `409 Conflict`, cuerpo `ProblemDetail` con el
+     detalle del motivo.
+  3. Préstamo que ya alcanzó el máximo de renovaciones → `409 Conflict`,
+     `ProblemDetail`. El máximo es la clave `max_renovaciones_default` de
+     `configuracion_sistema`, sembrada en `2` (`db/seed.sql`). **Rango
+     admisible**: ninguno validado en el código —
+     `ConfiguracionSistemaService.actualizar()` acepta cualquier cadena
+     para esta clave (incluida negativa, cero o no numérica); un valor no
+     numérico solo falla, en tiempo de uso, con `IllegalStateException`
+     al leer la clave (`obtenerValorEntero`), no al escribirla vía
+     `PUT /api/v1/configuracion/{clave}` (REQ-F-017).
+  4. Libro con reserva vigente de otro usuario → `409 Conflict`,
+     `ProblemDetail`.
   5. `LECTOR` que intenta renovar el préstamo de otro usuario → acceso
-     denegado.
+     denegado (`403`).
 - **Método de verificación**: **Test** (`PrestamoServiceTest`, 6 tests
-  nuevos, casos 50-55 según la matriz).
+  nuevos, casos 50-55 según la matriz) + **Inspection**
+  (`GlobalExceptionHandler.java`: `PrestamoVencidoException`,
+  `LimiteRenovacionesExcedidoException` y `MaterialReservadoException`
+  mapean las 3 a `HttpStatus.CONFLICT` vía
+  `ProblemDetail.forStatusAndDetail`).
 
 #### REQ-F-019 — Credencial QR: consulta propia y registro de préstamo con QR
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: la matriz cita `HU-PRE-04` (**no existe** como archivo,
   verificado — gap declarado) y `CU-01` (**sí existe** — "Registrar
   préstamo", el mismo caso de uso que ya respalda REQ-F-007. Se reutiliza
@@ -978,6 +1073,7 @@ formato.
 #### REQ-F-020 — Verificación de correo tras el registro
 
 - **Prioridad**: Must (corregida de `Should` — ver rationale)
+- **Estado**: implementado
 - **Fuente**: **sin HU/CU dedicada** — la matriz marca explícitamente
   `historia_usuario` y `caso_de_uso` como `—` para este requisito, mismo
   patrón que REQ-F-010.
@@ -1016,6 +1112,7 @@ formato.
 #### REQ-F-021 — Consultar notificaciones propias
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: **sin HU/CU dedicada** (matriz: `—`, `—`).
 - **Módulo/endpoint**: `NotificacionController`/`NotificacionService` — `GET /api/v1/notificaciones/usuario/{id}`
 - **Descripción**: cualquier usuario autenticado puede consultar sus
@@ -1037,6 +1134,7 @@ formato.
 #### REQ-F-022a — Alerta de préstamo por vencer
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: **sin HU/CU dedicada** (matriz: `—`, `—`).
 - **Módulo/endpoint**: `NotificacionVencimientoScheduler`/`NotificacionService` — job periódico, sin endpoint propio.
 - **Descripción**: el sistema genera una notificación de "préstamo por
@@ -1065,6 +1163,7 @@ formato.
 #### REQ-F-022b — Alerta de multa generada
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: **sin HU/CU dedicada** (matriz: `—`, `—`).
 - **Módulo/endpoint**: `PrestamoService` (`registrarDevolucion`)/`NotificacionService` — disparado por evento, no por job periódico, sin endpoint propio.
 - **Descripción**: el sistema genera una notificación de "multa generada"
@@ -1087,6 +1186,7 @@ formato.
 #### REQ-F-022c — Alerta de reserva caducada
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: **sin HU/CU dedicada** (matriz: `—`, `—`).
 - **Módulo/endpoint**: `ReservacionScheduler`/`NotificacionService` — job periódico cada 15 minutos, sin endpoint propio.
 - **Descripción**: el sistema genera una notificación de "reserva
@@ -1107,6 +1207,7 @@ formato.
 #### REQ-F-023 — Administración de usuarios (rol y estado)
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: la matriz cita `HU-ADM-01`/`CU-ADM-01`, que **no existen**
   como archivo en el repositorio (verificado) — gap declarado.
 - **Módulo/endpoint**: `UsuarioAdminController`/`UsuarioAdminService` — `GET /api/v1/admin/usuarios`; `PATCH .../{id}/rol`; `PATCH .../{id}/estado`; `POST /api/v1/admin/usuarios`; `DELETE /api/v1/admin/usuarios/{id}`
@@ -1157,6 +1258,7 @@ formato.
 #### REQ-F-024 — Consultar bitácora de auditoría
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: la matriz cita `HU-AUD-01`/`CU-AUD-01`, que **no existen**
   como archivo en el repositorio (verificado) — gap declarado.
 - **Módulo/endpoint**: `AuditoriaController`/`AuditoriaService` — `GET /api/v1/auditoria` (filtros `usuarioId`/`modulo`/`desde`/`hasta`); `GET /api/v1/auditoria/resumen` (agregación por tabla afectada); `GET /api/v1/auditoria/export` (exportación CSV, mismos filtros) — **los dos últimos no estaban documentados en versiones anteriores de este SRS**, agregados en esta revisión tras verificar `AuditoriaController.java` completo.
@@ -1178,6 +1280,7 @@ formato.
 #### REQ-F-025 — Reporte de índice de morosidad
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: **sin HU/CU dedicada** (matriz: `—`, `—`), mismo patrón que
   REQ-F-010.
 - **Módulo/endpoint**: `PrestamoController`/`PrestamoService` — `GET /api/v1/prestamos/reportes/morosidad` (función `fn_reporte_indice_morosidad`)
@@ -1197,6 +1300,7 @@ formato.
 #### REQ-F-026 — Reporte de uso por período
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: **sin HU/CU dedicada** (matriz: `—`, `—`).
 - **Módulo/endpoint**: `PrestamoController`/`PrestamoService` — `GET /api/v1/prestamos/reportes/uso` (función `fn_reporte_uso_por_periodo`)
 - **Descripción**: expone un reporte de préstamos agrupados por período,
@@ -1219,6 +1323,7 @@ formato.
 #### REQ-F-027 — Exportación a PDF del reporte de morosidad
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: **sin HU/CU dedicada** (matriz: `—`, `—`).
 - **Módulo/endpoint**: `PrestamoController`/`ReportePdfService` — `GET /api/v1/prestamos/reportes/morosidad/pdf` (`fn_reporte_indice_morosidad` + PDF en memoria, iText)
 - **Descripción**: genera en memoria (nunca en disco del servidor) el
@@ -1237,6 +1342,7 @@ formato.
 #### REQ-F-028 — Asistente virtual (Chatbot)
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: **sin HU/CU dedicada** (matriz: `—`, `—`).
 - **Módulo/endpoint**: `ChatbotController`/`ChatbotService` (ADR-016) — `POST /api/v1/chatbot/mensajes`; `GET /api/v1/chatbot/sesiones/{id}/historial`
 - **Descripción**: un `LECTOR` (únicamente, restricción deliberada) puede
@@ -1275,6 +1381,7 @@ formato.
 #### REQ-F-029 — Carga y consulta de portada de libro
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: HU-LIB-02, CU-LIB-02 (mismo par que REQ-F-006 — es una
   extensión de la gestión del catálogo, no una acción de negocio nueva).
 - **Módulo/endpoint**: `LibroController`/`LibroService` — `POST /api/v1/libros/{id}/portada` (multipart), `GET /api/v1/libros/{id}/portada`
@@ -1311,6 +1418,7 @@ formato.
 #### REQ-F-030 — Dashboard gerencial
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: **sin HU/CU dedicada** (matriz: `—`, `—`).
 - **Módulo/endpoint**: `DashboardGerenteComponent` (frontend) — reutiliza `GET /api/v1/prestamos/reportes/libros-mas-prestados` (mismo endpoint que REQ-F-010) y otros endpoints de reportes ya especificados (REQ-F-010/025/026); sin endpoint backend propio.
 - **Descripción**: `GERENTE` (y `ADMIN`, mismo rol que consume los
@@ -1329,6 +1437,7 @@ formato.
 #### REQ-F-031 — Catálogos maestros (editoriales, idiomas, estados de libro, autores, categorías)
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: **sin HU/CU dedicada** (matriz: `—`, `—`).
 - **Módulo/endpoint**: `EditorialController` — `GET/POST /api/v1/editoriales`, `GET /api/v1/editoriales/buscar`; `IdiomaController` — equivalente en `/api/v1/idiomas`; `EstadoLibroController` — `GET /api/v1/estados-libro` (sin `POST`, catálogo cerrado de solo lectura); `AutorController` — equivalente en `/api/v1/autores`; `CategoriaController` — equivalente en `/api/v1/categorias`. **Ampliado en esta revisión** respecto a versiones anteriores de este SRS, que solo citaban los primeros 3 controllers — verificado que `AutorController`/`CategoriaController` siguen exactamente el mismo patrón.
 - **Descripción**: listar (y, salvo `estados-libro`, crear) los catálogos
@@ -1363,6 +1472,7 @@ formato.
 #### REQ-F-032 — Solicitud de restablecimiento de contraseña
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: sin HU/CU dedicada — funcionalidad real sin documento de
   requisitos previo (mismo patrón que REQ-F-010/020).
 - **Módulo/endpoint**: `AuthController`/`AuthService` — `POST /api/auth/solicitar-reset` (`permitAll` en `SecurityConfig`, sin JWT).
@@ -1401,6 +1511,7 @@ formato.
 #### REQ-F-033 — Restablecimiento efectivo de contraseña
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: sin HU/CU dedicada, mismo patrón que REQ-F-032.
 - **Módulo/endpoint**: `AuthController`/`AuthService` — `POST /api/auth/reset` (`permitAll`, sin JWT).
 - **Descripción**: con el código de 6 dígitos recibido (REQ-F-032) y una
@@ -1440,6 +1551,7 @@ formato.
 #### REQ-F-034 — Reenvío de código de verificación de correo
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: sin HU/CU dedicada, mismo patrón que REQ-F-032/033.
 - **Módulo/endpoint**: `AuthController`/`AuthService` — `POST /api/auth/reenviar-codigo` (`permitAll`, sin JWT).
 - **Descripción**: un usuario recién registrado y aún
@@ -1476,6 +1588,7 @@ formato.
 #### REQ-F-035 — Favoritos por usuario
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: sin HU/CU dedicada — mencionado en el alcance (1.2) y
   funciones (2.2) del producto sin requisito formal hasta esta revisión
   (ver M4).
@@ -1506,6 +1619,7 @@ formato.
 #### REQ-F-036 — Sugerencias de adquisición
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: sin HU/CU dedicada — mismo caso que REQ-F-035 (ver M4).
 - **Módulo/endpoint**: `SugerenciaAdquisicionController`/`SugerenciaAdquisicionService` — `POST /api/v1/sugerencias-adquisicion` (LECTOR); `GET .../mias` (LECTOR); `GET /api/v1/sugerencias-adquisicion` (GERENTE/ADMIN, filtro `estado`); `PATCH .../{id}/estado` (GERENTE/ADMIN); `GET .../mas-pedidos` (GERENTE/ADMIN); `POST .../confirmar-adquisicion?isbn=` (GERENTE/ADMIN); `GET .../reporte-pdf` (GERENTE/ADMIN).
 - **Descripción**: un `LECTOR` puede sugerir un libro para que la
@@ -1544,6 +1658,7 @@ formato.
 #### REQ-F-037 — Portal público de consulta del catálogo sin cuenta
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: sin HU/CU dedicada — mencionado como "fuera de alcance...
   Google Books API" en versiones anteriores de la sección 1.2 sin
   distinguir que el portal público **sí** existe y es funcionalidad real
@@ -1581,6 +1696,7 @@ formato.
 #### REQ-F-038 — Registro de daños de ejemplares
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: sin HU/CU dedicada.
 - **Módulo/endpoint**: `TipoDanoController` — `GET /api/v1/tipos-dano` (BIBLIOTECARIO/GERENTE/ADMIN), `POST`/`PUT`/`DELETE` (ADMIN, class-level `@PreAuthorize("hasRole('ADMIN')")`); `CategoriaDanoController` — `GET` (BIBLIOTECARIO/GERENTE/ADMIN), `POST`/`PUT`/`DELETE` (ADMIN); `EvidenciaDanoController` — `POST/GET /api/v1/devoluciones/evidencia/{registroDanoId}` (subida/consulta de evidencia fotográfica, multipart, BIBLIOTECARIO/GERENTE/ADMIN); `DevolucionController` — `POST /api/v1/devoluciones/prestamo/{prestamoId}` (registra la devolución con posible daño, BIBLIOTECARIO/GERENTE/ADMIN).
 - **Descripción**: al registrar una devolución, el bibliotecario puede
@@ -1621,6 +1737,7 @@ formato.
 #### REQ-F-039 — Gestión de proveedores
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: sin HU/CU dedicada.
 - **Módulo/endpoint**: `ProveedorController` — `GET /api/v1/proveedores` (paginado), `GET .../todo`, `GET .../buscar`, `POST`, `PUT /{id}` — todos `@PreAuthorize("hasAnyRole('GERENTE','ADMIN')")`.
 - **Descripción**: `GERENTE`/`ADMIN` gestionan el catálogo de proveedores
@@ -1643,6 +1760,7 @@ formato.
 #### REQ-F-040 — Suscripción a disponibilidad de un libro
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: sin HU/CU dedicada.
 - **Módulo/endpoint**: `SuscripcionDisponibilidadController` — `POST /api/v1/libros/{libroId}/suscripciones`, `DELETE .../suscripciones`, `GET /api/v1/libros/suscripciones/mias` — los 3 con `@PreAuthorize("isAuthenticated()")` (cualquier rol autenticado, no restringido a `LECTOR`).
 - **Descripción**: un usuario autenticado puede suscribirse a un libro
@@ -1670,6 +1788,7 @@ formato.
 #### REQ-F-041 — Pago parcial de multa
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: sin HU/CU dedicada.
 - **Módulo/endpoint**: `MultaController`/`MultaService` (`sp_pago_parcial_multa`, columna `multas.monto_pagado`, `fn_pagos_recientes`) — **complementa REQ-F-014** (pago total), que documentaba solo el caso de pago completo.
 - **Descripción**: además del pago total de una multa (REQ-F-014), el
@@ -1700,6 +1819,7 @@ formato.
 #### REQ-F-042 — Respaldo y restauración de la base de datos
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: decisión arquitectónica, sin HU/CU dedicada.
 - **Módulo/endpoint**: `BackupController`/`RespaldoCompletoController` (backend, ambos `hasRole('ADMIN')` en todos sus endpoints) — `GET/POST/DELETE /api/v1/admin/backups*`, `GET/PUT/POST/DELETE /api/v1/admin/respaldo-completo/*`; microservicio Node `backup-service` (volcado completo vía `pg_dump`, ver `docs/despliegue/BACKUP.md` §6).
 - **Descripción**: `ADMIN` puede programar, ejecutar y descargar respaldos
@@ -1750,6 +1870,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-003 — TTL configurable del cache del catálogo
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: sin HU dedicada (requisito de configuración), CU-LIB-01, ADR-008
 - **Módulo**: `LibroService` — `GET /api/v1/libros`
 - **Descripción**: el cache Redis del listado de libros debe expirar tras
@@ -1776,6 +1897,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-001 — Revocación inmediata de tokens (blacklist)
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-AUTH-03, CU-AUTH-03, ADR-003
 - **Descripción**: todo `accessToken` invalidado por logout debe quedar
   en una blacklist de Redis hasta su expiración natural.
@@ -1792,6 +1914,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-002 — Cookie HttpOnly/Secure/SameSite para el refresh token
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-AUTH-04, ADR-012
 - **Descripción**: el `refreshToken` debe transportarse exclusivamente en
   una cookie `HttpOnly`, `Secure`, `SameSite=Strict`, con `path=/api/auth`,
@@ -1823,6 +1946,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-006 — Rate limiting de intentos de login
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-AUTH-05, CU-AUTH-05, `LoginRateLimiter`
 - **Descripción**: una combinación correo+IP debe bloquearse
   temporalmente (429) tras 5 intentos fallidos consecutivos en 900s.
@@ -1846,6 +1970,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-007 — Auditoría de eventos de autenticación
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-AUTH-06, CU-AUTH-06
 - **Descripción**: todo `LOGIN_OK`, `LOGIN_FAIL` y `LOGOUT` debe quedar
   registrado con IP, fecha/hora y usuario/correo, consultable en logs de
@@ -1870,6 +1995,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-010 — RBAC aplicado consistentemente con defensa en profundidad
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-AUTH-07, CU-AUTH-07, ADR-010
 - **Descripción**: cada endpoint debe verificar el rol del usuario
   únicamente desde su sesión autenticada, aplicado tanto vía
@@ -1879,11 +2005,16 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   a otro rol, ni manipulando el request (HU-AUTH-07); la verificación
   duplicada (aplicación + base de datos) es defensa en profundidad
   deliberada, no redundancia accidental (ADR-010, OWASP A01).
-- **Criterio de aceptación medible**:
+- **Criterio de aceptación medible (en términos de respuesta HTTP
+  observable — corregido por M15; el `SQLSTATE` se movió al campo
+  `modulo_codigo` de la matriz, no queda en el criterio)**:
   1. Rol no autorizado en un endpoint restringido → `403` antes de
      ejecutar lógica de negocio.
-  2. Si la verificación de la capa de aplicación se saltara, el SP
-     (ej. `sp_anular_multa`) igual rechaza con `SQLSTATE LB422`.
+  2. Si la verificación de la capa de aplicación se saltara, el SP (ej.
+     `sp_anular_multa`) igual rechaza la operación con `422 Unprocessable
+     Entity` y cuerpo `ProblemDetail` (`GlobalExceptionHandler` traduce
+     `SQLSTATE LB422` a ese código, ver `docs/trazabilidad/matriz.csv`
+     para la referencia completa al código SQL).
 - **Método de verificación**: **Test**
   (`MultaServiceTest.anular_sinRolGerenteOAdmin_lanzaAccesoDenegado`,
   `.listarPorUsuario_cuandoLectorPideOtroUsuario_lanzaAccesoDenegado` +
@@ -1898,6 +2029,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-011 — El rol ejecutor nunca se resuelve desde el body del request
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-AUTH-07, `AuthorizationDeniedException` handler
 - **Descripción**: el rol usado para autorizar una acción debe resolverse
   siempre desde el JWT de la sesión (`Authentication`), nunca desde un
@@ -1917,7 +2049,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 
 - **Prioridad**: Should
 - **Fuente**: sin HU dedicada — decisión de entorno, OWASP A02, ADR-015
-- **Descripción**: las comunicaciones cliente-servidor deberían viajar
+- **Descripción**: las comunicaciones cliente-servidor deben viajar
   cifradas (HTTPS), terminando en el proxy (no en el backend Spring Boot),
   con el backend preparado para reconocer una request como segura cuando
   venga de ese proxy.
@@ -1970,6 +2102,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-013 — Prevención de inyección SQL
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: sin HU dedicada, OWASP A03
 - **Descripción**: toda consulta (ORM o SP) debe ser parametrizada, sin
   concatenación de SQL con datos de entrada del usuario.
@@ -2078,6 +2211,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-004 — Estrategia híbrida de acceso a datos (ORM + SP)
 
 - **Prioridad**: Must
+- **Estado**: verificado
 - **Fuente**: HU-01 (Cajas, lado SP) + HU-AUTH-06 (Marlon, lado ORM), ADR-006
 - **Descripción**: el CRUD elemental de una sola tabla debe implementarse
   vía Spring Data JPA; cualquier operación con joins, agregaciones o
@@ -2110,6 +2244,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-005 — Esquema de base de datos reproducible
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: decisión arquitectónica, ADR-013
 - **Descripción**: un evaluador debe poder levantar el sistema completo
   con datos ya poblados usando un solo comando, sin ejecutar migraciones
@@ -2146,9 +2281,10 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-008 — PostgreSQL como motor único de base de datos
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: decisión arquitectónica, ADR-011
-- **Descripción**: el sistema usa PostgreSQL 16 como único motor de base
-  de datos, con Row Level Security para aislar datos por rol.
+- **Descripción**: el sistema debe usar PostgreSQL 16 como único motor de
+  base de datos, con Row Level Security para aislar datos por rol.
 - **Rationale**: RLS nativo (sin el cual el aislamiento por lector
   dependería de disciplina de código en cada endpoint), PL/pgSQL maduro
   para los 18 objetos SQL (ver REQ-NF-004), integridad referencial
@@ -2166,10 +2302,11 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-009 — Despliegue vía Docker Compose
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: decisión arquitectónica, ADR-007
-- **Descripción**: los 4 servicios del sistema se orquestan con Docker
-  Compose, con imágenes base pinadas por digest sha256 y healthchecks que
-  ordenan el arranque.
+- **Descripción**: los 4 servicios del sistema deben orquestarse con
+  Docker Compose, con imágenes base pinadas por digest sha256 y
+  healthchecks que ordenan el arranque.
 - **Rationale**: reproducibilidad de un solo comando sin la complejidad
   operativa de un orquestador pensado para escalado multi-nodo que este
   proyecto no necesita (ADR-007, comparación completa contra Kubernetes y
@@ -2183,6 +2320,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-015 — Automatización de CI/CD y documentación de API
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: decisión arquitectónica, sin HU/CU dedicada (matriz: `N/A -
   decisión arquitectónica`)
 - **Módulo**: `.github/workflows/ci.yml` + `Makefile` +
@@ -2206,6 +2344,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-016 — Comportamiento ante indisponibilidad de Redis, por servicio
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: sin HU dedicada — extiende REQ-NF-001, hallazgo del Dr.
   Guerrero (M17): la política real de `JwtAuthFilter` es fail-closed, no
   fail-open como asumía la sección 2.5 en versiones anteriores de este
@@ -2243,6 +2382,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-017 — Umbral de rendimiento bajo carga (p95)
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: prueba de carga real, Bloque C.1 de la guía.
 - **Descripción**: el endpoint con cache Redis `GET /api/v1/libros` debe
   responder dentro de un umbral de latencia p95 bajo carga concurrente,
@@ -2304,6 +2444,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-019 — Accesibilidad del frontend (Lighthouse)
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: Bloque C.5 de la guía, auditoría Lighthouse real.
 - **Descripción**: el frontend debe cumplir un umbral de accesibilidad
   medido con Lighthouse, perfil móvil con throttling Slow 4G.
@@ -2359,6 +2500,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-021 — Objetivos de respaldo y recuperación (frecuencia, retención, RPO/RTO)
 
 - **Prioridad**: Must
+- **Estado**: implementado
 - **Fuente**: Bloque ADB (Administración de Bases de Datos) de la guía,
   `docs/despliegue/BACKUP.md`.
 - **Descripción**: el sistema debe declarar objetivos concretos de
@@ -2403,6 +2545,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-022 — Protección de datos personales (minimización, consentimiento, ausencia de exposición)
 
 - **Prioridad**: Must
+- **Estado**: implementado (retencion/supresion pendiente)
 - **Fuente**: Bloque F de la guía (ética de datos),
   `docs/etica/ETHICS.md`.
 - **Descripción**: el sistema debe minimizar los datos personales que
@@ -2451,6 +2594,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-023 — Política de contraseñas
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: sin HU dedicada, verificado en código.
 - **Descripción**: el sistema debe declarar su política real de
   contraseñas, sin agregar reglas de composición que el código no aplica.
@@ -2481,6 +2625,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-024 — Interfaces externas consumidas (SMTP y API de Gemini)
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: decisión arquitectónica, `render.yaml`, ADR-016.
 - **Descripción**: a diferencia de la única interfaz **expuesta** por
   este sistema (la API REST propia, sección 3.3), el backend **consume**
@@ -2519,13 +2664,24 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 
 ### 3.3 Requisitos de interfaz externa
 
-El sistema expone una única interfaz externa real: una **API REST sobre
-HTTP/JSON**, documentada automáticamente vía springdoc-openapi (Swagger UI
-en `/swagger-ui.html`, ver ADR-001) y consumida por el frontend Angular.
-No existen requisitos de interfaz externa con ID propio en
-`docs/trazabilidad/matriz.csv` — cada endpoint concreto ya está trazado
-como parte del requisito funcional que lo usa (columna `endpoint_api` de
-la matriz, sección 3.1 de este documento). **Cifra recontada en esta
+**Corrección de alcance (hallazgo del Dr. Guerrero, M26)**: versiones
+anteriores de esta sección afirmaban que el sistema "expone una única
+interfaz externa real" — esa frase mezclaba dos conceptos distintos:
+la interfaz que este sistema **expone** hacia sus clientes (el frontend,
+o cualquier consumidor de la API) y las interfaces que este sistema
+**consume** de terceros. Ambas existen y son reales; se separan aquí en
+vez de seguir mezclándolas bajo "única interfaz externa".
+
+#### 3.3.1 Interfaz expuesta por este sistema
+
+El backend expone una única interfaz **hacia sus clientes**: una **API
+REST sobre HTTP/JSON**, documentada automáticamente vía springdoc-openapi
+(Swagger UI en `/swagger-ui.html`, ver ADR-001) y consumida por el
+frontend Angular. No existen requisitos de interfaz externa con ID propio
+en `docs/trazabilidad/matriz.csv` para esta API — cada endpoint concreto
+ya está trazado como parte del requisito funcional que lo usa (columna
+`endpoint_api` de la matriz, sección 3.1 de este documento). **Cifra
+recontada en esta
 revisión (hallazgo del Dr. Guerrero, 2026-09-07)** — versiones anteriores
 de este SRS citaban 19→44 endpoints y 5→15 `@RestController` en pasos
 sucesivos, ambas ya desactualizadas frente al código real de este commit:
@@ -2549,6 +2705,16 @@ tocar archivos fuera del alcance de esta tarea.
 usa la cookie `refreshToken`); errores en formato `ProblemDetail` (RFC
 7807) vía `GlobalExceptionHandler`, sin fuga de detalles internos
 (stacktraces, mensajes de motor de base de datos) al cliente.
+
+#### 3.3.2 Interfaces externas consumidas por este sistema
+
+A diferencia de 3.3.1, el backend **consume** dos interfaces de terceros
+reales, declaradas en `render.yaml` y verificadas en el código: **SMTP
+(vía Brevo)** para correo transaccional, y la **API de Gemini** para el
+chatbot. Ambas se formalizan con criterio de aceptación propio en
+**REQ-NF-024** (sección 3.2.3, Bloque 5/A25 de esta actualización) — esta
+subsección solo las referencia para que la sección 3.3 quede completa
+sin duplicar el contenido ya redactado allí.
 
 ---
 

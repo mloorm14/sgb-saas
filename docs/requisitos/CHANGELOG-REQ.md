@@ -157,6 +157,23 @@ desarrollo) — queda declarado para que el equipo decida.
 **71 filas, 0 problemas** (confirma que los 3 pendientes del Bloque 3 ya
 quedaron resueltos).
 
+## Forma, lenguaje y presentación (Bloque 6, 2026-09-07)
+
+| Punto | Cambio |
+|---|---|
+| M13 | Convención agregada a sección 3.0: "debe" es vinculante, "debería" no se usa en el enunciado de ningún requisito. Reescritos: `REQ-NF-012` ("deberían viajar" → "deben viajar"); `REQ-NF-008`/`REQ-NF-009` (presente indicativo "el sistema usa/se orquestan" → "el sistema debe usar/deben orquestarse"). `REQ-NF-014a`-`d` ya habían quedado en forma vinculante al dividirse en el Bloque 4. |
+| M15 | `REQ-F-018` y `REQ-NF-010`: criterios de aceptación reescritos en términos de respuesta HTTP observable (`409 Conflict`/`422 Unprocessable Entity` + `ProblemDetail`), verificado contra `GlobalExceptionHandler.java`. Nombres de excepción Java y `SQLSTATE` movidos al campo `modulo_codigo` de la matriz. |
+| M16 | Ya cubierto por M24 (Bloque 3) — confirmado aplicado: sin hashes muertos restantes en `SRS-v1.0.0.md` (`grep` de los 6 hashes citados, 0 resultados). |
+| M25 | Sección 1.6 nueva: tabla de correspondencia entre la estructura IEEE 830 de este SRS y la plantilla informativa de Anexo C de 29148:2018, con nota de honestidad explícita sobre no tener copia local del estándar para verificar numeración exacta de cláusula. No se reordena el documento (opción ya aceptada por el docente). |
+| M26 | Sección 3.3 dividida en 3.3.1 (interfaz expuesta: API REST propia) y 3.3.2 (interfaces consumidas: SMTP/Gemini, referencia a `REQ-NF-024`). Se corrige la afirmación anterior de "única interfaz externa real", que mezclaba expuesta y consumida. |
+| M27 | Nueva sección "Historial de revisiones" tras la portada: fecha de emisión (2026-09-07) y tabla de 3 versiones (v0.9.0-rc, v1.0.0 previo, v1.0.0 esta revisión), enlazando a este mismo changelog para el detalle línea por línea. |
+| M28 | Campo `- **Estado**: <valor>` agregado mecánicamente (script Python, no edición manual) a los 64 requisitos que no lo tenían explícito, usando el vocabulario exacto de la columna `estado` de `matriz.csv` (`verificado`/`implementado`/`pendiente`, sin inventar vocabulario nuevo). Los 7 que ya tenían una narrativa "Estado real" propia (`REQ-NF-012`, `REQ-NF-014a`-`d`, `REQ-NF-018`, `REQ-NF-020`) no se duplicaron. |
+| M29 | Fragmentos de código/ruta/nombre de método largos envueltos en backticks en línea a lo largo de toda la redacción de este bloque y del Bloque 5, para dar a pandoc/LaTeX más oportunidad de wrap limpio; verificación final contra el PDF real en el paso siguiente. |
+
+`scripts/validate-traceability.sh` corrido tras el bloque: **71 filas, 0
+problemas** (el campo `- **Estado**:` no es validado por el script, no
+afecta su resultado).
+
 ## Fecha de las entradas
 
 Todas las entradas de esta tabla corresponden a un único commit real,
