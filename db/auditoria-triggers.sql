@@ -29,6 +29,32 @@
 -- sí tiene acceso a la petición HTTP) — es su complemento a nivel de BD
 -- para operaciones DML directas sobre las tablas.
 -- ============================================================================
+--
+-- ACTUALIZACIÓN 2026-09-08 (ver docs/observaciones/OBSERVACIONES.md, OBS-28):
+-- de las 21 tablas de este archivo, hasta hoy solo las 9 de la sección
+-- "V40 — Fase 1" (ver más abajo) habían llegado realmente a una migración
+-- Flyway. Las 12 restantes -- las de esta primera mitad de la sección 2 --
+-- vivieron aquí, fuera de Flyway, mientras esas 12 tablas se auditaban en
+-- la práctica vía INSERT manual en Java (PrestamoService, MultaService,
+-- LibroService, DevolucionService, ReservacionService, UsuarioAdminService,
+-- SugerenciaAdquisicionService). `database/migrations/V49__auditoria_
+-- triggers_negocio.sql` ("Fase 2") cierra ese hueco copiando tal cual los
+-- 12 CREATE TRIGGER de abajo. En el mismo cambio se retiró el INSERT manual
+-- de esos 7 Services: para esas 12 tablas el párrafo de arriba ("No
+-- reemplaza la auditoría de aplicación... es su complemento") YA NO APLICA
+-- -- el trigger genérico pasó a ser la ÚNICA fuente de auditoría de esas
+-- tablas, no un complemento. Sigue aplicando sin cambios para LOGIN_OK/
+-- LOGIN_FAIL/LOGOUT/CORREO_VERIFICADO (AuthService), que no son mutaciones
+-- de fila que un trigger pueda capturar. Información que se perdió al
+-- retirar el INSERT manual (no recuperable por el trigger, que solo ve
+-- columnas de la fila): el texto libre `motivo` de
+-- UsuarioAdminService.cambiarEstado()/eliminarUsuario() (no es columna de
+-- usuarios, no se persiste en ningún otro lado) y el resumen humano
+-- consolidado de una devolución completa (estado + multa por atraso + multa
+-- por daño + cantidad de daños en una sola línea) de DevolucionService, que
+-- ahora queda repartido en varias filas separadas del trigger (una por
+-- tabla realmente modificada) en vez de una sola línea narrativa.
+-- ============================================================================
 
 
 -- ============================================================================
@@ -179,6 +205,11 @@ $$;
 -- V40 agrega: proveedores, configuracion_sistema, tipos_dano,
 -- categorias_dano, backups, backups_tablas, backup_programacion,
 -- configuracion_respaldo, registros_respaldo (ver database/migrations/V40).
+-- V49 agrega las 12 restantes (usuarios, libros, prestamos, multas,
+-- reservaciones, roles, usuario_roles, permisos, rol_permisos,
+-- notificaciones, sugerencias_adquisicion, registro_danos) -- ver
+-- database/migrations/V49__auditoria_triggers_negocio.sql y la
+-- actualización 2026-09-08 al inicio de este archivo.
 -- ============================================================================
 
 CREATE TRIGGER trg_auditoria_usuarios
