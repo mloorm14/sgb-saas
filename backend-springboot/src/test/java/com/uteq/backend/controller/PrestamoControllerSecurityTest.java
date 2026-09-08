@@ -1,6 +1,8 @@
 package com.uteq.backend.controller;
 
 import com.uteq.backend.config.SecurityConfig;
+import com.uteq.backend.dto.DevolucionResponseDTO;
+import com.uteq.backend.dto.PrestamoResponseDTO;
 import com.uteq.backend.security.JwtAuthFilter;
 import com.uteq.backend.security.JwtService;
 import com.uteq.backend.security.UserDetailsServiceImpl;
@@ -12,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -19,12 +22,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PrestamoController.class)
@@ -163,6 +169,52 @@ class PrestamoControllerSecurityTest {
     @WithMockUser(roles = "LECTOR")
     void morosidad_conRolLector_seRechaza() throws Exception {
         mockMvc.perform(get("/api/v1/prestamos/reportes/morosidad"))
+                .andExpect(status().isForbidden());
+    }
+
+    // ── crear() / registrarDevolucion(): BIBLIOTECARIO debe poder ──
+    // (corrección del hueco de rol reportado en la auditoría del Dr.
+    // Guerrero — antes de este fix, BIBLIOTECARIO recibía 403 aquí).
+
+    private static final String CUERPO_PRESTAMO_VALIDO =
+            "{\"usuarioId\":2,\"libroId\":3,\"diasPrestamo\":7}";
+
+    @Test
+    @WithMockUser(roles = "BIBLIOTECARIO")
+    void crear_conRolBibliotecario_sePermite() throws Exception {
+        when(prestamoService.crear(any(), any())).thenReturn(
+                new PrestamoResponseDTO(1L, 2L, 3L, 4L, null,
+                        OffsetDateTime.now(), OffsetDateTime.now().plusDays(7), null, (short) 0, 1));
+
+        mockMvc.perform(post("/api/v1/prestamos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(CUERPO_PRESTAMO_VALIDO))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @WithMockUser(roles = "BIBLIOTECARIO")
+    void registrarDevolucion_conRolBibliotecario_sePermite() throws Exception {
+        when(prestamoService.registrarDevolucion(1L))
+                .thenReturn(new DevolucionResponseDTO(1L, false, BigDecimal.ZERO));
+
+        mockMvc.perform(post("/api/v1/prestamos/1/devolucion"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "LECTOR")
+    void crear_conRolLector_seRechaza() throws Exception {
+        mockMvc.perform(post("/api/v1/prestamos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(CUERPO_PRESTAMO_VALIDO))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "LECTOR")
+    void registrarDevolucion_conRolLector_seRechaza() throws Exception {
+        mockMvc.perform(post("/api/v1/prestamos/1/devolucion"))
                 .andExpect(status().isForbidden());
     }
 }

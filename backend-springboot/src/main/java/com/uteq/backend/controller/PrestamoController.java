@@ -44,7 +44,7 @@ public class PrestamoController {
 
     // ── POST /api/v1/prestamos ────────────────────────────
     @PostMapping
-    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<PrestamoResponseDTO> crear(
             @Valid @RequestBody PrestamoRequestDTO dto,
             Authentication authentication) {
@@ -54,7 +54,7 @@ public class PrestamoController {
 
     // ── POST /api/v1/prestamos/{id}/devolucion ────────────
     @PostMapping("/{id}/devolucion")
-    @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<DevolucionResponseDTO> registrarDevolucion(@PathVariable Long id) {
         return ResponseEntity.ok(prestamoService.registrarDevolucion(id));
     }
