@@ -4,10 +4,12 @@ import com.uteq.backend.dto.UsuarioListadoResponseDTO;
 import com.uteq.backend.entity.EstadoUsuario;
 import com.uteq.backend.entity.Rol;
 import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.entity.UsuarioMotivoCambio;
 import com.uteq.backend.repository.EstadoMultaRepository;
 import com.uteq.backend.repository.EstadoUsuarioRepository;
 import com.uteq.backend.repository.MultaRepository;
 import com.uteq.backend.repository.RolRepository;
+import com.uteq.backend.repository.UsuarioMotivoCambioRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -41,17 +44,20 @@ public class UsuarioAdminService {
     private final EstadoUsuarioRepository estadoUsuarioRepo;
     private final MultaRepository multaRepo;
     private final EstadoMultaRepository estadoMultaRepo;
+    private final UsuarioMotivoCambioRepository usuarioMotivoCambioRepo;
 
     public UsuarioAdminService(UsuarioRepository usuarioRepo,
                                 RolRepository rolRepo,
                                 EstadoUsuarioRepository estadoUsuarioRepo,
                                 MultaRepository multaRepo,
-                                EstadoMultaRepository estadoMultaRepo) {
+                                EstadoMultaRepository estadoMultaRepo,
+                                UsuarioMotivoCambioRepository usuarioMotivoCambioRepo) {
         this.usuarioRepo = usuarioRepo;
         this.rolRepo = rolRepo;
         this.estadoUsuarioRepo = estadoUsuarioRepo;
         this.multaRepo = multaRepo;
         this.estadoMultaRepo = estadoMultaRepo;
+        this.usuarioMotivoCambioRepo = usuarioMotivoCambioRepo;
     }
 
     @Transactional(readOnly = true)
@@ -114,7 +120,9 @@ public class UsuarioAdminService {
 
     /**
      * Cambia el estado del usuario (bloqueo/activación manual).
-     * {@code motivo} queda registrado en la bitácora.
+     * {@code motivo} queda registrado en {@code usuario_motivos_cambio}
+     * (V50); el cambio de estado en sí lo audita
+     * {@code trg_auditoria_usuarios} sobre {@code bitacora_auditoria}.
      */
      @Transactional
     public void cambiarEstado(Long usuarioId, String nuevoEstado, String motivo, Authentication authentication) {
@@ -135,15 +143,17 @@ public class UsuarioAdminService {
             }
         }
 
+        Integer estadoAnteriorId = usuario.getEstado().getId();
         usuario.setEstado(estado);
         usuario.setActualizadoEn(Instant.now());
         usuarioRepo.save(usuario);
-        // NOTA: "motivo" ya no se persiste en ningún lado (no es columna de
-        // usuarios, y el INSERT manual que lo guardaba como texto libre en
-        // bitacora_auditoria.detalles se retiró junto con V49 -- ver OBS-28).
-        // trg_auditoria_usuarios sí audita este cambio de estado, pero solo
-        // ve las columnas de la fila (antes/después), no puede reconstruir
-        // el motivo que el llamante pasó como parámetro suelto.
+        // trg_auditoria_usuarios (V49) audita el UPDATE de la fila de
+        // usuarios, pero solo ve columnas (antes/después) -- no puede
+        // reconstruir "motivo", que llega como parámetro suelto fuera de la
+        // fila. usuario_motivos_cambio (V50) es COMPLEMENTARIA a esa
+        // auditoría, no un reemplazo: guarda justo el dato que el trigger no
+        // puede ver (ver OBS-28).
+        registrarMotivoCambio(usuarioId, "CAMBIO_ESTADO", estadoAnteriorId, estado.getId(), motivo, ejecutorId);
     }
 
     // El ejecutor se resuelve desde el JWT autenticado, nunca desde el body.
@@ -169,13 +179,42 @@ public class UsuarioAdminService {
     public void eliminarUsuario(Long usuarioId, String motivo, Authentication authentication) {
         Usuario usuario = usuarioRepo.findByIdWithEstadoAndRoles(usuarioId).orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
         EstadoUsuario inactivo = estadoUsuarioRepo.findByNombre("INACTIVO").orElseThrow(() -> new IllegalStateException("Estado INACTIVO no existe"));
+        Integer estadoAnteriorId = usuario.getEstado().getId();
         usuario.setEstado(inactivo);
         usuario.setActualizadoEn(Instant.now());
         usuarioRepo.save(usuario);
-        // NOTA: mismo caso que cambiarEstado() -- "motivo" no es columna de
-        // usuarios y ya no se persiste en ningún lado tras retirar el INSERT
-        // manual (ver OBS-28); trg_auditoria_usuarios audita el cambio de
-        // estado pero no el motivo suelto que llega como parámetro.
+        // Mismo caso que cambiarEstado(): trg_auditoria_usuarios audita el
+        // UPDATE de la fila, usuario_motivos_cambio (V50) guarda el motivo
+        // que el trigger no puede ver (ver OBS-28).
+        Long ejecutorId = resolverIdPorCorreo(authentication == null ? null : authentication.getName());
+        registrarMotivoCambio(usuarioId, "ELIMINACION", estadoAnteriorId, inactivo.getId(), motivo, ejecutorId);
+    }
+
+    // usuario_motivos_cambio (V50): historial dedicado, complementario a
+    // bitacora_auditoria/trg_auditoria_usuarios -- ver OBS-28.
+    private void registrarMotivoCambio(Long usuarioId, String tipoCambio, Integer estadoAnteriorId,
+                                        Integer estadoNuevoId, String motivo, Long ejecutorId) {
+        UsuarioMotivoCambio fila = UsuarioMotivoCambio.builder()
+                .usuarioId(usuarioId)
+                .tipoCambio(tipoCambio)
+                .estadoAnterior(estadoAnteriorId)
+                .estadoNuevo(estadoNuevoId)
+                .motivo(motivo)
+                .ejecutadoPor(ejecutorId)
+                .creadoEn(OffsetDateTime.now())
+                .build();
+        usuarioMotivoCambioRepo.save(fila);
+    }
+
+    // V50/OBS-28: historial de motivos de cambio de estado/eliminación,
+    // más reciente primero.
+    @Transactional(readOnly = true)
+    public List<com.uteq.backend.dto.UsuarioMotivoCambioResponseDTO> historialMotivos(Long usuarioId) {
+        return usuarioMotivoCambioRepo.findByUsuarioIdOrderByCreadoEnDesc(usuarioId).stream()
+                .map(m -> new com.uteq.backend.dto.UsuarioMotivoCambioResponseDTO(
+                        m.getId(), m.getTipoCambio(), m.getEstadoAnterior(), m.getEstadoNuevo(),
+                        m.getMotivo(), m.getEjecutadoPor(), m.getCreadoEn()))
+                .toList();
     }
 
     private Long resolverIdPorCorreo(String correo) {

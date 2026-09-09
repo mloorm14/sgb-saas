@@ -83,4 +83,13 @@ public class UsuarioAdminController {
         usuarioAdminService.eliminarUsuario(id, motivo, authentication);
         return ResponseEntity.noContent().build();
     }
+
+    // ── GET /api/v1/admin/usuarios/{id}/historial-motivos ──────────
+    // V50/OBS-28: historial de motivos de cambio de estado/eliminación,
+    // más reciente primero.
+    @GetMapping("/{id}/historial-motivos")
+    @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
+    public ResponseEntity<java.util.List<com.uteq.backend.dto.UsuarioMotivoCambioResponseDTO>> historialMotivos(@PathVariable Long id) {
+        return ResponseEntity.ok(usuarioAdminService.historialMotivos(id));
+    }
 }
