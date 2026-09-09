@@ -4,10 +4,12 @@ import com.uteq.backend.dto.UsuarioListadoResponseDTO;
 import com.uteq.backend.entity.EstadoUsuario;
 import com.uteq.backend.entity.Rol;
 import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.entity.UsuarioMotivoCambio;
 import com.uteq.backend.repository.EstadoMultaRepository;
 import com.uteq.backend.repository.EstadoUsuarioRepository;
 import com.uteq.backend.repository.MultaRepository;
 import com.uteq.backend.repository.RolRepository;
+import com.uteq.backend.repository.UsuarioMotivoCambioRepository;
 import com.uteq.backend.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -42,13 +44,18 @@ class UsuarioAdminServiceTest {
     @Mock EstadoUsuarioRepository estadoUsuarioRepo;
     @Mock MultaRepository multaRepo;
     @Mock EstadoMultaRepository estadoMultaRepo;
+    @Mock UsuarioMotivoCambioRepository usuarioMotivoCambioRepo;
     @Mock Authentication authentication;
 
     @InjectMocks UsuarioAdminService service;
 
     private EstadoUsuario estado(String nombre) {
+        return estado(nombre, 1);
+    }
+
+    private EstadoUsuario estado(String nombre, int id) {
         EstadoUsuario e = new EstadoUsuario();
-        e.setId(1);
+        e.setId(id);
         e.setNombre(nombre);
         return e;
     }
@@ -143,18 +150,33 @@ class UsuarioAdminServiceTest {
     // ── cambiarEstado ───────────────────────────────────────
 
     @Test
-    void cambiarEstado_conDatosValidos_actualizaEstado() {
-        Usuario usuarioObjetivo = usuario(5L, "lector@correo.com", "LECTOR", "ACTIVO");
+    void cambiarEstado_conDatosValidos_actualizaEstadoYRegistraMotivo() {
+        Usuario usuarioObjetivo = Usuario.builder()
+                .id(5L).nombre("Nombre").apellido("Apellido").correo("lector@correo.com")
+                .passwordHash("hash").estado(estado("ACTIVO", 3)).correoVerificado(true)
+                .roles(Set.of(rol("LECTOR"))).fechaRegistro(Instant.now()).actualizadoEn(Instant.now())
+                .build();
         Usuario admin = usuario(9L, "admin@correo.com", "ADMIN", "ACTIVO");
 
         given(usuarioRepo.findByIdWithEstadoAndRoles(5L)).willReturn(Optional.of(usuarioObjetivo));
-        given(estadoUsuarioRepo.findByNombre("INACTIVO")).willReturn(Optional.of(estado("INACTIVO")));
+        given(estadoUsuarioRepo.findByNombre("INACTIVO")).willReturn(Optional.of(estado("INACTIVO", 2)));
         given(authentication.getName()).willReturn("admin@correo.com");
         given(usuarioRepo.findByCorreo("admin@correo.com")).willReturn(Optional.of(admin));
 
         service.cambiarEstado(5L, "INACTIVO", "Solicitud de baja voluntaria", authentication);
 
         assertThat(usuarioObjetivo.getEstado().getNombre()).isEqualTo("INACTIVO");
+
+        // V50/OBS-28: el motivo ya no se pierde -- queda en usuario_motivos_cambio.
+        ArgumentCaptor<UsuarioMotivoCambio> captor = ArgumentCaptor.forClass(UsuarioMotivoCambio.class);
+        verify(usuarioMotivoCambioRepo).save(captor.capture());
+        UsuarioMotivoCambio fila = captor.getValue();
+        assertThat(fila.getUsuarioId()).isEqualTo(5L);
+        assertThat(fila.getTipoCambio()).isEqualTo("CAMBIO_ESTADO");
+        assertThat(fila.getEstadoAnterior()).isEqualTo(3);
+        assertThat(fila.getEstadoNuevo()).isEqualTo(2);
+        assertThat(fila.getMotivo()).isEqualTo("Solicitud de baja voluntaria");
+        assertThat(fila.getEjecutadoPor()).isEqualTo(9L);
     }
 
     @Test
@@ -176,6 +198,56 @@ class UsuarioAdminServiceTest {
                 .isInstanceOf(EntityNotFoundException.class);
 
         verify(estadoUsuarioRepo, times(0)).findByNombre(any());
+    }
+
+    // ── eliminarUsuario ─────────────────────────────────────
+
+    @Test
+    void eliminarUsuario_conMotivo_marcaInactivoYRegistraMotivo() {
+        Usuario usuarioObjetivo = Usuario.builder()
+                .id(6L).nombre("Nombre").apellido("Apellido").correo("lector2@correo.com")
+                .passwordHash("hash").estado(estado("ACTIVO", 3)).correoVerificado(true)
+                .roles(Set.of(rol("LECTOR"))).fechaRegistro(Instant.now()).actualizadoEn(Instant.now())
+                .build();
+        Usuario admin = usuario(9L, "admin@correo.com", "ADMIN", "ACTIVO");
+
+        given(usuarioRepo.findByIdWithEstadoAndRoles(6L)).willReturn(Optional.of(usuarioObjetivo));
+        given(estadoUsuarioRepo.findByNombre("INACTIVO")).willReturn(Optional.of(estado("INACTIVO", 2)));
+        given(authentication.getName()).willReturn("admin@correo.com");
+        given(usuarioRepo.findByCorreo("admin@correo.com")).willReturn(Optional.of(admin));
+
+        service.eliminarUsuario(6L, "Solicitud propia de baja", authentication);
+
+        assertThat(usuarioObjetivo.getEstado().getNombre()).isEqualTo("INACTIVO");
+
+        ArgumentCaptor<UsuarioMotivoCambio> captor = ArgumentCaptor.forClass(UsuarioMotivoCambio.class);
+        verify(usuarioMotivoCambioRepo).save(captor.capture());
+        UsuarioMotivoCambio fila = captor.getValue();
+        assertThat(fila.getUsuarioId()).isEqualTo(6L);
+        assertThat(fila.getTipoCambio()).isEqualTo("ELIMINACION");
+        assertThat(fila.getEstadoAnterior()).isEqualTo(3);
+        assertThat(fila.getEstadoNuevo()).isEqualTo(2);
+        assertThat(fila.getMotivo()).isEqualTo("Solicitud propia de baja");
+        assertThat(fila.getEjecutadoPor()).isEqualTo(9L);
+    }
+
+    // El controller permite DELETE sin ?motivo (query param opcional) --
+    // se persiste tal cual llega, sin inventar un texto de reemplazo.
+    @Test
+    void eliminarUsuario_sinMotivo_persisteMotivoNulo() {
+        Usuario usuarioObjetivo = usuario(7L, "lector3@correo.com", "LECTOR", "ACTIVO");
+        Usuario admin = usuario(9L, "admin@correo.com", "ADMIN", "ACTIVO");
+
+        given(usuarioRepo.findByIdWithEstadoAndRoles(7L)).willReturn(Optional.of(usuarioObjetivo));
+        given(estadoUsuarioRepo.findByNombre("INACTIVO")).willReturn(Optional.of(estado("INACTIVO")));
+        given(authentication.getName()).willReturn("admin@correo.com");
+        given(usuarioRepo.findByCorreo("admin@correo.com")).willReturn(Optional.of(admin));
+
+        service.eliminarUsuario(7L, null, authentication);
+
+        ArgumentCaptor<UsuarioMotivoCambio> captor = ArgumentCaptor.forClass(UsuarioMotivoCambio.class);
+        verify(usuarioMotivoCambioRepo).save(captor.capture());
+        assertThat(captor.getValue().getMotivo()).isNull();
     }
 
     // ── F8-gerente/V38 ───────────────────────────────────────
