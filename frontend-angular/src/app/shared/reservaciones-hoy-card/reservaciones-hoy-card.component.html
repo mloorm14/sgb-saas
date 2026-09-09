@@ -74,7 +74,10 @@
     </div>
     <div class="flex flex-wrap justify-between items-center mt-lg gap-sm">
       <div class="flex items-center gap-xs font-body-sm text-body-sm">
-        <span class="text-on-surface-variant">Mostrar {{ tamanoPagina }} por página</span>
+        <span class="text-on-surface-variant">Mostrar</span>
+        <select [value]="tamanoPagina()" (change)="cambiarTamanoPagina($event)" aria-label="Elementos por página" class="h-10 px-sm pr-8 rounded border border-outline-variant bg-surface-container-lowest cursor-pointer appearance-none text-xs leading-tight py-1.5">
+          <option [value]="10">10</option><option [value]="20">20</option><option [value]="30">30</option>
+        </select><span class="text-on-surface-variant">por página</span>
       </div>
       @if (paginas().length > 1) {
         <div class="flex items-center gap-xs">
