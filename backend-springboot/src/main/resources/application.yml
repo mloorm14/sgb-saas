@@ -20,6 +20,10 @@ spring:
     # Fuente única de migraciones (raíz del repo). El contenedor la recibe vía SPRING_FLYWAY_LOCATIONS.
     locations: filesystem:../database/migrations
     baseline-on-migrate: true
+    # V39_2 quedo por debajo del tope ya aplicado en prod: sin esto Flyway la
+    # rechaza en validacion (outOfOrder=false). CREATE OR REPLACE la hace
+    # inocua al aplicar tarde; en BDs nuevas conserva su orden ante V40.
+    out-of-order: true
     # baseline-version = migración más alta ya incluida en db/schema.sql. Subirla al agregar una migración nueva.
     baseline-version: 48
   data:
