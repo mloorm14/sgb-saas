@@ -126,7 +126,8 @@ exactamente los **71 requisitos** ya identificados y trazados en
 originales de la Tercera Entrega, más los 13 de los módulos construidos
 después, más los 28 que esta revisión agrega/formaliza —
 `REQ-F-029`-`042`, `REQ-NF-016`-`024` y la división de `REQ-NF-014`/
-`REQ-F-022` — ver `CHANGELOG-REQ.md` para el detalle completo) — no se
+`REQ-F-022` (ambos IDs padre retirados — no se reutilizan, usar solo los
+sub-IDs — ver `CHANGELOG-REQ.md` para el detalle completo) — no se
 amplía el alcance funcional del sistema al redactar este documento (el
 sistema construido no cambia), solo se formaliza su especificación, que
 es precisamente el hallazgo central del Dr. Guerrero que motivó esta
@@ -2457,6 +2458,13 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   validado con datos mock) implementados; **sin Demonstration real
   todavía** (N=0), declarado explícitamente, no simulado como si
   existiera.
+- **Condición de cierre**: pasa a `verificado` cuando exista una corrida
+  real con N>0 participantes, consentimiento informado
+  (`docs/etica/consentimientos/plantilla.md`) versionado por participante,
+  y export crudo del instrumento trazable — ejecutada en la fase de
+  despliegue en producción (`docs/capitulos/10-trabajo-futuro.tex` §SUS,
+  `OBS-08` reabierta). Fecha: por definir por el equipo (no se fija una
+  fecha hasta que exista una ventana real de despliegue).
 
 ##### REQ-NF-019 — Accesibilidad del frontend (Lighthouse)
 
@@ -2489,6 +2497,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-020 — SEO del portal público (Lighthouse)
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: Bloque C.5 de la guía, mismo informe que REQ-NF-019.
 - **Descripción**: el frontend debe cumplir un umbral de SEO medido con
   Lighthouse (mismas condiciones que REQ-NF-019).
@@ -2562,7 +2571,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-022 — Protección de datos personales (minimización, consentimiento, ausencia de exposición)
 
 - **Prioridad**: Must
-- **Estado**: implementado (retencion/supresion pendiente)
+- **Estado**: implementado
 - **Fuente**: Bloque F de la guía (ética de datos),
   `docs/etica/ETHICS.md`.
 - **Descripción**: el sistema debe minimizar los datos personales que
@@ -2865,6 +2874,32 @@ se agrega al sistema a futuro, el proceso correcto es: (1) agregar la fila
 a `matriz.csv`, (2) expandir la entrada correspondiente en este SRS, en
 ese orden — nunca solo uno de los dos, por el mismo riesgo de
 desincronización ya documentado en ADR-013 para Flyway/`schema.sql`.
+
+### 4.1 Estados de verificación: `implementado` vs `verificado`
+
+La columna `estado` de la matriz usa un vocabulario cerrado de tres
+valores (`pendiente` / `implementado` / `verificado`, impuesto por la
+validación 5 de `scripts/validate-traceability.sh`), con la siguiente
+diferencia operacional entre los dos estados no pendientes:
+
+- **`implementado`**: el código real existe en el repositorio y hay una
+  evidencia empírica declarada (verificación manual, capturas, inspección
+  de código o configuración, informes de medición citados en
+  `evidencia_empirica`), pero no hay una prueba automatizada que lo
+  re-verifique en cada build.
+- **`verificado`**: además de lo anterior, la fila tiene
+  `prueba_automatizada` no vacía en la matriz — que es literalmente lo que
+  ya impone la validación 2 del script. Solo este estado se re-comprueba
+  en cada ejecución de CI.
+
+Conteo real sobre `matriz.csv` (generado con `csv.DictReader`, no copiado
+a mano): **23 verificado / 47 implementado / 1 pendiente sobre 71 filas**;
+de los 26 requisitos `Must`, 23 están `verificado` y 3 `implementado`. La
+mayoría de los requisitos nuevos del Bloque 5 (`REQ-F-032`-`042`,
+`REQ-NF-016`-`024`) quedó en `implementado` porque se redactaron a partir
+de funcionalidad ya implementada en el código y verificada por inspección
+al momento de redactar el requisito; automatizar una prueba específica
+para cada uno es trabajo pendiente que no bloqueó esta entrega.
 
 ## 5. Requisitos de calidad de software (ISO/IEC 25010)
 

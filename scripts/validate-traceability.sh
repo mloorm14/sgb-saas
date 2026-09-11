@@ -34,6 +34,11 @@
 #        seccion 6, punto 8 del SRS) -- se valida que el ID aparezca
 #        dentro de esos dos archivos consolidados en vez de exigir un
 #        archivo propio.
+#   5. La columna estado solo admite el vocabulario cerrado
+#      {pendiente, implementado, verificado} -- agregado 2026-09-10
+#      (revision docente M1): el matiz de una fila (ej. por que un
+#      requisito implementado no cumple un umbral) va en la columna
+#      opcional "observaciones", nunca dentro del valor de estado.
 #
 # Uso: scripts/validate-traceability.sh [ruta-al-csv] [ruta-al-srs]
 # Por defecto valida docs/trazabilidad/matriz.csv y docs/requisitos/SRS.md
@@ -121,6 +126,12 @@ REQUIRED_COLUMNS = {
     "tipo_acceso", "evidencia_empirica", "estado",
 }
 
+# "observaciones" es opcional (no forma parte de REQUIRED_COLUMNS): guarda
+# el matiz de una fila (ej. por que un requisito implementado no cumple un
+# umbral) sin ensuciar el valor de "estado" (ver regla 5).
+
+ESTADOS_VALIDOS = {"pendiente", "implementado", "verificado"}
+
 
 def es_vacio(valor):
     # Un campo se considera vacio si esta en blanco tras recortar espacios.
@@ -164,6 +175,14 @@ def main():
                         f"{req_id} (fila {numero_fila}): estado=verificado pero prueba_automatizada esta vacio "
                         "(un requisito 'verificado' necesita una prueba real, no solo evidencia manual)"
                     )
+
+            # Validacion 5 (M1): vocabulario cerrado de estado.
+            estado_valor = fila.get("estado", "").strip()
+            if estado_valor not in ESTADOS_VALIDOS:
+                errores.append(
+                    f"{req_id} (fila {numero_fila}): estado='{estado_valor}' no pertenece al vocabulario "
+                    f"valido {sorted(ESTADOS_VALIDOS)} (el matiz va en la columna observaciones)"
+                )
 
             # Validacion 4 (M23): historia_usuario/caso_de_uso deben apuntar a
             # archivos reales cuando el valor tiene forma de ID HU-/CU-.
