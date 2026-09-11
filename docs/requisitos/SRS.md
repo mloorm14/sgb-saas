@@ -2489,6 +2489,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-020 — SEO del portal público (Lighthouse)
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: Bloque C.5 de la guía, mismo informe que REQ-NF-019.
 - **Descripción**: el frontend debe cumplir un umbral de SEO medido con
   Lighthouse (mismas condiciones que REQ-NF-019).
@@ -2562,7 +2563,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-022 — Protección de datos personales (minimización, consentimiento, ausencia de exposición)
 
 - **Prioridad**: Must
-- **Estado**: implementado (retencion/supresion pendiente)
+- **Estado**: implementado
 - **Fuente**: Bloque F de la guía (ética de datos),
   `docs/etica/ETHICS.md`.
 - **Descripción**: el sistema debe minimizar los datos personales que

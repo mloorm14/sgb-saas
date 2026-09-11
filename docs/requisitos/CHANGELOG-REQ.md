@@ -183,3 +183,12 @@ ese commit, comparando los dos archivos `.md` ya versionados, no en el
 momento exacto de cada cambio individual dentro de esa actualización — no
 existe un commit separado por requisito porque los 13 requisitos nuevos y
 los 2 modificados se agregaron juntos en una sola tarea de documentación.
+
+## Revisión docente 2026-09-11 (M1) — vocabulario de estado
+
+| Punto | Cambio |
+|---|---|
+| M1 | Columna `observaciones` agregada a `docs/trazabilidad/matriz.csv` (12 columnas). `REQ-NF-020`/`REQ-NF-022` limpiados a `estado=implementado`, matiz movido a `observaciones`. `scripts/validate-traceability.sh`: nueva validación 5 (vocabulario cerrado de `estado`: `pendiente`/`implementado`/`verificado`). `SRS.md`: `REQ-NF-022` con paréntesis quitado del campo `Estado`; `REQ-NF-020` con campo `- **Estado**: implementado` agregado (excepción puntual a M28, que lo había excluido por tener narrativa propia — ahora conviven ambos sin duplicar información). |
+
+`scripts/validate-traceability.sh` corrido tras el bloque: **71 filas, 0
+problemas** (incluida la validación 5 nueva).
