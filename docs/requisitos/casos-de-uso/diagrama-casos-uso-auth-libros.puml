@@ -1,7 +1,7 @@
-' Generado desde commit c7c6d9e (real source code)
-' Diagramas de casos de uso: Auth + Libro CRUD
-' Actores basados en roles reales de Usuario (Rol.nombre): LECTOR, BIBLIOTECARIO, GERENTE, ADMIN
-' Permisos derivados de @PreAuthorize en AuthController.java y LibroController.java
+' Generated from commit c7c6d9e (real source code)
+' Use case diagrams: Auth + Book CRUD
+' Actors based on real Usuario roles (Rol.nombre): LECTOR, BIBLIOTECARIO, GERENTE, ADMIN
+' Permissions derived from @PreAuthorize in AuthController.java and LibroController.java
 
 @startuml
 !define RECTANGLE class
@@ -14,32 +14,32 @@ skinparam usecase {
     ArrowColor Black
 }
 
-package "SGB-SaaS - Autenticación y Catálogo de Libros" {
+package "SGB-SaaS - Authentication and Book Catalog" {
 
     actor "LECTOR" as lector
     actor "BIBLIOTECARIO" as biblio
     actor "GERENTE" as gerente
     actor "ADMIN" as admin
 
-    package "Autenticación (AuthController)" {
-        usecase "Registrarse\nPOST /api/auth/registro" as UC_Registro
-        usecase "Verificar correo\nPOST /api/auth/verificar-correo" as UC_Verificar
-        usecase "Iniciar sesión\nPOST /api/auth/login" as UC_Login
-        usecase "Cerrar sesión\nPOST /api/auth/logout" as UC_Logout
-        usecase "Refrescar token\nPOST /api/auth/refresh" as UC_Refresh
+    package "Authentication (AuthController)" {
+        usecase "Sign up\nPOST /api/auth/registro" as UC_Registro
+        usecase "Verify email\nPOST /api/auth/verificar-correo" as UC_Verificar
+        usecase "Log in\nPOST /api/auth/login" as UC_Login
+        usecase "Log out\nPOST /api/auth/logout" as UC_Logout
+        usecase "Refresh token\nPOST /api/auth/refresh" as UC_Refresh
     }
 
-    package "Catálogo de Libros (LibroController)" {
-        usecase "Listar libros\nGET /api/v1/libros" as UC_Listar
-        usecase "Buscar libro por ID\nGET /api/v1/libros/{id}" as UC_Buscar
-        usecase "Autocompletar sugerencias\nGET /api/v1/libros/sugerencias" as UC_Sugerir
-        usecase "Crear libro\nPOST /api/v1/libros" as UC_Crear
-        usecase "Actualizar libro\nPUT /api/v1/libros/{id}" as UC_Actualizar
-        usecase "Eliminar libro (baja lógica)\nDELETE /api/v1/libros/{id}" as UC_Eliminar
+    package "Book Catalog (LibroController)" {
+        usecase "List books\nGET /api/v1/libros" as UC_Listar
+        usecase "Find book by ID\nGET /api/v1/libros/{id}" as UC_Buscar
+        usecase "Autocomplete suggestions\nGET /api/v1/libros/sugerencias" as UC_Sugerir
+        usecase "Create book\nPOST /api/v1/libros" as UC_Crear
+        usecase "Update book\nPUT /api/v1/libros/{id}" as UC_Actualizar
+        usecase "Delete book (soft delete)\nDELETE /api/v1/libros/{id}" as UC_Eliminar
     }
 }
 
-' --- Autenticación: todos los roles pueden registrarse/verificar/login ---
+' --- Authentication: all roles can sign up/verify/log in ---
 lector --> UC_Registro
 biblio --> UC_Registro
 gerente --> UC_Registro
@@ -65,7 +65,7 @@ biblio --> UC_Refresh
 gerente --> UC_Refresh
 admin --> UC_Refresh
 
-' --- Catálogo: listar/buscar - LECTOR, BIBLIOTECARIO, GERENTE, ADMIN ---
+' --- Catalog: list/search - LECTOR, BIBLIOTECARIO, GERENTE, ADMIN ---
 lector --> UC_Listar
 biblio --> UC_Listar
 gerente --> UC_Listar
@@ -76,13 +76,13 @@ biblio --> UC_Buscar
 gerente --> UC_Buscar
 admin --> UC_Buscar
 
-' --- Autocompletar: cualquier autenticado (isAuthenticated) ---
+' --- Autocomplete: any authenticated user (isAuthenticated) ---
 lector --> UC_Sugerir
 biblio --> UC_Sugerir
 gerente --> UC_Sugerir
 admin --> UC_Sugerir
 
-' --- Escritura (CRUD): solo BIBLIOTECARIO, GERENTE, ADMIN ---
+' --- Write (CRUD): only BIBLIOTECARIO, GERENTE, ADMIN ---
 biblio --> UC_Crear
 gerente --> UC_Crear
 admin --> UC_Crear
@@ -95,12 +95,12 @@ biblio --> UC_Eliminar
 gerente --> UC_Eliminar
 admin --> UC_Eliminar
 
-' Notas de trazabilidad
-note right of UC_Registro : Público (sin @PreAuthorize)\nAuthController:37
-note right of UC_Verificar : Público (sin @PreAuthorize)\nAuthController:47
-note right of UC_Login : Público\nAuthController:54
-note right of UC_Logout : Requiere Authorization header\nAuthController:63
-note right of UC_Refresh : Requiere cookie refreshToken\nAuthController:91
+' Traceability notes
+note right of UC_Registro : Public (no @PreAuthorize)\nAuthController:37
+note right of UC_Verificar : Public (no @PreAuthorize)\nAuthController:47
+note right of UC_Login : Public\nAuthController:54
+note right of UC_Logout : Requires Authorization header\nAuthController:63
+note right of UC_Refresh : Requires refreshToken cookie\nAuthController:91
 
 note right of UC_Listar : @PreAuthorize hasAnyRole\nLECTOR,BIBLIOTECARIO,GERENTE,ADMIN\nLibroController:36
 note right of UC_Buscar : @PreAuthorize hasAnyRole\nLECTOR,BIBLIOTECARIO,GERENTE,ADMIN\nLibroController:63

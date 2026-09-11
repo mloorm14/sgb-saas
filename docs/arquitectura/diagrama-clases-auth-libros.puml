@@ -1,7 +1,7 @@
-' Generado desde commit c7c6d9e (real source code)
-' Diagrama de clases: Auth + Libro (controladores, servicios, entidades)
-' Reglas: omitir métodos Lombok/IDE (getters, setters, equals, hashCode, constructors, builder)
-' Mostrar solo métodos de lógica de negocio reales y relaciones reales del código
+' Generated from commit c7c6d9e (real source code)
+' Class diagram: Auth + Book (controllers, services, entities)
+' Rules: omit Lombok/IDE methods (getters, setters, equals, hashCode, constructors, builder)
+' Show only real business-logic methods and real code relationships
 
 @startuml
 !define RECTANGLE class
@@ -207,54 +207,54 @@ package "com.uteq.backend.security" {
 ' --- Relaciones reales del código ---
 
 ' Controladores -> Servicios
-AuthController --> AuthService : usa
-AuthController --> JwtService : usa
-LibroController --> LibroService : usa
+AuthController --> AuthService : uses
+AuthController --> JwtService : uses
+LibroController --> LibroService : uses
 
 ' Servicios -> Repositorios
-AuthService --> UsuarioRepository : inyecta
-AuthService --> RolRepository : inyecta
-AuthService --> EstadoUsuarioRepository : inyecta
-AuthService --> BitacoraAuditoriaRepository : inyecta
-AuthService --> VerificacionCorreoService : inyecta
-AuthService --> JwtService : inyecta
-AuthService --> AuthenticationManager : inyecta
-AuthService --> LoginRateLimiter : inyecta
-AuthService --> RedisTemplate : inyecta
-AuthService --> PasswordEncoder : inyecta
+AuthService --> UsuarioRepository : injects
+AuthService --> RolRepository : injects
+AuthService --> EstadoUsuarioRepository : injects
+AuthService --> BitacoraAuditoriaRepository : injects
+AuthService --> VerificacionCorreoService : injects
+AuthService --> JwtService : injects
+AuthService --> AuthenticationManager : injects
+AuthService --> LoginRateLimiter : injects
+AuthService --> RedisTemplate : injects
+AuthService --> PasswordEncoder : injects
 
-LibroService --> LibroRepository : inyecta
-LibroService --> EditorialRepository : inyecta
-LibroService --> IdiomaRepository : inyecta
-LibroService --> EstadoLibroRepository : inyecta
-LibroService --> CategoriaRepository : inyecta
-LibroService --> AutorRepository : inyecta
+LibroService --> LibroRepository : injects
+LibroService --> EditorialRepository : injects
+LibroService --> IdiomaRepository : injects
+LibroService --> EstadoLibroRepository : injects
+LibroService --> CategoriaRepository : injects
+LibroService --> AutorRepository : injects
 
-VerificacionCorreoService --> RedisTemplate : inyecta
+VerificacionCorreoService --> RedisTemplate : injects
 
 ' Servicios -> Entidades (operan sobre)
-AuthService ..> Usuario : crea/actualiza/consulta
-AuthService ..> Rol : consulta (ROL_POR_DEFECTO)
-AuthService ..> EstadoUsuario : consulta (PENDIENTE_VERIFICACION, ACTIVO)
-AuthService ..> BitacoraAuditoria : crea
+AuthService ..> Usuario : creates/updates/queries
+AuthService ..> Rol : queries (ROL_POR_DEFECTO)
+AuthService ..> EstadoUsuario : queries (PENDIENTE_VERIFICACION, ACTIVO)
+AuthService ..> BitacoraAuditoria : creates
 
-LibroService ..> Libro : crea/actualiza/consulta/elimina (baja lógica)
-LibroService ..> Editorial : consulta (getReferenceById)
-LibroService ..> Idioma : consulta (getReferenceById)
-LibroService ..> EstadoLibro : consulta (ACTIVO, DADO_DE_BAJA)
-LibroService ..> Categoria : consulta (getReferenceById)
-LibroService ..> Autor : consulta (getReferenceById)
+LibroService ..> Libro : creates/updates/queries/deletes (soft delete)
+LibroService ..> Editorial : queries (getReferenceById)
+LibroService ..> Idioma : queries (getReferenceById)
+LibroService ..> EstadoLibro : queries (ACTIVO, DADO_DE_BAJA)
+LibroService ..> Categoria : queries (getReferenceById)
+LibroService ..> Autor : queries (getReferenceById)
 
 ' Seguridad
-JwtAuthFilter --> JwtService : usa
-JwtAuthFilter --> UserDetailsServiceImpl : usa
-JwtAuthFilter --> RedisTemplate : usa (blacklist)
+JwtAuthFilter --> JwtService : uses
+JwtAuthFilter --> UserDetailsServiceImpl : uses
+JwtAuthFilter --> RedisTemplate : uses (blacklist)
 
-JwtService --> Usuario : usa (extraer claims)
+JwtService --> Usuario : uses (extraer claims)
 
-LoginRateLimiter --> RedisTemplate : usa
+LoginRateLimiter --> RedisTemplate : uses
 
-UserDetailsServiceImpl --> UsuarioRepository : inyecta
+UserDetailsServiceImpl --> UsuarioRepository : injects
 
 ' Entidades -> Repositorios
 UsuarioRepository --> Usuario
