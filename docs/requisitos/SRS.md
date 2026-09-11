@@ -1140,35 +1140,15 @@ reescribieron a forma "debe".
 - **Método de verificación**: **Test** (`NotificacionServiceTest`, 6
   tests; `NotificacionControllerSecurityTest`, 4 tests).
 
-#### REQ-F-022a — Alerta de préstamo por vencer
+#### REQ-F-022 (retirado) �\u2192 dividido en REQ-F-022a, REQ-F-022b, REQ-F-022c
+
+El requisito original `REQ-F-022` (Alertas de pr\u00e9stamo/multa/reserva) fue dividido en tres sub-requisitos para mayor granularidad trazable. Ver `REQ-F-022a`, `REQ-F-022b`, `REQ-F-022c` a continuaci\u00f3n. El ID original `REQ-F-022` queda **retirado** y no debe reutilizarse.
+
+#### REQ-F-022a �\u2014 Alerta de pr\u00e9stamo por vencer
 
 - **Prioridad**: Should
 - **Estado**: implementado
 - **Fuente**: **sin HU/CU dedicada** (matriz: `—`, `—`).
-- **Módulo/endpoint**: `NotificacionVencimientoScheduler`/`NotificacionService` — job periódico, sin endpoint propio.
-- **Descripción**: el sistema genera una notificación de "préstamo por
-  vencer" mediante un job que corre cada 60 segundos, para todo préstamo
-  dentro de una ventana de anticipación configurable (default 15 minutos
-  antes de la fecha límite).
-- **Rationale**: reduce préstamos vencidos por descuido, sin depender de
-  que el bibliotecario o el lector revisen manualmente las fechas.
-- **Criterio de aceptación medible**: un préstamo dentro de la ventana de
-  anticipación configurada genera una notificación **una sola vez** (no
-  repetida en cada ejecución del job, que corre cada 60s).
-- **Nota de honestidad (verificada en código, 2026-09-07)**: el envío
-  real por correo de esta alerta está **deshabilitado por defecto**
-  (`NotificacionService`, `@Value("${notificaciones.email.habilitado:false}")`,
-  causa raíz documentada en `OBS-23`: saturación del proveedor SMTP tras
-  el volumen sintético de la rúbrica ADB) — la notificación **sí** se
-  persiste en la tabla `notificaciones` (consultable vía REQ-F-021), pero
-  el correo no se envía salvo que se reactive explícitamente esa clave de
-  configuración. El criterio de aceptación de este requisito es sobre la
-  generación de la notificación, no sobre su entrega por correo, que
-  queda declarada pendiente de reactivación SMTP, no como si funcionara.
-- **Método de verificación**: **Test**
-  (`NotificacionVencimientoSchedulerTest`, 3 tests;
-  `NotificacionServiceTest.generarAlertaVencimiento_*`; `EmailServiceTest`).
-
 #### REQ-F-022b — Alerta de multa generada
 
 - **Prioridad**: Should
@@ -2100,7 +2080,23 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   documenta la ausencia de un test de regresión en vez de implicar que
   existe uno.
 
-##### REQ-NF-014a — Content-Security-Policy (backend y frontend)
+#### REQ-NF-014 (retirado) → dividido en REQ-NF-014a, REQ-NF-014b, REQ-NF-014c, REQ-NF-014d
+
+El requisito original `REQ-NF-014` (Seguridad OWASP A05) fue dividido en cuatro sub-requisitos para mayor granularidad trazable. Ver `REQ-NF-014a`, `REQ-NF-014b`, `REQ-NF-014c`, `REQ-NF-014d` a continuación. El ID original `REQ-NF-014` queda **retirado** y no debe reutilizarse.
+
+#### REQ-NF-014 (retirado) → dividido en REQ-NF-014a, REQ-NF-014b, REQ-NF-014c, REQ-NF-014d
+
+El requisito original `REQ-NF-014` (Seguridad OWASP A05) fue dividido en cuatro sub-requisitos para mayor granularidad trazable. Ver `REQ-NF-014a`, `REQ-NF-014b`, `REQ-NF-014c`, `REQ-NF-014d` a continuación. El ID original `REQ-NF-014` queda **retirado** y no debe reutilizarse.
+
+#### REQ-NF-014 (retirado) → dividido en REQ-NF-014a, REQ-NF-014b, REQ-NF-014c, REQ-NF-014d
+
+El requisito original `REQ-NF-014` (Seguridad OWASP A05) fue dividido en cuatro sub-requisitos para mayor granularidad trazable. Ver `REQ-NF-014a`, `REQ-NF-014b`, `REQ-NF-014c`, `REQ-NF-014d` a continuación. El ID original `REQ-NF-014` queda **retirado** y no debe reutilizarse.
+
+#### REQ-NF-014 (retirado) �\u2192 dividido en REQ-NF-014a, REQ-NF-014b, REQ-NF-014c, REQ-NF-014d
+
+El requisito original `REQ-NF-014` (Seguridad OWASP A05) fue dividido en cuatro sub-requisitos para mayor granularidad trazable. Ver `REQ-NF-014a`, `REQ-NF-014b`, `REQ-NF-014c`, `REQ-NF-014d` a continuaci\u00f3n. El ID original `REQ-NF-014` queda **retirado** y no debe reutilizarse.
+
+##### REQ-NF-014a �\u2014 Content-Security-Policy (backend y frontend)
 
 - **Prioridad**: Should
 - **Fuente**: sin HU dedicada, OWASP A05
