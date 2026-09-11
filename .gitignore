@@ -49,3 +49,8 @@ GUIA_ROLES_GUION/
 
 # SonarQube scanner local
 .scannerwork/
+
+# Reportes HTML generados de JaCoCo (regenerables con mvn verify; solo se
+# versionan los artefactos crudos jacoco.xml/.csv/.exec — punto 14 higiene)
+docs/mediciones/jacoco/html/
+docs/mediciones/jacoco/*/html/
