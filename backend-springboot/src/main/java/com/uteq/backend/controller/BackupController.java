@@ -44,6 +44,11 @@ public class BackupController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
+    /**
+     * Executes the generar operation.
+     * @param req value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<BackupResponseDTO> generar(@Valid @RequestBody BackupRequestDTO req) {
         String tipo = req.tipo != null ? req.tipo : "manual";
         Backup b = backupService.generarBackup(req.desde, req.hasta, req.tablas, req.formato, tipo);
@@ -70,12 +75,21 @@ public class BackupController {
 
     @GetMapping("/programacion")
     @PreAuthorize("hasRole('ADMIN')")
+    /**
+     * Executes the listarProgramaciones operation.
+     * @return operation result
+     */
     public ResponseEntity<List<BackupProgramacion>> listarProgramaciones() {
         return ResponseEntity.ok(progService.listarActivas());
     }
 
     @PostMapping("/programacion")
     @PreAuthorize("hasRole('ADMIN')")
+    /**
+     * Executes the crearProgramacion operation.
+     * @param req value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<BackupProgramacion> crearProgramacion(@RequestBody BackupProgramacion req) {
         BackupProgramacion creada = progService.crear(req);
         // Opcional: auto-programar al crear
@@ -87,6 +101,11 @@ public class BackupController {
 
     @PostMapping("/{id}/programar")
     @PreAuthorize("hasRole('ADMIN')")
+    /**
+     * Executes the programar operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<Map<String, Object>> programar(@PathVariable Long id) {
         progService.programarEjecucion(id);
         BackupProgramacion programacion = progService.obtener(id);
@@ -98,6 +117,11 @@ public class BackupController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
+    /**
+     * Executes the borrar operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<Void> borrar(@PathVariable Long id) {
         // Solo elimina el registro de backup. La programación usa su propio endpoint
         // para evitar colisión de IDs entre ambas tablas.
@@ -107,6 +131,11 @@ public class BackupController {
 
     @DeleteMapping("/programacion/{id}")
     @PreAuthorize("hasRole('ADMIN')")
+    /**
+     * Executes the borrarProgramacion operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<Void> borrarProgramacion(@PathVariable Long id) {
         progService.eliminar(id);
         return ResponseEntity.noContent().build();
@@ -114,6 +143,11 @@ public class BackupController {
 
     @GetMapping("/{id}/download")
     @PreAuthorize("hasRole('ADMIN')")
+    /**
+     * Executes the descargar operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<byte[]> descargar(@PathVariable Long id) {
         byte[] contenido = backupService.descargar(id);
         return ResponseEntity.ok()
@@ -125,6 +159,11 @@ public class BackupController {
 
     @PostMapping("/{id}/ejecutar-ahora")
     @PreAuthorize("hasRole('ADMIN')")
+    /**
+     * Executes the ejecutarAhora operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<Map<String, Object>> ejecutarAhora(@PathVariable Long id) {
         BackupProgramacion p = progService.obtener(id);
         // Ejecutar backup inmediato con el rango correspondiente

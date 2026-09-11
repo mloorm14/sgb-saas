@@ -67,6 +67,11 @@ public class PublicoLibroController {
 
     // ── GET /api/publico/libros/{id} ─────────────────────────────────
     @GetMapping("/{id}")
+    /**
+     * Executes the obtener operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public LibroResponseDTO obtener(@PathVariable Long id) {
         return libroService.buscarPorIdPublico(id);
     }
@@ -79,6 +84,11 @@ public class PublicoLibroController {
     // autenticado de LibroController: Content-Type dinámico según
     // portada_tipo, 404 si el libro no existe o no tiene portada.
     @GetMapping("/{id}/portada")
+    /**
+     * Executes the portada operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<byte[]> portada(@PathVariable Long id) {
         PortadaImagenDTO portada = libroService.obtenerPortada(id);
         return ResponseEntity.ok()

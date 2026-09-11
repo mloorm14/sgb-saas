@@ -71,6 +71,10 @@ public class NotificacionService {
      * @param prestamo préstamo próximo a vencer, con usuario, libro y fecha estimada
      */
     @Transactional
+    /**
+     * Executes the generarAlertaVencimiento operation.
+     * @param prestamo value required by the operation
+     */
     public void generarAlertaVencimiento(Prestamo prestamo) {
         Integer tipoId = idDelTipo(TIPO_VENCIMIENTO);
         if (notificacionRepo.existsByPrestamoIdAndTipoNotificacionId(prestamo.getId(), tipoId)) {
@@ -95,6 +99,12 @@ public class NotificacionService {
      * @param monto monto de la multa generada, incluido en el mensaje
      */
     @Transactional
+    /**
+     * Executes the notificarMulta operation.
+     * @param usuarioId value required by the operation
+     * @param prestamoId value required by the operation
+     * @param monto value required by the operation
+     */
     public void notificarMulta(Long usuarioId, Long prestamoId, BigDecimal monto) {
         String mensaje = "Se generó una multa de $" + monto + " asociada a tu préstamo #" + prestamoId
                 + " por atraso en la devolución.";
@@ -109,6 +119,10 @@ public class NotificacionService {
      * @param reservacion reservación caducada con usuario y libro para el mensaje
      */
     @Transactional
+    /**
+     * Executes the notificarReservaCaducada operation.
+     * @param reservacion value required by the operation
+     */
     public void notificarReservaCaducada(Reservacion reservacion) {
         String titulo = tituloDelLibro(reservacion.getLibroId());
         String mensaje = "Tu reserva de \"" + titulo + "\" caducó porque no se retiró dentro del plazo.";
@@ -129,6 +143,13 @@ public class NotificacionService {
      * @throws AuthorizationDeniedException si un LECTOR pide notificaciones ajenas
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarPorUsuario operation.
+     * @param usuarioId value required by the operation
+     * @param authentication value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<NotificacionResponseDTO> listarPorUsuario(Long usuarioId, Authentication authentication, Pageable pageable) {
         validarAccesoUsuario(usuarioId, authentication);
         return notificacionRepo.findByUsuarioId(usuarioId, pageable).map(this::toDTO);
@@ -144,6 +165,12 @@ public class NotificacionService {
      * @throws EntityNotFoundException si el usuario no existe
      */
     @Transactional
+    /**
+     * Executes the notificarComprobantePago operation.
+     * @param usuarioId value required by the operation
+     * @param multaId value required by the operation
+     * @param montoPagado value required by the operation
+     */
     public void notificarComprobantePago(Long usuarioId, Long multaId, BigDecimal montoPagado) {
         Usuario usuario = usuarioRepo.findById(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
@@ -191,6 +218,12 @@ public class NotificacionService {
      * @throws EntityNotFoundException si el usuario no existe
      */
     @Transactional
+    /**
+     * Executes the notificarLibroDisponible operation.
+     * @param usuarioId value required by the operation
+     * @param libroId value required by the operation
+     * @param titulo value required by the operation
+     */
     public void notificarLibroDisponible(Long usuarioId, Long libroId, String titulo) {
         String mensaje = "El libro \"" + titulo + "\" esta disponible ahora — reservalo antes que otros.";
         Integer tipoId = idDelTipo(TIPO_DISPONIBLE);

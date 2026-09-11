@@ -19,11 +19,19 @@ public class ConsultarHorariosTool extends AbstractBaseConocimientoTool {
     }
 
     @Override
+    /**
+     * Executes the getName operation.
+     * @return operation result
+     */
     public String getName() {
         return "consultar_horarios";
     }
 
     @Override
+    /**
+     * Executes the getDescription operation.
+     * @return operation result
+     */
     public String getDescription() {
         return "Consulta los horarios de apertura de la biblioteca. "
                 + "Incluye horarios de lunes a viernes, sábados y días especiales.";

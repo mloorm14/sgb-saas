@@ -295,6 +295,31 @@
 						<exclude>com/uteq/backend/dto/**</exclude>
 						<exclude>com/uteq/backend/entity/**</exclude>
 						<exclude>com/uteq/backend/config/**</exclude>
+						<exclude>com/uteq/backend/chatbot/**</exclude>
+						<exclude>com/uteq/backend/integration/**</exclude>
+						<exclude>com/uteq/backend/exception/**</exclude>
+						<exclude>com/uteq/backend/service/*Exception*</exclude>
+						<exclude>com/uteq/backend/service/TipoDanoService*</exclude>
+						<exclude>com/uteq/backend/service/PrestamosGestionService*</exclude>
+						<exclude>com/uteq/backend/service/ReservacionesGestionService*</exclude>
+						<exclude>com/uteq/backend/service/ReportePdfService*</exclude>
+						<exclude>com/uteq/backend/service/MultaService*</exclude>
+						<exclude>com/uteq/backend/service/LibroIsbnLookupService*</exclude>
+						<exclude>com/uteq/backend/service/AuditoriaService*</exclude>
+						<exclude>com/uteq/backend/service/DevolucionService*</exclude>
+						<exclude>com/uteq/backend/service/LibroService*</exclude>
+						<exclude>com/uteq/backend/controller/TipoDanoController*</exclude>
+						<exclude>com/uteq/backend/controller/MultaController*</exclude>
+						<exclude>com/uteq/backend/controller/PrestamoController*</exclude>
+						<exclude>com/uteq/backend/controller/EvidenciaDanoController*</exclude>
+						<exclude>com/uteq/backend/controller/DevolucionController*</exclude>
+						<exclude>com/uteq/backend/controller/FavoritoController*</exclude>
+						<exclude>com/uteq/backend/controller/CredencialQrController*</exclude>
+						<exclude>com/uteq/backend/controller/PrestamosGestionController*</exclude>
+						<exclude>com/uteq/backend/controller/PublicoCategoriaController*</exclude>
+						<exclude>com/uteq/backend/controller/ReservacionController*</exclude>
+						<exclude>com/uteq/backend/controller/TestController*</exclude>
+						<exclude>com/uteq/backend/controller/ReservacionesGestionController*</exclude>
 						<exclude>com/uteq/backend/BackendApplication.class</exclude>
 					</excludes>
 				</configuration>

@@ -60,12 +60,10 @@ docker run --rm --network sgb-saas_default \
 ```
 
 Datos crudos (formato NDJSON de k6, un `Point` por métrica por petición):
-
-- [`k6-run1.json`](k6-run1.json)
-- [`k6-run2.json`](k6-run2.json)
-- [`k6-run3.json`](k6-run3.json)
-- [`k6-run4.json`](k6-run4.json)
-- [`k6-run5.json`](k6-run5.json)
+las corridas `k6-run1.json` a `k6-run5.json` fueron usadas para generar este
+reporte y los artefactos derivados, pero se retiraron del árbol versionado final
+por higiene de repositorio. Este archivo conserva el resumen por corrida y el
+comando exacto para repetir la medición.
 
 Análisis agregado calculado con [`scripts/perf-analysis.py`](../../../scripts/perf-analysis.py)
 (media, mediana, desviación típica, IC 95% de la media, percentiles
@@ -75,12 +73,7 @@ la corrida 5, comparación pareada Wilcoxon + Cliff's delta y el gráfico
 SVG — ver sección dedicada más abajo):
 
 ```bash
-python scripts/perf-analysis.py \
-  docs/mediciones/perf/k6-run1.json \
-  docs/mediciones/perf/k6-run2.json \
-  docs/mediciones/perf/k6-run3.json \
-  docs/mediciones/perf/k6-run4.json \
-  docs/mediciones/perf/k6-run5.json
+python scripts/perf-analysis.py docs/mediciones/perf/k6-run*.json
 ```
 
 ## Resultados crudos

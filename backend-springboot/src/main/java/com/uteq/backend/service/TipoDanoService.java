@@ -28,16 +28,32 @@ public class TipoDanoService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarTodos operation.
+     * @return operation result
+     */
     public List<TipoDanoDTO> listarTodos() {
         return tipoDanoRepo.findAll().stream().map(this::toDTO).toList();
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarActivos operation.
+     * @return operation result
+     */
     public List<TipoDanoDTO> listarActivos() {
         return tipoDanoRepo.findByActivoTrue().stream().map(this::toDTO).toList();
     }
 
     @Transactional
+    /**
+     * Executes the crear operation.
+     * @param nombre value required by the operation
+     * @param categoriaId value required by the operation
+     * @param tipoCosto value required by the operation
+     * @param valor value required by the operation
+     * @return operation result
+     */
     public TipoDanoDTO crear(String nombre, Integer categoriaId, String tipoCosto, BigDecimal valor) {
         if (tipoDanoRepo.findByNombre(nombre).isPresent()) {
             throw new IllegalArgumentException("Ya existe un tipo de daño con el nombre: " + nombre);
@@ -56,6 +72,15 @@ public class TipoDanoService {
     }
 
     @Transactional
+    /**
+     * Executes the actualizar operation.
+     * @param id value required by the operation
+     * @param nombre value required by the operation
+     * @param categoriaId value required by the operation
+     * @param tipoCosto value required by the operation
+     * @param valor value required by the operation
+     * @return operation result
+     */
     public TipoDanoDTO actualizar(Integer id, String nombre, Integer categoriaId, String tipoCosto, BigDecimal valor) {
         TipoDano tipo = tipoDanoRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Tipo de daño no encontrado: " + id));
@@ -83,6 +108,10 @@ public class TipoDanoService {
     }
 
     @Transactional
+    /**
+     * Executes the eliminar operation.
+     * @param id value required by the operation
+     */
     public void eliminar(Integer id) {
         TipoDano tipo = tipoDanoRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Tipo de daño no encontrado: " + id));

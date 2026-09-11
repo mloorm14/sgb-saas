@@ -20,6 +20,10 @@ public class PublicoCategoriaController {
     }
 
     @GetMapping
+    /**
+     * Executes the listar operation.
+     * @return operation result
+     */
     public ResponseEntity<List<CategoriaResponseDTO>> listar() {
         List<CategoriaResponseDTO> categorias = categoriaRepository.findAll().stream()
                 .map(c -> new CategoriaResponseDTO(c.getId(), c.getNombre()))

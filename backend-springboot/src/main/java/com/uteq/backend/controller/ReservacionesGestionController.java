@@ -53,6 +53,11 @@ public class ReservacionesGestionController {
     // Historial de reservaciones del usuario con título del libro resuelto.
     @GetMapping("/historial-reservaciones")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the historialReservaciones operation.
+     * @param usuarioId value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<List<HistorialReservacionDTO>> historialReservaciones(
             @RequestParam Long usuarioId) {
         return ResponseEntity.ok(

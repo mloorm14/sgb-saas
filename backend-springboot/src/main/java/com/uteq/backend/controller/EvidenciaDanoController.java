@@ -39,6 +39,11 @@ public class EvidenciaDanoController {
 
     @GetMapping("/evidencia/{registroDanoId}")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the listarEvidencias operation.
+     * @param registroDanoId value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<List<EvidenciaDanoResponseDTO>> listarEvidencias(
             @PathVariable Long registroDanoId) {
         return ResponseEntity.ok(devolucionService.listarEvidencias(registroDanoId));
@@ -46,6 +51,11 @@ public class EvidenciaDanoController {
 
     @GetMapping("/evidencia/{id}/archivo")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the obtenerArchivo operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<byte[]> obtenerArchivo(@PathVariable Long id) {
         var evidencia = devolucionService.obtenerArchivoBinario(id);
         return ResponseEntity.ok()

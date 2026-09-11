@@ -69,6 +69,12 @@ public class UsuarioAdminService {
      * @return página de filas resumidas con roles, estado y marca de multas pendientes
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the listar operation.
+     * @param filtro value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<UsuarioListadoResponseDTO> listar(String filtro, Pageable pageable) {
         return listar(filtro, pageable, null, false);
     }
@@ -86,6 +92,14 @@ public class UsuarioAdminService {
      * @return página de filas resumidas con roles, estado y marca de multas pendientes
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the listar operation.
+     * @param filtro value required by the operation
+     * @param pageable value required by the operation
+     * @param authentication value required by the operation
+     * @param soloMios value required by the operation
+     * @return operation result
+     */
     public Page<UsuarioListadoResponseDTO> listar(String filtro, Pageable pageable,
                                                   Authentication authentication, boolean soloMios) {
         String texto = filtro == null ? "" : filtro.trim();
@@ -120,6 +134,12 @@ public class UsuarioAdminService {
      * @throws org.springframework.security.access.AccessDeniedException si un GERENTE intenta asignar un rol fuera de su alcance o tocar usuarios ajenos
      */
     @Transactional
+    /**
+     * Executes the cambiarRol operation.
+     * @param usuarioId value required by the operation
+     * @param nuevoRol value required by the operation
+     * @param authentication value required by the operation
+     */
     public void cambiarRol(Long usuarioId, String nuevoRol, Authentication authentication) {
         Usuario usuario = usuarioRepo.findByIdWithEstadoAndRoles(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
@@ -160,6 +180,13 @@ public class UsuarioAdminService {
      * @throws org.springframework.security.access.AccessDeniedException si un GERENTE intenta un estado fuera de ACTIVO/INACTIVO o tocar usuarios ajenos
      */
      @Transactional
+    /**
+     * Executes the cambiarEstado operation.
+     * @param usuarioId value required by the operation
+     * @param nuevoEstado value required by the operation
+     * @param motivo value required by the operation
+     * @param authentication value required by the operation
+     */
     public void cambiarEstado(Long usuarioId, String nuevoEstado, String motivo, Authentication authentication) {
         Usuario usuario = usuarioRepo.findByIdWithEstadoAndRoles(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
@@ -235,6 +262,12 @@ public class UsuarioAdminService {
      * @throws IllegalStateException si falta la fila de catálogo del estado INACTIVO
      */
     @Transactional
+    /**
+     * Executes the eliminarUsuario operation.
+     * @param usuarioId value required by the operation
+     * @param motivo value required by the operation
+     * @param authentication value required by the operation
+     */
     public void eliminarUsuario(Long usuarioId, String motivo, Authentication authentication) {
         Usuario usuario = usuarioRepo.findByIdWithEstadoAndRoles(usuarioId).orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
         EstadoUsuario inactivo = estadoUsuarioRepo.findByNombre("INACTIVO").orElseThrow(() -> new IllegalStateException("Estado INACTIVO no existe"));

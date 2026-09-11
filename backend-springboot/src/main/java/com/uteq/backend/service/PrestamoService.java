@@ -110,6 +110,12 @@ public class PrestamoService {
      * @throws IllegalStateException si la reserva ya no está vigente o se supera el tope de préstamos
      */
     @Transactional
+    /**
+     * Executes the crear operation.
+     * @param dto value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public PrestamoResponseDTO crear(PrestamoRequestDTO dto, Authentication authentication) {
         Long usuarioId = resolverUsuarioId(dto);
         Long bibliotecarioId = resolverIdPorCorreo(authentication.getName());
@@ -186,6 +192,11 @@ public class PrestamoService {
      * @throws EntityNotFoundException si el préstamo no existe al notificar
      */
     @Transactional
+    /**
+     * Executes the registrarDevolucion operation.
+     * @param prestamoId value required by the operation
+     * @return operation result
+     */
     public DevolucionResponseDTO registrarDevolucion(Long prestamoId) {
         Map<String, Object> resultado = prestamoProcRepo.spRegistrarDevolucion(prestamoId);
         Boolean huboMulta = (Boolean) resultado.get("o_hubo_multa");
@@ -223,6 +234,12 @@ public class PrestamoService {
      * @throws MaterialReservadoException si otro usuario tiene reserva vigente del libro
      */
     @Transactional
+    /**
+     * Executes the renovar operation.
+     * @param prestamoId value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public RenovacionResponseDTO renovar(Long prestamoId, Authentication authentication) {
         Prestamo prestamo = prestamoRepo.findById(prestamoId)
                 .orElseThrow(() -> new EntityNotFoundException(PRESTAMO_NO_ENCONTRADO + prestamoId));
@@ -310,6 +327,13 @@ public class PrestamoService {
      * @throws AuthorizationDeniedException si un LECTOR pide préstamos ajenos
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarPorUsuario operation.
+     * @param usuarioId value required by the operation
+     * @param authentication value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<PrestamoResponseDTO> listarPorUsuario(Long usuarioId, Authentication authentication, Pageable pageable) {
         validarAccesoUsuario(usuarioId, authentication);
         return prestamoRepo.findByUsuarioId(usuarioId, pageable).map(this::toDTO);
@@ -325,6 +349,12 @@ public class PrestamoService {
      * @throws AuthorizationDeniedException si un LECTOR pide préstamos ajenos
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarActivosPorUsuario operation.
+     * @param usuarioId value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public List<PrestamoActivoResponseDTO> listarActivosPorUsuario(Long usuarioId, Authentication authentication) {
         validarAccesoUsuario(usuarioId, authentication);
         return prestamoRepo.findActivosByUsuarioId(usuarioId).stream()
@@ -345,6 +375,13 @@ public class PrestamoService {
      * @return libros ordenados por total de préstamos
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the reporteLibrosMasPrestados operation.
+     * @param limite value required by the operation
+     * @param desde value required by the operation
+     * @param hasta value required by the operation
+     * @return operation result
+     */
     public List<LibroMasPrestadoResponseDTO> reporteLibrosMasPrestados(
             Integer limite, OffsetDateTime desde, OffsetDateTime hasta) {
         // El default 10 se aplica en Java: la @Query siempre envía p_limite explícito y null daría LIMIT NULL.
@@ -364,6 +401,11 @@ public class PrestamoService {
      * @return lectores morosos ordenados por deuda
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the reporteMorosidad operation.
+     * @param limite value required by the operation
+     * @return operation result
+     */
     public List<ReporteMorosidadResponseDTO> reporteMorosidad(Integer limite) {
         Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
         return prestamoProcRepo.fnReporteIndiceMorosidad(limiteEfectivo).stream()
@@ -380,6 +422,12 @@ public class PrestamoService {
      * @return página del ranking de morosidad con su total
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the reporteMorosidadPaginado operation.
+     * @param limite value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<ReporteMorosidadResponseDTO> reporteMorosidadPaginado(Integer limite, Pageable pageable) {
         Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
         int limit = pageable.getPageSize();
@@ -406,6 +454,13 @@ public class PrestamoService {
      * @throws IllegalArgumentException si la granularidad no es dia, semana ni mes
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the reporteUsoPorPeriodo operation.
+     * @param granularidad value required by the operation
+     * @param desde value required by the operation
+     * @param hasta value required by the operation
+     * @return operation result
+     */
     public List<ReporteUsoPorPeriodoResponseDTO> reporteUsoPorPeriodo(
             String granularidad, OffsetDateTime desde, OffsetDateTime hasta) {
         String granularidadEfectiva = (granularidad != null) ? granularidad.toLowerCase() : "dia";
@@ -430,6 +485,14 @@ public class PrestamoService {
      * @throws IllegalArgumentException si la granularidad no es dia, semana ni mes
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the reporteUsoPorPeriodoPaginado operation.
+     * @param granularidad value required by the operation
+     * @param desde value required by the operation
+     * @param hasta value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<ReporteUsoPorPeriodoResponseDTO> reporteUsoPorPeriodoPaginado(
             String granularidad, OffsetDateTime desde, OffsetDateTime hasta, Pageable pageable) {
         String granularidadEfectiva = (granularidad != null) ? granularidad.toLowerCase() : "dia";
@@ -510,6 +573,14 @@ public class PrestamoService {
      * @return detalle ordenado por total de préstamos
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the reporteLibrosMasPrestadosDetallado operation.
+     * @param limite value required by the operation
+     * @param desde value required by the operation
+     * @param hasta value required by the operation
+     * @param categoriaId value required by the operation
+     * @return operation result
+     */
     public List<LibroMasPrestadoDetalladoResponseDTO> reporteLibrosMasPrestadosDetallado(
             Integer limite, OffsetDateTime desde, OffsetDateTime hasta, Integer categoriaId) {
         Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
@@ -530,6 +601,15 @@ public class PrestamoService {
      * @return página del ranking detallado con su total
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the reporteLibrosMasPrestadosDetalladoPaginado operation.
+     * @param limite value required by the operation
+     * @param desde value required by the operation
+     * @param hasta value required by the operation
+     * @param categoriaId value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<LibroMasPrestadoDetalladoResponseDTO> reporteLibrosMasPrestadosDetalladoPaginado(
             Integer limite, OffsetDateTime desde, OffsetDateTime hasta, Integer categoriaId, Pageable pageable) {
         Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
@@ -554,6 +634,13 @@ public class PrestamoService {
      * @return inventario filtrado con stock total y disponible
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the reporteInventario operation.
+     * @param categoriaId value required by the operation
+     * @param estadoStock value required by the operation
+     * @param busqueda value required by the operation
+     * @return operation result
+     */
     public List<ReporteInventarioResponseDTO> reporteInventario(
             Integer categoriaId, String estadoStock, String busqueda) {
         return prestamoProcRepo.fnReporteInventario(categoriaId, estadoStock, busqueda,
@@ -576,6 +663,14 @@ public class PrestamoService {
      * @return página del inventario con su total
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the reporteInventarioPaginado operation.
+     * @param categoriaId value required by the operation
+     * @param estadoStock value required by the operation
+     * @param busqueda value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<ReporteInventarioResponseDTO> reporteInventarioPaginado(
             Integer categoriaId, String estadoStock, String busqueda, Pageable pageable) {
         int limit = pageable.getPageSize();
@@ -618,6 +713,24 @@ public class PrestamoService {
      * @return inventario filtrado con stock total y disponible
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the reporteInventario operation.
+     * @param categoriaId value required by the operation
+     * @param estadoStock value required by the operation
+     * @param busqueda value required by the operation
+     * @param editorialId value required by the operation
+     * @param proveedorId value required by the operation
+     * @param estadoLibroId value required by the operation
+     * @param idiomaId value required by the operation
+     * @param anioDesde value required by the operation
+     * @param anioHasta value required by the operation
+     * @param stockTotalMin value required by the operation
+     * @param stockTotalMax value required by the operation
+     * @param stockDispMin value required by the operation
+     * @param stockDispMax value required by the operation
+     * @param ubicacion value required by the operation
+     * @return operation result
+     */
     public List<ReporteInventarioResponseDTO> reporteInventario(
             Integer categoriaId, String estadoStock, String busqueda,
             Integer editorialId, Integer proveedorId, Integer estadoLibroId, Integer idiomaId,
@@ -655,6 +768,25 @@ public class PrestamoService {
      * @return página del inventario con su total
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the reporteInventarioPaginado operation.
+     * @param categoriaId value required by the operation
+     * @param estadoStock value required by the operation
+     * @param busqueda value required by the operation
+     * @param editorialId value required by the operation
+     * @param proveedorId value required by the operation
+     * @param estadoLibroId value required by the operation
+     * @param idiomaId value required by the operation
+     * @param anioDesde value required by the operation
+     * @param anioHasta value required by the operation
+     * @param stockTotalMin value required by the operation
+     * @param stockTotalMax value required by the operation
+     * @param stockDispMin value required by the operation
+     * @param stockDispMax value required by the operation
+     * @param ubicacion value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<ReporteInventarioResponseDTO> reporteInventarioPaginado(
             Integer categoriaId, String estadoStock, String busqueda,
             Integer editorialId, Integer proveedorId, Integer estadoLibroId, Integer idiomaId,
@@ -688,6 +820,12 @@ public class PrestamoService {
      * @return vencidos con atraso y multa estimada
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the reportePrestamosVencidos operation.
+     * @param diasAtrasoMin value required by the operation
+     * @param busqueda value required by the operation
+     * @return operation result
+     */
     public List<ReporteVencidosResponseDTO> reportePrestamosVencidos(Integer diasAtrasoMin, String busqueda) {
         return prestamoProcRepo.fnReportePrestamosVencidos(diasAtrasoMin, busqueda).stream()
                 .map(p -> new ReporteVencidosResponseDTO(
@@ -706,6 +844,13 @@ public class PrestamoService {
      * @return página de vencidos con su total
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the reportePrestamosVencidosPaginado operation.
+     * @param diasAtrasoMin value required by the operation
+     * @param busqueda value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<ReporteVencidosResponseDTO> reportePrestamosVencidosPaginado(Integer diasAtrasoMin, String busqueda, Pageable pageable) {
         int limit = pageable.getPageSize();
         int offset = (int) pageable.getOffset();
@@ -728,6 +873,13 @@ public class PrestamoService {
      * @return categorías ordenadas por demanda
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the reporteCategoriasDemandadas operation.
+     * @param limite value required by the operation
+     * @param desde value required by the operation
+     * @param hasta value required by the operation
+     * @return operation result
+     */
     public List<ReporteCategoriasDemandadasResponseDTO> reporteCategoriasDemandadas(
             Integer limite, OffsetDateTime desde, OffsetDateTime hasta) {
         Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
@@ -746,6 +898,14 @@ public class PrestamoService {
      * @return página del ranking con su total
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the reporteCategoriasDemandadasPaginado operation.
+     * @param limite value required by the operation
+     * @param desde value required by the operation
+     * @param hasta value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<ReporteCategoriasDemandadasResponseDTO> reporteCategoriasDemandadasPaginado(
             Integer limite, OffsetDateTime desde, OffsetDateTime hasta, Pageable pageable) {
         Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;

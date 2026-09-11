@@ -18,6 +18,10 @@ public class R2Config {
     @Value("${app.backup.r2.secret-key:}") private String secretKey;
 
     @Bean
+    /**
+     * Executes the s3Client operation.
+     * @return operation result
+     */
     public S3Client s3Client() {
         if (endpoint == null || endpoint.isBlank() || accessKey == null || accessKey.isBlank()) return null;
         return S3Client.builder()

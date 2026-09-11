@@ -23,12 +23,21 @@ public class CategoriaDanoController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the listar operation.
+     * @return operation result
+     */
     public ResponseEntity<List<CategoriaDanoDTO>> listar() {
         return ResponseEntity.ok(repo.findAll().stream().map(c -> new CategoriaDanoDTO(c.getId(), c.getNombre())).toList());
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
+    /**
+     * Executes the crear operation.
+     * @param req value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<CategoriaDanoDTO> crear(@RequestBody CategoriaRequest req) {
         if (req.nombre() == null || req.nombre().isBlank()) return ResponseEntity.badRequest().build();
         if (repo.findByNombre(req.nombre()).isPresent()) return ResponseEntity.unprocessableEntity().build();
@@ -40,6 +49,12 @@ public class CategoriaDanoController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
+    /**
+     * Executes the actualizar operation.
+     * @param id value required by the operation
+     * @param req value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<CategoriaDanoDTO> actualizar(@PathVariable Integer id, @RequestBody CategoriaRequest req) {
         CategoriaDano c = repo.findById(id).orElse(null);
         if (c == null) return ResponseEntity.notFound().build();
@@ -50,6 +65,11 @@ public class CategoriaDanoController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
+    /**
+     * Executes the eliminar operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<Void> eliminar(@PathVariable Integer id) {
         CategoriaDano c = repo.findById(id).orElse(null);
         if (c == null) return ResponseEntity.notFound().build();

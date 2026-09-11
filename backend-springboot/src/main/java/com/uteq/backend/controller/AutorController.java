@@ -23,6 +23,10 @@ public class AutorController {
     }
 
     @GetMapping
+    /**
+     * Executes the listar operation.
+     * @return operation result
+     */
     public ResponseEntity<List<AutorResponseDTO>> listar() {
         List<AutorResponseDTO> autores = autorRepository.findAll().stream()
                 .map(a -> new AutorResponseDTO(a.getId(), a.getNombre()))
@@ -31,6 +35,11 @@ public class AutorController {
     }
 
     @GetMapping("/buscar")
+    /**
+     * Executes the buscar operation.
+     * @param q value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<List<AutorResponseDTO>> buscar(@RequestParam String q) {
         return ResponseEntity.ok(
                 autorRepository.findTop5ByNombreContainingIgnoreCase(q).stream()
@@ -40,6 +49,11 @@ public class AutorController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    /**
+     * Executes the crear operation.
+     * @param dto value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<AutorResponseDTO> crear(@Valid @RequestBody AutorRequestDTO dto) {
         Autor autor = new Autor();
         autor.setNombre(dto.nombre());

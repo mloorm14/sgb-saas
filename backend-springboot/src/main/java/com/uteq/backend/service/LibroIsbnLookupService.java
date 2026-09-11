@@ -63,6 +63,16 @@ public class LibroIsbnLookupService {
                 .build();
     }
 
+    /**
+
+     * Executes the buscarPorIsbn operation.
+
+     * @param isbn value required by the operation
+
+     * @return operation result
+
+     */
+
     public LibroIsbnLookupDTO buscarPorIsbn(String isbn) {
         try {
             JsonNode volume = buscarPrimerVolume(isbn);
@@ -159,6 +169,16 @@ public class LibroIsbnLookupService {
             return null;
         }
     }
+
+    /**
+
+     * Executes the obtenerPortada operation.
+
+     * @param isbn value required by the operation
+
+     * @return operation result
+
+     */
 
     public PortadaImagenDTO obtenerPortada(String isbn) {
         try {

@@ -47,6 +47,13 @@ public class UsuarioAdminController {
     // F8-gerente: GERENTE limitado en service a sus creados + LECTOR/BIBLIOTECARIO.
     @PatchMapping("/{id}/rol")
     @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
+    /**
+     * Executes the cambiarRol operation.
+     * @param id value required by the operation
+     * @param dto value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<Void> cambiarRol(
             @PathVariable Long id,
             @Valid @RequestBody CambioRolRequestDTO dto,
@@ -59,6 +66,13 @@ public class UsuarioAdminController {
     // F8-gerente: GERENTE limitado en service a sus creados + ACTIVO/INACTIVO.
     @PatchMapping("/{id}/estado")
     @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
+    /**
+     * Executes the cambiarEstado operation.
+     * @param id value required by the operation
+     * @param dto value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<Void> cambiarEstado(
             @PathVariable Long id,
             @Valid @RequestBody CambioEstadoUsuarioRequestDTO dto,
@@ -71,6 +85,12 @@ public class UsuarioAdminController {
     // F8-gerente: GERENTE crea solo LECTOR/BIBLIOTECARIO (service lo verifica).
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
+    /**
+     * Executes the crear operation.
+     * @param dto value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<UsuarioResponseDTO> crear(@Valid @RequestBody CrearUsuarioAdminRequestDTO dto, Authentication authentication) {
         UsuarioResponseDTO creado = usuarioAdminService.crearUsuario(dto, authentication);
         return ResponseEntity.status(HttpStatus.CREATED).body(creado);

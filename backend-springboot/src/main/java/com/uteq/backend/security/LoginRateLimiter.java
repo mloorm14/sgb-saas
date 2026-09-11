@@ -31,6 +31,18 @@ public class LoginRateLimiter {
     @Value("${app.security.login.rate-limit-window-seconds}")
     private long rateLimitWindowSeconds;
 
+    /**
+
+     * Executes the estaBloqueado operation.
+
+     * @param correo value required by the operation
+
+     * @param ip value required by the operation
+
+     * @return operation result
+
+     */
+
     public boolean estaBloqueado(String correo, String ip) {
         try {
             String valor = redisTemplate.opsForValue().get(key(correo, ip));
@@ -59,6 +71,16 @@ public class LoginRateLimiter {
             log.warn("Redis no disponible en registrarFallo (contador no incrementado): correo={}", correo, e);
         }
     }
+
+    /**
+
+     * Executes the resetear operation.
+
+     * @param correo value required by the operation
+
+     * @param ip value required by the operation
+
+     */
 
     public void resetear(String correo, String ip) {
         try {

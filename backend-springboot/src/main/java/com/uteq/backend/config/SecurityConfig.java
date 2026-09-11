@@ -33,16 +33,30 @@ public class SecurityConfig {
     private final UserDetailsServiceImpl userDetailsServiceImpl;
 
     @Bean
+    /**
+     * Executes the passwordEncoder operation.
+     * @return operation result
+     */
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12);
     }
 
     @Bean
+    /**
+     * Executes the authenticationManager operation.
+     * @param config value required by the operation
+     * @return operation result
+     * @throws Exception when the operation cannot be completed
+     */
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
     @Bean
+    /**
+     * Executes the authenticationProvider operation.
+     * @return operation result
+     */
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsServiceImpl);
         provider.setPasswordEncoder(passwordEncoder());
@@ -50,6 +64,12 @@ public class SecurityConfig {
     }
 
     @Bean
+    /**
+     * Executes the filterChain operation.
+     * @param http value required by the operation
+     * @return operation result
+     * @throws Exception when the operation cannot be completed
+     */
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())

@@ -86,6 +86,13 @@ public class MultaController {
 
     @PostMapping("/{id}/anulacion")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    /**
+     * Executes the anular operation.
+     * @param id value required by the operation
+     * @param dto value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<MultaAccionResponseDTO> anular(
             @PathVariable Long id,
             @Valid @RequestBody AnulacionMultaRequestDTO dto,

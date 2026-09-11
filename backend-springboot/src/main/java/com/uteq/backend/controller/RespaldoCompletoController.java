@@ -28,12 +28,21 @@ public class RespaldoCompletoController {
     // ── Configuración DR ──────────────────────────────────────────────────────
     @GetMapping("/config")
     @PreAuthorize("hasRole('ADMIN')")
+    /**
+     * Executes the obtenerConfig operation.
+     * @return operation result
+     */
     public ResponseEntity<ConfiguracionRespaldo> obtenerConfig() {
         return ResponseEntity.ok(service.obtenerConfiguracion());
     }
 
     @PutMapping("/config")
     @PreAuthorize("hasRole('ADMIN')")
+    /**
+     * Executes the actualizarConfig operation.
+     * @param req value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<ConfiguracionRespaldo> actualizarConfig(@RequestBody ConfigRequestDTO req) {
         return ResponseEntity.ok(service.actualizarConfiguracion(req.frecuenciaHoras, req.diasRetencion, req.habilitado));
     }
@@ -51,6 +60,11 @@ public class RespaldoCompletoController {
 
     @DeleteMapping("/registros/{id}")
     @PreAuthorize("hasRole('ADMIN')")
+    /**
+     * Executes the eliminarRegistro operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<Void> eliminarRegistro(@PathVariable Long id) {
         service.eliminar(id);
         return ResponseEntity.noContent().build();
@@ -58,6 +72,11 @@ public class RespaldoCompletoController {
 
     @GetMapping("/registros/{id}/download")
     @PreAuthorize("hasRole('ADMIN')")
+    /**
+     * Executes the descargarRegistro operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<byte[]> descargarRegistro(@PathVariable Long id) {
         byte[] contenido = service.descargar(id);
         return ResponseEntity.ok()
@@ -70,12 +89,23 @@ public class RespaldoCompletoController {
     // ── Registro de ejecución (llamado desde el microservicio Node.js vía token interno) ──
     @PostMapping("/registros")
     @PreAuthorize("hasRole('ADMIN')")
+    /**
+     * Executes the registrarInicio operation.
+     * @param req value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<RegistroRespaldo> registrarInicio(@RequestBody RegistroInicioDTO req) {
         return ResponseEntity.ok(service.registrarInicio(req.tipo, req.ejecutadoPor));
     }
 
     @PutMapping("/registros/{id}")
     @PreAuthorize("hasRole('ADMIN')")
+    /**
+     * Executes the registrarResultado operation.
+     * @param id value required by the operation
+     * @param req value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<RegistroRespaldo> registrarResultado(
             @PathVariable Long id, @RequestBody RegistroResultadoDTO req) {
         return ResponseEntity.ok(service.registrarResultado(

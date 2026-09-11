@@ -114,6 +114,11 @@ public class ReportePdfService {
     }
 
     // ── Morosidad ─────────────────────────────────────────
+    /**
+     * Executes the generarReporteMorosidad operation.
+     * @param filas value required by the operation
+     * @return operation result
+     */
     public byte[] generarReporteMorosidad(List<ReporteMorosidadResponseDTO> filas) {
         return generarPdf(
                 "Reporte de índice de morosidad",
@@ -131,6 +136,11 @@ public class ReportePdfService {
     }
 
     // ── Libros más prestados ──────────────────────────────
+    /**
+     * Executes the generarReporteLibrosMasPrestados operation.
+     * @param filas value required by the operation
+     * @return operation result
+     */
     public byte[] generarReporteLibrosMasPrestados(List<LibroMasPrestadoDetalladoResponseDTO> filas) {
         int[] contador = {1};
         return generarPdf(
@@ -151,6 +161,11 @@ public class ReportePdfService {
     }
 
     // ── Inventario ────────────────────────────────────────
+    /**
+     * Executes the generarReporteInventario operation.
+     * @param filas value required by the operation
+     * @return operation result
+     */
     public byte[] generarReporteInventario(List<ReporteInventarioResponseDTO> filas) {
         return generarPdf(
                 "Reporte de inventario y disponibilidad",
@@ -170,6 +185,11 @@ public class ReportePdfService {
     }
 
     // ── Préstamos vencidos ────────────────────────────────
+    /**
+     * Executes the generarReporteVencidos operation.
+     * @param filas value required by the operation
+     * @return operation result
+     */
     public byte[] generarReporteVencidos(List<ReporteVencidosResponseDTO> filas) {
         return generarPdf(
                 "Reporte de préstamos vencidos activos",
@@ -190,6 +210,11 @@ public class ReportePdfService {
     }
 
     // ── Uso por período ────────────────────────────────
+    /**
+     * Executes the generarReporteUsoPorPeriodo operation.
+     * @param filas value required by the operation
+     * @return operation result
+     */
     public byte[] generarReporteUsoPorPeriodo(List<ReporteUsoPorPeriodoResponseDTO> filas) {
         return generarPdf(
                 "Reporte de uso por período",
@@ -206,6 +231,11 @@ public class ReportePdfService {
     }
 
     // ── Resumen financiero ──────────────────────────────
+    /**
+     * Executes the generarReporteResumenFinanciero operation.
+     * @param dto value required by the operation
+     * @return operation result
+     */
     public byte[] generarReporteResumenFinanciero(ResumenFinancieroMultasResponseDTO dto) {
         ByteArrayOutputStream salida = new ByteArrayOutputStream();
         try (PdfDocument pdfDoc = new PdfDocument(new PdfWriter(salida));
@@ -240,6 +270,11 @@ public class ReportePdfService {
     }
 
     // ── Categorías demandadas ─────────────────────────────
+    /**
+     * Executes the generarReporteCategoriasDemandadas operation.
+     * @param filas value required by the operation
+     * @return operation result
+     */
     public byte[] generarReporteCategoriasDemandadas(List<ReporteCategoriasDemandadasResponseDTO> filas) {
         int[] contador = {1};
         return generarPdf(
@@ -257,6 +292,11 @@ public class ReportePdfService {
     }
 
     // ── Sugerencias más pedidas ───────────────────────────
+    /**
+     * Executes the generarReporteSugerenciasMasPedidas operation.
+     * @param filas value required by the operation
+     * @return operation result
+     */
     public byte[] generarReporteSugerenciasMasPedidas(List<SugerenciaAgrupadaDTO> filas) {
         int[] contador = {1};
         return generarPdf(
