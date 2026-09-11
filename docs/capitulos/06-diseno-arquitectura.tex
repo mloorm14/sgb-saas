@@ -16,7 +16,9 @@ versionados en el repositorio como evidencia histórica del diseño
 original, pero ya no se reproducen en este documento porque estaban
 desactualizados (citaban \texttt{Google Books API} como sistema
 externo, sin integración real en el código, y el segundo no incluía el
-contenedor Redis). Las figuras siguientes son la exportación real y
+contenedor Redis). Las figuras \autoref{fig:c4-nivel1-contexto},
+\autoref{fig:c4-nivel2-contenedores} y \autoref{fig:c4-componentes} son
+la exportación real y
 automática de \texttt{workspace.dsl} con Structurizr
 (\autoref{sec:c4-exportacion}), no una reconstrucción manual.
 
@@ -40,7 +42,6 @@ Spring Boot, PostgreSQL y Redis, alineados 1:1 con
 \end{figure}
 
 \section{Nivel 1 -- Contexto del sistema}
-\label{sec:c4-nivel1}
 
 Cinco actores interactúan con SGB-SaaS como caja negra: \textbf{Lector}
 (consulta el catálogo, reserva libros, ve su historial de préstamos y
@@ -68,7 +69,6 @@ superior) incluso para listar libros, así que el alcance real del
 \emph{Visitante anónimo} se limita a registro e inicio de sesión.
 
 \section{Nivel 2 -- Contenedores}
-\label{sec:c4-nivel2}
 
 Cuatro contenedores, alineados 1:1 con \texttt{docker-compose.yml}:
 

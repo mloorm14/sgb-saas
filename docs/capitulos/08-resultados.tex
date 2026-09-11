@@ -56,7 +56,8 @@ cache\_frio     & 10\,074 & 4,84 & 4,34 & 2,88 & [4,78; 4,89] & 6,70 & \textbf{7
 \end{table}
 
 Ambos umbrales exigidos se cumplen con margen amplio: p95
-$19{,}49$\,ms $<200$\,ms (caliente), p95 $7{,}50$\,ms $<500$\,ms (frío).
+$19{,}49$\,ms $<200$\,ms (caliente), p95 $7{,}50$\,ms $<500$\,ms (frío)
+(ver \autoref{tab:res-perf-descriptivo}).
 Tasa de error HTTP $\geq$500: $0{,}00$\,\% (0 de 20\,003 peticiones
 totales).
 
@@ -377,7 +378,7 @@ Domain/Entity & --- & Excluido & N/A \\
 \label{tab:res-jacoco-capas}
 \end{table}
 
-\textbf{Interpretación por capa (commit \texttt{825ad34}, histórico).} Ni \texttt{Controller} (62,38\,\%) ni \texttt{Service} (62,41\,\%) alcanzan individualmente el umbral del 65\,\% exigido por el criterio P1 de la guía para clasificar la cobertura como ``Satisfactorio'' (requiere al menos 2 de 3 capas $\geq$65\,\%). Por tanto, la clasificación de cobertura por capa cae en la categoría ``En desarrollo'' (50--65\,\%), consistente con la cifra global re-verificada de 55,25\,\% para este mismo commit (\texttt{825ad34}) reportada en la tabla anterior -- no con el 61,50\,\% citado antes de la retractación. Esta tabla e interpretación quedan sin modificar como referencia histórica; la tabla siguiente documenta la medición vigente al cierre.
+\textbf{Interpretación por capa (\autoref{tab:res-jacoco-capas}, commit \texttt{825ad34}, histórico).} Ni \texttt{Controller} (62,38\,\%) ni \texttt{Service} (62,41\,\%) alcanzan individualmente el umbral del 65\,\% exigido por el criterio P1 de la guía para clasificar la cobertura como ``Satisfactorio'' (requiere al menos 2 de 3 capas $\geq$65\,\%). Por tanto, la clasificación de cobertura por capa cae en la categoría ``En desarrollo'' (50--65\,\%), consistente con la cifra global re-verificada de 55,25\,\% para este mismo commit (\texttt{825ad34}) reportada en \autoref{tab:res-jacoco} -- no con el 61,50\,\% citado antes de la retractación. Esta tabla e interpretación quedan sin modificar como referencia histórica; la tabla siguiente documenta la medición vigente al cierre.
 
 \begin{table}[h]
 \centering
@@ -396,7 +397,7 @@ Domain/Entity & --- & Excluido & N/A \\
 \label{tab:res-jacoco-capas-vigente}
 \end{table}
 
-\textbf{Interpretación por capa (vigente al cierre).} Los tests de controlador agregados el 6 de septiembre de 2026 cambian el resultado de este criterio: \texttt{Controller} pasó de 62,38\,\% a 97,07\,\%, y junto con \texttt{Security} (85,16\,\%, sin cambios respecto a mediciones previas) se alcanzan 2 de las 3 capas exigidas por el criterio P1 ($\geq$65\,\% en al menos 2 de 3), por lo que la clasificación de cobertura por capa pasa de ``En desarrollo'' a \textbf{``Satisfactorio''}. \texttt{Service} permanece como brecha conocida (51,29\,\%, prácticamente sin cambio respecto al histórico), y se documenta aquí sin corregirse en esta entrega -- ver \autoref{sec:res-cobertura} para el detalle completo de artefactos.
+\textbf{Interpretación por capa (vigente al cierre, \autoref{tab:res-jacoco-capas-vigente}).} Los tests de controlador agregados el 6 de septiembre de 2026 cambian el resultado de este criterio: \texttt{Controller} pasó de 62,38\,\% a 97,07\,\%, y junto con \texttt{Security} (85,16\,\%, sin cambios respecto a mediciones previas) se alcanzan 2 de las 3 capas exigidas por el criterio P1 ($\geq$65\,\% en al menos 2 de 3), por lo que la clasificación de cobertura por capa pasa de ``En desarrollo'' a \textbf{``Satisfactorio''}. \texttt{Service} permanece como brecha conocida (51,29\,\%, prácticamente sin cambio respecto al histórico), y se documenta aquí sin corregirse en esta entrega -- ver \autoref{sec:res-cobertura} para el detalle completo de artefactos.
 
 La capa \texttt{Domain/Entity} (\texttt{com.uteq.backend.entity}) está deliberadamente excluida de la medición JaCoCo, tal como se declara en \texttt{backend-springboot/pom.xml} mediante las exclusiones: \texttt{com/uteq/backend/entity/**} (entidades JPA con getters/setters generados por Lombok, sin lógica de negocio propia), \texttt{com/uteq/backend/dto/**} (DTOs de transporte, solo estructura de datos), \texttt{com/uteq/backend/config/**} (configuración de beans/framework, probada indirectamente por tests de integración), y \texttt{com/uteq/backend/BackendApplication.class} (punto de entrada, sin lógica testable aislada). Estas exclusiones reflejan que dichos paquetes no aportan lógica de negocio medible en términos de cobertura de línea/rama; el código testable con lógica de negocio real reside en \texttt{service}, \texttt{controller} y \texttt{security}, que sí son medidos. Con \texttt{controller} y \texttt{security} ya por encima del 65\,\% al cierre, el equipo identifica el aumento de cobertura en \texttt{service} (51,29\,\%) como la brecha prioritaria pendiente, manteniendo la exclusión de entidades/DTOs/config como decisión de diseño documentada y razonada.
 
@@ -455,7 +456,7 @@ Escritorio & prod. 18-ago, después del fix (media, 3) & \textbf{100,0} (DT 0,0)
 \label{tab:res-lighthouse}
 \end{table}
 
-\textbf{Estadística descriptiva.} Con 3 corridas por perfil en cada una
+\textbf{Estadística descriptiva (\autoref{tab:res-lighthouse}).} Con 3 corridas por perfil en cada una
 de las dos rondas de producción (12 corridas en total, sumadas a las 2
 originales contra \texttt{localhost}), ya hay muestra suficiente para
 reportar media y desviación típica reales por categoría y perfil --
@@ -518,7 +519,7 @@ Móvil & 0,013 / 0,013 / 0,338\textsuperscript{*} & 0,005 / 0,011 / 0,011 (media
 \label{tab:res-cls}
 \end{table}
 
-Escritorio pasa de la franja ``pobre'' ($>0,25$) a ``buena'' ($<0,1$),
+Como resume \autoref{tab:res-cls}, Escritorio pasa de la franja ``pobre'' ($>0,25$) a ``buena'' ($<0,1$),
 una reducción del 87\,\%; el pico anómalo de móvil no se repite en
 ninguna de las 3 corridas de re-confirmación. \emph{Score} de
 \emph{audit} de CLS: 1,0 (perfecto) en las 6 corridas post-fix. Los
@@ -571,7 +572,7 @@ SEO & 100,0 $\pm$ 0,0 & 100,0 $\pm$ 0,0 & $\geq$90 \\
 \label{tab:res-lighthouse-perfiles}
 \end{table}
 
-Las 4 categorías cumplen su umbral en \textbf{ambos perfiles} (móvil y escritorio), en las 6 corridas individuales (3 por perfil). Escritorio alcanza 100,0 en todas las categorías (DT 0,0); móvil alcanza 100,0 en Accessibility, Best Practices y SEO, y 86,3 $\pm$ 1,5 en Performance (margen cómodo sobre 80). Se cumple con margen el requisito de la Guía: ``al menos tres corridas por perfil (mobile, desktop) con media y desviación típica por categoría'' (P4/B.10).
+Como resume \autoref{tab:res-lighthouse-perfiles}, las 4 categorías cumplen su umbral en \textbf{ambos perfiles} (móvil y escritorio), en las 6 corridas individuales (3 por perfil). Escritorio alcanza 100,0 en todas las categorías (DT 0,0); móvil alcanza 100,0 en Accessibility, Best Practices y SEO, y 86,3 $\pm$ 1,5 en Performance (margen cómodo sobre 80). Se cumple con margen el requisito de la Guía: ``al menos tres corridas por perfil (mobile, desktop) con media y desviación típica por categoría'' (P4/B.10).
 
 \section{Bloque 5 -- Usabilidad (SUS)}
 \label{sec:res-usabilidad}
@@ -615,7 +616,9 @@ anonimización por código de participante
 y el protocolo SUS se difieren formalmente como trabajo futuro para la
 fase de despliegue en producción (\autoref{sec:tf-sus}). Documentado
 como reabierto en \texttt{OBS-08} de
-\texttt{docs/observaciones/OBSERVACIONES.md}.
+\texttt{docs/observaciones/OBSERVACIONES.md}. Las
+\autoref{fig:res-sus-boxplot} y \autoref{fig:res-sus-items} muestran la
+salida del pipeline sobre esos datos mock (sin valor evidencial).
 
 \begin{figure}[h]
 \centering
@@ -637,7 +640,6 @@ como reabierto en \texttt{OBS-08} de
 \end{figure}
 
 \section{Resumen de bloques}
-\label{sec:res-resumen}
 
 \begin{table}[h]
 \centering

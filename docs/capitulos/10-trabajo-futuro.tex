@@ -32,7 +32,6 @@ análisis y reporte -- se difiere formalmente a la fase de despliegue en
 producción.
 
 \section{Análisis estático de SQL dinámico -- CERRADO}
-\label{sec:tf-audit-sql}
 
 El \autoref{cap:implementacion} señaló, al aclarar por qué
 \texttt{@Query(nativeQuery=true)} con parámetros bindeados no viola la
@@ -96,7 +95,6 @@ verificaciones manuales control-por-control (\autoref{tab:res-owasp}) y
 las dos corridas automatizadas ya mencionadas no quedan pendientes.
 
 \section{Completar Lighthouse a 6 corridas (3 móvil + 3 escritorio) -- CERRADO}
-\label{sec:tf-lighthouse}
 
 Una versión anterior de este capítulo declaraba que solo existían 2
 corridas totales, ambas de perfil móvil, frente a las 3 corridas por
@@ -155,7 +153,6 @@ un atacante cross-site puede lograr que el navegador adjunte la cookie,
 pero no puede leer su valor para construir el header a mano.
 
 \section{Salvaguarda contra auto-degradación del rol ADMIN}
-\label{sec:tf-admin-safeguard}
 
 Al revisar el código real de \texttt{UsuarioAdminService.cambiarRol}
 (\texttt{backend-springboot/\allowbreak src/\allowbreak main/\allowbreak java/\allowbreak com/\allowbreak uteq/\allowbreak backend/\allowbreak service/\allowbreak UsuarioAdminService.java},
