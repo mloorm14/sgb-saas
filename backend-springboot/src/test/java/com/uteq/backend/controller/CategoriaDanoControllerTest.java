@@ -76,6 +76,14 @@ class CategoriaDanoControllerTest extends WebMvcControllerTestSupport {
     }
 
     @Test
+    void crear_nombreNulo_devuelve400() throws Exception {
+        mockMvc.perform(post("/api/v1/categorias-dano")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombre\":null}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void crear_duplicado_devuelve422() throws Exception {
         when(repo.findByNombre("Portada")).thenReturn(Optional.of(categoria()));
 

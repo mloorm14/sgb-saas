@@ -80,6 +80,26 @@ class ProveedorControllerTest extends WebMvcControllerTestSupport {
     }
 
     @Test
+    void listar_qEnBlanco_usaFindAll() throws Exception {
+        when(proveedorRepository.findAll(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(proveedor())));
+
+        mockMvc.perform(get("/api/v1/proveedores").param("q", " "))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].nombre").value("Editorial UTEQ"));
+    }
+
+    @Test
+    void listar_soloActivo_usaBuscarConFiltros() throws Exception {
+        when(proveedorRepository.buscarConFiltros(eq(null), eq(true), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(proveedor())));
+
+        mockMvc.perform(get("/api/v1/proveedores").param("activo", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].ruc").value("1790012345001"));
+    }
+
+    @Test
     void listarTodo_devuelve200() throws Exception {
         when(proveedorRepository.findAll()).thenReturn(List.of(proveedor()));
 
