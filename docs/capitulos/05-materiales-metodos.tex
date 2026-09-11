@@ -74,16 +74,20 @@ y documentada del proyecto:
     \texttt{backend-springboot/pom.xml}): cobertura de línea/rama/complejidad
     ciclomática sobre el backend, con objetivo declarado de la guía de
     $\geq$70\,\% de líneas para la Entrega Final. El resultado de cierre
-    vigente es \textbf{56,01\,\%} de líneas (1613/2880) y
-    \textbf{34,59\,\%} de ramas (247/714), por debajo del umbral de
-    líneas -- tras un primer ciclo de trabajo dirigido específicamente a
+    vigente es \textbf{56,30\,\%} de líneas (2195/3899) y
+    \textbf{30,83\,\%} de ramas (390/1265) — medición en fresco sobre
+    \texttt{568e8c1f} (\autoref{sec:res-cobertura}) —, por debajo del
+    umbral de líneas. Historia de la cifra: tras un primer ciclo de
+    trabajo dirigido específicamente a
     cinco clases de autenticación/autorización que partían de cobertura
     casi nula, una medición intermedia que confirmó que el porcentaje
     subió a 81,64\,\% tras el merge de los ocho módulos de dominio
     nuevos que casi triplicaron la base de código analizable
     (\texttt{docs/\allowbreak mediciones/\allowbreak jacoco/\allowbreak 2026-08-13-cobertura-jacoco-post-merge-8-modulos.md}),
-    y una corrida de cierre posterior que registró un descenso a
-    56,01\,\% tras la incorporación de funcionalidad adicional (ver
+    una corrida de cierre posterior que registró 56,01\,\%
+    (1613/2880, \texttt{89eb6ab}) tras la incorporación de
+    funcionalidad adicional, y finalmente la medición vigente de
+    56,30\,\% citada arriba (ver
     \autoref{sec:res-cobertura} para el detalle completo).
   \item \textbf{Auditoría OWASP} (\texttt{scripts/owasp-audit.sh},
     \texttt{docs/mediciones/sec/}): verificación reproducible vía
