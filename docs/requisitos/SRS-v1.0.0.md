@@ -2432,21 +2432,15 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   (System Usability Scale) contra una muestra real de usuarios.
 - **Rationale**: complementa la evaluación cualitativa de usabilidad
   (ISO 25010, ver sección 5) con una métrica cuantitativa estandarizada.
-- **Estado real — N=0, muestra retractada, no N=15/82.17 (verificado
-  contra `docs/observaciones/OBSERVACIONES.md` antes de redactar este
-  requisito, por instrucción explícita de esta tarea)**: `OBS-08`
-  documenta que una corrida previa (N=15, media 82.17, IC95%
-  [80.08, 84.25]) fue **retirada** por falta de trazabilidad a un export
+- **Estado real — N=0, muestra retractada**: `OBS-08` documenta que una
+  corrida previa fue **retirada** por falta de trazabilidad a un export
   crudo del instrumento, ausencia de registro de sesiones con
-  hora/duración, y varianza cero con patrones demográficos
-  perfectamente regulares en 3 columnas (Q8/Q9/Q10), incompatibles con
-  15 respuestas independientes. El documento vuelve explícitamente a
-  **N=0** en todo el proyecto; la toma de datos real se difiere a la fase
-  de despliegue en producción (`docs/capitulos/10-trabajo-futuro.tex`
-  §SUS). Este requisito **no** usa la cifra 82.17 como válida, porque el
-  propio repositorio la contradice — declarar lo contrario habría violado
-  la regla de oro de esta tarea de no inventar/asumir un dato que el
-  repositorio mismo retractó.
+  hora/duración, y patrones incompatibles con respuestas independientes.
+  El documento vuelve explícitamente a **N=0** en todo el proyecto; la
+  toma de datos real se difiere a la fase de despliegue en producción
+  (`docs/capitulos/10-trabajo-futuro.tex` §SUS). Este requisito no usa
+  ninguna media SUS como válida, porque el propio repositorio no sostiene
+  datos reales de participantes.
 - **Criterio de aceptación medible (para cuando exista una muestra real)**:
   media SUS >= 75 (umbral convencional de "buena" usabilidad en la
   literatura SUS) sobre una muestra declarada de participantes reales con

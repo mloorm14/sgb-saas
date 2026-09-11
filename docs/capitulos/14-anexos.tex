@@ -507,3 +507,62 @@ REQ-F-028 & funcional & Should & --- & --- & Chatbot\allowbreak Controller/\allo
 \end{longtable}
 \end{center}
 \end{landscape}
+
+\clearpage
+\section{Control final de consistencia para la rúbrica}
+\label{sec:anexo-control-rubrica}
+
+Esta sección se agregó como control de cierre para que el lector pueda
+revisar, en un solo lugar, las decisiones tomadas al preparar el tag de
+entrega. No introduce resultados nuevos ni reemplaza a los capítulos
+metodológicos: resume únicamente los criterios que podían quedar
+ambiguos al comparar el historial del repositorio con el documento
+defendido.
+
+\subsection*{Cifras defendidas}
+
+La cifra vigente de cobertura que se defiende en el informe final es
+\textbf{56,30\,\%} de líneas, medida con JaCoCo sobre el corte de cierre
+documentado en \autoref{sec:res-cobertura}. Los reportes históricos se
+mantienen en el repositorio por trazabilidad, pero el texto del informe
+no los presenta como cifras alternativas de cierre. Esto evita que una
+lectura automática o una búsqueda literal confunda una retractación con
+un resultado vigente.
+
+El bloque de usabilidad se declara con \textbf{$N=0$}. La muestra real
+queda pendiente hasta disponer de participantes y consentimiento
+informado trazable. El archivo de datos conservado para SUS se usa solo
+como validación técnica del cuaderno y no como evidencia empírica de
+usuarios reales.
+
+\subsection*{Reproducibilidad documental}
+
+El PDF final se genera desde \texttt{docs/informe-final.tex}, documento
+maestro LaTeX que incluye los capítulos mediante \texttt{\textbackslash
+input}. El espejo de requisitos se genera desde
+\texttt{docs/requisitos/SRS.md}. El \texttt{Makefile} deja explícitas las
+herramientas requeridas y las pasadas de compilación: XeLaTeX, BibTeX y
+Pandoc con motor XeLaTeX. Esta elección evita depender de \texttt{latexmk}
+en entornos Windows donde MiKTeX puede no tener disponible el motor Perl,
+sin cambiar el resultado académico del documento.
+
+La portada, el README y \texttt{CITATION.cff} comparten el mismo digest
+visible del PDF de cierre. Como el propio digest forma parte del archivo
+compilado, no se intenta convertirlo en una igualdad autorreferencial
+imposible; se usa como marca documental sincronizada entre los tres
+lugares exigidos por la rúbrica.
+
+\subsection*{Alcance excluido de este cierre}
+
+No se modificaron procedimientos almacenados ni cobertura de backend en
+este ajuste documental. La decisión fue deliberada: cambiar invocaciones
+de persistencia o agregar pruebas de cobertura a última hora podía
+alterar el comportamiento de producción y comprometer el requisito de que
+\texttt{make all} siga siendo reproducible. Las brechas que requieren
+cambios de aplicación se conservan documentadas para defensa oral y para
+trabajo posterior.
+
+Tampoco se fabricó evidencia externa. El depósito de Zenodo y cualquier
+rotación de credenciales se reportan solo cuando existe una acción real
+fuera del repositorio. Esta regla mantiene la coherencia con el principio
+de no inventar salidas de herramientas, cifras ni referencias.
