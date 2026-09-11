@@ -23,6 +23,10 @@ public class CategoriaController {
     }
 
     @GetMapping
+    /**
+     * Executes the listar operation.
+     * @return operation result
+     */
     public ResponseEntity<List<CategoriaResponseDTO>> listar() {
         List<CategoriaResponseDTO> categorias = categoriaRepository.findAll().stream()
                 .map(c -> new CategoriaResponseDTO(c.getId(), c.getNombre()))
@@ -31,6 +35,11 @@ public class CategoriaController {
     }
 
     @GetMapping("/buscar")
+    /**
+     * Executes the buscar operation.
+     * @param q value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<List<CategoriaResponseDTO>> buscar(@RequestParam String q) {
         return ResponseEntity.ok(
                 categoriaRepository.findTop5ByNombreContainingIgnoreCase(q).stream()
@@ -40,6 +49,11 @@ public class CategoriaController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    /**
+     * Executes the crear operation.
+     * @param dto value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<CategoriaResponseDTO> crear(@Valid @RequestBody CategoriaRequestDTO dto) {
         if (categoriaRepository.existsByNombreIgnoreCase(dto.nombre())) {
             return ResponseEntity.unprocessableEntity().build();

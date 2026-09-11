@@ -29,6 +29,12 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     private final UsuarioRepository usuarioRepository;
 
     @Override
+    /**
+     * Executes the loadUserByUsername operation.
+     * @param correo value required by the operation
+     * @return operation result
+     * @throws UsernameNotFoundException when the operation cannot be completed
+     */
     public UserDetails loadUserByUsername(String correo) throws UsernameNotFoundException {
         Usuario usuario = usuarioRepository.findByCorreo(correo)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con correo: " + correo));

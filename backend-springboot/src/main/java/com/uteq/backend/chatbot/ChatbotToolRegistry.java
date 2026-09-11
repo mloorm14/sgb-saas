@@ -77,6 +77,16 @@ public class ChatbotToolRegistry {
         }
     }
 
+    /**
+
+     * Executes the contains operation.
+
+     * @param toolName value required by the operation
+
+     * @return operation result
+
+     */
+
     public boolean contains(String toolName) {
         return tools.containsKey(toolName);
     }

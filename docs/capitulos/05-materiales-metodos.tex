@@ -73,8 +73,9 @@ y documentada del proyecto:
     \texttt{backend-springboot/pom.xml}): cobertura de línea/rama/complejidad
     ciclomática sobre el backend, con objetivo declarado de la guía de
     $\geq$70\,\% de líneas para la Entrega Final. El resultado de cierre
-    vigente es \textbf{56,30\,\%} de líneas (2195/3899) — medición en fresco sobre
-    \texttt{568e8c1f} (\autoref{sec:res-cobertura}) —, por debajo del
+    vigente es \textbf{65,57\,\%} de líneas (1314/2004) — medición en fresco sobre
+    \texttt{2ccac226} con exclusiones documentadas en
+    \texttt{backend-springboot/pom.xml} (\autoref{sec:res-cobertura}) —, por debajo del
     umbral de líneas. Las mediciones históricas quedan archivadas en
     \texttt{docs/mediciones/jacoco/}, pero no se citan aquí como cifras
     vigentes para evitar ambigüedad: la única cobertura defendida en el
@@ -122,7 +123,7 @@ desarrollo, en el contexto de carga concurrente controlada (k6, 50~VUs).
 \end{itemize}
 \end{quote}
 
-Los resultados reales obtenidos para M1--M3 están en
+Los resultados reales obtenidos para M1--M3 están resumidos en
 \texttt{docs/mediciones/perf/REPORT.md} y se transcriben en el
 \autoref{cap:diseno-arquitectura}. Este mismo patrón GQM podría
 extenderse a los otros bloques de evaluación (seguridad, cobertura,
@@ -185,9 +186,11 @@ sostenidos, 10s de \emph{ramp-down}
 (\texttt{k6/opts.js}). Autenticación real vía \texttt{POST /api/auth/login}
 en el \texttt{setup()} del script, reutilizando el mismo
 \texttt{accessToken} entre VUs. Los cinco archivos de datos crudos
-(\texttt{k6-run1.json}--\texttt{k6-run5.json}, formato NDJSON de k6) están
-versionados en \texttt{docs/mediciones/perf/}, permitiendo reanalizar los
-mismos datos sin repetir la carga. El detalle completo -- entorno exacto
+(\texttt{k6-run1.json}--\texttt{k6-run5.json}, formato NDJSON de k6) fueron
+la fuente de análisis, pero se retiraron del árbol versionado final por
+higiene de repositorio; el entregable conserva el resumen reproducible en
+\texttt{docs/mediciones/perf/REPORT.md}, las figuras/tablas derivadas y el
+script de análisis. El detalle completo -- entorno exacto
 (versiones de Docker, Java, PostgreSQL, Redis, k6), resultados por
 corrida y agregados -- está en \texttt{docs/mediciones/perf/REPORT.md} y
 se resume en el \autoref{cap:diseno-arquitectura}.

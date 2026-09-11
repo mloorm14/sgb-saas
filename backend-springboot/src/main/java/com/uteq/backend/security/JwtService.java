@@ -35,9 +35,25 @@ public class JwtService {
     @Value("${security.jwt.refresh-expiration-ms}")
     private long refreshExpirationMs;
 
+    /**
+
+     * Executes the getExpirationMs operation.
+
+     * @return operation result
+
+     */
+
     public long getExpirationMs() {
         return expirationMs;
     }
+
+    /**
+
+     * Executes the getRefreshExpirationMs operation.
+
+     * @return operation result
+
+     */
 
     public long getRefreshExpirationMs() {
         return refreshExpirationMs;
@@ -47,9 +63,29 @@ public class JwtService {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+
+     * Executes the generateToken operation.
+
+     * @param usuario value required by the operation
+
+     * @return operation result
+
+     */
+
     public String generateToken(Usuario usuario) {
         return buildToken(usuario, expirationMs);
     }
+
+    /**
+
+     * Executes the generateRefreshToken operation.
+
+     * @param usuario value required by the operation
+
+     * @return operation result
+
+     */
 
     public String generateRefreshToken(Usuario usuario) {
         return buildToken(usuario, refreshExpirationMs);
@@ -92,6 +128,16 @@ public class JwtService {
                 .orElse(null);
     }
 
+    /**
+
+     * Executes the validateToken operation.
+
+     * @param token value required by the operation
+
+     * @return operation result
+
+     */
+
     public boolean validateToken(String token) {
         try {
             Jwts.parser()
@@ -104,13 +150,43 @@ public class JwtService {
         }
     }
 
+    /**
+
+     * Executes the extractCorreo operation.
+
+     * @param token value required by the operation
+
+     * @return operation result
+
+     */
+
     public String extractCorreo(String token) {
         return extractClaims(token).get("correo", String.class);
     }
 
+    /**
+
+     * Executes the extractJti operation.
+
+     * @param token value required by the operation
+
+     * @return operation result
+
+     */
+
     public String extractJti(String token) {
         return extractClaims(token).getId();
     }
+
+    /**
+
+     * Executes the extractExpiration operation.
+
+     * @param token value required by the operation
+
+     * @return operation result
+
+     */
 
     public Date extractExpiration(String token) {
         return extractClaims(token).getExpiration();

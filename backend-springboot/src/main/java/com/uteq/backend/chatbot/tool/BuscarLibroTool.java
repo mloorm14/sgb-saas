@@ -26,17 +26,29 @@ public class BuscarLibroTool extends AbstractChatbotTool {
     }
 
     @Override
+    /**
+     * Executes the getName operation.
+     * @return operation result
+     */
     public String getName() {
         return "buscar_libro";
     }
 
     @Override
+    /**
+     * Executes the getDescription operation.
+     * @return operation result
+     */
     public String getDescription() {
         return "Busca libros en el catálogo de la biblioteca por título, autor o tema. "
                 + "Devuelve los resultados más relevantes con su disponibilidad actual.";
     }
 
     @Override
+    /**
+     * Executes the getInputSchema operation.
+     * @return operation result
+     */
     public JsonNode getInputSchema() {
         ObjectNode schema = mapper.createObjectNode();
         schema.put("type", "object");
@@ -57,6 +69,11 @@ public class BuscarLibroTool extends AbstractChatbotTool {
     }
 
     @Override
+    /**
+     * Executes the execute operation.
+     * @param args value required by the operation
+     * @return operation result
+     */
     public JsonNode execute(JsonNode args) {
         String query = args.path(PARAM_QUERY).asText("");
         List<LibroSugerenciaDTO> resultados = libroService.sugerir(query);

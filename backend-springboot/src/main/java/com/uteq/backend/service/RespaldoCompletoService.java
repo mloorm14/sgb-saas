@@ -35,6 +35,10 @@ public class RespaldoCompletoService {
     }
 
     // ── Configuración ────────────────────────────────────────────────────────
+    /**
+     * Executes the obtenerConfiguracion operation.
+     * @return operation result
+     */
     public ConfiguracionRespaldo obtenerConfiguracion() {
         return configRepo.findAll().stream().findFirst().orElseGet(() -> {
             ConfiguracionRespaldo config = ConfiguracionRespaldo.builder()
@@ -47,6 +51,13 @@ public class RespaldoCompletoService {
     }
 
     @Transactional
+    /**
+     * Executes the actualizarConfiguracion operation.
+     * @param frecuenciaHoras value required by the operation
+     * @param diasRetencion value required by the operation
+     * @param habilitado value required by the operation
+     * @return operation result
+     */
     public ConfiguracionRespaldo actualizarConfiguracion(Integer frecuenciaHoras, Integer diasRetencion, Boolean habilitado) {
         if (frecuenciaHoras != null && (frecuenciaHoras < 1 || frecuenciaHoras > 168)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "frecuenciaHoras debe estar entre 1 y 168");
@@ -67,15 +78,32 @@ public class RespaldoCompletoService {
     }
 
     // ── Historial de registros ────────────────────────────────────────────────
+    /**
+     * Executes the listarPorTipo operation.
+     * @param tipo value required by the operation
+     * @return operation result
+     */
     public List<RegistroRespaldo> listarPorTipo(String tipo) {
         return registroRepo.findByTipoOrderByIniciadoEnDesc(tipo);
     }
+
+    /**
+
+     * Executes the listarTodos operation.
+
+     * @return operation result
+
+     */
 
     public List<RegistroRespaldo> listarTodos() {
         return registroRepo.findAll();
     }
 
     @Transactional
+    /**
+     * Executes the eliminar operation.
+     * @param id value required by the operation
+     */
     public void eliminar(Long id) {
         RegistroRespaldo r = registroRepo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Registro no encontrado"));
@@ -88,6 +116,16 @@ public class RespaldoCompletoService {
         }
         registroRepo.delete(r);
     }
+
+    /**
+
+     * Executes the descargar operation.
+
+     * @param id value required by the operation
+
+     * @return operation result
+
+     */
 
     public byte[] descargar(Long id) {
         RegistroRespaldo r = registroRepo.findById(id)
@@ -113,6 +151,12 @@ public class RespaldoCompletoService {
 
     // ── Registro de ejecución (llamado desde el microservicio Node.js via token interno) ──
     @Transactional
+    /**
+     * Executes the registrarInicio operation.
+     * @param tipo value required by the operation
+     * @param ejecutadoPor value required by the operation
+     * @return operation result
+     */
     public RegistroRespaldo registrarInicio(String tipo, Long ejecutadoPor) {
         RegistroRespaldo r = RegistroRespaldo.builder()
                 .tipo(tipo)
@@ -123,6 +167,16 @@ public class RespaldoCompletoService {
     }
 
     @Transactional
+    /**
+     * Executes the registrarResultado operation.
+     * @param id value required by the operation
+     * @param estado value required by the operation
+     * @param nombreArchivo value required by the operation
+     * @param tamanoBytes value required by the operation
+     * @param rutaR2 value required by the operation
+     * @param mensajeError value required by the operation
+     * @return operation result
+     */
     public RegistroRespaldo registrarResultado(Long id, String estado, String nombreArchivo,
                                                Long tamanoBytes, String rutaR2, String mensajeError) {
         RegistroRespaldo r = registroRepo.findById(id)

@@ -7,6 +7,7 @@ backend-springboot/.mvn/wrapper/maven-wrapper.jar
 frontend-angular/node_modules/
 frontend-angular/dist/
 frontend-angular/.angular/
+backup-service/node_modules/
 
 # Entornos y secretos
 .env
@@ -35,6 +36,9 @@ db/init/
 
 # Artefactos temporales de notebooks Jupyter (los .ipynb con sus outputs si se versionan)
 .ipynb_checkpoints/
+
+# Salidas crudas pesadas de k6 (guardar resumen/reportes, no NDJSON completos)
+docs/mediciones/perf/k6-run*.json
 
 # Scratch files de verificación de bundle (temporales, no versionar)
 live-bundle*.js

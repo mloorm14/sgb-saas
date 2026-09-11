@@ -64,6 +64,12 @@ public class ReservacionService {
      * @throws IllegalArgumentException si la fecha de retiro es anterior a hoy
      */
     @Transactional
+    /**
+     * Executes the crear operation.
+     * @param dto value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ReservacionResponseDTO crear(ReservacionRequestDTO dto, Authentication authentication) {
         if (esLector(authentication)) {
             Long idPropio = resolverIdPorCorreo(authentication.getName());
@@ -152,6 +158,13 @@ public class ReservacionService {
      * @throws IllegalStateException si la reserva ya no está pendiente o el estado destino no existe en el catálogo
      */
     @Transactional
+    /**
+     * Executes the cambiarEstado operation.
+     * @param reservacionId value required by the operation
+     * @param dto value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ReservacionResponseDTO cambiarEstado(
             Long reservacionId, CambioEstadoReservacionRequestDTO dto, Authentication authentication) {
         Reservacion reservacion = reservacionRepo.findById(reservacionId)
@@ -202,6 +215,13 @@ public class ReservacionService {
      * @throws AuthorizationDeniedException si un LECTOR pide reservaciones ajenas
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarPorUsuario operation.
+     * @param usuarioId value required by the operation
+     * @param authentication value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<ReservacionResponseDTO> listarPorUsuario(
             Long usuarioId, Authentication authentication, Pageable pageable) {
         validarAccesoUsuario(usuarioId, authentication);
@@ -215,6 +235,10 @@ public class ReservacionService {
      * @return lista de reservaciones del día con lector, libro y estado
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the buscarReservacionesDeHoy operation.
+     * @return operation result
+     */
     public List<ReservacionHoyResponseDTO> buscarReservacionesDeHoy() {
         return reservacionRepo.buscarReservacionesDeHoy().stream()
                 .map(p -> new ReservacionHoyResponseDTO(
@@ -235,6 +259,10 @@ public class ReservacionService {
      * @return lista de reservaciones próximas con lector, libro y estado
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the buscarReservacionesProximas operation.
+     * @return operation result
+     */
     public List<ReservacionHoyResponseDTO> buscarReservacionesProximas() {
         return reservacionRepo.buscarReservacionesProximas().stream()
                 .map(p -> new ReservacionHoyResponseDTO(

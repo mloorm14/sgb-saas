@@ -53,6 +53,12 @@ public class ChatbotController {
             @ApiResponse(responseCode = "404", description = "Sesión no encontrada o de otro usuario"),
             @ApiResponse(responseCode = "429", description = "Límite de mensajes por minuto excedido")
     })
+    /**
+     * Executes the enviarMensaje operation.
+     * @param dto value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<MensajeChatResponseDTO> enviarMensaje(
             @Valid @RequestBody MensajeChatRequestDTO dto, Authentication authentication) {
         return ResponseEntity.ok(chatbotOrchestrator.enviarMensaje(dto, authentication));
@@ -69,6 +75,12 @@ public class ChatbotController {
             @ApiResponse(responseCode = "403", description = "No es LECTOR o no autenticado"),
             @ApiResponse(responseCode = "404", description = "Sesión no encontrada o de otro usuario")
     })
+    /**
+     * Executes the historial operation.
+     * @param id value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<List<MensajeChatHistorialDTO>> historial(
             @PathVariable UUID id, Authentication authentication) {
         return ResponseEntity.ok(chatbotOrchestrator.obtenerHistorial(id, authentication));

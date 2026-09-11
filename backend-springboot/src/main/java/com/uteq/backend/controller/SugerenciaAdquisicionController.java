@@ -34,6 +34,12 @@ public class SugerenciaAdquisicionController {
     // ── POST /api/v1/sugerencias-adquisicion ──────────────
     @PostMapping
     @PreAuthorize("hasRole('LECTOR')")
+    /**
+     * Executes the crear operation.
+     * @param dto value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<SugerenciaAdquisicionResponseDTO> crear(
             @Valid @RequestBody SugerenciaAdquisicionRequestDTO dto,
             Authentication authentication) {
@@ -62,6 +68,13 @@ public class SugerenciaAdquisicionController {
     // ── PATCH /api/v1/sugerencias-adquisicion/{id}/estado ─
     @PatchMapping("/{id}/estado")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    /**
+     * Executes the cambiarEstado operation.
+     * @param id value required by the operation
+     * @param dto value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<SugerenciaAdquisicionResponseDTO> cambiarEstado(
             @PathVariable Long id,
             @Valid @RequestBody CambioEstadoSugerenciaRequestDTO dto,
@@ -97,6 +110,10 @@ public class SugerenciaAdquisicionController {
     // ── GET /api/v1/sugerencias-adquisicion/reporte-pdf ──
     @GetMapping("/reporte-pdf")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    /**
+     * Executes the reportePdf operation.
+     * @return operation result
+     */
     public ResponseEntity<byte[]> reportePdf() {
         byte[] pdf = reportePdfService.generarReporteSugerenciasMasPedidas(
                 sugerenciaService.getMasPedidosList());

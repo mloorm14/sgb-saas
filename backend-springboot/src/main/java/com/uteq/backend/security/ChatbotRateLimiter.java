@@ -30,6 +30,16 @@ public class ChatbotRateLimiter {
     @Value("${app.gemini.rate-limit-window-seconds}")
     private long rateLimitWindowSeconds;
 
+    /**
+
+     * Executes the estaBloqueado operation.
+
+     * @param usuarioId value required by the operation
+
+     * @return operation result
+
+     */
+
     public boolean estaBloqueado(Long usuarioId) {
         try {
             String valor = redisTemplate.opsForValue().get(key(usuarioId));

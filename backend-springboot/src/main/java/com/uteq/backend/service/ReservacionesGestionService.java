@@ -52,6 +52,11 @@ public class ReservacionesGestionService {
 
     // ── GET /gestion/buscar-usuario?correo= ──────────────────
     @Transactional(readOnly = true)
+    /**
+     * Executes the buscarPorCorreo operation.
+     * @param correo value required by the operation
+     * @return operation result
+     */
     public UsuarioReservacionesGestionDTO buscarPorCorreo(String correo) {
         Usuario usuario = usuarioRepo.findByCorreo(correo)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO));
@@ -76,6 +81,11 @@ public class ReservacionesGestionService {
     // Retorna las reservaciones del usuario con el título del libro
     // resuelto en batch (3 queries: reservaciones, libros, estados).
     @Transactional(readOnly = true)
+    /**
+     * Executes the historialReservaciones operation.
+     * @param usuarioId value required by the operation
+     * @return operation result
+     */
     public List<HistorialReservacionDTO> historialReservaciones(Long usuarioId) {
         // Validar que el usuario exista
         if (!usuarioRepo.existsById(usuarioId)) {

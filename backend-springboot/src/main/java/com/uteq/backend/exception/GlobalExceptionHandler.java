@@ -53,21 +53,41 @@ public class GlobalExceptionHandler {
     // ── Registro y préstamos ──────────────────────────────────
 
     @ExceptionHandler(CorreoYaRegistradoException.class)
+    /**
+     * Executes the handleCorreoYaRegistrado operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleCorreoYaRegistrado(CorreoYaRegistradoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     @ExceptionHandler(CorreoDominioNoPermitidoException.class)
+    /**
+     * Executes the handleCorreoDominioNoPermitido operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleCorreoDominioNoPermitido(CorreoDominioNoPermitidoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
     @ExceptionHandler(LimitePrestamosExcedidoException.class)
+    /**
+     * Executes the handleLimitePrestamosExcedido operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleLimitePrestamosExcedido(LimitePrestamosExcedidoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     @ExceptionHandler(EstadoReservacionInicialNoConfiguradoException.class)
+    /**
+     * Executes the handleEstadoReservacionInicialNoConfigurado operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleEstadoReservacionInicialNoConfigurado(EstadoReservacionInicialNoConfiguradoException ex) {
         // Falta seed de configuración del sistema → 503.
         return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
@@ -76,36 +96,66 @@ public class GlobalExceptionHandler {
     // ── Autenticación ─────────────────────────────────────────
 
     @ExceptionHandler(BadCredentialsException.class)
+    /**
+     * Executes the handleBadCredentials operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleBadCredentials(BadCredentialsException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
     }
 
     // Intentos de login agotados en la ventana vigente → 429.
     @ExceptionHandler(LoginRateLimitExcedidoException.class)
+    /**
+     * Executes the handleLoginRateLimitExcedido operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleLoginRateLimitExcedido(LoginRateLimitExcedidoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
     }
 
     // Lector agotó el cupo de mensajes del chatbot en la ventana vigente → 429.
     @ExceptionHandler(ChatbotRateLimitExcedidoException.class)
+    /**
+     * Executes the handleChatbotRateLimitExcedido operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleChatbotRateLimitExcedido(ChatbotRateLimitExcedidoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
     }
 
     // Sesión de chat inexistente o de otro usuario → 404.
     @ExceptionHandler(SesionChatNoEncontradaException.class)
+    /**
+     * Executes the handleSesionChatNoEncontrada operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleSesionChatNoEncontrada(SesionChatNoEncontradaException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     // Refresh token inválido, expirado o de usuario inexistente → 401.
     @ExceptionHandler(RefreshTokenInvalidoException.class)
+    /**
+     * Executes the handleRefreshTokenInvalido operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleRefreshTokenInvalido(RefreshTokenInvalidoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
     // Cuenta bloqueada por multas pendientes → 423.
     @ExceptionHandler(LockedException.class)
+    /**
+     * Executes the handleLocked operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleLocked(LockedException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.LOCKED,
                 "Cuenta bloqueada por multas pendientes. Regularice su situación para continuar.");
@@ -113,6 +163,11 @@ public class GlobalExceptionHandler {
 
     // Cuenta inactiva o pendiente de verificación → 403.
     @ExceptionHandler(DisabledException.class)
+    /**
+     * Executes the handleDisabled operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleDisabled(DisabledException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,
                 "Cuenta inactiva o pendiente de verificación.");
@@ -120,6 +175,11 @@ public class GlobalExceptionHandler {
 
     // Autenticado sin el rol requerido para el método → 403.
     @ExceptionHandler(AuthorizationDeniedException.class)
+    /**
+     * Executes the handleAuthorizationDenied operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleAuthorizationDenied(AuthorizationDeniedException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,
                 "No tiene permisos para realizar esta acción.");
@@ -128,11 +188,21 @@ public class GlobalExceptionHandler {
     // ── Validación ────────────────────────────────────────────
 
     @ExceptionHandler(ConstraintViolationException.class)
+    /**
+     * Executes the handleConstraintViolation operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleConstraintViolation(ConstraintViolationException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
+    /**
+     * Executes the handleValidation operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
         Map<String, String> detalles = new HashMap<>();
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
@@ -145,6 +215,11 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
+    /**
+     * Executes the handleBodyMalformed operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleBodyMalformed(HttpMessageNotReadableException ex) {
         String detalle = Objects.toString(
                 ex.getMostSpecificCause().getMessage(), "El cuerpo de la solicitud no es válido");
@@ -154,12 +229,22 @@ public class GlobalExceptionHandler {
     // ── Recursos ──────────────────────────────────────────────
 
     @ExceptionHandler(EntityNotFoundException.class)
+    /**
+     * Executes the handleNotFound operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleNotFound(EntityNotFoundException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     // Ruta o recurso estático inexistente (ej. Swagger en perfil prod) → 404.
     @ExceptionHandler(NoResourceFoundException.class)
+    /**
+     * Executes the handleNoResourceFound operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleNoResourceFound(NoResourceFoundException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Recurso no encontrado");
     }
@@ -167,28 +252,53 @@ public class GlobalExceptionHandler {
     // ── Reglas de préstamo (cada motivo con su excepción) ─────
 
     @ExceptionHandler(PrestamoVencidoException.class)
+    /**
+     * Executes the handlePrestamoVencido operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handlePrestamoVencido(PrestamoVencidoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     @ExceptionHandler(LimiteRenovacionesExcedidoException.class)
+    /**
+     * Executes the handleLimiteRenovacionesExcedido operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleLimiteRenovacionesExcedido(LimiteRenovacionesExcedidoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     @ExceptionHandler(MaterialReservadoException.class)
+    /**
+     * Executes the handleMaterialReservado operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleMaterialReservado(MaterialReservadoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     // Código de verificación incorrecto o expirado → 400.
     @ExceptionHandler(CodigoVerificacionInvalidoException.class)
+    /**
+     * Executes the handleCodigoVerificacionInvalido operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleCodigoVerificacionInvalido(CodigoVerificacionInvalidoException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     // Dependencia externa caída (Redis/SMTP) → 503.
     @ExceptionHandler(ServicioTemporalmenteNoDisponibleException.class)
+    /**
+     * Executes the handleServicioTemporalmenteNoDisponible operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleServicioTemporalmenteNoDisponible(ServicioTemporalmenteNoDisponibleException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
     }
@@ -196,6 +306,11 @@ public class GlobalExceptionHandler {
     // ── Acceso a datos ────────────────────────────────────────
 
     @ExceptionHandler(InvalidDataAccessApiUsageException.class)
+    /**
+     * Executes the handleSortInvalido operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleSortInvalido(InvalidDataAccessApiUsageException ex) {
         log.warn("Parámetro de ordenamiento inválido", ex);
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
@@ -204,6 +319,11 @@ public class GlobalExceptionHandler {
 
     // Dependencia de datos agotada o caída → 503.
     @ExceptionHandler({DataAccessResourceFailureException.class, UncategorizedDataAccessException.class})
+    /**
+     * Executes the handleDataAccessResourceFailure operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleDataAccessResourceFailure(DataAccessException ex) {
         log.error("Fallo de acceso a dependencia de datos (Redis/BD) {}: {}", ex.getClass().getSimpleName(), ex.getMessage(), ex);
         String root = Objects.toString(ex.getMostSpecificCause().getMessage(), ex.getMessage());
@@ -213,11 +333,21 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
+    /**
+     * Executes the handleIllegalArgument operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(IllegalStateException.class)
+    /**
+     * Executes the handleIllegalState operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleIllegalState(IllegalStateException ex) {
         log.warn("Estado ilegal de negocio", ex);
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
@@ -230,6 +360,11 @@ public class GlobalExceptionHandler {
             UncategorizedSQLException.class,
             DataAccessException.class
     })
+    /**
+     * Executes the handleStoredProcedureError operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleStoredProcedureError(DataAccessException ex) {
         Objects.requireNonNull(ex, "el handler siempre recibe la excepción");
         Throwable causa = ex;
@@ -263,6 +398,11 @@ public class GlobalExceptionHandler {
 
     // Reenvía el status indicado por el servicio (400, 404, etc.).
     @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    /**
+     * Executes the handleResponseStatus operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleResponseStatus(org.springframework.web.server.ResponseStatusException ex) {
         return ProblemDetail.forStatusAndDetail(
                 HttpStatus.valueOf(ex.getStatusCode().value()),
@@ -273,6 +413,11 @@ public class GlobalExceptionHandler {
     // ── Fallback ──────────────────────────────────────────────
 
     @ExceptionHandler(Exception.class)
+    /**
+     * Executes the handleGenerica operation.
+     * @param ex value required by the operation
+     * @return operation result
+     */
     public ProblemDetail handleGenerica(Exception ex) {
         log.error("Error no controlado: {}", ex.getMessage(), ex);
         String msg = ex.getMessage();

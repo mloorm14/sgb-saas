@@ -94,6 +94,11 @@ public class LibroService {
      */
     @Cacheable("libros")
     @Transactional(readOnly = true)
+    /**
+     * Executes the listar operation.
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<LibroResponseDTO> listar(Pageable pageable) {
         return libroRepo.findByEstado_Nombre(ESTADO_ACTIVO, pageable)
                 .map(this::toDTO);
@@ -113,6 +118,16 @@ public class LibroService {
      * @return página de vistas resumidas de los libros que cumplen los filtros combinados
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarConFiltros operation.
+     * @param q value required by the operation
+     * @param estadoLibroId value required by the operation
+     * @param categoriaId value required by the operation
+     * @param autorId value required by the operation
+     * @param disponible value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<LibroResponseDTO> listarConFiltros(String q, Integer estadoLibroId, Integer categoriaId, Long autorId, Boolean disponible, Pageable pageable) {
         Integer estadoId = resolverEstadoId(estadoLibroId);
 
@@ -164,6 +179,15 @@ public class LibroService {
      * @return página de vistas resumidas de los libros que cumplen los filtros combinados
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarConFiltros operation.
+     * @param q value required by the operation
+     * @param estadoLibroId value required by the operation
+     * @param categoriaId value required by the operation
+     * @param autorId value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<LibroResponseDTO> listarConFiltros(String q, Integer estadoLibroId, Integer categoriaId, Long autorId, Pageable pageable) {
         return listarConFiltros(q, estadoLibroId, categoriaId, autorId, null, pageable);
     }
@@ -191,6 +215,14 @@ public class LibroService {
      * @throws RuntimeException si la consulta de pendientes falla en el repositorio
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarPendientes operation.
+     * @param q value required by the operation
+     * @param anioPublicacion value required by the operation
+     * @param estadoIds value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<LibroResponseDTO> listarPendientes(String q, Integer anioPublicacion, List<Integer> estadoIds, Pageable pageable) {
         List<Integer> estados = resolverEstadosPendientes(estadoIds);
         if (estados.isEmpty()) {
@@ -224,6 +256,12 @@ public class LibroService {
      * @return página de vistas resumidas de los libros ACTIVO vinculados a esa categoría
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarPorCategoria operation.
+     * @param categoriaId value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<LibroResponseDTO> listarPorCategoria(Integer categoriaId, Pageable pageable) {
         return libroRepo.findByCategorias_IdAndEstado_Nombre(categoriaId, ESTADO_ACTIVO, pageable)
                 .map(this::toDTO);
@@ -237,6 +275,12 @@ public class LibroService {
      * @return página de vistas resumidas de los libros ACTIVO vinculados a ese autor
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarPorAutor operation.
+     * @param autorId value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<LibroResponseDTO> listarPorAutor(Long autorId, Pageable pageable) {
         return libroRepo.findByAutores_IdAndEstado_Nombre(autorId, ESTADO_ACTIVO, pageable)
                 .map(this::toDTO);
@@ -251,6 +295,11 @@ public class LibroService {
      * @throws jakarta.persistence.EntityNotFoundException si no existe ningún libro con ese identificador
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the buscarPorId operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public LibroResponseDTO buscarPorId(Long id) {
         return libroRepo.findById(id)
                 .map(this::toDTO)
@@ -267,6 +316,11 @@ public class LibroService {
      * @throws jakarta.persistence.EntityNotFoundException si no existe el libro o no está en estado ACTIVO
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the buscarPorIdPublico operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public LibroResponseDTO buscarPorIdPublico(Long id) {
         return libroRepo.findById(id)
                 .filter(l -> l.getEstado() != null && ESTADO_ACTIVO.equals(l.getEstado().getNombre()))
@@ -286,6 +340,11 @@ public class LibroService {
      */
     @Cacheable("sugerencias-libros")
     @Transactional(readOnly = true)
+    /**
+     * Executes the sugerir operation.
+     * @param texto value required by the operation
+     * @return operation result
+     */
     public List<LibroSugerenciaDTO> sugerir(String texto) {
         EstadoLibro estadoActivo = estadoRepo.findByNombre(ESTADO_ACTIVO)
                 .orElseThrow(() -> new IllegalStateException(
@@ -310,6 +369,11 @@ public class LibroService {
      */
     @CacheEvict(value = "libros", allEntries = true)
     @Transactional
+    /**
+     * Executes the crear operation.
+     * @param dto value required by the operation
+     * @return operation result
+     */
     public LibroResponseDTO crear(LibroRequestDTO dto) {
         if (libroRepo.existsByIsbn(dto.isbn())) {
             throw new IllegalArgumentException(
@@ -361,6 +425,12 @@ public class LibroService {
      */
     @CacheEvict(value = "libros", allEntries = true)
     @Transactional
+    /**
+     * Executes the actualizar operation.
+     * @param id value required by the operation
+     * @param dto value required by the operation
+     * @return operation result
+     */
     public LibroResponseDTO actualizar(Long id, LibroRequestDTO dto) {
         Libro libro = libroRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -426,6 +496,10 @@ public class LibroService {
      */
     @CacheEvict(value = "libros", allEntries = true)
     @Transactional
+    /**
+     * Executes the eliminar operation.
+     * @param id value required by the operation
+     */
     public void eliminar(Long id) {
         Libro libro = libroRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -451,6 +525,12 @@ public class LibroService {
      */
     @CacheEvict(value = "libros", allEntries = true)
     @Transactional
+    /**
+     * Executes the actualizarPortada operation.
+     * @param libroId value required by the operation
+     * @param archivo value required by the operation
+     * @return operation result
+     */
     public LibroResponseDTO actualizarPortada(Long libroId, MultipartFile archivo) {
         Libro libro = libroRepo.findById(libroId)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -480,6 +560,11 @@ public class LibroService {
      * @throws jakarta.persistence.EntityNotFoundException si no existe el libro o aún no tiene portada guardada
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the obtenerPortada operation.
+     * @param libroId value required by the operation
+     * @return operation result
+     */
     public PortadaImagenDTO obtenerPortada(Long libroId) {
         Libro libro = libroRepo.findById(libroId)
                 .orElseThrow(() -> new EntityNotFoundException(

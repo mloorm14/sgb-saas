@@ -35,6 +35,12 @@ public class SugerenciaAdquisicionService {
     }
 
     @Transactional
+    /**
+     * Executes the crear operation.
+     * @param dto value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public SugerenciaAdquisicionResponseDTO crear(SugerenciaAdquisicionRequestDTO dto, Authentication authentication) {
         Long usuarioId = resolverIdPorCorreo(authentication.getName());
 
@@ -52,6 +58,12 @@ public class SugerenciaAdquisicionService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarPropias operation.
+     * @param authentication value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<SugerenciaAdquisicionResponseDTO> listarPropias(Authentication authentication, Pageable pageable) {
         Long usuarioId = resolverIdPorCorreo(authentication.getName());
         return sugerenciaRepo.findByUsuarioId(usuarioId, pageable).map(this::toDTO);
@@ -59,6 +71,12 @@ public class SugerenciaAdquisicionService {
 
     // Solo GERENTE/ADMIN llegan acá: listado sin filtrar por dueño.
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarTodas operation.
+     * @param estado value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<SugerenciaAdquisicionResponseDTO> listarTodas(String estado, Pageable pageable) {
         if (estado == null || estado.isBlank()) {
             return sugerenciaRepo.findAll(pageable).map(this::toDTO);
@@ -67,6 +85,13 @@ public class SugerenciaAdquisicionService {
     }
 
     @Transactional
+    /**
+     * Executes the cambiarEstado operation.
+     * @param id value required by the operation
+     * @param nuevoEstado value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public SugerenciaAdquisicionResponseDTO cambiarEstado(Long id, String nuevoEstado, Authentication authentication) {
         SugerenciaAdquisicion sugerencia = sugerenciaRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(SUGERENCIA_NO_ENCONTRADA + id));
@@ -81,12 +106,21 @@ public class SugerenciaAdquisicionService {
     // ── Gestión por demanda: lo más pedido primero ──
     // El orden vive en el JPQL; el sort del Pageable se ignora a propósito.
     @Transactional(readOnly = true)
+    /**
+     * Executes the getMasPedidos operation.
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<SugerenciaAgrupadaDTO> getMasPedidos(Pageable pageable) {
         Pageable efectivo = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
         return sugerenciaRepo.findMasPedidosAgrupados(efectivo);
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Executes the getMasPedidosList operation.
+     * @return operation result
+     */
     public List<SugerenciaAgrupadaDTO> getMasPedidosList() {
         return sugerenciaRepo
                 .findMasPedidosAgrupados(PageRequest.of(0, Integer.MAX_VALUE))
@@ -100,6 +134,12 @@ public class SugerenciaAdquisicionService {
      * crear un libro con ese ISBN (validación automática).
      */
     @Transactional
+    /**
+     * Executes the confirmarAdquisicion operation.
+     * @param isbn value required by the operation
+     * @param revisorId value required by the operation
+     * @return operation result
+     */
     public int confirmarAdquisicion(String isbn, Long revisorId) {
         List<SugerenciaAdquisicion> pendientes = sugerenciaRepo.findByIsbnAndEstado(isbn, SugerenciaAdquisicion.PENDIENTE);
         for (SugerenciaAdquisicion s : pendientes) {

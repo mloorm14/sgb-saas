@@ -39,6 +39,15 @@ public class AuditoriaService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Executes the listar operation.
+     * @param usuarioId value required by the operation
+     * @param modulo value required by the operation
+     * @param desde value required by the operation
+     * @param hasta value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<EventoAuditoriaResponseDTO> listar(Long usuarioId, String modulo,
                                                      OffsetDateTime desde, OffsetDateTime hasta,
                                                      Pageable pageable) {
@@ -62,6 +71,10 @@ public class AuditoriaService {
      * que tenga al menos 1 evento en la bitácora.
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the resumen operation.
+     * @return operation result
+     */
     public List<ResumenCategoriaAuditoriaDTO> resumen() {
         OffsetDateTime desdeHoy = OffsetDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
 
@@ -88,6 +101,22 @@ public class AuditoriaService {
 
         return resultado;
     }
+
+    /**
+
+     * Executes the exportarCsv operation.
+
+     * @param usuarioId value required by the operation
+
+     * @param modulo value required by the operation
+
+     * @param desde value required by the operation
+
+     * @param hasta value required by the operation
+
+     * @return operation result
+
+     */
 
     public byte[] exportarCsv(Long usuarioId, String modulo, OffsetDateTime desde, OffsetDateTime hasta) {
         var pageable = org.springframework.data.domain.PageRequest.of(0, 10000, org.springframework.data.domain.Sort.by("fecha_hora").descending());

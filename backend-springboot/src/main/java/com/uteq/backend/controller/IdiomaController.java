@@ -26,6 +26,10 @@ public class IdiomaController {
     }
 
     @GetMapping
+    /**
+     * Executes the listar operation.
+     * @return operation result
+     */
     public ResponseEntity<List<IdiomaResponseDTO>> listar() {
         List<IdiomaResponseDTO> idiomas = idiomaRepository.findAll().stream()
                 .map(i -> new IdiomaResponseDTO(i.getId(), i.getNombre()))
@@ -34,6 +38,11 @@ public class IdiomaController {
     }
 
     @GetMapping("/buscar")
+    /**
+     * Executes the buscar operation.
+     * @param q value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<List<IdiomaResponseDTO>> buscar(@RequestParam String q) {
         return ResponseEntity.ok(
                 idiomaRepository.findTop5ByNombreContainingIgnoreCase(q).stream()
@@ -43,6 +52,11 @@ public class IdiomaController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    /**
+     * Executes the crear operation.
+     * @param dto value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<IdiomaResponseDTO> crear(@Valid @RequestBody IdiomaRequestDTO dto) {
         if (idiomaRepository.existsByNombreIgnoreCase(dto.nombre())) {
             return ResponseEntity.unprocessableEntity().build();

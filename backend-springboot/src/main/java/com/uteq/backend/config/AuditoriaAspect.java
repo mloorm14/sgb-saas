@@ -28,6 +28,13 @@ public class AuditoriaAspect {
     }
 
     @Around("@annotation(tx)")
+    /**
+     * Executes the setCurrentUser operation.
+     * @param pjp value required by the operation
+     * @param tx value required by the operation
+     * @return operation result
+     * @throws Throwable when the operation cannot be completed
+     */
     public Object setCurrentUser(ProceedingJoinPoint pjp, org.springframework.transaction.annotation.Transactional tx) throws Throwable {
         if (!tx.readOnly()) {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();

@@ -46,6 +46,10 @@ public class BackupProgramacion {
 
     // Getter explícito para boolean 'activo' (Lombok a veces genera getActivo en vez de isActivo).
     // Se usa Boolean.TRUE.equals para evitar NPE por auto-unboxing cuando activo es null.
+    /**
+     * Executes the isActivo operation.
+     * @return operation result
+     */
     public boolean isActivo() { return Boolean.TRUE.equals(activo); }
 
     // Restricción XOR: exactamente uno de los dos debe tener valor

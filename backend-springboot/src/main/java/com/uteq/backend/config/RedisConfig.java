@@ -48,6 +48,10 @@ public class RedisConfig {
     }
 
     @Bean
+    /**
+     * Executes the cacheErrorHandler operation.
+     * @return operation result
+     */
     public CacheErrorHandler cacheErrorHandler() {
         return new CacheErrorHandler() {
             private final Logger log = LoggerFactory.getLogger(CacheErrorHandler.class);
@@ -67,6 +71,11 @@ public class RedisConfig {
     }
 
     @Bean
+    /**
+     * Executes the redisTemplate operation.
+     * @param connectionFactory value required by the operation
+     * @return operation result
+     */
     public RedisTemplate<String, String> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, String> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);

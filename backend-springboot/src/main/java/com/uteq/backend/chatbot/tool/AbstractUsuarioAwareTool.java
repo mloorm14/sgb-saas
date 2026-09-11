@@ -15,6 +15,10 @@ public abstract class AbstractUsuarioAwareTool extends AbstractChatbotTool {
     public static final String USUARIO_ID = "usuario_id";
 
     @Override
+    /**
+     * Executes the getInputSchema operation.
+     * @return operation result
+     */
     public JsonNode getInputSchema() {
         ObjectNode schema = mapper.createObjectNode();
         schema.put("type", "object");

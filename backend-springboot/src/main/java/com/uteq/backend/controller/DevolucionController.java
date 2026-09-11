@@ -31,6 +31,13 @@ public class DevolucionController {
 
     @PostMapping("/prestamo/{prestamoId}")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the registrarDevolucion operation.
+     * @param prestamoId value required by the operation
+     * @param dto value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<DevolucionCompletaResponseDTO> registrarDevolucion(
             @PathVariable Long prestamoId,
             @Valid @RequestBody DevolucionRequestDTO dto,
@@ -42,6 +49,11 @@ public class DevolucionController {
 
     @GetMapping("/historial")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the historialDevoluciones operation.
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<List<DevolucionHistorialDTO>> historialDevoluciones(
             Authentication authentication) {
         Long bibliotecarioId = resolverIdPorCorreo(authentication.getName());

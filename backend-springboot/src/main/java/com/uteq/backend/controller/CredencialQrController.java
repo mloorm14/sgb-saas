@@ -26,6 +26,11 @@ public class CredencialQrController {
 
     @GetMapping(value = "/mi-credencial", produces = MediaType.IMAGE_PNG_VALUE)
     @PreAuthorize("hasRole('LECTOR')")
+    /**
+     * Executes the miCredencial operation.
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<byte[]> miCredencial(Authentication authentication) {
         byte[] imagen = service.generarImagenQrPropio(authentication);
         return ResponseEntity.ok()

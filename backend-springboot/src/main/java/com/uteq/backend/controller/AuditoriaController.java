@@ -56,6 +56,10 @@ public class AuditoriaController {
     // Agregación por tabla_afectada: total, hoy, último evento.
     // Misma restricción @PreAuthorize que el listado (GERENTE/ADMIN).
     @GetMapping("/resumen")
+    /**
+     * Executes the resumen operation.
+     * @return operation result
+     */
     public ResponseEntity<List<ResumenCategoriaAuditoriaDTO>> resumen() {
         return ResponseEntity.ok(auditoriaService.resumen());
     }

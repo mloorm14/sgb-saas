@@ -10,6 +10,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class TestController {
 
     @GetMapping("/protegido")
+    /**
+     * Executes the protegido operation.
+     * @return operation result
+     */
     public ResponseEntity<String> protegido() {
         return ResponseEntity.ok("Acceso autorizado. Estás autenticado correctamente.");
     }

@@ -45,6 +45,12 @@ public class PrestamoController {
     // ── POST /api/v1/prestamos ────────────────────────────
     @PostMapping
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the crear operation.
+     * @param dto value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<PrestamoResponseDTO> crear(
             @Valid @RequestBody PrestamoRequestDTO dto,
             Authentication authentication) {
@@ -55,6 +61,11 @@ public class PrestamoController {
     // ── POST /api/v1/prestamos/{id}/devolucion ────────────
     @PostMapping("/{id}/devolucion")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the registrarDevolucion operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<DevolucionResponseDTO> registrarDevolucion(@PathVariable Long id) {
         return ResponseEntity.ok(prestamoService.registrarDevolucion(id));
     }
@@ -64,6 +75,12 @@ public class PrestamoController {
     // PrestamoService.renovar()); BIBLIOTECARIO/GERENTE/ADMIN, cualquiera.
     @PostMapping("/{id}/renovacion")
     @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the renovar operation.
+     * @param id value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<RenovacionResponseDTO> renovar(
             @PathVariable Long id, Authentication authentication) {
         return ResponseEntity.ok(prestamoService.renovar(id, authentication));
@@ -83,6 +100,12 @@ public class PrestamoController {
     // ── GET /api/v1/prestamos/usuario/{usuarioId}/activos ─
     @GetMapping("/usuario/{usuarioId}/activos")
     @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE')")
+    /**
+     * Executes the listarActivosPorUsuario operation.
+     * @param usuarioId value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<List<PrestamoActivoResponseDTO>> listarActivosPorUsuario(
             @PathVariable Long usuarioId,
             Authentication authentication) {

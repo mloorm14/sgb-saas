@@ -28,8 +28,21 @@ public class BackupStorageService {
     private static final int GCM_IV_LENGTH = 12;
     private static final int GCM_TAG_LENGTH = 128;
     public BackupStorageService(@org.springframework.beans.factory.annotation.Autowired(required = false) S3Client s3Client) { this.s3Client = s3Client; }
+    /**
+     * Executes the isR2Configured operation.
+     * @return operation result
+     */
     public boolean isR2Configured() { return s3Client != null && bucket != null && !bucket.isBlank(); }
+    /**
+     * Executes the isEncryptionEnabled operation.
+     * @return operation result
+     */
     public boolean isEncryptionEnabled() { return encryptionKey != null && !encryptionKey.isBlank(); }
+    /**
+     * Executes the upload operation.
+     * @param key value required by the operation
+     * @param data value required by the operation
+     */
     public void upload(String key, byte[] data) {
         byte[] toStore = isEncryptionEnabled() ? encrypt(data) : data;
         if (isR2Configured()) {
@@ -40,12 +53,21 @@ public class BackupStorageService {
             try { Files.createDirectories(base); Files.write(base.resolve(sanitize(key)), toStore); } catch (IOException e) { throw new RuntimeException("No se pudo guardar respaldo local", e); }
         }
     }
+    /**
+     * Executes the download operation.
+     * @param key value required by the operation
+     * @return operation result
+     */
     public byte[] download(String key) {
         byte[] stored;
         if (isR2Configured()) { stored = s3Client.getObjectAsBytes(GetObjectRequest.builder().bucket(bucket).key(key).build()).asByteArray(); }
         else { try { stored = Files.readAllBytes(resolveLocalBase().resolve(sanitize(key))); } catch (IOException e) { throw new RuntimeException("No se pudo leer respaldo local: " + key, e); } }
         return isEncryptionEnabled() ? decrypt(stored) : stored;
     }
+    /**
+     * Executes the delete operation.
+     * @param key value required by the operation
+     */
     public void delete(String key) {
         if (isR2Configured()) s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());
         else { try { Files.deleteIfExists(resolveLocalBase().resolve(sanitize(key))); } catch (IOException e) { throw new RuntimeException("No se pudo eliminar respaldo local", e); } }

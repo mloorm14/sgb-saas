@@ -44,14 +44,14 @@ Evidencia del TTL externo del cache Redis `"libros"` (ver
 | `BODY_BYTES` | entero | bytes | igual entre llamada 1 y 2 para la misma consulta | Confirma que el cuerpo de la respuesta cacheada es idéntico byte a byte al original, no una respuesta distinta o truncada. |
 | `HTTPSTATUS` | entero | — | `200` en ambas llamadas | Código de respuesta esperado para una lectura exitosa del catálogo. |
 
-## `docs/mediciones/perf/k6-run{1..5}.json`
+## `docs/mediciones/perf/k6-run{1..5}.json` (fuente histórica, no versionada en el cierre)
 
 Salida cruda de k6 en formato **NDJSON** (un objeto JSON por línea, sin
 envoltorio de arreglo) para las 5 corridas del escenario de rendimiento
-`cache_caliente` vs.\ `cache_frío` (`k6/libros-listado-test.js`). Campos
-verificados abriendo `k6-run1.json` directamente para esta tarea, no
-asumidos del formato estándar documentado de k6 -- la estructura real
-tiene dos tipos de línea distintos:
+`cache_caliente` vs.\ `cache_frío` (`k6/libros-listado-test.js`). Esos
+archivos fueron usados para generar `docs/mediciones/perf/REPORT.md` y las
+figuras/tablas derivadas, pero se retiraron del árbol versionado final por
+higiene de repositorio. La estructura real tenía dos tipos de línea distintos:
 
 **Líneas `"type":"Metric"`** (una por cada una de las 16 métricas que k6
 declara al inicio de la corrida -- `checks`, `data_received`,

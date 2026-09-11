@@ -29,6 +29,9 @@ public class UsuarioScheduler {
 
     @Scheduled(fixedRate = 60 * 60 * 1000) // cada 1 hora
     @Transactional
+    /**
+     * Executes the eliminarNoVerificadosVencidos operation.
+     */
     public void eliminarNoVerificadosVencidos() {
         Instant cutoff = Instant.now().minus(HORAS_EXPIRACION, ChronoUnit.HOURS);
         int eliminados = usuarioRepo.deleteNoVerificadosBefore(cutoff);

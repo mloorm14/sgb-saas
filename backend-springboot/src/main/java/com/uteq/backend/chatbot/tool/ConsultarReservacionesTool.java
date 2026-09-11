@@ -37,17 +37,30 @@ public class ConsultarReservacionesTool extends AbstractUsuarioAwareTool {
     }
 
     @Override
+    /**
+     * Executes the getName operation.
+     * @return operation result
+     */
     public String getName() {
         return "consultar_reservaciones";
     }
 
     @Override
+    /**
+     * Executes the getDescription operation.
+     * @return operation result
+     */
     public String getDescription() {
         return "Consulta las reservas vigentes (PENDIENTE o LISTA_PARA_RETIRO) de un usuario de la biblioteca. "
                 + "Devuelve el listado con libro, fechas y estado.";
     }
 
     @Override
+    /**
+     * Executes the execute operation.
+     * @param args value required by the operation
+     * @return operation result
+     */
     public JsonNode execute(JsonNode args) {
         Long usuarioId = resolverUsuarioId(args);
         if (usuarioId == null) {

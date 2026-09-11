@@ -30,6 +30,12 @@ public class ReservacionController {
     // ── POST /api/v1/reservaciones ────────────────────────
     @PostMapping
     @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE')")
+    /**
+     * Executes the crear operation.
+     * @param dto value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<ReservacionResponseDTO> crear(
             @Valid @RequestBody ReservacionRequestDTO dto,
             Authentication authentication) {
@@ -42,12 +48,20 @@ public class ReservacionController {
     // paginar (volumen bajo por diseño -- es "las de hoy", no el histórico).
     @GetMapping("/hoy")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the reservacionesDeHoy operation.
+     * @return operation result
+     */
     public ResponseEntity<List<ReservacionHoyResponseDTO>> reservacionesDeHoy() {
         return ResponseEntity.ok(reservacionService.buscarReservacionesDeHoy());
     }
 
     @GetMapping("/proximas")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the reservacionesProximas operation.
+     * @return operation result
+     */
     public ResponseEntity<List<ReservacionHoyResponseDTO>> reservacionesProximas() {
         return ResponseEntity.ok(reservacionService.buscarReservacionesProximas());
     }
@@ -59,6 +73,13 @@ public class ReservacionController {
     // sistema expirar, pero nadie podía marcar "listo para retirar".
     @PatchMapping("/{id}/estado")
     @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the cambiarEstado operation.
+     * @param id value required by the operation
+     * @param dto value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<ReservacionResponseDTO> cambiarEstado(
             @PathVariable Long id,
             @Valid @RequestBody CambioEstadoReservacionRequestDTO dto,

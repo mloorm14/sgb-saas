@@ -58,6 +58,11 @@ public class PrestamosGestionController {
     // para el dropdown y el placeholder dinámico.
     @GetMapping("/sugerencias-usuarios")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the sugerenciasUsuarios operation.
+     * @param correo value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<List<UsuarioSugerenciaDTO>> sugerenciasUsuarios(
             @RequestParam String correo) {
         return ResponseEntity.ok(prestamosGestionService.sugerenciasUsuarios(correo));
@@ -68,6 +73,11 @@ public class PrestamosGestionController {
     // Caso B (préstamo directo). No es un error para el usuario final.
     @GetMapping("/reserva-activa")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the reservaActiva operation.
+     * @param usuarioId value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<ReservaActivaDTO> reservaActiva(@RequestParam Long usuarioId) {
         return ResponseEntity.ok(prestamosGestionService.reservaActiva(usuarioId));
     }
@@ -77,6 +87,11 @@ public class PrestamosGestionController {
     // tiempo; lista vacía si el usuario no tiene préstamos.
     @GetMapping("/historial")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the historial operation.
+     * @param usuarioId value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<List<HistorialPrestamoDTO>> historial(@RequestParam Long usuarioId) {
         return ResponseEntity.ok(prestamosGestionService.historial(usuarioId));
     }

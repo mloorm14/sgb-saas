@@ -73,6 +73,13 @@ public class MultaService {
      * @throws AuthorizationDeniedException si un LECTOR pide multas de otro usuario
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarPorUsuario operation.
+     * @param usuarioId value required by the operation
+     * @param authentication value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<MultaResponseDTO> listarPorUsuario(Long usuarioId, Authentication authentication, Pageable pageable) {
         validarAccesoUsuario(usuarioId, authentication);
         return multaRepo.findByUsuarioId(usuarioId, pageable).map(this::toDTO);
@@ -90,6 +97,13 @@ public class MultaService {
      * @throws AuthorizationDeniedException si un LECTOR pide multas de otro usuario
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarDetallePorUsuario operation.
+     * @param usuarioId value required by the operation
+     * @param authentication value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<MultaDetalleResponseDTO> listarDetallePorUsuario(Long usuarioId, Authentication authentication, Pageable pageable) {
         validarAccesoUsuario(usuarioId, authentication);
         return multaRepo.findByUsuarioId(usuarioId, pageable).map(this::toDetalleDTO);
@@ -105,6 +119,12 @@ public class MultaService {
      * @return mapa con las salidas del procedimiento (identificadores y estado resultante)
      */
     @Transactional
+    /**
+     * Executes the pagoParcial operation.
+     * @param multaId value required by the operation
+     * @param montoPagado value required by the operation
+     * @return operation result
+     */
     public Map<String, Object> pagoParcial(Long multaId, BigDecimal montoPagado) {
         return multaProcRepo.spPagoParcialMulta(multaId, montoPagado);
     }
@@ -118,6 +138,11 @@ public class MultaService {
      * @return acción resultante con el id de la multa y si el usuario quedó desbloqueado
      */
     @Transactional
+    /**
+     * Executes the pagar operation.
+     * @param multaId value required by the operation
+     * @return operation result
+     */
     public MultaAccionResponseDTO pagar(Long multaId) {
         Map<String, Object> resultado = multaProcRepo.spPagarMulta(multaId);
         return new MultaAccionResponseDTO(
@@ -137,6 +162,13 @@ public class MultaService {
      * @throws AuthorizationDeniedException si el ejecutor no es GERENTE ni ADMIN
      */
     @Transactional
+    /**
+     * Executes the anular operation.
+     * @param multaId value required by the operation
+     * @param motivo value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public MultaAccionResponseDTO anular(Long multaId, String motivo, Authentication authentication) {
         String rolEjecutor = resolverRolAnulacion(authentication);
         Map<String, Object> resultado = multaProcRepo.spAnularMulta(multaId, motivo, rolEjecutor);
@@ -154,6 +186,11 @@ public class MultaService {
      * @throws EntityNotFoundException si la multa o su préstamo no existen
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the resolverUsuarioIdDeMulta operation.
+     * @param multaId value required by the operation
+     * @return operation result
+     */
     public Long resolverUsuarioIdDeMulta(Long multaId) {
         Multa multa = multaRepo.findById(multaId)
                 .orElseThrow(() -> new EntityNotFoundException("Multa no encontrada: " + multaId));
@@ -172,6 +209,12 @@ public class MultaService {
      * @return resumen con recaudado, pendiente, generado hoy y pagos recientes
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the reporteResumenFinanciero operation.
+     * @param desde value required by the operation
+     * @param hasta value required by the operation
+     * @return operation result
+     */
     public ResumenFinancieroMultasResponseDTO reporteResumenFinanciero(OffsetDateTime desde, OffsetDateTime hasta) {
         ResumenFinancieroMultasProjection resumen = multaProcRepo.fnReporteResumenFinanciero(desde, hasta);
 

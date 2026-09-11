@@ -49,6 +49,9 @@ public class BackupProgramacionService {
      * TaskScheduler en memoria y los automáticos dejan de correr.
      */
     @PostConstruct
+    /**
+     * Executes the inicializarTareasProgramadas operation.
+     */
     public void inicializarTareasProgramadas() {
         progRepo.findByActivoTrueOrderByUltimaEjecucionDesc().forEach(p -> {
             try {
@@ -61,15 +64,43 @@ public class BackupProgramacionService {
 
     // ---------- CRUD simples ----------
 
+    /**
+
+     * Executes the listarActivas operation.
+
+     * @return operation result
+
+     */
+
     public List<BackupProgramacion> listarActivas() {
         return progRepo.findByActivoTrueOrderByUltimaEjecucionDesc();
     }
+
+    /**
+
+     * Executes the obtener operation.
+
+     * @param id value required by the operation
+
+     * @return operation result
+
+     */
 
     public BackupProgramacion obtener(Long id) {
         return progRepo.findById(id)
                 .filter(prog -> Boolean.TRUE.equals(prog.getActivo()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Programación no encontrada " + id));
     }
+
+    /**
+
+     * Executes the crear operation.
+
+     * @param dto value required by the operation
+
+     * @return operation result
+
+     */
 
     public BackupProgramacion crear(BackupProgramacion dto) {
         validarXorCampos(dto);
@@ -80,6 +111,16 @@ public class BackupProgramacionService {
         return progRepo.save(dto);
     }
 
+    /**
+
+     * Executes the actualizarUltimaEjecucion operation.
+
+     * @param id value required by the operation
+
+     * @param fecha value required by the operation
+
+     */
+
     public void actualizarUltimaEjecucion(Long id, OffsetDateTime fecha) {
         BackupProgramacion existing = progRepo.findById(id)
                 .filter(prog -> Boolean.TRUE.equals(prog.getActivo()))
@@ -87,6 +128,14 @@ public class BackupProgramacionService {
         existing.setUltimaEjecucion(fecha);
         progRepo.save(existing);
     }
+
+    /**
+
+     * Executes the eliminar operation.
+
+     * @param id value required by the operation
+
+     */
 
     public void eliminar(Long id) {
         BackupProgramacion p = progRepo.findById(id)

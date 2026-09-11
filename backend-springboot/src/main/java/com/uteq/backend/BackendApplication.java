@@ -8,6 +8,16 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class BackendApplication {
 
+	/**
+
+	 * Executes the main operation.
+
+	 * @param args value required by the operation
+
+	 * @return operation result
+
+	 */
+
 	public static void main(String[] args) {
 		SpringApplication.run(BackendApplication.class, args);
 	}

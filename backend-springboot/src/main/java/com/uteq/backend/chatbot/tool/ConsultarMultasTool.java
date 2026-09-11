@@ -24,17 +24,30 @@ public class ConsultarMultasTool extends AbstractUsuarioAwareTool {
     }
 
     @Override
+    /**
+     * Executes the getName operation.
+     * @return operation result
+     */
     public String getName() {
         return "consultar_multas";
     }
 
     @Override
+    /**
+     * Executes the getDescription operation.
+     * @return operation result
+     */
     public String getDescription() {
         return "Consulta las multas pendientes de pago de un usuario de la biblioteca. "
                 + "Devuelve el saldo total adeudado y la cantidad de multas pendientes.";
     }
 
     @Override
+    /**
+     * Executes the execute operation.
+     * @param args value required by the operation
+     * @return operation result
+     */
     public JsonNode execute(JsonNode args) {
         Long usuarioId = resolverUsuarioId(args);
         if (usuarioId == null) {

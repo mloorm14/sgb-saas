@@ -34,6 +34,14 @@ public class TipoDano {
 
     // Compatibilidad para tests viejos que usan precio
     @Transient
+    /**
+     * Executes the getPrecio operation.
+     * @return operation result
+     */
     public BigDecimal getPrecio() { return this.valor; }
+    /**
+     * Executes the setPrecio operation.
+     * @param precio value required by the operation
+     */
     public void setPrecio(BigDecimal precio) { this.valor = precio; if (this.tipoCosto==null) this.tipoCosto="FIJO"; }
 }
