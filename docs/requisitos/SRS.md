@@ -2875,6 +2875,32 @@ a `matriz.csv`, (2) expandir la entrada correspondiente en este SRS, en
 ese orden — nunca solo uno de los dos, por el mismo riesgo de
 desincronización ya documentado en ADR-013 para Flyway/`schema.sql`.
 
+### 4.1 Estados de verificación: `implementado` vs `verificado`
+
+La columna `estado` de la matriz usa un vocabulario cerrado de tres
+valores (`pendiente` / `implementado` / `verificado`, impuesto por la
+validación 5 de `scripts/validate-traceability.sh`), con la siguiente
+diferencia operacional entre los dos estados no pendientes:
+
+- **`implementado`**: el código real existe en el repositorio y hay una
+  evidencia empírica declarada (verificación manual, capturas, inspección
+  de código o configuración, informes de medición citados en
+  `evidencia_empirica`), pero no hay una prueba automatizada que lo
+  re-verifique en cada build.
+- **`verificado`**: además de lo anterior, la fila tiene
+  `prueba_automatizada` no vacía en la matriz — que es literalmente lo que
+  ya impone la validación 2 del script. Solo este estado se re-comprueba
+  en cada ejecución de CI.
+
+Conteo real sobre `matriz.csv` (generado con `csv.DictReader`, no copiado
+a mano): **23 verificado / 47 implementado / 1 pendiente sobre 71 filas**;
+de los 26 requisitos `Must`, 23 están `verificado` y 3 `implementado`. La
+mayoría de los requisitos nuevos del Bloque 5 (`REQ-F-032`-`042`,
+`REQ-NF-016`-`024`) quedó en `implementado` porque se redactaron a partir
+de funcionalidad ya implementada en el código y verificada por inspección
+al momento de redactar el requisito; automatizar una prueba específica
+para cada uno es trabajo pendiente que no bloqueó esta entrega.
+
 ## 5. Requisitos de calidad de software (ISO/IEC 25010)
 
 `docs/arquitectura/ISO25010.md` ya mapea las 8 características de calidad
