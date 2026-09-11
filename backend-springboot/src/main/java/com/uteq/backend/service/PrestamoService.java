@@ -95,6 +95,20 @@ public class PrestamoService {
         this.notificacionService = notificacionService;
     }
 
+    /**
+     * Crea un préstamo delegando en {@code sp_crear_prestamo} (valida stock
+     * y bloqueo por multas a nivel de motor). Resuelve al lector por
+     * usuarioId directo o token QR de credencial, valida su tope de
+     * préstamos activos y, si nace de una reserva vigente, la vincula y la
+     * marca RETIRADA.
+     *
+     * @param dto datos del préstamo (lector por id o QR, libro, días y reserva opcional)
+     * @param authentication autenticación del bibliotecario que registra, queda como responsable
+     * @return el préstamo creado
+     * @throws EntityNotFoundException si el préstamo creado no se puede releer
+     * @throws IllegalArgumentException si la identificación del lector es ambigua o la reserva no corresponde
+     * @throws IllegalStateException si la reserva ya no está vigente o se supera el tope de préstamos
+     */
     @Transactional
     public PrestamoResponseDTO crear(PrestamoRequestDTO dto, Authentication authentication) {
         Long usuarioId = resolverUsuarioId(dto);
@@ -162,6 +176,15 @@ public class PrestamoService {
         return dto.usuarioId();
     }
 
+    /**
+     * Registra la devolución de un préstamo vía {@code sp_registrar_devolucion},
+     * que calcula atraso y genera la multa si corresponde. Si hubo multa,
+     * dispara la notificación al lector. Único punto donde nace una multa.
+     *
+     * @param prestamoId préstamo a devolver
+     * @return resultado con el id, si hubo multa y su monto
+     * @throws EntityNotFoundException si el préstamo no existe al notificar
+     */
     @Transactional
     public DevolucionResponseDTO registrarDevolucion(Long prestamoId) {
         Map<String, Object> resultado = prestamoProcRepo.spRegistrarDevolucion(prestamoId);
@@ -183,6 +206,22 @@ public class PrestamoService {
     // Validaciones en Java (consultas + UPDATE simple): cada rechazo lanza una excepción distinta.
     // Orden: 1. no existe → 404 / 2. LECTOR ajeno → 403 / 3. devuelto → 400
     //   4. vencido → 409 / 5. límite de renovaciones → 409 / 6. reserva vigente de otro → 409
+    /**
+     * Renueva un préstamo extendiendo su fecha estimada y marcándolo RENOVADO.
+     * Valida en orden: existencia, acceso del LECTOR, no devuelto, no vencido,
+     * tope de renovaciones y ausencia de reserva vigente de otro usuario.
+     * Cada rechazo lanza una excepción distinta para mapear el HTTP correcto.
+     *
+     * @param prestamoId préstamo a renovar
+     * @param authentication autenticación vigente, un LECTOR solo renueva lo suyo
+     * @return renovación con nueva fecha, renovaciones usadas y restantes
+     * @throws EntityNotFoundException si el préstamo no existe
+     * @throws AuthorizationDeniedException si un LECTOR renueva préstamo ajeno
+     * @throws IllegalArgumentException si ya fue devuelto
+     * @throws PrestamoVencidoException si está vencido
+     * @throws LimiteRenovacionesExcedidoException si agotó sus renovaciones
+     * @throws MaterialReservadoException si otro usuario tiene reserva vigente del libro
+     */
     @Transactional
     public RenovacionResponseDTO renovar(Long prestamoId, Authentication authentication) {
         Prestamo prestamo = prestamoRepo.findById(prestamoId)
@@ -260,12 +299,31 @@ public class PrestamoService {
                 .getId();
     }
 
+    /**
+     * Lista paginada de préstamos de un usuario. Un LECTOR solo ve los
+     * suyos; otros roles ven los de cualquiera.
+     *
+     * @param usuarioId dueño de los préstamos
+     * @param authentication autenticación vigente para el control por rol
+     * @param pageable paginación y orden
+     * @return página de préstamos del usuario
+     * @throws AuthorizationDeniedException si un LECTOR pide préstamos ajenos
+     */
     @Transactional(readOnly = true)
     public Page<PrestamoResponseDTO> listarPorUsuario(Long usuarioId, Authentication authentication, Pageable pageable) {
         validarAccesoUsuario(usuarioId, authentication);
         return prestamoRepo.findByUsuarioId(usuarioId, pageable).map(this::toDTO);
     }
 
+    /**
+     * Lista los préstamos activos de un usuario con días restantes, para la
+     * vista "mis préstamos" del lector. Mismo control de acceso que el listado.
+     *
+     * @param usuarioId dueño de los préstamos activos
+     * @param authentication autenticación vigente para el control por rol
+     * @return préstamos no devueltos del usuario con su estado
+     * @throws AuthorizationDeniedException si un LECTOR pide préstamos ajenos
+     */
     @Transactional(readOnly = true)
     public List<PrestamoActivoResponseDTO> listarActivosPorUsuario(Long usuarioId, Authentication authentication) {
         validarAccesoUsuario(usuarioId, authentication);
@@ -276,6 +334,16 @@ public class PrestamoService {
 
     private static final int LIMITE_REPORTE_DEFAULT = 10;
 
+    /**
+     * Ranking de libros más prestados en un rango de fechas, para reportes
+     * gerenciales. El límite nulo se normaliza a 10 en Java porque la
+     * función SQL exige un límite explícito.
+     *
+     * @param limite tope de filas, 10 si es nulo
+     * @param desde inicio del rango, puede ser nulo (sin cota)
+     * @param hasta fin del rango, puede ser nulo (sin cota)
+     * @return libros ordenados por total de préstamos
+     */
     @Transactional(readOnly = true)
     public List<LibroMasPrestadoResponseDTO> reporteLibrosMasPrestados(
             Integer limite, OffsetDateTime desde, OffsetDateTime hasta) {
@@ -288,6 +356,13 @@ public class PrestamoService {
 
     // ── GET /reportes/morosidad ──
     // Default 10 aplicado en Java por el mismo motivo que reporteLibrosMasPrestados.
+    /**
+     * Índice de morosidad por lector (deuda total, multas pendientes y atraso
+     * promedio), para la gestión de cobranza. Límite nulo equivale a 10.
+     *
+     * @param limite tope de filas, 10 si es nulo
+     * @return lectores morosos ordenados por deuda
+     */
     @Transactional(readOnly = true)
     public List<ReporteMorosidadResponseDTO> reporteMorosidad(Integer limite) {
         Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
@@ -296,6 +371,14 @@ public class PrestamoService {
                 .toList();
     }
 
+    /**
+     * Versión paginada del índice de morosidad, para tablas grandes del
+     * panel gerente. Pagina en base de datos con límite/offset del pageable.
+     *
+     * @param limite tope del ranking base, 10 si es nulo
+     * @param pageable página y tamaño solicitados
+     * @return página del ranking de morosidad con su total
+     */
     @Transactional(readOnly = true)
     public Page<ReporteMorosidadResponseDTO> reporteMorosidadPaginado(Integer limite, Pageable pageable) {
         Integer limiteEfectivo = (limite != null) ? limite : LIMITE_REPORTE_DEFAULT;
@@ -311,6 +394,17 @@ public class PrestamoService {
     // granularidad inválida → 400; el fallback en SQL es solo defensa en profundidad.
     private static final List<String> GRANULARIDADES_VALIDAS = List.of("dia", "semana", "mes");
 
+    /**
+     * Uso del servicio por período (préstamos vs devoluciones) con
+     * granularidad día, semana o mes, para gráficos de tendencia.
+     * Granularidad nula equivale a día; otra granularidad es error 400.
+     *
+     * @param granularidad agrupación temporal: dia, semana o mes
+     * @param desde inicio del rango, puede ser nulo
+     * @param hasta fin del rango, puede ser nulo
+     * @return serie temporal de uso
+     * @throws IllegalArgumentException si la granularidad no es dia, semana ni mes
+     */
     @Transactional(readOnly = true)
     public List<ReporteUsoPorPeriodoResponseDTO> reporteUsoPorPeriodo(
             String granularidad, OffsetDateTime desde, OffsetDateTime hasta) {
@@ -325,6 +419,16 @@ public class PrestamoService {
                 .toList();
     }
 
+    /**
+     * Versión paginada del uso por período, para series largas.
+     *
+     * @param granularidad agrupación temporal: dia, semana o mes
+     * @param desde inicio del rango, puede ser nulo
+     * @param hasta fin del rango, puede ser nulo
+     * @param pageable página y tamaño solicitados
+     * @return página de la serie temporal con su total
+     * @throws IllegalArgumentException si la granularidad no es dia, semana ni mes
+     */
     @Transactional(readOnly = true)
     public Page<ReporteUsoPorPeriodoResponseDTO> reporteUsoPorPeriodoPaginado(
             String granularidad, OffsetDateTime desde, OffsetDateTime hasta, Pageable pageable) {
@@ -395,6 +499,16 @@ public class PrestamoService {
                 p.getTotalPrestamos());
     }
 
+    /**
+     * Ranking detallado de libros más prestados con autor, categoría y
+     * porcentaje sobre el total, para el reporte gerencial completo.
+     *
+     * @param limite tope de filas, 10 si es nulo
+     * @param desde inicio del rango, puede ser nulo
+     * @param hasta fin del rango, puede ser nulo
+     * @param categoriaId filtro opcional por categoría
+     * @return detalle ordenado por total de préstamos
+     */
     @Transactional(readOnly = true)
     public List<LibroMasPrestadoDetalladoResponseDTO> reporteLibrosMasPrestadosDetallado(
             Integer limite, OffsetDateTime desde, OffsetDateTime hasta, Integer categoriaId) {
@@ -405,6 +519,16 @@ public class PrestamoService {
                 .toList();
     }
 
+    /**
+     * Versión paginada del ranking detallado, para tablas grandes.
+     *
+     * @param limite tope del ranking base, 10 si es nulo
+     * @param desde inicio del rango, puede ser nulo
+     * @param hasta fin del rango, puede ser nulo
+     * @param categoriaId filtro opcional por categoría
+     * @param pageable página y tamaño solicitados
+     * @return página del ranking detallado con su total
+     */
     @Transactional(readOnly = true)
     public Page<LibroMasPrestadoDetalladoResponseDTO> reporteLibrosMasPrestadosDetalladoPaginado(
             Integer limite, OffsetDateTime desde, OffsetDateTime hasta, Integer categoriaId, Pageable pageable) {
@@ -419,6 +543,16 @@ public class PrestamoService {
         return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
     }
 
+    /**
+     * Inventario con stock y disponibilidad por libro, con filtros básicos
+     * de categoría, estado, texto y paginación simple. Los 11 filtros
+     * gerenciales avanzados viajan nulos a la función.
+     *
+     * @param categoriaId filtro opcional por categoría
+     * @param estadoStock filtro opcional por estado de stock
+     * @param busqueda texto libre sobre título/isbn, opcional
+     * @return inventario filtrado con stock total y disponible
+     */
     @Transactional(readOnly = true)
     public List<ReporteInventarioResponseDTO> reporteInventario(
             Integer categoriaId, String estadoStock, String busqueda) {
@@ -432,6 +566,15 @@ public class PrestamoService {
                 .toList();
     }
 
+    /**
+     * Versión paginada del inventario con filtros básicos.
+     *
+     * @param categoriaId filtro opcional por categoría
+     * @param estadoStock filtro opcional por estado de stock
+     * @param busqueda texto libre sobre título/isbn, opcional
+     * @param pageable página y tamaño solicitados
+     * @return página del inventario con su total
+     */
     @Transactional(readOnly = true)
     public Page<ReporteInventarioResponseDTO> reporteInventarioPaginado(
             Integer categoriaId, String estadoStock, String busqueda, Pageable pageable) {
@@ -453,6 +596,27 @@ public class PrestamoService {
     }
 
     // Sobrecarga con 8 filtros gerenciales.
+    /**
+     * Sobrecarga del inventario con los 8 filtros gerenciales completos
+     * (editorial, proveedor, estado del libro, idioma, rango de años, rangos
+     * de stock y ubicación), para el reporte de adquisiciones y expurgo.
+     *
+     * @param categoriaId filtro opcional por categoría
+     * @param estadoStock filtro opcional por estado de stock
+     * @param busqueda texto libre sobre título/isbn, opcional
+     * @param editorialId filtro opcional por editorial
+     * @param proveedorId filtro opcional por proveedor
+     * @param estadoLibroId filtro opcional por estado del libro
+     * @param idiomaId filtro opcional por idioma
+     * @param anioDesde año de publicación mínimo, opcional
+     * @param anioHasta año de publicación máximo, opcional
+     * @param stockTotalMin stock total mínimo, opcional
+     * @param stockTotalMax stock total máximo, opcional
+     * @param stockDispMin stock disponible mínimo, opcional
+     * @param stockDispMax stock disponible máximo, opcional
+     * @param ubicacion ubicación física parcial, opcional
+     * @return inventario filtrado con stock total y disponible
+     */
     @Transactional(readOnly = true)
     public List<ReporteInventarioResponseDTO> reporteInventario(
             Integer categoriaId, String estadoStock, String busqueda,
@@ -470,6 +634,26 @@ public class PrestamoService {
                 .toList();
     }
 
+    /**
+     * Versión paginada del inventario con los 8 filtros gerenciales.
+     *
+     * @param categoriaId filtro opcional por categoría
+     * @param estadoStock filtro opcional por estado de stock
+     * @param busqueda texto libre sobre título/isbn, opcional
+     * @param editorialId filtro opcional por editorial
+     * @param proveedorId filtro opcional por proveedor
+     * @param estadoLibroId filtro opcional por estado del libro
+     * @param idiomaId filtro opcional por idioma
+     * @param anioDesde año de publicación mínimo, opcional
+     * @param anioHasta año de publicación máximo, opcional
+     * @param stockTotalMin stock total mínimo, opcional
+     * @param stockTotalMax stock total máximo, opcional
+     * @param stockDispMin stock disponible mínimo, opcional
+     * @param stockDispMax stock disponible máximo, opcional
+     * @param ubicacion ubicación física parcial, opcional
+     * @param pageable página y tamaño solicitados
+     * @return página del inventario con su total
+     */
     @Transactional(readOnly = true)
     public Page<ReporteInventarioResponseDTO> reporteInventarioPaginado(
             Integer categoriaId, String estadoStock, String busqueda,
@@ -495,6 +679,14 @@ public class PrestamoService {
         return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
     }
 
+    /**
+     * Préstamos vencidos con días de atraso y multa estimada, para la
+     * gestión de cobranza en mostrador.
+     *
+     * @param diasAtrasoMin atraso mínimo en días para incluir, opcional
+     * @param busqueda texto libre sobre lector o libro, opcional
+     * @return vencidos con atraso y multa estimada
+     */
     @Transactional(readOnly = true)
     public List<ReporteVencidosResponseDTO> reportePrestamosVencidos(Integer diasAtrasoMin, String busqueda) {
         return prestamoProcRepo.fnReportePrestamosVencidos(diasAtrasoMin, busqueda).stream()
@@ -505,6 +697,14 @@ public class PrestamoService {
                 .toList();
     }
 
+    /**
+     * Versión paginada de préstamos vencidos.
+     *
+     * @param diasAtrasoMin atraso mínimo en días para incluir, opcional
+     * @param busqueda texto libre sobre lector o libro, opcional
+     * @param pageable página y tamaño solicitados
+     * @return página de vencidos con su total
+     */
     @Transactional(readOnly = true)
     public Page<ReporteVencidosResponseDTO> reportePrestamosVencidosPaginado(Integer diasAtrasoMin, String busqueda, Pageable pageable) {
         int limit = pageable.getPageSize();
@@ -518,6 +718,15 @@ public class PrestamoService {
         return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
     }
 
+    /**
+     * Categorías más demandadas con total y porcentaje, para decidir
+     * adquisiciones. Límite nulo equivale a 10.
+     *
+     * @param limite tope de filas, 10 si es nulo
+     * @param desde inicio del rango, puede ser nulo
+     * @param hasta fin del rango, puede ser nulo
+     * @return categorías ordenadas por demanda
+     */
     @Transactional(readOnly = true)
     public List<ReporteCategoriasDemandadasResponseDTO> reporteCategoriasDemandadas(
             Integer limite, OffsetDateTime desde, OffsetDateTime hasta) {
@@ -527,6 +736,15 @@ public class PrestamoService {
                 .toList();
     }
 
+    /**
+     * Versión paginada de categorías demandadas.
+     *
+     * @param limite tope del ranking base, 10 si es nulo
+     * @param desde inicio del rango, puede ser nulo
+     * @param hasta fin del rango, puede ser nulo
+     * @param pageable página y tamaño solicitados
+     * @return página del ranking con su total
+     */
     @Transactional(readOnly = true)
     public Page<ReporteCategoriasDemandadasResponseDTO> reporteCategoriasDemandadasPaginado(
             Integer limite, OffsetDateTime desde, OffsetDateTime hasta, Pageable pageable) {

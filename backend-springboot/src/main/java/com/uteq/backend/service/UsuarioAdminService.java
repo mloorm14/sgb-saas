@@ -60,12 +60,31 @@ public class UsuarioAdminService {
         this.usuarioMotivoCambioRepo = usuarioMotivoCambioRepo;
     }
 
+    /**
+     * Devuelve la página de usuarios con el filtro de texto dado para el panel de administración.
+     * Delegada en la variante con alcance por rol (ver {@link #listar}), sin restringir por creador.
+     *
+     * @param filtro texto libre para buscar por nombre, apellido o correo; nulo o vacío lista todo
+     * @param pageable paginación y orden solicitados por el panel
+     * @return página de filas resumidas con roles, estado y marca de multas pendientes
+     */
     @Transactional(readOnly = true)
     public Page<UsuarioListadoResponseDTO> listar(String filtro, Pageable pageable) {
         return listar(filtro, pageable, null, false);
     }
 
     // GERENTE filtra por creado_por = miId; ADMIN ve todo.
+    /**
+     * Devuelve la página de usuarios aplicando filtro de texto y alcance por creador para el panel de administración.
+     * Cuando quien consulta es GERENTE (o se pide solo lo propio), restringe a los usuarios creados por él;
+     * ADMIN ve todo. Enriquece cada fila con la marca de multas pendientes en una sola consulta por lote para evitar N+1.
+     *
+     * @param filtro texto libre para buscar por nombre, apellido o correo; nulo o vacío lista todo
+     * @param pageable paginación y orden solicitados por el panel
+     * @param authentication identidad autenticada desde el JWT de la que se deriva el rol y el creador; nula significa sin restricción
+     * @param soloMios cuando es verdadero restringe a los usuarios creados por quien consulta aunque no sea GERENTE
+     * @return página de filas resumidas con roles, estado y marca de multas pendientes
+     */
     @Transactional(readOnly = true)
     public Page<UsuarioListadoResponseDTO> listar(String filtro, Pageable pageable,
                                                   Authentication authentication, boolean soloMios) {
@@ -90,7 +109,15 @@ public class UsuarioAdminService {
     }
 
     /**
-     * Reemplaza los roles del usuario por uno solo ({@code nuevoRol}).
+     * Reemplaza los roles del usuario por uno solo para ajustar sus permisos en la plataforma.
+     * GERENTE solo puede reasignar LECTOR o BIBLIOTECARIO entre usuarios creados por él; ADMIN opera sin esa restricción.
+     *
+     * @param usuarioId identificador del usuario cuyo rol se reemplaza
+     * @param nuevoRol nombre del rol destino que quedará como único rol vigente
+     * @param authentication identidad autenticada desde el JWT de la que se deriva el rol del ejecutor y su alcance
+     * @throws jakarta.persistence.EntityNotFoundException si no existe ningún usuario con ese identificador
+     * @throws IllegalArgumentException si el nombre de rol no existe en el catálogo
+     * @throws org.springframework.security.access.AccessDeniedException si un GERENTE intenta asignar un rol fuera de su alcance o tocar usuarios ajenos
      */
     @Transactional
     public void cambiarRol(Long usuarioId, String nuevoRol, Authentication authentication) {
@@ -119,10 +146,18 @@ public class UsuarioAdminService {
     }
 
     /**
-     * Cambia el estado del usuario (bloqueo/activación manual).
+     * Mueve al usuario al estado indicado para bloquearlo o reactivarlo manualmente desde el panel.
      * {@code motivo} queda registrado en {@code usuario_motivos_cambio}
      * (V50); el cambio de estado en sí lo audita
      * {@code trg_auditoria_usuarios} sobre {@code bitacora_auditoria}.
+     *
+     * @param usuarioId identificador del usuario cuyo estado se cambia
+     * @param nuevoEstado nombre del estado destino en el catálogo de estados de usuario
+     * @param motivo justificación escrita por el ejecutor que queda guardada en el historial de motivos
+     * @param authentication identidad autenticada desde el JWT de la que se deriva el rol del ejecutor y su alcance
+     * @throws jakarta.persistence.EntityNotFoundException si no existe ningún usuario con ese identificador
+     * @throws IllegalArgumentException si el nombre de estado no existe en el catálogo
+     * @throws org.springframework.security.access.AccessDeniedException si un GERENTE intenta un estado fuera de ACTIVO/INACTIVO o tocar usuarios ajenos
      */
      @Transactional
     public void cambiarEstado(Long usuarioId, String nuevoEstado, String motivo, Authentication authentication) {
@@ -157,6 +192,19 @@ public class UsuarioAdminService {
     }
 
     // El ejecutor se resuelve desde el JWT autenticado, nunca desde el body.
+    /**
+     * Da de alta un usuario ya verificado y activo desde el panel para que pueda operar sin pasar por
+     * la confirmación por correo. El ejecutor se deriva del JWT autenticado y queda como creador del registro.
+     * GERENTE solo puede crear LECTOR o BIBLIOTECARIO.
+     *
+     * @param dto solicitud con nombre, apellido, correo, contraseña en claro sin cifrar y nombre del rol a asignar
+     * @param authentication identidad autenticada desde el JWT de la que se deriva el ejecutor y su alcance
+     * @return vista resumida del usuario persistido con identificador, nombre, correo y roles asignados
+     * @throws CorreoYaRegistradoException si ya existe un usuario con el correo solicitado
+     * @throws org.springframework.security.access.AccessDeniedException si un GERENTE intenta crear un rol fuera de su alcance
+     * @throws IllegalArgumentException si el nombre de rol no existe en el catálogo
+     * @throws IllegalStateException si falta la fila de catálogo del estado ACTIVO
+     */
     @Transactional
     public com.uteq.backend.dto.UsuarioResponseDTO crearUsuario(com.uteq.backend.dto.CrearUsuarioAdminRequestDTO dto, Authentication authentication) {
         usuarioRepo.findByCorreo(dto.correo()).ifPresent(u -> { throw new com.uteq.backend.service.CorreoYaRegistradoException("El correo ya está registrado: " + dto.correo()); });
@@ -175,6 +223,17 @@ public class UsuarioAdminService {
         return new com.uteq.backend.dto.UsuarioResponseDTO(guardado.getId(), guardado.getNombre(), guardado.getCorreo(), rolesStr);
     }
 
+    /**
+     * Desactiva la cuenta pasándola al estado INACTIVO para retirarla de la operación sin borrar su fila.
+     * Persiste además el motivo en la tabla de motivos de cambio, complemento del trigger de auditoría
+     * que solo ve columnas antes/después y no recibe el motivo como parámetro.
+     *
+     * @param usuarioId identificador del usuario a desactivar
+     * @param motivo justificación escrita por el ejecutor que queda guardada en el historial de motivos
+     * @param authentication identidad autenticada desde el JWT de la que se deriva el ejecutor del cambio
+     * @throws jakarta.persistence.EntityNotFoundException si no existe ningún usuario con ese identificador
+     * @throws IllegalStateException si falta la fila de catálogo del estado INACTIVO
+     */
     @Transactional
     public void eliminarUsuario(Long usuarioId, String motivo, Authentication authentication) {
         Usuario usuario = usuarioRepo.findByIdWithEstadoAndRoles(usuarioId).orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + usuarioId));
@@ -208,6 +267,13 @@ public class UsuarioAdminService {
 
     // V50/OBS-28: historial de motivos de cambio de estado/eliminación,
     // más reciente primero.
+    /**
+     * Recupera el historial de motivos de cambio de estado y desactivaciones del usuario, del más
+     * reciente al más antiguo, para explicar en el panel por qué la cuenta llegó a su estado actual.
+     *
+     * @param usuarioId identificador del usuario cuyo historial se consulta
+     * @return lista de registros con tipo de cambio, estado anterior y nuevo, motivo, ejecutor y fecha, ordenada por fecha descendente
+     */
     @Transactional(readOnly = true)
     public List<com.uteq.backend.dto.UsuarioMotivoCambioResponseDTO> historialMotivos(Long usuarioId) {
         return usuarioMotivoCambioRepo.findByUsuarioIdOrderByCreadoEnDesc(usuarioId).stream()

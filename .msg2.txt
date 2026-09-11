@@ -1,1 +1,0 @@
-'chore: actualizar render.yaml y variables de entorno' 

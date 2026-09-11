@@ -299,15 +299,16 @@ def generar_grafico_p95(por_escenario, output_path):
         label="cache_frio", color=COLOR_FRIO,
     )
     ax.set_xticks(x)
-    ax.set_xticklabels([f"Corrida {i}" for i in runs])
+    ax.set_xticklabels([f"Run {i}" for i in runs])
     ax.set_ylabel("p95 http_req_duration (ms)")
-    ax.set_xlabel("Corrida")
-    ax.set_title("p95 por corrida — cache_caliente vs cache_frio (barras de error: IC 95% bootstrap)")
+    ax.set_xlabel("Run")
+    ax.set_title("p95 per run — cache_caliente vs cache_frio (error bars: 95% bootstrap CI)")
     ax.legend()
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     fig.tight_layout()
     fig.savefig(output_path, format="svg")
+    fig.savefig(str(output_path).removesuffix(".svg") + ".pdf", format="pdf")
     plt.close(fig)
 
 

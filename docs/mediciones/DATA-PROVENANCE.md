@@ -8,7 +8,7 @@ por última vez. Requisito R2 de la guía. Complementa a
 crudo) sin repetirlo -- este archivo responde "de dónde viene", no "qué
 forma tiene".
 
-**Fecha**: 2026-08-31. **Commit base**: `c6de386`. **Método**: se
+**Fecha**: 2026-08-31. **Commit base**: `39beb37`. **Método**: se
 recorrieron los 13 capítulos de `docs/capitulos/*.tex` buscando
 `\begin{table}`, `\begin{longtable}`, `\begin{tabularx}`,
 `\begin{tabular}` e `\includegraphics` (no solo los que tienen

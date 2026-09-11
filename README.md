@@ -282,6 +282,13 @@ make all   # = up → test → bench → audit → docs → compilar PDF del inf
 
 Targets disponibles: `up` `down` `test` `bench` `audit` `docs` `all` `clean`.
 
+### Compilación del informe (cómo regenerar el PDF)
+
+- **Archivo principal**: `docs/informe-final.tex` (si no existiera, el `Makefile` usa `docs/informe-entrega-3.tex` con aviso; si no existe ninguno, falla con mensaje explicativo — ver `Makefile:225-239`).
+- **Compilador**: `latexmk -pdf -interaction=nonstopmode -halt-on-error` (resuelve solo las pasadas necesarias, incluyendo bibtex; no usar `pdflatex`+`bibtex` a mano).
+- **Orden exacto** (`make all`): `check-latexmk` → `up` → `test` → `bench` → `audit` → `docs` → compilación del PDF. Si cualquier paso falla, `make` se detiene ahí y el PDF no se intenta compilar.
+- **Dependencias**: `latexmk` (Windows: MiKTeX, `winget install MiKTeX.MiKTeX`; Debian/Ubuntu: `apt install latexmk`), Docker + docker compose, JDK 21, Node + Angular CLI, Python 3 y k6 (versiones reales capturadas por `make docs` en `docs/entorno/versions.txt`), y Chrome instalado (para `make test-frontend` con ChromeHeadless).
+
 - **`make docs`** regenera la evidencia documental que cambia con cada
   corrida: `docs/entorno/versions.txt` (versiones **reales** del entorno —
   Docker, docker compose, JDK, Node, Angular CLI, Python y k6, criterio D.2 —

@@ -221,6 +221,13 @@ class AuthControllerTest {
     }
 
     @Test
+    void refresh_cookieEnBlanco_devuelve400ProblemDetail() throws Exception {
+        mockMvc.perform(post("/api/auth/refresh").cookie(new Cookie("refreshToken", " ")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(containsString("refreshToken")));
+    }
+
+    @Test
     void refresh_cookieInvalida_devuelve401ProblemDetail() throws Exception {
         when(authService.refresh(eq("token-malo")))
                 .thenThrow(new RefreshTokenInvalidoException("Refresh token inválido o expirado. Inicie sesión nuevamente."));

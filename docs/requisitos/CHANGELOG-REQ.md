@@ -27,9 +27,11 @@ ocurrió.
 
 | Métrica | Valor |
 |---|---|
-| **Número total de requisitos (v1.0.0)** | **43** |
-| **Distribución por tipo** | **28 funcionales** (`REQ-F`, 65.1%) / **15 no funcionales** (`REQ-NF`, 34.9%) |
-| **Porcentaje verificado** | **21 / 43 = 48.8%** con `estado = verificado` en `docs/trazabilidad/matriz.csv` (los 22 restantes, 51.2%, tienen `estado = implementado` — código real y, en la mayoría de los casos, con prueba automatizada, pero sin el nivel adicional de evidencia empírica en vivo contra el stack real que distingue a "verificado" en la convención de esta matriz; ningún requisito tiene otro estado) |
+| **Número total de requisitos (v1.0.0)** | **43** (histórico de la Entrega Final original; el corpus vigente es **71 filas** en `docs/trazabilidad/matriz.csv`, ver fila siguiente) |
+| **Número total de filas (vigente, revisión docente 2026-09-11)** | **71** (43 originales + 3 ya existentes en matriz sin redactar + 20 nuevos `REQ-F-032`-`042`/`REQ-NF-016`-`024` + 5 netas de dividir `REQ-NF-014` en 4 y `REQ-F-022` en 3) |
+| **Distribución por tipo (vigente)** | **44 funcionales** (`REQ-F`, 62.0%) / **27 no funcionales** (`REQ-NF`, 38.0%) |
+| **Distribución por estado (vigente)** | **23 verificado / 47 implementado / 1 pendiente** sobre 71 (ver `SRS.md` §4.1 para la definición operacional; de los 26 `Must`, 23 `verificado` y 3 `implementado`) |
+| **Porcentaje verificado (histórico, Entrega Final original)** | **21 / 43 = 48.8%** con `estado = verificado` en `docs/trazabilidad/matriz.csv` al momento de esa entrega (los 22 restantes, 51.2%, tenían `estado = implementado` — código real y, en la mayoría de los casos, con prueba automatizada, pero sin el nivel adicional de evidencia empírica en vivo contra el stack real que distingue a "verificado" en la convención de esta matriz). La cifra vigente es **23 / 71 = 32.4%** (ver fila de distribución por estado). |
 | **Tasa de estabilidad** | **1 − (2 / 43) = 0.9535 ≈ 95.3%** (2 requisitos modificados sobre 43 totales en v1.0.0) |
 
 ## Tabla de cambios
@@ -94,10 +96,10 @@ este mismo commit (no contra suposiciones):
 
 ## División de requisitos compuestos (Bloque 4, 2026-09-07)
 
-| ID anterior | IDs nuevos | Motivo |
-|---|---|---|
-| `REQ-NF-014` | `REQ-NF-014a` (CSP backend+frontend), `REQ-NF-014b` (supresión de stacktraces), `REQ-NF-014c` (Swagger desactivado en prod), `REQ-NF-014d` (contenedor sin root) | El ID único agrupaba 4 controles OWASP A05 independientes, cada uno con su propio criterio de aceptación y estado verificable por separado (los 4 están implementados, pero eso no siempre fue ni será necesariamente cierto a la vez para los 4). |
-| `REQ-F-022` | `REQ-F-022a` (alerta préstamo por vencer, job cada 60s), `REQ-F-022b` (alerta multa generada, disparada por evento en `sp_registrar_devolucion`), `REQ-F-022c` (alerta reserva caducada, job cada 15 min) | El ID único agrupaba 3 alertas con periodicidades y disparadores distintos (dos jobs con frecuencias distintas + un disparador por evento). Los 3 comparten el mismo estado real: notificación in-app persistida siempre, envío por correo deshabilitado por defecto desde `OBS-23` (saturación SMTP por el volumen sintético de la rúbrica ADB) — declarado explícitamente en cada sub-requisito, no como si el correo funcionara. |
+| ID anterior | IDs nuevos | Motivo | Estado del ID anterior |
+|---|---|---|---|
+| `REQ-NF-014` | `REQ-NF-014a` (CSP backend+frontend), `REQ-NF-014b` (supresión de stacktraces), `REQ-NF-014c` (Swagger desactivado en prod), `REQ-NF-014d` (contenedor sin root) | El ID único agrupaba 4 controles OWASP A05 independientes, cada uno con su propio criterio de aceptación y estado verificable por separado (los 4 están implementados, pero eso no siempre fue ni será necesariamente cierto a la vez para los 4). | RETIRADO — no se reutiliza, usar solo los sub-IDs |
+| `REQ-F-022` | `REQ-F-022a` (alerta préstamo por vencer, job cada 60s), `REQ-F-022b` (alerta multa generada, disparada por evento en `sp_registrar_devolucion`), `REQ-F-022c` (alerta reserva caducada, job cada 15 min) | El ID único agrupaba 3 alertas con periodicidades y disparadores distintos (dos jobs con frecuencias distintas + un disparador por evento). Los 3 comparten el mismo estado real: notificación in-app persistida siempre, envío por correo deshabilitado por defecto desde `OBS-23` (saturación SMTP por el volumen sintético de la rúbrica ADB) — declarado explícitamente en cada sub-requisito, no como si el correo funcionara. | RETIRADO — no se reutiliza, usar solo los sub-IDs |
 
 Matriz actualizada: cada fila única se reemplazó por N filas (una por
 sub-ID). Todas las referencias sueltas a `REQ-NF-014`/`REQ-F-022` en
@@ -183,3 +185,12 @@ ese commit, comparando los dos archivos `.md` ya versionados, no en el
 momento exacto de cada cambio individual dentro de esa actualización — no
 existe un commit separado por requisito porque los 13 requisitos nuevos y
 los 2 modificados se agregaron juntos en una sola tarea de documentación.
+
+## Revisión docente 2026-09-11 (M1) — vocabulario de estado
+
+| Punto | Cambio |
+|---|---|
+| M1 | Columna `observaciones` agregada a `docs/trazabilidad/matriz.csv` (12 columnas). `REQ-NF-020`/`REQ-NF-022` limpiados a `estado=implementado`, matiz movido a `observaciones`. `scripts/validate-traceability.sh`: nueva validación 5 (vocabulario cerrado de `estado`: `pendiente`/`implementado`/`verificado`). `SRS.md`: `REQ-NF-022` con paréntesis quitado del campo `Estado`; `REQ-NF-020` con campo `- **Estado**: implementado` agregado (excepción puntual a M28, que lo había excluido por tener narrativa propia — ahora conviven ambos sin duplicar información). |
+
+`scripts/validate-traceability.sh` corrido tras el bloque: **71 filas, 0
+problemas** (incluida la validación 5 nueva).

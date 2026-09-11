@@ -22,7 +22,7 @@ implementen como procedimiento o función SQL. El siguiente listado es
 de forma atómica, validando que el usuario no esté bloqueado por multas
 y que el libro tenga stock disponible, usando \texttt{SQLSTATE}
 personalizados (\texttt{LB404}/\texttt{LB422}) para que el backend
-traduzca el error sin parsear texto.
+traduzca el error sin parsear texto (ver Listado \ref{lst:sp-crear-prestamo}).
 
 \begin{lstlisting}[language=SQL, caption={\texttt{db/procs/sp\_crear\_prestamo.sql} (completo)}, label={lst:sp-crear-prestamo}]
 CREATE OR REPLACE FUNCTION sp_crear_prestamo(
@@ -208,7 +208,7 @@ Todas las respuestas de error del backend se devuelven como
 caso particularmente representativo es la traducción de los
 \texttt{SQLSTATE} personalizados de los procedimientos almacenados
 (\autoref{sec:sp-invocacion}) a códigos HTTP, sin que el backend tenga
-que parsear el texto del mensaje de error:
+que parsear el texto del mensaje de error (ver Listado \ref{lst:global-exception-handler}):
 
 \begin{lstlisting}[language=Java, caption={\texttt{GlobalExceptionHandler.handleStoredProcedureError} (extracto real)}, label={lst:global-exception-handler}]
 @ExceptionHandler({
@@ -265,7 +265,7 @@ entrega -- ver \texttt{docs/mediciones/sec/2026-08-11-owasp-a05-verificacion-rea
 préstamo, ver \texttt{REQ-F-018}) para leerse en cada operación de
 negocio sin ir a la base de datos cada vez, con un caché en memoria
 simple (\texttt{ConcurrentHashMap} por instancia, no Redis) invalidado
-clave por clave al escribir:
+clave por clave al escribir (ver Listado \ref{lst:config-service}):
 
 \begin{lstlisting}[language=Java, caption={\texttt{ConfiguracionSistemaService} (extracto real: lectura cacheada y escritura)}, label={lst:config-service}]
 private final ConcurrentHashMap<String, String> cache = new ConcurrentHashMap<>();
@@ -310,7 +310,7 @@ quede una clave suelta sin ningún consumidor real.
 
 El listado de libros usa caché declarativo de Spring
 (\texttt{@Cacheable}/\texttt{@CacheEvict}) sobre Redis, con TTL
-configurable externamente (ADR-008):
+configurable externamente (ADR-008, ver Listado \ref{lst:libro-service-cache}):
 
 \begin{lstlisting}[language=Java, caption={\texttt{LibroService} (extracto real: lectura cacheada y evicción en escritura)}, label={lst:libro-service-cache}]
 @Cacheable("libros")
@@ -348,7 +348,7 @@ incompatible con el caché de listado general.
 
 El \texttt{refreshToken} viaja exclusivamente en una cookie
 \texttt{HttpOnly}, \texttt{Secure}, \texttt{SameSite=None}, con
-\texttt{path=/api/auth} (ADR-012) -- nunca en el cuerpo JSON, para que
+\texttt{path=/api/auth} (ADR-012, ver Listado \ref{lst:jwt-cookie}) -- nunca en el cuerpo JSON, para que
 JavaScript del frontend no pueda leerlo ni reenviarlo manualmente:
 
 \begin{lstlisting}[language=Java, caption={\texttt{AuthController.buildRefreshCookie} (real, completo)}, label={lst:jwt-cookie}]

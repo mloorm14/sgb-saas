@@ -30,14 +30,15 @@
 #        porque no contiene ningun token con forma de ID HU-/CU-.
 #      - los IDs legados del modulo de Cajas (HU-01..HU-05, CU-01..CU-05):
 #        viven consolidados en docs/requisitos/historias-usuario.md y
-#      docs/requisitos/casos-de-uso.md, no como archivo individual (ver
-#      seccion 6, punto 8 del SRS) -- se valida que el ID aparezca
-#      dentro de esos dos archivos consolidados en vez de exigir un
-#      archivo propio.
-#   5. La columna "estado" solo puede tomar uno de los 3 valores del
-#      vocabulario declarado: "implementado", "verificado", "pendiente".
-#      Cualquier otro valor (incluyendo matizadores como parentesis) es
-#      error. Los matizadores deben ir en la columna "observaciones".
+#        docs/requisitos/casos-de-uso.md, no como archivo individual (ver
+#        seccion 6, punto 8 del SRS) -- se valida que el ID aparezca
+#        dentro de esos dos archivos consolidados en vez de exigir un
+#        archivo propio.
+#   5. La columna estado solo admite el vocabulario cerrado
+#      {pendiente, implementado, verificado} -- agregado 2026-09-10
+#      (revision docente M1): el matiz de una fila (ej. por que un
+#      requisito implementado no cumple un umbral) va en la columna
+#      opcional "observaciones", nunca dentro del valor de estado.
 #
 # Uso: scripts/validate-traceability.sh [ruta-al-csv] [ruta-al-srs]
 # Por defecto valida docs/trazabilidad/matriz.csv y docs/requisitos/SRS.md
@@ -91,9 +92,6 @@ ID_HU_CU_RE = re.compile(r"\b((?:HU|CU)-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\b")
 # casos-de-uso.md), no un archivo por HU/CU como el resto de modulos (ver SRS seccion 6.8).
 IDS_LEGADO_CAJAS = {f"HU-0{n}" for n in range(1, 6)} | {f"CU-0{n}" for n in range(1, 6)}
 
-# Vocabulario valido para la columna "estado" (M1)
-ESTADOS_VALIDOS = {"implementado", "verificado", "pendiente"}
-
 
 def ids_requisito_en_srs(path):
     ids = set()
@@ -125,310 +123,14 @@ def id_existe_en_archivo_legado(path, id_):
 REQUIRED_COLUMNS = {
     "id_requisito", "tipo", "prioridad_moscow", "historia_usuario",
     "caso_de_uso", "modulo_codigo", "endpoint_api", "prueba_automatizada",
-    "tipo_acceso", "evidencia_empirica", "estado", "observaciones",
+    "tipo_acceso", "evidencia_empirica", "estado",
 }
 
+# "observaciones" es opcional (no forma parte de REQUIRED_COLUMNS): guarda
+# el matiz de una fila (ej. por que un requisito implementado no cumple un
+# umbral) sin ensuciar el valor de "estado" (ver regla 5).
 
-def es_vacio(valor):
-    # Un campo se considera vacio si esta en blanco tras recortar espacios.
-    # Una nota explicativa como "-- (decision arquitectonica, ver ADR-011)"
-    # NO se considera vacio: es contenido real que documenta por que no hay
-    # una historia de usuario tradicional, no una celda sin completar.
-    return valor is None or valor.strip() == ""
-
-
-def main():
-    with open(csv_path, encoding="utf-8", newline="") as f:
-        reader = csv.DictReader(f)
-        faltantes = REQUIRED_COLUMNS - set(reader.fieldnames or [])
-        if faltantes:
-            print(f"ERROR: faltan columnas obligatorias en el CSV: {sorted(faltantes)}", file=sys.stderr)
-            sys.exit(1)
-
-        errores = []
-        total_filas = 0
-        ids_matriz = set()
-
-        for numero_fila, fila in enumerate(reader, start=2):  # fila 1 = encabezado
-            total_filas += 1
-            req_id = fila.get("id_requisito", "").strip() or f"(fila {numero_fila} sin id_requisito)"
-            if req_id:
-                ids_matriz.add(req_id)
-
-            if fila.get("prioridad_moscow", "").strip() == "Must":
-                if es_vacio(fila.get("historia_usuario")):
-                    errores.append(
-                        f"{req_id} (fila {numero_fila}): prioridad Must pero historia_usuario esta vacio"
-                    )
-                if es_vacio(fila.get("caso_de_uso")):
-                    errores.append(
-                        f"{req_id} (fila {numero_fila}): prioridad Must pero caso_de_uso esta vacio"
-                    )
-
-            if fila.get("estado", "").strip() == "verificado":
-                if es_vacio(fila.get("prueba_automatizada")):
-                    errores.append(
-                        f"{req_id} (fila {numero_fila}): estado=verificado pero prueba_automatizada esta vacio "
-                        "(un requisito 'verificado' necesita una prueba real, no solo evidencia manual)"
-                    )
-
-            # Validacion 5 (M1): estado debe ser uno de los 3 valores validos
-            estado = fila.get("estado", "").strip()
-            if estado and estado not in ESTADOS_VALIDOS:
-                errores.append(
-                    f"{req_id} (fila {numero_fila}): estado '{estado}' no es valido. "
-                    f"Valores permitidos: {', '.join(sorted(ESTADOS_VALIDOS))}. "
-                    f"Los matizadores deben ir en la columna 'observaciones'."
-                )
-
-            # Validacion 2: estado=verificado requiere prueba_automatizada
-            if fila.get("estado", "").strip() == "verificado":
-                if es_vacio(fila.get("prueba_automatizada")):
-                    errores.append(
-                        f"{req_id} (fila {numero_fila}): estado=verificado pero prueba_automatizada esta vacio "
-                        "(un requisito 'verificado' necesita una prueba real, no solo evidencia manual)"
-                    )
-
-            # Validacion 4 (M23): historia_usuario/caso_de_uso deben apuntar a
-            # archivos reales cuando el valor tiene forma de ID HU-/CU-.
-            for columna, directorio, tipo in (
-                ("historia_usuario", historias_dir, "HU"),
-                ("caso_de_uso", casos_uso_dir, "CU"),
-            ):
-                valor = fila.get(columna) or ""
-                for id_encontrado in ID_HU_CU_RE.findall(valor):
-                    if not id_encontrado.startswith(tipo + "-"):
-                        continue  # ej. no validar un CU- encontrado dentro de la columna historia_usuario
-                    if id_encontrado in IDS_LEGADO_CAJAS:
-                        legado_path = historias_legado_path if tipo == "HU" else casos_uso_legado_path
-                        if not id_existe_en_archivo_legado(legado_path, id_encontrado):
-                            errores.append(
-                                f"{req_id} (fila {numero_fila}): columna {columna} cita '{id_encontrado}' "
-                                f"(ID legado de Cajas) pero no aparece en {os.path.relpath(legado_path)}"
-                            )
-                        continue
-                    if not archivo_existe_con_prefijo(directorio, id_encontrado):
-                        errores.append(
-                            f"{req_id} (fila {numero_fila}): columna {columna} cita '{id_encontrado}' "
-                            f"pero no existe ningun archivo '{id_encontrado}-*.md' en {os.path.relpath(directorio)}"
-                        )
-
-        # Validacion 3 (M23): IDs de requisito sincronizados entre la matriz y el SRS.
-        ids_srs = ids_requisito_en_srs(srs_path)
-        solo_en_matriz = sorted(ids_matriz - ids_srs)
-        solo_en_srs = sorted(ids_srs - ids_matriz)
-        for id_ in solo_en_matriz:
-            errores.append(
-                f"{id_}: existe en la matriz pero no tiene encabezado '#### {id_}' / '##### {id_}' en {os.path.relpath(srs_path)}"
-            )
-        for id_ in solo_en_srs:
-            errores.append(
-                f"{id_}: tiene encabezado en {os.path.relpath(srs_path)} pero no existe ninguna fila en la matriz"
-            )
-
-        if errores:
-            print(f"Matriz de trazabilidad invalida: {len(errores)} problema(s) en {total_filas} filas.", file=sys.stderr)
-            for err in errores:
-                print(f"  - {err}", file=sys.stderr)
-            sys.exit(1)
-
-        print(f"Matriz de trazabilidad valida: {total_filas} filas, 0 problemas.")
-
-
-def main():
-    with open(csv_path, encoding="utf-8", newline="") as f:
-        reader = csv.DictReader(f)
-        faltantes = REQUIRED_COLUMNS - set(reader.fieldnames or [])
-        if faltantes:
-            print(f"ERROR: faltan columnas obligatorias en el CSV: {sorted(faltantes)}", file=sys.stderr)
-            sys.exit(1)
-
-        errores = []
-        total_filas = 0
-        ids_matriz = set()
-
-        for numero_fila, fila in enumerate(reader, start=2):  # fila 1 = encabezado
-            total_filas += 1
-            req_id = fila.get("id_requisito", "").strip() or f"(fila {numero_fila} sin id_requisito)"
-            if req_id:
-                ids_matriz.add(req_id)
-
-            if fila.get("prioridad_moscow", "").strip() == "Must":
-                if es_vacio(fila.get("historia_usuario")):
-                    errores.append(
-                        f"{req_id} (fila {numero_fila}): prioridad Must pero historia_usuario esta vacio"
-                    )
-                if es_vacio(fila.get("caso_de_uso")):
-                    errores.append(
-                        f"{req_id} (fila {numero_fila}): prioridad Must pero caso_de_uso esta vacio"
-                    )
-
-            if fila.get("estado", "").strip() == "verificado":
-                if es_vacio(fila.get("prueba_automatizada")):
-                    errores.append(
-                        f"{req_id} (fila {numero_fila}): estado=verificado pero prueba_automatizada esta vacio "
-                        "(un requisito 'verificado' necesita una prueba real, no solo evidencia manual)"
-                    )
-
-            # Validacion 5 (M1): estado debe ser uno de los 3 valores validos
-            estado = fila.get("estado", "").strip()
-            if estado and estado not in ESTADOS_VALIDOS:
-                errores.append(
-                    f"{req_id} (fila {numero_fila}): estado '{estado}' no es valido. "
-                    f"Valores permitidos: {', '.join(sorted(ESTADOS_VALIDOS))}. "
-                    f"Los matizadores deben ir en la columna 'observaciones'."
-                )
-
-            # Validacion 2: estado=verificado requiere prueba_automatizada
-            if fila.get("estado", "").strip() == "verificado":
-                if es_vacio(fila.get("prueba_automatizada")):
-                    errores.append(
-                        f"{req_id} (fila {numero_fila}): estado=verificado pero prueba_automatizada esta vacio "
-                        "(un requisito 'verificado' necesita una prueba real, no solo evidencia manual)"
-                    )
-
-            # Validacion 4 (M23): historia_usuario/caso_de_uso deben apuntar a
-            # archivos reales cuando el valor tiene forma de ID HU-/CU-.
-            for columna, directorio, tipo in (
-                ("historia_usuario", historias_dir, "HU"),
-                ("caso_de_uso", casos_uso_dir, "CU"),
-            ):
-                valor = fila.get(columna) or ""
-                for id_encontrado in ID_HU_CU_RE.findall(valor):
-                    if not id_encontrado.startswith(tipo + "-"):
-                        continue  # ej. no validar un CU- encontrado dentro de la columna historia_usuario
-                    if id_encontrado in IDS_LEGADO_CAJAS:
-                        legado_path = historias_legado_path if tipo == "HU" else casos_uso_legado_path
-                        if not id_existe_en_archivo_legado(legado_path, id_encontrado):
-                            errores.append(
-                                f"{req_id} (fila {numero_fila}): columna {columna} cita '{id_encontrado}' "
-                                f"(ID legado de Cajas) pero no aparece en {os.path.relpath(legado_path)}"
-                            )
-                        continue
-                    if not archivo_existe_con_prefijo(directorio, id_encontrado):
-                        errores.append(
-                            f"{req_id} (fila {numero_fila}): columna {columna} cita '{id_encontrado}' "
-                            f"pero no existe ningun archivo '{id_encontrado}-*.md' en {os.path.relpath(directorio)}"
-                        )
-
-        # Validacion 3 (M23): IDs de requisito sincronizados entre la matriz y el SRS.
-        ids_srs = ids_requisito_en_srs(srs_path)
-        solo_en_matriz = sorted(ids_matriz - ids_srs)
-        solo_en_srs = sorted(ids_srs - ids_matriz)
-        for id_ in solo_en_matriz:
-            errores.append(
-                f"{id_}: existe en la matriz pero no tiene encabezado '#### {id_}' / '##### {id_}' en {os.path.relpath(srs_path)}"
-            )
-        for id_ in solo_en_srs:
-            errores.append(
-                f"{id_}: tiene encabezado en {os.path.relpath(srs_path)} pero no existe ninguna fila en la matriz"
-            )
-
-        if errores:
-            print(f"Matriz de trazabilidad invalida: {len(errores)} problema(s) en {total_filas} filas.", file=sys.stderr)
-            for err in errores:
-                print(f"  - {err}", file=sys.stderr)
-            sys.exit(1)
-
-        print(f"Matriz de trazabilidad valida: {total_filas} filas, 0 problemas.")
-
-
-def main():
-    with open(csv_path, encoding="utf-8", newline="") as f:
-        reader = csv.DictReader(f)
-        faltantes = REQUIRED_COLUMNS - set(reader.fieldnames or [])
-        if faltantes:
-            print(f"ERROR: faltan columnas obligatorias en el CSV: {sorted(faltantes)}", file=sys.stderr)
-            sys.exit(1)
-
-        errores = []
-        total_filas = 0
-        ids_matriz = set()
-
-        for numero_fila, fila in enumerate(reader, start=2):  # fila 1 = encabezado
-            total_filas += 1
-            req_id = fila.get("id_requisito", "").strip() or f"(fila {numero_fila} sin id_requisito)"
-            if req_id:
-                ids_matriz.add(req_id)
-
-            if fila.get("prioridad_moscow", "").strip() == "Must":
-                if es_vacio(fila.get("historia_usuario")):
-                    errores.append(
-                        f"{req_id} (fila {numero_fila}): prioridad Must pero historia_usuario esta vacio"
-                    )
-                if es_vacio(fila.get("caso_de_uso")):
-                    errores.append(
-                        f"{req_id} (fila {numero_fila}): prioridad Must pero caso_de_uso esta vacio"
-                    )
-
-            if fila.get("estado", "").strip() == "verificado":
-                if es_vacio(fila.get("prueba_automatizada")):
-                    errores.append(
-                        f"{req_id} (fila {numero_fila}): estado=verificado pero prueba_automatizada esta vacio "
-                        "(un requisito 'verificado' necesita una prueba real, no solo evidencia manual)"
-                    )
-
-            # Validacion 5 (M1): estado debe ser uno de los 3 valores validos
-            estado = fila.get("estado", "").strip()
-            if estado and estado not in ESTADOS_VALIDOS:
-                errores.append(
-                    f"{req_id} (fila {numero_fila}): estado '{estado}' no es valido. "
-                    f"Valores permitidos: {', '.join(sorted(ESTADOS_VALIDOS))}. "
-                    f"Los matizadores deben ir en la columna 'observaciones'."
-                )
-
-            # Validacion 2: estado=verificado requiere prueba_automatizada
-            if fila.get("estado", "").strip() == "verificado":
-                if es_vacio(fila.get("prueba_automatizada")):
-                    errores.append(
-                        f"{req_id} (fila {numero_fila}): estado=verificado pero prueba_automatizada esta vacio "
-                        "(un requisito 'verificado' necesita una prueba real, no solo evidencia manual)"
-                    )
-
-            # Validacion 4 (M23): historia_usuario/caso_de_uso deben apuntar a
-            # archivos reales cuando el valor tiene forma de ID HU-/CU-.
-            for columna, directorio, tipo in (
-                ("historia_usuario", historias_dir, "HU"),
-                ("caso_de_uso", casos_uso_dir, "CU"),
-            ):
-                valor = fila.get(columna) or ""
-                for id_encontrado in ID_HU_CU_RE.findall(valor):
-                    if not id_encontrado.startswith(tipo + "-"):
-                        continue  # ej. no validar un CU- encontrado dentro de la columna historia_usuario
-                    if id_encontrado in IDS_LEGADO_CAJAS:
-                        legado_path = historias_legado_path if tipo == "HU" else casos_uso_legado_path
-                        if not id_existe_en_archivo_legado(legado_path, id_encontrado):
-                            errores.append(
-                                f"{req_id} (fila {numero_fila}): columna {columna} cita '{id_encontrado}' "
-                                f"(ID legado de Cajas) pero no aparece en {os.path.relpath(legado_path)}"
-                            )
-                        continue
-                    if not archivo_existe_con_prefijo(directorio, id_encontrado):
-                        errores.append(
-                            f"{req_id} (fila {numero_fila}): columna {columna} cita '{id_encontrado}' "
-                            f"pero no existe ningun archivo '{id_encontrado}-*.md' en {os.path.relpath(directorio)}"
-                        )
-
-        # Validacion 3 (M23): IDs de requisito sincronizados entre la matriz y el SRS.
-        ids_srs = ids_requisito_en_srs(srs_path)
-        solo_en_matriz = sorted(ids_matriz - ids_srs)
-        solo_en_srs = sorted(ids_srs - ids_matriz)
-        for id_ in solo_en_matriz:
-            errores.append(
-                f"{id_}: existe en la matriz pero no tiene encabezado '#### {id_}' / '##### {id_}' en {os.path.relpath(srs_path)}"
-            )
-        for id_ in solo_en_srs:
-            errores.append(
-                f"{id_}: tiene encabezado en {os.path.relpath(srs_path)} pero no existe ninguna fila en la matriz"
-            )
-
-        if errores:
-            print(f"Matriz de trazabilidad invalida: {len(errores)} problema(s) en {total_filas} filas.", file=sys.stderr)
-            for err in errores:
-                print(f"  - {err}", file=sys.stderr)
-            sys.exit(1)
-
-        print(f"Matriz de trazabilidad valida: {total_filas} filas, 0 problemas.")
+ESTADOS_VALIDOS = {"pendiente", "implementado", "verificado"}
 
 
 def es_vacio(valor):
@@ -439,6 +141,94 @@ def es_vacio(valor):
     return valor is None or valor.strip() == ""
 
 
-if __name__ == "__main__":
-    main()
+def main():
+    with open(csv_path, encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        faltantes = REQUIRED_COLUMNS - set(reader.fieldnames or [])
+        if faltantes:
+            print(f"ERROR: faltan columnas obligatorias en el CSV: {sorted(faltantes)}", file=sys.stderr)
+            sys.exit(1)
+
+        errores = []
+        total_filas = 0
+        ids_matriz = set()
+
+        for numero_fila, fila in enumerate(reader, start=2):  # fila 1 = encabezado
+            total_filas += 1
+            req_id = fila.get("id_requisito", "").strip() or f"(fila {numero_fila} sin id_requisito)"
+            if req_id:
+                ids_matriz.add(req_id)
+
+            if fila.get("prioridad_moscow", "").strip() == "Must":
+                if es_vacio(fila.get("historia_usuario")):
+                    errores.append(
+                        f"{req_id} (fila {numero_fila}): prioridad Must pero historia_usuario esta vacio"
+                    )
+                if es_vacio(fila.get("caso_de_uso")):
+                    errores.append(
+                        f"{req_id} (fila {numero_fila}): prioridad Must pero caso_de_uso esta vacio"
+                    )
+
+            if fila.get("estado", "").strip() == "verificado":
+                if es_vacio(fila.get("prueba_automatizada")):
+                    errores.append(
+                        f"{req_id} (fila {numero_fila}): estado=verificado pero prueba_automatizada esta vacio "
+                        "(un requisito 'verificado' necesita una prueba real, no solo evidencia manual)"
+                    )
+
+            # Validacion 5 (M1): vocabulario cerrado de estado.
+            estado_valor = fila.get("estado", "").strip()
+            if estado_valor not in ESTADOS_VALIDOS:
+                errores.append(
+                    f"{req_id} (fila {numero_fila}): estado='{estado_valor}' no pertenece al vocabulario "
+                    f"valido {sorted(ESTADOS_VALIDOS)} (el matiz va en la columna observaciones)"
+                )
+
+            # Validacion 4 (M23): historia_usuario/caso_de_uso deben apuntar a
+            # archivos reales cuando el valor tiene forma de ID HU-/CU-.
+            for columna, directorio, tipo in (
+                ("historia_usuario", historias_dir, "HU"),
+                ("caso_de_uso", casos_uso_dir, "CU"),
+            ):
+                valor = fila.get(columna) or ""
+                for id_encontrado in ID_HU_CU_RE.findall(valor):
+                    if not id_encontrado.startswith(tipo + "-"):
+                        continue  # ej. no validar un CU- encontrado dentro de la columna historia_usuario
+                    if id_encontrado in IDS_LEGADO_CAJAS:
+                        legado_path = historias_legado_path if tipo == "HU" else casos_uso_legado_path
+                        if not id_existe_en_archivo_legado(legado_path, id_encontrado):
+                            errores.append(
+                                f"{req_id} (fila {numero_fila}): columna {columna} cita '{id_encontrado}' "
+                                f"(ID legado de Cajas) pero no aparece en {os.path.relpath(legado_path)}"
+                            )
+                        continue
+                    if not archivo_existe_con_prefijo(directorio, id_encontrado):
+                        errores.append(
+                            f"{req_id} (fila {numero_fila}): columna {columna} cita '{id_encontrado}' "
+                            f"pero no existe ningun archivo '{id_encontrado}-*.md' en {os.path.relpath(directorio)}"
+                        )
+
+        # Validacion 3 (M23): IDs de requisito sincronizados entre la matriz y el SRS.
+        ids_srs = ids_requisito_en_srs(srs_path)
+        solo_en_matriz = sorted(ids_matriz - ids_srs)
+        solo_en_srs = sorted(ids_srs - ids_matriz)
+        for id_ in solo_en_matriz:
+            errores.append(
+                f"{id_}: existe en la matriz pero no tiene encabezado '#### {id_}' / '##### {id_}' en {os.path.relpath(srs_path)}"
+            )
+        for id_ in solo_en_srs:
+            errores.append(
+                f"{id_}: tiene encabezado en {os.path.relpath(srs_path)} pero no existe ninguna fila en la matriz"
+            )
+
+        if errores:
+            print(f"Matriz de trazabilidad invalida: {len(errores)} problema(s) en {total_filas} filas.", file=sys.stderr)
+            for err in errores:
+                print(f"  - {err}", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"Matriz de trazabilidad valida: {total_filas} filas, 0 problemas.")
+
+
+main()
 PYEOF

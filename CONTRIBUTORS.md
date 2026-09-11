@@ -10,13 +10,17 @@ que esa persona lo ejerció. Entrega Final.
 
 Hay múltiples identidades Git por persona (variaciones de nombre/email
 por distintas máquinas/configuraciones). Conteo sobre `git log --no-merges`
-(987 commits totales), unificando alias por persona:
+(1311 commits totales al cierre de esta revisión), unificando alias por persona:
 
 | Persona | Alias Git considerados | Commits |
 |---|---|---|
-| Irvin Cajas Ibarra | `Theirvin1 <icajasi@msuteq.edu.ec>`, `TheIrvin <irvincajas72@gmail.com>`, `Irvin <icajasi@msuteq.edu.ec>`, `Irvin Cajas <icajasi@msuteq.edu.ec>` | **526** |
-| Marlon Loor Medranda | `Marlon Loor <mloorm14@uteq.edu.ec>`, `mloorm14 <mloorm14@uteq.edu.ec>`, `Loor Marlon <mloorm14@uteq.edu.ec>`, `Marlon Taylor Loor Medranda <mloorm14@uteq.edu.ec>` | **245** |
-| Moises Panama Murillo | `MoisesPanama <mpanamam@uteq.edu.ec>`, `Moisés Panamá <mpanamam@uteq.edu.ec>`, `Moises Panama <mpanamam@uteq.edu.ec>` | **214** |
+| Irvin Cajas Ibarra | `Theirvin1 <icajasi@msuteq.edu.ec>`, `TheIrvin <irvincajas72@gmail.com>`, `Irvin <icajasi@msuteq.edu.ec>`, `Irvin Cajas <icajasi@msuteq.edu.ec>` | **720** |
+| Marlon Loor Medranda | `Marlon Loor <mloorm14@uteq.edu.ec>`, `mloorm14 <mloorm14@uteq.edu.ec>`, `Loor Marlon <mloorm14@uteq.edu.ec>`, `Marlon Taylor Loor Medranda <mloorm14@uteq.edu.ec>` | **293** |
+| Moises Panama Murillo | `MoisesPanama <mpanamam@uteq.edu.ec>`, `Moisés Panamá <mpanamam@uteq.edu.ec>`, `Moises Panama <mpanamam@uteq.edu.ec>` | **296** |
+
+720+293+296 = 1309, más 1 de `TeilorSuit` y 1 del bot = 1311. Para
+re-sincronizar al cierre: `git rev-list --count --no-merges <tag>` y
+`git shortlog -sne --no-merges <tag>`, unificando los alias de arriba.
 
 Excluidos del conteo de autoría humana: `copilot-swe-agent[bot]` (1 commit,
 agente automatizado, no es una persona del equipo). El commit
@@ -30,6 +34,10 @@ certeza — se deja documentado aquí en vez de forzar una asignación.
 
 Rol nominal en el equipo: Tech Lead / DevOps / Seguridad.
 
+- **Conceptualization** — formulación del alcance y la arquitectura del
+  sistema: estrategia de ramas y versionado, decisiones de stack y
+  despliegue (ADR-001, ADR-007/013, OBS-11/OBS-18), definición de los
+  módulos y su secuencia de construcción.
 - **Software** — implementación de autenticación JWT+RBAC, cookies
   HttpOnly, blacklist de tokens en Redis, cache del catálogo con TTL
   externo, corrección de `GlobalExceptionHandler`/RFC 7807, pinning de
@@ -112,8 +120,10 @@ Rol nominal en el equipo: Frontend.
   chatbot); generación de los gráficos de SUS (`sus_boxplot.svg/png`,
   `sus_items_breakdown.svg`, paleta accesible a daltonismo), commit
   `d8b18ec`.
-- **Data curation** — creación y anonimización del dataset real de SUS
-  (`docs/mediciones/sus/sus.csv`, N=15, códigos P01-P15), eliminación de
+- **Data curation** — creación del dataset SUS (`docs/mediciones/sus/sus.csv`,
+  N=15, códigos P01-P15) y su posterior retiro declarado (N=0 en todo el
+  entregable, ver OBS-08 reabierta y `DATA-PROVENANCE.md` filas 16-18:
+  sin commit de datos reales), eliminación de
   15 PDFs con PII del historial de Git por cumplimiento de protección de
   datos, actualización de `ETHICS.md`, `DATA-DICTIONARY.md` (sección SUS,
   22 campos) y `DATA-PROVENANCE.md` (commit `d8b18ec`).
@@ -126,6 +136,20 @@ Rol nominal en el equipo: Frontend.
   brechas de accesibilidad WCAG AA (modales, objetivos táctiles, ARIA,
   manejo de tecla Escape; patrón ARIA combobox en 6 campos de
   autocompletado — commits `1640dd9`, `b1399a2`).
+
+## Cobertura de los 14 roles CRediT
+
+12 roles asignados arriba con evidencia (Software, Conceptualization,
+Project administration, Supervision, Validation, Data curation, Formal
+analysis, Visualization, Writing – original draft, Writing – review &
+editing, Resources, Methodology, Investigation — contar: son 13
+asignados; el 14.º se declara abajo):
+
+- **Funding acquisition** — **no aplica**: proyecto académico de fin de
+  curso sin financiamiento externo ni convocatoria que lo requiera. Se
+  declara explícitamente para que la taxonomía quede completa (14/14
+  cubiertos entre asignados y declarados no aplicables) en vez de dejar
+  un rol sin mencionar.
 
 ## Referencias
 

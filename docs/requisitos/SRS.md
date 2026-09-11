@@ -126,7 +126,8 @@ exactamente los **71 requisitos** ya identificados y trazados en
 originales de la Tercera Entrega, más los 13 de los módulos construidos
 después, más los 28 que esta revisión agrega/formaliza —
 `REQ-F-029`-`042`, `REQ-NF-016`-`024` y la división de `REQ-NF-014`/
-`REQ-F-022` — ver `CHANGELOG-REQ.md` para el detalle completo) — no se
+`REQ-F-022` (ambos IDs padre retirados — no se reutilizan, usar solo los
+sub-IDs — ver `CHANGELOG-REQ.md` para el detalle completo) — no se
 amplía el alcance funcional del sistema al redactar este documento (el
 sistema construido no cambia), solo se formaliza su especificación, que
 es precisamente el hallazgo central del Dr. Guerrero que motivó esta
@@ -1140,15 +1141,35 @@ reescribieron a forma "debe".
 - **Método de verificación**: **Test** (`NotificacionServiceTest`, 6
   tests; `NotificacionControllerSecurityTest`, 4 tests).
 
-#### REQ-F-022 (retirado) �\u2192 dividido en REQ-F-022a, REQ-F-022b, REQ-F-022c
-
-El requisito original `REQ-F-022` (Alertas de pr\u00e9stamo/multa/reserva) fue dividido en tres sub-requisitos para mayor granularidad trazable. Ver `REQ-F-022a`, `REQ-F-022b`, `REQ-F-022c` a continuaci\u00f3n. El ID original `REQ-F-022` queda **retirado** y no debe reutilizarse.
-
-#### REQ-F-022a �\u2014 Alerta de pr\u00e9stamo por vencer
+#### REQ-F-022a — Alerta de préstamo por vencer
 
 - **Prioridad**: Should
 - **Estado**: implementado
 - **Fuente**: **sin HU/CU dedicada** (matriz: `—`, `—`).
+- **Módulo/endpoint**: `NotificacionVencimientoScheduler`/`NotificacionService` — job periódico, sin endpoint propio.
+- **Descripción**: el sistema genera una notificación de "préstamo por
+  vencer" mediante un job que corre cada 60 segundos, para todo préstamo
+  dentro de una ventana de anticipación configurable (default 15 minutos
+  antes de la fecha límite).
+- **Rationale**: reduce préstamos vencidos por descuido, sin depender de
+  que el bibliotecario o el lector revisen manualmente las fechas.
+- **Criterio de aceptación medible**: un préstamo dentro de la ventana de
+  anticipación configurada genera una notificación **una sola vez** (no
+  repetida en cada ejecución del job, que corre cada 60s).
+- **Nota de honestidad (verificada en código, 2026-09-07)**: el envío
+  real por correo de esta alerta está **deshabilitado por defecto**
+  (`NotificacionService`, `@Value("${notificaciones.email.habilitado:false}")`,
+  causa raíz documentada en `OBS-23`: saturación del proveedor SMTP tras
+  el volumen sintético de la rúbrica ADB) — la notificación **sí** se
+  persiste en la tabla `notificaciones` (consultable vía REQ-F-021), pero
+  el correo no se envía salvo que se reactive explícitamente esa clave de
+  configuración. El criterio de aceptación de este requisito es sobre la
+  generación de la notificación, no sobre su entrega por correo, que
+  queda declarada pendiente de reactivación SMTP, no como si funcionara.
+- **Método de verificación**: **Test**
+  (`NotificacionVencimientoSchedulerTest`, 3 tests;
+  `NotificacionServiceTest.generarAlertaVencimiento_*`; `EmailServiceTest`).
+
 #### REQ-F-022b — Alerta de multa generada
 
 - **Prioridad**: Should
@@ -2054,10 +2075,48 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   observación de red (OWASP A02); terminar TLS en el proxy en vez del
   backend evita acoplar la gestión de certificados a la aplicación
   (ADR-015).
-- **Estado**: implementado
-- **Observaciones**: No cumple umbral (score 82 < 90 en Lighthouse SEO). Causas: falta \`meta-description\` y \`robots.txt\` válido (fallback SPA). Trabajo futuro documentado.
-- **Método de verificación**: **Demonstration**
-  (\`docs/mediciones/lighthouse/REPORT.md\`, \`lhci-20260731-0300.json\`).
+- **Estado real — implementado en el despliegue real de producción,
+  actualizado respecto a versiones anteriores de este SRS** (hallazgo del
+  Dr. Guerrero: versiones previas declaraban esto pendiente sin distinguir
+  el despliegue Docker local del despliegue real en Render): (1) **la
+  decisión de arquitectura** (dónde termina TLS) quedó documentada en
+  ADR-015; (2) **la preparación del backend**
+  (`server.forward-headers-strategy: framework`, `application.yml:61`)
+  para confiar en `X-Forwarded-Proto` de un proxy real; (3) **el
+  despliegue real** (`render.yaml`, verificado en este commit) publica
+  `sgb-backend` (Web Service Docker) y `biblora-sgb` (Static Site) sin
+  ningún bloque `domains:` de dominio propio — ambos corren bajo
+  subdominios `*.onrender.com`, donde Render **termina TLS
+  automáticamente en su borde/CDN** con certificados que administra la
+  plataforma (no hay `server.ssl.*` ni certificado propio configurado en
+  este repositorio porque no hace falta: el origen — el contenedor
+  backend — recibe tráfico HTTP plano del proxy de Render, y es
+  exactamente ese proxy el que agrega `X-Forwarded-Proto: https`, la
+  cabecera que el punto (2) ya prepara al backend para confiar). **Lo que
+  sigue sin TLS propio, sin ambigüedad**: el stack de **Docker Compose
+  local** (`docker-compose.yml`, `frontend-angular/nginx.conf`) no activa
+  `server.ssl.*` ni certificado alguno — ese entorno es solo para
+  desarrollo/evaluación local, nunca fue el objetivo de este requisito.
+- **Criterio de aceptación medible**: `https://sgb-backend-b058.onrender.com/actuator/health`
+  y `https://biblora-sgb.onrender.com` deben responder con certificado
+  válido (sin advertencias del navegador/`curl`), emitido y renovado por
+  Render, no por este repositorio; el backend debe reconocer esas
+  peticiones como seguras vía `X-Forwarded-Proto` (confirmado por
+  `server.forward-headers-strategy: framework`). **Sigue sin cumplirse,
+  sin ambigüedad**: no hay redirección automática HTTP→HTTPS configurada
+  por este repositorio (depende por completo de que Render la fuerce en
+  su borde, no verificado en este commit — PENDIENTE_VERIFICAR_MARLON), ni
+  cabecera `Strict-Transport-Security` propia emitida por el backend.
+- **Método de verificación**: **Analysis** (decisión de arquitectura y
+  preparación del backend, revisadas por inspección) —
+  `docs/mediciones/sec/owasp/2026-07-30-owasp-a02-fallo-criptografico.md`
+  (hallazgo original) y
+  `docs/mediciones/sec/owasp/2026-08-10-owasp-a02-fix-tls-transporte.md` (qué se
+  cerró y qué sigue pendiente, con la misma honestidad declarada en el
+  hallazgo original). **TLS real activo end-to-end sigue sin Test ni
+  Demonstration** — no hay stack con certificado real contra el cual
+  verificar.
+
 ##### REQ-NF-013 — Prevención de inyección SQL
 
 - **Prioridad**: Must
@@ -2080,23 +2139,7 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   documenta la ausencia de un test de regresión en vez de implicar que
   existe uno.
 
-#### REQ-NF-014 (retirado) → dividido en REQ-NF-014a, REQ-NF-014b, REQ-NF-014c, REQ-NF-014d
-
-El requisito original `REQ-NF-014` (Seguridad OWASP A05) fue dividido en cuatro sub-requisitos para mayor granularidad trazable. Ver `REQ-NF-014a`, `REQ-NF-014b`, `REQ-NF-014c`, `REQ-NF-014d` a continuación. El ID original `REQ-NF-014` queda **retirado** y no debe reutilizarse.
-
-#### REQ-NF-014 (retirado) → dividido en REQ-NF-014a, REQ-NF-014b, REQ-NF-014c, REQ-NF-014d
-
-El requisito original `REQ-NF-014` (Seguridad OWASP A05) fue dividido en cuatro sub-requisitos para mayor granularidad trazable. Ver `REQ-NF-014a`, `REQ-NF-014b`, `REQ-NF-014c`, `REQ-NF-014d` a continuación. El ID original `REQ-NF-014` queda **retirado** y no debe reutilizarse.
-
-#### REQ-NF-014 (retirado) → dividido en REQ-NF-014a, REQ-NF-014b, REQ-NF-014c, REQ-NF-014d
-
-El requisito original `REQ-NF-014` (Seguridad OWASP A05) fue dividido en cuatro sub-requisitos para mayor granularidad trazable. Ver `REQ-NF-014a`, `REQ-NF-014b`, `REQ-NF-014c`, `REQ-NF-014d` a continuación. El ID original `REQ-NF-014` queda **retirado** y no debe reutilizarse.
-
-#### REQ-NF-014 (retirado) �\u2192 dividido en REQ-NF-014a, REQ-NF-014b, REQ-NF-014c, REQ-NF-014d
-
-El requisito original `REQ-NF-014` (Seguridad OWASP A05) fue dividido en cuatro sub-requisitos para mayor granularidad trazable. Ver `REQ-NF-014a`, `REQ-NF-014b`, `REQ-NF-014c`, `REQ-NF-014d` a continuaci\u00f3n. El ID original `REQ-NF-014` queda **retirado** y no debe reutilizarse.
-
-##### REQ-NF-014a �\u2014 Content-Security-Policy (backend y frontend)
+##### REQ-NF-014a — Content-Security-Policy (backend y frontend)
 
 - **Prioridad**: Should
 - **Fuente**: sin HU dedicada, OWASP A05
@@ -2453,16 +2496,32 @@ El requisito original `REQ-NF-014` (Seguridad OWASP A05) fue dividido en cuatro 
 ##### REQ-NF-020 — SEO del portal público (Lighthouse)
 
 - **Prioridad**: Should
+- **Estado**: implementado
 - **Fuente**: Bloque C.5 de la guía, mismo informe que REQ-NF-019.
 - **Descripción**: el frontend debe cumplir un umbral de SEO medido con
   Lighthouse (mismas condiciones que REQ-NF-019).
 - **Rationale**: relevante específicamente para A6 (portal público sin
   cuenta) — sin indexabilidad razonable, el portal público pierde parte
   de su propósito de atraer usuarios antes del registro.
-- **Estado**: implementado
-- **Observaciones**: No cumple umbral (score 82 < 90 en Lighthouse SEO). Causas: falta \`meta-description\` y \`robots.txt\` válido (fallback SPA). Trabajo futuro documentado.
+- **Estado real — NO cumple el umbral, declarado sin ambigüedad**:
+  categoría SEO >=90 exigido — real: **82**, no cumple.
+- **Causas identificadas (extraídas del propio JSON del reporte, no
+  interpretadas a mano)**:
+  1. `meta-description` (score 0): `index.html` del build de Angular no
+     tiene una etiqueta `<meta name="description">` — confirmado
+     manualmente contra el archivo real.
+  2. `robots-txt` (score 0): `GET /robots.txt` responde `200` pero con el
+     `index.html` de la SPA (por el fallback de rutas de Angular/nginx),
+     no un `robots.txt` real — Lighthouse lo rechaza como inválido.
+- **Criterio de aceptación medible**: categoría SEO >=90 (no cumplido
+  hoy); ambas causas identificadas arriba son corregibles sin cambios de
+  arquitectura (agregar `<meta name="description">` al `index.html`;
+  servir un `robots.txt` real desde `nginx.conf` antes del fallback
+  `try_files`) — quedan como trabajo futuro, no se corrigen en esta tarea
+  de documentación de requisitos.
 - **Método de verificación**: **Demonstration**
-  (\`docs/mediciones/lighthouse/REPORT.md\`, \`lhci-20260731-0300.json\`).
+  (`docs/mediciones/lighthouse/REPORT.md`, `lhci-20260731-0300.json`).
+
 ##### REQ-NF-021 — Objetivos de respaldo y recuperación (frecuencia, retención, RPO/RTO)
 
 - **Prioridad**: Must
@@ -2512,7 +2571,6 @@ El requisito original `REQ-NF-014` (Seguridad OWASP A05) fue dividido en cuatro 
 
 - **Prioridad**: Must
 - **Estado**: implementado
-- **Observaciones**: Retencion/supresion de bitacora_auditoria pendiente (LOPD Ecuador)
 - **Fuente**: Bloque F de la guía (ética de datos),
   `docs/etica/ETHICS.md`.
 - **Descripción**: el sistema debe minimizar los datos personales que
@@ -2816,15 +2874,31 @@ a `matriz.csv`, (2) expandir la entrada correspondiente en este SRS, en
 ese orden — nunca solo uno de los dos, por el mismo riesgo de
 desincronización ya documentado en ADR-013 para Flyway/`schema.sql`.
 
-## 4.1 Glosario de estados de la matriz de trazabilidad
+### 4.1 Estados de verificación: `implementado` vs `verificado`
 
-Para evitar ambigüedad en la columna **estado** de la matriz de trazabilidad (`docs/trazabilidad/matriz.csv`), se definen los tres valores permitidos:
+La columna `estado` de la matriz usa un vocabulario cerrado de tres
+valores (`pendiente` / `implementado` / `verificado`, impuesto por la
+validación 5 de `scripts/validate-traceability.sh`), con la siguiente
+diferencia operacional entre los dos estados no pendientes:
 
-- **implementado**: el código fuente que satisface el requisito existe en el repositorio y compila correctamente. No implica que exista una prueba automatizada que lo verifique en cada build; solo que la funcionalidad está codificada y desplegada.
-- **verificado**: además de estar implementado, existe al menos una prueba automatizada (unitaria, de integración o de contrato) que ejercita el requisito y pasa en el pipeline de CI. La columna `prueba_automatizada` de la matriz cita el nombre de dicha prueba.
-- **pendiente**: el requisito aún no se ha implementado, o su implementación no ha sido verificada por prueba automatizada.
+- **`implementado`**: el código real existe en el repositorio y hay una
+  evidencia empírica declarada (verificación manual, capturas, inspección
+  de código o configuración, informes de medición citados en
+  `evidencia_empirica`), pero no hay una prueba automatizada que lo
+  re-verifique en cada build.
+- **`verificado`**: además de lo anterior, la fila tiene
+  `prueba_automatizada` no vacía en la matriz — que es literalmente lo que
+  ya impone la validación 2 del script. Solo este estado se re-comprueba
+  en cada ejecución de CI.
 
-Esta distinción es relevante porque la mayoría de los requisitos nuevos de esta revisión quedaron en **implementado** (el código existe y funciona en entorno real) pero no en **verificado** (aún no tienen prueba automatizada dedicada en el pipeline de CI). La columna `observaciones` de la matriz documenta los casos donde esto aplica.
+Conteo real sobre `matriz.csv` (generado con `csv.DictReader`, no copiado
+a mano): **23 verificado / 47 implementado / 1 pendiente sobre 71 filas**;
+de los 26 requisitos `Must`, 23 están `verificado` y 3 `implementado`. La
+mayoría de los requisitos nuevos del Bloque 5 (`REQ-F-032`-`042`,
+`REQ-NF-016`-`024`) quedó en `implementado` porque se redactaron a partir
+de funcionalidad ya implementada en el código y verificada por inspección
+al momento de redactar el requisito; automatizar una prueba específica
+para cada uno es trabajo pendiente que no bloqueó esta entrega.
 
 ## 5. Requisitos de calidad de software (ISO/IEC 25010)
 

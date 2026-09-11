@@ -86,6 +86,12 @@ public class LibroService {
         this.sugerenciaAdquisicionService = sugerenciaAdquisicionService;
     }
 
+    /**
+     * Devuelve la página de libros en estado ACTIVO para el catálogo general, usando la caché de listados.
+     *
+     * @param pageable paginación y orden solicitados por el catálogo
+     * @return página de vistas resumidas de cada libro con editorial, idioma, estado, stock y nombres de categorías y autores
+     */
     @Cacheable("libros")
     @Transactional(readOnly = true)
     public Page<LibroResponseDTO> listar(Pageable pageable) {
@@ -93,6 +99,19 @@ public class LibroService {
                 .map(this::toDTO);
     }
 
+    /**
+     * Devuelve la página de libros combinando texto, estado, categoría, autor y disponibilidad para las
+     * búsquedas del catálogo. Elige la consulta adecuada según vengan texto o marca de disponibilidad y
+     * resuelve el estado nulo al ACTIVO del catálogo.
+     *
+     * @param q texto libre para buscar por título o ISBN; nulo o vacío desactiva la búsqueda por texto
+     * @param estadoLibroId identificador del estado a filtrar; nulo resuelve al ACTIVO del catálogo
+     * @param categoriaId identificador de la categoría a filtrar; nulo desactiva ese filtro
+     * @param autorId identificador del autor a filtrar; nulo desactiva ese filtro
+     * @param disponible cuando es verdadero solo trae con stock disponible mayor a cero, cuando es falso solo agotados, nulo trae ambos
+     * @param pageable paginación y orden solicitados por el catálogo
+     * @return página de vistas resumidas de los libros que cumplen los filtros combinados
+     */
     @Transactional(readOnly = true)
     public Page<LibroResponseDTO> listarConFiltros(String q, Integer estadoLibroId, Integer categoriaId, Long autorId, Boolean disponible, Pageable pageable) {
         Integer estadoId = resolverEstadoId(estadoLibroId);
@@ -132,6 +151,18 @@ public class LibroService {
         return libroRepo.findByEstadoId(estadoId, pageable).map(this::toDTO);
     }
 
+    /**
+     * Devuelve la página de libros con texto, estado, categoría y autor para compatibilidad con las
+     * vistas que aún no filtran por disponibilidad. Delegada en la variante completa con disponibilidad
+     * nula (ver {@link #listarConFiltros}).
+     *
+     * @param q texto libre para buscar por título o ISBN; nulo o vacío desactiva la búsqueda por texto
+     * @param estadoLibroId identificador del estado a filtrar; nulo resuelve al ACTIVO del catálogo
+     * @param categoriaId identificador de la categoría a filtrar; nulo desactiva ese filtro
+     * @param autorId identificador del autor a filtrar; nulo desactiva ese filtro
+     * @param pageable paginación y orden solicitados por el catálogo
+     * @return página de vistas resumidas de los libros que cumplen los filtros combinados
+     */
     @Transactional(readOnly = true)
     public Page<LibroResponseDTO> listarConFiltros(String q, Integer estadoLibroId, Integer categoriaId, Long autorId, Pageable pageable) {
         return listarConFiltros(q, estadoLibroId, categoriaId, autorId, null, pageable);
@@ -147,6 +178,18 @@ public class LibroService {
                 .getId();
     }
 
+    /**
+     * Devuelve la página de libros en estados operativos pendientes de revisión (dados de baja,
+     * pendientes, en reparación o perdidos) para la bandeja de gestión interna. Si no se indican
+     * estados usa los identificadores por defecto y ante un fallo de consulta lo registra y aborta.
+     *
+     * @param q texto libre para buscar dentro de esos estados; nulo desactiva la búsqueda por texto
+     * @param anioPublicacion año de publicación a filtrar; nulo desactiva ese filtro
+     * @param estadoIds identificadores de estado a incluir; nulos o vacíos usan los valores por defecto de la bandeja
+     * @param pageable paginación y orden solicitados por la bandeja
+     * @return página de vistas resumidas de los libros en los estados pedidos, vacía si la lista de estados queda vacía
+     * @throws RuntimeException si la consulta de pendientes falla en el repositorio
+     */
     @Transactional(readOnly = true)
     public Page<LibroResponseDTO> listarPendientes(String q, Integer anioPublicacion, List<Integer> estadoIds, Pageable pageable) {
         List<Integer> estados = resolverEstadosPendientes(estadoIds);
@@ -173,18 +216,40 @@ public class LibroService {
     }
 
     // Filtros de catálogo por categoría/autor (?categoriaId=/?autorId=). Sin @Cacheable: solo el listado general usa cache.
+    /**
+     * Devuelve la página de libros ACTIVO de una categoría para navegar el catálogo por estantería temática.
+     *
+     * @param categoriaId identificador de la categoría a explorar
+     * @param pageable paginación y orden solicitados por el catálogo
+     * @return página de vistas resumidas de los libros ACTIVO vinculados a esa categoría
+     */
     @Transactional(readOnly = true)
     public Page<LibroResponseDTO> listarPorCategoria(Integer categoriaId, Pageable pageable) {
         return libroRepo.findByCategorias_IdAndEstado_Nombre(categoriaId, ESTADO_ACTIVO, pageable)
                 .map(this::toDTO);
     }
 
+    /**
+     * Devuelve la página de libros ACTIVO de un autor para navegar el catálogo por autoría.
+     *
+     * @param autorId identificador del autor a explorar
+     * @param pageable paginación y orden solicitados por el catálogo
+     * @return página de vistas resumidas de los libros ACTIVO vinculados a ese autor
+     */
     @Transactional(readOnly = true)
     public Page<LibroResponseDTO> listarPorAutor(Long autorId, Pageable pageable) {
         return libroRepo.findByAutores_IdAndEstado_Nombre(autorId, ESTADO_ACTIVO, pageable)
                 .map(this::toDTO);
     }
 
+    /**
+     * Recupera la ficha completa de un libro por su identificador para la gestión interna, sin importar
+     * en qué estado se encuentre.
+     *
+     * @param id identificador del libro a recuperar
+     * @return vista resumida del libro con editorial, idioma, estado, stock y nombres de categorías y autores
+     * @throws jakarta.persistence.EntityNotFoundException si no existe ningún libro con ese identificador
+     */
     @Transactional(readOnly = true)
     public LibroResponseDTO buscarPorId(Long id) {
         return libroRepo.findById(id)
@@ -193,6 +258,14 @@ public class LibroService {
                         LIBRO_NO_ENCONTRADO + id));
     }
 
+    /**
+     * Recupera la ficha de un libro visible al público para la página de detalle del catálogo, solo si
+     * se encuentra en estado ACTIVO.
+     *
+     * @param id identificador del libro a mostrar en el catálogo público
+     * @return vista resumida del libro en estado ACTIVO con editorial, idioma, stock y nombres de categorías y autores
+     * @throws jakarta.persistence.EntityNotFoundException si no existe el libro o no está en estado ACTIVO
+     */
     @Transactional(readOnly = true)
     public LibroResponseDTO buscarPorIdPublico(Long id) {
         return libroRepo.findById(id)
@@ -203,6 +276,14 @@ public class LibroService {
     }
 
     // Autocompletado: DTO ligero y "disponible" derivado de stockDisponible > 0. Cache propio de TTL corto.
+    /**
+     * Sugiere los candidatos cuyo título coincide con el texto para el autocompletado de búsqueda,
+     * marcando en cada uno si hay stock disponible para préstamo inmediato. Usa caché propia de TTL corto.
+     *
+     * @param texto prefijo del título escrito por quien busca en el autocompletado
+     * @return lista ligera de sugerencias con identificador, título y marca de disponibilidad derivada del stock
+     * @throws IllegalStateException si falta la fila de catálogo del estado ACTIVO
+     */
     @Cacheable("sugerencias-libros")
     @Transactional(readOnly = true)
     public List<LibroSugerenciaDTO> sugerir(String texto) {
@@ -217,6 +298,16 @@ public class LibroService {
                 .toList();
     }
 
+    /**
+     * Da de alta un libro con sus catálogos y colecciones para ampliar el catálogo gestionable.
+     * Rechaza ISBN duplicados y valida año, resumen, stock, páginas y precio; lo creado por GERENTE o
+     * ADMIN queda en estado PENDIENTE, y el precio de lo creado por BIBLIOTECARIO se descarta. Al crear
+     * con un ISBN pedido en sugerencias, esas quedan confirmadas.
+     *
+     * @param dto solicitud con título, ISBN, resumen, ubicación, año, páginas, existencias, precio base e identificadores de editorial, idioma, estado, categorías, autores y proveedor opcional
+     * @return vista resumida del libro persistido con editorial, idioma, estado, stock y nombres de categorías y autores
+     * @throws IllegalArgumentException si el ISBN ya está registrado o algún dato viola las reglas de año, resumen, stock, páginas o precio
+     */
     @CacheEvict(value = "libros", allEntries = true)
     @Transactional
     public LibroResponseDTO crear(LibroRequestDTO dto) {
@@ -256,6 +347,18 @@ public class LibroService {
         return resultado;
     }
 
+    /**
+     * Reemplaza los datos del libro indicado para corregir su ficha o reponer existencias en el catálogo.
+     * Rechaza ISBN usados por otro libro y valida año, resumen, stock y páginas; solo GERENTE o ADMIN
+     * pueden vincular proveedor o tocar el precio base. Si el libro vuelve a tener stock, notifica a la
+     * lista de espera como mecanismo best-effort.
+     *
+     * @param id identificador del libro cuya ficha se reemplaza
+     * @param dto solicitud con título, ISBN, resumen, ubicación, año, páginas, existencias, precio base e identificadores de editorial, idioma, estado, categorías, autores y proveedor opcional
+     * @return vista resumida del libro actualizado con editorial, idioma, estado, stock y nombres de categorías y autores
+     * @throws jakarta.persistence.EntityNotFoundException si no existe ningún libro con ese identificador
+     * @throws IllegalArgumentException si el ISBN pertenece a otro libro, el precio base es negativo o algún dato viola las reglas
+     */
     @CacheEvict(value = "libros", allEntries = true)
     @Transactional
     public LibroResponseDTO actualizar(Long id, LibroRequestDTO dto) {
@@ -313,6 +416,14 @@ public class LibroService {
         return resultado;
     }
 
+    /**
+     * Da de baja lógica el libro pasándolo al estado DADO_DE_BAJA para retirarlo del catálogo sin
+     * borrar su fila ni su historial asociado.
+     *
+     * @param id identificador del libro a dar de baja
+     * @throws jakarta.persistence.EntityNotFoundException si no existe ningún libro con ese identificador
+     * @throws IllegalStateException si falta la fila de catálogo del estado DADO_DE_BAJA
+     */
     @CacheEvict(value = "libros", allEntries = true)
     @Transactional
     public void eliminar(Long id) {
@@ -328,6 +439,16 @@ public class LibroService {
 
     // ── Portada binaria ──
     // POST portada (multipart): guarda el binario en BD y limpia portadaUrl para una sola fuente vigente.
+    /**
+     * Guarda la imagen de portada como binario en la base para unificar la visualización en una sola
+     * fuente vigente, limpiando la URL externa previa. Invalida la caché de listados.
+     *
+     * @param libroId identificador del libro al que pertenece la portada
+     * @param archivo imagen en PNG, JPEG, WEBP o AVIF dentro del tamaño máximo configurado en el sistema
+     * @return vista resumida del libro con la portada actualizada
+     * @throws jakarta.persistence.EntityNotFoundException si no existe ningún libro con ese identificador
+     * @throws IllegalArgumentException si no se adjunta imagen, el tipo no está permitido, excede el tamaño máximo o no puede leerse
+     */
     @CacheEvict(value = "libros", allEntries = true)
     @Transactional
     public LibroResponseDTO actualizarPortada(Long libroId, MultipartFile archivo) {
@@ -350,6 +471,14 @@ public class LibroService {
     }
 
     // GET portada: 404 si no existe o no tiene portada (el placeholder lo resuelve el frontend).
+    /**
+     * Recupera el binario y el tipo de la portada guardada para servir la imagen del libro al catálogo.
+     * No genera marcador de posición: si no hay portada se informa como ausente.
+     *
+     * @param libroId identificador del libro cuya portada se quiere servir
+     * @return contenedor con los bytes de la imagen y su tipo de contenido para la respuesta HTTP
+     * @throws jakarta.persistence.EntityNotFoundException si no existe el libro o aún no tiene portada guardada
+     */
     @Transactional(readOnly = true)
     public PortadaImagenDTO obtenerPortada(Long libroId) {
         Libro libro = libroRepo.findById(libroId)

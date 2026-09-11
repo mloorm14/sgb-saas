@@ -61,23 +61,62 @@ public class MultaService {
         this.prestamoRepo = prestamoRepo;
     }
 
+    /**
+     * Lista las multas de un usuario en forma resumida y paginada.
+     * Aplica control de acceso por rol antes de consultar: un LECTOR solo
+     * puede ver sus propias multas, otros roles pueden ver las de cualquiera.
+     *
+     * @param usuarioId identificador del dueño de las multas a listar
+     * @param authentication autenticación vigente, usada para resolver el rol y el usuario propio
+     * @param pageable paginación y orden solicitados por el cliente
+     * @return página de multas en formato resumido
+     * @throws AuthorizationDeniedException si un LECTOR pide multas de otro usuario
+     */
     @Transactional(readOnly = true)
     public Page<MultaResponseDTO> listarPorUsuario(Long usuarioId, Authentication authentication, Pageable pageable) {
         validarAccesoUsuario(usuarioId, authentication);
         return multaRepo.findByUsuarioId(usuarioId, pageable).map(this::toDTO);
     }
 
+    /**
+     * Lista las multas de un usuario con detalle enriquecido (libro, fechas
+     * del préstamo, días de atraso y saldo), para la vista de gestión.
+     * Comparte el mismo control de acceso por rol que {@link #listarPorUsuario}.
+     *
+     * @param usuarioId identificador del dueño de las multas a listar
+     * @param authentication autenticación vigente, usada para resolver el rol y el usuario propio
+     * @param pageable paginación y orden solicitados por el cliente
+     * @return página de multas con detalle de préstamo y libro
+     * @throws AuthorizationDeniedException si un LECTOR pide multas de otro usuario
+     */
     @Transactional(readOnly = true)
     public Page<MultaDetalleResponseDTO> listarDetallePorUsuario(Long usuarioId, Authentication authentication, Pageable pageable) {
         validarAccesoUsuario(usuarioId, authentication);
         return multaRepo.findByUsuarioId(usuarioId, pageable).map(this::toDetalleDTO);
     }
 
+    /**
+     * Registra un pago parcial contra una multa sin saldarla por completo.
+     * Delega en el procedimiento almacenado {@code sp_pago_parcial_multa},
+     * que valida el monto y actualiza el saldo pendiente a nivel de motor.
+     *
+     * @param multaId identificador de la multa a abonar
+     * @param montoPagado monto del abono parcial, debe ser positivo y no superar el saldo
+     * @return mapa con las salidas del procedimiento (identificadores y estado resultante)
+     */
     @Transactional
     public Map<String, Object> pagoParcial(Long multaId, BigDecimal montoPagado) {
         return multaProcRepo.spPagoParcialMulta(multaId, montoPagado);
     }
 
+    /**
+     * Paga totalmente una multa y, si era la única pendiente del usuario,
+     * lo desbloquea para nuevos préstamos. La lógica vive en
+     * {@code sp_pagar_multa}; aquí solo se adapta su salida al DTO.
+     *
+     * @param multaId identificador de la multa a pagar
+     * @return acción resultante con el id de la multa y si el usuario quedó desbloqueado
+     */
     @Transactional
     public MultaAccionResponseDTO pagar(Long multaId) {
         Map<String, Object> resultado = multaProcRepo.spPagarMulta(multaId);
@@ -86,6 +125,17 @@ public class MultaService {
                 (Boolean) resultado.get("o_usuario_desbloqueado"));
     }
 
+    /**
+     * Anula una multa con motivo registrado. Solo GERENTE o ADMIN pueden
+     * ejecutarla: el rol se resuelve desde la autenticación y se envía al
+     * procedimiento {@code sp_anular_multa} para auditoría.
+     *
+     * @param multaId identificador de la multa a anular
+     * @param motivo justificación de la anulación, queda registrada en la multa
+     * @param authentication autenticación vigente, de donde se extrae el rol ejecutor
+     * @return acción resultante con el id de la multa y si el usuario quedó desbloqueado
+     * @throws AuthorizationDeniedException si el ejecutor no es GERENTE ni ADMIN
+     */
     @Transactional
     public MultaAccionResponseDTO anular(Long multaId, String motivo, Authentication authentication) {
         String rolEjecutor = resolverRolAnulacion(authentication);
@@ -95,6 +145,14 @@ public class MultaService {
                 (Boolean) resultado.get("o_usuario_desbloqueado"));
     }
 
+    /**
+     * Resuelve el dueño de una multa navegando multa → préstamo → usuario.
+     * Se usa para validar acceso y para notificar al lector correcto.
+     *
+     * @param multaId identificador de la multa cuyo dueño se busca
+     * @return identificador del usuario dueño del préstamo multado
+     * @throws EntityNotFoundException si la multa o su préstamo no existen
+     */
     @Transactional(readOnly = true)
     public Long resolverUsuarioIdDeMulta(Long multaId) {
         Multa multa = multaRepo.findById(multaId)
@@ -104,6 +162,15 @@ public class MultaService {
         return prestamo.getUsuarioId();
     }
 
+    /**
+     * Arma el resumen financiero de multas para el dashboard gerente:
+     * total recaudado y pendiente en el rango pedido, total generado hoy
+     * y los 5 pagos más recientes. Combina tres funciones de base de datos.
+     *
+     * @param desde inicio del rango del resumen, inclusivo
+     * @param hasta fin del rango del resumen, inclusivo
+     * @return resumen con recaudado, pendiente, generado hoy y pagos recientes
+     */
     @Transactional(readOnly = true)
     public ResumenFinancieroMultasResponseDTO reporteResumenFinanciero(OffsetDateTime desde, OffsetDateTime hasta) {
         ResumenFinancieroMultasProjection resumen = multaProcRepo.fnReporteResumenFinanciero(desde, hasta);

@@ -59,6 +59,18 @@ public class AuthService {
     private final ConfiguracionSistemaService configuracionSistemaService;
     private final EmailService emailService;
 
+    /**
+     * Crea una cuenta nueva con rol LECTOR en estado PENDIENTE_VERIFICACION para permitir el registro
+     * autónomo y dejarla lista para la confirmación por correo.
+     * Valida que el correo no esté duplicado ni pertenezca a un dominio restringido, cifra la
+     * contraseña y dispara el envío del código de verificación (ver {@link #verificarCorreo}).
+     *
+     * @param dto solicitud con nombre, apellido, correo de acceso y contraseña en claro sin cifrar
+     * @return vista resumida del usuario persistido con identificador, nombre, correo y roles asignados
+     * @throws CorreoYaRegistradoException si ya existe un usuario con el correo solicitado
+     * @throws CorreoDominioNoPermitidoException si el dominio del correo no figura entre los permitidos
+     * @throws IllegalStateException si faltan las filas de catálogo del rol LECTOR o del estado inicial
+     */
     public UsuarioResponseDTO registrar(RegistroRequestDTO dto) {
         usuarioRepository.findByCorreo(dto.correo()).ifPresent(usuario -> {
             throw new CorreoYaRegistradoException("El correo ya está registrado: " + dto.correo());
@@ -112,6 +124,15 @@ public class AuthService {
 
     // ── POST /api/auth/reenviar-codigo ──
     // Sin JWT (aún no puede loguearse): regenera el código cuando el TTL de Redis ya expiró.
+    /**
+     * Regenera y reenvía el código de verificación para una cuenta aún pendiente, de modo que el
+     * titular pueda completar la activación cuando el código anterior ya expiró en Redis.
+     * Rechaza la operación si la cuenta ya quedó verificada.
+     *
+     * @param correo dirección asociada a la cuenta pendiente de verificación
+     * @throws jakarta.persistence.EntityNotFoundException si no existe ningún usuario con ese correo
+     * @throws IllegalArgumentException si el correo ya está verificado o la cuenta no requiere verificación
+     */
     public void reenviarCodigo(String correo) {
         Usuario usuario = usuarioRepository.findByCorreo(correo)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo));
@@ -123,6 +144,15 @@ public class AuthService {
 
     // ── POST /api/auth/solicitar-reset ──
     // Recuperación en 2 pasos: código de 6 dígitos con TTL 10 min en Redis, enviado por correo.
+    /**
+     * Inicia la recuperación de acceso en dos pasos para que el titular pueda definir una contraseña
+     * nueva sin estar autenticado. Genera un código aleatorio de 6 dígitos con vigencia de 10 minutos
+     * en Redis y lo envía por correo como mecanismo best-effort (ver {@link #resetPassword}).
+     *
+     * @param correo dirección de la cuenta que solicita la recuperación
+     * @throws jakarta.persistence.EntityNotFoundException si no existe ningún usuario con ese correo
+     * @throws ServicioTemporalmenteNoDisponibleException si Redis no acepta el guardado del código
+     */
     public void solicitarReset(String correo) {
         Usuario usuario = usuarioRepository.findByCorreo(correo)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo));
@@ -145,6 +175,17 @@ public class AuthService {
     }
 
     // ── POST /api/auth/reset ────────────────────────
+    /**
+     * Reemplaza la contraseña de una cuenta usando el código de recuperación de un solo uso, para
+     * devolverle el acceso al titular tras validar su identidad sin JWT. Consume el código en Redis
+     * cuando el cambio se persiste.
+     *
+     * @param correo dirección de la cuenta a recuperar
+     * @param codigo código de 6 dígitos previamente generado por {@link #solicitarReset} y aún vigente en Redis
+     * @param nuevaPassword contraseña en claro sin cifrar que reemplazará a la anterior
+     * @throws CodigoVerificacionInvalidoException si el código no coincide, expiró o Redis no responde a la lectura
+     * @throws jakarta.persistence.EntityNotFoundException si no existe ningún usuario con ese correo
+     */
     public void resetPassword(String correo, String codigo, String nuevaPassword) {
         String key = "reset-codigo:" + correo;
         String almacenado;
@@ -169,6 +210,18 @@ public class AuthService {
 
     // ── POST /api/auth/verificar-correo ──
     // Sin JWT: la identidad se comprueba con el código de un solo uso.
+    /**
+     * Confirma el código de verificación de un solo uso y activa la cuenta, para desbloquear el inicio
+     * de sesión que permanece restringido mientras el correo sigue pendiente. Registra el evento en la
+     * bitácora de auditoría con la IP de origen.
+     *
+     * @param correo dirección pendiente de confirmación
+     * @param codigo código de un solo uso previamente enviado al correo del titular
+     * @param ipOrigen dirección IP desde donde se confirma, usada solo para auditoría y registro
+     * @return vista resumida del usuario ya activado con identificador, nombre, correo y roles
+     * @throws IllegalArgumentException si no existe ningún usuario con ese correo
+     * @throws IllegalStateException si falta la fila de catálogo del estado ACTIVO
+     */
     public UsuarioResponseDTO verificarCorreo(String correo, String codigo, String ipOrigen) {
         verificacionCorreoService.validar(correo, codigo);
 
@@ -189,6 +242,18 @@ public class AuthService {
         return mapToUsuarioResponseDTO(guardado);
     }
 
+    /**
+     * Autentica las credenciales y emite los tokens de sesión para mantener conectado al titular.
+     * Aplica el límite de intentos por correo e IP antes de autenticar, reinicia el contador tras el
+     * éxito y deja traza de cada resultado en la bitácora de auditoría.
+     *
+     * @param dto credenciales de acceso con correo y contraseña en claro sin cifrar
+     * @param ipOrigen dirección IP desde donde se intenta el acceso, usada para el límite de intentos y auditoría
+     * @return par de tokens con el JWT de acceso, el token de refresco y su vigencia en segundos
+     * @throws LoginRateLimitExcedidoException si la combinación de correo e IP agotó los intentos permitidos
+     * @throws org.springframework.security.authentication.BadCredentialsException si la contraseña o el usuario no son válidos
+     * @throws RuntimeException si la autenticación prospera pero el usuario ya no existe en la base
+     */
     public TokenResponseDTO login(LoginRequestDTO dto, String ipOrigen) {
         // Verifica el rate limit ANTES de autenticar → 429 si se agotó.
         if (loginRateLimiter.estaBloqueado(dto.correo(), ipOrigen)) {
@@ -225,6 +290,14 @@ public class AuthService {
         return new TokenResponseDTO(accessToken, refreshToken, expiresInSeconds());
     }
 
+    /**
+     * Revoca la sesión marcando el identificador del token como inválido en Redis hasta su expiración,
+     * para que no pueda reutilizarse aunque su firma siga vigente. La revocación es best-effort: si
+     * Redis no responde, la expiración propia del token sigue siendo el límite duro de validez.
+     *
+     * @param token JWT de acceso del cual se extraen identificador, vencimiento y correo del titular
+     * @param ipOrigen dirección IP desde donde se cierra la sesión, usada solo para auditoría y registro
+     */
     public void logout(String token, String ipOrigen) {
         String jti = jwtService.extractJti(token);
         Date expiration = jwtService.extractExpiration(token);
@@ -271,6 +344,14 @@ public class AuthService {
         }
     }
 
+    /**
+     * Emite un JWT de acceso nuevo a partir de un token de refresco vigente, para extender la sesión
+     * sin volver a pedir las credenciales al titular.
+     *
+     * @param refreshToken token de refresco previamente emitido por {@link #login} y aún vigente
+     * @return par de tokens con el JWT de acceso renovado, el mismo refresco recibido y su vigencia en segundos
+     * @throws RefreshTokenInvalidoException si el refresco no es válido, expiró o su correo ya no existe
+     */
     public TokenResponseDTO refresh(String refreshToken) {
         if (!jwtService.validateToken(refreshToken)) {
             throw new RefreshTokenInvalidoException("Refresh token inválido o expirado. Inicie sesión nuevamente.");

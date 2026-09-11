@@ -51,6 +51,18 @@ public class ReservacionService {
         this.configuracionSistemaService = configuracionSistemaService;
     }
 
+    /**
+     * Crea una reservación en estado PENDIENTE con fecha límite de retiro.
+     * Valida que un LECTOR solo reserve para sí mismo, que no supere el
+     * máximo de reservas activas y que no esté bloqueado por multas.
+     *
+     * @param dto datos de la reserva (usuario, libro y fecha de retiro opcional)
+     * @param authentication autenticación vigente, usada para el control por rol
+     * @return la reservación creada con su fecha límite calculada
+     * @throws AuthorizationDeniedException si un LECTOR reserva para otro usuario
+     * @throws IllegalStateException si supera el máximo de activas o está bloqueado por multa
+     * @throws IllegalArgumentException si la fecha de retiro es anterior a hoy
+     */
     @Transactional
     public ReservacionResponseDTO crear(ReservacionRequestDTO dto, Authentication authentication) {
         if (esLector(authentication)) {
@@ -125,6 +137,20 @@ public class ReservacionService {
         return r;
     }
 
+    /**
+     * Cambia el estado de una reservación pendiente (aceptar, rechazar o,
+     * para el propio LECTOR, cancelar). Solo se admite transición desde
+     * PENDIENTE: RETIRADA/EXPIRADA pertenecen al flujo de entrega y
+     * vencimiento, no a este endpoint.
+     *
+     * @param reservacionId identificador de la reservación a transicionar
+     * @param dto nuevo estado destino solicitado
+     * @param authentication autenticación vigente, usada para el control por rol
+     * @return la reservación con el estado actualizado
+     * @throws EntityNotFoundException si la reservación no existe
+     * @throws AuthorizationDeniedException si un LECTOR toca reserva ajena o pide otro estado que CANCELADA
+     * @throws IllegalStateException si la reserva ya no está pendiente o el estado destino no existe en el catálogo
+     */
     @Transactional
     public ReservacionResponseDTO cambiarEstado(
             Long reservacionId, CambioEstadoReservacionRequestDTO dto, Authentication authentication) {
@@ -165,6 +191,16 @@ public class ReservacionService {
         return toDTO(reservacion);
     }
 
+    /**
+     * Lista paginada de reservaciones de un usuario, con el mismo control
+     * "propio vs cualquiera" que préstamos y multas: LECTOR solo las suyas.
+     *
+     * @param usuarioId identificador del dueño de las reservaciones
+     * @param authentication autenticación vigente, usada para resolver el rol y el usuario propio
+     * @param pageable paginación y orden solicitados
+     * @return página de reservaciones del usuario
+     * @throws AuthorizationDeniedException si un LECTOR pide reservaciones ajenas
+     */
     @Transactional(readOnly = true)
     public Page<ReservacionResponseDTO> listarPorUsuario(
             Long usuarioId, Authentication authentication, Pageable pageable) {
@@ -172,6 +208,12 @@ public class ReservacionService {
         return reservacionRepo.findByUsuarioId(usuarioId, pageable).map(this::toDTO);
     }
 
+    /**
+     * Devuelve las reservaciones que vencen hoy, para la tarjeta operativa
+     * del panel bibliotecario (retiros pendientes del día).
+     *
+     * @return lista de reservaciones del día con lector, libro y estado
+     */
     @Transactional(readOnly = true)
     public List<ReservacionHoyResponseDTO> buscarReservacionesDeHoy() {
         return reservacionRepo.buscarReservacionesDeHoy().stream()
@@ -186,6 +228,12 @@ public class ReservacionService {
                 .toList();
     }
 
+    /**
+     * Devuelve las reservaciones próximas a vencer, para anticipar retiros
+     * y avisar antes de que expiren.
+     *
+     * @return lista de reservaciones próximas con lector, libro y estado
+     */
     @Transactional(readOnly = true)
     public List<ReservacionHoyResponseDTO> buscarReservacionesProximas() {
         return reservacionRepo.buscarReservacionesProximas().stream()

@@ -64,7 +64,11 @@ public class NotificacionService {
     }
 
     /**
-     * No hace nada si ya existe una notificación VENCIMIENTO para este préstamo.
+     * Genera la alerta de préstamo por vencer (job cada 60s). Es idempotente:
+     * no hace nada si ya existe una notificación VENCIMIENTO para el
+     * préstamo, para no spamear al lector en cada corrida del scheduler.
+     *
+     * @param prestamo préstamo próximo a vencer, con usuario, libro y fecha estimada
      */
     @Transactional
     public void generarAlertaVencimiento(Prestamo prestamo) {
@@ -82,7 +86,13 @@ public class NotificacionService {
     }
 
     /**
-     * Notifica la multa recién creada por una devolución con atraso (sin deduplicación).
+     * Notifica la multa recién generada por una devolución con atraso.
+     * Se dispara por evento desde {@code sp_registrar_devolucion}, sin
+     * deduplicación: cada multa genera exactamente una alerta.
+     *
+     * @param usuarioId dueño del préstamo multado, receptor de la alerta
+     * @param prestamoId préstamo que originó la multa, para contexto del mensaje
+     * @param monto monto de la multa generada, incluido en el mensaje
      */
     @Transactional
     public void notificarMulta(Long usuarioId, Long prestamoId, BigDecimal monto) {
@@ -92,7 +102,11 @@ public class NotificacionService {
     }
 
     /**
-     * Notifica cada reservación que va a expirar en la corrida actual del scheduler.
+     * Notifica cada reservación vencida encontrada en la corrida actual del
+     * scheduler (cada 15 min). La notificación in-app siempre se persiste;
+     * el correo depende de la configuración (deshabilitado por defecto).
+     *
+     * @param reservacion reservación caducada con usuario y libro para el mensaje
      */
     @Transactional
     public void notificarReservaCaducada(Reservacion reservacion) {
@@ -104,6 +118,16 @@ public class NotificacionService {
 
     // ── GET /notificaciones/usuario/{id} ──
     // Propio vs cualquiera: LECTOR solo sus propias notificaciones.
+    /**
+     * Lista paginada de notificaciones de un usuario, con el control
+     * "propio vs cualquiera": un LECTOR solo ve las suyas.
+     *
+     * @param usuarioId dueño de las notificaciones a listar
+     * @param authentication autenticación vigente, usada para resolver el rol y el usuario propio
+     * @param pageable paginación y orden solicitados
+     * @return página de notificaciones del usuario
+     * @throws AuthorizationDeniedException si un LECTOR pide notificaciones ajenas
+     */
     @Transactional(readOnly = true)
     public Page<NotificacionResponseDTO> listarPorUsuario(Long usuarioId, Authentication authentication, Pageable pageable) {
         validarAccesoUsuario(usuarioId, authentication);
@@ -111,7 +135,13 @@ public class NotificacionService {
     }
 
     /**
-     * Envía comprobante de pago de multa por correo al usuario dueño.
+     * Envía el comprobante de pago de una multa por correo al usuario dueño,
+     * con el HTML del recibo (multa, monto, fecha y estado REGISTRADO).
+     *
+     * @param usuarioId receptor del comprobante, debe existir
+     * @param multaId multa pagada, mostrada en el recibo
+     * @param montoPagado monto cobrado, mostrado en el recibo
+     * @throws EntityNotFoundException si el usuario no existe
      */
     @Transactional
     public void notificarComprobantePago(Long usuarioId, Long multaId, BigDecimal montoPagado) {
@@ -150,6 +180,16 @@ public class NotificacionService {
         crearYEnviar(usuarioId, null, idDelTipo(TIPO_COMPROBANTE_PAGO), html, asunto);
     }
 
+    /**
+     * Avisa a un suscriptor que el libro que esperaba ya está disponible.
+     * A diferencia de las alertas automáticas, esta vía es manual y sí
+     * intenta el correo cuando el envío está permitido.
+     *
+     * @param usuarioId suscriptor a avisar, debe existir
+     * @param libroId libro disponible (informativo, puede ir nulo en el registro)
+     * @param titulo título del libro, incluido en el mensaje
+     * @throws EntityNotFoundException si el usuario no existe
+     */
     @Transactional
     public void notificarLibroDisponible(Long usuarioId, Long libroId, String titulo) {
         String mensaje = "El libro \"" + titulo + "\" esta disponible ahora — reservalo antes que otros.";
