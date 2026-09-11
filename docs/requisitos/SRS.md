@@ -2814,6 +2814,16 @@ a `matriz.csv`, (2) expandir la entrada correspondiente en este SRS, en
 ese orden — nunca solo uno de los dos, por el mismo riesgo de
 desincronización ya documentado en ADR-013 para Flyway/`schema.sql`.
 
+## 4.1 Glosario de estados de la matriz de trazabilidad
+
+Para evitar ambigüedad en la columna **estado** de la matriz de trazabilidad (`docs/trazabilidad/matriz.csv`), se definen los tres valores permitidos:
+
+- **implementado**: el código fuente que satisface el requisito existe en el repositorio y compila correctamente. No implica que exista una prueba automatizada que lo verifique en cada build; solo que la funcionalidad está codificada y desplegada.
+- **verificado**: además de estar implementado, existe al menos una prueba automatizada (unitaria, de integración o de contrato) que ejercita el requisito y pasa en el pipeline de CI. La columna `prueba_automatizada` de la matriz cita el nombre de dicha prueba.
+- **pendiente**: el requisito aún no se ha implementado, o su implementación no ha sido verificada por prueba automatizada.
+
+Esta distinción es relevante porque la mayoría de los requisitos nuevos de esta revisión quedaron en **implementado** (el código existe y funciona en entorno real) pero no en **verificado** (aún no tienen prueba automatizada dedicada en el pipeline de CI). La columna `observaciones` de la matriz documenta los casos donde esto aplica.
+
 ## 5. Requisitos de calidad de software (ISO/IEC 25010)
 
 `docs/arquitectura/ISO25010.md` ya mapea las 8 características de calidad
