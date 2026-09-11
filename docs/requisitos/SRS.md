@@ -2458,13 +2458,12 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   validado con datos mock) implementados; **sin Demonstration real
   todavía** (N=0), declarado explícitamente, no simulado como si
   existiera.
-- **Condición de cierre**: pasa a `verificado` cuando exista una corrida
-  real con N>0 participantes, consentimiento informado
-  (`docs/etica/consentimientos/plantilla.md`) versionado por participante,
-  y export crudo del instrumento trazable — ejecutada en la fase de
-  despliegue en producción (`docs/capitulos/10-trabajo-futuro.tex` §SUS,
-  `OBS-08` reabierta). Fecha: por definir por el equipo (no se fija una
-  fecha hasta que exista una ventana real de despliegue).
+- **Condición de cierre**: se cierra cuando se complete la recopilación de
+  N\u226515 respuestas SUS v\u00e1lidas en el despliegue de producción real,
+  con export crudo del instrumento versionado y trazable, y análisis
+  estad\u00edstico completado (media, IC95%, desviación estándar) —
+  conforme a lo planificado en `docs/capitulos/10-trabajo-futuro.tex`
+  §SUS y documentado en `docs/observaciones/OBSERVACIONES.md` (OBS-08).
 
 ##### REQ-NF-019 — Accesibilidad del frontend (Lighthouse)
 
