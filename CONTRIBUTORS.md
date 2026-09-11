@@ -10,15 +10,15 @@ que esa persona lo ejerció. Entrega Final.
 
 Hay múltiples identidades Git por persona (variaciones de nombre/email
 por distintas máquinas/configuraciones). Conteo sobre `git log --no-merges`
-(1303 commits totales al cierre de esta revisión), unificando alias por persona:
+(1311 commits totales al cierre de esta revisión), unificando alias por persona:
 
 | Persona | Alias Git considerados | Commits |
 |---|---|---|
-| Irvin Cajas Ibarra | `Theirvin1 <icajasi@msuteq.edu.ec>`, `TheIrvin <irvincajas72@gmail.com>`, `Irvin <icajasi@msuteq.edu.ec>`, `Irvin Cajas <icajasi@msuteq.edu.ec>` | **712** |
+| Irvin Cajas Ibarra | `Theirvin1 <icajasi@msuteq.edu.ec>`, `TheIrvin <irvincajas72@gmail.com>`, `Irvin <icajasi@msuteq.edu.ec>`, `Irvin Cajas <icajasi@msuteq.edu.ec>` | **720** |
 | Marlon Loor Medranda | `Marlon Loor <mloorm14@uteq.edu.ec>`, `mloorm14 <mloorm14@uteq.edu.ec>`, `Loor Marlon <mloorm14@uteq.edu.ec>`, `Marlon Taylor Loor Medranda <mloorm14@uteq.edu.ec>` | **293** |
 | Moises Panama Murillo | `MoisesPanama <mpanamam@uteq.edu.ec>`, `Moisés Panamá <mpanamam@uteq.edu.ec>`, `Moises Panama <mpanamam@uteq.edu.ec>` | **296** |
 
-712+293+296 = 1301, más 1 de `TeilorSuit` y 1 del bot = 1303. Para
+720+293+296 = 1309, más 1 de `TeilorSuit` y 1 del bot = 1311. Para
 re-sincronizar al cierre: `git rev-list --count --no-merges <tag>` y
 `git shortlog -sne --no-merges <tag>`, unificando los alias de arriba.
 
