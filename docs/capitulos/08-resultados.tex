@@ -581,7 +581,7 @@ Bloque & Estado & Completo/ Parcial/ Pendiente & Umbral cumplido \\
 \midrule
 1. Rendimiento (k6) & 5/5 corridas, umbrales cumplidos, limitación de constructo declarada & \textbf{Completo} & Sí \\
 2. Seguridad (OWASP) & 6/6 controles con resultado cerrado (A02 incluido, HSTS verificado en producción); ZAP ejecutado (0 High en producción, 2 High en local explicados) & \textbf{Completo} & Sí \\
-3. Cobertura (JaCoCo) & Medición vigente post-merge: criterio P1 de la rúbrica cumplido (\texttt{controller} 97,1\,\%, \texttt{security} 85,2\,\%, 2 de 3 capas $\geq$65\,\%); \texttt{service} (51,3\,\%) y la cifra global (56,3\,\%, por debajo del objetivo interno de 70\,\%) quedan como brecha conocida & \textbf{Completo} & Sí \\
+3. Cobertura (JaCoCo) & Medición vigente de cierre: 65,57\,\% de líneas (1314/2004) y 39,97\,\% de ramas (231/578), respaldada por el XML versionado; queda por debajo del objetivo interno de 70\,\% y se declara como brecha conocida & \textbf{Parcial} & No \\
 4. Calidad web (Lighthouse) & 12 corridas reales de producción (2 rondas $\times$ 2 perfiles $\times$ 3), umbral cumplido en las 6 corridas post-fix; defecto real de CLS encontrado y corregido, verificado antes/después en producción & \textbf{Completo} & Sí \\
 5. Usabilidad (SUS) & $N=0$ de $N\geq15$ exigidos; protocolo y pipeline listos, corrida diferida a despliegue & \textbf{Pendiente} & No \\
 \bottomrule
