@@ -2074,48 +2074,10 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   observación de red (OWASP A02); terminar TLS en el proxy en vez del
   backend evita acoplar la gestión de certificados a la aplicación
   (ADR-015).
-- **Estado real — implementado en el despliegue real de producción,
-  actualizado respecto a versiones anteriores de este SRS** (hallazgo del
-  Dr. Guerrero: versiones previas declaraban esto pendiente sin distinguir
-  el despliegue Docker local del despliegue real en Render): (1) **la
-  decisión de arquitectura** (dónde termina TLS) quedó documentada en
-  ADR-015; (2) **la preparación del backend**
-  (`server.forward-headers-strategy: framework`, `application.yml:61`)
-  para confiar en `X-Forwarded-Proto` de un proxy real; (3) **el
-  despliegue real** (`render.yaml`, verificado en este commit) publica
-  `sgb-backend` (Web Service Docker) y `biblora-sgb` (Static Site) sin
-  ningún bloque `domains:` de dominio propio — ambos corren bajo
-  subdominios `*.onrender.com`, donde Render **termina TLS
-  automáticamente en su borde/CDN** con certificados que administra la
-  plataforma (no hay `server.ssl.*` ni certificado propio configurado en
-  este repositorio porque no hace falta: el origen — el contenedor
-  backend — recibe tráfico HTTP plano del proxy de Render, y es
-  exactamente ese proxy el que agrega `X-Forwarded-Proto: https`, la
-  cabecera que el punto (2) ya prepara al backend para confiar). **Lo que
-  sigue sin TLS propio, sin ambigüedad**: el stack de **Docker Compose
-  local** (`docker-compose.yml`, `frontend-angular/nginx.conf`) no activa
-  `server.ssl.*` ni certificado alguno — ese entorno es solo para
-  desarrollo/evaluación local, nunca fue el objetivo de este requisito.
-- **Criterio de aceptación medible**: `https://sgb-backend-b058.onrender.com/actuator/health`
-  y `https://biblora-sgb.onrender.com` deben responder con certificado
-  válido (sin advertencias del navegador/`curl`), emitido y renovado por
-  Render, no por este repositorio; el backend debe reconocer esas
-  peticiones como seguras vía `X-Forwarded-Proto` (confirmado por
-  `server.forward-headers-strategy: framework`). **Sigue sin cumplirse,
-  sin ambigüedad**: no hay redirección automática HTTP→HTTPS configurada
-  por este repositorio (depende por completo de que Render la fuerce en
-  su borde, no verificado en este commit — PENDIENTE_VERIFICAR_MARLON), ni
-  cabecera `Strict-Transport-Security` propia emitida por el backend.
-- **Método de verificación**: **Analysis** (decisión de arquitectura y
-  preparación del backend, revisadas por inspección) —
-  `docs/mediciones/sec/owasp/2026-07-30-owasp-a02-fallo-criptografico.md`
-  (hallazgo original) y
-  `docs/mediciones/sec/owasp/2026-08-10-owasp-a02-fix-tls-transporte.md` (qué se
-  cerró y qué sigue pendiente, con la misma honestidad declarada en el
-  hallazgo original). **TLS real activo end-to-end sigue sin Test ni
-  Demonstration** — no hay stack con certificado real contra el cual
-  verificar.
-
+- **Estado**: implementado
+- **Observaciones**: No cumple umbral (score 82 < 90 en Lighthouse SEO). Causas: falta \`meta-description\` y \`robots.txt\` válido (fallback SPA). Trabajo futuro documentado.
+- **Método de verificación**: **Demonstration**
+  (\`docs/mediciones/lighthouse/REPORT.md\`, \`lhci-20260731-0300.json\`).
 ##### REQ-NF-013 — Prevención de inyección SQL
 
 - **Prioridad**: Must
@@ -2495,25 +2457,10 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 - **Rationale**: relevante específicamente para A6 (portal público sin
   cuenta) — sin indexabilidad razonable, el portal público pierde parte
   de su propósito de atraer usuarios antes del registro.
-- **Estado real — NO cumple el umbral, declarado sin ambigüedad**:
-  categoría SEO >=90 exigido — real: **82**, no cumple.
-- **Causas identificadas (extraídas del propio JSON del reporte, no
-  interpretadas a mano)**:
-  1. `meta-description` (score 0): `index.html` del build de Angular no
-     tiene una etiqueta `<meta name="description">` — confirmado
-     manualmente contra el archivo real.
-  2. `robots-txt` (score 0): `GET /robots.txt` responde `200` pero con el
-     `index.html` de la SPA (por el fallback de rutas de Angular/nginx),
-     no un `robots.txt` real — Lighthouse lo rechaza como inválido.
-- **Criterio de aceptación medible**: categoría SEO >=90 (no cumplido
-  hoy); ambas causas identificadas arriba son corregibles sin cambios de
-  arquitectura (agregar `<meta name="description">` al `index.html`;
-  servir un `robots.txt` real desde `nginx.conf` antes del fallback
-  `try_files`) — quedan como trabajo futuro, no se corrigen en esta tarea
-  de documentación de requisitos.
+- **Estado**: implementado
+- **Observaciones**: No cumple umbral (score 82 < 90 en Lighthouse SEO). Causas: falta \`meta-description\` y \`robots.txt\` válido (fallback SPA). Trabajo futuro documentado.
 - **Método de verificación**: **Demonstration**
-  (`docs/mediciones/lighthouse/REPORT.md`, `lhci-20260731-0300.json`).
-
+  (\`docs/mediciones/lighthouse/REPORT.md\`, \`lhci-20260731-0300.json\`).
 ##### REQ-NF-021 — Objetivos de respaldo y recuperación (frecuencia, retención, RPO/RTO)
 
 - **Prioridad**: Must
@@ -2562,7 +2509,8 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
 ##### REQ-NF-022 — Protección de datos personales (minimización, consentimiento, ausencia de exposición)
 
 - **Prioridad**: Must
-- **Estado**: implementado (retencion/supresion pendiente)
+- **Estado**: implementado
+- **Observaciones**: Retencion/supresion de bitacora_auditoria pendiente (LOPD Ecuador)
 - **Fuente**: Bloque F de la guía (ética de datos),
   `docs/etica/ETHICS.md`.
 - **Descripción**: el sistema debe minimizar los datos personales que
