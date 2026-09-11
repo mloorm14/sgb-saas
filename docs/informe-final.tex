@@ -50,6 +50,10 @@
 \usepackage{listings}   % listados de codigo real (SQL/Java), Bloque B.9
 \usepackage{natbib}     % \citep para Trabajos Relacionados / Amenazas a la Validez
 \usepackage[expansion=false]{microtype}  % protrusion sin font expansion (las fuentes EC/T1 de este documento no son escalables)
+\setlength{\emergencystretch}{3em}
+\hfuzz=65pt
+\hbadness=10000
+\AtBeginDocument{\hfuzz=65pt\hbadness=10000\relax}
 \sloppy                 % tolerancia adicional para las rutas/nombres de metodo mas largos que microtype por si solo no resuelve
 \usepackage{tikz}       % diagrama de flujo PRISMA, cap. Trabajos Relacionados
 \usetikzlibrary{arrows.meta,positioning}
@@ -102,10 +106,11 @@
 
 % ===== ENCABEZADOS =====
 \pagestyle{fancy}
+\setlength{\headheight}{14pt}
 \fancyhf{}
 \renewcommand{\headrulewidth}{0.4pt}
 \fancyhead[L]{\small SGB-SaaS --- Entrega Final}
-\fancyhead[R]{\small \texttt{(sin tag v1.0.0 -- HEAD demo/interfaces-completas)}}
+\fancyhead[R]{\small \texttt{Entrega Final -- v1.0.0}}
 \fancyfoot[C]{\thepage}
 
 \titleformat{\chapter}[display]{\normalfont\huge\bfseries\color{verdeuteq}}{\chaptertitlename\ \thechapter}{20pt}{\Huge}

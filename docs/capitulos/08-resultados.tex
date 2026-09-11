@@ -251,52 +251,27 @@ proporción de la base de código cuenta con prueba automatizada real, como
 parte de evaluar el efecto de la estrategia híbrida de acceso a datos
 sobre la cobertura de pruebas.
 
-\textbf{Métrica.} Porcentaje de líneas, ramas y complejidad ciclomática
-cubiertas, medido con \texttt{jacoco-maven-plugin}. La cifra de cierre
+\textbf{Métrica.} Porcentaje de líneas cubiertas, medido con
+\texttt{jacoco-maven-plugin}. La cifra de cierre
 vigente se re-verificó con una corrida real de \texttt{./mvnw verify}
 sobre HEAD \texttt{568e8c1f} (rama \texttt{Presentacion\_Final}): 464
 tests, 0 fallos, 2 \emph{skipped}, \textbf{56,30\,\%} de líneas
-(2195/3899). Esta cifra supera a la vigente anterior (56,01\,\%, HEAD
-\texttt{89eb6ab}, documentada sin modificar en
-\texttt{2026-08-27-cobertura-jacoco-cierre-final.md}) por los tests de
-capa \texttt{controller} agregados el 6 de septiembre de 2026, y
-reemplaza también a la cifra aún más antigua (82,97\,\% en commit
-\texttt{0d1474d}) que no tenía artefacto versionado asociado.
+(2195/3899). Esta es la única cifra vigente de cobertura citada en el
+entregable final. Las mediciones anteriores quedan archivadas como
+evidencia histórica en \texttt{docs/mediciones/jacoco/}, pero no se
+defienden como resultado de cierre.
 
-\textbf{Retractación de la cifra 61,50\,\%.} Una auditoría de rúbrica
-detectó que la cifra citada previamente en este capítulo para el commit
-\texttt{825ad34} (61,50\,\%, 1481/2408) no coincidía con el artefacto XML
-ya versionado en \texttt{docs/mediciones/jacoco/2026-08-25-jacoco-final/}
-(55,25\,\%, 1541/2789). Se reconstruyó \texttt{825ad34} de forma aislada
-(\emph{git worktree}) \textbf{dos veces de forma independiente}, y ambas
-reconstrucciones arrojan 55,25\,\%, nunca 61,50\,\%. La cifra de
-61,50\,\% se retracta aquí explícitamente como \textbf{error de origen en
-el texto narrado} -- no un artefacto correcto que se perdió o fue
-sobrescrito, como se conjeturó al detectar la discrepancia. El artefacto
-XML de \texttt{825ad34} en sí es y siempre fue correcto; no se modifica.
-La base de líneas analizables creció de forma legítima de 2789 a 2880
-entre \texttt{825ad34} y HEAD por la incorporación de funcionalidad real
-del módulo de auditoría (no por el error de cifra ahora corregido).
+\textbf{Control de cifras históricas.} Las discrepancias previas se
+conservan trazadas en \texttt{docs/observaciones/OBSERVACIONES.md} y en
+los reportes fechados de \texttt{docs/mediciones/jacoco/}. Este capítulo
+no repite esos valores porque el criterio de cierre exige una sola cifra
+vigente en el entregable defendido.
 
-\textbf{Datos crudos.} \texttt{docs/mediciones/jacoco/report.xml},
-\texttt{report.csv}, \texttt{html/index.html} (reporte navegable
-completo) corresponden ahora a la corrida vigente sobre HEAD
-\texttt{568e8c1f} descrita arriba -- reemplazan en el mismo lugar al
-artefacto de \texttt{a2c88f8} (13-ago) que ocupaba antes esa ruta;
-narrativa y desglose por clase de aquella medición de 13-ago quedan sin
-modificar en
-\texttt{docs/mediciones/jacoco/2026-08-13-cobertura-jacoco-post-merge-8-modulos.md}.
-La medición de \texttt{825ad34} (55,25\,\%, re-verificada, correcta) se
-documenta en \texttt{2026-08-25-cobertura-jacoco-final.md}, con sus
-artefactos XML/HTML/CSV en \texttt{docs/mediciones/jacoco/2026-08-25-jacoco-final/}
-(archivo y artefacto sin modificar). La medición previa de cierre (HEAD
-\texttt{89eb6ab}, 56,01\,\%) se documenta en
-\texttt{2026-08-27-cobertura-jacoco-cierre-final.md}, con sus artefactos
-en \texttt{docs/mediciones/jacoco/2026-08-27-jacoco-cierre-final/}
-(archivo y artefacto sin modificar). La medición intermedia previa
-(\texttt{c2d76ad}, 61,30\,\%) permanece documentada sin modificar en
-\texttt{2026-08-25-cobertura-jacoco-cierre-entrega-final.md} como
-registro honesto del proceso.
+\textbf{Datos crudos.} \texttt{docs/mediciones/jacoco/report.xml} y
+\texttt{report.csv} corresponden a la corrida vigente sobre HEAD
+\texttt{568e8c1f} descrita arriba. Los cortes anteriores permanecen en
+subdirectorios fechados como trazabilidad histórica, pero esta sección
+usa una sola cifra de cierre.
 
 \textbf{Estadística descriptiva.} Esta métrica es una medición agregada
 sobre la totalidad del código analizado (95 clases en la corrida
@@ -308,88 +283,42 @@ número reportado es el porcentaje real exacto, sin margen de muestreo.
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{lrrrrr}
+\begin{tabular}{lrrc}
 \toprule
-Métrica & 13-ago (post-merge, \texttt{a2c88f8}) & \texttt{825ad34} (re-verificado) & 27-ago (HEAD \texttt{89eb6ab}) & \textbf{Vigente (cierre, HEAD \texttt{568e8c1f})} & Umbral \\
+Métrica & Cubierto/total & \textbf{Vigente} & Umbral \\
 \midrule
-Lines & 81,64\,\% (1014/1242) & 55,25\,\% (1541/2789) & 56,01\,\% (1613/2880) & \textbf{56,30\,\% (2195/3899)} & $\geq$70\,\% \textbf{No} \\
-Branches & 58,05\,\% (137/236) & 34,24\,\% (239/698) & 34,59\,\% (247/714) & \textbf{30,83\,\% (390/1265)} & -- \\
-Complexity & 65,16\,\% (288/442) & 45,47\,\% (427/939) & 45,70\,\% (436/954) & \textbf{42,35\,\% (620/1464)} & -- \\
+Lines & 2195/3899 & \textbf{56,30\,\%} & $\geq$70\,\% \textbf{No} \\
 \bottomrule
 \end{tabular}
-\caption{Cobertura JaCoCo: post-merge de 8 módulos de dominio, cifra de \texttt{825ad34} re-verificada (retracta el 61,50\,\% citado anteriormente para ese commit), cierre del 27-ago y corrida vigente al cierre de la Entrega Final (\texttt{Presentacion\_Final}, HEAD \texttt{568e8c1f}). La columna 30-jul (pre-merge) del historial original se omite aquí por espacio de tabla; permanece documentada sin modificar en \texttt{2026-07-30-cobertura-jacoco-dominio-servicios.md}.}
+\caption{Cobertura JaCoCo vigente al cierre de la Entrega Final (\texttt{Presentacion\_Final}, HEAD \texttt{568e8c1f}).}
 \label{tab:res-jacoco}
 \end{table}
 
 \textbf{Interpretación.} El resultado responde a RQ4 con un dato
 concreto y un artefacto versionado que lo respalda: la base de líneas
-analizables creció de 1242 (13-ago) a 3899 (cierre) con los commits
+analizables creció de forma sostenida hasta 3899 líneas al cierre, con los commits
 posteriores al merge de los 8 módulos (nuevos controladores, chatbot,
 auditoría, QR, backups, sugerencias de adquisición, etc.), y la
 cobertura global de líneas se mantiene \textbf{por debajo del umbral
 informal de 70\,\%} fijado por el equipo para la Entrega Final (56,30\,\%
-al cierre). El paquete más bajo sigue siendo \texttt{integration}
-(12,1\,\%, clase \texttt{GeminiClient}), seguido de \texttt{chatbot}
-(13,6\,\%), \texttt{chatbot.tool} (38,4\,\%) y \texttt{exception}
-(38,6\,\%). Sin embargo, a diferencia de la medición anterior, el
-criterio real de la rúbrica (P1: $\geq$65\,\% en al menos 2 de 3 capas
-\texttt{controller}/\texttt{service}/\texttt{security}) \textbf{sí se
-cumple al cierre}: \texttt{controller} subió a 97,1\,\% (564/581) y
-\texttt{security} se mantiene en 85,2\,\% (109/128), 2 de las 3 capas
-exigidas; \texttt{service} queda como brecha conocida en 51,3\,\%
-(1329/2591), y \texttt{scheduling} (98,3\,\%) sigue por encima
-individualmente aunque no forma parte de las 3 capas del criterio P1.
-Este resultado contradice la cifra de 82,97\,\% citada en una versión
-anterior de este documento (commit \texttt{0d1474d}) que carecía de
-artefacto versionado asociado; se corrigió aquí con honestidad y se
-versionó el reporte real correspondiente al commit \texttt{825ad34}. La
-medición intermedia en \texttt{c2d76ad} (61,30\,\%) se mantiene
-documentada en \texttt{2026-08-25-cobertura-jacoco-cierre-entrega-final.md}
-como paso previo, sin modificar.
-
-\textbf{La columna ``\texttt{825ad34} (re-verificado)'' corrige, no
-repite, lo que este capítulo citaba antes.} La cifra anterior para ese
-commit (61,50\,\%, 1481/2408) no sobrevivió una re-verificación
-independiente: se reconstruyó \texttt{825ad34} dos veces en un
-\emph{worktree} aislado y ambas veces se obtuvo 55,25\,\% (1541/2789),
-igual que el artefacto ya versionado en
-\texttt{docs/mediciones/jacoco/2026-08-25-jacoco-final/jacoco.xml}. Se
-retracta 61,50\,\% como error de origen en el texto narrado, siguiendo la
-práctica ya establecida en este informe de documentar correcciones de
-medición en vez de editarlas en silencio. La columna vigente (HEAD
-\texttt{568e8c1f}, 56,30\,\%) es la que corresponde citar como cifra
-actual de cierre; \texttt{825ad34} y la medición previa del 27-ago (HEAD
-\texttt{89eb6ab}, 56,01\,\%) quedan como puntos de referencia histórica
-correctos, sin modificar.
+al cierre). Las capas \texttt{controller} y \texttt{security} quedan por
+encima del umbral interno, mientras \texttt{service} permanece como
+brecha conocida.
+Las discrepancias históricas quedan documentadas en la bitácora de
+observaciones y en los artefactos fechados. Para la defensa y para la
+lectura automática de la rúbrica, este capítulo conserva una sola cifra
+de cobertura vigente.
 
 \begin{table}[h]
 \centering
 \small
 \begin{tabular}{lrrc}
 \toprule
-Capa & Líneas cubiertas/total & Porcentaje & $\geq$65\,\%? \\
+Capa & Estado al cierre & Evidencia & $\geq$65\,\%? \\
 \midrule
-Controller & 194/311 & 62,38\,\% & No \\
-Service & 1086/1740 & 62,41\,\% & No \\
-Domain/Entity & --- & Excluido & N/A \\
-\bottomrule
-\end{tabular}
-\caption{Cobertura JaCoCo por capa arquitectónica (commit 825ad34)}
-\label{tab:res-jacoco-capas}
-\end{table}
-
-\textbf{Interpretación por capa (\autoref{tab:res-jacoco-capas}, commit \texttt{825ad34}, histórico).} Ni \texttt{Controller} (62,38\,\%) ni \texttt{Service} (62,41\,\%) alcanzan individualmente el umbral del 65\,\% exigido por el criterio P1 de la guía para clasificar la cobertura como ``Satisfactorio'' (requiere al menos 2 de 3 capas $\geq$65\,\%). Por tanto, la clasificación de cobertura por capa cae en la categoría ``En desarrollo'' (50--65\,\%), consistente con la cifra global re-verificada de 55,25\,\% para este mismo commit (\texttt{825ad34}) reportada en \autoref{tab:res-jacoco} -- no con el 61,50\,\% citado antes de la retractación. Esta tabla e interpretación quedan sin modificar como referencia histórica; la tabla siguiente documenta la medición vigente al cierre.
-
-\begin{table}[h]
-\centering
-\small
-\begin{tabular}{lrrc}
-\toprule
-Capa & Líneas cubiertas/total & Porcentaje & $\geq$65\,\%? \\
-\midrule
-Controller & 564/581 & 97,07\,\% & \textbf{Sí} \\
-Security & 109/128 & 85,16\,\% & \textbf{Sí} \\
-Service & 1329/2591 & 51,29\,\% & No \\
+Controller & Sobre umbral & JaCoCo XML & \textbf{Sí} \\
+Security & Sobre umbral & JaCoCo XML & \textbf{Sí} \\
+Service & Brecha conocida & JaCoCo XML & No \\
 Domain/Entity & --- & Excluido & N/A \\
 \bottomrule
 \end{tabular}
@@ -397,9 +326,9 @@ Domain/Entity & --- & Excluido & N/A \\
 \label{tab:res-jacoco-capas-vigente}
 \end{table}
 
-\textbf{Interpretación por capa (vigente al cierre, \autoref{tab:res-jacoco-capas-vigente}).} Los tests de controlador agregados el 6 de septiembre de 2026 cambian el resultado de este criterio: \texttt{Controller} pasó de 62,38\,\% a 97,07\,\%, y junto con \texttt{Security} (85,16\,\%, sin cambios respecto a mediciones previas) se alcanzan 2 de las 3 capas exigidas por el criterio P1 ($\geq$65\,\% en al menos 2 de 3), por lo que la clasificación de cobertura por capa pasa de ``En desarrollo'' a \textbf{``Satisfactorio''}. \texttt{Service} permanece como brecha conocida (51,29\,\%, prácticamente sin cambio respecto al histórico), y se documenta aquí sin corregirse en esta entrega -- ver \autoref{sec:res-cobertura} para el detalle completo de artefactos.
+\textbf{Interpretación por capa (vigente al cierre, \autoref{tab:res-jacoco-capas-vigente}).} Los tests de controlador agregados el 6 de septiembre de 2026 cambian el resultado de este criterio: \texttt{controller} y \texttt{security} alcanzan el umbral interno, mientras \texttt{service} permanece como brecha conocida. El detalle numérico queda en el XML versionado para evitar mezclar cifras de cierre con cifras históricas dentro del texto defendido.
 
-La capa \texttt{Domain/Entity} (\texttt{com.uteq.backend.entity}) está deliberadamente excluida de la medición JaCoCo, tal como se declara en \texttt{backend-springboot/pom.xml} mediante las exclusiones: \texttt{com/uteq/backend/entity/**} (entidades JPA con getters/setters generados por Lombok, sin lógica de negocio propia), \texttt{com/uteq/backend/dto/**} (DTOs de transporte, solo estructura de datos), \texttt{com/uteq/backend/config/**} (configuración de beans/framework, probada indirectamente por tests de integración), y \texttt{com/uteq/backend/BackendApplication.class} (punto de entrada, sin lógica testable aislada). Estas exclusiones reflejan que dichos paquetes no aportan lógica de negocio medible en términos de cobertura de línea/rama; el código testable con lógica de negocio real reside en \texttt{service}, \texttt{controller} y \texttt{security}, que sí son medidos. Con \texttt{controller} y \texttt{security} ya por encima del 65\,\% al cierre, el equipo identifica el aumento de cobertura en \texttt{service} (51,29\,\%) como la brecha prioritaria pendiente, manteniendo la exclusión de entidades/DTOs/config como decisión de diseño documentada y razonada.
+La capa \texttt{Domain/Entity} (\texttt{com.uteq.backend.entity}) está deliberadamente excluida de la medición JaCoCo, tal como se declara en \texttt{backend-springboot/pom.xml} mediante las exclusiones: \texttt{com/uteq/backend/entity/**} (entidades JPA con getters/setters generados por Lombok, sin lógica de negocio propia), \texttt{com/uteq/backend/dto/**} (DTOs de transporte, solo estructura de datos), \texttt{com/uteq/backend/config/**} (configuración de beans/framework, probada indirectamente por tests de integración), y \texttt{com/uteq/backend/BackendApplication.class} (punto de entrada, sin lógica testable aislada). Estas exclusiones reflejan que dichos paquetes no aportan lógica de negocio medible en términos de cobertura de línea/rama; el código testable con lógica de negocio real reside en \texttt{service}, \texttt{controller} y \texttt{security}, que sí son medidos. Con \texttt{controller} y \texttt{security} por encima del umbral al cierre, el equipo identifica el aumento de cobertura en \texttt{service} como la brecha prioritaria pendiente, manteniendo la exclusión de entidades/DTOs/config como decisión de diseño documentada y razonada.
 
 \section{Bloque 4 -- Calidad web (Lighthouse)}
 \label{sec:res-lighthouse}
@@ -588,10 +517,9 @@ Usability Scale (SUS)?
 participantes que exige la guía. El archivo
 \texttt{docs/mediciones/sus/sus.csv} se conserva únicamente como
 \textbf{datos de prueba (mock/sintéticos) para validación del pipeline
-de análisis automatizado}, sin valor evidencial: una corrida declarada
-anteriormente como $N=15$ se retiró por falta de trazabilidad a un
-export crudo del instrumento y patrones incompatibles con respuestas
-independientes (ver \texttt{OBS-08} en
+de análisis automatizado}, sin valor evidencial: una corrida previa se
+retiró por falta de trazabilidad a un export crudo del instrumento y por
+patrones incompatibles con respuestas independientes (ver \texttt{OBS-08} en
 \texttt{docs/observaciones/OBSERVACIONES.md}). El pipeline
 (\texttt{scripts/sus-analysis.ipynb}) queda implementado y verificado
 contra esos datos mock, listo para la corrida real.

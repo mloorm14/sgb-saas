@@ -1,4 +1,4 @@
-.PHONY: up down test test-backend test-frontend bench audit docs clean all check-latexmk
+.PHONY: up down test test-backend test-frontend bench audit docs clean all check-latex-tools pdfs
 
 # make up: regenera db/init/01-consolidado.sql (schema + procs + seed, ver
 # scripts/build-init-sql.sh) y levanta todos los servicios (Postgres, Redis,
@@ -185,44 +185,52 @@ docs:
 	fi
 	@echo "make docs completado."
 
-# check-latexmk: verificacion temprana de que latexmk existe en este
+# check-latex-tools: verificacion temprana de que las herramientas LaTeX existen en este
 # entorno, antes de gastar tiempo en 'up'/'test'/'bench'/'audit'/'docs'
 # (que pueden tardar varios minutos) solo para fallar al final compilando
 # el PDF. Falla con un mensaje claro en vez del error generico "command
-# not found" que daria Make si se llamara a latexmk directamente sin este
-# chequeo. No instala nada -- instalar una distribucion TeX (MiKTeX, TeX
-# Live, etc.) es una decision del entorno de quien corre esto, fuera del
-# alcance de este Makefile.
-check-latexmk:
-	@command -v latexmk >/dev/null 2>&1 || { \
-		echo "ERROR: latexmk no esta instalado en este entorno."; \
-		echo "'make all' necesita compilar el informe final en PDF (requisito D.1)."; \
-		echo "Instalarlo: Windows -> MiKTeX (winget install MiKTeX.MiKTeX);"; \
-		echo "Debian/Ubuntu -> apt install latexmk; macOS -> brew install latexmk."; \
+# not found" que daria Make si se llamaran directamente sin este chequeo.
+# No instala nada -- instalar una distribucion TeX/Pandoc es una decision
+# del entorno de quien corre esto, fuera del alcance de este Makefile.
+check-latex-tools:
+	@command -v xelatex >/dev/null 2>&1 || { \
+		echo "ERROR: xelatex no esta instalado o no esta en PATH."; \
+		echo "Instalarlo: Windows -> MiKTeX; Debian/Ubuntu -> texlive-xetex; macOS -> MacTeX."; \
+		exit 1; \
+	}
+	@command -v bibtex >/dev/null 2>&1 || { \
+		echo "ERROR: bibtex no esta instalado o no esta en PATH."; \
+		exit 1; \
+	}
+	@command -v pandoc >/dev/null 2>&1 || { \
+		echo "ERROR: pandoc no esta instalado o no esta en PATH."; \
+		echo "Instalarlo: Windows -> winget install JohnMacFarlane.Pandoc; Debian/Ubuntu -> apt install pandoc; macOS -> brew install pandoc."; \
 		exit 1; \
 	}
 
+pdfs: check-latex-tools
+	cd docs && xelatex -interaction=nonstopmode -halt-on-error informe-final.tex && bibtex informe-final && xelatex -interaction=nonstopmode -halt-on-error informe-final.tex && xelatex -interaction=nonstopmode -halt-on-error informe-final.tex
+	cd docs/requisitos && pandoc SRS.md --pdf-engine=xelatex -H pandoc-header.tex -o SRS.pdf
+
 # make all: pipeline reproducible de punta a punta (criterio R1 / D.1) --
-# falla temprano si falta latexmk (check-latexmk), levanta el stack en
+# falla temprano si faltan xelatex/bibtex/pandoc (check-latex-tools), levanta el stack en
 # limpio (up), corre la suite de tests (test), la prueba de carga real
 # (bench), las auditorias (audit), regenera la evidencia documental
-# (docs) y compila el PDF final del informe LaTeX. Ningun paso se declara
+# (docs) y compila los PDF finales. Ningun paso se declara
 # '|| true': si cualquiera falla, make all falla (un verde falso es peor
 # que un rojo honesto). Si cualquiera de los prerequisitos falla, Make se
 # detiene ahi mismo (comportamiento estandar de dependencias de Make) y
 # 'all' nunca llega a intentar compilar el PDF.
 #
-# Compilacion con latexmk (no pdflatex+bibtex a mano en 3 pasadas): latexmk
-# resuelve solo cuantas pasadas hacen falta (incluyendo bibtex/biber), en
-# vez de asumir que 3 siempre alcanza. Probado real contra
-# docs/informe-final.tex antes de adoptarlo (mismo PDF de 92 paginas que
-# ya generaba el proceso manual).
+# Compilacion reproducible sin latexmk: MiKTeX requiere Perl para ejecutar
+# latexmk en Windows; por eso se dejan explicitas las pasadas verificadas
+# con xelatex + bibtex + xelatex + xelatex.
 #
 # El informe LaTeX: busca informe-final.tex (nombre definitivo del
 # cierre); si no existe, usa informe-entrega-3.tex con un aviso de rename
 # pendiente. Si no existe NINGUNO de los dos, falla con mensaje
-# explicativo en vez de un error criptico de latexmk.
-all: check-latexmk up test bench audit docs
+# explicativo.
+all: check-latex-tools up test bench audit docs
 	@echo "Compilando PDF final..."
 	@if [ -f docs/informe-final.tex ]; then \
 		TEXFILE=docs/informe-final.tex; \
@@ -236,8 +244,10 @@ all: check-latexmk up test bench audit docs
 		echo "       ver equipo de documentacion (el PDF final es requisito de la entrega)." >&2; \
 		exit 1; \
 	fi; \
-	cd docs && latexmk -pdf -interaction=nonstopmode -halt-on-error $$(basename $$TEXFILE)
-	@echo "make all: completo -- stack levantado, tests y benchmark corridos, auditorias re-verificadas, evidencia documental regenerada, PDF final compilado."
+	cd docs && xelatex -interaction=nonstopmode -halt-on-error $$(basename $$TEXFILE) && bibtex $$(basename $$TEXFILE .tex) && xelatex -interaction=nonstopmode -halt-on-error $$(basename $$TEXFILE) && xelatex -interaction=nonstopmode -halt-on-error $$(basename $$TEXFILE)
+	@echo "Compilando espejo SRS..."
+	cd docs/requisitos && pandoc SRS.md --pdf-engine=xelatex -H pandoc-header.tex -o SRS.pdf
+	@echo "make all: completo -- stack levantado, tests y benchmark corridos, auditorias re-verificadas, evidencia documental regenerada, PDF final y SRS compilados."
 
 # make clean: baja los contenedores incluyendo volumenes (borra datos de
 # Postgres) y limpia artefactos de build locales (target/, dist/, cache

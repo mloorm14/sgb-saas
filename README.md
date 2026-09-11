@@ -284,10 +284,13 @@ Targets disponibles: `up` `down` `test` `bench` `audit` `docs` `all` `clean`.
 
 ### Compilación del informe (cómo regenerar el PDF)
 
-- **Archivo principal**: `docs/informe-final.tex` (si no existiera, el `Makefile` usa `docs/informe-entrega-3.tex` con aviso; si no existe ninguno, falla con mensaje explicativo — ver `Makefile:225-239`).
-- **Compilador**: `latexmk -pdf -interaction=nonstopmode -halt-on-error` (resuelve solo las pasadas necesarias, incluyendo bibtex; no usar `pdflatex`+`bibtex` a mano).
-- **Orden exacto** (`make all`): `check-latexmk` → `up` → `test` → `bench` → `audit` → `docs` → compilación del PDF. Si cualquier paso falla, `make` se detiene ahí y el PDF no se intenta compilar.
-- **Dependencias**: `latexmk` (Windows: MiKTeX, `winget install MiKTeX.MiKTeX`; Debian/Ubuntu: `apt install latexmk`), Docker + docker compose, JDK 21, Node + Angular CLI, Python 3 y k6 (versiones reales capturadas por `make docs` en `docs/entorno/versions.txt`), y Chrome instalado (para `make test-frontend` con ChromeHeadless).
+- **Archivo principal**: `docs/informe-final.tex` (documento maestro LaTeX con `\input{capitulos/...}`); el espejo de requisitos se genera desde `docs/requisitos/SRS.md`.
+- **Compilador**: `xelatex` + `bibtex` para `docs/informe-final.pdf`; `pandoc --pdf-engine=xelatex` para `docs/requisitos/SRS.pdf`.
+- **Comandos exactos para regenerar los PDF**:
+  - `cd docs && xelatex -interaction=nonstopmode -halt-on-error informe-final.tex && bibtex informe-final && xelatex -interaction=nonstopmode -halt-on-error informe-final.tex && xelatex -interaction=nonstopmode -halt-on-error informe-final.tex`
+  - `cd docs/requisitos && pandoc SRS.md --pdf-engine=xelatex -H pandoc-header.tex -o SRS.pdf`
+- **Orden exacto** (`make all`): `check-latex-tools` → `up` → `test` → `bench` → `audit` → `docs` → compilación de `docs/informe-final.pdf` y `docs/requisitos/SRS.pdf`. Si cualquier paso falla, `make` se detiene ahí y el PDF no se intenta compilar.
+- **Dependencias**: MiKTeX/XeLaTeX + BibTeX (Windows: `winget install MiKTeX.MiKTeX`; Debian/Ubuntu: `apt install texlive-xetex`; macOS: MacTeX), Pandoc (Windows: `winget install JohnMacFarlane.Pandoc`; Debian/Ubuntu: `apt install pandoc`; macOS: `brew install pandoc`), Docker + docker compose, JDK 21, Node + Angular CLI, Python 3 y k6 (versiones reales capturadas por `make docs` en `docs/entorno/versions.txt`), y Chrome instalado (para `make test-frontend` con ChromeHeadless).
 
 - **`make docs`** regenera la evidencia documental que cambia con cada
   corrida: `docs/entorno/versions.txt` (versiones **reales** del entorno —
@@ -296,9 +299,9 @@ Targets disponibles: `up` `down` `test` `bench` `audit` `docs` `all` `clean`.
   (Wilcoxon pareado + Cliff's delta, `scripts/perf-analysis.py`) y verifica
   (solo advierte, no regenera) la sincronía del render C4 contra
   `docs/arquitectura/workspace.dsl`.
-- **Notebooks con outputs archivados**: `docs/mediciones/perf-analysis.ipynb`
+- **Notebooks con outputs archivados**: `scripts/perf-analysis.ipynb`
   (análisis de rendimiento, invoca `scripts/perf-analysis.py` — una sola
-  fuente de verdad, no duplica lógica) y `docs/mediciones/sus-analysis.ipynb`
+  fuente de verdad, no duplica lógica) y `scripts/sus-analysis.ipynb`
   (SUS, en estado *pendiente de datos* — no se fabrican resultados).
 - **Semillas fijas (D.2)**: toda aleatoriedad del pipeline usa semilla
   explícita, no el default no determinista del lenguaje — el PRNG
@@ -307,9 +310,8 @@ Targets disponibles: `up` `down` `test` `bench` `audit` `docs` `all` `clean`.
   documentados en su propio código. El resto del pipeline (agregación
   estadística, SUS pendiente) no usa muestreo aleatorio: *no aplica*,
   confirmado. Ver también la convención en `docs/mediciones/README.md`.
-- **Requisitos adicionales** para `make all`: `latexmk` (compilar el PDF —
-  Windows: MiKTeX, `winget install MiKTeX.MiKTeX`; Debian/Ubuntu:
-  `apt install latexmk`) y Chrome instalado (para `make test-frontend` con
+- **Requisitos adicionales** para `make all`: XeLaTeX, BibTeX y Pandoc para
+  compilar los PDF; Chrome instalado (para `make test-frontend` con
   ChromeHeadless). `make test-frontend` instala `node_modules` automáticamente
   si faltan (`npm ci`, mismo paso que CI).
 
@@ -319,8 +321,8 @@ Targets disponibles: `up` `down` `test` `bench` `audit` `docs` `all` `clean`.
 
 ## Integridad del entregable
 
-Digest SHA256 de `docs/informe-final.pdf` (compilado 2026-09-07, 113 páginas):
+Digest SHA256 de `docs/informe-final.pdf` (regenerado 2026-09-11, 113 páginas):
 
 ```
-1738e2c96700b71e59a072ea322da00dd8760282e670f6a470070cfc12dd7dd0
+f0d55d6567f7092818186e3d6f5da823bce33567d12e96cbe0e51ecdfe0338c6
 ```
