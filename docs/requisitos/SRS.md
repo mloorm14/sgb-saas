@@ -2458,6 +2458,13 @@ Top 10 en vivo, no una elección arbitraria de énfasis de este documento.
   validado con datos mock) implementados; **sin Demonstration real
   todavía** (N=0), declarado explícitamente, no simulado como si
   existiera.
+- **Condición de cierre**: pasa a `verificado` cuando exista una corrida
+  real con N>0 participantes, consentimiento informado
+  (`docs/etica/consentimientos/plantilla.md`) versionado por participante,
+  y export crudo del instrumento trazable — ejecutada en la fase de
+  despliegue en producción (`docs/capitulos/10-trabajo-futuro.tex` §SUS,
+  `OBS-08` reabierta). Fecha: por definir por el equipo (no se fija una
+  fecha hasta que exista una ventana real de despliegue).
 
 ##### REQ-NF-019 — Accesibilidad del frontend (Lighthouse)
 
