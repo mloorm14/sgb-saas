@@ -29,6 +29,12 @@ public class FavoritoController {
     // ── POST /api/v1/favoritos/{libroId} ──────────────────
     @PostMapping("/{libroId}")
     @PreAuthorize("hasRole('LECTOR')")
+    /**
+     * Executes the agregar operation.
+     * @param libroId value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<FavoritoResponseDTO> agregar(
             @PathVariable Long libroId, Authentication authentication) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -38,6 +44,12 @@ public class FavoritoController {
     // ── DELETE /api/v1/favoritos/{libroId} ────────────────
     @DeleteMapping("/{libroId}")
     @PreAuthorize("hasRole('LECTOR')")
+    /**
+     * Executes the quitar operation.
+     * @param libroId value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<Void> quitar(
             @PathVariable Long libroId, Authentication authentication) {
         favoritoService.quitar(libroId, authentication);
@@ -62,6 +74,11 @@ public class FavoritoController {
 
     @GetMapping("/todo")
     @PreAuthorize("hasRole('LECTOR')")
+    /**
+     * Executes the listarPropiosTodo operation.
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<List<FavoritoResponseDTO>> listarPropiosTodo(Authentication authentication) {
         return ResponseEntity.ok(favoritoService.listarPropios(authentication));
     }

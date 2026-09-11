@@ -85,6 +85,15 @@ public class BackupService {
     }
 
     @Transactional
+    /**
+     * Executes the generarBackup operation.
+     * @param desde value required by the operation
+     * @param hasta value required by the operation
+     * @param tablas value required by the operation
+     * @param formato value required by the operation
+     * @param tipo value required by the operation
+     * @return operation result
+     */
     public Backup generarBackup(OffsetDateTime desde, OffsetDateTime hasta, Set<String> tablas, String formato, String tipo) {
         validarRango(desde, hasta);
         validarTablas(tablas);
@@ -186,8 +195,27 @@ public class BackupService {
         return sb.toString();
     }
 
+    /**
+
+     * Executes the listarTodos operation.
+
+     * @return operation result
+
+     */
+
     public List<Backup> listarTodos() { return backupRepository.findAllOrderByCreatedDesc(); }
+    /**
+     * Executes the listarPorRango operation.
+     * @param desde value required by the operation
+     * @param hasta value required by the operation
+     * @return operation result
+     */
     public List<Backup> listarPorRango(OffsetDateTime desde, OffsetDateTime hasta) { return backupRepository.findByFechaRange(desde, hasta); }
+    /**
+     * Executes the obtenerPorId operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public Backup obtenerPorId(Long id) { return backupRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Backup no encontrado " + id)); }
 
     /**
@@ -203,6 +231,10 @@ public class BackupService {
     }
 
     @Transactional
+    /**
+     * Executes the eliminar operation.
+     * @param id value required by the operation
+     */
     public void eliminar(Long id) {
         Backup b = obtenerPorId(id);
           try { storageService.delete(b.getRuta()); } catch (Exception ignored) {
@@ -210,6 +242,16 @@ public class BackupService {
           }
         backupRepository.delete(b);
     }
+
+    /**
+
+     * Executes the descargar operation.
+
+     * @param id value required by the operation
+
+     * @return operation result
+
+     */
 
     public byte[] descargar(Long id) {
         Backup b = obtenerPorId(id);

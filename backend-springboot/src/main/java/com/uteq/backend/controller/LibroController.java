@@ -104,6 +104,11 @@ public class LibroController {
     // ── GET /api/v1/libros/{id} ───────────────────────────
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the buscar operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<LibroResponseDTO> buscar(@PathVariable Long id) {
         return ResponseEntity.ok(libroService.buscarPorId(id));
     }
@@ -111,6 +116,11 @@ public class LibroController {
     // ── POST /api/v1/libros ───────────────────────────────
     @PostMapping
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the crear operation.
+     * @param dto value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<LibroResponseDTO> crear(
             @Valid @RequestBody LibroRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -120,6 +130,12 @@ public class LibroController {
     // ── PUT /api/v1/libros/{id} ───────────────────────────
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the actualizar operation.
+     * @param id value required by the operation
+     * @param dto value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<LibroResponseDTO> actualizar(
             @PathVariable Long id,
             @Valid @RequestBody LibroRequestDTO dto) {
@@ -129,6 +145,11 @@ public class LibroController {
     // ── DELETE /api/v1/libros/{id} ────────────────────────
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the eliminar operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         libroService.eliminar(id);
         return ResponseEntity.noContent().build();
@@ -153,6 +174,11 @@ public class LibroController {
     // decisión del frontend.
     @GetMapping("/{id}/portada")
     @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')")
+    /**
+     * Executes the obtenerPortada operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<byte[]> obtenerPortada(@PathVariable Long id) {
         PortadaImagenDTO portada = libroService.obtenerPortada(id);
         return ResponseEntity.ok()

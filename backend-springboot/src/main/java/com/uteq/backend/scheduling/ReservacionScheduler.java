@@ -41,6 +41,9 @@ public class ReservacionScheduler {
 
     // Cada 15 minutos -- valor que podra ser modificado mas adelante si es necesario
     @Scheduled(fixedRate = 15 * 60 * 1000)
+    /**
+     * Executes the expirarReservacionesVencidas operation.
+     */
     public void expirarReservacionesVencidas() {
         notificarLasQueVanAExpirar();
 

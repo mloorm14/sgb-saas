@@ -71,6 +71,11 @@ public class AuthService {
      * @throws CorreoDominioNoPermitidoException si el dominio del correo no figura entre los permitidos
      * @throws IllegalStateException si faltan las filas de catálogo del rol LECTOR o del estado inicial
      */
+    /**
+     * Executes the registrar operation.
+     * @param dto value required by the operation
+     * @return operation result
+     */
     public UsuarioResponseDTO registrar(RegistroRequestDTO dto) {
         usuarioRepository.findByCorreo(dto.correo()).ifPresent(usuario -> {
             throw new CorreoYaRegistradoException("El correo ya está registrado: " + dto.correo());
@@ -133,6 +138,10 @@ public class AuthService {
      * @throws jakarta.persistence.EntityNotFoundException si no existe ningún usuario con ese correo
      * @throws IllegalArgumentException si el correo ya está verificado o la cuenta no requiere verificación
      */
+    /**
+     * Executes the reenviarCodigo operation.
+     * @param correo value required by the operation
+     */
     public void reenviarCodigo(String correo) {
         Usuario usuario = usuarioRepository.findByCorreo(correo)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo));
@@ -152,6 +161,10 @@ public class AuthService {
      * @param correo dirección de la cuenta que solicita la recuperación
      * @throws jakarta.persistence.EntityNotFoundException si no existe ningún usuario con ese correo
      * @throws ServicioTemporalmenteNoDisponibleException si Redis no acepta el guardado del código
+     */
+    /**
+     * Executes the solicitarReset operation.
+     * @param correo value required by the operation
      */
     public void solicitarReset(String correo) {
         Usuario usuario = usuarioRepository.findByCorreo(correo)
@@ -185,6 +198,12 @@ public class AuthService {
      * @param nuevaPassword contraseña en claro sin cifrar que reemplazará a la anterior
      * @throws CodigoVerificacionInvalidoException si el código no coincide, expiró o Redis no responde a la lectura
      * @throws jakarta.persistence.EntityNotFoundException si no existe ningún usuario con ese correo
+     */
+    /**
+     * Executes the resetPassword operation.
+     * @param correo value required by the operation
+     * @param codigo value required by the operation
+     * @param nuevaPassword value required by the operation
      */
     public void resetPassword(String correo, String codigo, String nuevaPassword) {
         String key = "reset-codigo:" + correo;
@@ -222,6 +241,13 @@ public class AuthService {
      * @throws IllegalArgumentException si no existe ningún usuario con ese correo
      * @throws IllegalStateException si falta la fila de catálogo del estado ACTIVO
      */
+    /**
+     * Executes the verificarCorreo operation.
+     * @param correo value required by the operation
+     * @param codigo value required by the operation
+     * @param ipOrigen value required by the operation
+     * @return operation result
+     */
     public UsuarioResponseDTO verificarCorreo(String correo, String codigo, String ipOrigen) {
         verificacionCorreoService.validar(correo, codigo);
 
@@ -253,6 +279,12 @@ public class AuthService {
      * @throws LoginRateLimitExcedidoException si la combinación de correo e IP agotó los intentos permitidos
      * @throws org.springframework.security.authentication.BadCredentialsException si la contraseña o el usuario no son válidos
      * @throws RuntimeException si la autenticación prospera pero el usuario ya no existe en la base
+     */
+    /**
+     * Executes the login operation.
+     * @param dto value required by the operation
+     * @param ipOrigen value required by the operation
+     * @return operation result
      */
     public TokenResponseDTO login(LoginRequestDTO dto, String ipOrigen) {
         // Verifica el rate limit ANTES de autenticar → 429 si se agotó.
@@ -297,6 +329,11 @@ public class AuthService {
      *
      * @param token JWT de acceso del cual se extraen identificador, vencimiento y correo del titular
      * @param ipOrigen dirección IP desde donde se cierra la sesión, usada solo para auditoría y registro
+     */
+    /**
+     * Executes the logout operation.
+     * @param token value required by the operation
+     * @param ipOrigen value required by the operation
      */
     public void logout(String token, String ipOrigen) {
         String jti = jwtService.extractJti(token);

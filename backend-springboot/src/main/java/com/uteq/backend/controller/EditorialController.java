@@ -26,6 +26,10 @@ public class EditorialController {
     }
 
     @GetMapping
+    /**
+     * Executes the listar operation.
+     * @return operation result
+     */
     public ResponseEntity<List<EditorialResponseDTO>> listar() {
         List<EditorialResponseDTO> editoriales = editorialRepository.findAll().stream()
                 .map(e -> new EditorialResponseDTO(e.getId(), e.getNombre()))
@@ -34,6 +38,11 @@ public class EditorialController {
     }
 
     @GetMapping("/buscar")
+    /**
+     * Executes the buscar operation.
+     * @param q value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<List<EditorialResponseDTO>> buscar(@RequestParam String q) {
         return ResponseEntity.ok(
                 editorialRepository.findTop5ByNombreContainingIgnoreCase(q).stream()
@@ -43,6 +52,11 @@ public class EditorialController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    /**
+     * Executes the crear operation.
+     * @param dto value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<EditorialResponseDTO> crear(@Valid @RequestBody EditorialRequestDTO dto) {
         if (editorialRepository.existsByNombreIgnoreCase(dto.nombre())) {
             return ResponseEntity.unprocessableEntity().build();

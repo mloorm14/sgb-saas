@@ -40,6 +40,9 @@ public class NotificacionVencimientoScheduler {
     }
 
     @Scheduled(fixedRate = 60 * 1000)
+    /**
+     * Executes the notificarProximosAVencer operation.
+     */
     public void notificarProximosAVencer() {
         int diasAnticipacion = configuracionSistemaService.obtenerValorEntero("dias_anticipacion_vencimiento");
         int minutosAnticipacion = diasAnticipacion * 24 * 60;

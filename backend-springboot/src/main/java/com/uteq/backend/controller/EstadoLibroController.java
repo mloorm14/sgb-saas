@@ -23,6 +23,10 @@ public class EstadoLibroController {
     }
 
     @GetMapping
+    /**
+     * Executes the listar operation.
+     * @return operation result
+     */
     public ResponseEntity<List<EstadoLibroResponseDTO>> listar() {
         List<EstadoLibroResponseDTO> estados = estadoLibroRepository.findAll().stream()
                 .map(e -> new EstadoLibroResponseDTO(e.getId(), e.getNombre()))

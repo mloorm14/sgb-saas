@@ -37,6 +37,12 @@ public class FavoritoService {
     }
 
     @Transactional
+    /**
+     * Executes the agregar operation.
+     * @param libroId value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public FavoritoResponseDTO agregar(Long libroId, Authentication authentication) {
         Long usuarioId = resolverIdPorCorreo(authentication.getName());
         Libro libro = libroRepo.findById(libroId)
@@ -56,6 +62,11 @@ public class FavoritoService {
     }
 
     @Transactional
+    /**
+     * Executes the quitar operation.
+     * @param libroId value required by the operation
+     * @param authentication value required by the operation
+     */
     public void quitar(Long libroId, Authentication authentication) {
         Long usuarioId = resolverIdPorCorreo(authentication.getName());
         if (!favoritoRepo.existsByUsuarioIdAndLibroId(usuarioId, libroId)) {
@@ -65,6 +76,11 @@ public class FavoritoService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarPropios operation.
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public List<FavoritoResponseDTO> listarPropios(Authentication authentication) {
         Long usuarioId = resolverIdPorCorreo(authentication.getName());
         return favoritoRepo.findByUsuarioId(usuarioId).stream()
@@ -73,6 +89,12 @@ public class FavoritoService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarPropiosPaginado operation.
+     * @param authentication value required by the operation
+     * @param pageable value required by the operation
+     * @return operation result
+     */
     public Page<FavoritoResponseDTO> listarPropiosPaginado(Authentication authentication, Pageable pageable) {
         Long usuarioId = resolverIdPorCorreo(authentication.getName());
         return favoritoRepo.findByUsuarioId(usuarioId, pageable)

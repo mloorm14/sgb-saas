@@ -23,6 +23,10 @@ public abstract class AbstractBaseConocimientoTool extends AbstractChatbotTool {
     }
 
     @Override
+    /**
+     * Executes the getInputSchema operation.
+     * @return operation result
+     */
     public JsonNode getInputSchema() {
         ObjectNode schema = mapper.createObjectNode();
         schema.put("type", "object");
@@ -40,6 +44,11 @@ public abstract class AbstractBaseConocimientoTool extends AbstractChatbotTool {
     protected abstract ObjectNode mapearEntrada(BaseConocimiento bc);
 
     @Override
+    /**
+     * Executes the execute operation.
+     * @param args value required by the operation
+     * @return operation result
+     */
     public JsonNode execute(JsonNode args) {
         List<String> categorias = getCategorias().stream()
                 .map(String::toUpperCase)

@@ -99,6 +99,13 @@ public class DevolucionService {
     }
 
     @Transactional
+    /**
+     * Executes the registrarDevolucion operation.
+     * @param prestamoId value required by the operation
+     * @param dto value required by the operation
+     * @param bibliotecarioId value required by the operation
+     * @return operation result
+     */
     public DevolucionCompletaResponseDTO registrarDevolucion(
             Long prestamoId, DevolucionRequestDTO dto, Long bibliotecarioId) {
 
@@ -229,6 +236,10 @@ public class DevolucionService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarTiposDano operation.
+     * @return operation result
+     */
     public List<TipoDanoDTO> listarTiposDano() {
         return tipoDanoRepo.findByActivoTrue().stream()
                 .map(t -> new TipoDanoDTO(t.getId(), t.getNombre(),
@@ -239,6 +250,11 @@ public class DevolucionService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Executes the historialDevoluciones operation.
+     * @param bibliotecarioId value required by the operation
+     * @return operation result
+     */
     public List<DevolucionHistorialDTO> historialDevoluciones(Long bibliotecarioId) {
         List<RegistroDano> registros = registroDanoRepo
                 .findTop10ByBibliotecarioIdOrderByFechaRegistroDesc(
@@ -302,6 +318,13 @@ public class DevolucionService {
     // ── Evidencia fotográfica ──────────────────────────────
 
     @Transactional
+    /**
+     * Executes the subirEvidencia operation.
+     * @param registroDanoId value required by the operation
+     * @param archivo value required by the operation
+     * @param bibliotecarioId value required by the operation
+     * @return operation result
+     */
     public EvidenciaDanoResponseDTO subirEvidencia(Long registroDanoId, MultipartFile archivo, Long bibliotecarioId) {
         RegistroDano registro = registroDanoRepo.findById(registroDanoId)
                 .orElseThrow(() -> new EntityNotFoundException("Registro de daño no encontrado: " + registroDanoId));
@@ -345,6 +368,11 @@ public class DevolucionService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarEvidencias operation.
+     * @param registroDanoId value required by the operation
+     * @return operation result
+     */
     public List<EvidenciaDanoResponseDTO> listarEvidencias(Long registroDanoId) {
         return evidenciaDanoRepo.findByRegistroDanoId(registroDanoId).stream()
                 .map(e -> new EvidenciaDanoResponseDTO(
@@ -354,6 +382,11 @@ public class DevolucionService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Executes the obtenerArchivoEvidencia operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public EvidenciaDanoResponseDTO obtenerArchivoEvidencia(Long id) {
         EvidenciaDano evidencia = evidenciaDanoRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Evidencia no encontrada: " + id));
@@ -363,6 +396,11 @@ public class DevolucionService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Executes the obtenerArchivoBinario operation.
+     * @param id value required by the operation
+     * @return operation result
+     */
     public EvidenciaDanoArchivoDTO obtenerArchivoBinario(Long id) {
         EvidenciaDano evidencia = evidenciaDanoRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Evidencia no encontrada: " + id));

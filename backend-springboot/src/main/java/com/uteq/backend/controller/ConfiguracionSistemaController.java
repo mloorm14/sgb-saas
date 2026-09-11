@@ -24,11 +24,21 @@ public class ConfiguracionSistemaController {
     }
 
     @GetMapping
+    /**
+     * Executes the listar operation.
+     * @return operation result
+     */
     public ResponseEntity<List<ConfiguracionSistemaResponseDTO>> listar() {
         return ResponseEntity.ok(service.listar());
     }
 
     @PutMapping("/{clave}")
+    /**
+     * Executes the actualizar operation.
+     * @param clave value required by the operation
+     * @param dto value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<ConfiguracionSistemaResponseDTO> actualizar(
             @PathVariable String clave,
             @Valid @RequestBody ConfiguracionSistemaRequestDTO dto) {

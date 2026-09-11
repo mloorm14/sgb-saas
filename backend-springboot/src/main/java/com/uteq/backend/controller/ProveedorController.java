@@ -45,6 +45,10 @@ public class ProveedorController {
     // Compatibilidad: lista completa para casos antiguos (no usar con 50k)
     @GetMapping("/todo")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    /**
+     * Executes the listarTodo operation.
+     * @return operation result
+     */
     public ResponseEntity<List<ProveedorResponseDTO>> listarTodo() {
         List<ProveedorResponseDTO> proveedores = proveedorRepository.findAll().stream()
                 .map(this::toDTO).toList();
@@ -53,6 +57,11 @@ public class ProveedorController {
 
     @GetMapping("/buscar")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    /**
+     * Executes the buscar operation.
+     * @param q value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<List<ProveedorResponseDTO>> buscar(@RequestParam String q) {
         return ResponseEntity.ok(
                 proveedorRepository.findTop5ByNombreContainingIgnoreCase(q).stream()
@@ -62,6 +71,11 @@ public class ProveedorController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    /**
+     * Executes the crear operation.
+     * @param dto value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<ProveedorResponseDTO> crear(@Valid @RequestBody ProveedorRequestDTO dto) {
         if (proveedorRepository.existsByNombreIgnoreCase(dto.nombre())) {
             return ResponseEntity.unprocessableEntity().build();
@@ -84,6 +98,12 @@ public class ProveedorController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
+    /**
+     * Executes the actualizar operation.
+     * @param id value required by the operation
+     * @param dto value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<ProveedorResponseDTO> actualizar(@PathVariable Integer id,
                                                            @Valid @RequestBody ProveedorRequestDTO dto) {
         return proveedorRepository.findById(id)

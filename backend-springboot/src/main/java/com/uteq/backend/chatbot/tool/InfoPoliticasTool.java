@@ -20,11 +20,19 @@ public class InfoPoliticasTool extends AbstractBaseConocimientoTool {
     }
 
     @Override
+    /**
+     * Executes the getName operation.
+     * @return operation result
+     */
     public String getName() {
         return "info_politicas";
     }
 
     @Override
+    /**
+     * Executes the getDescription operation.
+     * @return operation result
+     */
     public String getDescription() {
         return "Consulta información sobre las políticas de la biblioteca: "
                 + "préstamo, devolución, renovaciones, sanciones, multas y reglas generales.";

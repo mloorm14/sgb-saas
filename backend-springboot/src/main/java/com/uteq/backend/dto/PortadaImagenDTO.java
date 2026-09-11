@@ -16,6 +16,11 @@ public record PortadaImagenDTO(
         String contentType
 ) {
     @Override
+    /**
+     * Executes the equals operation.
+     * @param o value required by the operation
+     * @return operation result
+     */
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof PortadaImagenDTO otro)) return false;
@@ -23,11 +28,19 @@ public record PortadaImagenDTO(
     }
 
     @Override
+    /**
+     * Executes the hashCode operation.
+     * @return operation result
+     */
     public int hashCode() {
         return 31 * Arrays.hashCode(bytes) + Objects.hashCode(contentType);
     }
 
     @Override
+    /**
+     * Executes the toString operation.
+     * @return operation result
+     */
     public String toString() {
         return "PortadaImagenDTO[bytes=" + Arrays.toString(bytes) + ", contentType=" + contentType + "]";
     }

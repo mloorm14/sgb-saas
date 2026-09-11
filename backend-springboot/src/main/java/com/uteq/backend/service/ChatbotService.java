@@ -56,6 +56,12 @@ public class ChatbotService {
     private final ChatbotRateLimiter chatbotRateLimiter;
 
     @Transactional
+    /**
+     * Executes the enviarMensaje operation.
+     * @param dto value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public MensajeChatResponseDTO enviarMensaje(MensajeChatRequestDTO dto, Authentication authentication) {
         Long usuarioId = resolverIdPorCorreo(authentication.getName());
 
@@ -96,6 +102,12 @@ public class ChatbotService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Executes the obtenerHistorial operation.
+     * @param sesionId value required by the operation
+     * @param authentication value required by the operation
+     * @return operation result
+     */
     public List<MensajeChatHistorialDTO> obtenerHistorial(UUID sesionId, Authentication authentication) {
         Long usuarioId = resolverIdPorCorreo(authentication.getName());
         SesionChat sesion = validarPropiedadSesion(sesionId, usuarioId);

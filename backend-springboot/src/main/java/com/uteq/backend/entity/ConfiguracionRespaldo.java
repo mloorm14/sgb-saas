@@ -38,6 +38,14 @@ public class ConfiguracionRespaldo {
     @Column(name = "actualizado_en")
     private OffsetDateTime actualizadoEn;
 
+    /**
+
+     * Executes the isHabilitado operation.
+
+     * @return operation result
+
+     */
+
     public boolean isHabilitado() {
         return habilitado != null && habilitado;
     }

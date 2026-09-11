@@ -24,6 +24,12 @@ public class SuscripcionDisponibilidadController {
 
     @PostMapping("/{libroId}/suscripciones")
     @PreAuthorize("isAuthenticated()")
+    /**
+     * Executes the suscribir operation.
+     * @param libroId value required by the operation
+     * @param auth value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<Void> suscribir(@PathVariable Long libroId, Authentication auth) {
         Long usuarioId = resolverUsuarioId(auth);
         service.suscribir(usuarioId, libroId);
@@ -32,6 +38,12 @@ public class SuscripcionDisponibilidadController {
 
     @DeleteMapping("/{libroId}/suscripciones")
     @PreAuthorize("isAuthenticated()")
+    /**
+     * Executes the desuscribir operation.
+     * @param libroId value required by the operation
+     * @param auth value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<Void> desuscribir(@PathVariable Long libroId, Authentication auth) {
         Long usuarioId = resolverUsuarioId(auth);
         service.desuscribir(usuarioId, libroId);
@@ -40,6 +52,11 @@ public class SuscripcionDisponibilidadController {
 
     @GetMapping("/suscripciones/mias")
     @PreAuthorize("isAuthenticated()")
+    /**
+     * Executes the misSuscripciones operation.
+     * @param auth value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<List<Long>> misSuscripciones(Authentication auth) {
         Long usuarioId = resolverUsuarioId(auth);
         return ResponseEntity.ok(service.listarLibrosIds(usuarioId));

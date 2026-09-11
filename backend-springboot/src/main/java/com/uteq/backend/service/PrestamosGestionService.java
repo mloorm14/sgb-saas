@@ -106,6 +106,11 @@ public class PrestamosGestionService {
 
     // ── GET /gestion/buscar-usuario?correo= ──────────────────
     @Transactional(readOnly = true)
+    /**
+     * Executes the buscarPorCorreo operation.
+     * @param correo value required by the operation
+     * @return operation result
+     */
     public UsuarioPrestamosGestionDTO buscarPorCorreo(String correo) {
         Usuario usuario = usuarioRepo.findByCorreo(correo)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO));
@@ -135,6 +140,11 @@ public class PrestamosGestionService {
     // Autocompletado predictivo: retorna hasta 3 usuarios cuyo correo
     // contenga el texto ingresado (case-insensitive).
     @Transactional(readOnly = true)
+    /**
+     * Executes the sugerenciasUsuarios operation.
+     * @param correo value required by the operation
+     * @return operation result
+     */
     public List<UsuarioSugerenciaDTO> sugerenciasUsuarios(String correo) {
         if (correo == null || correo.trim().length() < 2) {
             return List.of();
@@ -153,6 +163,11 @@ public class PrestamosGestionService {
     // 404 (EntityNotFoundException) si no hay reserva vigente: el frontend
     // interpreta ese 404 como "Caso B: préstamo directo".
     @Transactional(readOnly = true)
+    /**
+     * Executes the reservaActiva operation.
+     * @param usuarioId value required by the operation
+     * @return operation result
+     */
     public ReservaActivaDTO reservaActiva(Long usuarioId) {
         List<Integer> idsVigentes = ESTADOS_RESERVA_VIGENTE.stream()
                 .map(this::idEstadoReservacion)
@@ -195,6 +210,11 @@ public class PrestamosGestionService {
     // préstamos: el frontend muestra "Este usuario no tiene préstamos
     // registrados".
     @Transactional(readOnly = true)
+    /**
+     * Executes the historial operation.
+     * @param usuarioId value required by the operation
+     * @return operation result
+     */
     public List<HistorialPrestamoDTO> historial(Long usuarioId) {
         List<Prestamo> prestamos = prestamoRepo.findByUsuarioIdOrderByIdDesc(usuarioId);
         if (prestamos.isEmpty()) {

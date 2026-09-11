@@ -265,13 +265,38 @@ public class GeminiClient {
             JsonNode functionArgs,
             boolean isFunctionCall
     ) {
+        /**
+         * Executes the texto operation.
+         * @param texto value required by the operation
+         * @return operation result
+         */
         public static GeminiResponse texto(String texto) {
             return new GeminiResponse(texto, null, null, false);
         }
 
+        /**
+
+         * Executes the functionCall operation.
+
+         * @param name value required by the operation
+
+         * @param args value required by the operation
+
+         * @return operation result
+
+         */
+
         public static GeminiResponse functionCall(String name, JsonNode args) {
             return new GeminiResponse(null, name, args, true);
         }
+
+        /**
+
+         * Executes the getTexto operation.
+
+         * @return operation result
+
+         */
 
         public String getTexto() {
             return texto != null ? texto : "";

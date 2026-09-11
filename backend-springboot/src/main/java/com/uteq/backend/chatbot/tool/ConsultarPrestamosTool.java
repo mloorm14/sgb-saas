@@ -24,17 +24,30 @@ public class ConsultarPrestamosTool extends AbstractUsuarioAwareTool {
     }
 
     @Override
+    /**
+     * Executes the getName operation.
+     * @return operation result
+     */
     public String getName() {
         return "consultar_prestamos";
     }
 
     @Override
+    /**
+     * Executes the getDescription operation.
+     * @return operation result
+     */
     public String getDescription() {
         return "Consulta los préstamos activos (no devueltos) de un usuario de la biblioteca. "
                 + "Devuelve títulos, ISBNs, fechas de préstamo y devolución estimada.";
     }
 
     @Override
+    /**
+     * Executes the execute operation.
+     * @param args value required by the operation
+     * @return operation result
+     */
     public JsonNode execute(JsonNode args) {
         Long usuarioId = resolverUsuarioId(args);
         if (usuarioId == null) {

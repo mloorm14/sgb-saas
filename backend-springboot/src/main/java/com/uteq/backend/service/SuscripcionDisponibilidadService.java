@@ -31,6 +31,11 @@ public class SuscripcionDisponibilidadService {
     }
 
     @Transactional
+    /**
+     * Executes the suscribir operation.
+     * @param usuarioId value required by the operation
+     * @param libroId value required by the operation
+     */
     public void suscribir(Long usuarioId, Long libroId) {
         usuarioRepo.findById(usuarioId).orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado: " + usuarioId));
         Libro libro = libroRepo.findById(libroId).orElseThrow(() -> new EntityNotFoundException("Libro no encontrado: " + libroId));
@@ -49,16 +54,30 @@ public class SuscripcionDisponibilidadService {
     }
 
     @Transactional
+    /**
+     * Executes the desuscribir operation.
+     * @param usuarioId value required by the operation
+     * @param libroId value required by the operation
+     */
     public void desuscribir(Long usuarioId, Long libroId) {
         suscripcionRepo.deleteByUsuarioIdAndLibroId(usuarioId, libroId);
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Executes the listarLibrosIds operation.
+     * @param usuarioId value required by the operation
+     * @return operation result
+     */
     public List<Long> listarLibrosIds(Long usuarioId) {
         return suscripcionRepo.findByUsuarioId(usuarioId).stream().map(SuscripcionDisponibilidad::getLibroId).toList();
     }
 
     @Transactional
+    /**
+     * Executes the notificarDisponibles operation.
+     * @param libroId value required by the operation
+     */
     public void notificarDisponibles(Long libroId) {
         Libro libro = libroRepo.findById(libroId).orElseThrow(() -> new EntityNotFoundException("Libro no encontrado: " + libroId));
         if (libro.getStockDisponible() == null || libro.getStockDisponible() <= 0) return;

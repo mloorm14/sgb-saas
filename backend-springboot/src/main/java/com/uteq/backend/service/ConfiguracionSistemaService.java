@@ -35,6 +35,10 @@ public class ConfiguracionSistemaService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Executes the listar operation.
+     * @return operation result
+     */
     public List<ConfiguracionSistemaResponseDTO> listar() {
         return repo.findAll().stream()
                 .map(c -> new ConfiguracionSistemaResponseDTO(c.getClave(), c.getValor()))
@@ -45,6 +49,12 @@ public class ConfiguracionSistemaService {
      * Actualiza una clave que YA existe; no crea claves nuevas por esta vía.
      */
     @Transactional
+    /**
+     * Executes the actualizar operation.
+     * @param clave value required by the operation
+     * @param nuevoValor value required by the operation
+     * @return operation result
+     */
     public ConfiguracionSistemaResponseDTO actualizar(String clave, String nuevoValor) {
         ConfiguracionSistema config = repo.findById(clave)
                 .orElseThrow(() -> new EntityNotFoundException(CLAVE_NO_ENCONTRADA + clave));
@@ -68,6 +78,11 @@ public class ConfiguracionSistemaService {
     }
 
     @Transactional(readOnly = true)
+    /**
+     * Executes the obtenerValor operation.
+     * @param clave value required by the operation
+     * @return operation result
+     */
     public String obtenerValor(String clave) {
         String cacheado = cache.get(clave);
         if (cacheado != null) {
@@ -80,6 +95,16 @@ public class ConfiguracionSistemaService {
         return valor;
     }
 
+    /**
+
+     * Executes the obtenerValorEntero operation.
+
+     * @param clave value required by the operation
+
+     * @return operation result
+
+     */
+
     public Integer obtenerValorEntero(String clave) {
         String valor = obtenerValor(clave);
         try {
@@ -89,6 +114,16 @@ public class ConfiguracionSistemaService {
                     "Valor no numérico para la clave '" + clave + "': " + valor);
         }
     }
+
+    /**
+
+     * Executes the obtenerValorDecimal operation.
+
+     * @param clave value required by the operation
+
+     * @return operation result
+
+     */
 
     public BigDecimal obtenerValorDecimal(String clave) {
         String valor = obtenerValor(clave);

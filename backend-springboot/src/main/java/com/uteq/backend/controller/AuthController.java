@@ -38,6 +38,11 @@ public class AuthController {
     private final JwtService jwtService;
 
     @PostMapping("/registro")
+    /**
+     * Executes the registro operation.
+     * @param dto value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<UsuarioResponseDTO> registro(@Valid @RequestBody RegistroRequestDTO dto) {
         UsuarioResponseDTO usuario = authService.registrar(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(usuario);
@@ -47,18 +52,33 @@ public class AuthController {
     // Regenera el código de 6 dígitos en Redis cuando el anterior expiró
     // (TTL 10 min) y el usuario quedó bloqueado sin intervención de ADMIN.
     @PostMapping("/reenviar-codigo")
+    /**
+     * Executes the reenviarCodigo operation.
+     * @param dto value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<Void> reenviarCodigo(@Valid @RequestBody ReenviarCodigoRequestDTO dto) {
         authService.reenviarCodigo(dto.correo());
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/solicitar-reset")
+    /**
+     * Executes the solicitarReset operation.
+     * @param dto value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<Void> solicitarReset(@Valid @RequestBody SolicitarResetRequestDTO dto) {
         authService.solicitarReset(dto.correo());
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/reset")
+    /**
+     * Executes the reset operation.
+     * @param dto value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<Void> reset(@Valid @RequestBody ResetPasswordRequestDTO dto) {
         authService.resetPassword(dto.correo(), dto.codigo(), dto.nuevaPassword());
         return ResponseEntity.noContent().build();
@@ -67,6 +87,12 @@ public class AuthController {
     // Sin JWT: el recién registrado aún no puede loguearse.
     // La identidad se prueba con el código de un solo uso.
     @PostMapping("/verificar-correo")
+    /**
+     * Executes the verificarCorreo operation.
+     * @param dto value required by the operation
+     * @param request value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<UsuarioResponseDTO> verificarCorreo(
             @Valid @RequestBody CodigoVerificacionRequestDTO dto, HttpServletRequest request) {
         UsuarioResponseDTO usuario = authService.verificarCorreo(dto.correo(), dto.codigo(), obtenerIpOrigen(request));
@@ -74,6 +100,12 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    /**
+     * Executes the login operation.
+     * @param dto value required by the operation
+     * @param request value required by the operation
+     * @return operation result
+     */
     public ResponseEntity<TokenResponseDTO> login(@Valid @RequestBody LoginRequestDTO dto, HttpServletRequest request) {
         TokenResponseDTO tokens = authService.login(dto, obtenerIpOrigen(request));
         ResponseCookie cookie = buildRefreshCookie(tokens.refreshToken(), jwtService.getRefreshExpirationMs());
