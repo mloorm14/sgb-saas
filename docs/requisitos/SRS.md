@@ -2415,6 +2415,12 @@ El requisito original `REQ-NF-014` (Seguridad OWASP A05) fue dividido en cuatro 
   validado con datos mock) implementados; **sin Demonstration real
   todavía** (N=0), declarado explícitamente, no simulado como si
   existiera.
+- **Condición de cierre**: se cierra cuando se complete la recopilación de
+  N\u226515 respuestas SUS v\u00e1lidas en el despliegue de producción real,
+  con export crudo del instrumento versionado y trazable, y análisis
+  estad\u00edstico completado (media, IC95%, desviación estándar) —
+  conforme a lo planificado en `docs/capitulos/10-trabajo-futuro.tex`
+  §SUS y documentado en `docs/observaciones/OBSERVACIONES.md` (OBS-08).
 
 ##### REQ-NF-019 — Accesibilidad del frontend (Lighthouse)
 
