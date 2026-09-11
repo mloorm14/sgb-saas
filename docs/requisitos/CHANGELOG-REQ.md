@@ -94,10 +94,10 @@ este mismo commit (no contra suposiciones):
 
 ## División de requisitos compuestos (Bloque 4, 2026-09-07)
 
-| ID anterior | IDs nuevos | Motivo |
-|---|---|---|
-| `REQ-NF-014` | `REQ-NF-014a` (CSP backend+frontend), `REQ-NF-014b` (supresión de stacktraces), `REQ-NF-014c` (Swagger desactivado en prod), `REQ-NF-014d` (contenedor sin root) | El ID único agrupaba 4 controles OWASP A05 independientes, cada uno con su propio criterio de aceptación y estado verificable por separado (los 4 están implementados, pero eso no siempre fue ni será necesariamente cierto a la vez para los 4). |
-| `REQ-F-022` | `REQ-F-022a` (alerta préstamo por vencer, job cada 60s), `REQ-F-022b` (alerta multa generada, disparada por evento en `sp_registrar_devolucion`), `REQ-F-022c` (alerta reserva caducada, job cada 15 min) | El ID único agrupaba 3 alertas con periodicidades y disparadores distintos (dos jobs con frecuencias distintas + un disparador por evento). Los 3 comparten el mismo estado real: notificación in-app persistida siempre, envío por correo deshabilitado por defecto desde `OBS-23` (saturación SMTP por el volumen sintético de la rúbrica ADB) — declarado explícitamente en cada sub-requisito, no como si el correo funcionara. |
+| ID anterior | IDs nuevos | Motivo | Estado del ID anterior |
+|---|---|---|---|
+| `REQ-NF-014` | `REQ-NF-014a` (CSP backend+frontend), `REQ-NF-014b` (supresión de stacktraces), `REQ-NF-014c` (Swagger desactivado en prod), `REQ-NF-014d` (contenedor sin root) | El ID único agrupaba 4 controles OWASP A05 independientes, cada uno con su propio criterio de aceptación y estado verificable por separado (los 4 están implementados, pero eso no siempre fue ni será necesariamente cierto a la vez para los 4). | RETIRADO — no se reutiliza, usar solo los sub-IDs |
+| `REQ-F-022` | `REQ-F-022a` (alerta préstamo por vencer, job cada 60s), `REQ-F-022b` (alerta multa generada, disparada por evento en `sp_registrar_devolucion`), `REQ-F-022c` (alerta reserva caducada, job cada 15 min) | El ID único agrupaba 3 alertas con periodicidades y disparadores distintos (dos jobs con frecuencias distintas + un disparador por evento). Los 3 comparten el mismo estado real: notificación in-app persistida siempre, envío por correo deshabilitado por defecto desde `OBS-23` (saturación SMTP por el volumen sintético de la rúbrica ADB) — declarado explícitamente en cada sub-requisito, no como si el correo funcionara. | RETIRADO — no se reutiliza, usar solo los sub-IDs |
 
 Matriz actualizada: cada fila única se reemplazó por N filas (una por
 sub-ID). Todas las referencias sueltas a `REQ-NF-014`/`REQ-F-022` en

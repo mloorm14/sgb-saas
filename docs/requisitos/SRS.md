@@ -126,7 +126,8 @@ exactamente los **71 requisitos** ya identificados y trazados en
 originales de la Tercera Entrega, más los 13 de los módulos construidos
 después, más los 28 que esta revisión agrega/formaliza —
 `REQ-F-029`-`042`, `REQ-NF-016`-`024` y la división de `REQ-NF-014`/
-`REQ-F-022` — ver `CHANGELOG-REQ.md` para el detalle completo) — no se
+`REQ-F-022` (ambos IDs padre retirados — no se reutilizan, usar solo los
+sub-IDs — ver `CHANGELOG-REQ.md` para el detalle completo) — no se
 amplía el alcance funcional del sistema al redactar este documento (el
 sistema construido no cambia), solo se formaliza su especificación, que
 es precisamente el hallazgo central del Dr. Guerrero que motivó esta
