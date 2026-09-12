@@ -52,7 +52,7 @@ class FineServiceTest {
         Map<String, Object> mapaResult = new HashMap<>();
         mapaResult.put("o_multa_id", 7L);
         mapaResult.put("o_usuario_desbloqueado", true);
-        given(fineProcRepo.spPayFine(7L)).willReturn(mapaResult);
+        given(fineProcRepo.spPayFineProcedure(7L)).willReturn(mapaResult);
 
         FineActionResponseDTO result = fineService.pay(7L);
 
@@ -66,7 +66,7 @@ class FineServiceTest {
         Map<String, Object> mapaResult = new HashMap<>();
         mapaResult.put("o_multa_id", 8L);
         mapaResult.put("o_usuario_desbloqueado", false);
-        given(fineProcRepo.spPayFine(8L)).willReturn(mapaResult);
+        given(fineProcRepo.spPayFineProcedure(8L)).willReturn(mapaResult);
 
         FineActionResponseDTO result = fineService.pay(8L);
 
@@ -80,7 +80,7 @@ class FineServiceTest {
         Map<String, Object> mapaResult = new HashMap<>();
         mapaResult.put("o_multa_id", 9L);
         mapaResult.put("o_usuario_desbloqueado", true);
-        given(fineProcRepo.spVoidFine(9L, "Error administrativo", "GERENTE"))
+        given(fineProcRepo.spVoidFineProcedure(9L, "Error administrativo", "GERENTE"))
                 .willReturn(mapaResult);
 
         FineActionResponseDTO result = fineService.annul(9L, "Error administrativo", auth);
@@ -89,7 +89,7 @@ class FineServiceTest {
         // Verifica explícitamente que el rol enviado al SP es el de la
         // authority real ("GERENTE"), no un valor que hubiera podido venir
         // de un campo del body (que ni siquiera existe en el DTO).
-        verify(fineProcRepo).spVoidFine(9L, "Error administrativo", "GERENTE");
+        verify(fineProcRepo).spVoidFineProcedure(9L, "Error administrativo", "GERENTE");
     }
 
     // ── Test 4: anular con rol ADMIN también es válido ────────
@@ -99,12 +99,12 @@ class FineServiceTest {
         Map<String, Object> mapaResult = new HashMap<>();
         mapaResult.put("o_multa_id", 12L);
         mapaResult.put("o_usuario_desbloqueado", false);
-        given(fineProcRepo.spVoidFine(12L, "Duplicado", "ADMIN"))
+        given(fineProcRepo.spVoidFineProcedure(12L, "Duplicado", "ADMIN"))
                 .willReturn(mapaResult);
 
         fineService.annul(12L, "Duplicado", auth);
 
-        verify(fineProcRepo).spVoidFine(12L, "Duplicado", "ADMIN");
+        verify(fineProcRepo).spVoidFineProcedure(12L, "Duplicado", "ADMIN");
     }
 
     // ── Test 6: anular sin rol válido -> defensa en profundidad, denegado ──
