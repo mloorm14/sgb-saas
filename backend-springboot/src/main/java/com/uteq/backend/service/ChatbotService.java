@@ -1,18 +1,18 @@
 package com.uteq.backend.service;
 
-import com.uteq.backend.dto.LibroSugerenciaDTO;
-import com.uteq.backend.dto.MensajeChatHistorialDTO;
-import com.uteq.backend.dto.MensajeChatRequestDTO;
-import com.uteq.backend.dto.MensajeChatResponseDTO;
-import com.uteq.backend.entity.BaseConocimiento;
-import com.uteq.backend.entity.MensajeChat;
-import com.uteq.backend.entity.SesionChat;
-import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.dto.BookSuggestionDTO;
+import com.uteq.backend.dto.MessageChatHistoryDTO;
+import com.uteq.backend.dto.MessageChatRequestDTO;
+import com.uteq.backend.dto.MessageChatResponseDTO;
+import com.uteq.backend.entity.KnowledgeBase;
+import com.uteq.backend.entity.MessageChat;
+import com.uteq.backend.entity.SessionChat;
+import com.uteq.backend.entity.User;
 import com.uteq.backend.integration.GeminiClient;
-import com.uteq.backend.repository.BaseConocimientoRepository;
-import com.uteq.backend.repository.MensajeChatRepository;
-import com.uteq.backend.repository.SesionChatRepository;
-import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.repository.BaseKnowledgeRepository;
+import com.uteq.backend.repository.MessageChatRepository;
+import com.uteq.backend.repository.SessionChatRepository;
+import com.uteq.backend.repository.UserRepository;
 import com.uteq.backend.security.ChatbotRateLimiter;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -45,80 +45,83 @@ public class ChatbotService {
     private static final List<String> PALABRAS_RESERVA =
             List.of("reservar", "apartar", "reserva");
 
-    private final SesionChatRepository sesionChatRepo;
-    private final MensajeChatRepository mensajeChatRepo;
-    private final BaseConocimientoRepository baseConocimientoRepo;
-    private final UsuarioRepository usuarioRepo;
-    private final LibroService libroService;
+    private final SessionChatRepository sessionChatRepo;
+    private final MessageChatRepository messageChatRepo;
+    private final BaseKnowledgeRepository baseKnowledgeRepo;
+    private final UserRepository userRepo;
+    private final BookService bookService;
     // Integración reservada para v2 (reservas desde el chat); aún no se invoca.
-    private final ReservacionService reservacionService;
+    private final ReservationService reservationService;
     private final GeminiClient geminiClient;
     private final ChatbotRateLimiter chatbotRateLimiter;
 
     @Transactional
     /**
-     * Executes the enviarMensaje operation.
-     * @param dto value required by the operation
-     * @param authentication value required by the operation
-     * @return operation result
+     * Sends message Chat Response data transfer object.
+     *
+     * @param dto message Chat Request data transfer object used to scope this message Chat Response data transfer object
+     * @param authentication authentication of the caller used to scope this message Chat Response data transfer object
+     * @return message Chat Response data transfer object reflecting the state after the operation
+     * @throws ChatbotRateLimitExcedidoException when the message Chat Response data transfer object cannot be processed with the given input
      */
-    public MensajeChatResponseDTO enviarMensaje(MensajeChatRequestDTO dto, Authentication authentication) {
-        Long usuarioId = resolverIdPorCorreo(authentication.getName());
+    public MessageChatResponseDTO sendMessage(MessageChatRequestDTO dto, Authentication authentication) {
+        Long userId = resolveIdByEmail(authentication.getName());
 
-        if (chatbotRateLimiter.estaBloqueado(usuarioId)) {
-            throw new ChatbotRateLimitExcedidoException(
+        if (chatbotRateLimiter.estaBlocked(userId)) {
+            throw new ChatbotRateLimitExceededException(
                     "Has alcanzado el límite de mensajes al asistente. Intenta de nuevo en un momento.");
         }
 
-        SesionChat sesion = resolverSesion(dto.sesionId(), usuarioId);
+        SessionChat session = resolveSession(dto.sessionId(), userId);
 
         // Persiste el mensaje del usuario ANTES de llamar a Gemini para no perder el intento.
-        MensajeChat msgUsuario = new MensajeChat();
-        msgUsuario.setSesionId(sesion.getId());
-        msgUsuario.setRol(ROL_USUARIO);
-        msgUsuario.setContenido(dto.texto());
-        msgUsuario.setCreadoEn(OffsetDateTime.now());
-        mensajeChatRepo.save(msgUsuario);
+        MessageChat msgUser = new MessageChat();
+        msgUser.setSessionId(session.getId());
+        msgUser.setRole(ROL_USUARIO);
+        msgUser.setContent(dto.text());
+        msgUser.setCreated(OffsetDateTime.now());
+        messageChatRepo.save(msgUser);
 
-        String promptSistema = construirPromptSistema(dto.texto());
-        List<MensajeChat> historial =
-                mensajeChatRepo.findBySesionIdOrderByCreadoEnAsc(sesion.getId());
+        String promptSystem = construirPromptSystem(dto.text());
+        List<MessageChat> history =
+                messageChatRepo.findBySessionIdOrderByCreatedAsc(session.getId());
 
-        String respuesta = geminiClient.generarRespuesta(promptSistema, historial, dto.texto());
+        String response = geminiClient.generateResponse(promptSystem, history, dto.text());
 
-        MensajeChat msgAsistente = new MensajeChat();
-        msgAsistente.setSesionId(sesion.getId());
-        msgAsistente.setRol(ROL_ASISTENTE);
-        msgAsistente.setContenido(respuesta);
-        msgAsistente.setCreadoEn(OffsetDateTime.now());
-        mensajeChatRepo.save(msgAsistente);
+        MessageChat msgAsistente = new MessageChat();
+        msgAsistente.setSessionId(session.getId());
+        msgAsistente.setRole(ROL_ASISTENTE);
+        msgAsistente.setContent(response);
+        msgAsistente.setCreated(OffsetDateTime.now());
+        messageChatRepo.save(msgAsistente);
 
-        sesion.setUltimaActividad(OffsetDateTime.now());
-        sesionChatRepo.save(sesion);
+        session.setLastActividad(OffsetDateTime.now());
+        sessionChatRepo.save(session);
 
-        chatbotRateLimiter.registrarMensaje(usuarioId);
+        chatbotRateLimiter.registerMessage(userId);
 
-        return new MensajeChatResponseDTO(sesion.getId(), respuesta, msgAsistente.getCreadoEn());
+        return new MessageChatResponseDTO(session.getId(), response, msgAsistente.getCreated());
     }
 
     @Transactional(readOnly = true)
     /**
-     * Executes the obtenerHistorial operation.
-     * @param sesionId value required by the operation
-     * @param authentication value required by the operation
-     * @return operation result
+     * Retrieves message Chat history DTO records.
+     *
+     * @param sesionId UUID used to scope this message Chat history DTO records
+     * @param authentication authentication of the caller used to scope this message Chat history DTO records
+     * @return list of message Chat history data transfer object matching the requested criteria
      */
-    public List<MensajeChatHistorialDTO> obtenerHistorial(UUID sesionId, Authentication authentication) {
-        Long usuarioId = resolverIdPorCorreo(authentication.getName());
-        SesionChat sesion = validarPropiedadSesion(sesionId, usuarioId);
-        return mensajeChatRepo.findBySesionIdOrderByCreadoEnAsc(sesion.getId()).stream()
-                .map(m -> new MensajeChatHistorialDTO(m.getRol(), m.getContenido(), m.getCreadoEn()))
+    public List<MessageChatHistoryDTO> getHistory(UUID sessionId, Authentication authentication) {
+        Long userId = resolveIdByEmail(authentication.getName());
+        SessionChat session = validatePropiedadSession(sessionId, userId);
+        return messageChatRepo.findBySessionIdOrderByCreatedAsc(session.getId()).stream()
+                .map(m -> new MessageChatHistoryDTO(m.getRole(), m.getContent(), m.getCreated()))
                 .toList();
     }
 
     // ── Prompt de sistema con grounding real ──
     // Instruye al modelo a responder SOLO con el contexto provisto, sin inventar disponibilidad.
-    private String construirPromptSistema(String textoUsuario) {
+    private String construirPromptSystem(String textUser) {
         StringBuilder sb = new StringBuilder();
         sb.append("Eres el asistente virtual de la biblioteca SGB-SaaS. ")
                 .append("Responde SOLO con la información real provista abajo (base de conocimiento y, ")
@@ -129,26 +132,26 @@ public class ChatbotService {
                 .append("Responde en español, breve y útil.\n\n");
 
         sb.append("### Base de conocimiento:\n");
-        for (BaseConocimiento bc : baseConocimientoRepo.findByActivoTrue()) {
-            sb.append("- [").append(bc.getCategoria()).append("] ")
-                    .append(bc.getPreguntaEjemplo()).append(" => ").append(bc.getRespuesta())
+        for (KnowledgeBase bc : baseKnowledgeRepo.findByActiveTrue()) {
+            sb.append("- [").append(bc.getCategory()).append("] ")
+                    .append(bc.getQuestionExample()).append(" => ").append(bc.getResponse())
                     .append("\n");
         }
 
-        if (tieneIntencionDisponibilidad(textoUsuario)) {
-            List<LibroSugerenciaDTO> sugerencias = libroService.sugerir(textoUsuario);
+        if (tieneIntencionAvailability(textUser)) {
+            List<BookSuggestionDTO> suggestions = bookService.sugerir(textUser);
             sb.append("\n### Disponibilidad real de libros (única fuente veraz):\n");
-            if (sugerencias.isEmpty()) {
+            if (suggestions.isEmpty()) {
                 sb.append("(sin coincidencias en el catálogo para esta búsqueda)\n");
             }
-            for (LibroSugerenciaDTO s : sugerencias) {
-                sb.append("- ").append(s.titulo())
+            for (BookSuggestionDTO s : suggestions) {
+                sb.append("- ").append(s.title())
                         .append(" [id=").append(s.id())
-                        .append(", disponible=").append(s.disponible()).append("]\n");
+                        .append(", disponible=").append(s.available()).append("]\n");
             }
         }
 
-        if (tieneIntencionReserva(textoUsuario)) {
+        if (tieneIntencionReservation(textUser)) {
             sb.append("\n### Si el usuario pide reservar o apartar un libro: NO ejecutes la reserva. ")
                     .append("Indícale que confirme el título exacto y que puede reservar desde el ")
                     .append("catálogo o en ventanilla. Pide confirmación antes de dar por hecho nada.\n");
@@ -156,43 +159,43 @@ public class ChatbotService {
         return sb.toString();
     }
 
-    private boolean tieneIntencionDisponibilidad(String texto) {
-        String t = texto.toLowerCase(Locale.ROOT);
+    private boolean tieneIntencionAvailability(String text) {
+        String t = text.toLowerCase(Locale.ROOT);
         return PALABRAS_DISPONIBILIDAD.stream().anyMatch(t::contains);
     }
 
-    private boolean tieneIntencionReserva(String texto) {
-        String t = texto.toLowerCase(Locale.ROOT);
+    private boolean tieneIntencionReservation(String text) {
+        String t = text.toLowerCase(Locale.ROOT);
         return PALABRAS_RESERVA.stream().anyMatch(t::contains);
     }
 
-    private SesionChat resolverSesion(UUID sesionId, Long usuarioId) {
-        if (sesionId == null) {
+    private SessionChat resolveSession(UUID sessionId, Long userId) {
+        if (sessionId == null) {
             OffsetDateTime ahora = OffsetDateTime.now();
-            SesionChat nueva = new SesionChat();
-            nueva.setUsuarioId(usuarioId);
-            nueva.setCreadoEn(ahora);
-            nueva.setUltimaActividad(ahora);
-            return sesionChatRepo.save(nueva);
+            SessionChat fresh = new SessionChat();
+            fresh.setUserId(userId);
+            fresh.setCreated(ahora);
+            fresh.setLastActividad(ahora);
+            return sessionChatRepo.save(fresh);
         }
-        return validarPropiedadSesion(sesionId, usuarioId);
+        return validatePropiedadSession(sessionId, userId);
     }
 
-    private SesionChat validarPropiedadSesion(UUID sesionId, Long usuarioId) {
-        SesionChat sesion = sesionChatRepo.findById(sesionId)
-                .orElseThrow(() -> new SesionChatNoEncontradaException(
-                        "Sesión de chat no encontrada: " + sesionId));
+    private SessionChat validatePropiedadSession(UUID sessionId, Long userId) {
+        SessionChat session = sessionChatRepo.findById(sessionId)
+                .orElseThrow(() -> new SessionChatNotFoundException(
+                        "Sesión de chat no encontrada: " + sessionId));
         // Sesión ajena se reporta igual que inexistente (404 genérico).
-        if (!sesion.getUsuarioId().equals(usuarioId)) {
-            throw new SesionChatNoEncontradaException(
-                    "Sesión de chat no encontrada: " + sesionId);
+        if (!session.getUserId().equals(userId)) {
+            throw new SessionChatNotFoundException(
+                    "Sesión de chat no encontrada: " + sessionId);
         }
-        return sesion;
+        return session;
     }
 
-    private Long resolverIdPorCorreo(String correo) {
-        Usuario usuario = usuarioRepo.findByCorreo(correo)
-                .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo));
-        return usuario.getId();
+    private Long resolveIdByEmail(String email) {
+        User user = userRepo.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + email));
+        return user.getId();
     }
 }

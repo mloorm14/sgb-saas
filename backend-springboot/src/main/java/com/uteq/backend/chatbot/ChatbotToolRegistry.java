@@ -16,7 +16,7 @@ import java.util.Map;
  * Registry que recolecta todas las {@link ChatbotTool} beans y las expone
  * en dos formatos:
  * <ul>
- *   <li>{@link #buildToolsPayload()} — formato Gemini (para el campo {@code tools} del payload)</li>
+ *   <li>{@link #buildToolsPayload} — formato Gemini (para el campo {@code tools} del payload)</li>
  *   <li>{@link #execute(String, JsonNode)} — ejecuta una tool por nombre y devuelve el resultado</li>
  * </ul>
  */
@@ -78,13 +78,10 @@ public class ChatbotToolRegistry {
     }
 
     /**
-
-     * Executes the contains operation.
-
-     * @param toolName value required by the operation
-
-     * @return operation result
-
+     * Handles contains.
+     *
+     * @param toolName text value used to scope this contains
+     * @return true when the check succeeds
      */
 
     public boolean contains(String toolName) {

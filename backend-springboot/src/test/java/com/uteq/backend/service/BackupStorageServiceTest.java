@@ -17,7 +17,7 @@ class BackupStorageServiceTest {
     Path tempDir;
 
     @Test
-    void uploadYDownload_sinR2_guardaArchivoLocalSanitizado() throws Exception {
+    void uploadYDownload_withoutR2_guardaFileLocalSanitizado() throws Exception {
         BackupStorageService service = new BackupStorageService(null);
         ReflectionTestUtils.setField(service, "storageUrl", tempDir.toString());
 
@@ -29,7 +29,7 @@ class BackupStorageServiceTest {
     }
 
     @Test
-    void uploadYDownload_conClaveTextoPlano_cifraYDescifraLocalmente() throws Exception {
+    void uploadYDownload_withKeyTextPlain_cifraYDescifraLocalmente() throws Exception {
         BackupStorageService service = new BackupStorageService(null);
         ReflectionTestUtils.setField(service, "storageUrl", tempDir.toString());
         ReflectionTestUtils.setField(service, "encryptionKey", "clave-de-prueba-para-tests");
@@ -43,7 +43,7 @@ class BackupStorageServiceTest {
     }
 
     @Test
-    void uploadYDownload_conClaveBase64Valida_cifraYDescifraLocalmente() {
+    void uploadYDownload_withKeyBase64Valida_cifraYDescifraLocalmente() {
         BackupStorageService service = new BackupStorageService(null);
         ReflectionTestUtils.setField(service, "storageUrl", tempDir.toString());
         ReflectionTestUtils.setField(service, "encryptionKey",
@@ -55,19 +55,19 @@ class BackupStorageServiceTest {
     }
 
     @Test
-    void delete_sinR2_eliminaArchivoLocalSiExiste() throws Exception {
+    void delete_withoutR2_eliminaFileLocalSiExiste() throws Exception {
         BackupStorageService service = new BackupStorageService(null);
         ReflectionTestUtils.setField(service, "storageUrl", tempDir.toString());
-        Path archivo = tempDir.resolve("backup.zip");
-        Files.write(archivo, "abc".getBytes());
+        Path file = tempDir.resolve("backup.zip");
+        Files.write(file, "abc".getBytes());
 
         service.delete("backup.zip");
 
-        assertThat(Files.exists(archivo)).isFalse();
+        assertThat(Files.exists(file)).isFalse();
     }
 
     @Test
-    void download_cuandoArchivoNoExiste_envuelveIOException() {
+    void download_cuandoFileNotExiste_envuelveIOException() {
         BackupStorageService service = new BackupStorageService(null);
         ReflectionTestUtils.setField(service, "storageUrl", tempDir.toString());
 

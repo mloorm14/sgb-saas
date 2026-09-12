@@ -1,7 +1,7 @@
 package com.uteq.backend.security;
 
-import com.uteq.backend.entity.Rol;
-import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.entity.Role;
+import com.uteq.backend.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -36,11 +36,9 @@ public class JwtService {
     private long refreshExpirationMs;
 
     /**
-
-     * Executes the getExpirationMs operation.
-
-     * @return operation result
-
+     * Retrieves expiration ms.
+     *
+     * @return generated identifier of the affected record
      */
 
     public long getExpirationMs() {
@@ -48,11 +46,9 @@ public class JwtService {
     }
 
     /**
-
-     * Executes the getRefreshExpirationMs operation.
-
-     * @return operation result
-
+     * Retrieves refresh expiration ms.
+     *
+     * @return generated identifier of the affected record
      */
 
     public long getRefreshExpirationMs() {
@@ -64,44 +60,38 @@ public class JwtService {
     }
 
     /**
-
-     * Executes the generateToken operation.
-
-     * @param usuario value required by the operation
-
-     * @return operation result
-
+     * Generates JWT.
+     *
+     * @param user user used to scope this JWT
+     * @return resulting text payload
      */
 
-    public String generateToken(Usuario usuario) {
-        return buildToken(usuario, expirationMs);
+    public String generateToken(User user) {
+        return buildToken(user, expirationMs);
     }
 
     /**
-
-     * Executes the generateRefreshToken operation.
-
-     * @param usuario value required by the operation
-
-     * @return operation result
-
+     * Generates JWT.
+     *
+     * @param user user used to scope this JWT
+     * @return resulting text payload
      */
 
-    public String generateRefreshToken(Usuario usuario) {
-        return buildToken(usuario, refreshExpirationMs);
+    public String generateRefreshToken(User user) {
+        return buildToken(user, refreshExpirationMs);
     }
 
-    private String buildToken(Usuario usuario, long ttlMs) {
+    private String buildToken(User user, long ttlMs) {
         Date now = new Date();
         Date expiration = new Date(now.getTime() + ttlMs);
 
-        List<String> roles = usuario.getRoles().stream()
-                .map(Rol::getNombre)
+        List<String> roles = user.getRoles().stream()
+                .map(Role::getName)
                 .toList();
 
         return Jwts.builder()
-                .subject(String.valueOf(usuario.getId()))
-                .claim("correo", usuario.getCorreo())
+                .subject(String.valueOf(user.getId()))
+                .claim("correo", user.getEmail())
                 // Claim real para autorización: arreglo completo de roles.
                 .claim("roles", roles)
                 // DECISIÓN TEMPORAL DE RETROCOMPATIBILIDAD (TAREA 4.1): se
@@ -111,7 +101,7 @@ public class JwtService {
                 // frontend (Panama) migre a leer "roles" (array) en su
                 // lugar -- no agregar más lógica que dependa de "rol"
                 // mientras tanto.
-                .claim("rol", rolPrincipal(roles))
+                .claim("rol", rolePrincipal(roles))
                 .id(UUID.randomUUID().toString())
                 .issuedAt(now)
                 .expiration(expiration)
@@ -119,23 +109,20 @@ public class JwtService {
                 .compact();
     }
 
-    private String rolPrincipal(List<String> roles) {
+    private String rolePrincipal(List<String> roles) {
         return roles.stream()
-                .min(Comparator.comparingInt(nombre -> {
-                    int idx = JERARQUIA_ROLES.indexOf(nombre);
+                .min(Comparator.comparingInt(name -> {
+                    int idx = JERARQUIA_ROLES.indexOf(name);
                     return idx == -1 ? Integer.MAX_VALUE : idx;
                 }))
                 .orElse(null);
     }
 
     /**
-
-     * Executes the validateToken operation.
-
-     * @param token value required by the operation
-
-     * @return operation result
-
+     * Validates JWT.
+     *
+     * @param token text value used to scope this JWT
+     * @return true when the check succeeds
      */
 
     public boolean validateToken(String token) {
@@ -151,27 +138,21 @@ public class JwtService {
     }
 
     /**
-
-     * Executes the extractCorreo operation.
-
-     * @param token value required by the operation
-
-     * @return operation result
-
+     * Handles extract email address.
+     *
+     * @param token text value used to scope this extract email address
+     * @return resulting text payload
      */
 
-    public String extractCorreo(String token) {
+    public String extractEmail(String token) {
         return extractClaims(token).get("correo", String.class);
     }
 
     /**
-
-     * Executes the extractJti operation.
-
-     * @param token value required by the operation
-
-     * @return operation result
-
+     * Handles extract Jti.
+     *
+     * @param token text value used to scope this extract Jti
+     * @return resulting text payload
      */
 
     public String extractJti(String token) {
@@ -179,13 +160,10 @@ public class JwtService {
     }
 
     /**
-
-     * Executes the extractExpiration operation.
-
-     * @param token value required by the operation
-
-     * @return operation result
-
+     * Handles extract Expiration.
+     *
+     * @param token text value used to scope this extract Expiration
+     * @return Date reflecting the state after the operation
      */
 
     public Date extractExpiration(String token) {

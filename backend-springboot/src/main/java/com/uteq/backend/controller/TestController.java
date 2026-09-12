@@ -11,8 +11,9 @@ public class TestController {
 
     @GetMapping("/protegido")
     /**
-     * Executes the protegido operation.
-     * @return operation result
+     * Handles protegido.
+     *
+     * @return response entity<string> with the resulting state after the operation
      */
     public ResponseEntity<String> protegido() {
         return ResponseEntity.ok("Acceso autorizado. Estás autenticado correctamente.");

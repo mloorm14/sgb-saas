@@ -9,14 +9,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class BackendApplication {
 
 	/**
-
-	 * Executes the main operation.
-
-	 * @param args value required by the operation
-
-	 * @return operation result
-
-	 */
+     * Handles main.
+     *
+     * @param args string[] supplied by the caller for this invocation
+     */
 
 	public static void main(String[] args) {
 		SpringApplication.run(BackendApplication.class, args);

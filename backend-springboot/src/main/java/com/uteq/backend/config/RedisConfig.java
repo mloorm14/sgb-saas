@@ -27,30 +27,31 @@ public class RedisConfig {
     @Bean
     public CacheManager cacheManager(
             RedisConnectionFactory connectionFactory,
-            @Value("${app.cache.libros.ttl-seconds}") long librosTtlSeconds,
-            @Value("${app.cache.sugerencias.ttl-seconds}") long sugerenciasTtlSeconds) {
+            @Value("${app.cache.libros.ttl-seconds}") long booksTtlSeconds,
+            @Value("${app.cache.sugerencias.ttl-seconds}") long suggestionsTtlSeconds) {
         RedisCacheConfiguration baseConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .disableCachingNullValues();
 
         // TTL externo (application.yml), nunca hardcodeado en Java.
-        RedisCacheConfiguration librosConfig = baseConfig.entryTtl(Duration.ofSeconds(librosTtlSeconds));
+        RedisCacheConfiguration booksConfig = baseConfig.entryTtl(Duration.ofSeconds(booksTtlSeconds));
 
         // TTL propio en segundos: el autocompletado se teclea letra por letra.
-        RedisCacheConfiguration sugerenciasConfig = baseConfig.entryTtl(Duration.ofSeconds(sugerenciasTtlSeconds));
+        RedisCacheConfiguration suggestionsConfig = baseConfig.entryTtl(Duration.ofSeconds(suggestionsTtlSeconds));
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(baseConfig)
                 .withInitialCacheConfigurations(Map.of(
-                        "libros", librosConfig,
-                        "sugerencias-libros", sugerenciasConfig))
+                        "libros", booksConfig,
+                        "sugerencias-libros", suggestionsConfig))
                 .transactionAware()
                 .build();
     }
 
     @Bean
     /**
-     * Executes the cacheErrorHandler operation.
-     * @return operation result
+     * Handles cache error handler.
+     *
+     * @return cache error handler with the resulting state after the operation
      */
     public CacheErrorHandler cacheErrorHandler() {
         return new CacheErrorHandler() {
@@ -72,9 +73,10 @@ public class RedisConfig {
 
     @Bean
     /**
-     * Executes the redisTemplate operation.
-     * @param connectionFactory value required by the operation
-     * @return operation result
+     * Handles Redis Template.
+     *
+     * @param connectionFactory Redis Connection Factory used to scope this Redis Template
+     * @return Redis Template<String, String> reflecting the state after the operation
      */
     public RedisTemplate<String, String> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, String> template = new RedisTemplate<>();

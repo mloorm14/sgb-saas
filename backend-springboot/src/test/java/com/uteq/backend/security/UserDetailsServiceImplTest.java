@@ -1,9 +1,9 @@
 package com.uteq.backend.security;
 
-import com.uteq.backend.entity.EstadoUsuario;
-import com.uteq.backend.entity.Rol;
-import com.uteq.backend.entity.Usuario;
-import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.entity.StatusUser;
+import com.uteq.backend.entity.Role;
+import com.uteq.backend.entity.User;
+import com.uteq.backend.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -35,43 +35,43 @@ class UserDetailsServiceImplTest {
     private static final String CORREO = "userdetails-test@correo.com";
 
     @Mock
-    private UsuarioRepository usuarioRepository;
+    private UserRepository userRepository;
 
     @InjectMocks
     private UserDetailsServiceImpl userDetailsServiceImpl;
 
-    private Usuario usuarioConEstado(String nombreEstado, String... nombresRoles) {
-        EstadoUsuario estado = new EstadoUsuario();
-        estado.setId(1);
-        estado.setNombre(nombreEstado);
+    private User userWithStatus(String nameStatus, String... nombresRoles) {
+        StatusUser status = new StatusUser();
+        status.setId(1);
+        status.setName(nameStatus);
 
-        Set<Rol> roles = new java.util.HashSet<>();
+        Set<Role> roles = new java.util.HashSet<>();
         int idSecuencia = 1;
-        for (String nombreRol : nombresRoles) {
-            Rol rol = new Rol();
-            rol.setId(idSecuencia++);
-            rol.setNombre(nombreRol);
-            roles.add(rol);
+        for (String nameRole : nombresRoles) {
+            Role role = new Role();
+            role.setId(idSecuencia++);
+            role.setName(nameRole);
+            roles.add(role);
         }
 
-        return Usuario.builder()
+        return User.builder()
                 .id(99L)
-                .nombre("UserDetails")
-                .apellido("De Prueba")
-                .correo(CORREO)
+                .name("UserDetails")
+                .lastName("De Prueba")
+                .email(CORREO)
                 .passwordHash("hash-bcrypt-de-prueba")
-                .estado(estado)
-                .correoVerificado(true)
+                .status(status)
+                .emailVerified(true)
                 .roles(roles)
-                .fechaRegistro(Instant.now())
-                .actualizadoEn(Instant.now())
+                .dateRegistration(Instant.now())
+                .updated(Instant.now())
                 .build();
     }
 
     @Test
-    void usuarioActivoConRoles_devuelveUserDetailsConAuthoritiesRoleCorrectas() {
-        Usuario usuario = usuarioConEstado("ACTIVO", "LECTOR", "BIBLIOTECARIO");
-        when(usuarioRepository.findByCorreo(CORREO)).thenReturn(Optional.of(usuario));
+    void userActiveWithRoles_devuelveUserDetailsWithAuthoritiesRoleCorrectas() {
+        User user = userWithStatus("ACTIVO", "LECTOR", "BIBLIOTECARIO");
+        when(userRepository.findByEmail(CORREO)).thenReturn(Optional.of(user));
 
         UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(CORREO);
 
@@ -88,8 +88,8 @@ class UserDetailsServiceImplTest {
     }
 
     @Test
-    void usuarioNoEncontrado_lanzaUsernameNotFoundException() {
-        when(usuarioRepository.findByCorreo(CORREO)).thenReturn(Optional.empty());
+    void userNotFound_lanzaUsernameNotFoundException() {
+        when(userRepository.findByEmail(CORREO)).thenReturn(Optional.empty());
 
         UsernameNotFoundException ex = assertThrows(UsernameNotFoundException.class,
                 () -> userDetailsServiceImpl.loadUserByUsername(CORREO));
@@ -99,9 +99,9 @@ class UserDetailsServiceImplTest {
     // Verificado en vivo hace dias (usuario bloqueado por multa no puede
     // hacer login); queda como test permanente de regresion.
     @Test
-    void usuarioBloqueadoPorMulta_accountNonLockedEsFalseYSigueHabilitado() {
-        Usuario usuario = usuarioConEstado("BLOQUEADO_POR_MULTA", "LECTOR");
-        when(usuarioRepository.findByCorreo(CORREO)).thenReturn(Optional.of(usuario));
+    void userBlockedByFine_accountNonLockedEsFalseYSigueEnabled() {
+        User user = userWithStatus("BLOQUEADO_POR_MULTA", "LECTOR");
+        when(userRepository.findByEmail(CORREO)).thenReturn(Optional.of(user));
 
         UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(CORREO);
 
@@ -110,9 +110,9 @@ class UserDetailsServiceImplTest {
     }
 
     @Test
-    void usuarioInactivo_disabledEsTrue() {
-        Usuario usuario = usuarioConEstado("INACTIVO", "LECTOR");
-        when(usuarioRepository.findByCorreo(CORREO)).thenReturn(Optional.of(usuario));
+    void userInactivo_disabledEsTrue() {
+        User user = userWithStatus("INACTIVO", "LECTOR");
+        when(userRepository.findByEmail(CORREO)).thenReturn(Optional.of(user));
 
         UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(CORREO);
 
@@ -121,9 +121,9 @@ class UserDetailsServiceImplTest {
     }
 
     @Test
-    void usuarioPendienteVerificacion_disabledEsTrue() {
-        Usuario usuario = usuarioConEstado("PENDIENTE_VERIFICACION", "LECTOR");
-        when(usuarioRepository.findByCorreo(CORREO)).thenReturn(Optional.of(usuario));
+    void userPendingVerification_disabledEsTrue() {
+        User user = userWithStatus("PENDIENTE_VERIFICACION", "LECTOR");
+        when(userRepository.findByEmail(CORREO)).thenReturn(Optional.of(user));
 
         UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(CORREO);
 

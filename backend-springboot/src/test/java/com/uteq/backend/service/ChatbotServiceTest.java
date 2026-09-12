@@ -1,18 +1,18 @@
 package com.uteq.backend.service;
 
-import com.uteq.backend.dto.LibroSugerenciaDTO;
-import com.uteq.backend.dto.MensajeChatHistorialDTO;
-import com.uteq.backend.dto.MensajeChatRequestDTO;
-import com.uteq.backend.dto.MensajeChatResponseDTO;
-import com.uteq.backend.entity.BaseConocimiento;
-import com.uteq.backend.entity.MensajeChat;
-import com.uteq.backend.entity.SesionChat;
-import com.uteq.backend.entity.Usuario;
+import com.uteq.backend.dto.BookSuggestionDTO;
+import com.uteq.backend.dto.MessageChatHistoryDTO;
+import com.uteq.backend.dto.MessageChatRequestDTO;
+import com.uteq.backend.dto.MessageChatResponseDTO;
+import com.uteq.backend.entity.KnowledgeBase;
+import com.uteq.backend.entity.MessageChat;
+import com.uteq.backend.entity.SessionChat;
+import com.uteq.backend.entity.User;
 import com.uteq.backend.integration.GeminiClient;
-import com.uteq.backend.repository.BaseConocimientoRepository;
-import com.uteq.backend.repository.MensajeChatRepository;
-import com.uteq.backend.repository.SesionChatRepository;
-import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.repository.BaseKnowledgeRepository;
+import com.uteq.backend.repository.MessageChatRepository;
+import com.uteq.backend.repository.SessionChatRepository;
+import com.uteq.backend.repository.UserRepository;
 import com.uteq.backend.security.ChatbotRateLimiter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,12 +44,12 @@ class ChatbotServiceTest {
     private static final String MENSAJE_FALLBACK_GEMINI =
             "El asistente está saturado, intenta en unos segundos.";
 
-    @Mock SesionChatRepository sesionChatRepo;
-    @Mock MensajeChatRepository mensajeChatRepo;
-    @Mock BaseConocimientoRepository baseConocimientoRepo;
-    @Mock UsuarioRepository usuarioRepo;
-    @Mock LibroService libroService;
-    @Mock ReservacionService reservacionService;
+    @Mock SessionChatRepository sessionChatRepo;
+    @Mock MessageChatRepository messageChatRepo;
+    @Mock BaseKnowledgeRepository baseKnowledgeRepo;
+    @Mock UserRepository userRepo;
+    @Mock BookService bookService;
+    @Mock ReservationService reservationService;
     @Mock GeminiClient geminiClient;
     @Mock ChatbotRateLimiter chatbotRateLimiter;
 
@@ -57,210 +57,210 @@ class ChatbotServiceTest {
 
     // ── Test 1: sesión nueva ────────────────────────────────
     @Test
-    void enviarMensaje_sesionNueva_creaSesionYPersisteAmbosMensajes() {
-        Authentication auth = authComoLector();
-        prepararUsuarioLector();
-        given(chatbotRateLimiter.estaBloqueado(1L)).willReturn(false);
-        given(sesionChatRepo.save(any(SesionChat.class))).willAnswer(inv -> {
-            SesionChat s = inv.getArgument(0);
+    void sendMessage_sessionFresh_creaSessionYPersisteAmbosMensajes() {
+        Authentication auth = authComoReader();
+        prepararUserReader();
+        given(chatbotRateLimiter.estaBlocked(1L)).willReturn(false);
+        given(sessionChatRepo.save(any(SessionChat.class))).willAnswer(inv -> {
+            SessionChat s = inv.getArgument(0);
             s.setId(UUID.randomUUID());
             return s;
         });
-        given(mensajeChatRepo.save(any(MensajeChat.class))).willAnswer(inv -> inv.getArgument(0));
-        given(baseConocimientoRepo.findByActivoTrue()).willReturn(List.of());
-        given(mensajeChatRepo.findBySesionIdOrderByCreadoEnAsc(any(UUID.class))).willReturn(List.of());
-        given(geminiClient.generarRespuesta(anyString(), any(), anyString())).willReturn("Hola, ¿en qué te ayudo?");
+        given(messageChatRepo.save(any(MessageChat.class))).willAnswer(inv -> inv.getArgument(0));
+        given(baseKnowledgeRepo.findByActiveTrue()).willReturn(List.of());
+        given(messageChatRepo.findBySessionIdOrderByCreatedAsc(any(UUID.class))).willReturn(List.of());
+        given(geminiClient.generateResponse(anyString(), any(), anyString())).willReturn("Hola, ¿en qué te ayudo?");
 
-        MensajeChatResponseDTO resultado = chatbotService.enviarMensaje(
-                new MensajeChatRequestDTO(null, "¿Cuál es el horario?"), auth);
+        MessageChatResponseDTO result = chatbotService.sendMessage(
+                new MessageChatRequestDTO(null, "¿Cuál es el horario?"), auth);
 
-        assertThat(resultado.sesionId()).isNotNull();
-        assertThat(resultado.respuesta()).isEqualTo("Hola, ¿en qué te ayudo?");
+        assertThat(result.sessionId()).isNotNull();
+        assertThat(result.response()).isEqualTo("Hola, ¿en qué te ayudo?");
         // save x2: la creación de la sesión en resolverSesion + la
         // actualización de ultima_actividad al final de enviarMensaje.
-        verify(sesionChatRepo, org.mockito.Mockito.times(2)).save(any(SesionChat.class));
-        verify(mensajeChatRepo).save(argRol("USUARIO"));
-        verify(mensajeChatRepo).save(argRol("ASISTENTE"));
-        verify(chatbotRateLimiter).registrarMensaje(1L);
+        verify(sessionChatRepo, org.mockito.Mockito.times(2)).save(any(SessionChat.class));
+        verify(messageChatRepo).save(argRole("USUARIO"));
+        verify(messageChatRepo).save(argRole("ASISTENTE"));
+        verify(chatbotRateLimiter).registerMessage(1L);
     }
 
     // ── Test 2: sesión existente propia ─────────────────────
     @Test
-    void enviarMensaje_sesionExistentePropia_reutilizaSesionYActualizaUltimaActividad() {
-        Authentication auth = authComoLector();
-        prepararUsuarioLector();
-        given(chatbotRateLimiter.estaBloqueado(1L)).willReturn(false);
-        UUID sesionId = UUID.randomUUID();
-        given(sesionChatRepo.findById(sesionId)).willReturn(Optional.of(sesionDeUsuario(sesionId, 1L)));
-        given(mensajeChatRepo.save(any(MensajeChat.class))).willAnswer(inv -> inv.getArgument(0));
-        given(baseConocimientoRepo.findByActivoTrue()).willReturn(List.of());
-        given(mensajeChatRepo.findBySesionIdOrderByCreadoEnAsc(sesionId)).willReturn(List.of());
-        given(geminiClient.generarRespuesta(anyString(), any(), anyString())).willReturn("Respuesta");
+    void sendMessage_sessionExistingOwn_reutilizaSessionYActualizaLastActividad() {
+        Authentication auth = authComoReader();
+        prepararUserReader();
+        given(chatbotRateLimiter.estaBlocked(1L)).willReturn(false);
+        UUID sessionId = UUID.randomUUID();
+        given(sessionChatRepo.findById(sessionId)).willReturn(Optional.of(sessionUser(sessionId, 1L)));
+        given(messageChatRepo.save(any(MessageChat.class))).willAnswer(inv -> inv.getArgument(0));
+        given(baseKnowledgeRepo.findByActiveTrue()).willReturn(List.of());
+        given(messageChatRepo.findBySessionIdOrderByCreatedAsc(sessionId)).willReturn(List.of());
+        given(geminiClient.generateResponse(anyString(), any(), anyString())).willReturn("Respuesta");
 
-        MensajeChatResponseDTO resultado = chatbotService.enviarMensaje(
-                new MensajeChatRequestDTO(sesionId, "¿Hay multas?"), auth);
+        MessageChatResponseDTO result = chatbotService.sendMessage(
+                new MessageChatRequestDTO(sessionId, "¿Hay multas?"), auth);
 
-        assertThat(resultado.sesionId()).isEqualTo(sesionId);
+        assertThat(result.sessionId()).isEqualTo(sessionId);
         // Reutiliza la sesión existente: el save que sí ocurre es la
         // actualización de ultima_actividad sobre ESA misma sesión, no la
         // creación de una nueva.
-        ArgumentCaptor<SesionChat> captorSesion = ArgumentCaptor.forClass(SesionChat.class);
-        verify(sesionChatRepo).save(captorSesion.capture());
-        assertThat(captorSesion.getValue().getId()).isEqualTo(sesionId);
-        assertThat(captorSesion.getValue().getUltimaActividad()).isAfter(
-                captorSesion.getValue().getCreadoEn());
-        verify(mensajeChatRepo).save(argRol("USUARIO"));
-        verify(mensajeChatRepo).save(argRol("ASISTENTE"));
+        ArgumentCaptor<SessionChat> captorSession = ArgumentCaptor.forClass(SessionChat.class);
+        verify(sessionChatRepo).save(captorSession.capture());
+        assertThat(captorSession.getValue().getId()).isEqualTo(sessionId);
+        assertThat(captorSession.getValue().getLastActividad()).isAfter(
+                captorSession.getValue().getCreated());
+        verify(messageChatRepo).save(argRole("USUARIO"));
+        verify(messageChatRepo).save(argRole("ASISTENTE"));
     }
 
     // ── Test 3: sesión de otro usuario ──────────────────────
     @Test
-    void enviarMensaje_sesionDeOtroUsuario_lanzaSesionChatNoEncontrada() {
-        Authentication auth = authComoLector();
-        prepararUsuarioLector();
-        given(chatbotRateLimiter.estaBloqueado(1L)).willReturn(false);
-        UUID sesionId = UUID.randomUUID();
-        given(sesionChatRepo.findById(sesionId)).willReturn(Optional.of(sesionDeUsuario(sesionId, 2L)));
+    void sendMessage_sessionOtroUser_lanzaSessionChatNotFound() {
+        Authentication auth = authComoReader();
+        prepararUserReader();
+        given(chatbotRateLimiter.estaBlocked(1L)).willReturn(false);
+        UUID sessionId = UUID.randomUUID();
+        given(sessionChatRepo.findById(sessionId)).willReturn(Optional.of(sessionUser(sessionId, 2L)));
 
-        assertThatThrownBy(() -> chatbotService.enviarMensaje(
-                new MensajeChatRequestDTO(sesionId, "hola"), auth))
-                .isInstanceOf(SesionChatNoEncontradaException.class);
-        verify(mensajeChatRepo, never()).save(any(MensajeChat.class));
+        assertThatThrownBy(() -> chatbotService.sendMessage(
+                new MessageChatRequestDTO(sessionId, "hola"), auth))
+                .isInstanceOf(SessionChatNotFoundException.class);
+        verify(messageChatRepo, never()).save(any(MessageChat.class));
     }
 
     // ── Test 4: rate limit excedido ─────────────────────────
     @Test
-    void enviarMensaje_rateLimitExcedido_lanzaChatbotRateLimitExcedido() {
-        Authentication auth = authComoLector();
-        prepararUsuarioLector();
-        given(chatbotRateLimiter.estaBloqueado(1L)).willReturn(true);
+    void sendMessage_rateLimitExceeded_lanzaChatbotRateLimitExceeded() {
+        Authentication auth = authComoReader();
+        prepararUserReader();
+        given(chatbotRateLimiter.estaBlocked(1L)).willReturn(true);
 
-        assertThatThrownBy(() -> chatbotService.enviarMensaje(
-                new MensajeChatRequestDTO(null, "hola"), auth))
-                .isInstanceOf(ChatbotRateLimitExcedidoException.class);
-        verify(geminiClient, never()).generarRespuesta(anyString(), any(), anyString());
-        verify(sesionChatRepo, never()).save(any(SesionChat.class));
+        assertThatThrownBy(() -> chatbotService.sendMessage(
+                new MessageChatRequestDTO(null, "hola"), auth))
+                .isInstanceOf(ChatbotRateLimitExceededException.class);
+        verify(geminiClient, never()).generateResponse(anyString(), any(), anyString());
+        verify(sessionChatRepo, never()).save(any(SessionChat.class));
     }
 
     // ── Test 5: grounding de disponibilidad ─────────────────
     @Test
-    void enviarMensaje_textoConsultaDisponibilidad_incluyeResultadosDeLibroServiceEnContexto() {
-        Authentication auth = authComoLector();
-        prepararUsuarioLector();
-        given(chatbotRateLimiter.estaBloqueado(1L)).willReturn(false);
-        given(sesionChatRepo.save(any(SesionChat.class))).willAnswer(inv -> {
-            SesionChat s = inv.getArgument(0);
+    void sendMessage_textConsultaAvailability_incluyeResultsBookServiceContexto() {
+        Authentication auth = authComoReader();
+        prepararUserReader();
+        given(chatbotRateLimiter.estaBlocked(1L)).willReturn(false);
+        given(sessionChatRepo.save(any(SessionChat.class))).willAnswer(inv -> {
+            SessionChat s = inv.getArgument(0);
             s.setId(UUID.randomUUID());
             return s;
         });
-        given(mensajeChatRepo.save(any(MensajeChat.class))).willAnswer(inv -> inv.getArgument(0));
-        given(baseConocimientoRepo.findByActivoTrue()).willReturn(List.of());
-        given(mensajeChatRepo.findBySesionIdOrderByCreadoEnAsc(any(UUID.class))).willReturn(List.of());
-        given(libroService.sugerir(anyString())).willReturn(
-                List.of(new LibroSugerenciaDTO(10L, "Clean Code", true)));
-        given(geminiClient.generarRespuesta(anyString(), any(), anyString())).willReturn("Sí está disponible.");
+        given(messageChatRepo.save(any(MessageChat.class))).willAnswer(inv -> inv.getArgument(0));
+        given(baseKnowledgeRepo.findByActiveTrue()).willReturn(List.of());
+        given(messageChatRepo.findBySessionIdOrderByCreatedAsc(any(UUID.class))).willReturn(List.of());
+        given(bookService.sugerir(anyString())).willReturn(
+                List.of(new BookSuggestionDTO(10L, "Clean Code", true)));
+        given(geminiClient.generateResponse(anyString(), any(), anyString())).willReturn("Sí está disponible.");
 
-        chatbotService.enviarMensaje(
-                new MensajeChatRequestDTO(null, "¿hay disponible el libro Clean Code?"), auth);
+        chatbotService.sendMessage(
+                new MessageChatRequestDTO(null, "¿hay disponible el libro Clean Code?"), auth);
 
         ArgumentCaptor<String> captorPrompt = ArgumentCaptor.forClass(String.class);
-        verify(geminiClient).generarRespuesta(captorPrompt.capture(), any(), anyString());
+        verify(geminiClient).generateResponse(captorPrompt.capture(), any(), anyString());
         assertThat(captorPrompt.getValue())
                 .contains("Clean Code")
                 .contains("disponible=true");
-        verify(libroService).sugerir(anyString());
+        verify(bookService).sugerir(anyString());
     }
 
     // ── Test 6: fallback de Gemini no rompe el flujo ────────
     @Test
-    void enviarMensaje_geminiClientDevuelveMensajeDeFallback_seGuardaComoRespuestaAsistente() {
-        Authentication auth = authComoLector();
-        prepararUsuarioLector();
-        given(chatbotRateLimiter.estaBloqueado(1L)).willReturn(false);
-        given(sesionChatRepo.save(any(SesionChat.class))).willAnswer(inv -> {
-            SesionChat s = inv.getArgument(0);
+    void sendMessage_geminiClientDevuelveMessageFallback_seGuardaComoResponseAsistente() {
+        Authentication auth = authComoReader();
+        prepararUserReader();
+        given(chatbotRateLimiter.estaBlocked(1L)).willReturn(false);
+        given(sessionChatRepo.save(any(SessionChat.class))).willAnswer(inv -> {
+            SessionChat s = inv.getArgument(0);
             s.setId(UUID.randomUUID());
             return s;
         });
-        given(mensajeChatRepo.save(any(MensajeChat.class))).willAnswer(inv -> inv.getArgument(0));
-        given(baseConocimientoRepo.findByActivoTrue()).willReturn(List.of());
-        given(mensajeChatRepo.findBySesionIdOrderByCreadoEnAsc(any(UUID.class))).willReturn(List.of());
-        given(geminiClient.generarRespuesta(anyString(), any(), anyString()))
+        given(messageChatRepo.save(any(MessageChat.class))).willAnswer(inv -> inv.getArgument(0));
+        given(baseKnowledgeRepo.findByActiveTrue()).willReturn(List.of());
+        given(messageChatRepo.findBySessionIdOrderByCreatedAsc(any(UUID.class))).willReturn(List.of());
+        given(geminiClient.generateResponse(anyString(), any(), anyString()))
                 .willReturn(MENSAJE_FALLBACK_GEMINI);
 
-        MensajeChatResponseDTO resultado = chatbotService.enviarMensaje(
-                new MensajeChatRequestDTO(null, "hola"), auth);
+        MessageChatResponseDTO result = chatbotService.sendMessage(
+                new MessageChatRequestDTO(null, "hola"), auth);
 
-        assertThat(resultado.respuesta()).isEqualTo(MENSAJE_FALLBACK_GEMINI);
-        verify(mensajeChatRepo).save(argRol("ASISTENTE"));
-        verify(chatbotRateLimiter).registrarMensaje(1L);
+        assertThat(result.response()).isEqualTo(MENSAJE_FALLBACK_GEMINI);
+        verify(messageChatRepo).save(argRole("ASISTENTE"));
+        verify(chatbotRateLimiter).registerMessage(1L);
     }
 
     // ── Test 7: historial propio ordenado ───────────────────
     @Test
-    void obtenerHistorial_sesionPropia_retornaMensajesOrdenados() {
-        Authentication auth = authComoLector();
-        prepararUsuarioLector();
-        UUID sesionId = UUID.randomUUID();
-        given(sesionChatRepo.findById(sesionId)).willReturn(Optional.of(sesionDeUsuario(sesionId, 1L)));
-        MensajeChat primero = mensaje("USUARIO", "¿hay libros?", OffsetDateTime.now().minusMinutes(2));
-        MensajeChat segundo = mensaje("ASISTENTE", "Sí, revisa el catálogo", OffsetDateTime.now());
-        given(mensajeChatRepo.findBySesionIdOrderByCreadoEnAsc(sesionId)).willReturn(List.of(primero, segundo));
+    void getHistory_sessionOwn_retornaMensajesOrdenados() {
+        Authentication auth = authComoReader();
+        prepararUserReader();
+        UUID sessionId = UUID.randomUUID();
+        given(sessionChatRepo.findById(sessionId)).willReturn(Optional.of(sessionUser(sessionId, 1L)));
+        MessageChat primero = message("USUARIO", "¿hay libros?", OffsetDateTime.now().minusMinutes(2));
+        MessageChat second = message("ASISTENTE", "Sí, revisa el catálogo", OffsetDateTime.now());
+        given(messageChatRepo.findBySessionIdOrderByCreatedAsc(sessionId)).willReturn(List.of(primero, second));
 
-        List<MensajeChatHistorialDTO> historial = chatbotService.obtenerHistorial(sesionId, auth);
+        List<MessageChatHistoryDTO> history = chatbotService.getHistory(sessionId, auth);
 
-        assertThat(historial).hasSize(2);
-        assertThat(historial.get(0).rol()).isEqualTo("USUARIO");
-        assertThat(historial.get(1).rol()).isEqualTo("ASISTENTE");
-        assertThat(historial.get(1).contenido()).isEqualTo("Sí, revisa el catálogo");
+        assertThat(history).hasSize(2);
+        assertThat(history.get(0).role()).isEqualTo("USUARIO");
+        assertThat(history.get(1).role()).isEqualTo("ASISTENTE");
+        assertThat(history.get(1).content()).isEqualTo("Sí, revisa el catálogo");
     }
 
     // ── Test 8: historial de sesión ajena ───────────────────
     @Test
-    void obtenerHistorial_sesionAjena_lanzaSesionChatNoEncontrada() {
-        Authentication auth = authComoLector();
-        prepararUsuarioLector();
-        UUID sesionId = UUID.randomUUID();
-        given(sesionChatRepo.findById(sesionId)).willReturn(Optional.of(sesionDeUsuario(sesionId, 2L)));
+    void getHistory_sessionAjena_lanzaSessionChatNotFound() {
+        Authentication auth = authComoReader();
+        prepararUserReader();
+        UUID sessionId = UUID.randomUUID();
+        given(sessionChatRepo.findById(sessionId)).willReturn(Optional.of(sessionUser(sessionId, 2L)));
 
-        assertThatThrownBy(() -> chatbotService.obtenerHistorial(sesionId, auth))
-                .isInstanceOf(SesionChatNoEncontradaException.class);
-        verify(mensajeChatRepo, never()).findBySesionIdOrderByCreadoEnAsc(any(UUID.class));
+        assertThatThrownBy(() -> chatbotService.getHistory(sessionId, auth))
+                .isInstanceOf(SessionChatNotFoundException.class);
+        verify(messageChatRepo, never()).findBySessionIdOrderByCreatedAsc(any(UUID.class));
     }
 
     // ── Helpers ────────────────────────────────────────────
-    private Authentication authComoLector() {
+    private Authentication authComoReader() {
         Authentication auth = mock(Authentication.class);
         lenient().when(auth.getName()).thenReturn(CORREO);
         return auth;
     }
 
-    private void prepararUsuarioLector() {
-        Usuario usuario = new Usuario();
-        usuario.setId(1L);
-        given(usuarioRepo.findByCorreo(CORREO)).willReturn(Optional.of(usuario));
+    private void prepararUserReader() {
+        User user = new User();
+        user.setId(1L);
+        given(userRepo.findByEmail(CORREO)).willReturn(Optional.of(user));
     }
 
-    private SesionChat sesionDeUsuario(UUID id, Long usuarioId) {
-        SesionChat s = new SesionChat();
+    private SessionChat sessionUser(UUID id, Long userId) {
+        SessionChat s = new SessionChat();
         s.setId(id);
-        s.setUsuarioId(usuarioId);
-        s.setCreadoEn(OffsetDateTime.now().minusHours(1));
-        s.setUltimaActividad(OffsetDateTime.now().minusMinutes(1));
+        s.setUserId(userId);
+        s.setCreated(OffsetDateTime.now().minusHours(1));
+        s.setLastActividad(OffsetDateTime.now().minusMinutes(1));
         return s;
     }
 
-    private MensajeChat mensaje(String rol, String contenido, OffsetDateTime creadoEn) {
-        MensajeChat m = new MensajeChat();
-        m.setSesionId(UUID.randomUUID());
-        m.setRol(rol);
-        m.setContenido(contenido);
-        m.setCreadoEn(creadoEn);
+    private MessageChat message(String role, String content, OffsetDateTime created) {
+        MessageChat m = new MessageChat();
+        m.setSessionId(UUID.randomUUID());
+        m.setRole(role);
+        m.setContent(content);
+        m.setCreated(created);
         return m;
     }
 
-    private MensajeChat argRol(String rol) {
-        return org.mockito.ArgumentMatchers.argThat(m -> m instanceof MensajeChat
-                && rol.equals(((MensajeChat) m).getRol()));
+    private MessageChat argRole(String role) {
+        return org.mockito.ArgumentMatchers.argThat(m -> m instanceof MessageChat
+                && role.equals(((MessageChat) m).getRole()));
     }
 }

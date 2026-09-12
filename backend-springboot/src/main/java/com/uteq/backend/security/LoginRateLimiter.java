@@ -32,23 +32,19 @@ public class LoginRateLimiter {
     private long rateLimitWindowSeconds;
 
     /**
-
-     * Executes the estaBloqueado operation.
-
-     * @param correo value required by the operation
-
-     * @param ip value required by the operation
-
-     * @return operation result
-
+     * Handles esta Bloqueado.
+     *
+     * @param email text value used to scope this esta Bloqueado
+     * @param ip text value used to scope this esta Bloqueado
+     * @return true when the check succeeds
      */
 
-    public boolean estaBloqueado(String correo, String ip) {
+    public boolean estaBlocked(String email, String ip) {
         try {
-            String valor = redisTemplate.opsForValue().get(key(correo, ip));
-            return valor != null && Long.parseLong(valor) >= maxAttempts;
+            String value = redisTemplate.opsForValue().get(key(email, ip));
+            return value != null && Long.parseLong(value) >= maxAttempts;
         } catch (DataAccessException e) {
-            log.warn("Redis no disponible en estaBloqueado (fail-open, sin bloqueo): correo={}", correo, e);
+            log.warn("Redis no disponible en estaBloqueado (fail-open, sin bloqueo): correo={}", email, e);
             return false;
         }
     }
@@ -60,33 +56,30 @@ public class LoginRateLimiter {
      * cada intento subsiguiente (evita que un atacante lento mantenga el
      * bloqueo indefinidamente fallando un intento cada pocos minutos).
      */
-    public void registrarFallo(String correo, String ip) {
+    public void registerFailure(String email, String ip) {
         try {
-            String llave = key(correo, ip);
-            Long nuevoValor = redisTemplate.opsForValue().increment(llave);
-            if (nuevoValor != null && nuevoValor == 1L) {
-                redisTemplate.expire(llave, Duration.ofSeconds(rateLimitWindowSeconds));
+            String key = key(email, ip);
+            Long freshValue = redisTemplate.opsForValue().increment(key);
+            if (freshValue != null && freshValue == 1L) {
+                redisTemplate.expire(key, Duration.ofSeconds(rateLimitWindowSeconds));
             }
         } catch (DataAccessException e) {
-            log.warn("Redis no disponible en registrarFallo (contador no incrementado): correo={}", correo, e);
+            log.warn("Redis no disponible en registrarFallo (contador no incrementado): correo={}", email, e);
         }
     }
 
     /**
-
-     * Executes the resetear operation.
-
-     * @param correo value required by the operation
-
-     * @param ip value required by the operation
-
+     * Handles resetear.
+     *
+     * @param email text value used to scope this resetear
+     * @param ip text value used to scope this resetear
      */
 
-    public void resetear(String correo, String ip) {
+    public void resetear(String email, String ip) {
         try {
-            redisTemplate.delete(key(correo, ip));
+            redisTemplate.delete(key(email, ip));
         } catch (DataAccessException e) {
-            log.warn("Redis no disponible en resetear (contador no limpiado): correo={}", correo, e);
+            log.warn("Redis no disponible en resetear (contador no limpiado): correo={}", email, e);
         }
     }
 
@@ -96,17 +89,17 @@ public class LoginRateLimiter {
      * si por alguna razón Redis no expone un TTL preciso (ej. -1/-2 de
      * {@code getExpire}), en vez de un número negativo confuso.
      */
-    public long segundosRestantes(String correo, String ip) {
+    public long secondsRestantes(String email, String ip) {
         try {
-            Long ttl = redisTemplate.getExpire(key(correo, ip));
+            Long ttl = redisTemplate.getExpire(key(email, ip));
             return (ttl == null || ttl < 0) ? rateLimitWindowSeconds : ttl;
         } catch (DataAccessException e) {
-            log.warn("Redis no disponible en segundosRestantes (se informa ventana completa): correo={}", correo, e);
+            log.warn("Redis no disponible en segundosRestantes (se informa ventana completa): correo={}", email, e);
             return rateLimitWindowSeconds;
         }
     }
 
-    private String key(String correo, String ip) {
-        return KEY_PREFIX + correo + ":" + ip;
+    private String key(String email, String ip) {
+        return KEY_PREFIX + email + ":" + ip;
     }
 }

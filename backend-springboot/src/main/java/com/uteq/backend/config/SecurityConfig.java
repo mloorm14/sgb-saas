@@ -34,8 +34,9 @@ public class SecurityConfig {
 
     @Bean
     /**
-     * Executes the passwordEncoder operation.
-     * @return operation result
+     * Handles password encoder.
+     *
+     * @return password encoder with the resulting state after the operation
      */
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12);
@@ -43,10 +44,11 @@ public class SecurityConfig {
 
     @Bean
     /**
-     * Executes the authenticationManager operation.
-     * @param config value required by the operation
-     * @return operation result
-     * @throws Exception when the operation cannot be completed
+     * Handles authentication Manager.
+     *
+     * @param config Authentication Configuration used to scope this authentication Manager
+     * @return Authentication Manager reflecting the state after the operation
+     * @throws Exception when the authentication Manager cannot be processed with the given input
      */
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
@@ -54,8 +56,9 @@ public class SecurityConfig {
 
     @Bean
     /**
-     * Executes the authenticationProvider operation.
-     * @return operation result
+     * Handles authentication provider.
+     *
+     * @return authentication provider with the resulting state after the operation
      */
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsServiceImpl);
@@ -65,10 +68,11 @@ public class SecurityConfig {
 
     @Bean
     /**
-     * Executes the filterChain operation.
-     * @param http value required by the operation
-     * @return operation result
-     * @throws Exception when the operation cannot be completed
+     * Handles filter Chain.
+     *
+     * @param http Http Security used to scope this filter Chain
+     * @return Security Filter Chain reflecting the state after the operation
+     * @throws Exception when the filter Chain cannot be processed with the given input
      */
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http

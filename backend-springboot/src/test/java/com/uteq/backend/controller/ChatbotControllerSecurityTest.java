@@ -2,8 +2,8 @@ package com.uteq.backend.controller;
 
 import com.uteq.backend.chatbot.ChatbotOrchestrator;
 import com.uteq.backend.config.SecurityConfig;
-import com.uteq.backend.dto.MensajeChatRequestDTO;
-import com.uteq.backend.dto.MensajeChatResponseDTO;
+import com.uteq.backend.dto.MessageChatRequestDTO;
+import com.uteq.backend.dto.MessageChatResponseDTO;
 import com.uteq.backend.security.JwtAuthFilter;
 import com.uteq.backend.security.JwtService;
 import com.uteq.backend.security.UserDetailsServiceImpl;
@@ -56,7 +56,7 @@ class ChatbotControllerSecurityTest {
     private MockMvc mockMvc;
 
     @BeforeEach
-    void construirMockMvcConSeguridad() {
+    void construirMockMvcWithSeguridad() {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
@@ -78,48 +78,48 @@ class ChatbotControllerSecurityTest {
 
     @Test
     @WithMockUser(roles = "LECTOR")
-    void enviarMensaje_conRolLector_retorna200() throws Exception {
-        when(chatbotOrchestrator.enviarMensaje(any(), any())).thenReturn(new MensajeChatResponseDTO(
+    void sendMessage_withRoleReader_retorna200() throws Exception {
+        when(chatbotOrchestrator.sendMessage(any(), any())).thenReturn(new MessageChatResponseDTO(
                 UUID.randomUUID(), "Respuesta", OffsetDateTime.now()));
 
         mockMvc.perform(post("/api/v1/chatbot/mensajes")
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(new MensajeChatRequestDTO(null, "hola"))))
+                        .content(objectMapper.writeValueAsString(new MessageChatRequestDTO(null, "hola"))))
                 .andExpect(status().isOk());
     }
 
     @Test
     @WithMockUser(roles = "BIBLIOTECARIO")
-    void enviarMensaje_conRolBibliotecario_retorna403() throws Exception {
+    void sendMessage_withRoleLibrarian_retorna403() throws Exception {
         mockMvc.perform(post("/api/v1/chatbot/mensajes")
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(new MensajeChatRequestDTO(null, "hola"))))
+                        .content(objectMapper.writeValueAsString(new MessageChatRequestDTO(null, "hola"))))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(roles = "GERENTE")
-    void enviarMensaje_conRolGerente_retorna403() throws Exception {
+    void sendMessage_withRoleManager_retorna403() throws Exception {
         mockMvc.perform(post("/api/v1/chatbot/mensajes")
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(new MensajeChatRequestDTO(null, "hola"))))
+                        .content(objectMapper.writeValueAsString(new MessageChatRequestDTO(null, "hola"))))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    void enviarMensaje_sinAutenticar_esRechazado() throws Exception {
+    void sendMessage_withoutAutenticar_esRejected() throws Exception {
         // Ver DISCREPANCIA en el Javadoc de la clase: el repo devuelve 403
         // (Http403ForbiddenEntryPoint) para no autenticado, no 401.
         mockMvc.perform(post("/api/v1/chatbot/mensajes")
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(new MensajeChatRequestDTO(null, "hola"))))
+                        .content(objectMapper.writeValueAsString(new MessageChatRequestDTO(null, "hola"))))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(roles = "LECTOR")
-    void historial_conRolLector_retorna200() throws Exception {
-        when(chatbotOrchestrator.obtenerHistorial(any(), any())).thenReturn(java.util.List.of());
+    void history_withRoleReader_retorna200() throws Exception {
+        when(chatbotOrchestrator.getHistory(any(), any())).thenReturn(java.util.List.of());
 
         mockMvc.perform(get("/api/v1/chatbot/sesiones/{id}/historial", UUID.randomUUID()))
                 .andExpect(status().isOk());

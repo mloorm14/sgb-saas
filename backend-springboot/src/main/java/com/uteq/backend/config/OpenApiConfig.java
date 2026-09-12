@@ -18,8 +18,9 @@ public class OpenApiConfig {
 
     @Bean
     /**
-     * Executes the sgbOpenAPI operation.
-     * @return operation result
+     * Handles sgb open api.
+     *
+     * @return open api with the resulting state after the operation
      */
     public OpenAPI sgbOpenAPI() {
         return new OpenAPI()

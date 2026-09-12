@@ -1,17 +1,17 @@
 package com.uteq.backend.service;
 
 import com.uteq.backend.dto.LoginRequestDTO;
-import com.uteq.backend.dto.RegistroRequestDTO;
+import com.uteq.backend.dto.RegistrationRequestDTO;
 import com.uteq.backend.dto.TokenResponseDTO;
-import com.uteq.backend.dto.UsuarioResponseDTO;
-import com.uteq.backend.entity.BitacoraAuditoria;
-import com.uteq.backend.entity.EstadoUsuario;
-import com.uteq.backend.entity.Rol;
-import com.uteq.backend.entity.Usuario;
-import com.uteq.backend.repository.BitacoraAuditoriaRepository;
-import com.uteq.backend.repository.EstadoUsuarioRepository;
-import com.uteq.backend.repository.RolRepository;
-import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.dto.UserResponseDTO;
+import com.uteq.backend.entity.AuditLogAudit;
+import com.uteq.backend.entity.StatusUser;
+import com.uteq.backend.entity.Role;
+import com.uteq.backend.entity.User;
+import com.uteq.backend.repository.AuditLogAuditRepository;
+import com.uteq.backend.repository.StatusUserRepository;
+import com.uteq.backend.repository.RoleRepository;
+import com.uteq.backend.repository.UserRepository;
 import com.uteq.backend.security.JwtService;
 import com.uteq.backend.security.LoginRateLimiter;
 import lombok.RequiredArgsConstructor;
@@ -46,82 +46,77 @@ public class AuthService {
     private static final String TABLA_SESIONES = "sesiones";
     private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado: ";
 
-    private final UsuarioRepository usuarioRepository;
-    private final RolRepository rolRepository;
-    private final EstadoUsuarioRepository estadoUsuarioRepository;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final StatusUserRepository statusUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final RedisTemplate<String, String> redisTemplate;
     private final LoginRateLimiter loginRateLimiter;
-    private final BitacoraAuditoriaRepository bitacoraAuditoriaRepository;
-    private final VerificacionCorreoService verificacionCorreoService;
-    private final ConfiguracionSistemaService configuracionSistemaService;
+    private final AuditLogAuditRepository auditLogAuditRepository;
+    private final VerificationEmailService verificationEmailService;
+    private final ConfigurationSystemService configurationSystemService;
     private final EmailService emailService;
 
     /**
      * Crea una cuenta nueva con rol LECTOR en estado PENDIENTE_VERIFICACION para permitir el registro
      * autónomo y dejarla lista para la confirmación por correo.
      * Valida que el correo no esté duplicado ni pertenezca a un dominio restringido, cifra la
-     * contraseña y dispara el envío del código de verificación (ver {@link #verificarCorreo}).
+     * contraseña y dispara el envío del código de verificación (ver {@link #verifyEmail}).
      *
      * @param dto solicitud con nombre, apellido, correo de acceso y contraseña en claro sin cifrar
      * @return vista resumida del usuario persistido con identificador, nombre, correo y roles asignados
-     * @throws CorreoYaRegistradoException si ya existe un usuario con el correo solicitado
-     * @throws CorreoDominioNoPermitidoException si el dominio del correo no figura entre los permitidos
+     * @throws EmailYaRegistradoException si ya existe un usuario con el correo solicitado
+     * @throws EmailDomainNotAllowedException si el dominio del correo no figura entre los permitidos
      * @throws IllegalStateException si faltan las filas de catálogo del rol LECTOR o del estado inicial
      */
-    /**
-     * Executes the registrar operation.
-     * @param dto value required by the operation
-     * @return operation result
-     */
-    public UsuarioResponseDTO registrar(RegistroRequestDTO dto) {
-        usuarioRepository.findByCorreo(dto.correo()).ifPresent(usuario -> {
-            throw new CorreoYaRegistradoException("El correo ya está registrado: " + dto.correo());
+    public UserResponseDTO register(RegistrationRequestDTO dto) {
+        userRepository.findByEmail(dto.email()).ifPresent(user -> {
+            throw new EmailYaRegistradoException("El correo ya está registrado: " + dto.email());
         });
 
-        validarDominioCorreo(dto.correo());
+        validateDomainEmail(dto.email());
 
-        Rol rolLector = rolRepository.findByNombre(ROL_POR_DEFECTO)
+        Role roleReader = roleRepository.findByName(ROL_POR_DEFECTO)
                 .orElseThrow(() -> new IllegalStateException("Catalogo roles sin fila '" + ROL_POR_DEFECTO + "'"));
-        EstadoUsuario estadoPendienteVerificacion = estadoUsuarioRepository.findByNombre(ESTADO_INICIAL)
+        StatusUser statusPendingVerification = statusUserRepository.findByName(ESTADO_INICIAL)
                 .orElseThrow(() -> new IllegalStateException("Catalogo estados_usuario sin fila '" + ESTADO_INICIAL + "'"));
 
         Instant ahora = Instant.now();
-        Set<Rol> roles = new HashSet<>();
-        roles.add(rolLector);
+        Set<Role> roles = new HashSet<>();
+        roles.add(roleReader);
 
-        Usuario usuario = Usuario.builder()
-                .nombre(dto.nombre())
-                .apellido(dto.apellido())
-                .correo(dto.correo())
+        User user = User.builder()
+                .name(dto.name())
+                .lastName(dto.lastName())
+                .email(dto.email())
                 .passwordHash(passwordEncoder.encode(dto.password()))
-                .estado(estadoPendienteVerificacion)
-                .correoVerificado(false)
+                .status(statusPendingVerification)
+                .emailVerified(false)
                 .roles(roles)
-                .fechaRegistro(ahora)
-                .actualizadoEn(ahora)
+                .dateRegistration(ahora)
+                .updated(ahora)
                 .build();
 
-        Usuario guardado = usuarioRepository.save(usuario);
+        User guardado = userRepository.save(user);
 
         // Queda PENDIENTE_VERIFICACION hasta confirmar el código vía verificarCorreo().
-        verificacionCorreoService.generarYEnviarCodigo(guardado);
+        verificationEmailService.generateYSendCode(guardado);
 
-        return mapToUsuarioResponseDTO(guardado);
+        return mapToUserResponseDTO(guardado);
     }
 
-    private void validarDominioCorreo(String correo) {
+    private void validateDomainEmail(String email) {
         try {
-            String dominiosPermitidos = configuracionSistemaService.obtenerValor("correo_dominios_permitidos");
-            if (dominiosPermitidos == null || dominiosPermitidos.isBlank()) return;
-            String dominio = correo.substring(correo.lastIndexOf('@') + 1).toLowerCase();
-            for (String permitido : dominiosPermitidos.split(",")) {
-                if (dominio.equals(permitido.trim().toLowerCase())) return;
+            String domainsAlloweds = configurationSystemService.getValue("correo_dominios_permitidos");
+            if (domainsAlloweds == null || domainsAlloweds.isBlank()) return;
+            String domain = email.substring(email.lastIndexOf('@') + 1).toLowerCase();
+            for (String allowed : domainsAlloweds.split(",")) {
+                if (domain.equals(allowed.trim().toLowerCase())) return;
             }
-            throw new CorreoDominioNoPermitidoException(
-                    "Solo se permiten registros con dominio: " + dominiosPermitidos);
+            throw new EmailDomainNotAllowedException(
+                    "Solo se permiten registros con dominio: " + domainsAlloweds);
         } catch (jakarta.persistence.EntityNotFoundException e) {
             // Si la clave no existe en configuracion_sistema, no restringe
         }
@@ -134,21 +129,17 @@ public class AuthService {
      * titular pueda completar la activación cuando el código anterior ya expiró en Redis.
      * Rechaza la operación si la cuenta ya quedó verificada.
      *
-     * @param correo dirección asociada a la cuenta pendiente de verificación
+     * @param email dirección asociada a la cuenta pendiente de verificación
      * @throws jakarta.persistence.EntityNotFoundException si no existe ningún usuario con ese correo
      * @throws IllegalArgumentException si el correo ya está verificado o la cuenta no requiere verificación
      */
-    /**
-     * Executes the reenviarCodigo operation.
-     * @param correo value required by the operation
-     */
-    public void reenviarCodigo(String correo) {
-        Usuario usuario = usuarioRepository.findByCorreo(correo)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo));
-        if (usuario.isCorreoVerificado() || !ESTADO_INICIAL.equals(usuario.getEstado().getNombre())) {
+    public void resendCode(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(USUARIO_NO_ENCONTRADO + email));
+        if (user.isEmailVerified() || !ESTADO_INICIAL.equals(user.getStatus().getName())) {
             throw new IllegalArgumentException("El correo ya está verificado o la cuenta no requiere verificación.");
         }
-        verificacionCorreoService.generarYEnviarCodigo(usuario);
+        verificationEmailService.generateYSendCode(user);
     }
 
     // ── POST /api/auth/solicitar-reset ──
@@ -158,33 +149,29 @@ public class AuthService {
      * nueva sin estar autenticado. Genera un código aleatorio de 6 dígitos con vigencia de 10 minutos
      * en Redis y lo envía por correo como mecanismo best-effort (ver {@link #resetPassword}).
      *
-     * @param correo dirección de la cuenta que solicita la recuperación
+     * @param email dirección de la cuenta que solicita la recuperación
      * @throws jakarta.persistence.EntityNotFoundException si no existe ningún usuario con ese correo
-     * @throws ServicioTemporalmenteNoDisponibleException si Redis no acepta el guardado del código
+     * @throws ServiceTemporalmenteNotAvailableException si Redis no acepta el guardado del código
      */
-    /**
-     * Executes the solicitarReset operation.
-     * @param correo value required by the operation
-     */
-    public void solicitarReset(String correo) {
-        Usuario usuario = usuarioRepository.findByCorreo(correo)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(USUARIO_NO_ENCONTRADO + correo));
-        String key = "reset-codigo:" + correo;
-        String codigo = String.format("%06d", new java.security.SecureRandom().nextInt(1_000_000));
+    public void requestReset(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(USUARIO_NO_ENCONTRADO + email));
+        String key = "reset-codigo:" + email;
+        String code = String.format("%06d", new java.security.SecureRandom().nextInt(1_000_000));
         try {
-            redisTemplate.opsForValue().set(key, codigo, java.time.Duration.ofMinutes(10));
+            redisTemplate.opsForValue().set(key, code, java.time.Duration.ofMinutes(10));
         } catch (org.springframework.dao.DataAccessException e) {
-            throw new ServicioTemporalmenteNoDisponibleException("Servicio de reset no disponible");
+            throw new ServiceTemporalmenteNotAvailableException("Servicio de reset no disponible");
         }
-        String cuerpo = "<p>Hola " + usuario.getNombre() + ",</p>"
-                + "<p>Tu código para recuperar la cuenta es: <b>" + codigo + "</b></p>"
+        String body = "<p>Hola " + user.getName() + ",</p>"
+                + "<p>Tu código para recuperar la cuenta es: <b>" + code + "</b></p>"
                 + "<p>Vence en 10 minutos.</p>";
         // Envío best-effort: si falla, el código queda en Redis y el usuario puede reintentar.
-        boolean enviado = emailService.enviarCorreo(correo, "Recuperar cuenta - SGB-SaaS", cuerpo);
+        boolean enviado = emailService.sendEmail(email, "Recuperar cuenta - SGB-SaaS", body);
         if (!enviado) {
-            log.warn("No se pudo enviar correo de recuperacion a {} (codigo en Redis)", correo);
+            log.warn("No se pudo enviar correo de recuperacion a {} (codigo en Redis)", email);
         }
-        log.info("Código de recuperacion generado para {}: {}", correo, codigo);
+        log.info("Código de recuperacion generado para {}: {}", email, code);
     }
 
     // ── POST /api/auth/reset ────────────────────────
@@ -193,38 +180,32 @@ public class AuthService {
      * devolverle el acceso al titular tras validar su identidad sin JWT. Consume el código en Redis
      * cuando el cambio se persiste.
      *
-     * @param correo dirección de la cuenta a recuperar
-     * @param codigo código de 6 dígitos previamente generado por {@link #solicitarReset} y aún vigente en Redis
-     * @param nuevaPassword contraseña en claro sin cifrar que reemplazará a la anterior
-     * @throws CodigoVerificacionInvalidoException si el código no coincide, expiró o Redis no responde a la lectura
+     * @param email dirección de la cuenta a recuperar
+     * @param code código de 6 dígitos previamente generado por {@link #requestReset} y aún vigente en Redis
+     * @param freshPassword contraseña en claro sin cifrar que reemplazará a la anterior
+     * @throws CodeVerificationInvalidException si el código no coincide, expiró o Redis no responde a la lectura
      * @throws jakarta.persistence.EntityNotFoundException si no existe ningún usuario con ese correo
      */
-    /**
-     * Executes the resetPassword operation.
-     * @param correo value required by the operation
-     * @param codigo value required by the operation
-     * @param nuevaPassword value required by the operation
-     */
-    public void resetPassword(String correo, String codigo, String nuevaPassword) {
-        String key = "reset-codigo:" + correo;
+    public void resetPassword(String email, String code, String freshPassword) {
+        String key = "reset-codigo:" + email;
         String almacenado;
         try {
             almacenado = redisTemplate.opsForValue().get(key);
         } catch (org.springframework.dao.DataAccessException e) {
-            throw new CodigoVerificacionInvalidoException("Servicio no disponible");
+            throw new CodeVerificationInvalidException("Servicio no disponible");
         }
-        if (almacenado == null || !almacenado.equals(codigo)) {
-            throw new CodigoVerificacionInvalidoException("Código inválido o expirado");
+        if (almacenado == null || !almacenado.equals(code)) {
+            throw new CodeVerificationInvalidException("Código inválido o expirado");
         }
-        Usuario usuario = usuarioRepository.findByCorreo(correo)
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Usuario no encontrado"));
-        usuario.setPasswordHash(passwordEncoder.encode(nuevaPassword));
-        usuario.setActualizadoEn(Instant.now());
-        usuarioRepository.save(usuario);
+        user.setPasswordHash(passwordEncoder.encode(freshPassword));
+        user.setUpdated(Instant.now());
+        userRepository.save(user);
           try { redisTemplate.delete(key); } catch (Exception ignored) {
               // best-effort: si Redis cae, el reseteo ya se completó en BD
           }
-        log.info("Password reseteado para {}", correo);
+        log.info("Password reseteado para {}", email);
     }
 
     // ── POST /api/auth/verificar-correo ──
@@ -234,38 +215,31 @@ public class AuthService {
      * de sesión que permanece restringido mientras el correo sigue pendiente. Registra el evento en la
      * bitácora de auditoría con la IP de origen.
      *
-     * @param correo dirección pendiente de confirmación
-     * @param codigo código de un solo uso previamente enviado al correo del titular
-     * @param ipOrigen dirección IP desde donde se confirma, usada solo para auditoría y registro
+     * @param email dirección pendiente de confirmación
+     * @param code código de un solo uso previamente enviado al correo del titular
+     * @param ipSource dirección IP desde donde se confirma, usada solo para auditoría y registro
      * @return vista resumida del usuario ya activado con identificador, nombre, correo y roles
      * @throws IllegalArgumentException si no existe ningún usuario con ese correo
      * @throws IllegalStateException si falta la fila de catálogo del estado ACTIVO
      */
-    /**
-     * Executes the verificarCorreo operation.
-     * @param correo value required by the operation
-     * @param codigo value required by the operation
-     * @param ipOrigen value required by the operation
-     * @return operation result
-     */
-    public UsuarioResponseDTO verificarCorreo(String correo, String codigo, String ipOrigen) {
-        verificacionCorreoService.validar(correo, codigo);
+    public UserResponseDTO verifyEmail(String email, String code, String ipSource) {
+        verificationEmailService.validate(email, code);
 
-        Usuario usuario = usuarioRepository.findByCorreo(correo)
-                .orElseThrow(() -> new IllegalArgumentException(USUARIO_NO_ENCONTRADO + correo));
-        EstadoUsuario estadoActivo = estadoUsuarioRepository.findByNombre(ESTADO_VERIFICADO)
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException(USUARIO_NO_ENCONTRADO + email));
+        StatusUser statusActive = statusUserRepository.findByName(ESTADO_VERIFICADO)
                 .orElseThrow(() -> new IllegalStateException("Catalogo estados_usuario sin fila '" + ESTADO_VERIFICADO + "'"));
 
-        usuario.setEstado(estadoActivo);
-        usuario.setCorreoVerificado(true);
-        usuario.setActualizadoEn(Instant.now());
-        Usuario guardado = usuarioRepository.save(usuario);
+        user.setStatus(statusActive);
+        user.setEmailVerified(true);
+        user.setUpdated(Instant.now());
+        User guardado = userRepository.save(user);
 
-        log.info("Correo verificado: correo={} ip={}", correo, ipOrigen);
-        registrarAuditoria(guardado.getId(), "CORREO_VERIFICADO", guardado.getId(),
-                "Correo verificado para: " + correo, ipOrigen);
+        log.info("Correo verificado: correo={} ip={}", email, ipSource);
+        registerAudit(guardado.getId(), "CORREO_VERIFICADO", guardado.getId(),
+                "Correo verificado para: " + email, ipSource);
 
-        return mapToUsuarioResponseDTO(guardado);
+        return mapToUserResponseDTO(guardado);
     }
 
     /**
@@ -274,50 +248,44 @@ public class AuthService {
      * éxito y deja traza de cada resultado en la bitácora de auditoría.
      *
      * @param dto credenciales de acceso con correo y contraseña en claro sin cifrar
-     * @param ipOrigen dirección IP desde donde se intenta el acceso, usada para el límite de intentos y auditoría
+     * @param ipSource dirección IP desde donde se intenta el acceso, usada para el límite de intentos y auditoría
      * @return par de tokens con el JWT de acceso, el token de refresco y su vigencia en segundos
-     * @throws LoginRateLimitExcedidoException si la combinación de correo e IP agotó los intentos permitidos
+     * @throws LoginRateLimitExceededException si la combinación de correo e IP agotó los intentos permitidos
      * @throws org.springframework.security.authentication.BadCredentialsException si la contraseña o el usuario no son válidos
      * @throws RuntimeException si la autenticación prospera pero el usuario ya no existe en la base
      */
-    /**
-     * Executes the login operation.
-     * @param dto value required by the operation
-     * @param ipOrigen value required by the operation
-     * @return operation result
-     */
-    public TokenResponseDTO login(LoginRequestDTO dto, String ipOrigen) {
+    public TokenResponseDTO login(LoginRequestDTO dto, String ipSource) {
         // Verifica el rate limit ANTES de autenticar → 429 si se agotó.
-        if (loginRateLimiter.estaBloqueado(dto.correo(), ipOrigen)) {
-            long segundosRestantes = loginRateLimiter.segundosRestantes(dto.correo(), ipOrigen);
+        if (loginRateLimiter.estaBlocked(dto.email(), ipSource)) {
+            long secondsRestantes = loginRateLimiter.secondsRestantes(dto.email(), ipSource);
             log.warn("Login bloqueado por rate limit: correo={} ip={} segundosRestantes={}",
-                    dto.correo(), ipOrigen, segundosRestantes);
-            throw new LoginRateLimitExcedidoException(
-                    "Demasiados intentos fallidos. Intente nuevamente en " + segundosRestantes + " segundos.");
+                    dto.email(), ipSource, secondsRestantes);
+            throw new LoginRateLimitExceededException(
+                    "Demasiados intentos fallidos. Intente nuevamente en " + secondsRestantes + " segundos.");
         }
 
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(dto.correo(), dto.password())
+                    new UsernamePasswordAuthenticationToken(dto.email(), dto.password())
             );
         } catch (BadCredentialsException ex) {
-            loginRateLimiter.registrarFallo(dto.correo(), ipOrigen);
-            log.warn("Login fallido: correo={} ip={}", dto.correo(), ipOrigen);
-            registrarAuditoria(null, "LOGIN_FAIL", null, "Login fallido para correo: " + dto.correo(), ipOrigen);
+            loginRateLimiter.registerFailure(dto.email(), ipSource);
+            log.warn("Login fallido: correo={} ip={}", dto.email(), ipSource);
+            registerAudit(null, "LOGIN_FAIL", null, "Login fallido para correo: " + dto.email(), ipSource);
             throw ex;
         }
 
-        Usuario usuario = usuarioRepository.findByCorreo(dto.correo())
-                .orElseThrow(() -> new RuntimeException(USUARIO_NO_ENCONTRADO + dto.correo()));
+        User user = userRepository.findByEmail(dto.email())
+                .orElseThrow(() -> new RuntimeException(USUARIO_NO_ENCONTRADO + dto.email()));
 
         // Login exitoso: resetea el contador de fallos de esta combinación correo+IP.
-        loginRateLimiter.resetear(dto.correo(), ipOrigen);
-        log.info("Login exitoso: sub={} correo={} ip={}", usuario.getId(), dto.correo(), ipOrigen);
-        registrarAuditoria(usuario.getId(), "LOGIN_OK", usuario.getId(),
-                "Login exitoso para correo: " + dto.correo(), ipOrigen);
+        loginRateLimiter.resetear(dto.email(), ipSource);
+        log.info("Login exitoso: sub={} correo={} ip={}", user.getId(), dto.email(), ipSource);
+        registerAudit(user.getId(), "LOGIN_OK", user.getId(),
+                "Login exitoso para correo: " + dto.email(), ipSource);
 
-        String accessToken = jwtService.generateToken(usuario);
-        String refreshToken = jwtService.generateRefreshToken(usuario);
+        String accessToken = jwtService.generateToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
 
         return new TokenResponseDTO(accessToken, refreshToken, expiresInSeconds());
     }
@@ -328,17 +296,12 @@ public class AuthService {
      * Redis no responde, la expiración propia del token sigue siendo el límite duro de validez.
      *
      * @param token JWT de acceso del cual se extraen identificador, vencimiento y correo del titular
-     * @param ipOrigen dirección IP desde donde se cierra la sesión, usada solo para auditoría y registro
+     * @param ipSource dirección IP desde donde se cierra la sesión, usada solo para auditoría y registro
      */
-    /**
-     * Executes the logout operation.
-     * @param token value required by the operation
-     * @param ipOrigen value required by the operation
-     */
-    public void logout(String token, String ipOrigen) {
+    public void logout(String token, String ipSource) {
         String jti = jwtService.extractJti(token);
         Date expiration = jwtService.extractExpiration(token);
-        String correo = jwtService.extractCorreo(token);
+        String email = jwtService.extractEmail(token);
 
         long ttl = (expiration.getTime() - System.currentTimeMillis()) / 1000;
 
@@ -348,36 +311,36 @@ public class AuthService {
             } catch (org.springframework.dao.DataAccessException e) {
                 // Fail-open acotado: la revocación por blacklist es best-effort;
                 // el exp del token sigue siendo el límite duro de validez.
-                log.warn("Redis no disponible en logout (blacklist no actualizada): correo={} jti={}", correo, jti, e);
+                log.warn("Redis no disponible en logout (blacklist no actualizada): correo={} jti={}", email, jti, e);
             }
         }
 
-        log.info("Logout: correo={} jti={} ip={}", correo, jti, ipOrigen);
-        registrarAuditoria(null, "LOGOUT", null, "Logout para correo: " + correo + " (jti=" + jti + ")", ipOrigen);
+        log.info("Logout: correo={} jti={} ip={}", email, jti, ipSource);
+        registerAudit(null, "LOGOUT", null, "Logout para correo: " + email + " (jti=" + jti + ")", ipSource);
     }
 
     // Escribe LOGIN_OK/LOGIN_FAIL/LOGOUT en bitacora_auditoria.
     // LOGIN_* van a 'sesiones'; CORREO_VERIFICADO a 'usuarios'.
-    private void registrarAuditoria(Long usuarioId, String tipoOperacion, Long registroId,
-                                    String detalles, String ipOrigen) {
-        boolean esSesion = "LOGIN_OK".equals(tipoOperacion)
-                || "LOGIN_FAIL".equals(tipoOperacion)
-                || "LOGOUT".equals(tipoOperacion);
-        BitacoraAuditoria evento = BitacoraAuditoria.builder()
-                .usuarioId(usuarioId)
-                .tipoOperacion(tipoOperacion)
-                .tablaAfectada(esSesion ? TABLA_SESIONES : TABLA_USUARIOS)
-                .registroId(registroId)
+    private void registerAudit(Long userId, String typeOperacion, Long registrationId,
+                                    String detalles, String ipSource) {
+        boolean esSession = "LOGIN_OK".equals(typeOperacion)
+                || "LOGIN_FAIL".equals(typeOperacion)
+                || "LOGOUT".equals(typeOperacion);
+        AuditLogAudit event = AuditLogAudit.builder()
+                .userId(userId)
+                .typeOperacion(typeOperacion)
+                .tableAfectada(esSession ? TABLA_SESIONES : TABLA_USUARIOS)
+                .registrationId(registrationId)
                 .detalles(detalles)
-                .ipOrigen(ipOrigen)
-                .fechaHora(OffsetDateTime.now())
+                .ipSource(ipSource)
+                .dateTime(OffsetDateTime.now())
                 .build();
         try {
-            bitacoraAuditoriaRepository.save(evento);
+            auditLogAuditRepository.save(event);
         } catch (org.springframework.dao.DataAccessException e) {
             // Bitácora best-effort: si falla no rompe el login; el evento queda en el log.
             log.error("No se pudo registrar evento de auditoría: tipo={} usuarioId={} ip={}",
-                    tipoOperacion, usuarioId, ipOrigen, e);
+                    typeOperacion, userId, ipSource, e);
         }
     }
 
@@ -387,30 +350,30 @@ public class AuthService {
      *
      * @param refreshToken token de refresco previamente emitido por {@link #login} y aún vigente
      * @return par de tokens con el JWT de acceso renovado, el mismo refresco recibido y su vigencia en segundos
-     * @throws RefreshTokenInvalidoException si el refresco no es válido, expiró o su correo ya no existe
+     * @throws RefreshTokenInvalidException si el refresco no es válido, expiró o su correo ya no existe
      */
     public TokenResponseDTO refresh(String refreshToken) {
         if (!jwtService.validateToken(refreshToken)) {
-            throw new RefreshTokenInvalidoException("Refresh token inválido o expirado. Inicie sesión nuevamente.");
+            throw new RefreshTokenInvalidException("Refresh token inválido o expirado. Inicie sesión nuevamente.");
         }
 
-        String correo = jwtService.extractCorreo(refreshToken);
-        Usuario usuario = usuarioRepository.findByCorreo(correo)
-                .orElseThrow(() -> new RefreshTokenInvalidoException("Refresh token inválido o expirado. Inicie sesión nuevamente."));
+        String email = jwtService.extractEmail(refreshToken);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RefreshTokenInvalidException("Refresh token inválido o expirado. Inicie sesión nuevamente."));
 
-        String nuevoAccessToken = jwtService.generateToken(usuario);
+        String freshAccessToken = jwtService.generateToken(user);
 
-        return new TokenResponseDTO(nuevoAccessToken, refreshToken, expiresInSeconds());
+        return new TokenResponseDTO(freshAccessToken, refreshToken, expiresInSeconds());
     }
 
     private long expiresInSeconds() {
         return jwtService.getExpirationMs() / 1000;
     }
 
-    private UsuarioResponseDTO mapToUsuarioResponseDTO(Usuario usuario) {
-        List<String> roles = usuario.getRoles().stream()
-                .map(Rol::getNombre)
+    private UserResponseDTO mapToUserResponseDTO(User user) {
+        List<String> roles = user.getRoles().stream()
+                .map(Role::getName)
                 .toList();
-        return new UsuarioResponseDTO(usuario.getId(), usuario.getNombre(), usuario.getCorreo(), roles);
+        return new UserResponseDTO(user.getId(), user.getName(), user.getEmail(), roles);
     }
 }

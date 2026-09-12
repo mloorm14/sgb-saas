@@ -19,8 +19,9 @@ public class R2Config {
 
     @Bean
     /**
-     * Executes the s3Client operation.
-     * @return operation result
+     * Handles s3 client.
+     *
+     * @return s3 client with the resulting state after the operation
      */
     public S3Client s3Client() {
         if (endpoint == null || endpoint.isBlank() || accessKey == null || accessKey.isBlank()) return null;

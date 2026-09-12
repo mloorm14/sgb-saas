@@ -1,6 +1,6 @@
 package com.uteq.backend.integration;
 
-import com.uteq.backend.entity.MensajeChat;
+import com.uteq.backend.entity.MessageChat;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -72,9 +72,9 @@ public class GeminiClient {
      * Genera una respuesta de texto simple (sin function calling).
      * Se mantiene por backward-compatibility con tests existentes.
      */
-    public String generarRespuesta(String promptSistema, List<MensajeChat> historial, String mensajeNuevo) {
-        GeminiResponse respuesta = generarRespuestaConTools(promptSistema, historial, mensajeNuevo, List.of());
-        return respuesta.getTexto();
+    public String generateResponse(String promptSystem, List<MessageChat> history, String messageFresh) {
+        GeminiResponse response = generateResponseWithTools(promptSystem, history, messageFresh, List.of());
+        return response.getText();
     }
 
     // ── API con function calling ──────────────────────────────────────────
@@ -82,63 +82,63 @@ public class GeminiClient {
     /**
      * Genera una respuesta que puede ser texto o un functionCall.
      *
-     * @param promptSistema prompt de sistema (grounding)
-     * @param historial     mensajes previos de la sesión
-     * @param mensajeNuevo  mensaje del usuario
+     * @param promptSystem prompt de sistema (grounding)
+     * @param history     mensajes previos de la sesión
+     * @param messageFresh  mensaje del usuario
      * @param tools         lista de tools en formato Gemini (desde ChatbotToolRegistry)
      * @return GeminiResponse con texto y/o functionCall
      */
-    public GeminiResponse generarRespuestaConTools(
-            String promptSistema,
-            List<MensajeChat> historial,
-            String mensajeNuevo,
+    public GeminiResponse generateResponseWithTools(
+            String promptSystem,
+            List<MessageChat> history,
+            String messageFresh,
             List<Map<String, Object>> tools) {
 
         if (apiKey == null || apiKey.isBlank()) {
             log.debug("Gemini deshabilitado (sin API key), devolviendo fallback");
-            return GeminiResponse.texto(MENSAJE_FALLBACK_GENERICO);
+            return GeminiResponse.text(MENSAJE_FALLBACK_GENERICO);
         }
-        for (int intento = 0; intento < 2; intento++) {
+        for (int attempt = 0; attempt < 2; attempt++) {
             try {
-                return llamarGemini(promptSistema, historial, mensajeNuevo, tools);
+                return llamarGemini(promptSystem, history, messageFresh, tools);
             } catch (HttpClientErrorException.TooManyRequests ex) {
-                log.warn("Gemini respondió 429 (intento {}/2)", intento + 1);
-                if (intento == 0) continue;
-                return GeminiResponse.texto(MENSAJE_SATURADO);
+                log.warn("Gemini respondió 429 (intento {}/2)", attempt + 1);
+                if (attempt == 0) continue;
+                return GeminiResponse.text(MENSAJE_SATURADO);
             } catch (ResourceAccessException ex) {
-                log.warn("Timeout/sin conexión hacia Gemini (intento {}/2)", intento + 1, ex);
-                if (intento == 0) continue;
-                return GeminiResponse.texto(MENSAJE_SATURADO);
+                log.warn("Timeout/sin conexión hacia Gemini (intento {}/2)", attempt + 1, ex);
+                if (attempt == 0) continue;
+                return GeminiResponse.text(MENSAJE_SATURADO);
             } catch (HttpClientErrorException ex) {
                 String responseBody = ex.getResponseBodyAsString();
-                log.error("Gemini respondió {} en intento {}: body completo={}", ex.getStatusCode(), intento + 1, responseBody);
-                return GeminiResponse.texto(MENSAJE_FALLBACK_GENERICO);
+                log.error("Gemini respondió {} en intento {}: body completo={}", ex.getStatusCode(), attempt + 1, responseBody);
+                return GeminiResponse.text(MENSAJE_FALLBACK_GENERICO);
             } catch (HttpServerErrorException ex) {
                 String responseBody = ex.getResponseBodyAsString();
-                log.error("Gemini respondió error de servidor {} en intento {}: body completo={}", ex.getStatusCode(), intento + 1, responseBody);
-                return GeminiResponse.texto(MENSAJE_FALLBACK_GENERICO);
+                log.error("Gemini respondió error de servidor {} en intento {}: body completo={}", ex.getStatusCode(), attempt + 1, responseBody);
+                return GeminiResponse.text(MENSAJE_FALLBACK_GENERICO);
             }
         }
-        return GeminiResponse.texto(MENSAJE_SATURADO);
+        return GeminiResponse.text(MENSAJE_SATURADO);
     }
 
     // ── Lógica interna ────────────────────────────────────────────────────
 
     private GeminiResponse llamarGemini(
-            String promptSistema,
-            List<MensajeChat> historial,
-            String mensajeNuevo,
+            String promptSystem,
+            List<MessageChat> history,
+            String messageFresh,
             List<Map<String, Object>> tools) {
 
         List<Map<String, Object>> contents = new ArrayList<>();
 
-        for (MensajeChat mensaje : historial) {
-            String rol = geminiRol(mensaje.getRol());
-            String contenido = mensaje.getContenido();
+        for (MessageChat message : history) {
+            String role = geminiRole(message.getRole());
+            String content = message.getContent();
 
-            if (contenido != null && contenido.startsWith("[FunctionCall:") && contenido.endsWith("]")) {
+            if (content != null && content.startsWith("[FunctionCall:") && content.endsWith("]")) {
                 // Parsear: [FunctionCall:nombre:{...}]
-                String payload = contenido.substring("[FunctionCall:".length(), contenido.length() - 1);
+                String payload = content.substring("[FunctionCall:".length(), content.length() - 1);
                 int sep = payload.indexOf(':');
                 String name = payload.substring(0, sep);
                 String argsJson = payload.substring(sep + 1);
@@ -148,12 +148,12 @@ public class GeminiClient {
                             "role", "model",
                             CLAVE_PARTS, List.of(Map.of(CLAVE_FUNCTION_CALL, Map.of("name", name, "args", argsNode)))));
                 } catch (Exception ex) {
-                    log.warn("No se pudo parsear FunctionCall: {}", contenido);
-                    contents.add(Map.of("role", rol, CLAVE_PARTS, List.of(Map.of("text", contenido))));
+                    log.warn("No se pudo parsear FunctionCall: {}", content);
+                    contents.add(Map.of("role", role, CLAVE_PARTS, List.of(Map.of("text", content))));
                 }
-            } else if (contenido != null && contenido.startsWith("[FunctionResponse:") && contenido.endsWith("]")) {
+            } else if (content != null && content.startsWith("[FunctionResponse:") && content.endsWith("]")) {
                 // Parsear: [FunctionResponse:nombre:{...}]
-                String payload = contenido.substring("[FunctionResponse:".length(), contenido.length() - 1);
+                String payload = content.substring("[FunctionResponse:".length(), content.length() - 1);
                 int sep = payload.indexOf(':');
                 String name = payload.substring(0, sep);
                 String resultJson = payload.substring(sep + 1);
@@ -163,27 +163,27 @@ public class GeminiClient {
                             "role", "user",
                             CLAVE_PARTS, List.of(Map.of("functionResponse", Map.of("name", name, "response", resultNode)))));
                 } catch (Exception ex) {
-                    log.warn("No se pudo parsear FunctionResponse: {}", contenido);
-                    contents.add(Map.of("role", rol, CLAVE_PARTS, List.of(Map.of("text", contenido))));
+                    log.warn("No se pudo parsear FunctionResponse: {}", content);
+                    contents.add(Map.of("role", role, CLAVE_PARTS, List.of(Map.of("text", content))));
                 }
             } else {
                 contents.add(Map.of(
-                        "role", rol,
-                        CLAVE_PARTS, List.of(Map.of("text", contenido != null ? contenido : ""))));
+                        "role", role,
+                        CLAVE_PARTS, List.of(Map.of("text", content != null ? content : ""))));
             }
         }
 
-        if (historial.isEmpty()
-                || !"USUARIO".equals(historial.get(historial.size() - 1).getRol())
-                || !mensajeNuevo.equals(historial.get(historial.size() - 1).getContenido())) {
+        if (history.isEmpty()
+                || !"USUARIO".equals(history.get(history.size() - 1).getRole())
+                || !messageFresh.equals(history.get(history.size() - 1).getContent())) {
             contents.add(Map.of(
                     "role", "user",
-                    CLAVE_PARTS, List.of(Map.of("text", mensajeNuevo))));
+                    CLAVE_PARTS, List.of(Map.of("text", messageFresh))));
         }
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("contents", contents);
-        body.put("systemInstruction", Map.of(CLAVE_PARTS, List.of(Map.of("text", promptSistema))));
+        body.put("systemInstruction", Map.of(CLAVE_PARTS, List.of(Map.of("text", promptSystem))));
 
         if (tools != null && !tools.isEmpty()) {
             body.put("tools", tools);
@@ -200,24 +200,24 @@ public class GeminiClient {
 
         log.debug("Payload Gemini completo (tools={}): {}", tools != null ? tools.size() : 0, jsonBody);
 
-        String respuestaJson = restClient.post()
+        String responseJson = restClient.post()
                 .uri(url)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(jsonBody)
                 .retrieve()
                 .body(String.class);
 
-        log.debug("Respuesta cruda completa de Gemini: {}", respuestaJson);
-        return parsearRespuesta(respuestaJson);
+        log.debug("Respuesta cruda completa de Gemini: {}", responseJson);
+        return parsearResponse(responseJson);
     }
 
-    private GeminiResponse parsearRespuesta(String respuestaJson) {
+    private GeminiResponse parsearResponse(String responseJson) {
         try {
-            JsonNode root = objectMapper.readTree(respuestaJson);
+            JsonNode root = objectMapper.readTree(responseJson);
             JsonNode candidates = root.path("candidates");
             if (!candidates.isArray() || candidates.isEmpty()) {
-                log.warn("Respuesta de Gemini sin candidates: {}", respuestaJson);
-                return GeminiResponse.texto(MENSAJE_FALLBACK_GENERICO);
+                log.warn("Respuesta de Gemini sin candidates: {}", responseJson);
+                return GeminiResponse.text(MENSAJE_FALLBACK_GENERICO);
             }
 
             JsonNode candidate = candidates.get(0);
@@ -225,8 +225,8 @@ public class GeminiClient {
             JsonNode parts = content.path(CLAVE_PARTS);
 
             if (!parts.isArray() || parts.isEmpty()) {
-                log.warn("Respuesta de Gemini sin parts: {}", respuestaJson);
-                return GeminiResponse.texto(MENSAJE_FALLBACK_GENERICO);
+                log.warn("Respuesta de Gemini sin parts: {}", responseJson);
+                return GeminiResponse.text(MENSAJE_FALLBACK_GENERICO);
             }
 
             // Verificar si hay functionCall
@@ -240,17 +240,17 @@ public class GeminiClient {
             }
 
             // Respuesta de texto normal
-            String texto = firstPart.path("text").asText("");
-            return GeminiResponse.texto(texto);
+            String text = firstPart.path("text").asText("");
+            return GeminiResponse.text(text);
 
         } catch (Exception ex) {
-            log.error("No se pudo parsear la respuesta de Gemini: {}", respuestaJson, ex);
-            return GeminiResponse.texto(MENSAJE_FALLBACK_GENERICO);
+            log.error("No se pudo parsear la respuesta de Gemini: {}", responseJson, ex);
+            return GeminiResponse.text(MENSAJE_FALLBACK_GENERICO);
         }
     }
 
-    private String geminiRol(String rol) {
-        return "ASISTENTE".equals(rol) ? "model" : "user";
+    private String geminiRole(String role) {
+        return "ASISTENTE".equals(role) ? "model" : "user";
     }
 
     // ── Response record ───────────────────────────────────────────────────
@@ -260,46 +260,41 @@ public class GeminiClient {
      * o ambos (raro pero posible).
      */
     public record GeminiResponse(
-            String texto,
+            String text,
             String functionName,
             JsonNode functionArgs,
             boolean isFunctionCall
     ) {
         /**
-         * Executes the texto operation.
-         * @param texto value required by the operation
-         * @return operation result
-         */
-        public static GeminiResponse texto(String texto) {
-            return new GeminiResponse(texto, null, null, false);
+     * Handles texto.
+     *
+     * @param text text value used to scope this texto
+     * @return Gemini Response reflecting the state after the operation
+     */
+    public static GeminiResponse text(String text) {
+            return new GeminiResponse(text, null, null, false);
         }
 
         /**
-
-         * Executes the functionCall operation.
-
-         * @param name value required by the operation
-
-         * @param args value required by the operation
-
-         * @return operation result
-
-         */
+     * Handles function Call.
+     *
+     * @param name text value used to scope this function Call
+     * @param args JSON payload Node used to scope this function Call
+     * @return Gemini Response reflecting the state after the operation
+     */
 
         public static GeminiResponse functionCall(String name, JsonNode args) {
             return new GeminiResponse(null, name, args, true);
         }
 
         /**
+     * Retrieves texto.
+     *
+     * @return resulting text payload
+     */
 
-         * Executes the getTexto operation.
-
-         * @return operation result
-
-         */
-
-        public String getTexto() {
-            return texto != null ? texto : "";
+        public String getText() {
+            return text != null ? text : "";
         }
     }
 }
