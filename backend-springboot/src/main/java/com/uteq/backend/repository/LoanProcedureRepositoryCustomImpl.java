@@ -17,8 +17,6 @@ class LoanProcedureRepositoryCustomImpl implements LoanProcedureRepositoryCustom
 
     @Override
     public Long spCreateLoanProcedure(Long userId, Long bookId, Long librarianId, Integer daysLoan) {
-        // En PostgreSQL las funciones RETURNS escalar se invocan via SELECT.
-        // Se usan parametros posicionales (?1, ?2...) para evitar sintaxis nombrada =>
         Query q = em.createNativeQuery("SELECT sp_crear_prestamo(?1, ?2, ?3, ?4)");
         q.setParameter(1, userId);
         q.setParameter(2, bookId);
@@ -29,15 +27,13 @@ class LoanProcedureRepositoryCustomImpl implements LoanProcedureRepositoryCustom
 
     @Override
     public Map<String, Object> spRegisterLoanReturn(Long loanId) {
-        // Funcion con parametros OUT: se expanden como columnas en SELECT *
         Query q = em.createNativeQuery("SELECT * FROM sp_registrar_devolucion(?1)");
         q.setParameter(1, loanId);
         Object[] row = (Object[]) q.getSingleResult();
-        
         Map<String, Object> result = new HashMap<>();
         result.put("o_prestamo_id", ((Number) row[0]).longValue());
         result.put("o_hubo_multa", (Boolean) row[1]);
-        result.put("o_monto_multa", (BigDecimal) row[2]);
+        result.put("o_monto_multa", row[2] != null ? new BigDecimal(row[2].toString()) : null);
         return result;
     }
 }

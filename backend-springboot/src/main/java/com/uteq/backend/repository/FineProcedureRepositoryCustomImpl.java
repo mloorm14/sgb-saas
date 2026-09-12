@@ -19,7 +19,6 @@ class FineProcedureRepositoryCustomImpl implements FineProcedureRepositoryCustom
         Query q = em.createNativeQuery("SELECT * FROM sp_pagar_multa(?1)");
         q.setParameter(1, fineId);
         Object[] row = (Object[]) q.getSingleResult();
-        
         Map<String, Object> result = new HashMap<>();
         result.put("o_multa_id", ((Number) row[0]).longValue());
         result.put("o_usuario_desbloqueado", (Boolean) row[1]);
@@ -33,7 +32,6 @@ class FineProcedureRepositoryCustomImpl implements FineProcedureRepositoryCustom
         q.setParameter(2, reason);
         q.setParameter(3, roleExecutor);
         Object[] row = (Object[]) q.getSingleResult();
-        
         Map<String, Object> result = new HashMap<>();
         result.put("o_multa_id", ((Number) row[0]).longValue());
         result.put("o_usuario_desbloqueado", (Boolean) row[1]);
