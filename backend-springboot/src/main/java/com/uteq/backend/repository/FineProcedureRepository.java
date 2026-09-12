@@ -10,8 +10,16 @@ import org.springframework.data.repository.query.Param;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
+import org.springframework.data.jpa.repository.query.Procedure;
+
 @org.springframework.stereotype.Repository
 public interface FineProcedureRepository extends Repository<Fine, Long>, FineProcedureRepositoryCustom {
+
+    @Procedure(name = "Multa.pagarMulta")
+    Map<String, Object> spPayFineProcedure(Long fineId);
+
+    @Procedure(name = "Multa.anularMulta")
+    Map<String, Object> spVoidFineProcedure(Long fineId, String reason, String roleExecutor);
 
     @Query(value = "SELECT * FROM sp_pago_parcial_multa(:p_multa_id, :p_monto_pagado)", nativeQuery = true)
     Map<String, Object> spPaymentParcialFine(

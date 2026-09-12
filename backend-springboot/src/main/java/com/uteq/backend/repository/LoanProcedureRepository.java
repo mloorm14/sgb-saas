@@ -33,6 +33,12 @@ import java.util.List;
 @org.springframework.stereotype.Repository
 public interface LoanProcedureRepository extends Repository<Loan, Long>, LoanProcedureRepositoryCustom {
 
+    @Procedure(procedureName = "sp_crear_prestamo")
+    Long spCreateLoanProcedure(Long userId, Long bookId, Long librarianId, Integer daysLoan);
+
+    @Procedure(name = "Prestamo.registrarDevolucion")
+    java.util.Map<String, Object> spRegisterLoanReturn(Long loanId);
+
 
     /**
      * sp_crear_prestamo: retorno escalar único (BIGINT). Antes usaba
