@@ -18,8 +18,9 @@ import java.util.Map;
 @org.springframework.stereotype.Repository
 public interface FineProcedureRepository extends Repository<Fine, Long> {
 
+    // NOTA: sin @Param — binding posicional para evitar sintaxis "nombre => ?" de Hibernate 6
     @Procedure(name = "Multa.pagarMulta")
-    Map<String, Object> spPayFineProcedure(@Param("p_multa_id") Long fineId);
+    Map<String, Object> spPayFineProcedure(Long fineId);
 
     /**
      * sp_pagar_multa: 2 parámetros OUT (o_multa_id, o_usuario_desbloqueado).
@@ -31,12 +32,9 @@ public interface FineProcedureRepository extends Repository<Fine, Long> {
     @Query(value = "SELECT * FROM sp_pagar_multa(:p_multa_id)", nativeQuery = true)
     Map<String, Object> spPayFine(@Param("p_multa_id") Long fineId);
 
+    // NOTA: sin @Param — binding posicional para evitar sintaxis "nombre => ?" de Hibernate 6
     @Procedure(name = "Multa.anularMulta")
-    Map<String, Object> spVoidFineProcedure(
-            @Param("p_multa_id") Long fineId,
-            @Param("p_motivo") String reason,
-            @Param("p_rol_ejecutor") String roleExecutor
-    );
+    Map<String, Object> spVoidFineProcedure(Long fineId, String reason, String roleExecutor);
 
     /**
      * sp_anular_multa: 3 IN + 2 OUT. Mismo cambio de mecanismo que
