@@ -2,7 +2,7 @@ package com.uteq.backend.repository;
 
 import com.uteq.backend.entity.Reservation;
 import org.springframework.data.jpa.repository.Query;
-// import org.springframework.data.jpa.repository.query.Procedure; -- no usado: el objeto es FUNCTION, no PROCEDURE.
+import org.springframework.data.jpa.repository.query.Procedure;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
@@ -14,6 +14,9 @@ import java.time.OffsetDateTime;
  */
 @org.springframework.stereotype.Repository
 public interface ReservationProcedureRepository extends Repository<Reservation, Long> {
+
+    @Procedure(procedureName = "sp_expirar_reservaciones_vencidas")
+    Integer spExpireReservationsVencidasProcedure();
 
     // ── CÓDIGO ANTERIOR (no usar, dejado como referencia histórica) ──
     /**

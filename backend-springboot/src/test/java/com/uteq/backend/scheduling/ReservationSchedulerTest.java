@@ -53,7 +53,7 @@ class ReservationSchedulerTest {
     void expireReservationsVencidas_consultaWithStatusesByExpireResueltos() {
         given(reservationRepository.findByStatusReservationIdInAndDateLimitPickupBefore(anyList(), any()))
                 .willReturn(List.of());
-        given(reservationProcedureRepository.spExpireReservationsVencidas()).willReturn(0);
+        given(reservationProcedureRepository.spExpireReservationsVencidasProcedure()).willReturn(0);
 
         scheduler.expireReservationsVencidas();
 
@@ -69,7 +69,7 @@ class ReservationSchedulerTest {
         Reservation r2 = reservationWithId(20L);
         given(reservationRepository.findByStatusReservationIdInAndDateLimitPickupBefore(anyList(), any()))
                 .willReturn(List.of(r1, r2));
-        given(reservationProcedureRepository.spExpireReservationsVencidas()).willReturn(2);
+        given(reservationProcedureRepository.spExpireReservationsVencidasProcedure()).willReturn(2);
 
         scheduler.expireReservationsVencidas();
 
@@ -82,7 +82,7 @@ class ReservationSchedulerTest {
     void expireReservationsVencidas_withoutReservationsByLapse_notNotificaANadie() {
         given(reservationRepository.findByStatusReservationIdInAndDateLimitPickupBefore(anyList(), any()))
                 .willReturn(List.of());
-        given(reservationProcedureRepository.spExpireReservationsVencidas()).willReturn(0);
+        given(reservationProcedureRepository.spExpireReservationsVencidasProcedure()).willReturn(0);
 
         scheduler.expireReservationsVencidas();
 
@@ -97,13 +97,13 @@ class ReservationSchedulerTest {
         Reservation r1 = reservationWithId(10L);
         given(reservationRepository.findByStatusReservationIdInAndDateLimitPickupBefore(anyList(), any()))
                 .willReturn(List.of(r1));
-        given(reservationProcedureRepository.spExpireReservationsVencidas()).willReturn(1);
+        given(reservationProcedureRepository.spExpireReservationsVencidasProcedure()).willReturn(1);
 
         scheduler.expireReservationsVencidas();
 
         InOrder order = inOrder(notificationService, reservationProcedureRepository);
         order.verify(notificationService).notifyReservationExpired(r1);
-        order.verify(reservationProcedureRepository).spExpireReservationsVencidas();
+        order.verify(reservationProcedureRepository).spExpireReservationsVencidasProcedure();
     }
 
     // El SP siempre se invoca, incluso sin reservaciones por caducar en
@@ -113,11 +113,11 @@ class ReservationSchedulerTest {
     void expireReservationsVencidas_invocaProcedimientoSiempre() {
         given(reservationRepository.findByStatusReservationIdInAndDateLimitPickupBefore(anyList(), any()))
                 .willReturn(List.of());
-        given(reservationProcedureRepository.spExpireReservationsVencidas()).willReturn(0);
+        given(reservationProcedureRepository.spExpireReservationsVencidasProcedure()).willReturn(0);
 
         scheduler.expireReservationsVencidas();
 
-        verify(reservationProcedureRepository).spExpireReservationsVencidas();
+        verify(reservationProcedureRepository).spExpireReservationsVencidasProcedure();
     }
 
     private StatusReservation status(Integer id, String name) {

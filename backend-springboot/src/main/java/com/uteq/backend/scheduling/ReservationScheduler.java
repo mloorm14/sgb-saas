@@ -47,7 +47,7 @@ public class ReservationScheduler {
     public void expireReservationsVencidas() {
         notifyQueVanAExpire();
 
-        Integer rowsUpdated = reservationProcedureRepository.spExpireReservationsVencidas();
+        Integer rowsUpdated = reservationProcedureRepository.spExpireReservationsVencidasProcedure();
         log.info("Job de expiración de reservaciones: {} filas actualizadas", rowsUpdated);
     }
 
