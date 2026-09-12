@@ -12,14 +12,7 @@ import com.uteq.backend.repository.projection.ReporteVencidosProjection;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
-// import org.springframework.data.jpa.repository.query.Procedure; -- ya no se
-// usa: @Procedure generaba sintaxis PostgreSQL "nombre => valor" dentro del
-// escape JDBC {call ...}, que pgjdbc no soporta ahí (bug conocido de
-// Hibernate 6.2+/7.x sin fix oficial, ver
-// docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md y
-// spring-projects/spring-data-jpa#3393). Reemplazado por @Query nativa,
-// aprobado por el equipo -- pendiente de actualizar ADR-006.
-
+import org.springframework.data.jpa.repository.query.Procedure;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -32,31 +25,13 @@ import java.util.List;
 @org.springframework.stereotype.Repository
 public interface PrestamoProcedureRepository extends Repository<Prestamo, Long> {
 
-    // ── CÓDIGO ANTERIOR (no usar, dejado como referencia histórica) ──
-    // /**
-    //  * sp_crear_prestamo: retorno escalar único (BIGINT) — caso simple,
-    //  * mapea directo con @Procedure(procedureName=...) sin necesidad de
-    //  * @NamedStoredProcedureQuery.
-    //  */
-    // @Procedure(procedureName = "sp_crear_prestamo")
-    // Long spCrearPrestamo(
-    //         @Param("p_usuario_id") Long usuarioId,
-    //         @Param("p_libro_id") Long libroId,
-    //         @Param("p_bibliotecario_id") Long bibliotecarioId,
-    //         @Param("p_dias_prestamo") Integer diasPrestamo
-    // );
-
     /**
-     * sp_crear_prestamo: retorno escalar único (BIGINT). Antes usaba
-     * @Procedure(procedureName=...) (ver bloque comentado arriba) -- fallaba
-     * en runtime con "syntax error at or near '=>'" porque Hibernate genera
-     * sintaxis de parámetros nombrados de PostgreSQL dentro del escape JDBC
-     * {call ...}, que pgjdbc no soporta. @Query nativa con SELECT evita el
-     * CallableStatement por completo (mismo patrón que ya usaba este
-     * repositorio para las 2 funciones TABLE de abajo).
+     * sp_crear_prestamo: retorno escalar único (BIGINT).
+     * Mecanismo exigido por la guía: {@code @Procedure} directo sobre la
+     * función PostgreSQL — conectado vía CallableStatement de JDBC.
+     * Los servicios deben llamar este método.
      */
-    @Query(value = "SELECT sp_crear_prestamo(:p_usuario_id, :p_libro_id, :p_bibliotecario_id, :p_dias_prestamo)",
-            nativeQuery = true)
+    @Procedure(procedureName = "sp_crear_prestamo")
     Long spCrearPrestamo(
             @Param("p_usuario_id") Long usuarioId,
             @Param("p_libro_id") Long libroId,
