@@ -27,13 +27,11 @@ import java.util.List;
 public interface LoanProcedureRepository extends Repository<Loan, Long> {
 
     // Mecanismo exigido {@code @Procedure} (habilitado para cumplir guía Cordero) — rutina principal sp_crear_prestamo
+    // NOTA: sin @Param en los argumentos — fuerza binding posicional ({call sp(?,?,?,?)}),
+    // evitando la sintaxis "nombre => ?" que Hibernate 6 genera con @Param y que pgjdbc rechaza
+    // dentro de escape JDBC {call ...} (bug documentado, spring-projects/spring-data-jpa#3393).
     @Procedure(procedureName = "sp_crear_prestamo")
-    Long spCreateLoanProcedure(
-            @Param("p_user_id") Long userId,
-            @Param("p_book_id") Long bookId,
-            @Param("p_librarian_id") Long librarianId,
-            @Param("p_days_loan") Integer daysLoan
-    );
+    Long spCreateLoanProcedure(Long userId, Long bookId, Long librarianId, Integer daysLoan);
 
     /**
      * sp_crear_prestamo: retorno escalar único (BIGINT). Antes usaba
