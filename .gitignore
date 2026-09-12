@@ -63,3 +63,4 @@ docs/mediciones/jacoco/*/html/
 # conservan resúmenes/documentos livianos en Markdown cuando aplique)
 docs/mediciones/sec/zap/*.html
 docs/mediciones/sec/static-analysis/*.html
+tmp/
