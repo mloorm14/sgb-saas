@@ -101,6 +101,18 @@ class JwtServiceTest {
     }
 
     @Test
+    void generateToken_demoReaderAccount_claimRoleEsReader() {
+        User user = userWithRoles("LECTOR");
+        user.setEmail("u@uteq.edu.ec");
+
+        Claims claims = parsearClaims(jwtService.generateToken(user));
+
+        assertEquals("u@uteq.edu.ec", claims.get("correo", String.class));
+        assertEquals(List.of("LECTOR"), claims.get("roles", List.class));
+        assertEquals("LECTOR", claims.get("rol", String.class));
+    }
+
+    @Test
     void generateRefreshToken_usaRefreshExpirationMs() {
         User user = userWithRoles("LECTOR");
 
