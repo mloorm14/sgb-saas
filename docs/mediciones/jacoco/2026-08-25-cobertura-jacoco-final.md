@@ -1,20 +1,20 @@
 # Evidencia — Bloque C.4: cobertura JaCoCo al cierre de la Entrega Final — Medición final (VIGENTE)
 
-**Este es el reporte definitivo.** Reemplaza la medición intermedia (`c2d76ad`, 61,30 %) documentada en `2026-08-25-cobertura-jacoco-cierre-entrega-final.md`, que permanece inalterada como registro histórico del estado intermedio (antes de los fixes de Testcontainers y SameSite). Esta medición final corresponde al commit de cierre real y versiona el reporte completo correspondiente.
+**Este es el reporte definitivo.** Reemplaza la medición intermedia (hash histórico invalidado, 61,30 %) documentada en `2026-08-25-cobertura-jacoco-cierre-entrega-final.md`, que permanece inalterada como registro histórico del estado intermedio (antes de los fixes de Testcontainers y SameSite). Esta medición final corresponde al commit de cierre real y versiona el reporte completo correspondiente.
 
 ## Motivo de esta medición
 
-La Entrega Final exige re-verificar la cobertura con una corrida real sobre el commit de cierre, sin fallos ni errores, y versionar el artefacto completo. La medición intermedia (`c2d76ad`, 61,30 %) se obtuvo con `-Dmaven.test.failure.ignore=true` porque 10 tests fallaban (1 SameSite, 9 ApplicationContext). Esta medición final se ejecuta **sin** ignorar fallos, tras dos fixes en la misma línea de commits:
+La Entrega Final exige re-verificar la cobertura con una corrida real sobre el commit de cierre, sin fallos ni errores, y versionar el artefacto completo. La medición intermedia (hash histórico invalidado, 61,30 %) se obtuvo con `-Dmaven.test.failure.ignore=true` porque 10 tests fallaban (1 SameSite, 9 ApplicationContext). Esta medición final se ejecuta **sin** ignorar fallos, tras dos fixes en la misma línea de commits:
 
-1. **Testcontainers** añadido para las 2 clases de integración (`LibroPortadaIntegrationTest`, `PrestamoMultaProcedureIntegrationTest`) que fallaban por falta de Postgres real (commit `825ad34`).
-2. **Fix de SameSite** en la aserción del test `AuthControllerTest` (Strict → None, este mismo commit, no revertido en código fuente — el cambio de `SameSite=Strict` a `None` en `AuthController.java` ya estaba en `2884126`).
+1. **Testcontainers** añadido para las 2 clases de integración (`LibroPortadaIntegrationTest`, `PrestamoMultaProcedureIntegrationTest`) que fallaban por falta de Postgres real (commit hash histórico invalidado).
+2. **Fix de SameSite** en la aserción del test `AuthControllerTest` (Strict → None, este mismo commit, no revertido en código fuente — el cambio de `SameSite=Strict` a `None` en `AuthController.java` ya estaba en hash histórico invalidado).
 
 Esta medición final se ejecuta con `mvnw clean verify` **sin** `-Dmaven.test.failure.ignore=true` y obtiene **BUILD SUCCESS** con 0 fallos y 0 errores. Es la cifra definitiva para el commit HEAD (`demo/interfaces-completas`).
 
 ## Cabecera de medición
 
 - **Fecha (ISO 8601 UTC)**: 2026-08-25T22:29:40Z
-- **Commit**: `825ad34a889246450cef40e88c5ae5cd49f7ffc9` (`demo/interfaces-completas`, HEAD al momento de esta corrida)
+- **Commit**: hash histórico invalidado (`demo/interfaces-completas`, HEAD al momento de esta corrida)
 - **Docker**: Docker version 29.5.3, build d1c06ef
 - **Docker Compose**: Docker Compose version v5.1.4
 - **Java**: openjdk version "21.0.11" 2026-04-21 LTS (Temurin)
@@ -48,13 +48,13 @@ Build: `BUILD SUCCESS` (sin flags de ignore),
 
 ### Totales agregados (todas las clases analizadas en el scope C.4)
 
-| Métrica | Corrida 13-ago (post-merge 8 módulos, `a2c88f8`) | **Corrida final (cierre definitivo, `825ad34`)** | Objetivo Entrega Final |
+| Métrica | Corrida 13-ago (post-merge 8 módulos, `a2c88f8`) | **Corrida final (cierre definitivo, hash histórico invalidado)** | Objetivo Entrega Final |
 |---|---|---|---|
 | **Lines** | 81,64\,% (1014/1242) | **61,50\,% (1481/2408)** | ≥70\,% **No** |
 | **Branches** | 58,05\,% (137/236) | **38,98\,% (237/608)** | — |
 | **Complexity** | 65,16\,% (288/442) | **48,15\,% (404/839)** | — |
 
-**El número sube ligeramente respecto a la medición intermedia.** La base de líneas analizables se mantiene en 2408; los 9 tests de integración ahora pasan y aportan cobertura real. La cobertura de líneas sube de 61,30 % a 61,50 % (+0,20 pp), ramas de 38,16 % a 38,98 % (+0,82 pp), complejidad de 47,56 % a 48,15 % (+0,59 pp). Sigue **por debajo del umbral de 70 %** exigido para la Entrega Final. Esto contradice la cifra de 82,97 % citada en una versión anterior del informe (commit `0d1474d`) que carecía de artefacto versionado; se corrige aquí con honestidad.
+**El número sube ligeramente respecto a la medición intermedia.** La base de líneas analizables se mantiene en 2408; los 9 tests de integración ahora pasan y aportan cobertura real. La cobertura de líneas sube de 61,30 % a 61,50 % (+0,20 pp), ramas de 38,16 % a 38,98 % (+0,82 pp), complejidad de 47,56 % a 48,15 % (+0,59 pp). Sigue **por debajo del umbral de 70 %** exigido para la Entrega Final. Esto contradice la cifra de 82,97 % citada en una versión anterior del informe (commit hash histórico invalidado) que carecía de artefacto versionado; se corrige aquí con honestidad.
 
 ### Desglose por paquete (lines / branches)
 
@@ -110,10 +110,10 @@ XML crudo: `docs/mediciones/jacoco/2026-08-25-jacoco-final/jacoco.xml`.
 
 2. **La cifra anterior (82,97 %) era incorrecta / sin evidencia.**
    El documento principal citaba 82,97 % (1208/1456) en commit
-   `0d1474d` pero **no existía ningún XML/HTML versionado** para esa
+   hash histórico invalidado pero **no existía ningún XML/HTML versionado** para esa
    corrida — el número provenía de `target/site/jacoco/jacoco.csv` de una
-   corrida local que no se versionó. La medición intermedia (`c2d76ad`,
-   61,30 %) ya corrigió esa cifra; esta medición final (`825ad34`,
+   corrida local que no se versionó. La medición intermedia (hash histórico invalidado,
+   61,30 %) ya corrigió esa cifra; esta medición final (hash histórico invalidado,
    61,50 %) incorpora la cobertura real de los 9 tests de integración
    habilitados por Testcontainers y del test de cookie SameSite corregido.
 
