@@ -46,10 +46,10 @@ public class BackupController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     /**
-     * Generates Response Entity&lt;Backup Response DTO>.
+     * Genera o entrega generate a partir de los datos actuales del sistema.
      *
-     * @param req Backup Request data transfer object used to scope this Response Entity&lt;Backup Response DTO>
-     * @return Response Entity&lt;Backup Response DTO> reflecting the state after the operation
+     * @param req datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<BackupResponseDTO> generate(@Valid @RequestBody BackupRequestDTO req) {
         String type = req.type != null ? req.type : "manual";
@@ -57,6 +57,13 @@ public class BackupController {
         String url = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}/download").buildAndExpand(b.getId()).toUriString();
         return ResponseEntity.status(HttpStatus.CREATED).body(new BackupResponseDTO(b.getId(), b.getCreated(), b.getFrom(), b.getUntil(), b.getTables(), b.getFormat(), b.getPath(), b.getSizeBytes(), b.getStatus(), b.getType(), url));
     }
+    /**
+     * Consulta list usando los filtros recibidos y devuelve el resultado solicitado.
+     *
+     * @param from fecha limite usada para acotar el rango temporal de la consulta
+     * @param until fecha limite usada para acotar el rango temporal de la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -89,10 +96,10 @@ public class BackupController {
     @PostMapping("/programacion")
     @PreAuthorize("hasRole('ADMIN')")
     /**
-     * Creates Response Entity&lt;Backup Programacion>.
+     * Registra create schedule validando los datos de entrada antes de persistir cambios.
      *
-     * @param req Backup schedule used to scope this Response Entity&lt;Backup Programacion>
-     * @return Response Entity&lt;Backup Programacion> reflecting the state after the operation
+     * @param req datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<BackupSchedule> createSchedule(@RequestBody BackupSchedule req) {
         BackupSchedule created = progService.create(req);
@@ -106,10 +113,10 @@ public class BackupController {
     @PostMapping("/{id}/programar")
     @PreAuthorize("hasRole('ADMIN')")
     /**
-     * Schedules Response Entity&lt;Map<String, Object>>.
+     * Procesa schedule y devuelve el resultado calculado por el backend.
      *
-     * @param id numeric identifier used to scope this Response Entity&lt;Map<String, Object>>
-     * @return Response Entity&lt;Map<String, Object>> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public ResponseEntity<Map<String, Object>> schedule(@PathVariable Long id) {
         progService.scheduleExecution(id);
@@ -123,12 +130,12 @@ public class BackupController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     /**
-     * Handles borrar.
+     * Procesa deleteBackup y devuelve el resultado calculado por el backend.
      *
-     * @param id numeric identifier used to scope this borrar
-     * @return Response Entity&lt;Void> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
-    public ResponseEntity<Void> borrar(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteBackup(@PathVariable Long id) {
         // Solo elimina el registro de backup. La programación usa su propio endpoint
         // para evitar colisión de IDs entre ambas tablas.
         backupService.delete(id);
@@ -138,12 +145,12 @@ public class BackupController {
     @DeleteMapping("/programacion/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     /**
-     * Handles borrar schedule.
+     * Procesa deleteBackup schedule y devuelve el resultado calculado por el backend.
      *
-     * @param id numeric identifier used to scope this borrar schedule
-     * @return Response Entity&lt;Void> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
-    public ResponseEntity<Void> borrarSchedule(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteSchedule(@PathVariable Long id) {
         progService.delete(id);
         return ResponseEntity.noContent().build();
     }
@@ -151,10 +158,10 @@ public class BackupController {
     @GetMapping("/{id}/download")
     @PreAuthorize("hasRole('ADMIN')")
     /**
-     * Downloads Response Entity&lt;byte[]>.
+     * Genera o entrega download a partir de los datos actuales del sistema.
      *
-     * @param id numeric identifier used to scope this Response Entity&lt;byte[]>
-     * @return Response Entity&lt;byte[]> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<byte[]> download(@PathVariable Long id) {
         byte[] content = backupService.download(id);
@@ -168,12 +175,12 @@ public class BackupController {
     @PostMapping("/{id}/ejecutar-ahora")
     @PreAuthorize("hasRole('ADMIN')")
     /**
-     * Executes Response Entity&lt;Map<String, Object>>.
+     * Procesa execute ahora y devuelve el resultado calculado por el backend.
      *
-     * @param id numeric identifier used to scope this Response Entity&lt;Map<String, Object>>
-     * @return Response Entity&lt;Map<String, Object>> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
-    public ResponseEntity<Map<String, Object>> executeAhora(@PathVariable Long id) {
+    public ResponseEntity<Map<String, Object>> executeNow(@PathVariable Long id) {
         BackupSchedule p = progService.get(id);
         // Ejecutar backup inmediato con el rango correspondiente
           OffsetDateTime ahora = OffsetDateTime.now();

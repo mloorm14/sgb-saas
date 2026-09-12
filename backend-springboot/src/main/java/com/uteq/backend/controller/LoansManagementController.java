@@ -42,6 +42,12 @@ public class LoansManagementController {
     // columna que resuelve findByCorreo en el resto del sistema. 404 con
     // ProblemDetail si no hay coincidencia; el mensaje es el que muestra
     // la pantalla.
+    /**
+     * Consulta search user usando los filtros recibidos y devuelve el resultado solicitado.
+     *
+     * @param email texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping("/buscar-usuario")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<UserLoansManagementDTO> searchUser(
@@ -58,10 +64,10 @@ public class LoansManagementController {
     @GetMapping("/sugerencias-usuarios")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     /**
-     * Handles sugerencias users.
+     * Procesa suggestions users y devuelve el resultado calculado por el backend.
      *
-     * @param email text value used to scope this sugerencias users
-     * @return Response Entity&lt;List<Usuario suggestion DTO>> reflecting the state after the operation
+     * @param email texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<List<UserSuggestionDTO>> suggestionsUsers(
             @RequestParam("correo") String email) {
@@ -74,10 +80,10 @@ public class LoansManagementController {
     @GetMapping("/reserva-activa")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     /**
-     * Handles reservation Activa.
+     * Procesa reservation active y devuelve el resultado calculado por el backend.
      *
-     * @param userId numeric identifier used to scope this reservation Activa
-     * @return Response Entity&lt;Reserva Activa DTO> reflecting the state after the operation
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<ReservationActiveDTO> reservationActive(@RequestParam("usuarioId") Long userId) {
         return ResponseEntity.ok(loansManagementService.reservationActive(userId));
@@ -89,10 +95,10 @@ public class LoansManagementController {
     @GetMapping("/historial")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     /**
-     * Handles history.
+     * Procesa history y devuelve el resultado calculado por el backend.
      *
-     * @param userId numeric identifier used to scope this history
-     * @return Response Entity&lt;List<Historial loan DTO>> reflecting the state after the operation
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<List<HistoryLoanDTO>> history(@RequestParam("usuarioId") Long userId) {
         return ResponseEntity.ok(loansManagementService.history(userId));

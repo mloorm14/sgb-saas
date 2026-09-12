@@ -41,16 +41,22 @@ public class FullBackupController {
     @PutMapping("/config")
     @PreAuthorize("hasRole('ADMIN')")
     /**
-     * Updates Response Entity&lt;Configuracion Respaldo>.
+     * Actualiza update config con las reglas de negocio requeridas por el flujo.
      *
-     * @param req Config Request data transfer object used to scope this Response Entity&lt;Configuracion Respaldo>
-     * @return Response Entity&lt;Configuracion Respaldo> reflecting the state after the operation
+     * @param req datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<ConfigurationBackup> updateConfig(@RequestBody ConfigRequestDTO req) {
         return ResponseEntity.ok(service.updateConfiguration(req.frequencyTimes, req.daysRetention, req.enabled));
     }
 
     // ── Historial de registros ─────────────────────────────────────────────────
+    /**
+     * Consulta list registrations usando los filtros recibidos y devuelve el resultado solicitado.
+     *
+     * @param type criterio de clasificacion usado para seleccionar la variante o filtro requerido
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping("/registros")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<RegistrationBackup>> listRegistrations(
@@ -64,10 +70,10 @@ public class FullBackupController {
     @DeleteMapping("/registros/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     /**
-     * Deletes Response Entity&lt;Void>.
+     * Elimina o anula delete registration despues de validar que la operacion sea permitida.
      *
-     * @param id numeric identifier used to scope this Response Entity&lt;Void>
-     * @return Response Entity&lt;Void> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<Void> deleteRegistration(@PathVariable Long id) {
         service.delete(id);
@@ -77,10 +83,10 @@ public class FullBackupController {
     @GetMapping("/registros/{id}/download")
     @PreAuthorize("hasRole('ADMIN')")
     /**
-     * Downloads Response Entity&lt;byte[]>.
+     * Genera o entrega download registration a partir de los datos actuales del sistema.
      *
-     * @param id numeric identifier used to scope this Response Entity&lt;byte[]>
-     * @return Response Entity&lt;byte[]> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<byte[]> downloadRegistration(@PathVariable Long id) {
         byte[] content = service.download(id);
@@ -95,10 +101,10 @@ public class FullBackupController {
     @PostMapping("/registros")
     @PreAuthorize("hasRole('ADMIN')")
     /**
-     * Registers Response Entity&lt;Registro Respaldo>.
+     * Registra register start validando los datos de entrada antes de persistir cambios.
      *
-     * @param req record Inicio data transfer object used to scope this Response Entity&lt;Registro Respaldo>
-     * @return Response Entity&lt;Registro Respaldo> reflecting the state after the operation
+     * @param req datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<RegistrationBackup> registerStart(@RequestBody RegistrationStartDTO req) {
         return ResponseEntity.ok(service.registerStart(req.type, req.executedBy));
@@ -107,11 +113,11 @@ public class FullBackupController {
     @PutMapping("/registros/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     /**
-     * Registers Response Entity&lt;Registro Respaldo>.
+     * Registra register result validando los datos de entrada antes de persistir cambios.
      *
-     * @param id numeric identifier used to scope this Response Entity&lt;Registro Respaldo>
-     * @param req record Resultado data transfer object used to scope this Response Entity&lt;Registro Respaldo>
-     * @return Response Entity&lt;Registro Respaldo> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param req datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<RegistrationBackup> registerResult(
             @PathVariable Long id, @RequestBody RegistrationResultDTO req) {
@@ -120,6 +126,12 @@ public class FullBackupController {
     }
 
     // ── Proxy hacia el microservicio Node.js ───────────────────────────────────
+    /**
+     * Procesa trigger backup full y devuelve el resultado calculado por el backend.
+     *
+     * @param principal identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
+     */
     @PostMapping("/trigger")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<java.util.Map<String, Object>> triggerBackupFull(java.security.Principal principal) {

@@ -115,10 +115,11 @@ public class ReportPdfService {
 
     // ── Morosidad ─────────────────────────────────────────
     /**
-     * Generates report PDF document.
+         * Genera el reporte PDF de indice de morosidad.
      *
-     * @param rows list of report delinquency Response data transfer object used to scope this report PDF document
-     * @return binary content of the generated file
+     * @param rows lista de ReportDelinquencyResponseDTO con la evidencia de multas.
+     * @return bytes con el PDF generado
+     * @throws IOException si falla la generacion del archivo PDF
      */
     public byte[] generateReportDelinquency(List<ReportDelinquencyResponseDTO> rows) {
         return generatePdf(
@@ -138,10 +139,11 @@ public class ReportPdfService {
 
     // ── Libros más prestados ──────────────────────────────
     /**
-     * Generates report PDF document.
+         * Genera el reporte PDF de los libros mas prestados.
      *
-     * @param rows list of book Mas Prestado Detallado Response data transfer object used to scope this report PDF document
-     * @return binary content of the generated file
+     * @param rows lista de BookMostLoanedDetailedResponseDTO con los datos de prestamo.
+     * @return bytes con el PDF generado
+     * @throws IOException si falla la generacion del archivo PDF
      */
     public byte[] generateReportBooksMostLoaned(List<BookMostLoanedDetailedResponseDTO> rows) {
         int[] contador = {1};
@@ -164,10 +166,11 @@ public class ReportPdfService {
 
     // ── Inventario ────────────────────────────────────────
     /**
-     * Generates report PDF document.
+         * Genera el reporte PDF de inventario y disponibilidad.
      *
-     * @param rows list of report inventory Response data transfer object used to scope this report PDF document
-     * @return binary content of the generated file
+     * @param rows lista de ReportInventoryResponseDTO con los datos de stock.
+     * @return bytes con el PDF generado
+     * @throws IOException si falla la generacion del archivo PDF
      */
     public byte[] generateReportInventory(List<ReportInventoryResponseDTO> rows) {
         return generatePdf(
@@ -189,10 +192,11 @@ public class ReportPdfService {
 
     // ── Préstamos vencidos ────────────────────────────────
     /**
-     * Generates report PDF document.
+         * Genera el reporte PDF de prestamos vencidos activos.
      *
-     * @param rows list of report overdue loans Response data transfer object used to scope this report PDF document
-     * @return binary content of the generated file
+     * @param rows lista de ReportOverduesResponseDTO con los datos de prestamos vencidos.
+     * @return bytes con el PDF generado
+     * @throws IOException si falla la generacion del archivo PDF
      */
     public byte[] generateReportOverdues(List<ReportOverduesResponseDTO> rows) {
         return generatePdf(
@@ -215,10 +219,11 @@ public class ReportPdfService {
 
     // ── Uso por período ────────────────────────────────
     /**
-     * Generates report PDF document.
+         * Genera el reporte PDF de uso por periodo.
      *
-     * @param rows list of report usage Por period Response data transfer object used to scope this report PDF document
-     * @return binary content of the generated file
+     * @param rows lista de ReportUsageByPeriodResponseDTO con los datos de uso.
+     * @return bytes con el PDF generado
+     * @throws IOException si falla la generacion del archivo PDF
      */
     public byte[] generateReportUsageByPeriod(List<ReportUsageByPeriodResponseDTO> rows) {
         return generatePdf(
@@ -237,10 +242,11 @@ public class ReportPdfService {
 
     // ── Resumen financiero ──────────────────────────────
     /**
-     * Generates report PDF document.
+         * Genera el reporte PDF resumen financiero de multas.
      *
-     * @param dto summary Financiero fines Response data transfer object used to scope this report PDF document
-     * @return binary content of the generated file
+     * @param dto SummaryFinancialFinesResponseDTO con los datos financieros.
+     * @return bytes con el PDF generado
+     * @throws IOException si falla la generacion del archivo PDF
      */
     public byte[] generateReportSummaryFinancial(SummaryFinancialFinesResponseDTO dto) {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -277,10 +283,11 @@ public class ReportPdfService {
 
     // ── Categorías demandadas ─────────────────────────────
     /**
-     * Generates report PDF document.
+         * Genera el reporte PDF de categorias mas demandadas.
      *
-     * @param rows list of report Categorias Demandadas Response data transfer object used to scope this report PDF document
-     * @return binary content of the generated file
+     * @param rows lista de ReportCategoriesDemandedResponseDTO con los datos de categorias.
+     * @return bytes con el PDF generado
+     * @throws IOException si falla la generacion del archivo PDF
      */
     public byte[] generateReportCategoriesDemanded(List<ReportCategoriesDemandedResponseDTO> rows) {
         int[] contador = {1};
@@ -300,10 +307,11 @@ public class ReportPdfService {
 
     // ── Sugerencias más pedidas ───────────────────────────
     /**
-     * Generates report PDF document.
+         * Genera el reporte PDF de sugerencias mas pedidas.
      *
-     * @param rows list of suggestion Agrupada data transfer object used to scope this report PDF document
-     * @return binary content of the generated file
+     * @param rows lista de SuggestionGroupedDTO con los datos de solicitudes.
+     * @return bytes con el PDF generado
+     * @throws IOException si falla la generacion del archivo PDF
      */
     public byte[] generateReportSuggestionsMostPedidas(List<SuggestionGroupedDTO> rows) {
         int[] contador = {1};

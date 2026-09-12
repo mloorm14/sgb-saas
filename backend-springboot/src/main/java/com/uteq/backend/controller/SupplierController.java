@@ -25,6 +25,14 @@ public class SupplierController {
     public SupplierController(SupplierRepository supplierRepository) {
         this.supplierRepository = supplierRepository;
     }
+    /**
+     * Consulta list usando los filtros recibidos y devuelve el resultado solicitado.
+     *
+     * @param q texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @param active criterio de clasificacion usado para seleccionar la variante o filtro requerido
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
 
     @GetMapping
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
@@ -50,7 +58,7 @@ public class SupplierController {
      *
      * @return response entity<list<proveedor response dto>> with the resulting state after the operation
      */
-    public ResponseEntity<List<SupplierResponseDTO>> listTodo() {
+    public ResponseEntity<List<SupplierResponseDTO>> listAll() {
         List<SupplierResponseDTO> suppliers = supplierRepository.findAll().stream()
                 .map(this::toDTO).toList();
         return ResponseEntity.ok(suppliers);
@@ -59,10 +67,10 @@ public class SupplierController {
     @GetMapping("/buscar")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     /**
-     * Searches Response Entity&lt;List<Proveedor Response DTO>>.
+     * Consulta search usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param q text value used to scope this Response Entity&lt;List<Proveedor Response DTO>>
-     * @return Response Entity&lt;List<Proveedor Response DTO>> reflecting the state after the operation
+     * @param q texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<List<SupplierResponseDTO>> search(@RequestParam String q) {
         return ResponseEntity.ok(
@@ -74,10 +82,10 @@ public class SupplierController {
     @PostMapping
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     /**
-     * Creates Response Entity&lt;Proveedor Response DTO>.
+     * Registra create validando los datos de entrada antes de persistir cambios.
      *
-     * @param dto supplier Request data transfer object used to scope this Response Entity&lt;Proveedor Response DTO>
-     * @return Response Entity&lt;Proveedor Response DTO> reflecting the state after the operation
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<SupplierResponseDTO> create(@Valid @RequestBody SupplierRequestDTO dto) {
         if (supplierRepository.existsByNameIgnoreCase(dto.name())) {
@@ -102,11 +110,11 @@ public class SupplierController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     /**
-     * Updates Response Entity&lt;Proveedor Response DTO>.
+     * Actualiza update con las reglas de negocio requeridas por el flujo.
      *
-     * @param id numeric value used to scope this Response Entity&lt;Proveedor Response DTO>
-     * @param dto supplier Request data transfer object used to scope this Response Entity&lt;Proveedor Response DTO>
-     * @return Response Entity&lt;Proveedor Response DTO> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<SupplierResponseDTO> update(@PathVariable Integer id,
                                                            @Valid @RequestBody SupplierRequestDTO dto) {

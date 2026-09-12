@@ -60,10 +60,10 @@ public class JwtService {
     }
 
     /**
-     * Generates JWT.
-     *
-     * @param user user used to scope this JWT
-     * @return resulting text payload
+         * Genera un JWT de acceso para un usuario.
+     * @param user usuario para el token
+     * @return JWT firmado
+     * @throws RuntimeException si falla la firma
      */
 
     public String generateToken(User user) {
@@ -71,10 +71,10 @@ public class JwtService {
     }
 
     /**
-     * Generates JWT.
+     * Genera o entrega generate refresh token a partir de los datos actuales del sistema.
      *
-     * @param user user used to scope this JWT
-     * @return resulting text payload
+     * @param user valor de entrada user usado por la operacion para completar su regla de negocio
+     * @return texto generado o recuperado por la operacion
      */
 
     public String generateRefreshToken(User user) {
@@ -119,10 +119,9 @@ public class JwtService {
     }
 
     /**
-     * Validates JWT.
-     *
-     * @param token text value used to scope this JWT
-     * @return true when the check succeeds
+         * Valida la firma y expiracion de un JWT.
+     * @param token JWT a validar
+     * @return true si valido y no expirado
      */
 
     public boolean validateToken(String token) {
@@ -138,10 +137,10 @@ public class JwtService {
     }
 
     /**
-     * Handles extract email address.
+     * Procesa extract email y devuelve el resultado calculado por el backend.
      *
-     * @param token text value used to scope this extract email address
-     * @return resulting text payload
+     * @param token token de seguridad recibido para validar o renovar la sesion del usuario
+     * @return texto generado o recuperado por la operacion
      */
 
     public String extractEmail(String token) {
@@ -149,10 +148,10 @@ public class JwtService {
     }
 
     /**
-     * Handles extract Jti.
+     * Procesa extract jti y devuelve el resultado calculado por el backend.
      *
-     * @param token text value used to scope this extract Jti
-     * @return resulting text payload
+     * @param token token de seguridad recibido para validar o renovar la sesion del usuario
+     * @return texto generado o recuperado por la operacion
      */
 
     public String extractJti(String token) {
@@ -160,10 +159,10 @@ public class JwtService {
     }
 
     /**
-     * Handles extract Expiration.
+     * Procesa extract expiration y devuelve el resultado calculado por el backend.
      *
-     * @param token text value used to scope this extract Expiration
-     * @return Date reflecting the state after the operation
+     * @param token token de seguridad recibido para validar o renovar la sesion del usuario
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
 
     public Date extractExpiration(String token) {

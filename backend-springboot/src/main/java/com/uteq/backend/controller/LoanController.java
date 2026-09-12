@@ -46,11 +46,11 @@ public class LoanController {
     @PostMapping
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     /**
-     * Creates Response Entity&lt;Prestamo Response DTO>.
+     * Registra create validando los datos de entrada antes de persistir cambios.
      *
-     * @param dto loan Request data transfer object used to scope this Response Entity&lt;Prestamo Response DTO>
-     * @param authentication authentication of the caller used to scope this Response Entity&lt;Prestamo Response DTO>
-     * @return Response Entity&lt;Prestamo Response DTO> reflecting the state after the operation
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<LoanResponseDTO> create(
             @Valid @RequestBody LoanRequestDTO dto,
@@ -63,10 +63,10 @@ public class LoanController {
     @PostMapping("/{id}/devolucion")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     /**
-     * Registers Response Entity&lt;Devolucion Response DTO>.
+     * Registra register loan return validando los datos de entrada antes de persistir cambios.
      *
-     * @param id numeric identifier used to scope this Response Entity&lt;Devolucion Response DTO>
-     * @return Response Entity&lt;Devolucion Response DTO> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<LoanReturnResponseDTO> registerLoanReturn(@PathVariable Long id) {
         return ResponseEntity.ok(loanService.registerLoanReturn(id));
@@ -78,11 +78,11 @@ public class LoanController {
     @PostMapping("/{id}/renovacion")
     @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')")
     /**
-     * Renews Response Entity&lt;Renovacion Response DTO>.
+     * Actualiza renew con las reglas de negocio requeridas por el flujo.
      *
-     * @param id numeric identifier used to scope this Response Entity&lt;Renovacion Response DTO>
-     * @param authentication authentication of the caller used to scope this Response Entity&lt;Renovacion Response DTO>
-     * @return Response Entity&lt;Renovacion Response DTO> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<RenewalResponseDTO> renew(
             @PathVariable Long id, Authentication authentication) {
@@ -90,6 +90,14 @@ public class LoanController {
     }
 
     // ── GET /api/v1/prestamos/usuario/{usuarioId}?page=0&size=10 ──
+    /**
+     * Consulta list by user usando los filtros recibidos y devuelve el resultado solicitado.
+     *
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping("/usuario/{usuarioId}")
     @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE')")
     public ResponseEntity<Page<LoanResponseDTO>> listByUser(
@@ -104,11 +112,11 @@ public class LoanController {
     @GetMapping("/usuario/{usuarioId}/activos")
     @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE')")
     /**
-     * Lists Response Entity&lt;List<Prestamo Activo Response DTO>>.
+     * Consulta list actives by user usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param userId numeric identifier used to scope this Response Entity&lt;List<Prestamo Activo Response DTO>>
-     * @param authentication authentication of the caller used to scope this Response Entity&lt;List<Prestamo Activo Response DTO>>
-     * @return Response Entity&lt;List<Prestamo Activo Response DTO>> reflecting the state after the operation
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<List<LoanActiveResponseDTO>> listActivesByUser(
             @PathVariable("usuarioId") Long userId,
@@ -118,6 +126,14 @@ public class LoanController {
     }
 
     // ── GET /api/v1/prestamos/reportes/libros-mas-prestados ──
+    /**
+     * Procesa report books most loaned y devuelve el resultado calculado por el backend.
+     *
+     * @param limit valor de entrada limit usado por la operacion para completar su regla de negocio
+     * @param from fecha limite usada para acotar el rango temporal de la consulta
+     * @param until fecha limite usada para acotar el rango temporal de la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping("/reportes/libros-mas-prestados")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<List<BookMostLoanedResponseDTO>> reportBooksMostLoaned(
@@ -129,6 +145,16 @@ public class LoanController {
     }
 
     // ── GET /api/v1/prestamos/reportes/libros-mas-prestados-detallado ──
+    /**
+     * Procesa report books most loaned detailed y devuelve el resultado calculado por el backend.
+     *
+     * @param limit valor de entrada limit usado por la operacion para completar su regla de negocio
+     * @param from fecha limite usada para acotar el rango temporal de la consulta
+     * @param until fecha limite usada para acotar el rango temporal de la consulta
+     * @param categoryId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping("/reportes/libros-mas-prestados-detallado")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<Page<BookMostLoanedDetailedResponseDTO>> reportBooksMostLoanedDetailed(
@@ -138,12 +164,21 @@ public class LoanController {
             @RequestParam(name = "categoriaId", required = false) Integer categoryId,
             @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(
-                loanService.reportBooksMostLoanedDetailedPaginado(limit, from, until, categoryId, pageable));
+                loanService.reportBooksMostLoanedDetailedPaginated(limit, from, until, categoryId, pageable));
     }
+    /**
+     * Procesa report books most loaned detailed todo y devuelve el resultado calculado por el backend.
+     *
+     * @param limit valor de entrada limit usado por la operacion para completar su regla de negocio
+     * @param from fecha limite usada para acotar el rango temporal de la consulta
+     * @param until fecha limite usada para acotar el rango temporal de la consulta
+     * @param categoryId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
 
     @GetMapping("/reportes/libros-mas-prestados-detallado/todo")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
-    public ResponseEntity<List<BookMostLoanedDetailedResponseDTO>> reportBooksMostLoanedDetailedTodo(
+    public ResponseEntity<List<BookMostLoanedDetailedResponseDTO>> reportBooksMostLoanedDetailedAll(
             @RequestParam(name = "limite", required = false) Integer limit,
             @RequestParam(name = "desde", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
             @RequestParam(name = "hasta", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime until,
@@ -152,22 +187,44 @@ public class LoanController {
     }
 
     // ── GET /api/v1/prestamos/reportes/morosidad ──────────
+    /**
+     * Procesa report delinquency y devuelve el resultado calculado por el backend.
+     *
+     * @param limit valor de entrada limit usado por la operacion para completar su regla de negocio
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping("/reportes/morosidad")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<Page<ReportDelinquencyResponseDTO>> reportDelinquency(
             @RequestParam(name = "limite", required = false) Integer limit,
             @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(loanService.reportDelinquencyPaginado(limit, pageable));
+        return ResponseEntity.ok(loanService.reportDelinquencyPaginated(limit, pageable));
     }
+    /**
+     * Procesa report delinquency todo y devuelve el resultado calculado por el backend.
+     *
+     * @param limit valor de entrada limit usado por la operacion para completar su regla de negocio
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
 
     @GetMapping("/reportes/morosidad/todo")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
-    public ResponseEntity<List<ReportDelinquencyResponseDTO>> reportDelinquencyTodo(
+    public ResponseEntity<List<ReportDelinquencyResponseDTO>> reportDelinquencyAll(
             @RequestParam(name = "limite", required = false) Integer limit) {
         return ResponseEntity.ok(loanService.reportDelinquency(limit));
     }
 
     // ── GET /api/v1/prestamos/reportes/uso?granularidad=dia|semana|mes ──
+    /**
+     * Procesa report usage by period y devuelve el resultado calculado por el backend.
+     *
+     * @param granularidad criterio de clasificacion usado para seleccionar la variante o filtro requerido
+     * @param from fecha limite usada para acotar el rango temporal de la consulta
+     * @param until fecha limite usada para acotar el rango temporal de la consulta
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping("/reportes/uso")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<Page<ReportUsageByPeriodResponseDTO>> reportUsageByPeriod(
@@ -175,12 +232,20 @@ public class LoanController {
             @RequestParam(name = "desde", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
             @RequestParam(name = "hasta", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime until,
             @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(loanService.reportUsageByPeriodPaginado(granularidad, from, until, pageable));
+        return ResponseEntity.ok(loanService.reportUsageByPeriodPaginated(granularidad, from, until, pageable));
     }
+    /**
+     * Procesa report usage by period todo y devuelve el resultado calculado por el backend.
+     *
+     * @param granularidad criterio de clasificacion usado para seleccionar la variante o filtro requerido
+     * @param from fecha limite usada para acotar el rango temporal de la consulta
+     * @param until fecha limite usada para acotar el rango temporal de la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
 
     @GetMapping("/reportes/uso/todo")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
-    public ResponseEntity<List<ReportUsageByPeriodResponseDTO>> reportUsageByPeriodTodo(
+    public ResponseEntity<List<ReportUsageByPeriodResponseDTO>> reportUsageByPeriodAll(
             @RequestParam(required = false, defaultValue = "dia") String granularidad,
             @RequestParam(name = "desde", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
             @RequestParam(name = "hasta", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime until) {
@@ -188,6 +253,12 @@ public class LoanController {
     }
 
     // ── GET /api/v1/prestamos/reportes/morosidad/pdf ──────
+    /**
+     * Procesa report delinquency pdf y devuelve el resultado calculado por el backend.
+     *
+     * @param limit valor de entrada limit usado por la operacion para completar su regla de negocio
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping(value = "/reportes/morosidad/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<byte[]> reportDelinquencyPdf(
@@ -201,6 +272,15 @@ public class LoanController {
     }
 
     // ── GET /api/v1/prestamos/reportes/libros-mas-prestados/pdf ──
+    /**
+     * Procesa report books most loaned pdf y devuelve el resultado calculado por el backend.
+     *
+     * @param limit valor de entrada limit usado por la operacion para completar su regla de negocio
+     * @param from fecha limite usada para acotar el rango temporal de la consulta
+     * @param until fecha limite usada para acotar el rango temporal de la consulta
+     * @param categoryId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping(value = "/reportes/libros-mas-prestados/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<byte[]> reportBooksMostLoanedPdf(
@@ -218,6 +298,14 @@ public class LoanController {
     }
 
     // ── GET /api/v1/prestamos/reportes/inventario/pdf ─────
+    /**
+     * Procesa report inventory pdf y devuelve el resultado calculado por el backend.
+     *
+     * @param categoryId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param statusStock valor de entrada statusStock usado por la operacion para completar su regla de negocio
+     * @param busqueda texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping(value = "/reportes/inventario/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<byte[]> reportInventoryPdf(
@@ -234,6 +322,13 @@ public class LoanController {
     }
 
     // ── GET /api/v1/prestamos/reportes/vencidos/pdf ───────
+    /**
+     * Procesa report overdues pdf y devuelve el resultado calculado por el backend.
+     *
+     * @param daysAtrasoMin valor de entrada daysAtrasoMin usado por la operacion para completar su regla de negocio
+     * @param busqueda texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping(value = "/reportes/vencidos/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<byte[]> reportOverduesPdf(
@@ -249,6 +344,14 @@ public class LoanController {
     }
 
     // ── GET /api/v1/prestamos/reportes/categorias-demandadas/pdf ──
+    /**
+     * Procesa report categories demanded pdf y devuelve el resultado calculado por el backend.
+     *
+     * @param limit valor de entrada limit usado por la operacion para completar su regla de negocio
+     * @param from fecha limite usada para acotar el rango temporal de la consulta
+     * @param until fecha limite usada para acotar el rango temporal de la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping(value = "/reportes/categorias-demandadas/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<byte[]> reportCategoriesDemandedPdf(
@@ -265,6 +368,14 @@ public class LoanController {
     }
 
     // ── GET /api/v1/prestamos/reportes/uso/pdf ───────────
+    /**
+     * Procesa report usage pdf y devuelve el resultado calculado por el backend.
+     *
+     * @param granularidad criterio de clasificacion usado para seleccionar la variante o filtro requerido
+     * @param from fecha limite usada para acotar el rango temporal de la consulta
+     * @param until fecha limite usada para acotar el rango temporal de la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping(value = "/reportes/uso/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<byte[]> reportUsagePdf(
@@ -281,6 +392,26 @@ public class LoanController {
 
     // ── GET /api/v1/prestamos/reportes/inventario ─────────
     // Paginacion real + 8 filtros gerenciales (categoria/editorial/año/stock/ubicacion/proveedor/estado/idioma)
+    /**
+     * Procesa report inventory y devuelve el resultado calculado por el backend.
+     *
+     * @param categoryId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param statusStock valor de entrada statusStock usado por la operacion para completar su regla de negocio
+     * @param busqueda texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @param publisherId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param supplierId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param statusBookId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param languageId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param yearFrom valor de entrada yearFrom usado por la operacion para completar su regla de negocio
+     * @param yearUntil valor de entrada yearUntil usado por la operacion para completar su regla de negocio
+     * @param stockTotalMin valor de entrada stockTotalMin usado por la operacion para completar su regla de negocio
+     * @param stockTotalMax valor de entrada stockTotalMax usado por la operacion para completar su regla de negocio
+     * @param stockDispMin valor de entrada stockDispMin usado por la operacion para completar su regla de negocio
+     * @param stockDispMax valor de entrada stockDispMax usado por la operacion para completar su regla de negocio
+     * @param location valor de entrada location usado por la operacion para completar su regla de negocio
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping("/reportes/inventario")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<Page<ReportInventoryResponseDTO>> reportInventory(
@@ -299,14 +430,33 @@ public class LoanController {
             @RequestParam(required = false) Short stockDispMax,
             @RequestParam(name = "ubicacion", required = false) String location,
             @PageableDefault(size = 20, sort = "title") Pageable pageable) {
-        return ResponseEntity.ok(loanService.reportInventoryPaginado(
+        return ResponseEntity.ok(loanService.reportInventoryPaginated(
                 categoryId, statusStock, busqueda, publisherId, supplierId, statusBookId, languageId,
                 yearFrom, yearUntil, stockTotalMin, stockTotalMax, stockDispMin, stockDispMax, location, pageable));
     }
+    /**
+     * Procesa report inventory todo y devuelve el resultado calculado por el backend.
+     *
+     * @param categoryId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param statusStock valor de entrada statusStock usado por la operacion para completar su regla de negocio
+     * @param busqueda texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @param publisherId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param supplierId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param statusBookId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param languageId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param yearFrom valor de entrada yearFrom usado por la operacion para completar su regla de negocio
+     * @param yearUntil valor de entrada yearUntil usado por la operacion para completar su regla de negocio
+     * @param stockTotalMin valor de entrada stockTotalMin usado por la operacion para completar su regla de negocio
+     * @param stockTotalMax valor de entrada stockTotalMax usado por la operacion para completar su regla de negocio
+     * @param stockDispMin valor de entrada stockDispMin usado por la operacion para completar su regla de negocio
+     * @param stockDispMax valor de entrada stockDispMax usado por la operacion para completar su regla de negocio
+     * @param location valor de entrada location usado por la operacion para completar su regla de negocio
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
 
     @GetMapping("/reportes/inventario/todo")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
-    public ResponseEntity<List<ReportInventoryResponseDTO>> reportInventoryTodo(
+    public ResponseEntity<List<ReportInventoryResponseDTO>> reportInventoryAll(
             @RequestParam(name = "categoriaId", required = false) Integer categoryId,
             @RequestParam(name = "estadoStock", required = false) String statusStock,
             @RequestParam(required = false) String busqueda,
@@ -327,24 +477,48 @@ public class LoanController {
     }
 
     // ── GET /api/v1/prestamos/reportes/vencidos ───────────
+    /**
+     * Procesa report loans overdues y devuelve el resultado calculado por el backend.
+     *
+     * @param daysAtrasoMin valor de entrada daysAtrasoMin usado por la operacion para completar su regla de negocio
+     * @param busqueda texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping("/reportes/vencidos")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<Page<ReportOverduesResponseDTO>> reportLoansOverdues(
             @RequestParam(name = "diasAtrasoMin", required = false) Integer daysAtrasoMin,
             @RequestParam(required = false) String busqueda,
             @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(loanService.reportLoansOverduesPaginado(daysAtrasoMin, busqueda, pageable));
+        return ResponseEntity.ok(loanService.reportLoansOverduesPaginated(daysAtrasoMin, busqueda, pageable));
     }
+    /**
+     * Procesa report loans overdues todo y devuelve el resultado calculado por el backend.
+     *
+     * @param daysAtrasoMin valor de entrada daysAtrasoMin usado por la operacion para completar su regla de negocio
+     * @param busqueda texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
 
     @GetMapping("/reportes/vencidos/todo")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
-    public ResponseEntity<List<ReportOverduesResponseDTO>> reportLoansOverduesTodo(
+    public ResponseEntity<List<ReportOverduesResponseDTO>> reportLoansOverduesAll(
             @RequestParam(name = "diasAtrasoMin", required = false) Integer daysAtrasoMin,
             @RequestParam(required = false) String busqueda) {
         return ResponseEntity.ok(loanService.reportLoansOverdues(daysAtrasoMin, busqueda));
     }
 
     // ── GET /api/v1/prestamos/reportes/categorias-demandadas ──
+    /**
+     * Procesa report categories demanded y devuelve el resultado calculado por el backend.
+     *
+     * @param limit valor de entrada limit usado por la operacion para completar su regla de negocio
+     * @param from fecha limite usada para acotar el rango temporal de la consulta
+     * @param until fecha limite usada para acotar el rango temporal de la consulta
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping("/reportes/categorias-demandadas")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<Page<ReportCategoriesDemandedResponseDTO>> reportCategoriesDemanded(
@@ -352,12 +526,20 @@ public class LoanController {
             @RequestParam(name = "desde", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
             @RequestParam(name = "hasta", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime until,
             @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(loanService.reportCategoriesDemandedPaginado(limit, from, until, pageable));
+        return ResponseEntity.ok(loanService.reportCategoriesDemandedPaginated(limit, from, until, pageable));
     }
+    /**
+     * Procesa report categories demanded todo y devuelve el resultado calculado por el backend.
+     *
+     * @param limit valor de entrada limit usado por la operacion para completar su regla de negocio
+     * @param from fecha limite usada para acotar el rango temporal de la consulta
+     * @param until fecha limite usada para acotar el rango temporal de la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
 
     @GetMapping("/reportes/categorias-demandadas/todo")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
-    public ResponseEntity<List<ReportCategoriesDemandedResponseDTO>> reportCategoriesDemandedTodo(
+    public ResponseEntity<List<ReportCategoriesDemandedResponseDTO>> reportCategoriesDemandedAll(
             @RequestParam(name = "limite", required = false) Integer limit,
             @RequestParam(name = "desde", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
             @RequestParam(name = "hasta", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime until) {

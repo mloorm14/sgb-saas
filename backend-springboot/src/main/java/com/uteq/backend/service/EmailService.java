@@ -42,8 +42,12 @@ public class EmailService {
     }
 
     /**
-     * @param bodyHtml se envía como HTML para énfasis simple, sin plantilla externa.
-     * @return {@code true} si se despachó sin error; {@code false} si falló (ya quedó en el log).
+     * Envia send email usando los datos y destinatarios recibidos.
+     *
+     * @param destinatario valor de entrada destinatario usado por la operacion para completar su regla de negocio
+     * @param asunto valor de entrada asunto usado por la operacion para completar su regla de negocio
+     * @param bodyHtml valor de entrada bodyHtml usado por la operacion para completar su regla de negocio
+     * @return true cuando la comprobacion se cumple; false en caso contrario
      */
     public boolean sendEmail(String destinatario, String asunto, String bodyHtml) {
         // 1) Intento SMTP clásico

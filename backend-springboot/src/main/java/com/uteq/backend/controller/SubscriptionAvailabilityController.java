@@ -25,11 +25,11 @@ public class SubscriptionAvailabilityController {
     @PostMapping("/{libroId}/suscripciones")
     @PreAuthorize("isAuthenticated()")
     /**
-     * Handles suscribir.
+     * Procesa suscribir y devuelve el resultado calculado por el backend.
      *
-     * @param bookId numeric identifier used to scope this suscribir
-     * @param auth authentication of the caller used to scope this suscribir
-     * @return Response Entity&lt;Void> reflecting the state after the operation
+     * @param bookId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param auth identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<Void> suscribir(@PathVariable("libroId") Long bookId, Authentication auth) {
         Long userId = resolveUserId(auth);
@@ -40,11 +40,11 @@ public class SubscriptionAvailabilityController {
     @DeleteMapping("/{libroId}/suscripciones")
     @PreAuthorize("isAuthenticated()")
     /**
-     * Handles desuscribir.
+     * Procesa desuscribir y devuelve el resultado calculado por el backend.
      *
-     * @param bookId numeric identifier used to scope this desuscribir
-     * @param auth authentication of the caller used to scope this desuscribir
-     * @return Response Entity&lt;Void> reflecting the state after the operation
+     * @param bookId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param auth identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<Void> desuscribir(@PathVariable("libroId") Long bookId, Authentication auth) {
         Long userId = resolveUserId(auth);
@@ -55,10 +55,10 @@ public class SubscriptionAvailabilityController {
     @GetMapping("/suscripciones/mias")
     @PreAuthorize("isAuthenticated()")
     /**
-     * Handles mis Suscripciones.
+     * Procesa mis subscriptions y devuelve el resultado calculado por el backend.
      *
-     * @param auth authentication of the caller used to scope this mis Suscripciones
-     * @return Response Entity&lt;List<Long>> reflecting the state after the operation
+     * @param auth identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<List<Long>> misSubscriptions(Authentication auth) {
         Long userId = resolveUserId(auth);

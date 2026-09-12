@@ -74,7 +74,7 @@ class SuggestionAcquisitionServiceTest {
         given(suggestionRepo.findAll(Pageable.unpaged())).willReturn(page);
 
         Page<SuggestionAcquisitionResponseDTO> result =
-                suggestionService.listTodas(null, Pageable.unpaged());
+                suggestionService.listAll(null, Pageable.unpaged());
 
         assertThat(result.getTotalElements()).isEqualTo(1);
     }

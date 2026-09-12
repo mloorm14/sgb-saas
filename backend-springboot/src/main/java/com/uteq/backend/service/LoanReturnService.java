@@ -100,14 +100,12 @@ public class LoanReturnService {
 
     @Transactional
     /**
-     * Registers return Completa Response data transfer object.
+     * Registra register loan return validando los datos de entrada antes de persistir cambios.
      *
-     * @param loanId numeric identifier used to scope this return Completa Response data transfer object
-     * @param dto return Request data transfer object used to scope this return Completa Response data transfer object
-     * @param bibliotecarioId numeric identifier used to scope this return Completa Response data transfer object
-     * @return return Completa Response data transfer object reflecting the state after the operation
-     * @throws IllegalStateException when the return Completa Response data transfer object cannot be processed with the given input
-     * @throws EntityNotFoundException when the return Completa Response data transfer object cannot be processed with the given input
+     * @param loanId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @param librarianId valor de entrada librarianId usado por la operacion para completar su regla de negocio
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public LoanReturnFullResponseDTO registerLoanReturn(
             Long loanId, LoanReturnRequestDTO dto, Long librarianId) {
@@ -240,9 +238,8 @@ public class LoanReturnService {
 
     @Transactional(readOnly = true)
     /**
-     * Lists tipos damage report.
-     *
-     * @return list of tipo damage report dto matching the requested criteria
+         * Busca/lista recursos.
+     * @return lista o pagina de resultados
      */
     public List<TypeDamageDTO> listTypesDamage() {
         return typeDamageRepo.findByActiveTrue().stream()
@@ -255,10 +252,10 @@ public class LoanReturnService {
 
     @Transactional(readOnly = true)
     /**
-     * Handles history Devoluciones.
+     * Procesa history loan returns y devuelve el resultado calculado por el backend.
      *
-     * @param bibliotecarioId numeric identifier used to scope this history Devoluciones
-     * @return list of return history data transfer object matching the requested criteria
+     * @param librarianId valor de entrada librarianId usado por la operacion para completar su regla de negocio
+     * @return lista de resultados que coincide con la consulta solicitada
      */
     public List<LoanReturnHistoryDTO> historyLoanReturns(Long librarianId) {
         List<RegistrationDamage> registrations = registrationDamageRepo
@@ -324,15 +321,12 @@ public class LoanReturnService {
 
     @Transactional
     /**
-     * Uploads evidence damage report Response data transfer object.
+     * Procesa upload evidence y devuelve el resultado calculado por el backend.
      *
-     * @param registroDanoId numeric identifier used to scope this evidence damage report Response data transfer object
-     * @param file uploaded file used to scope this evidence damage report Response data transfer object
-     * @param bibliotecarioId numeric identifier used to scope this evidence damage report Response data transfer object
-     * @return evidence damage report Response data transfer object reflecting the state after the operation
-     * @throws IllegalArgumentException when the evidence damage report Response data transfer object cannot be processed with the given input
-     * @throws IllegalStateException when the evidence damage report Response data transfer object cannot be processed with the given input
-     * @throws EntityNotFoundException when the evidence damage report Response data transfer object cannot be processed with the given input
+     * @param registrationDamageId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param file archivo recibido en la peticion y usado como contenido principal de la operacion
+     * @param librarianId valor de entrada librarianId usado por la operacion para completar su regla de negocio
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public EvidenceDamageResponseDTO uploadEvidence(Long registrationDamageId, MultipartFile file, Long librarianId) {
         RegistrationDamage registration = registrationDamageRepo.findById(registrationDamageId)
@@ -378,10 +372,10 @@ public class LoanReturnService {
 
     @Transactional(readOnly = true)
     /**
-     * Lists evidence damage report Response DTO records.
+     * Consulta list evidences usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param registroDanoId numeric identifier used to scope this evidence damage report Response DTO records
-     * @return list of evidence damage report Response data transfer object matching the requested criteria
+     * @param registrationDamageId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return lista de resultados que coincide con la consulta solicitada
      */
     public List<EvidenceDamageResponseDTO> listEvidences(Long registrationDamageId) {
         return evidenceDamageRepo.findByRegistrationDamageId(registrationDamageId).stream()
@@ -393,11 +387,10 @@ public class LoanReturnService {
 
     @Transactional(readOnly = true)
     /**
-     * Retrieves evidence damage report Response data transfer object.
+     * Consulta get file evidence usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param id numeric identifier used to scope this evidence damage report Response data transfer object
-     * @return evidence damage report Response data transfer object reflecting the state after the operation
-     * @throws EntityNotFoundException when the evidence damage report Response data transfer object cannot be processed with the given input
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public EvidenceDamageResponseDTO getFileEvidence(Long id) {
         EvidenceDamage evidence = evidenceDamageRepo.findById(id)
@@ -409,11 +402,10 @@ public class LoanReturnService {
 
     @Transactional(readOnly = true)
     /**
-     * Retrieves evidence damage report file data transfer object.
+     * Consulta get file binario usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param id numeric identifier used to scope this evidence damage report file data transfer object
-     * @return evidence damage report file data transfer object reflecting the state after the operation
-     * @throws EntityNotFoundException when the evidence damage report file data transfer object cannot be processed with the given input
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public EvidenceDamageFileDTO getFileBinario(Long id) {
         EvidenceDamage evidence = evidenceDamageRepo.findById(id)

@@ -44,11 +44,11 @@ public class SecurityConfig {
 
     @Bean
     /**
-     * Handles authentication Manager.
+     * Procesa authentication manager y devuelve el resultado calculado por el backend.
      *
-     * @param config Authentication Configuration used to scope this authentication Manager
-     * @return Authentication Manager reflecting the state after the operation
-     * @throws Exception when the authentication Manager cannot be processed with the given input
+     * @param config objeto del framework usado para integrar esta operacion con Spring o Jackson
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
+     * @throws Exception si la operacion no puede completarse por validacion, permisos o fallo del recurso asociado
      */
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
@@ -68,11 +68,11 @@ public class SecurityConfig {
 
     @Bean
     /**
-     * Handles filter Chain.
+     * Procesa filter chain y devuelve el resultado calculado por el backend.
      *
-     * @param http Http Security used to scope this filter Chain
-     * @return Security Filter Chain reflecting the state after the operation
-     * @throws Exception when the filter Chain cannot be processed with the given input
+     * @param http objeto del framework usado para integrar esta operacion con Spring o Jackson
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
+     * @throws Exception si la operacion no puede completarse por validacion, permisos o fallo del recurso asociado
      */
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http

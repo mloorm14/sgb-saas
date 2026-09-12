@@ -110,14 +110,6 @@ public class LoanService {
      * @throws IllegalStateException si la reserva ya no está vigente o se supera el tope de préstamos
      */
     @Transactional
-    /**
-     * Creates loan Response data transfer object.
-     *
-     * @param dto loan Request data transfer object used to scope this loan Response data transfer object
-     * @param authentication authentication of the caller used to scope this loan Response data transfer object
-     * @return loan Response data transfer object reflecting the state after the operation
-     * @throws EntityNotFoundException when the loan Response data transfer object cannot be processed with the given input
-     */
     public LoanResponseDTO create(LoanRequestDTO dto, Authentication authentication) {
         Long userId = resolveUserId(dto);
         Long librarianId = resolveIdByEmail(authentication.getName());
@@ -194,13 +186,6 @@ public class LoanService {
      * @throws EntityNotFoundException si el préstamo no existe al notificar
      */
     @Transactional
-    /**
-     * Registers return Response data transfer object.
-     *
-     * @param loanId numeric identifier used to scope this return Response data transfer object
-     * @return return Response data transfer object reflecting the state after the operation
-     * @throws EntityNotFoundException when the return Response data transfer object cannot be processed with the given input
-     */
     public LoanReturnResponseDTO registerLoanReturn(Long loanId) {
         Map<String, Object> result = loanProcRepo.spRegisterLoanReturn(loanId);
         Boolean huboFine = (Boolean) result.get("o_hubo_multa");
@@ -238,17 +223,6 @@ public class LoanService {
      * @throws MaterialReservadoException si otro usuario tiene reserva vigente del libro
      */
     @Transactional
-    /**
-     * Renews renewal Response data transfer object.
-     *
-     * @param loanId numeric identifier used to scope this renewal Response data transfer object
-     * @param authentication authentication of the caller used to scope this renewal Response data transfer object
-     * @return renewal Response data transfer object reflecting the state after the operation
-     * @throws IllegalArgumentException when the renewal Response data transfer object cannot be processed with the given input
-     * @throws LoanOverdueException when the renewal Response data transfer object cannot be processed with the given input
-     * @throws LimitRenewalsExceededException when the renewal Response data transfer object cannot be processed with the given input
-     * @throws MaterialReservadoException when the renewal Response data transfer object cannot be processed with the given input
-     */
     public RenewalResponseDTO renew(Long loanId, Authentication authentication) {
         Loan loan = loanRepo.findById(loanId)
                 .orElseThrow(() -> new EntityNotFoundException(PRESTAMO_NO_ENCONTRADO + loanId));
@@ -336,14 +310,6 @@ public class LoanService {
      * @throws AuthorizationDeniedException si un LECTOR pide préstamos ajenos
      */
     @Transactional(readOnly = true)
-    /**
-     * Lists loan Response DTO records.
-     *
-     * @param userId numeric identifier used to scope this loan Response DTO records
-     * @param authentication authentication of the caller used to scope this loan Response DTO records
-     * @param pageable pagination information used to scope this loan Response DTO records
-     * @return page of loan Response data transfer object for the requested pagination
-     */
     public Page<LoanResponseDTO> listByUser(Long userId, Authentication authentication, Pageable pageable) {
         validateAccessUser(userId, authentication);
         return loanRepo.findByUserId(userId, pageable).map(this::toDTO);
@@ -359,13 +325,6 @@ public class LoanService {
      * @throws AuthorizationDeniedException si un LECTOR pide préstamos ajenos
      */
     @Transactional(readOnly = true)
-    /**
-     * Lists loan Activo Response DTO records.
-     *
-     * @param userId numeric identifier used to scope this loan Activo Response DTO records
-     * @param authentication authentication of the caller used to scope this loan Activo Response DTO records
-     * @return list of loan Activo Response data transfer object matching the requested criteria
-     */
     public List<LoanActiveResponseDTO> listActivesByUser(Long userId, Authentication authentication) {
         validateAccessUser(userId, authentication);
         return loanRepo.findActivesByUserId(userId).stream()
@@ -386,14 +345,6 @@ public class LoanService {
      * @return libros ordenados por total de préstamos
      */
     @Transactional(readOnly = true)
-    /**
-     * Handles report books Mas Prestados.
-     *
-     * @param limit numeric value used to scope this report books Mas Prestados
-     * @param from date-time bound used to scope this report books Mas Prestados
-     * @param until date-time bound used to scope this report books Mas Prestados
-     * @return list of book Mas Prestado Response data transfer object matching the requested criteria
-     */
     public List<BookMostLoanedResponseDTO> reportBooksMostLoaned(
             Integer limit, OffsetDateTime from, OffsetDateTime until) {
         // El default 10 se aplica en Java: la @Query siempre envía p_limite explícito y null daría LIMIT NULL.
@@ -413,12 +364,6 @@ public class LoanService {
      * @return lectores morosos ordenados por deuda
      */
     @Transactional(readOnly = true)
-    /**
-     * Handles report delinquency.
-     *
-     * @param limit numeric value used to scope this report delinquency
-     * @return list of report delinquency Response data transfer object matching the requested criteria
-     */
     public List<ReportDelinquencyResponseDTO> reportDelinquency(Integer limit) {
         Integer limitEffective = (limit != null) ? limit : LIMITE_REPORTE_DEFAULT;
         return loanProcRepo.fnReportIndexDelinquency(limitEffective).stream()
@@ -435,18 +380,11 @@ public class LoanService {
      * @return página del ranking de morosidad con su total
      */
     @Transactional(readOnly = true)
-    /**
-     * Handles report delinquency Paginado.
-     *
-     * @param limit numeric value used to scope this report delinquency Paginado
-     * @param pageable pagination information used to scope this report delinquency Paginado
-     * @return page of report delinquency Response data transfer object for the requested pagination
-     */
-    public Page<ReportDelinquencyResponseDTO> reportDelinquencyPaginado(Integer limit, Pageable pageable) {
+    public Page<ReportDelinquencyResponseDTO> reportDelinquencyPaginated(Integer limit, Pageable pageable) {
         Integer limitEffective = (limit != null) ? limit : LIMITE_REPORTE_DEFAULT;
         int pageSize = pageable.getPageSize();
         int offset = (int) pageable.getOffset();
-        List<ReportDelinquencyProjection> projections = loanProcRepo.fnReportIndexDelinquencyPaginado(limitEffective, pageSize, offset);
+        List<ReportDelinquencyProjection> projections = loanProcRepo.fnReportIndexDelinquencyPaginated(limitEffective, pageSize, offset);
         long total = loanProcRepo.countReportIndexDelinquency(limitEffective);
         List<ReportDelinquencyResponseDTO> content = projections.stream().map(this::toDTO).toList();
         return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
@@ -468,15 +406,6 @@ public class LoanService {
      * @throws IllegalArgumentException si la granularidad no es dia, semana ni mes
      */
     @Transactional(readOnly = true)
-    /**
-     * Handles report usage Por period Response DTO records.
-     *
-     * @param granularidad text value used to scope this report usage Por period Response DTO records
-     * @param from date-time bound used to scope this report usage Por period Response DTO records
-     * @param until date-time bound used to scope this report usage Por period Response DTO records
-     * @return list of report usage Por period Response data transfer object matching the requested criteria
-     * @throws IllegalArgumentException when the report usage Por period Response DTO records cannot be processed with the given input
-     */
     public List<ReportUsageByPeriodResponseDTO> reportUsageByPeriod(
             String granularidad, OffsetDateTime from, OffsetDateTime until) {
         String granularidadEfectiva = (granularidad != null) ? granularidad.toLowerCase() : "dia";
@@ -501,17 +430,7 @@ public class LoanService {
      * @throws IllegalArgumentException si la granularidad no es dia, semana ni mes
      */
     @Transactional(readOnly = true)
-    /**
-     * Handles report usage Por period Response DTO records.
-     *
-     * @param granularidad text value used to scope this report usage Por period Response DTO records
-     * @param from date-time bound used to scope this report usage Por period Response DTO records
-     * @param until date-time bound used to scope this report usage Por period Response DTO records
-     * @param pageable pagination information used to scope this report usage Por period Response DTO records
-     * @return page of report usage Por period Response data transfer object for the requested pagination
-     * @throws IllegalArgumentException when the report usage Por period Response DTO records cannot be processed with the given input
-     */
-    public Page<ReportUsageByPeriodResponseDTO> reportUsageByPeriodPaginado(
+    public Page<ReportUsageByPeriodResponseDTO> reportUsageByPeriodPaginated(
             String granularidad, OffsetDateTime from, OffsetDateTime until, Pageable pageable) {
         String granularidadEfectiva = (granularidad != null) ? granularidad.toLowerCase() : "dia";
         if (!GRANULARIDADES_VALIDAS.contains(granularidadEfectiva)) {
@@ -519,7 +438,7 @@ public class LoanService {
         }
         int limit = pageable.getPageSize();
         int offset = (int) pageable.getOffset();
-        List<ReportUsageByPeriodProjection> projections = loanProcRepo.fnReportUsageByPeriodPaginado(granularidadEfectiva, from, until, limit, offset);
+        List<ReportUsageByPeriodProjection> projections = loanProcRepo.fnReportUsageByPeriodPaginated(granularidadEfectiva, from, until, limit, offset);
         long total = loanProcRepo.countReportUsageByPeriod(granularidadEfectiva, from, until);
         List<ReportUsageByPeriodResponseDTO> content = projections.stream().map(this::toDTO).toList();
         return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
@@ -591,15 +510,6 @@ public class LoanService {
      * @return detalle ordenado por total de préstamos
      */
     @Transactional(readOnly = true)
-    /**
-     * Handles report books Mas Prestados Detallado.
-     *
-     * @param limit numeric value used to scope this report books Mas Prestados Detallado
-     * @param from date-time bound used to scope this report books Mas Prestados Detallado
-     * @param until date-time bound used to scope this report books Mas Prestados Detallado
-     * @param categoryId numeric value used to scope this report books Mas Prestados Detallado
-     * @return list of book Mas Prestado Detallado Response data transfer object matching the requested criteria
-     */
     public List<BookMostLoanedDetailedResponseDTO> reportBooksMostLoanedDetailed(
             Integer limit, OffsetDateTime from, OffsetDateTime until, Integer categoryId) {
         Integer limitEffective = (limit != null) ? limit : LIMITE_REPORTE_DEFAULT;
@@ -620,22 +530,12 @@ public class LoanService {
      * @return página del ranking detallado con su total
      */
     @Transactional(readOnly = true)
-    /**
-     * Handles report books Mas Prestados Detallado Paginado.
-     *
-     * @param limit numeric value used to scope this report books Mas Prestados Detallado Paginado
-     * @param from date-time bound used to scope this report books Mas Prestados Detallado Paginado
-     * @param until date-time bound used to scope this report books Mas Prestados Detallado Paginado
-     * @param categoryId numeric value used to scope this report books Mas Prestados Detallado Paginado
-     * @param pageable pagination information used to scope this report books Mas Prestados Detallado Paginado
-     * @return page of book Mas Prestado Detallado Response data transfer object for the requested pagination
-     */
-    public Page<BookMostLoanedDetailedResponseDTO> reportBooksMostLoanedDetailedPaginado(
+    public Page<BookMostLoanedDetailedResponseDTO> reportBooksMostLoanedDetailedPaginated(
             Integer limit, OffsetDateTime from, OffsetDateTime until, Integer categoryId, Pageable pageable) {
         Integer limitEffective = (limit != null) ? limit : LIMITE_REPORTE_DEFAULT;
         int pageSize = pageable.getPageSize();
         int offset = (int) pageable.getOffset();
-        List<BookMostLoanedDetailedProjection> projections = loanProcRepo.fnReportBooksDetailedPaginado(limitEffective, from, until, categoryId, pageSize, offset);
+        List<BookMostLoanedDetailedProjection> projections = loanProcRepo.fnReportBooksDetailedPaginated(limitEffective, from, until, categoryId, pageSize, offset);
         long total = loanProcRepo.countReportBooksDetailed(limitEffective, from, until, categoryId);
         List<BookMostLoanedDetailedResponseDTO> content = projections.stream()
                 .map(p -> new BookMostLoanedDetailedResponseDTO(p.getBookId(), p.getTitle(), p.getIsbn(), p.getAuthorName(), p.getCategoryName(), p.getTotalLoans(), p.getPercentage()))
@@ -654,14 +554,6 @@ public class LoanService {
      * @return inventario filtrado con stock total y disponible
      */
     @Transactional(readOnly = true)
-    /**
-     * Handles report inventory.
-     *
-     * @param categoryId numeric value used to scope this report inventory
-     * @param statusStock text value used to scope this report inventory
-     * @param busqueda text value used to scope this report inventory
-     * @return list of report inventory Response data transfer object matching the requested criteria
-     */
     public List<ReportInventoryResponseDTO> reportInventory(
             Integer categoryId, String statusStock, String busqueda) {
         return loanProcRepo.fnReportInventory(categoryId, statusStock, busqueda,
@@ -684,21 +576,12 @@ public class LoanService {
      * @return página del inventario con su total
      */
     @Transactional(readOnly = true)
-    /**
-     * Handles report inventory Paginado.
-     *
-     * @param categoryId numeric value used to scope this report inventory Paginado
-     * @param statusStock text value used to scope this report inventory Paginado
-     * @param busqueda text value used to scope this report inventory Paginado
-     * @param pageable pagination information used to scope this report inventory Paginado
-     * @return page of report inventory Response data transfer object for the requested pagination
-     */
-    public Page<ReportInventoryResponseDTO> reportInventoryPaginado(
+    public Page<ReportInventoryResponseDTO> reportInventoryPaginated(
             Integer categoryId, String statusStock, String busqueda, Pageable pageable) {
         int limit = pageable.getPageSize();
         int offset = (int) pageable.getOffset();
         List<ReportInventoryProjection> projections =
-                loanProcRepo.fnReportInventoryPaginado(categoryId, statusStock, busqueda,
+                loanProcRepo.fnReportInventoryPaginated(categoryId, statusStock, busqueda,
                         null, null, null, null, null, null, null, null, null, null, null, limit, offset);
         long total = loanProcRepo.countReportInventory(categoryId, statusStock, busqueda,
                         null, null, null, null, null, null, null, null, null, null, null);
@@ -735,25 +618,6 @@ public class LoanService {
      * @return inventario filtrado con stock total y disponible
      */
     @Transactional(readOnly = true)
-    /**
-     * Handles report inventory.
-     *
-     * @param categoryId numeric value used to scope this report inventory
-     * @param statusStock text value used to scope this report inventory
-     * @param busqueda text value used to scope this report inventory
-     * @param publisherId numeric value used to scope this report inventory
-     * @param supplierId numeric value used to scope this report inventory
-     * @param statusBookId numeric value used to scope this report inventory
-     * @param languageId numeric value used to scope this report inventory
-     * @param yearFrom Short used to scope this report inventory
-     * @param yearUntil Short used to scope this report inventory
-     * @param stockTotalMin Short used to scope this report inventory
-     * @param stockTotalMax Short used to scope this report inventory
-     * @param stockDispMin Short used to scope this report inventory
-     * @param stockDispMax Short used to scope this report inventory
-     * @param location text value used to scope this report inventory
-     * @return list of report inventory Response data transfer object matching the requested criteria
-     */
     public List<ReportInventoryResponseDTO> reportInventory(
             Integer categoryId, String statusStock, String busqueda,
             Integer publisherId, Integer supplierId, Integer statusBookId, Integer languageId,
@@ -791,27 +655,7 @@ public class LoanService {
      * @return página del inventario con su total
      */
     @Transactional(readOnly = true)
-    /**
-     * Handles report inventory Paginado.
-     *
-     * @param categoryId numeric value used to scope this report inventory Paginado
-     * @param statusStock text value used to scope this report inventory Paginado
-     * @param busqueda text value used to scope this report inventory Paginado
-     * @param publisherId numeric value used to scope this report inventory Paginado
-     * @param supplierId numeric value used to scope this report inventory Paginado
-     * @param statusBookId numeric value used to scope this report inventory Paginado
-     * @param languageId numeric value used to scope this report inventory Paginado
-     * @param yearFrom Short used to scope this report inventory Paginado
-     * @param yearUntil Short used to scope this report inventory Paginado
-     * @param stockTotalMin Short used to scope this report inventory Paginado
-     * @param stockTotalMax Short used to scope this report inventory Paginado
-     * @param stockDispMin Short used to scope this report inventory Paginado
-     * @param stockDispMax Short used to scope this report inventory Paginado
-     * @param location text value used to scope this report inventory Paginado
-     * @param pageable pagination information used to scope this report inventory Paginado
-     * @return page of report inventory Response data transfer object for the requested pagination
-     */
-    public Page<ReportInventoryResponseDTO> reportInventoryPaginado(
+    public Page<ReportInventoryResponseDTO> reportInventoryPaginated(
             Integer categoryId, String statusStock, String busqueda,
             Integer publisherId, Integer supplierId, Integer statusBookId, Integer languageId,
             Short yearFrom, Short yearUntil, Short stockTotalMin, Short stockTotalMax,
@@ -819,7 +663,7 @@ public class LoanService {
         int limit = pageable.getPageSize();
         int offset = (int) pageable.getOffset();
         List<ReportInventoryProjection> projections =
-                loanProcRepo.fnReportInventoryPaginado(categoryId, statusStock, busqueda,
+                loanProcRepo.fnReportInventoryPaginated(categoryId, statusStock, busqueda,
                         publisherId, supplierId, statusBookId, languageId, yearFrom, yearUntil,
                         stockTotalMin, stockTotalMax, stockDispMin, stockDispMax, location, limit, offset);
         long total = loanProcRepo.countReportInventory(categoryId, statusStock, busqueda,
@@ -844,13 +688,6 @@ public class LoanService {
      * @return vencidos con atraso y multa estimada
      */
     @Transactional(readOnly = true)
-    /**
-     * Handles report loans overdue loans.
-     *
-     * @param daysAtrasoMin numeric value used to scope this report loans overdue loans
-     * @param busqueda text value used to scope this report loans overdue loans
-     * @return list of report overdue loans Response data transfer object matching the requested criteria
-     */
     public List<ReportOverduesResponseDTO> reportLoansOverdues(Integer daysAtrasoMin, String busqueda) {
         return loanProcRepo.fnReportLoansOverdues(daysAtrasoMin, busqueda).stream()
                 .map(p -> new ReportOverduesResponseDTO(
@@ -869,18 +706,10 @@ public class LoanService {
      * @return página de vencidos con su total
      */
     @Transactional(readOnly = true)
-    /**
-     * Handles report loans overdue loans Paginado.
-     *
-     * @param daysAtrasoMin numeric value used to scope this report loans overdue loans Paginado
-     * @param busqueda text value used to scope this report loans overdue loans Paginado
-     * @param pageable pagination information used to scope this report loans overdue loans Paginado
-     * @return page of report overdue loans Response data transfer object for the requested pagination
-     */
-    public Page<ReportOverduesResponseDTO> reportLoansOverduesPaginado(Integer daysAtrasoMin, String busqueda, Pageable pageable) {
+    public Page<ReportOverduesResponseDTO> reportLoansOverduesPaginated(Integer daysAtrasoMin, String busqueda, Pageable pageable) {
         int limit = pageable.getPageSize();
         int offset = (int) pageable.getOffset();
-        List<ReportOverduesProjection> projections = loanProcRepo.fnReportLoansOverduesPaginado(daysAtrasoMin, busqueda, limit, offset);
+        List<ReportOverduesProjection> projections = loanProcRepo.fnReportLoansOverduesPaginated(daysAtrasoMin, busqueda, limit, offset);
         long total = loanProcRepo.countReportLoansOverdues(daysAtrasoMin, busqueda);
         List<ReportOverduesResponseDTO> content = projections.stream()
                 .map(p -> new ReportOverduesResponseDTO(p.getLoanId(), p.getUserName(), p.getUserEmail(), p.getBookTitle(), p.getBookIsbn(),
@@ -899,14 +728,6 @@ public class LoanService {
      * @return categorías ordenadas por demanda
      */
     @Transactional(readOnly = true)
-    /**
-     * Handles report Categorias Demandadas.
-     *
-     * @param limit numeric value used to scope this report Categorias Demandadas
-     * @param from date-time bound used to scope this report Categorias Demandadas
-     * @param until date-time bound used to scope this report Categorias Demandadas
-     * @return list of report Categorias Demandadas Response data transfer object matching the requested criteria
-     */
     public List<ReportCategoriesDemandedResponseDTO> reportCategoriesDemanded(
             Integer limit, OffsetDateTime from, OffsetDateTime until) {
         Integer limitEffective = (limit != null) ? limit : LIMITE_REPORTE_DEFAULT;
@@ -925,21 +746,12 @@ public class LoanService {
      * @return página del ranking con su total
      */
     @Transactional(readOnly = true)
-    /**
-     * Handles report Categorias Demandadas Paginado.
-     *
-     * @param limit numeric value used to scope this report Categorias Demandadas Paginado
-     * @param from date-time bound used to scope this report Categorias Demandadas Paginado
-     * @param until date-time bound used to scope this report Categorias Demandadas Paginado
-     * @param pageable pagination information used to scope this report Categorias Demandadas Paginado
-     * @return page of report Categorias Demandadas Response data transfer object for the requested pagination
-     */
-    public Page<ReportCategoriesDemandedResponseDTO> reportCategoriesDemandedPaginado(
+    public Page<ReportCategoriesDemandedResponseDTO> reportCategoriesDemandedPaginated(
             Integer limit, OffsetDateTime from, OffsetDateTime until, Pageable pageable) {
         Integer limitEffective = (limit != null) ? limit : LIMITE_REPORTE_DEFAULT;
         int pageSize = pageable.getPageSize();
         int offset = (int) pageable.getOffset();
-        List<ReportCategoriesDemandedProjection> projections = loanProcRepo.fnReportCategoriesDemandedPaginado(limitEffective, from, until, pageSize, offset);
+        List<ReportCategoriesDemandedProjection> projections = loanProcRepo.fnReportCategoriesDemandedPaginated(limitEffective, from, until, pageSize, offset);
         long total = loanProcRepo.countReportCategoriesDemanded(limitEffective, from, until);
         List<ReportCategoriesDemandedResponseDTO> content = projections.stream()
                 .map(p -> new ReportCategoriesDemandedResponseDTO(p.getCategoryId(), p.getCategoryName(), p.getTotalLoans(), p.getPercentage()))

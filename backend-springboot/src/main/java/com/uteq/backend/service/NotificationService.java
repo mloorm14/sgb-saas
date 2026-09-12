@@ -71,11 +71,6 @@ public class NotificationService {
      * @param loan préstamo próximo a vencer, con usuario, libro y fecha estimada
      */
     @Transactional
-    /**
-     * Generates notification.
-     *
-     * @param loan loan used to scope this notification
-     */
     public void generateAlertaDue(Loan loan) {
         Integer typeId = idType(TIPO_VENCIMIENTO);
         if (notificationRepo.existsByLoanIdAndTypeNotificationId(loan.getId(), typeId)) {
@@ -100,13 +95,6 @@ public class NotificationService {
      * @param amount monto de la multa generada, incluido en el mensaje
      */
     @Transactional
-    /**
-     * Notifies notification.
-     *
-     * @param userId numeric identifier used to scope this notification
-     * @param loanId numeric identifier used to scope this notification
-     * @param amount monetary amount used to scope this notification
-     */
     public void notifyFine(Long userId, Long loanId, BigDecimal amount) {
         String message = "Se generó una multa de $" + amount + " asociada a tu préstamo #" + loanId
                 + " por atraso en la devolución.";
@@ -121,11 +109,6 @@ public class NotificationService {
      * @param reservation reservación caducada con usuario y libro para el mensaje
      */
     @Transactional
-    /**
-     * Notifies notification.
-     *
-     * @param reservation reservation used to scope this notification
-     */
     public void notifyReservationExpired(Reservation reservation) {
         String title = titleBook(reservation.getBookId());
         String message = "Tu reserva de \"" + title + "\" caducó porque no se retiró dentro del plazo.";
@@ -146,14 +129,6 @@ public class NotificationService {
      * @throws AuthorizationDeniedException si un LECTOR pide notificaciones ajenas
      */
     @Transactional(readOnly = true)
-    /**
-     * Lists notification Response DTO records.
-     *
-     * @param userId numeric identifier used to scope this notification Response DTO records
-     * @param authentication authentication of the caller used to scope this notification Response DTO records
-     * @param pageable pagination information used to scope this notification Response DTO records
-     * @return page of notification Response data transfer object for the requested pagination
-     */
     public Page<NotificationResponseDTO> listByUser(Long userId, Authentication authentication, Pageable pageable) {
         validateAccessUser(userId, authentication);
         return notificationRepo.findByUserId(userId, pageable).map(this::toDTO);
@@ -169,14 +144,6 @@ public class NotificationService {
      * @throws EntityNotFoundException si el usuario no existe
      */
     @Transactional
-    /**
-     * Notifies notification.
-     *
-     * @param userId numeric identifier used to scope this notification
-     * @param fineId numeric identifier used to scope this notification
-     * @param amountPaid monetary amount used to scope this notification
-     * @throws EntityNotFoundException when the notification cannot be processed with the given input
-     */
     public void notifyReceiptPayment(Long userId, Long fineId, BigDecimal amountPaid) {
         User user = userRepo.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + userId));
@@ -224,13 +191,6 @@ public class NotificationService {
      * @throws EntityNotFoundException si el usuario no existe
      */
     @Transactional
-    /**
-     * Notifies notification.
-     *
-     * @param userId numeric identifier used to scope this notification
-     * @param bookId numeric identifier used to scope this notification
-     * @param title text value used to scope this notification
-     */
     public void notifyBookAvailable(Long userId, Long bookId, String title) {
         String message = "El libro \"" + title + "\" esta disponible ahora — reservalo antes que otros.";
         Integer typeId = idType(TIPO_DISPONIBLE);

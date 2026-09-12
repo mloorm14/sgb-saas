@@ -29,11 +29,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     /**
-     * Loads User Details.
+     * Procesa load user by username y devuelve el resultado calculado por el backend.
      *
-     * @param email text value used to scope this User Details
-     * @return User Details reflecting the state after the operation
-     * @throws UsernameNotFoundException when the User Details cannot be processed with the given input
+     * @param email texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
+     * @throws UsernameNotFoundException si la operacion no puede completarse por validacion, permisos o fallo del recurso asociado
      */
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         com.uteq.backend.entity.User user = userRepository.findByEmail(email)

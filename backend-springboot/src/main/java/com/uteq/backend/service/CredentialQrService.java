@@ -34,7 +34,10 @@ public class CredentialQrService {
     }
 
     /**
-     * Genera el QR del usuario autenticado: cada usuario solo puede pedir el suyo.
+     * Genera o entrega generate image qr own a partir de los datos actuales del sistema.
+     *
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return contenido binario generado o recuperado por la operacion
      */
     public byte[] generateImageQrOwn(Authentication authentication) {
         User user = userRepo.findByEmail(authentication.getName())
@@ -61,8 +64,10 @@ public class CredentialQrService {
     }
 
     /**
-     * Resuelve el usuario desde el token escaneado en ventanilla.
-     * Token inexistente o usuario no ACTIVO → mismo mensaje genérico (no filtra existencia).
+     * Procesa resolve by token y devuelve el resultado calculado por el backend.
+     *
+     * @param token token de seguridad recibido para validar o renovar la sesion del usuario
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public User resolveByToken(UUID token) {
         User user = userRepo.findByCredentialQrToken(token)

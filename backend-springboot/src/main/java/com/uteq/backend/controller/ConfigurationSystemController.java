@@ -35,11 +35,11 @@ public class ConfigurationSystemController {
 
     @PutMapping("/{clave}")
     /**
-     * Updates Response Entity&lt;Configuracion Sistema Response DTO>.
+     * Actualiza update con las reglas de negocio requeridas por el flujo.
      *
-     * @param key text value used to scope this Response Entity&lt;Configuracion Sistema Response DTO>
-     * @param dto configuration Sistema Request data transfer object used to scope this Response Entity&lt;Configuracion Sistema Response DTO>
-     * @return Response Entity&lt;Configuracion Sistema Response DTO> reflecting the state after the operation
+     * @param key clave o valor de configuracion que se valida antes de guardarse
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<ConfigurationSystemResponseDTO> update(
             @PathVariable("clave") String key,

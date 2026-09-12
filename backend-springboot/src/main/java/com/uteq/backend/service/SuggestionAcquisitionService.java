@@ -36,11 +36,11 @@ public class SuggestionAcquisitionService {
 
     @Transactional
     /**
-     * Creates suggestion Adquisicion Response data transfer object.
+     * Registra create validando los datos de entrada antes de persistir cambios.
      *
-     * @param dto suggestion Adquisicion Request data transfer object used to scope this suggestion Adquisicion Response data transfer object
-     * @param authentication authentication of the caller used to scope this suggestion Adquisicion Response data transfer object
-     * @return suggestion Adquisicion Response data transfer object reflecting the state after the operation
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public SuggestionAcquisitionResponseDTO create(SuggestionAcquisitionRequestDTO dto, Authentication authentication) {
         Long userId = resolveIdByEmail(authentication.getName());
@@ -60,11 +60,11 @@ public class SuggestionAcquisitionService {
 
     @Transactional(readOnly = true)
     /**
-     * Lists suggestion Adquisicion Response DTO records.
+     * Consulta list owns usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param authentication authentication of the caller used to scope this suggestion Adquisicion Response DTO records
-     * @param pageable pagination information used to scope this suggestion Adquisicion Response DTO records
-     * @return page of suggestion Adquisicion Response data transfer object for the requested pagination
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return pagina de resultados que coincide con los filtros y la paginacion solicitada
      */
     public Page<SuggestionAcquisitionResponseDTO> listOwns(Authentication authentication, Pageable pageable) {
         Long userId = resolveIdByEmail(authentication.getName());
@@ -74,13 +74,13 @@ public class SuggestionAcquisitionService {
     // Solo GERENTE/ADMIN llegan acá: listado sin filtrar por dueño.
     @Transactional(readOnly = true)
     /**
-     * Lists suggestion Adquisicion Response DTO records.
+     * Consulta list todas usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param estado text value used to scope this suggestion Adquisicion Response DTO records
-     * @param pageable pagination information used to scope this suggestion Adquisicion Response DTO records
-     * @return page of suggestion Adquisicion Response data transfer object for the requested pagination
+     * @param status criterio de clasificacion usado para seleccionar la variante o filtro requerido
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return pagina de resultados que coincide con los filtros y la paginacion solicitada
      */
-    public Page<SuggestionAcquisitionResponseDTO> listTodas(String status, Pageable pageable) {
+    public Page<SuggestionAcquisitionResponseDTO> listAll(String status, Pageable pageable) {
         if (status == null || status.isBlank()) {
             return suggestionRepo.findAll(pageable).map(this::toDTO);
         }
@@ -89,13 +89,12 @@ public class SuggestionAcquisitionService {
 
     @Transactional
     /**
-     * Changes suggestion Adquisicion Response data transfer object.
+     * Actualiza change status con las reglas de negocio requeridas por el flujo.
      *
-     * @param id numeric identifier used to scope this suggestion Adquisicion Response data transfer object
-     * @param freshStatus text value used to scope this suggestion Adquisicion Response data transfer object
-     * @param authentication authentication of the caller used to scope this suggestion Adquisicion Response data transfer object
-     * @return suggestion Adquisicion Response data transfer object reflecting the state after the operation
-     * @throws EntityNotFoundException when the suggestion Adquisicion Response data transfer object cannot be processed with the given input
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param freshStatus valor de entrada freshStatus usado por la operacion para completar su regla de negocio
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public SuggestionAcquisitionResponseDTO changeStatus(Long id, String freshStatus, Authentication authentication) {
         SuggestionAcquisition suggestion = suggestionRepo.findById(id)
@@ -112,10 +111,10 @@ public class SuggestionAcquisitionService {
     // El orden vive en el JPQL; el sort del Pageable se ignora a propósito.
     @Transactional(readOnly = true)
     /**
-     * Retrieves suggestion Agrupada DTO records.
+     * Consulta get most pedidos usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param pageable pagination information used to scope this suggestion Agrupada DTO records
-     * @return page of suggestion Agrupada data transfer object for the requested pagination
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return pagina de resultados que coincide con los filtros y la paginacion solicitada
      */
     public Page<SuggestionGroupedDTO> getMostPedidos(Pageable pageable) {
         Pageable effective = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
@@ -124,9 +123,8 @@ public class SuggestionAcquisitionService {
 
     @Transactional(readOnly = true)
     /**
-     * Retrieves suggestion Agrupada DTO records.
-     *
-     * @return list of suggestion Agrupada data transfer object matching the requested criteria
+         * Busca/lista recursos.
+     * @return lista o pagina de resultados
      */
     public List<SuggestionGroupedDTO> getMostPedidosList() {
         return suggestionRepo
@@ -135,27 +133,21 @@ public class SuggestionAcquisitionService {
     }
 
     /**
-     * Confirma la adquisición de un ISBN: todas sus sugerencias PENDIENTE
-     * pasan a APROBADA (que acá significa "adquirido") y salen del agrupado.
-     * La llama el botón de gestión, el reporte no la usa, y LibroService al
-     * crear un libro con ese ISBN (validación automática).
+     * Procesa confirm acquisition y devuelve el resultado calculado por el backend.
+     *
+     * @param isbn valor de entrada isbn usado por la operacion para completar su regla de negocio
+     * @param revisorId valor de entrada revisorId usado por la operacion para completar su regla de negocio
+     * @return valor numerico calculado o recuperado por la operacion
      */
     @Transactional
-    /**
-     * Confirms suggestion Adquisicion.
-     *
-     * @param isbn text value used to scope this suggestion Adquisicion
-     * @param revisorId numeric identifier used to scope this suggestion Adquisicion
-     * @return identifier of the affected record
-     */
     public int confirmAcquisition(String isbn, Long revisorId) {
-        List<SuggestionAcquisition> pendientes = suggestionRepo.findByIsbnAndStatus(isbn, SuggestionAcquisition.PENDIENTE);
-        for (SuggestionAcquisition s : pendientes) {
+        List<SuggestionAcquisition> pending = suggestionRepo.findByIsbnAndStatus(isbn, SuggestionAcquisition.PENDIENTE);
+        for (SuggestionAcquisition s : pending) {
             s.setStatus(SuggestionAcquisition.APROBADA);
             s.setRevisadoBy(revisorId);
             suggestionRepo.save(s);
         }
-        return pendientes.size();
+        return pending.size();
     }
 
     private Long resolveIdByEmail(String email) {
@@ -165,6 +157,12 @@ public class SuggestionAcquisitionService {
     }
 
     /** Versión pública para el controller (confirmar-adquisicion). */
+    /**
+     * Procesa resolve id by email public y devuelve el resultado calculado por el backend.
+     *
+     * @param email texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @return valor numerico calculado o recuperado por la operacion
+     */
     public Long resolveIdByEmailPublic(String email) {
         return resolveIdByEmail(email);
     }

@@ -35,11 +35,11 @@ public class SuggestionAcquisitionController {
     @PostMapping
     @PreAuthorize("hasRole('LECTOR')")
     /**
-     * Creates Response Entity&lt;Sugerencia Adquisicion Response DTO>.
+     * Registra create validando los datos de entrada antes de persistir cambios.
      *
-     * @param dto suggestion Adquisicion Request data transfer object used to scope this Response Entity&lt;Sugerencia Adquisicion Response DTO>
-     * @param authentication authentication of the caller used to scope this Response Entity&lt;Sugerencia Adquisicion Response DTO>
-     * @return Response Entity&lt;Sugerencia Adquisicion Response DTO> reflecting the state after the operation
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<SuggestionAcquisitionResponseDTO> create(
             @Valid @RequestBody SuggestionAcquisitionRequestDTO dto,
@@ -49,6 +49,13 @@ public class SuggestionAcquisitionController {
     }
 
     // ── GET /api/v1/sugerencias-adquisicion/mias ──────────
+    /**
+     * Consulta list owns usando los filtros recibidos y devuelve el resultado solicitado.
+     *
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping("/mias")
     @PreAuthorize("hasRole('LECTOR')")
     public ResponseEntity<Page<SuggestionAcquisitionResponseDTO>> listOwns(
@@ -58,24 +65,31 @@ public class SuggestionAcquisitionController {
     }
 
     // ── GET /api/v1/sugerencias-adquisicion?estado=PENDIENTE ──
+    /**
+     * Consulta list todas usando los filtros recibidos y devuelve el resultado solicitado.
+     *
+     * @param status criterio de clasificacion usado para seleccionar la variante o filtro requerido
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
-    public ResponseEntity<Page<SuggestionAcquisitionResponseDTO>> listTodas(
+    public ResponseEntity<Page<SuggestionAcquisitionResponseDTO>> listAll(
             @RequestParam(name = "estado", required = false) String status,
             @PageableDefault(size = 10, sort = "created") Pageable pageable) {
-        return ResponseEntity.ok(suggestionService.listTodas(status, pageable));
+        return ResponseEntity.ok(suggestionService.listAll(status, pageable));
     }
 
     // ── PATCH /api/v1/sugerencias-adquisicion/{id}/estado ─
     @PatchMapping("/{id}/estado")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     /**
-     * Changes Response Entity&lt;Sugerencia Adquisicion Response DTO>.
+     * Actualiza change status con las reglas de negocio requeridas por el flujo.
      *
-     * @param id numeric identifier used to scope this Response Entity&lt;Sugerencia Adquisicion Response DTO>
-     * @param dto Cambio status suggestion Request data transfer object used to scope this Response Entity&lt;Sugerencia Adquisicion Response DTO>
-     * @param authentication authentication of the caller used to scope this Response Entity&lt;Sugerencia Adquisicion Response DTO>
-     * @return Response Entity&lt;Sugerencia Adquisicion Response DTO> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<SuggestionAcquisitionResponseDTO> changeStatus(
             @PathVariable Long id,
@@ -89,6 +103,12 @@ public class SuggestionAcquisitionController {
     // Gestión por demanda (GERENTE/ADMIN): PENDIENTE agrupadas por ISBN.
     // Importante: va ANTES de que alguien agregue un @GetMapping("/{id}")
     // para que "mas-pedidos" no se confunda con un id.
+    /**
+     * Procesa most pedidos y devuelve el resultado calculado por el backend.
+     *
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping("/mas-pedidos")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<Page<SuggestionGroupedDTO>> mostPedidos(
@@ -98,6 +118,13 @@ public class SuggestionAcquisitionController {
 
     // ── POST /api/v1/sugerencias-adquisicion/confirmar-adquisicion?isbn= ──
     // Marca adquiridas todas las PENDIENTE de ese ISBN (salen del agrupado).
+    /**
+     * Procesa confirm acquisition y devuelve el resultado calculado por el backend.
+     *
+     * @param isbn valor de entrada isbn usado por la operacion para completar su regla de negocio
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
+     */
     @PostMapping("/confirmar-adquisicion")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     public ResponseEntity<java.util.Map<String, Object>> confirmAcquisition(

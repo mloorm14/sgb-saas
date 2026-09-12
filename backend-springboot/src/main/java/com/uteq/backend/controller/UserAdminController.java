@@ -35,6 +35,15 @@ public class UserAdminController {
     // fuerza ese filtro para GERENTE aunque no mande el flag).
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
+    /**
+     * Consulta list usando los filtros recibidos y devuelve el resultado solicitado.
+     *
+     * @param filter texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @param mios valor de entrada mios usado por la operacion para completar su regla de negocio
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     public ResponseEntity<Page<UserListingResponseDTO>> list(
             @RequestParam(name = "filtro", required = false) String filter,
             @RequestParam(required = false, defaultValue = "false") boolean mios,
@@ -48,12 +57,12 @@ public class UserAdminController {
     @PatchMapping("/{id}/rol")
     @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
     /**
-     * Changes Response Entity&lt;Void>.
+     * Actualiza change role con las reglas de negocio requeridas por el flujo.
      *
-     * @param id numeric identifier used to scope this Response Entity&lt;Void>
-     * @param dto Cambio Rol Request data transfer object used to scope this Response Entity&lt;Void>
-     * @param authentication authentication of the caller used to scope this Response Entity&lt;Void>
-     * @return Response Entity&lt;Void> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<Void> changeRole(
             @PathVariable Long id,
@@ -68,12 +77,12 @@ public class UserAdminController {
     @PatchMapping("/{id}/estado")
     @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
     /**
-     * Changes Response Entity&lt;Void>.
+     * Actualiza change status con las reglas de negocio requeridas por el flujo.
      *
-     * @param id numeric identifier used to scope this Response Entity&lt;Void>
-     * @param dto Cambio status user Request data transfer object used to scope this Response Entity&lt;Void>
-     * @param authentication authentication of the caller used to scope this Response Entity&lt;Void>
-     * @return Response Entity&lt;Void> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<Void> changeStatus(
             @PathVariable Long id,
@@ -88,11 +97,11 @@ public class UserAdminController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
     /**
-     * Creates Response Entity&lt;Usuario Response DTO>.
+     * Registra create validando los datos de entrada antes de persistir cambios.
      *
-     * @param dto Crear user Admin Request data transfer object used to scope this Response Entity&lt;Usuario Response DTO>
-     * @param authentication authentication of the caller used to scope this Response Entity&lt;Usuario Response DTO>
-     * @return Response Entity&lt;Usuario Response DTO> reflecting the state after the operation
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<UserResponseDTO> create(@Valid @RequestBody CreateUserAdminRequestDTO dto, Authentication authentication) {
         UserResponseDTO created = userAdminService.createUser(dto, authentication);
@@ -100,6 +109,14 @@ public class UserAdminController {
     }
 
     // ── DELETE /api/v1/admin/usuarios/{id} soft INACTIVO ──────────
+    /**
+     * Elimina o anula delete despues de validar que la operacion sea permitida.
+     *
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param reason valor de entrada reason usado por la operacion para completar su regla de negocio
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id, @RequestParam(name = "motivo", required = false) String reason, Authentication authentication) {
@@ -110,6 +127,12 @@ public class UserAdminController {
     // ── GET /api/v1/admin/usuarios/{id}/historial-motivos ──────────
     // V50/OBS-28: historial de motivos de cambio de estado/eliminación,
     // más reciente primero.
+    /**
+     * Procesa history reasons y devuelve el resultado calculado por el backend.
+     *
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping("/{id}/historial-motivos")
     @PreAuthorize("hasAnyRole('ADMIN','GERENTE')")
     public ResponseEntity<java.util.List<com.uteq.backend.dto.UserReasonChangeResponseDTO>> historyReasons(@PathVariable Long id) {

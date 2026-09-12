@@ -31,10 +31,10 @@ public class ChatbotRateLimiter {
     private long rateLimitWindowSeconds;
 
     /**
-     * Handles esta Bloqueado.
+     * Procesa esta blocked y devuelve el resultado calculado por el backend.
      *
-     * @param userId numeric identifier used to scope this esta Bloqueado
-     * @return true when the check succeeds
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return true cuando la comprobacion se cumple; false en caso contrario
      */
 
     public boolean estaBlocked(Long userId) {
@@ -48,9 +48,9 @@ public class ChatbotRateLimiter {
     }
 
     /**
-     * Incrementa el contador. El TTL de la ventana se fija solo en el
-     * primer mensaje (cuando el contador pasa de 0 a 1), misma lógica de
-     * ventana fija que LoginRateLimiter.registrarFallo.
+     * Registra register message validando los datos de entrada antes de persistir cambios.
+     *
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
      */
     public void registerMessage(Long userId) {
         try {

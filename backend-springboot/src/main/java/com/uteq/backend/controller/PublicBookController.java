@@ -46,6 +46,16 @@ public class PublicBookController {
     // Espejo de LibroController.listar(): q busca por título/ISBN,
     // categoriaId/autorId filtran (mutuamente excluyentes), paginado
     // por defecto size=10 sort=titulo.
+    /**
+     * Consulta list usando los filtros recibidos y devuelve el resultado solicitado.
+     *
+     * @param q texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @param categoryId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param authorId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param available criterio de clasificacion usado para seleccionar la variante o filtro requerido
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return pagina de resultados que coincide con los filtros y la paginacion solicitada
+     */
     @GetMapping
     public Page<BookResponseDTO> list(
             @RequestParam(required = false) String q,
@@ -59,6 +69,12 @@ public class PublicBookController {
     // ── GET /api/publico/libros/sugerencias?texto= ───────────────────
     // Autocompletado del buscador público. Misma validación que el endpoint
     // autenticado (mínimo 2 caracteres).
+    /**
+     * Procesa suggestions y devuelve el resultado calculado por el backend.
+     *
+     * @param text texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @return lista de resultados que coincide con la consulta solicitada
+     */
     @GetMapping("/sugerencias")
     public List<BookSuggestionDTO> suggestions(
             @RequestParam("texto") @Size(min = 2, max = 60, message = "El texto de búsqueda debe tener entre 2 y 60 caracteres") String text) {
@@ -68,10 +84,10 @@ public class PublicBookController {
     // ── GET /api/publico/libros/{id} ─────────────────────────────────
     @GetMapping("/{id}")
     /**
-     * Retrieves book Response data transfer object.
+     * Consulta get usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param id numeric identifier used to scope this book Response data transfer object
-     * @return book Response data transfer object reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public BookResponseDTO get(@PathVariable Long id) {
         return bookService.searchByIdPublic(id);
@@ -86,10 +102,10 @@ public class PublicBookController {
     // portada_tipo, 404 si el libro no existe o no tiene portada.
     @GetMapping("/{id}/portada")
     /**
-     * Handles cover image.
+     * Procesa cover y devuelve el resultado calculado por el backend.
      *
-     * @param id numeric identifier used to scope this cover image
-     * @return Response Entity&lt;byte[]> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<byte[]> cover(@PathVariable Long id) {
         CoverImageDTO cover = bookService.getCover(id);

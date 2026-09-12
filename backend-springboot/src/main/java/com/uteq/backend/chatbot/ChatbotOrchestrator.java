@@ -79,12 +79,11 @@ public class ChatbotOrchestrator {
 
     @Transactional
     /**
-     * Sends message Chat Response data transfer object.
+     * Envia send message usando los datos y destinatarios recibidos.
      *
-     * @param dto message Chat Request data transfer object used to scope this message Chat Response data transfer object
-     * @param authentication authentication of the caller used to scope this message Chat Response data transfer object
-     * @return message Chat Response data transfer object reflecting the state after the operation
-     * @throws ChatbotRateLimitExcedidoException when the message Chat Response data transfer object cannot be processed with the given input
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public MessageChatResponseDTO sendMessage(MessageChatRequestDTO dto, Authentication authentication) {
         Long userId = resolveIdByEmail(authentication.getName());
@@ -131,11 +130,11 @@ public class ChatbotOrchestrator {
 
     @Transactional(readOnly = true)
     /**
-     * Retrieves message Chat history DTO records.
+     * Consulta get history usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param sesionId UUID used to scope this message Chat history DTO records
-     * @param authentication authentication of the caller used to scope this message Chat history DTO records
-     * @return list of message Chat history data transfer object matching the requested criteria
+     * @param sessionId valor de entrada sessionId usado por la operacion para completar su regla de negocio
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return lista de resultados que coincide con la consulta solicitada
      */
     public List<MessageChatHistoryDTO> getHistory(UUID sessionId, Authentication authentication) {
         Long userId = resolveIdByEmail(authentication.getName());

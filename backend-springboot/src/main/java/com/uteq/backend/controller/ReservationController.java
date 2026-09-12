@@ -31,11 +31,11 @@ public class ReservationController {
     @PostMapping
     @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE')")
     /**
-     * Creates Response Entity&lt;Reservacion Response DTO>.
+     * Registra create validando los datos de entrada antes de persistir cambios.
      *
-     * @param dto reservation Request data transfer object used to scope this Response Entity&lt;Reservacion Response DTO>
-     * @param authentication authentication of the caller used to scope this Response Entity&lt;Reservacion Response DTO>
-     * @return Response Entity&lt;Reservacion Response DTO> reflecting the state after the operation
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<ReservationResponseDTO> create(
             @Valid @RequestBody ReservationRequestDTO dto,
@@ -77,12 +77,12 @@ public class ReservationController {
     @PatchMapping("/{id}/estado")
     @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')")
     /**
-     * Changes Response Entity&lt;Reservacion Response DTO>.
+     * Actualiza change status con las reglas de negocio requeridas por el flujo.
      *
-     * @param id numeric identifier used to scope this Response Entity&lt;Reservacion Response DTO>
-     * @param dto Cambio status reservation Request data transfer object used to scope this Response Entity&lt;Reservacion Response DTO>
-     * @param authentication authentication of the caller used to scope this Response Entity&lt;Reservacion Response DTO>
-     * @return Response Entity&lt;Reservacion Response DTO> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<ReservationResponseDTO> changeStatus(
             @PathVariable Long id,
@@ -92,6 +92,14 @@ public class ReservationController {
     }
 
     // ── GET /api/v1/reservaciones/usuario/{usuarioId} ─────
+    /**
+     * Consulta list by user usando los filtros recibidos y devuelve el resultado solicitado.
+     *
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping("/usuario/{usuarioId}")
     @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE')")
     public ResponseEntity<Page<ReservationResponseDTO>> listByUser(

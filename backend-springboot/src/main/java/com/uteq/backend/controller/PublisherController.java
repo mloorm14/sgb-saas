@@ -40,10 +40,10 @@ public class PublisherController {
 
     @GetMapping("/buscar")
     /**
-     * Searches Response Entity&lt;List<Editorial Response DTO>>.
+     * Consulta search usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param q text value used to scope this Response Entity&lt;List<Editorial Response DTO>>
-     * @return Response Entity&lt;List<Editorial Response DTO>> reflecting the state after the operation
+     * @param q texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<List<PublisherResponseDTO>> search(@RequestParam String q) {
         return ResponseEntity.ok(
@@ -55,10 +55,10 @@ public class PublisherController {
     @PostMapping
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     /**
-     * Creates Response Entity&lt;Editorial Response DTO>.
+     * Registra create validando los datos de entrada antes de persistir cambios.
      *
-     * @param dto publisher Request data transfer object used to scope this Response Entity&lt;Editorial Response DTO>
-     * @return Response Entity&lt;Editorial Response DTO> reflecting the state after the operation
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<PublisherResponseDTO> create(@Valid @RequestBody PublisherRequestDTO dto) {
         if (publisherRepository.existsByNameIgnoreCase(dto.name())) {

@@ -36,10 +36,10 @@ public class CategoryDamageController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     /**
-     * Creates Response Entity&lt;Categoria damage report DTO>.
+     * Registra create validando los datos de entrada antes de persistir cambios.
      *
-     * @param req category Request used to scope this Response Entity&lt;Categoria damage report DTO>
-     * @return Response Entity&lt;Categoria damage report DTO> reflecting the state after the operation
+     * @param req datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<CategoryDamageDTO> create(@RequestBody CategoryRequest req) {
         if (req.name() == null || req.name().isBlank()) return ResponseEntity.badRequest().build();
@@ -53,11 +53,11 @@ public class CategoryDamageController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     /**
-     * Updates Response Entity&lt;Categoria damage report DTO>.
+     * Actualiza update con las reglas de negocio requeridas por el flujo.
      *
-     * @param id numeric value used to scope this Response Entity&lt;Categoria damage report DTO>
-     * @param req category Request used to scope this Response Entity&lt;Categoria damage report DTO>
-     * @return Response Entity&lt;Categoria damage report DTO> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param req datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<CategoryDamageDTO> update(@PathVariable Integer id, @RequestBody CategoryRequest req) {
         CategoryDamage c = repo.findById(id).orElse(null);
@@ -70,10 +70,10 @@ public class CategoryDamageController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     /**
-     * Deletes Response Entity&lt;Void>.
+     * Elimina o anula delete despues de validar que la operacion sea permitida.
      *
-     * @param id numeric value used to scope this Response Entity&lt;Void>
-     * @return Response Entity&lt;Void> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         CategoryDamage c = repo.findById(id).orElse(null);
@@ -82,6 +82,12 @@ public class CategoryDamageController {
         repo.save(c);
         return ResponseEntity.noContent().build();
     }
+    /**
+     * Procesa category request y devuelve el resultado calculado por el backend.
+     *
+     * @param name valor de entrada name usado por la operacion para completar su regla de negocio
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
+     */
 
     public record CategoryRequest(@NotBlank @JsonProperty("nombre") String name) {}
 }

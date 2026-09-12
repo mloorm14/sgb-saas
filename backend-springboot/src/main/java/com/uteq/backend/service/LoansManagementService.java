@@ -107,11 +107,10 @@ public class LoansManagementService {
     // ── GET /gestion/buscar-usuario?correo= ──────────────────
     @Transactional(readOnly = true)
     /**
-     * Searches user loans Gestion data transfer object.
+     * Consulta search by email usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param email text value used to scope this user loans Gestion data transfer object
-     * @return user loans Gestion data transfer object reflecting the state after the operation
-     * @throws EntityNotFoundException when the user loans Gestion data transfer object cannot be processed with the given input
+     * @param email texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public UserLoansManagementDTO searchByEmail(String email) {
         User user = userRepo.findByEmail(email)
@@ -143,10 +142,10 @@ public class LoansManagementService {
     // contenga el texto ingresado (case-insensitive).
     @Transactional(readOnly = true)
     /**
-     * Handles sugerencias users.
+     * Procesa suggestions users y devuelve el resultado calculado por el backend.
      *
-     * @param email text value used to scope this sugerencias users
-     * @return list of user suggestion data transfer object matching the requested criteria
+     * @param email texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @return lista de resultados que coincide con la consulta solicitada
      */
     public List<UserSuggestionDTO> suggestionsUsers(String email) {
         if (email == null || email.trim().length() < 2) {
@@ -167,11 +166,10 @@ public class LoansManagementService {
     // interpreta ese 404 como "Caso B: préstamo directo".
     @Transactional(readOnly = true)
     /**
-     * Handles reservation Activa.
+     * Procesa reservation active y devuelve el resultado calculado por el backend.
      *
-     * @param userId numeric identifier used to scope this reservation Activa
-     * @return reservation Activa data transfer object reflecting the state after the operation
-     * @throws EntityNotFoundException when the reservation Activa cannot be processed with the given input
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public ReservationActiveDTO reservationActive(Long userId) {
         List<Integer> idsVigentes = ESTADOS_RESERVA_VIGENTE.stream()
@@ -216,10 +214,10 @@ public class LoansManagementService {
     // registrados".
     @Transactional(readOnly = true)
     /**
-     * Handles history.
+     * Procesa history y devuelve el resultado calculado por el backend.
      *
-     * @param userId numeric identifier used to scope this history
-     * @return list of history loan data transfer object matching the requested criteria
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return lista de resultados que coincide con la consulta solicitada
      */
     public List<HistoryLoanDTO> history(Long userId) {
         List<Loan> loans = loanRepo.findByUserIdOrderByIdDesc(userId);

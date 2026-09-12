@@ -43,9 +43,8 @@ public class TypeDamage {
      */
     public BigDecimal getPrice() { return this.value; }
     /**
-     * Handles set Precio.
-     *
-     * @param price monetary amount used to scope this set Precio
+         * setPrice.
+     * @return resultado de la operacion
      */
     public void setPrice(BigDecimal price) { this.value = price; if (this.typeCost==null) this.typeCost="FIJO"; }
 }

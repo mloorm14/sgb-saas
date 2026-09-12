@@ -114,7 +114,7 @@ class SuggestionAcquisitionControllerSecurityTest {
     @Test
     @WithMockUser(roles = "GERENTE")
     void listTodas_withRoleManager_sePermite() throws Exception {
-        when(suggestionService.listTodas(anyString(), any())).thenReturn(Page.empty());
+        when(suggestionService.listAll(anyString(), any())).thenReturn(Page.empty());
 
         mockMvc.perform(get("/api/v1/sugerencias-adquisicion").param("estado", "PENDIENTE"))
                 .andExpect(status().isOk());

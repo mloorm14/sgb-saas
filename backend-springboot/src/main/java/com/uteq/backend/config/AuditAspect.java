@@ -29,12 +29,12 @@ public class AuditAspect {
 
     @Around("@annotation(tx)")
     /**
-     * Handles set Current User.
+     * Procesa set current user y devuelve el resultado calculado por el backend.
      *
-     * @param pjp Proceeding Join Point used to scope this set Current User
-     * @param tx org.springframework.transaction.annotation.Transactional used to scope this set Current User
-     * @return Object reflecting the state after the operation
-     * @throws Throwable when the set Current User cannot be processed with the given input
+     * @param pjp objeto del framework usado para integrar esta operacion con Spring o Jackson
+     * @param tx objeto del framework usado para integrar esta operacion con Spring o Jackson
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
+     * @throws Throwable si la operacion no puede completarse por validacion, permisos o fallo del recurso asociado
      */
     public Object setCurrentUser(ProceedingJoinPoint pjp, org.springframework.transaction.annotation.Transactional tx) throws Throwable {
         if (!tx.readOnly()) {

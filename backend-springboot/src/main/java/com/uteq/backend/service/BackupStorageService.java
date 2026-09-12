@@ -29,23 +29,20 @@ public class BackupStorageService {
     private static final int GCM_TAG_LENGTH = 128;
     public BackupStorageService(@org.springframework.beans.factory.annotation.Autowired(required = false) S3Client s3Client) { this.s3Client = s3Client; }
     /**
-     * Checks whether Backup Storage.
-     *
-     * @return true when the check succeeds
+         * isR2Configured.
+     * @return resultado de la operacion
      */
     public boolean isR2Configured() { return s3Client != null && bucket != null && !bucket.isBlank(); }
     /**
-     * Checks whether Backup Storage.
-     *
-     * @return true when the check succeeds
+         * isEncryptionEnabled.
+     * @return resultado de la operacion
      */
     public boolean isEncryptionEnabled() { return encryptionKey != null && !encryptionKey.isBlank(); }
     /**
-     * Uploads Backup Storage.
+     * Ejecuta upload aplicando las validaciones necesarias del proceso.
      *
-     * @param key text value used to scope this Backup Storage
-     * @param data binary content used to scope this Backup Storage
-     * @throws RuntimeException when the Backup Storage cannot be processed with the given input
+     * @param key clave o valor de configuracion que se valida antes de guardarse
+     * @param data valor de entrada data usado por la operacion para completar su regla de negocio
      */
     public void upload(String key, byte[] data) {
         byte[] toStore = isEncryptionEnabled() ? encrypt(data) : data;
@@ -58,11 +55,10 @@ public class BackupStorageService {
         }
     }
     /**
-     * Downloads Backup Storage.
+     * Genera o entrega download a partir de los datos actuales del sistema.
      *
-     * @param key text value used to scope this Backup Storage
-     * @return binary content of the generated file
-     * @throws RuntimeException when the Backup Storage cannot be processed with the given input
+     * @param key clave o valor de configuracion que se valida antes de guardarse
+     * @return contenido binario generado o recuperado por la operacion
      */
     public byte[] download(String key) {
         byte[] stored;
@@ -71,10 +67,9 @@ public class BackupStorageService {
         return isEncryptionEnabled() ? decrypt(stored) : stored;
     }
     /**
-     * Deletes Backup Storage.
+     * Elimina o anula delete despues de validar que la operacion sea permitida.
      *
-     * @param key text value used to scope this Backup Storage
-     * @throws RuntimeException when the Backup Storage cannot be processed with the given input
+     * @param key clave o valor de configuracion que se valida antes de guardarse
      */
     public void delete(String key) {
         if (isR2Configured()) s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());

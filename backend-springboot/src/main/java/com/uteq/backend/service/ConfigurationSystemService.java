@@ -36,9 +36,8 @@ public class ConfigurationSystemService {
 
     @Transactional(readOnly = true)
     /**
-     * Lists configuration Sistema Response DTO records.
-     *
-     * @return list of configuration Sistema Response data transfer object matching the requested criteria
+         * Busca/lista recursos.
+     * @return lista o pagina de resultados
      */
     public List<ConfigurationSystemResponseDTO> list() {
         return repo.findAll().stream()
@@ -47,17 +46,13 @@ public class ConfigurationSystemService {
     }
 
     /**
-     * Actualiza una clave que YA existe; no crea claves nuevas por esta vía.
+     * Actualiza update con las reglas de negocio requeridas por el flujo.
+     *
+     * @param key clave o valor de configuracion que se valida antes de guardarse
+     * @param freshValue clave o valor de configuracion que se valida antes de guardarse
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     @Transactional
-    /**
-     * Updates configuration Sistema Response data transfer object.
-     *
-     * @param key text value used to scope this configuration Sistema Response data transfer object
-     * @param nuevoValor text value used to scope this configuration Sistema Response data transfer object
-     * @return configuration Sistema Response data transfer object reflecting the state after the operation
-     * @throws EntityNotFoundException when the configuration Sistema Response data transfer object cannot be processed with the given input
-     */
     public ConfigurationSystemResponseDTO update(String key, String freshValue) {
         ConfigurationSystem config = repo.findById(key)
                 .orElseThrow(() -> new EntityNotFoundException(CLAVE_NO_ENCONTRADA + key));
@@ -82,11 +77,10 @@ public class ConfigurationSystemService {
 
     @Transactional(readOnly = true)
     /**
-     * Retrieves configuration Sistema.
+     * Consulta get value usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param key text value used to scope this configuration Sistema
-     * @return resulting text payload
-     * @throws EntityNotFoundException when the configuration Sistema cannot be processed with the given input
+     * @param key clave o valor de configuracion que se valida antes de guardarse
+     * @return texto generado o recuperado por la operacion
      */
     public String getValue(String key) {
         String cacheado = cache.get(key);
@@ -101,11 +95,10 @@ public class ConfigurationSystemService {
     }
 
     /**
-     * Retrieves configuration Sistema.
+     * Consulta get value entero usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param key text value used to scope this configuration Sistema
-     * @return identifier of the affected record
-     * @throws IllegalStateException when the configuration Sistema cannot be processed with the given input
+     * @param key clave o valor de configuracion que se valida antes de guardarse
+     * @return valor numerico calculado o recuperado por la operacion
      */
 
     public Integer getValueEntero(String key) {
@@ -119,11 +112,10 @@ public class ConfigurationSystemService {
     }
 
     /**
-     * Retrieves Big Decimal.
+     * Consulta get value decimal usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param key text value used to scope this Big Decimal
-     * @return Big Decimal reflecting the state after the operation
-     * @throws IllegalStateException when the Big Decimal cannot be processed with the given input
+     * @param key clave o valor de configuracion que se valida antes de guardarse
+     * @return valor numerico calculado o recuperado por la operacion
      */
 
     public BigDecimal getValueDecimal(String key) {

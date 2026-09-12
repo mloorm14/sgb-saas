@@ -37,10 +37,10 @@ public class CategoryController {
 
     @GetMapping("/buscar")
     /**
-     * Searches Response Entity&lt;List<Categoria Response DTO>>.
+     * Consulta search usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param q text value used to scope this Response Entity&lt;List<Categoria Response DTO>>
-     * @return Response Entity&lt;List<Categoria Response DTO>> reflecting the state after the operation
+     * @param q texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<List<CategoryResponseDTO>> search(@RequestParam String q) {
         return ResponseEntity.ok(
@@ -52,10 +52,10 @@ public class CategoryController {
     @PostMapping
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     /**
-     * Creates Response Entity&lt;Categoria Response DTO>.
+     * Registra create validando los datos de entrada antes de persistir cambios.
      *
-     * @param dto category Request data transfer object used to scope this Response Entity&lt;Categoria Response DTO>
-     * @return Response Entity&lt;Categoria Response DTO> reflecting the state after the operation
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<CategoryResponseDTO> create(@Valid @RequestBody CategoryRequestDTO dto) {
         if (categoryRepository.existsByNameIgnoreCase(dto.name())) {

@@ -29,9 +29,8 @@ public class TypeDamageService {
 
     @Transactional(readOnly = true)
     /**
-     * Lists Tipo damage report DTO records.
-     *
-     * @return list of Tipo damage report data transfer object matching the requested criteria
+         * Lista todos los backups registrados.
+     * @return lista de backups ordenados por fecha descendente
      */
     public List<TypeDamageDTO> listAll() {
         return typeDamageRepo.findAll().stream().map(this::toDTO).toList();
@@ -39,9 +38,8 @@ public class TypeDamageService {
 
     @Transactional(readOnly = true)
     /**
-     * Lists Tipo damage report DTO records.
-     *
-     * @return list of Tipo damage report data transfer object matching the requested criteria
+         * Lista programaciones de backup activas.
+     * @return lista de programaciones activas
      */
     public List<TypeDamageDTO> listActives() {
         return typeDamageRepo.findByActiveTrue().stream().map(this::toDTO).toList();
@@ -49,15 +47,13 @@ public class TypeDamageService {
 
     @Transactional
     /**
-     * Creates Tipo damage report data transfer object.
+     * Registra create validando los datos de entrada antes de persistir cambios.
      *
-     * @param nombre text value used to scope this Tipo damage report data transfer object
-     * @param categoryId numeric value used to scope this Tipo damage report data transfer object
-     * @param tipoCosto text value used to scope this Tipo damage report data transfer object
-     * @param valor monetary amount used to scope this Tipo damage report data transfer object
-     * @return Tipo damage report data transfer object reflecting the state after the operation
-     * @throws IllegalArgumentException when the Tipo damage report data transfer object cannot be processed with the given input
-     * @throws EntityNotFoundException when the Tipo damage report data transfer object cannot be processed with the given input
+     * @param name valor de entrada name usado por la operacion para completar su regla de negocio
+     * @param categoryId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param typeCost valor de entrada typeCost usado por la operacion para completar su regla de negocio
+     * @param value clave o valor de configuracion que se valida antes de guardarse
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public TypeDamageDTO create(String name, Integer categoryId, String typeCost, BigDecimal value) {
         if (typeDamageRepo.findByName(name).isPresent()) {
@@ -78,16 +74,14 @@ public class TypeDamageService {
 
     @Transactional
     /**
-     * Updates Tipo damage report data transfer object.
+     * Actualiza update con las reglas de negocio requeridas por el flujo.
      *
-     * @param id numeric value used to scope this Tipo damage report data transfer object
-     * @param nombre text value used to scope this Tipo damage report data transfer object
-     * @param categoryId numeric value used to scope this Tipo damage report data transfer object
-     * @param tipoCosto text value used to scope this Tipo damage report data transfer object
-     * @param valor monetary amount used to scope this Tipo damage report data transfer object
-     * @return Tipo damage report data transfer object reflecting the state after the operation
-     * @throws IllegalArgumentException when the Tipo damage report data transfer object cannot be processed with the given input
-     * @throws EntityNotFoundException when the Tipo damage report data transfer object cannot be processed with the given input
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param name valor de entrada name usado por la operacion para completar su regla de negocio
+     * @param categoryId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param typeCost valor de entrada typeCost usado por la operacion para completar su regla de negocio
+     * @param value clave o valor de configuracion que se valida antes de guardarse
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public TypeDamageDTO update(Integer id, String name, Integer categoryId, String typeCost, BigDecimal value) {
         TypeDamage type = typeDamageRepo.findById(id)
@@ -117,10 +111,9 @@ public class TypeDamageService {
 
     @Transactional
     /**
-     * Deletes Tipo damage report.
+     * Elimina o anula delete despues de validar que la operacion sea permitida.
      *
-     * @param id numeric value used to scope this Tipo damage report
-     * @throws EntityNotFoundException when the Tipo damage report cannot be processed with the given input
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
      */
     public void delete(Integer id) {
         TypeDamage type = typeDamageRepo.findById(id)

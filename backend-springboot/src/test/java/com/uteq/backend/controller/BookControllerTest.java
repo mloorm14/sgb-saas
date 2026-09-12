@@ -70,7 +70,7 @@ class BookControllerTest extends WebMvcControllerTestSupport {
     @WithMockUser(roles = "ADMIN")
     void pendientes_devuelve200() throws Exception {
         Page<BookResponseDTO> page = new PageImpl<>(List.of());
-        when(bookService.listPendientes(any(), any(), any(), any())).thenReturn(page);
+        when(bookService.listPending(any(), any(), any(), any())).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/libros/pendientes"))
                 .andExpect(status().isOk());

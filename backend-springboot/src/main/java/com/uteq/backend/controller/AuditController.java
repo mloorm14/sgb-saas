@@ -36,6 +36,17 @@ public class AuditController {
     }
 
     // ── GET /api/v1/auditoria?usuarioId=&modulo=&desde=&hasta= ──
+    /**
+     * Consulta list usando los filtros recibidos y devuelve el resultado solicitado.
+     *
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param module criterio de clasificacion usado para seleccionar la variante o filtro requerido
+     * @param from fecha limite usada para acotar el rango temporal de la consulta
+     * @param until fecha limite usada para acotar el rango temporal de la consulta
+     * @param cual valor de entrada cual usado por la operacion para completar su regla de negocio
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping
     public ResponseEntity<Page<EventAuditResponseDTO>> list(
             @RequestParam(name = "usuarioId", required = false) Long userId,
@@ -55,13 +66,23 @@ public class AuditController {
     // Misma restricción @PreAuthorize que el listado (GERENTE/ADMIN).
     @GetMapping("/resumen")
     /**
-     * Handles summary.
+     * Procesa summary y devuelve el resultado calculado por el backend.
      *
-     * @return response entity<list<resumen category audit dto>> with the resulting state after the operation
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<List<SummaryCategoryAuditDTO>> summary() {
         return ResponseEntity.ok(auditService.summary());
     }
+    /**
+     * Genera o entrega export a partir de los datos actuales del sistema.
+     *
+     * @param format criterio de clasificacion usado para seleccionar la variante o filtro requerido
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param module criterio de clasificacion usado para seleccionar la variante o filtro requerido
+     * @param from fecha limite usada para acotar el rango temporal de la consulta
+     * @param until fecha limite usada para acotar el rango temporal de la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
 
     @GetMapping("/export")
     public ResponseEntity<byte[]> export(@RequestParam(defaultValue = "csv") String format,

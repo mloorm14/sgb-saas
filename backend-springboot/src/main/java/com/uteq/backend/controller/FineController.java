@@ -38,6 +38,14 @@ public class FineController {
         this.notificationService = notificationService;
         this.reportPdfService = reportPdfService;
     }
+    /**
+     * Consulta list by user usando los filtros recibidos y devuelve el resultado solicitado.
+     *
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
 
     @GetMapping("/usuario/{usuarioId}")
     @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')")
@@ -48,6 +56,14 @@ public class FineController {
         return ResponseEntity.ok(
                 fineService.listByUser(userId, authentication, pageable));
     }
+    /**
+     * Consulta list detail by user usando los filtros recibidos y devuelve el resultado solicitado.
+     *
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
 
     @GetMapping("/usuario/{usuarioId}/detalle")
     @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')")
@@ -58,6 +74,13 @@ public class FineController {
         return ResponseEntity.ok(
                 fineService.listDetailByUser(userId, authentication, pageable));
     }
+    /**
+     * Procesa pay y devuelve el resultado calculado por el backend.
+     *
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param body datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
+     */
 
     @PostMapping("/{id}/pago")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
@@ -87,12 +110,12 @@ public class FineController {
     @PostMapping("/{id}/anulacion")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     /**
-     * Voids Response Entity&lt;Multa Accion Response DTO>.
+     * Elimina o anula annul despues de validar que la operacion sea permitida.
      *
-     * @param id numeric identifier used to scope this Response Entity&lt;Multa Accion Response DTO>
-     * @param dto Anulacion fine Request data transfer object used to scope this Response Entity&lt;Multa Accion Response DTO>
-     * @param authentication authentication of the caller used to scope this Response Entity&lt;Multa Accion Response DTO>
-     * @return Response Entity&lt;Multa Accion Response DTO> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<FineActionResponseDTO> annul(
             @PathVariable Long id,
@@ -100,6 +123,13 @@ public class FineController {
             Authentication authentication) {
         return ResponseEntity.ok(fineService.annul(id, dto.reason(), authentication));
     }
+    /**
+     * Procesa report summary financial y devuelve el resultado calculado por el backend.
+     *
+     * @param from fecha limite usada para acotar el rango temporal de la consulta
+     * @param until fecha limite usada para acotar el rango temporal de la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
 
     @GetMapping("/reportes/resumen-financiero")
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
@@ -108,6 +138,13 @@ public class FineController {
             @RequestParam(name = "hasta", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime until) {
         return ResponseEntity.ok(fineService.reportSummaryFinancial(from, until));
     }
+    /**
+     * Procesa report summary financial pdf y devuelve el resultado calculado por el backend.
+     *
+     * @param from fecha limite usada para acotar el rango temporal de la consulta
+     * @param until fecha limite usada para acotar el rango temporal de la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
 
     @GetMapping(value = "/reportes/resumen-financiero/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")

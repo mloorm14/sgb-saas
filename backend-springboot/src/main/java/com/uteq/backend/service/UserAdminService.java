@@ -69,13 +69,6 @@ public class UserAdminService {
      * @return página de filas resumidas con roles, estado y marca de multas pendientes
      */
     @Transactional(readOnly = true)
-    /**
-     * Lists user Listado Response DTO records.
-     *
-     * @param filter text value used to scope this user Listado Response DTO records
-     * @param pageable pagination information used to scope this user Listado Response DTO records
-     * @return page of user Listado Response data transfer object for the requested pagination
-     */
     public Page<UserListingResponseDTO> list(String filter, Pageable pageable) {
         return list(filter, pageable, null, false);
     }
@@ -93,15 +86,6 @@ public class UserAdminService {
      * @return página de filas resumidas con roles, estado y marca de multas pendientes
      */
     @Transactional(readOnly = true)
-    /**
-     * Lists user Listado Response DTO records.
-     *
-     * @param filter text value used to scope this user Listado Response DTO records
-     * @param pageable pagination information used to scope this user Listado Response DTO records
-     * @param authentication authentication of the caller used to scope this user Listado Response DTO records
-     * @param soloMios flag used to scope this user Listado Response DTO records
-     * @return page of user Listado Response data transfer object for the requested pagination
-     */
     public Page<UserListingResponseDTO> list(String filter, Pageable pageable,
                                                   Authentication authentication, boolean soloMios) {
         String text = filter == null ? "" : filter.trim();
@@ -136,16 +120,6 @@ public class UserAdminService {
      * @throws org.springframework.security.access.AccessDeniedException si un GERENTE intenta asignar un rol fuera de su alcance o tocar usuarios ajenos
      */
     @Transactional
-    /**
-     * Changes user Admin.
-     *
-     * @param userId numeric identifier used to scope this user Admin
-     * @param freshRole text value used to scope this user Admin
-     * @param authentication authentication of the caller used to scope this user Admin
-     * @throws org when the user Admin cannot be processed with the given input
-     * @throws EntityNotFoundException when the user Admin cannot be processed with the given input
-     * @throws IllegalArgumentException when the user Admin cannot be processed with the given input
-     */
     public void changeRole(Long userId, String freshRole, Authentication authentication) {
         User user = userRepo.findByIdWithStatusAndRoles(userId)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + userId));
@@ -186,17 +160,6 @@ public class UserAdminService {
      * @throws org.springframework.security.access.AccessDeniedException si un GERENTE intenta un estado fuera de ACTIVO/INACTIVO o tocar usuarios ajenos
      */
      @Transactional
-    /**
-     * Changes user Admin.
-     *
-     * @param userId numeric identifier used to scope this user Admin
-     * @param freshStatus text value used to scope this user Admin
-     * @param reason text value used to scope this user Admin
-     * @param authentication authentication of the caller used to scope this user Admin
-     * @throws org when the user Admin cannot be processed with the given input
-     * @throws EntityNotFoundException when the user Admin cannot be processed with the given input
-     * @throws IllegalArgumentException when the user Admin cannot be processed with the given input
-     */
     public void changeStatus(Long userId, String freshStatus, String reason, Authentication authentication) {
         User user = userRepo.findByIdWithStatusAndRoles(userId)
                 .orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + userId));
@@ -261,7 +224,7 @@ public class UserAdminService {
     }
 
     /**
-     * Desactiva la cuenta pasándola al estado INACTIVO para retirarla de la operación sin borrar su fila.
+     * Desactiva la cuenta pasándola al estado INACTIVO para retirarla de la operación sin deleteBackup su fila.
      * Persiste además el motivo en la tabla de motivos de cambio, complemento del trigger de auditoría
      * que solo ve columnas antes/después y no recibe el motivo como parámetro.
      *
@@ -272,15 +235,6 @@ public class UserAdminService {
      * @throws IllegalStateException si falta la fila de catálogo del estado INACTIVO
      */
     @Transactional
-    /**
-     * Deletes user Admin.
-     *
-     * @param userId numeric identifier used to scope this user Admin
-     * @param reason text value used to scope this user Admin
-     * @param authentication authentication of the caller used to scope this user Admin
-     * @throws EntityNotFoundException when the user Admin cannot be processed with the given input
-     * @throws IllegalStateException when the user Admin cannot be processed with the given input
-     */
     public void deleteUser(Long userId, String reason, Authentication authentication) {
         User user = userRepo.findByIdWithStatusAndRoles(userId).orElseThrow(() -> new EntityNotFoundException(USUARIO_NO_ENCONTRADO + userId));
         StatusUser inactivo = statusUserRepo.findByName("INACTIVO").orElseThrow(() -> new IllegalStateException("Estado INACTIVO no existe"));

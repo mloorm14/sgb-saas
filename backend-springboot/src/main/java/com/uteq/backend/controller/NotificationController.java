@@ -27,6 +27,14 @@ public class NotificationController {
     // Mismo patrón de autorización que MultaController: un LECTOR solo ve
     // las suyas (validado en NotificacionService), el resto de roles puede
     // consultar cualquiera.
+    /**
+     * Consulta list by user usando los filtros recibidos y devuelve el resultado solicitado.
+     *
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping("/usuario/{usuarioId}")
     @PreAuthorize("hasAnyRole('LECTOR','BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<Page<NotificationResponseDTO>> listByUser(

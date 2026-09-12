@@ -38,12 +38,11 @@ public class FavoriteService {
 
     @Transactional
     /**
-     * Handles agregar.
+     * Procesa agregar y devuelve el resultado calculado por el backend.
      *
-     * @param bookId numeric identifier used to scope this agregar
-     * @param authentication authentication of the caller used to scope this agregar
-     * @return favorite Response data transfer object reflecting the state after the operation
-     * @throws EntityNotFoundException when the agregar cannot be processed with the given input
+     * @param bookId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public FavoriteResponseDTO agregar(Long bookId, Authentication authentication) {
         Long userId = resolveIdByEmail(authentication.getName());
@@ -65,11 +64,10 @@ public class FavoriteService {
 
     @Transactional
     /**
-     * Handles quitar.
+     * Ejecuta quitar aplicando las validaciones necesarias del proceso.
      *
-     * @param bookId numeric identifier used to scope this quitar
-     * @param authentication authentication of the caller used to scope this quitar
-     * @throws EntityNotFoundException when the quitar cannot be processed with the given input
+     * @param bookId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
      */
     public void quitar(Long bookId, Authentication authentication) {
         Long userId = resolveIdByEmail(authentication.getName());
@@ -81,10 +79,10 @@ public class FavoriteService {
 
     @Transactional(readOnly = true)
     /**
-     * Lists favorite Response DTO records.
+     * Consulta list owns usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param authentication authentication of the caller used to scope this favorite Response DTO records
-     * @return list of favorite Response data transfer object matching the requested criteria
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return lista de resultados que coincide con la consulta solicitada
      */
     public List<FavoriteResponseDTO> listOwns(Authentication authentication) {
         Long userId = resolveIdByEmail(authentication.getName());
@@ -95,13 +93,13 @@ public class FavoriteService {
 
     @Transactional(readOnly = true)
     /**
-     * Lists favorite Response DTO records.
+     * Consulta list owns paginado usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param authentication authentication of the caller used to scope this favorite Response DTO records
-     * @param pageable pagination information used to scope this favorite Response DTO records
-     * @return page of favorite Response data transfer object for the requested pagination
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return pagina de resultados que coincide con los filtros y la paginacion solicitada
      */
-    public Page<FavoriteResponseDTO> listOwnsPaginado(Authentication authentication, Pageable pageable) {
+    public Page<FavoriteResponseDTO> listOwnsPaginated(Authentication authentication, Pageable pageable) {
         Long userId = resolveIdByEmail(authentication.getName());
         return favoriteRepo.findByUserId(userId, pageable)
                 .map(f -> toDTO(f, title(f.getBookId())));

@@ -86,15 +86,14 @@ public class BackupService {
 
     @Transactional
     /**
-     * Generates Backup.
+     * Genera o entrega generate backup a partir de los datos actuales del sistema.
      *
-     * @param from date-time bound used to scope this Backup
-     * @param until date-time bound used to scope this Backup
-     * @param tablas collection of String used to scope this Backup
-     * @param formato text value used to scope this Backup
-     * @param type text value used to scope this Backup
-     * @return Backup reflecting the state after the operation
-     * @throws ResponseStatusException when the Backup cannot be processed with the given input
+     * @param from fecha limite usada para acotar el rango temporal de la consulta
+     * @param until fecha limite usada para acotar el rango temporal de la consulta
+     * @param tables coleccion de datos usada como entrada para filtrar o construir la respuesta
+     * @param format criterio de clasificacion usado para seleccionar la variante o filtro requerido
+     * @param type criterio de clasificacion usado para seleccionar la variante o filtro requerido
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public Backup generateBackup(OffsetDateTime from, OffsetDateTime until, Set<String> tables, String format, String type) {
         validateRange(from, until);
@@ -198,26 +197,24 @@ public class BackupService {
     }
 
     /**
-     * Lists Backup records.
-     *
-     * @return list of Backup matching the requested criteria
+         * Lista todos los backups registrados.
+     * @return lista de backups ordenados por fecha descendente
      */
 
     public List<Backup> listAll() { return backupRepository.findAllOrderByCreatedDesc(); }
     /**
-     * Lists Backup records.
+     * Consulta list by range usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param from date-time bound used to scope this Backup records
-     * @param until date-time bound used to scope this Backup records
-     * @return list of Backup matching the requested criteria
+     * @param from fecha limite usada para acotar el rango temporal de la consulta
+     * @param until fecha limite usada para acotar el rango temporal de la consulta
+     * @return lista de resultados que coincide con la consulta solicitada
      */
     public List<Backup> listByRange(OffsetDateTime from, OffsetDateTime until) { return backupRepository.findByDateRange(from, until); }
     /**
-     * Retrieves Backup.
-     *
-     * @param id numeric identifier used to scope this Backup
-     * @return Backup reflecting the state after the operation
-     * @throws ResponseStatusException when the Backup cannot be processed with the given input
+         * Obtiene un backup por ID.
+     * @param id identificador
+     * @return backup encontrado
+     * @throws ResponseStatusException si no existe (404)
      */
     public Backup getById(Long id) { return backupRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Backup no encontrado " + id)); }
 
@@ -235,9 +232,9 @@ public class BackupService {
 
     @Transactional
     /**
-     * Deletes Backup.
+     * Elimina o anula delete despues de validar que la operacion sea permitida.
      *
-     * @param id numeric identifier used to scope this Backup
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
      */
     public void delete(Long id) {
         Backup b = getById(id);
@@ -248,10 +245,10 @@ public class BackupService {
     }
 
     /**
-     * Downloads Backup.
+     * Genera o entrega download a partir de los datos actuales del sistema.
      *
-     * @param id numeric identifier used to scope this Backup
-     * @return binary content of the generated file
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return contenido binario generado o recuperado por la operacion
      */
 
     public byte[] download(Long id) {

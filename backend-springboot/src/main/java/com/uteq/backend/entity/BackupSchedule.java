@@ -49,9 +49,9 @@ public class BackupSchedule {
     // Getter explícito para boolean 'activo' (Lombok a veces genera getActivo en vez de isActivo).
     // Se usa Boolean.TRUE.equals para evitar NPE por auto-unboxing cuando activo es null.
     /**
-     * Checks whether Backup schedule.
+     * Verifica is active y devuelve el resultado de la comprobacion.
      *
-     * @return true when the check succeeds
+     * @return true cuando la comprobacion se cumple; false en caso contrario
      */
     public boolean isActive() { return Boolean.TRUE.equals(active); }
 

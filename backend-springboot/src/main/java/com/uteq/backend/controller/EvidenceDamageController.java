@@ -26,6 +26,14 @@ public class EvidenceDamageController {
         this.loanReturnService = loanReturnService;
         this.userRepo = userRepo;
     }
+    /**
+     * Procesa upload evidence y devuelve el resultado calculado por el backend.
+     *
+     * @param registrationDamageId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param file archivo recibido en la peticion y usado como contenido principal de la operacion
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
 
     @PostMapping(value = "/evidencia/{registroDanoId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
@@ -40,10 +48,10 @@ public class EvidenceDamageController {
     @GetMapping("/evidencia/{registroDanoId}")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     /**
-     * Lists Response Entity&lt;List<Evidencia damage report Response DTO>>.
+     * Consulta list evidences usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param registroDanoId numeric identifier used to scope this Response Entity&lt;List<Evidencia damage report Response DTO>>
-     * @return Response Entity&lt;List<Evidencia damage report Response DTO>> reflecting the state after the operation
+     * @param registrationDamageId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<List<EvidenceDamageResponseDTO>> listEvidences(
             @PathVariable("registroDanoId") Long registrationDamageId) {
@@ -53,10 +61,10 @@ public class EvidenceDamageController {
     @GetMapping("/evidencia/{id}/archivo")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     /**
-     * Retrieves Response Entity&lt;byte[]>.
+     * Consulta get file usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param id numeric identifier used to scope this Response Entity&lt;byte[]>
-     * @return Response Entity&lt;byte[]> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<byte[]> getFile(@PathVariable Long id) {
         var evidence = loanReturnService.getFileBinario(id);

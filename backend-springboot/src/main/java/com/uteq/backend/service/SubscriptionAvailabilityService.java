@@ -32,11 +32,10 @@ public class SubscriptionAvailabilityService {
 
     @Transactional
     /**
-     * Handles suscribir.
+     * Ejecuta suscribir aplicando las validaciones necesarias del proceso.
      *
-     * @param userId numeric identifier used to scope this suscribir
-     * @param bookId numeric identifier used to scope this suscribir
-     * @throws EntityNotFoundException when the suscribir cannot be processed with the given input
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param bookId identificador del registro que se usa para ubicar el recurso en la base de datos
      */
     public void suscribir(Long userId, Long bookId) {
         userRepo.findById(userId).orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado: " + userId));
@@ -57,10 +56,10 @@ public class SubscriptionAvailabilityService {
 
     @Transactional
     /**
-     * Handles desuscribir.
+     * Ejecuta desuscribir aplicando las validaciones necesarias del proceso.
      *
-     * @param userId numeric identifier used to scope this desuscribir
-     * @param bookId numeric identifier used to scope this desuscribir
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param bookId identificador del registro que se usa para ubicar el recurso en la base de datos
      */
     public void desuscribir(Long userId, Long bookId) {
         subscriptionRepo.deleteByUserIdAndBookId(userId, bookId);
@@ -68,10 +67,10 @@ public class SubscriptionAvailabilityService {
 
     @Transactional(readOnly = true)
     /**
-     * Lists Long records.
+     * Consulta list books ids usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param userId numeric identifier used to scope this Long records
-     * @return list of Long matching the requested criteria
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return lista de resultados que coincide con la consulta solicitada
      */
     public List<Long> listBooksIds(Long userId) {
         return subscriptionRepo.findByUserId(userId).stream().map(SubscriptionAvailability::getBookId).toList();
@@ -79,10 +78,9 @@ public class SubscriptionAvailabilityService {
 
     @Transactional
     /**
-     * Notifies subscription availability.
+     * Envia notify disponibles usando los datos y destinatarios recibidos.
      *
-     * @param bookId numeric identifier used to scope this subscription availability
-     * @throws EntityNotFoundException when the subscription availability cannot be processed with the given input
+     * @param bookId identificador del registro que se usa para ubicar el recurso en la base de datos
      */
     public void notifyDisponibles(Long bookId) {
         Book book = bookRepo.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Libro no encontrado: " + bookId));

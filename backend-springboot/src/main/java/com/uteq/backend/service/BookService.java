@@ -94,12 +94,6 @@ public class BookService {
      */
     @Cacheable("libros")
     @Transactional(readOnly = true)
-    /**
-     * Lists book Response DTO records.
-     *
-     * @param pageable pagination information used to scope this book Response DTO records
-     * @return page of book Response data transfer object for the requested pagination
-     */
     public Page<BookResponseDTO> list(Pageable pageable) {
         return bookRepo.findByStatus_Name(ESTADO_ACTIVO, pageable)
                 .map(this::toDTO);
@@ -119,17 +113,6 @@ public class BookService {
      * @return página de vistas resumidas de los libros que cumplen los filtros combinados
      */
     @Transactional(readOnly = true)
-    /**
-     * Lists book Response DTO records.
-     *
-     * @param q text value used to scope this book Response DTO records
-     * @param statusBookId numeric value used to scope this book Response DTO records
-     * @param categoryId numeric value used to scope this book Response DTO records
-     * @param authorId numeric identifier used to scope this book Response DTO records
-     * @param available flag used to scope this book Response DTO records
-     * @param pageable pagination information used to scope this book Response DTO records
-     * @return page of book Response data transfer object for the requested pagination
-     */
     public Page<BookResponseDTO> listWithFilters(String q, Integer statusBookId, Integer categoryId, Long authorId, Boolean available, Pageable pageable) {
         Integer statusId = resolveStatusId(statusBookId);
 
@@ -181,16 +164,6 @@ public class BookService {
      * @return página de vistas resumidas de los libros que cumplen los filtros combinados
      */
     @Transactional(readOnly = true)
-    /**
-     * Lists book Response DTO records.
-     *
-     * @param q text value used to scope this book Response DTO records
-     * @param statusBookId numeric value used to scope this book Response DTO records
-     * @param categoryId numeric value used to scope this book Response DTO records
-     * @param authorId numeric identifier used to scope this book Response DTO records
-     * @param pageable pagination information used to scope this book Response DTO records
-     * @return page of book Response data transfer object for the requested pagination
-     */
     public Page<BookResponseDTO> listWithFilters(String q, Integer statusBookId, Integer categoryId, Long authorId, Pageable pageable) {
         return listWithFilters(q, statusBookId, categoryId, authorId, null, pageable);
     }
@@ -218,18 +191,8 @@ public class BookService {
      * @throws RuntimeException si la consulta de pendientes falla en el repositorio
      */
     @Transactional(readOnly = true)
-    /**
-     * Lists book Response DTO records.
-     *
-     * @param q text value used to scope this book Response DTO records
-     * @param yearPublication numeric value used to scope this book Response DTO records
-     * @param statusIds list of Integer used to scope this book Response DTO records
-     * @param pageable pagination information used to scope this book Response DTO records
-     * @return page of book Response data transfer object for the requested pagination
-     * @throws RuntimeException when the book Response DTO records cannot be processed with the given input
-     */
-    public Page<BookResponseDTO> listPendientes(String q, Integer yearPublication, List<Integer> statusIds, Pageable pageable) {
-        List<Integer> statuses = resolveStatusesPendientes(statusIds);
+    public Page<BookResponseDTO> listPending(String q, Integer yearPublication, List<Integer> statusIds, Pageable pageable) {
+        List<Integer> statuses = resolvePendingStatuses(statusIds);
         if (statuses.isEmpty()) {
             log.warn("listarPendientes: lista vacía - estadoIds={}", statusIds);
             return Page.empty(pageable);
@@ -243,7 +206,7 @@ public class BookService {
         }
     }
 
-    private List<Integer> resolveStatusesPendientes(List<Integer> statusIds) {
+    private List<Integer> resolvePendingStatuses(List<Integer> statusIds) {
         if (statusIds != null && !statusIds.isEmpty()) {
             return statusIds;
         }
@@ -261,13 +224,6 @@ public class BookService {
      * @return página de vistas resumidas de los libros ACTIVO vinculados a esa categoría
      */
     @Transactional(readOnly = true)
-    /**
-     * Lists book Response DTO records.
-     *
-     * @param categoryId numeric value used to scope this book Response DTO records
-     * @param pageable pagination information used to scope this book Response DTO records
-     * @return page of book Response data transfer object for the requested pagination
-     */
     public Page<BookResponseDTO> listByCategory(Integer categoryId, Pageable pageable) {
         return bookRepo.findByCategories_IdAndStatus_Name(categoryId, ESTADO_ACTIVO, pageable)
                 .map(this::toDTO);
@@ -281,13 +237,6 @@ public class BookService {
      * @return página de vistas resumidas de los libros ACTIVO vinculados a ese autor
      */
     @Transactional(readOnly = true)
-    /**
-     * Lists book Response DTO records.
-     *
-     * @param authorId numeric identifier used to scope this book Response DTO records
-     * @param pageable pagination information used to scope this book Response DTO records
-     * @return page of book Response data transfer object for the requested pagination
-     */
     public Page<BookResponseDTO> listByAuthor(Long authorId, Pageable pageable) {
         return bookRepo.findByAuthors_IdAndStatus_Name(authorId, ESTADO_ACTIVO, pageable)
                 .map(this::toDTO);
@@ -302,13 +251,6 @@ public class BookService {
      * @throws jakarta.persistence.EntityNotFoundException si no existe ningún libro con ese identificador
      */
     @Transactional(readOnly = true)
-    /**
-     * Searches book Response data transfer object.
-     *
-     * @param id numeric identifier used to scope this book Response data transfer object
-     * @return book Response data transfer object reflecting the state after the operation
-     * @throws EntityNotFoundException when the book Response data transfer object cannot be processed with the given input
-     */
     public BookResponseDTO searchById(Long id) {
         return bookRepo.findById(id)
                 .map(this::toDTO)
@@ -325,13 +267,6 @@ public class BookService {
      * @throws jakarta.persistence.EntityNotFoundException si no existe el libro o no está en estado ACTIVO
      */
     @Transactional(readOnly = true)
-    /**
-     * Searches book Response data transfer object.
-     *
-     * @param id numeric identifier used to scope this book Response data transfer object
-     * @return book Response data transfer object reflecting the state after the operation
-     * @throws EntityNotFoundException when the book Response data transfer object cannot be processed with the given input
-     */
     public BookResponseDTO searchByIdPublic(Long id) {
         return bookRepo.findById(id)
                 .filter(l -> l.getStatus() != null && ESTADO_ACTIVO.equals(l.getStatus().getName()))
@@ -351,13 +286,6 @@ public class BookService {
      */
     @Cacheable("sugerencias-libros")
     @Transactional(readOnly = true)
-    /**
-     * Handles sugerir.
-     *
-     * @param text text value used to scope this sugerir
-     * @return list of book suggestion data transfer object matching the requested criteria
-     * @throws IllegalStateException when the sugerir cannot be processed with the given input
-     */
     public List<BookSuggestionDTO> sugerir(String text) {
         StatusBook statusActive = statusRepo.findByName(ESTADO_ACTIVO)
                 .orElseThrow(() -> new IllegalStateException(
@@ -382,13 +310,6 @@ public class BookService {
      */
     @CacheEvict(value = "libros", allEntries = true)
     @Transactional
-    /**
-     * Creates book Response data transfer object.
-     *
-     * @param dto book Request data transfer object used to scope this book Response data transfer object
-     * @return book Response data transfer object reflecting the state after the operation
-     * @throws IllegalArgumentException when the book Response data transfer object cannot be processed with the given input
-     */
     public BookResponseDTO create(BookRequestDTO dto) {
         if (bookRepo.existsByIsbn(dto.isbn())) {
             throw new IllegalArgumentException(
@@ -440,15 +361,6 @@ public class BookService {
      */
     @CacheEvict(value = "libros", allEntries = true)
     @Transactional
-    /**
-     * Updates book Response data transfer object.
-     *
-     * @param id numeric identifier used to scope this book Response data transfer object
-     * @param dto book Request data transfer object used to scope this book Response data transfer object
-     * @return book Response data transfer object reflecting the state after the operation
-     * @throws IllegalArgumentException when the book Response data transfer object cannot be processed with the given input
-     * @throws EntityNotFoundException when the book Response data transfer object cannot be processed with the given input
-     */
     public BookResponseDTO update(Long id, BookRequestDTO dto) {
         Book book = bookRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -506,7 +418,7 @@ public class BookService {
 
     /**
      * Da de baja lógica el libro pasándolo al estado DADO_DE_BAJA para retirarlo del catálogo sin
-     * borrar su fila ni su historial asociado.
+     * deleteBackup su fila ni su historial asociado.
      *
      * @param id identificador del libro a dar de baja
      * @throws jakarta.persistence.EntityNotFoundException si no existe ningún libro con ese identificador
@@ -514,13 +426,6 @@ public class BookService {
      */
     @CacheEvict(value = "libros", allEntries = true)
     @Transactional
-    /**
-     * Deletes book.
-     *
-     * @param id numeric identifier used to scope this book
-     * @throws EntityNotFoundException when the book cannot be processed with the given input
-     * @throws IllegalStateException when the book cannot be processed with the given input
-     */
     public void delete(Long id) {
         Book book = bookRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -546,15 +451,6 @@ public class BookService {
      */
     @CacheEvict(value = "libros", allEntries = true)
     @Transactional
-    /**
-     * Updates book Response data transfer object.
-     *
-     * @param bookId numeric identifier used to scope this book Response data transfer object
-     * @param file uploaded file used to scope this book Response data transfer object
-     * @return book Response data transfer object reflecting the state after the operation
-     * @throws IllegalArgumentException when the book Response data transfer object cannot be processed with the given input
-     * @throws EntityNotFoundException when the book Response data transfer object cannot be processed with the given input
-     */
     public BookResponseDTO updateCover(Long bookId, MultipartFile file) {
         Book book = bookRepo.findById(bookId)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -584,13 +480,6 @@ public class BookService {
      * @throws jakarta.persistence.EntityNotFoundException si no existe el libro o aún no tiene portada guardada
      */
     @Transactional(readOnly = true)
-    /**
-     * Retrieves cover image Imagen data transfer object.
-     *
-     * @param bookId numeric identifier used to scope this cover image Imagen data transfer object
-     * @return cover image Imagen data transfer object reflecting the state after the operation
-     * @throws EntityNotFoundException when the cover image Imagen data transfer object cannot be processed with the given input
-     */
     public CoverImageDTO getCover(Long bookId) {
         Book book = bookRepo.findById(bookId)
                 .orElseThrow(() -> new EntityNotFoundException(

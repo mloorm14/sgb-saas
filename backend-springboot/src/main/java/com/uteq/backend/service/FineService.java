@@ -73,14 +73,6 @@ public class FineService {
      * @throws AuthorizationDeniedException si un LECTOR pide multas de otro usuario
      */
     @Transactional(readOnly = true)
-    /**
-     * Lists fine Response DTO records.
-     *
-     * @param userId numeric identifier used to scope this fine Response DTO records
-     * @param authentication authentication of the caller used to scope this fine Response DTO records
-     * @param pageable pagination information used to scope this fine Response DTO records
-     * @return page of fine Response data transfer object for the requested pagination
-     */
     public Page<FineResponseDTO> listByUser(Long userId, Authentication authentication, Pageable pageable) {
         validateAccessUser(userId, authentication);
         return fineRepo.findByUserId(userId, pageable).map(this::toDTO);
@@ -98,14 +90,6 @@ public class FineService {
      * @throws AuthorizationDeniedException si un LECTOR pide multas de otro usuario
      */
     @Transactional(readOnly = true)
-    /**
-     * Lists fine detail Response DTO records.
-     *
-     * @param userId numeric identifier used to scope this fine detail Response DTO records
-     * @param authentication authentication of the caller used to scope this fine detail Response DTO records
-     * @param pageable pagination information used to scope this fine detail Response DTO records
-     * @return page of fine detail Response data transfer object for the requested pagination
-     */
     public Page<FineDetailResponseDTO> listDetailByUser(Long userId, Authentication authentication, Pageable pageable) {
         validateAccessUser(userId, authentication);
         return fineRepo.findByUserId(userId, pageable).map(this::toDetailDTO);
@@ -121,13 +105,6 @@ public class FineService {
      * @return mapa con las salidas del procedimiento (identificadores y estado resultante)
      */
     @Transactional
-    /**
-     * Handles payment Parcial.
-     *
-     * @param fineId numeric identifier used to scope this payment Parcial
-     * @param amountPaid monetary amount used to scope this payment Parcial
-     * @return Map<String, Object> reflecting the state after the operation
-     */
     public Map<String, Object> paymentParcial(Long fineId, BigDecimal amountPaid) {
         return fineProcRepo.spPaymentParcialFine(fineId, amountPaid);
     }
@@ -141,12 +118,6 @@ public class FineService {
      * @return acción resultante con el id de la multa y si el usuario quedó desbloqueado
      */
     @Transactional
-    /**
-     * Pays fine Accion Response data transfer object.
-     *
-     * @param fineId numeric identifier used to scope this fine Accion Response data transfer object
-     * @return fine Accion Response data transfer object reflecting the state after the operation
-     */
     public FineActionResponseDTO pay(Long fineId) {
         Map<String, Object> result = fineProcRepo.spPayFine(fineId);
         return new FineActionResponseDTO(
@@ -166,14 +137,6 @@ public class FineService {
      * @throws AuthorizationDeniedException si el ejecutor no es GERENTE ni ADMIN
      */
     @Transactional
-    /**
-     * Voids fine Accion Response data transfer object.
-     *
-     * @param fineId numeric identifier used to scope this fine Accion Response data transfer object
-     * @param reason text value used to scope this fine Accion Response data transfer object
-     * @param authentication authentication of the caller used to scope this fine Accion Response data transfer object
-     * @return fine Accion Response data transfer object reflecting the state after the operation
-     */
     public FineActionResponseDTO annul(Long fineId, String reason, Authentication authentication) {
         String roleExecutor = resolveRoleCancellation(authentication);
         Map<String, Object> result = fineProcRepo.spVoidFine(fineId, reason, roleExecutor);
@@ -191,13 +154,6 @@ public class FineService {
      * @throws EntityNotFoundException si la multa o su préstamo no existen
      */
     @Transactional(readOnly = true)
-    /**
-     * Resolves fine.
-     *
-     * @param fineId numeric identifier used to scope this fine
-     * @return identifier of the affected record
-     * @throws EntityNotFoundException when the fine cannot be processed with the given input
-     */
     public Long resolveUserIdFine(Long fineId) {
         Fine fine = fineRepo.findById(fineId)
                 .orElseThrow(() -> new EntityNotFoundException("Multa no encontrada: " + fineId));
@@ -216,13 +172,6 @@ public class FineService {
      * @return resumen con recaudado, pendiente, generado hoy y pagos recientes
      */
     @Transactional(readOnly = true)
-    /**
-     * Handles report summary Financiero.
-     *
-     * @param from date-time bound used to scope this report summary Financiero
-     * @param until date-time bound used to scope this report summary Financiero
-     * @return summary Financiero fines Response data transfer object reflecting the state after the operation
-     */
     public SummaryFinancialFinesResponseDTO reportSummaryFinancial(OffsetDateTime from, OffsetDateTime until) {
         SummaryFinancialFinesProjection summary = fineProcRepo.fnReportSummaryFinancial(from, until);
 
@@ -234,7 +183,7 @@ public class FineService {
 
         // Pagos recientes: últimos 5
         var paymentsRecientes = fineProcRepo.fnPaymentsRecientes(5).stream()
-                .map(p -> new com.uteq.backend.dto.PaymentRecienteDTO(
+                .map(p -> new com.uteq.backend.dto.RecentPaymentDTO(
                         p.getFineId(),
                         p.getAmountPaid(),
                         p.getDatePaid().atOffset(java.time.ZoneOffset.UTC),

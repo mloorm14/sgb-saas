@@ -11,10 +11,10 @@ public record EvidenceDamageFileDTO( @JsonProperty("archivoTipo") String fileTyp
 ) {
     @Override
     /**
-     * Handles equals.
+     * Procesa equals y devuelve el resultado calculado por el backend.
      *
-     * @param o Object used to scope this equals
-     * @return true when the check succeeds
+     * @param o valor de entrada o usado por la operacion para completar su regla de negocio
+     * @return true cuando la comprobacion se cumple; false en caso contrario
      */
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -147,7 +147,7 @@ public interface LoanProcedureRepository extends Repository<Loan, Long> {
 
     @Query(value = "SELECT * FROM fn_reporte_inventario(:p_category_id, :p_status_stock, :p_busqueda, :p_publisher_id, :p_supplier_id, :p_status_book_id, :p_language_id, :p_year_from, :p_year_until, :p_stock_total_min, :p_stock_total_max, :p_stock_disp_min, :p_stock_disp_max, :p_location) LIMIT :limit OFFSET :offset",
             nativeQuery = true)
-    List<ReportInventoryProjection> fnReportInventoryPaginado(
+    List<ReportInventoryProjection> fnReportInventoryPaginated(
             @Param("p_category_id") Integer categoryId,
             @Param("p_status_stock") String statusStock,
             @Param("p_busqueda") String busqueda,
@@ -200,7 +200,7 @@ public interface LoanProcedureRepository extends Repository<Loan, Long> {
 
     @Query(value = "SELECT * FROM fn_reporte_prestamos_vencidos(CAST(:p_days_atraso_min AS INTEGER), CAST(:p_busqueda AS TEXT), CAST(:p_days_atraso_max AS INTEGER)) LIMIT :limit OFFSET :offset",
             nativeQuery = true)
-    List<ReportOverduesProjection> fnReportLoansOverduesPaginado(
+    List<ReportOverduesProjection> fnReportLoansOverduesPaginated(
             @Param("p_days_atraso_min") Integer daysAtrasoMin,
             @Param("p_busqueda") String busqueda,
             @Param("p_days_atraso_max") Integer daysAtrasoMax,
@@ -208,8 +208,8 @@ public interface LoanProcedureRepository extends Repository<Loan, Long> {
             @Param("offset") int offset
     );
 
-    default List<ReportOverduesProjection> fnReportLoansOverduesPaginado(Integer daysAtrasoMin, String busqueda, int limit, int offset) {
-        return fnReportLoansOverduesPaginado(daysAtrasoMin, busqueda, null, limit, offset);
+    default List<ReportOverduesProjection> fnReportLoansOverduesPaginated(Integer daysAtrasoMin, String busqueda, int limit, int offset) {
+        return fnReportLoansOverduesPaginated(daysAtrasoMin, busqueda, null, limit, offset);
     }
 
     @Query(value = "SELECT COUNT(*) FROM fn_reporte_prestamos_vencidos(CAST(:p_days_atraso_min AS INTEGER), CAST(:p_busqueda AS TEXT), CAST(:p_days_atraso_max AS INTEGER))",
@@ -232,10 +232,10 @@ public interface LoanProcedureRepository extends Repository<Loan, Long> {
             @Param("p_until") OffsetDateTime until
     );
 
-    // Paginados restantes (wrapper LIMIT/OFFSET + COUNT) — codigo legible, una query por reporte
+    // Paginated wrappers restantes (wrapper LIMIT/OFFSET + COUNT) — codigo legible, una query por reporte
     @Query(value = "SELECT * FROM fn_reporte_categorias_demandadas(:p_limit, :p_from, :p_until) LIMIT :limit OFFSET :offset",
             nativeQuery = true)
-    List<ReportCategoriesDemandedProjection> fnReportCategoriesDemandedPaginado(
+    List<ReportCategoriesDemandedProjection> fnReportCategoriesDemandedPaginated(
             @Param("p_limit") Integer maxLimit, @Param("p_from") OffsetDateTime from, @Param("p_until") OffsetDateTime until,
             @Param("limit") int limit, @Param("offset") int offset);
 
@@ -243,13 +243,13 @@ public interface LoanProcedureRepository extends Repository<Loan, Long> {
     long countReportCategoriesDemanded(@Param("p_limit") Integer maxLimit, @Param("p_from") OffsetDateTime from, @Param("p_until") OffsetDateTime until);
 
     @Query(value = "SELECT * FROM fn_reporte_indice_morosidad(:p_limit) LIMIT :limit OFFSET :offset", nativeQuery = true)
-    List<ReportDelinquencyProjection> fnReportIndexDelinquencyPaginado(@Param("p_limit") Integer maxLimit, @Param("limit") int limit, @Param("offset") int offset);
+    List<ReportDelinquencyProjection> fnReportIndexDelinquencyPaginated(@Param("p_limit") Integer maxLimit, @Param("limit") int limit, @Param("offset") int offset);
 
     @Query(value = "SELECT COUNT(*) FROM fn_reporte_indice_morosidad(:p_limit)", nativeQuery = true)
     long countReportIndexDelinquency(@Param("p_limit") Integer maxLimit);
 
     @Query(value = "SELECT * FROM fn_reporte_libros_mas_prestados_detallado(:p_limit, :p_from, :p_until, :p_category_id) LIMIT :limit OFFSET :offset", nativeQuery = true)
-    List<BookMostLoanedDetailedProjection> fnReportBooksDetailedPaginado(
+    List<BookMostLoanedDetailedProjection> fnReportBooksDetailedPaginated(
             @Param("p_limit") Integer maxLimit, @Param("p_from") OffsetDateTime from, @Param("p_until") OffsetDateTime until,
             @Param("p_category_id") Integer categoryId, @Param("limit") int limit, @Param("offset") int offset);
 
@@ -257,7 +257,7 @@ public interface LoanProcedureRepository extends Repository<Loan, Long> {
     long countReportBooksDetailed(@Param("p_limit") Integer maxLimit, @Param("p_from") OffsetDateTime from, @Param("p_until") OffsetDateTime until, @Param("p_category_id") Integer categoryId);
 
     @Query(value = "SELECT * FROM fn_reporte_uso_por_periodo(:p_granularidad, :p_from, :p_until) LIMIT :limit OFFSET :offset", nativeQuery = true)
-    List<ReportUsageByPeriodProjection> fnReportUsageByPeriodPaginado(
+    List<ReportUsageByPeriodProjection> fnReportUsageByPeriodPaginated(
             @Param("p_granularidad") String granularidad, @Param("p_from") OffsetDateTime from, @Param("p_until") OffsetDateTime until,
             @Param("limit") int limit, @Param("offset") int offset);
 

@@ -59,10 +59,10 @@ public class QueryReservationsTool extends AbstractUserAwareTool {
 
     @Override
     /**
-     * Executes JSON payload Node.
+     * Procesa execute y devuelve el resultado calculado por el backend.
      *
-     * @param args JSON payload Node used to scope this JSON payload Node
-     * @return JSON payload Node reflecting the state after the operation
+     * @param args argumento recibido por la herramienta del chatbot para decidir y ejecutar la accion
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public JsonNode execute(JsonNode args) {
         Long userId = resolveUserId(args);

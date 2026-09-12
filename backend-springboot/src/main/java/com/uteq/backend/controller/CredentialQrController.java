@@ -27,10 +27,10 @@ public class CredentialQrController {
     @GetMapping(value = "/mi-credencial", produces = MediaType.IMAGE_PNG_VALUE)
     @PreAuthorize("hasRole('LECTOR')")
     /**
-     * Handles mi credential.
+     * Procesa mi credential y devuelve el resultado calculado por el backend.
      *
-     * @param authentication authentication of the caller used to scope this mi credential
-     * @return Response Entity&lt;byte[]> reflecting the state after the operation
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<byte[]> miCredential(Authentication authentication) {
         byte[] image = service.generateImageQrOwn(authentication);

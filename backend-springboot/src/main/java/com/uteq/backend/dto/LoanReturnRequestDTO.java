@@ -16,8 +16,12 @@ public record LoanReturnRequestDTO(
         @NotBlank(message = "El estado de devolucion es obligatorio") @JsonProperty("estadoDevolucion") String statusLoanReturn, @JsonProperty("descripcion") String description, @JsonProperty("danos") List<DamageItemDTO> damages
 ) {
     /**
-     * Cada tipo de daño seleccionado. Si tipoDanoId es null, se espera
-     * nombreCustom (daño "Otro").
+     * Procesa damage item dto y devuelve el resultado calculado por el backend.
+     *
+     * @param typeDamageId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param nameCustom valor de entrada nameCustom usado por la operacion para completar su regla de negocio
+     * @param priceCobrado valor de entrada priceCobrado usado por la operacion para completar su regla de negocio
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public record DamageItemDTO(
             Integer typeDamageId,

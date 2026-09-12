@@ -24,6 +24,14 @@ public class RedisConfig {
 
     // Caches con serialización JDK estándar (PageImpl no deserializa en JSON).
     // "libros": paginado del catálogo. "sugerencias-libros": autocompletado con TTL corto.
+    /**
+     * Procesa cache manager y devuelve el resultado calculado por el backend.
+     *
+     * @param connectionFactory valor de entrada connectionFactory usado por la operacion para completar su regla de negocio
+     * @param booksTtlSeconds valor de entrada booksTtlSeconds usado por la operacion para completar su regla de negocio
+     * @param suggestionsTtlSeconds valor de entrada suggestionsTtlSeconds usado por la operacion para completar su regla de negocio
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
+     */
     @Bean
     public CacheManager cacheManager(
             RedisConnectionFactory connectionFactory,
@@ -73,10 +81,10 @@ public class RedisConfig {
 
     @Bean
     /**
-     * Handles Redis Template.
+     * Procesa redis template y devuelve el resultado calculado por el backend.
      *
-     * @param connectionFactory Redis Connection Factory used to scope this Redis Template
-     * @return Redis Template<String, String> reflecting the state after the operation
+     * @param connectionFactory valor de entrada connectionFactory usado por la operacion para completar su regla de negocio
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public RedisTemplate<String, String> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, String> template = new RedisTemplate<>();

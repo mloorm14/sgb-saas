@@ -49,9 +49,6 @@ public class BackupScheduleService {
      * TaskScheduler en memoria y los automáticos dejan de correr.
      */
     @PostConstruct
-    /**
-     * Initializes Backup schedule.
-     */
     public void initializeTasksProgramadas() {
         progRepo.findByActiveTrueOrderByLastExecutionDesc().forEach(p -> {
             try {
@@ -65,9 +62,8 @@ public class BackupScheduleService {
     // ---------- CRUD simples ----------
 
     /**
-     * Lists Backup schedule records.
-     *
-     * @return list of Backup schedule matching the requested criteria
+         * Lista programaciones de backup activas.
+     * @return lista de programaciones activas
      */
 
     public List<BackupSchedule> listActives() {
@@ -75,11 +71,10 @@ public class BackupScheduleService {
     }
 
     /**
-     * Retrieves Backup schedule.
+     * Consulta get usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param id numeric identifier used to scope this Backup schedule
-     * @return Backup schedule reflecting the state after the operation
-     * @throws ResponseStatusException when the Backup schedule cannot be processed with the given input
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
 
     public BackupSchedule get(Long id) {
@@ -89,10 +84,10 @@ public class BackupScheduleService {
     }
 
     /**
-     * Creates Backup schedule.
+     * Registra create validando los datos de entrada antes de persistir cambios.
      *
-     * @param dto Backup schedule used to scope this Backup schedule
-     * @return Backup schedule reflecting the state after the operation
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
 
     public BackupSchedule create(BackupSchedule dto) {
@@ -105,11 +100,10 @@ public class BackupScheduleService {
     }
 
     /**
-     * Updates Backup schedule.
+     * Actualiza update last execution con las reglas de negocio requeridas por el flujo.
      *
-     * @param id numeric identifier used to scope this Backup schedule
-     * @param date date-time bound used to scope this Backup schedule
-     * @throws ResponseStatusException when the Backup schedule cannot be processed with the given input
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param date fecha limite usada para acotar el rango temporal de la consulta
      */
 
     public void updateLastExecution(Long id, OffsetDateTime date) {
@@ -121,10 +115,9 @@ public class BackupScheduleService {
     }
 
     /**
-     * Deletes Backup schedule.
+     * Elimina o anula delete despues de validar que la operacion sea permitida.
      *
-     * @param id numeric identifier used to scope this Backup schedule
-     * @throws ResponseStatusException when the Backup schedule cannot be processed with the given input
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
      */
 
     public void delete(Long id) {
@@ -169,8 +162,10 @@ public class BackupScheduleService {
     // ---------- Programación automática ----------
 
     /**
-     * Programa o reprograma una tarea de respaldo automático.
-     * Si ya había un scheduler activo para este id, se cancela y se crea uno nuevo.
+     * Procesa schedule execution y devuelve el resultado calculado por el backend.
+     *
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public ScheduledFuture<?> scheduleExecution(Long id) {
         BackupSchedule p = progRepo.findById(id)

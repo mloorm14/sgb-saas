@@ -39,6 +39,12 @@ public class ReservationsManagementController {
     // ── GET /api/v1/reservaciones/gestion/buscar-usuario?correo= ──
     // Busca el usuario por correo completo y retorna su tarjeta de
     // identificación + cantidad de reservas activas.
+    /**
+     * Consulta search user usando los filtros recibidos y devuelve el resultado solicitado.
+     *
+     * @param email texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping("/buscar-usuario")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     public ResponseEntity<UserReservationsManagementDTO> searchUser(
@@ -53,10 +59,10 @@ public class ReservationsManagementController {
     @GetMapping("/historial-reservaciones")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     /**
-     * Handles history reservations.
+     * Procesa history reservations y devuelve el resultado calculado por el backend.
      *
-     * @param userId numeric identifier used to scope this history reservations
-     * @return Response Entity&lt;List<Historial reservation DTO>> reflecting the state after the operation
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<List<HistoryReservationDTO>> historyReservations(
             @RequestParam("usuarioId") Long userId) {

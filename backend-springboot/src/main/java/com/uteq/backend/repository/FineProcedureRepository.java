@@ -1,7 +1,7 @@
 package com.uteq.backend.repository;
 
 import com.uteq.backend.entity.Fine;
-import com.uteq.backend.repository.projection.PaymentRecienteProjection;
+import com.uteq.backend.repository.projection.RecentPaymentProjection;
 import com.uteq.backend.repository.projection.SummaryFinancialFinesProjection;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.query.Procedure;
@@ -75,7 +75,7 @@ public interface FineProcedureRepository extends Repository<Fine, Long> {
     );
 
     @Query(value = "SELECT * FROM fn_pagos_recientes(:p_limit)", nativeQuery = true)
-    java.util.List<PaymentRecienteProjection> fnPaymentsRecientes(
+    java.util.List<RecentPaymentProjection> fnPaymentsRecientes(
             @Param("p_limit") Integer limit
     );
 }

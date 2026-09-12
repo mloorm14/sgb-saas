@@ -32,12 +32,12 @@ public class LoanReturnController {
     @PostMapping("/prestamo/{prestamoId}")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     /**
-     * Registers Response Entity&lt;Devolucion Completa Response DTO>.
+     * Registra register loan return validando los datos de entrada antes de persistir cambios.
      *
-     * @param loanId numeric identifier used to scope this Response Entity&lt;Devolucion Completa Response DTO>
-     * @param dto return Request data transfer object used to scope this Response Entity&lt;Devolucion Completa Response DTO>
-     * @param authentication authentication of the caller used to scope this Response Entity&lt;Devolucion Completa Response DTO>
-     * @return Response Entity&lt;Devolucion Completa Response DTO> reflecting the state after the operation
+     * @param loanId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<LoanReturnFullResponseDTO> registerLoanReturn(
             @PathVariable("prestamoId") Long loanId,
@@ -51,10 +51,10 @@ public class LoanReturnController {
     @GetMapping("/historial")
     @PreAuthorize("hasAnyRole('BIBLIOTECARIO','GERENTE','ADMIN')")
     /**
-     * Handles history Devoluciones.
+     * Procesa history loan returns y devuelve el resultado calculado por el backend.
      *
-     * @param authentication authentication of the caller used to scope this history Devoluciones
-     * @return Response Entity&lt;List<Devolucion history DTO>> reflecting the state after the operation
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<List<LoanReturnHistoryDTO>> historyLoanReturns(
             Authentication authentication) {

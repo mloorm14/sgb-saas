@@ -69,8 +69,12 @@ public class GeminiClient {
     // ── API legacy (sin tools, backward-compatible) ───────────────────────
 
     /**
-     * Genera una respuesta de texto simple (sin function calling).
-     * Se mantiene por backward-compatibility con tests existentes.
+     * Genera o entrega generate response a partir de los datos actuales del sistema.
+     *
+     * @param promptSystem valor de entrada promptSystem usado por la operacion para completar su regla de negocio
+     * @param history valor de entrada history usado por la operacion para completar su regla de negocio
+     * @param messageFresh valor de entrada messageFresh usado por la operacion para completar su regla de negocio
+     * @return texto generado o recuperado por la operacion
      */
     public String generateResponse(String promptSystem, List<MessageChat> history, String messageFresh) {
         GeminiResponse response = generateResponseWithTools(promptSystem, history, messageFresh, List.of());
@@ -256,8 +260,13 @@ public class GeminiClient {
     // ── Response record ───────────────────────────────────────────────────
 
     /**
-     * Respuesta estructurada de Gemini: puede contener texto, un functionCall,
-     * o ambos (raro pero posible).
+     * Procesa gemini response y devuelve el resultado calculado por el backend.
+     *
+     * @param text texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @param functionName valor de entrada functionName usado por la operacion para completar su regla de negocio
+     * @param functionArgs valor de entrada functionArgs usado por la operacion para completar su regla de negocio
+     * @param isFunctionCall valor de entrada isFunctionCall usado por la operacion para completar su regla de negocio
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public record GeminiResponse(
             String text,
@@ -265,23 +274,23 @@ public class GeminiClient {
             JsonNode functionArgs,
             boolean isFunctionCall
     ) {
-        /**
-     * Handles texto.
+    /**
+     * Procesa text y devuelve el resultado calculado por el backend.
      *
-     * @param text text value used to scope this texto
-     * @return Gemini Response reflecting the state after the operation
+     * @param text texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public static GeminiResponse text(String text) {
             return new GeminiResponse(text, null, null, false);
         }
 
         /**
-     * Handles function Call.
-     *
-     * @param name text value used to scope this function Call
-     * @param args JSON payload Node used to scope this function Call
-     * @return Gemini Response reflecting the state after the operation
-     */
+         * Procesa function call y devuelve el resultado calculado por el backend.
+         *
+         * @param name valor de entrada name usado por la operacion para completar su regla de negocio
+         * @param args argumento recibido por la herramienta del chatbot para decidir y ejecutar la accion
+         * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
+         */
 
         public static GeminiResponse functionCall(String name, JsonNode args) {
             return new GeminiResponse(null, name, args, true);

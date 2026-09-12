@@ -64,10 +64,10 @@ public class BookIsbnLookupService {
     }
 
     /**
-     * Searches book Isbn Lookup data transfer object.
+     * Consulta search by isbn usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param isbn text value used to scope this book Isbn Lookup data transfer object
-     * @return book Isbn Lookup data transfer object reflecting the state after the operation
+     * @param isbn valor de entrada isbn usado por la operacion para completar su regla de negocio
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
 
     public BookIsbnLookupDTO searchByIsbn(String isbn) {
@@ -168,11 +168,10 @@ public class BookIsbnLookupService {
     }
 
     /**
-     * Retrieves cover image Imagen data transfer object.
+     * Consulta get cover usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param isbn text value used to scope this cover image Imagen data transfer object
-     * @return cover image Imagen data transfer object reflecting the state after the operation
-     * @throws EntityNotFoundException when the cover image Imagen data transfer object cannot be processed with the given input
+     * @param isbn valor de entrada isbn usado por la operacion para completar su regla de negocio
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
 
     public CoverImageDTO getCover(String isbn) {

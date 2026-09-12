@@ -36,9 +36,8 @@ public class FullBackupService {
 
     // ── Configuración ────────────────────────────────────────────────────────
     /**
-     * Retrieves configuration backup.
-     *
-     * @return configuration backup reflecting the state after the operation
+         * Busca/lista recursos.
+     * @return lista o pagina de resultados
      */
     public ConfigurationBackup getConfiguration() {
         return configRepo.findAll().stream().findFirst().orElseGet(() -> {
@@ -53,13 +52,12 @@ public class FullBackupService {
 
     @Transactional
     /**
-     * Updates configuration backup.
+     * Actualiza update configuration con las reglas de negocio requeridas por el flujo.
      *
-     * @param frecuenciaHoras numeric value used to scope this configuration backup
-     * @param diasRetencion numeric value used to scope this configuration backup
-     * @param habilitado flag used to scope this configuration backup
-     * @return configuration backup reflecting the state after the operation
-     * @throws ResponseStatusException when the configuration backup cannot be processed with the given input
+     * @param frequencyTimes valor de entrada frequencyTimes usado por la operacion para completar su regla de negocio
+     * @param daysRetention valor de entrada daysRetention usado por la operacion para completar su regla de negocio
+     * @param enabled valor de entrada enabled usado por la operacion para completar su regla de negocio
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public ConfigurationBackup updateConfiguration(Integer frequencyTimes, Integer daysRetention, Boolean enabled) {
         if (frequencyTimes != null && (frequencyTimes < 1 || frequencyTimes > 168)) {
@@ -82,19 +80,18 @@ public class FullBackupService {
 
     // ── Historial de registros ────────────────────────────────────────────────
     /**
-     * Lists record backup records.
+         * Lista los registros de backup filtrados por tipo.
      *
-     * @param type text value used to scope this record backup records
-     * @return list of record backup matching the requested criteria
+     * @param type tipo de backup a filtrar (ej. 'completo', 'incremental')
+     * @return lista de registros ordenados por inicio descendente
      */
     public List<RegistrationBackup> listByType(String type) {
         return registrationRepo.findByTypeOrderByStartedDesc(type);
     }
 
     /**
-     * Lists record backup records.
-     *
-     * @return list of record backup matching the requested criteria
+         * Lista todos los backups registrados.
+     * @return lista de backups ordenados por fecha descendente
      */
 
     public List<RegistrationBackup> listAll() {
@@ -103,10 +100,10 @@ public class FullBackupService {
 
     @Transactional
     /**
-     * Deletes backup Completo.
+         * Elimina un registro de backup y su archivo en almacenamiento.
      *
-     * @param id numeric identifier used to scope this backup Completo
-     * @throws ResponseStatusException when the backup Completo cannot be processed with the given input
+     * @param id identificador del registro a eliminar
+     * @throws ResponseStatusException si el registro no existe (404)
      */
     public void delete(Long id) {
         RegistrationBackup r = registrationRepo.findById(id)
@@ -122,11 +119,10 @@ public class FullBackupService {
     }
 
     /**
-     * Downloads backup Completo.
+     * Genera o entrega download a partir de los datos actuales del sistema.
      *
-     * @param id numeric identifier used to scope this backup Completo
-     * @return binary content of the generated file
-     * @throws ResponseStatusException when the backup Completo cannot be processed with the given input
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return contenido binario generado o recuperado por la operacion
      */
 
     public byte[] download(Long id) {
@@ -154,11 +150,11 @@ public class FullBackupService {
     // ── Registro de ejecución (llamado desde el microservicio Node.js via token interno) ──
     @Transactional
     /**
-     * Registers record backup.
+     * Registra register start validando los datos de entrada antes de persistir cambios.
      *
-     * @param type text value used to scope this record backup
-     * @param ejecutadoPor numeric identifier used to scope this record backup
-     * @return record backup reflecting the state after the operation
+     * @param type criterio de clasificacion usado para seleccionar la variante o filtro requerido
+     * @param executedBy valor de entrada executedBy usado por la operacion para completar su regla de negocio
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public RegistrationBackup registerStart(String type, Long executedBy) {
         RegistrationBackup r = RegistrationBackup.builder()
@@ -171,16 +167,15 @@ public class FullBackupService {
 
     @Transactional
     /**
-     * Registers record backup.
+     * Registra register result validando los datos de entrada antes de persistir cambios.
      *
-     * @param id numeric identifier used to scope this record backup
-     * @param estado text value used to scope this record backup
-     * @param nombreArchivo text value used to scope this record backup
-     * @param tamanoBytes numeric identifier used to scope this record backup
-     * @param rutaR2 text value used to scope this record backup
-     * @param mensajeError text value used to scope this record backup
-     * @return record backup reflecting the state after the operation
-     * @throws ResponseStatusException when the record backup cannot be processed with the given input
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param status criterio de clasificacion usado para seleccionar la variante o filtro requerido
+     * @param nameFile valor de entrada nameFile usado por la operacion para completar su regla de negocio
+     * @param sizeBytes valor de entrada sizeBytes usado por la operacion para completar su regla de negocio
+     * @param pathR2 valor de entrada pathR2 usado por la operacion para completar su regla de negocio
+     * @param messageError valor de entrada messageError usado por la operacion para completar su regla de negocio
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public RegistrationBackup registerResult(Long id, String status, String nameFile,
                                                Long sizeBytes, String pathR2, String messageError) {

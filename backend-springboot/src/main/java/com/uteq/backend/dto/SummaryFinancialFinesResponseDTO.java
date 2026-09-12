@@ -5,5 +5,5 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record SummaryFinancialFinesResponseDTO(
-        @JsonProperty("totalRecaudado") BigDecimal totalRecaudado, @JsonProperty("totalPendiente") BigDecimal totalPending, @JsonProperty("totalGeneradoHoy") BigDecimal totalGeneratedToday, @JsonProperty("pagosRecientes") List<PaymentRecienteDTO> paymentsRecientes
+        @JsonProperty("totalRecaudado") BigDecimal totalRecaudado, @JsonProperty("totalPendiente") BigDecimal totalPending, @JsonProperty("totalGeneradoHoy") BigDecimal totalGeneratedToday, @JsonProperty("pagosRecientes") List<RecentPaymentDTO> paymentsRecientes
 ) {}

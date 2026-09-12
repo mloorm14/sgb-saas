@@ -54,11 +54,11 @@ public class ChatbotController {
             @ApiResponse(responseCode = "429", description = "Límite de mensajes por minuto excedido")
     })
     /**
-     * Sends Response Entity&lt;Mensaje Chat Response DTO>.
+     * Envia send message usando los datos y destinatarios recibidos.
      *
-     * @param dto message Chat Request data transfer object used to scope this Response Entity&lt;Mensaje Chat Response DTO>
-     * @param authentication authentication of the caller used to scope this Response Entity&lt;Mensaje Chat Response DTO>
-     * @return Response Entity&lt;Mensaje Chat Response DTO> reflecting the state after the operation
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<MessageChatResponseDTO> sendMessage(
             @Valid @RequestBody MessageChatRequestDTO dto, Authentication authentication) {
@@ -77,11 +77,11 @@ public class ChatbotController {
             @ApiResponse(responseCode = "404", description = "Sesión no encontrada o de otro usuario")
     })
     /**
-     * Handles history.
+     * Procesa history y devuelve el resultado calculado por el backend.
      *
-     * @param id UUID used to scope this history
-     * @param authentication authentication of the caller used to scope this history
-     * @return Response Entity&lt;List<Mensaje Chat history DTO>> reflecting the state after the operation
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<List<MessageChatHistoryDTO>> history(
             @PathVariable UUID id, Authentication authentication) {

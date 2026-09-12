@@ -39,10 +39,10 @@ public class AuthController {
 
     @PostMapping("/registro")
     /**
-     * Handles record.
+     * Procesa registration y devuelve el resultado calculado por el backend.
      *
-     * @param dto record Request data transfer object used to scope this record
-     * @return Response Entity&lt;Usuario Response DTO> reflecting the state after the operation
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<UserResponseDTO> registration(@Valid @RequestBody RegistrationRequestDTO dto) {
         UserResponseDTO user = authService.register(dto);
@@ -54,10 +54,11 @@ public class AuthController {
     // (TTL 10 min) y el usuario quedó bloqueado sin intervención de ADMIN.
     @PostMapping("/reenviar-codigo")
     /**
-     * Resends Response Entity&lt;Void>.
-     *
-     * @param dto Reenviar code Request data transfer object used to scope this Response Entity&lt;Void>
-     * @return Response Entity&lt;Void> reflecting the state after the operation
+         * Reenvia el codigo de verificacion para una cuenta pendiente.
+     * @param dto email de la cuenta
+     * @return ResponseEntity vacia
+     * @throws EntityNotFoundException si email no existe
+     * @throws IllegalArgumentException si ya verificado
      */
     public ResponseEntity<Void> resendCode(@Valid @RequestBody ResendCodeRequestDTO dto) {
         authService.resendCode(dto.email());
@@ -66,10 +67,11 @@ public class AuthController {
 
     @PostMapping("/solicitar-reset")
     /**
-     * Requests Response Entity&lt;Void>.
-     *
-     * @param dto Solicitar Reset Request data transfer object used to scope this Response Entity&lt;Void>
-     * @return Response Entity&lt;Void> reflecting the state after the operation
+         * Inicia recuperacion de contrasena enviando codigo por email.
+     * @param dto email de la cuenta
+     * @return ResponseEntity vacia
+     * @throws EntityNotFoundException si email no existe
+     * @throws ServiceTemporalmenteNotAvailableException si Redis no disponible
      */
     public ResponseEntity<Void> requestReset(@Valid @RequestBody RequestResetRequestDTO dto) {
         authService.requestReset(dto.email());
@@ -78,10 +80,10 @@ public class AuthController {
 
     @PostMapping("/reset")
     /**
-     * Handles reset.
+     * Procesa reset y devuelve el resultado calculado por el backend.
      *
-     * @param dto Reset Password Request data transfer object used to scope this reset
-     * @return Response Entity&lt;Void> reflecting the state after the operation
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<Void> reset(@Valid @RequestBody ResetPasswordRequestDTO dto) {
         authService.resetPassword(dto.email(), dto.code(), dto.freshPassword());
@@ -92,11 +94,11 @@ public class AuthController {
     // La identidad se prueba con el código de un solo uso.
     @PostMapping("/verificar-correo")
     /**
-     * Verifies Response Entity&lt;Usuario Response DTO>.
-     *
-     * @param dto code Verificacion Request data transfer object used to scope this Response Entity&lt;Usuario Response DTO>
-     * @param request incoming HTTP request used to scope this Response Entity&lt;Usuario Response DTO>
-     * @return Response Entity&lt;Usuario Response DTO> reflecting the state after the operation
+         * Verifica codigo de activacion y activa la cuenta.
+     * @param dto email y codigo de verificacion
+     * @param request HTTP request para IP
+     * @return ResponseEntity con UserResponseDTO activado
+     * @throws IllegalArgumentException si codigo invalido/expirado
      */
     public ResponseEntity<UserResponseDTO> verifyEmail(
             @Valid @RequestBody CodeVerificationRequestDTO dto, HttpServletRequest request) {
@@ -106,11 +108,11 @@ public class AuthController {
 
     @PostMapping("/login")
     /**
-     * Handles login.
+     * Procesa login y devuelve el resultado calculado por el backend.
      *
-     * @param dto Login Request data transfer object used to scope this login
-     * @param request incoming HTTP request used to scope this login
-     * @return Response Entity&lt;Token Response DTO> reflecting the state after the operation
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @param request datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<TokenResponseDTO> login(@Valid @RequestBody LoginRequestDTO dto, HttpServletRequest request) {
         TokenResponseDTO tokens = authService.login(dto, getIpSource(request));
@@ -119,6 +121,13 @@ public class AuthController {
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(tokens);
     }
+    /**
+     * Procesa logout y devuelve el resultado calculado por el backend.
+     *
+     * @param authHeader token de seguridad recibido para validar o renovar la sesion del usuario
+     * @param request datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authHeader, HttpServletRequest request) {
@@ -142,6 +151,12 @@ public class AuthController {
     // (en vez de required=true) para que la ausencia de cookie caiga en el
     // handler ya existente de IllegalArgumentException (400, RFC 7807) en
     // vez de en el mecanismo de error por defecto de Spring MVC.
+    /**
+     * Procesa refresh y devuelve el resultado calculado por el backend.
+     *
+     * @param refreshTokenCookie token de seguridad recibido para validar o renovar la sesion del usuario
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @PostMapping("/refresh")
     public ResponseEntity<TokenResponseDTO> refresh(
             @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshTokenCookie) {

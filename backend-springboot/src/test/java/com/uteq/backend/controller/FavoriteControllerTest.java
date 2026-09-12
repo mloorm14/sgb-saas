@@ -78,7 +78,7 @@ class FavoriteControllerTest extends WebMvcControllerTestSupport {
 
     @Test
     void listOwns_devuelve200() throws Exception {
-        when(favoriteService.listOwnsPaginado(any(), any()))
+        when(favoriteService.listOwnsPaginated(any(), any()))
                 .thenReturn(new PageImpl<>(List.of(favorite())));
 
         mockMvc.perform(get("/api/v1/favoritos"))

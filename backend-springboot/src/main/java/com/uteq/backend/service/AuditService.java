@@ -40,14 +40,14 @@ public class AuditService {
 
     @Transactional(readOnly = true)
     /**
-     * Lists Evento audit record Response DTO records.
+     * Consulta list usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param userId numeric identifier used to scope this Evento audit record Response DTO records
-     * @param module text value used to scope this Evento audit record Response DTO records
-     * @param from date-time bound used to scope this Evento audit record Response DTO records
-     * @param until date-time bound used to scope this Evento audit record Response DTO records
-     * @param pageable pagination information used to scope this Evento audit record Response DTO records
-     * @return page of Evento audit record Response data transfer object for the requested pagination
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param module criterio de clasificacion usado para seleccionar la variante o filtro requerido
+     * @param from fecha limite usada para acotar el rango temporal de la consulta
+     * @param until fecha limite usada para acotar el rango temporal de la consulta
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return pagina de resultados que coincide con los filtros y la paginacion solicitada
      */
     public Page<EventAuditResponseDTO> list(Long userId, String module,
                                                      OffsetDateTime from, OffsetDateTime until,
@@ -67,16 +67,11 @@ public class AuditService {
     }
 
     /**
-     * Resumen por categoría: una sola query de agregación agrupando por
-     * tabla_afectada. Devuelve una lista con un elemento por cada categoría
-     * que tenga al menos 1 evento en la bitácora.
+     * Procesa summary y devuelve el resultado calculado por el backend.
+     *
+     * @return lista de resultados que coincide con la consulta solicitada
      */
     @Transactional(readOnly = true)
-    /**
-     * Handles summary.
-     *
-     * @return list of summary category audit dto matching the requested criteria
-     */
     public List<SummaryCategoryAuditDTO> summary() {
         OffsetDateTime fromToday = OffsetDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
 
@@ -105,13 +100,13 @@ public class AuditService {
     }
 
     /**
-     * Handles exportar CSV payload.
+     * Genera o entrega exportar csv a partir de los datos actuales del sistema.
      *
-     * @param userId numeric identifier used to scope this exportar CSV payload
-     * @param module text value used to scope this exportar CSV payload
-     * @param from date-time bound used to scope this exportar CSV payload
-     * @param until date-time bound used to scope this exportar CSV payload
-     * @return binary content of the generated file
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param module criterio de clasificacion usado para seleccionar la variante o filtro requerido
+     * @param from fecha limite usada para acotar el rango temporal de la consulta
+     * @param until fecha limite usada para acotar el rango temporal de la consulta
+     * @return contenido binario generado o recuperado por la operacion
      */
 
     public byte[] exportarCsv(Long userId, String module, OffsetDateTime from, OffsetDateTime until) {

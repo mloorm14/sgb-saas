@@ -148,7 +148,7 @@ class LoanControllerTest extends WebMvcControllerTestSupport {
 
     @Test
     void reportBooksMostLoanedDetailed_devuelve200() throws Exception {
-        when(loanService.reportBooksMostLoanedDetailedPaginado(any(), any(), any(), any(), any()))
+        when(loanService.reportBooksMostLoanedDetailedPaginated(any(), any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(detailed())));
 
         mockMvc.perform(get("/api/v1/prestamos/reportes/libros-mas-prestados-detallado"))
@@ -168,7 +168,7 @@ class LoanControllerTest extends WebMvcControllerTestSupport {
 
     @Test
     void reportDelinquency_devuelve200() throws Exception {
-        when(loanService.reportDelinquencyPaginado(any(), any()))
+        when(loanService.reportDelinquencyPaginated(any(), any()))
                 .thenReturn(new PageImpl<>(List.of(delinquency())));
 
         mockMvc.perform(get("/api/v1/prestamos/reportes/morosidad"))
@@ -188,7 +188,7 @@ class LoanControllerTest extends WebMvcControllerTestSupport {
     @Test
     void reportUsageByPeriod_devuelve200() throws Exception {
         OffsetDateTime period = OffsetDateTime.parse("2026-01-01T00:00:00-05:00");
-        when(loanService.reportUsageByPeriodPaginado(eq("dia"), any(), any(), any()))
+        when(loanService.reportUsageByPeriodPaginated(eq("dia"), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(new ReportUsageByPeriodResponseDTO(period, 4L, 2L))));
 
         mockMvc.perform(get("/api/v1/prestamos/reportes/uso").param("granularidad", "dia"))
@@ -209,7 +209,7 @@ class LoanControllerTest extends WebMvcControllerTestSupport {
 
     @Test
     void reportInventory_devuelve200() throws Exception {
-        when(loanService.reportInventoryPaginado(any(), any(), any(), any(), any(), any(), any(),
+        when(loanService.reportInventoryPaginated(any(), any(), any(), any(), any(), any(), any(),
                 any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(inventory())));
 
@@ -231,7 +231,7 @@ class LoanControllerTest extends WebMvcControllerTestSupport {
 
     @Test
     void reportOverdues_devuelve200() throws Exception {
-        when(loanService.reportLoansOverduesPaginado(any(), any(), any()))
+        when(loanService.reportLoansOverduesPaginated(any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(overdue())));
 
         mockMvc.perform(get("/api/v1/prestamos/reportes/vencidos"))
@@ -250,7 +250,7 @@ class LoanControllerTest extends WebMvcControllerTestSupport {
 
     @Test
     void reportCategoriesDemanded_devuelve200() throws Exception {
-        when(loanService.reportCategoriesDemandedPaginado(any(), any(), any(), any()))
+        when(loanService.reportCategoriesDemandedPaginated(any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(categoryDemanded())));
 
         mockMvc.perform(get("/api/v1/prestamos/reportes/categorias-demandadas"))

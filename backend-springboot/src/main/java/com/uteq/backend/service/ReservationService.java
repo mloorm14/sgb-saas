@@ -64,14 +64,6 @@ public class ReservationService {
      * @throws IllegalArgumentException si la fecha de retiro es anterior a hoy
      */
     @Transactional
-    /**
-     * Creates reservation Response data transfer object.
-     *
-     * @param dto reservation Request data transfer object used to scope this reservation Response data transfer object
-     * @param authentication authentication of the caller used to scope this reservation Response data transfer object
-     * @return reservation Response data transfer object reflecting the state after the operation
-     * @throws AuthorizationDeniedException when the reservation Response data transfer object cannot be processed with the given input
-     */
     public ReservationResponseDTO create(ReservationRequestDTO dto, Authentication authentication) {
         if (esReader(authentication)) {
             Long idOwn = resolveIdByEmail(authentication.getName());
@@ -160,18 +152,6 @@ public class ReservationService {
      * @throws IllegalStateException si la reserva ya no está pendiente o el estado destino no existe en el catálogo
      */
     @Transactional
-    /**
-     * Changes reservation Response data transfer object.
-     *
-     * @param reservationId numeric identifier used to scope this reservation Response data transfer object
-     * @param dto Cambio status reservation Request data transfer object used to scope this reservation Response data transfer object
-     * @param authentication authentication of the caller used to scope this reservation Response data transfer object
-     * @return reservation Response data transfer object reflecting the state after the operation
-     * @throws AuthorizationDeniedException when the reservation Response data transfer object cannot be processed with the given input
-     * @throws IllegalStateException when the reservation Response data transfer object cannot be processed with the given input
-     * @throws EntityNotFoundException when the reservation Response data transfer object cannot be processed with the given input
-     * @throws EstadoReservacionInicialNoConfiguradoException when the reservation Response data transfer object cannot be processed with the given input
-     */
     public ReservationResponseDTO changeStatus(
             Long reservationId, ChangeStatusReservationRequestDTO dto, Authentication authentication) {
         Reservation reservation = reservationRepo.findById(reservationId)
@@ -222,14 +202,6 @@ public class ReservationService {
      * @throws AuthorizationDeniedException si un LECTOR pide reservaciones ajenas
      */
     @Transactional(readOnly = true)
-    /**
-     * Lists reservation Response DTO records.
-     *
-     * @param userId numeric identifier used to scope this reservation Response DTO records
-     * @param authentication authentication of the caller used to scope this reservation Response DTO records
-     * @param pageable pagination information used to scope this reservation Response DTO records
-     * @return page of reservation Response data transfer object for the requested pagination
-     */
     public Page<ReservationResponseDTO> listByUser(
             Long userId, Authentication authentication, Pageable pageable) {
         validateAccessUser(userId, authentication);
@@ -243,11 +215,6 @@ public class ReservationService {
      * @return lista de reservaciones del día con lector, libro y estado
      */
     @Transactional(readOnly = true)
-    /**
-     * Searches reservation Hoy Response DTO records.
-     *
-     * @return list of reservation Hoy Response data transfer object matching the requested criteria
-     */
     public List<ReservationTodayResponseDTO> searchReservationsToday() {
         return reservationRepo.searchReservationsToday().stream()
                 .map(p -> new ReservationTodayResponseDTO(
@@ -268,11 +235,6 @@ public class ReservationService {
      * @return lista de reservaciones próximas con lector, libro y estado
      */
     @Transactional(readOnly = true)
-    /**
-     * Searches reservation Hoy Response DTO records.
-     *
-     * @return list of reservation Hoy Response data transfer object matching the requested criteria
-     */
     public List<ReservationTodayResponseDTO> searchReservationsNexts() {
         return reservationRepo.searchReservationsNexts().stream()
                 .map(p -> new ReservationTodayResponseDTO(

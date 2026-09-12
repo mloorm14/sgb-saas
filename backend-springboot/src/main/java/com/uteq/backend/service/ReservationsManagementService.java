@@ -53,11 +53,10 @@ public class ReservationsManagementService {
     // ── GET /gestion/buscar-usuario?correo= ──────────────────
     @Transactional(readOnly = true)
     /**
-     * Searches user reservations Gestion data transfer object.
+     * Consulta search by email usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param email text value used to scope this user reservations Gestion data transfer object
-     * @return user reservations Gestion data transfer object reflecting the state after the operation
-     * @throws EntityNotFoundException when the user reservations Gestion data transfer object cannot be processed with the given input
+     * @param email texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public UserReservationsManagementDTO searchByEmail(String email) {
         User user = userRepo.findByEmail(email)
@@ -84,11 +83,10 @@ public class ReservationsManagementService {
     // resuelto en batch (3 queries: reservaciones, libros, estados).
     @Transactional(readOnly = true)
     /**
-     * Handles history reservations.
+     * Procesa history reservations y devuelve el resultado calculado por el backend.
      *
-     * @param userId numeric identifier used to scope this history reservations
-     * @return list of history reservation data transfer object matching the requested criteria
-     * @throws EntityNotFoundException when the history reservations cannot be processed with the given input
+     * @param userId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @return lista de resultados que coincide con la consulta solicitada
      */
     public List<HistoryReservationDTO> historyReservations(Long userId) {
         // Validar que el usuario exista

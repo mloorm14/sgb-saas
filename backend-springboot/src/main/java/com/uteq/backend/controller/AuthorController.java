@@ -37,10 +37,10 @@ public class AuthorController {
 
     @GetMapping("/buscar")
     /**
-     * Searches Response Entity&lt;List<Autor Response DTO>>.
+     * Consulta search usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param q text value used to scope this Response Entity&lt;List<Autor Response DTO>>
-     * @return Response Entity&lt;List<Autor Response DTO>> reflecting the state after the operation
+     * @param q texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<List<AuthorResponseDTO>> search(@RequestParam String q) {
         return ResponseEntity.ok(
@@ -52,10 +52,10 @@ public class AuthorController {
     @PostMapping
     @PreAuthorize("hasAnyRole('GERENTE','ADMIN')")
     /**
-     * Creates Response Entity&lt;Autor Response DTO>.
+     * Registra create validando los datos de entrada antes de persistir cambios.
      *
-     * @param dto author Request data transfer object used to scope this Response Entity&lt;Autor Response DTO>
-     * @return Response Entity&lt;Autor Response DTO> reflecting the state after the operation
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<AuthorResponseDTO> create(@Valid @RequestBody AuthorRequestDTO dto) {
         Author author = new Author();

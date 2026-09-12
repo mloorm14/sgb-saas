@@ -30,11 +30,11 @@ public class FavoriteController {
     @PostMapping("/{libroId}")
     @PreAuthorize("hasRole('LECTOR')")
     /**
-     * Handles agregar.
+     * Procesa agregar y devuelve el resultado calculado por el backend.
      *
-     * @param bookId numeric identifier used to scope this agregar
-     * @param authentication authentication of the caller used to scope this agregar
-     * @return Response Entity&lt;Favorito Response DTO> reflecting the state after the operation
+     * @param bookId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<FavoriteResponseDTO> agregar(
             @PathVariable("libroId") Long bookId, Authentication authentication) {
@@ -46,11 +46,11 @@ public class FavoriteController {
     @DeleteMapping("/{libroId}")
     @PreAuthorize("hasRole('LECTOR')")
     /**
-     * Handles quitar.
+     * Procesa quitar y devuelve el resultado calculado por el backend.
      *
-     * @param bookId numeric identifier used to scope this quitar
-     * @param authentication authentication of the caller used to scope this quitar
-     * @return Response Entity&lt;Void> reflecting the state after the operation
+     * @param bookId identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<Void> quitar(
             @PathVariable("libroId") Long bookId, Authentication authentication) {
@@ -66,23 +66,30 @@ public class FavoriteController {
     // hallazgo IDOR que ya se corrigió en PrestamoService.validarAccesoUsuario.
     // Se deja sin path param a propósito: "mis favoritos", no "favoritos
     // de tal usuarioId".
+    /**
+     * Consulta list owns usando los filtros recibidos y devuelve el resultado solicitado.
+     *
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @GetMapping
     @PreAuthorize("hasRole('LECTOR')")
     public ResponseEntity<Page<FavoriteResponseDTO>> listOwns(
             Authentication authentication,
             @PageableDefault(size = 10, sort = "agregado") Pageable pageable) {
-        return ResponseEntity.ok(favoriteService.listOwnsPaginado(authentication, pageable));
+        return ResponseEntity.ok(favoriteService.listOwnsPaginated(authentication, pageable));
     }
 
     @GetMapping("/todo")
     @PreAuthorize("hasRole('LECTOR')")
     /**
-     * Lists Response Entity&lt;List<Favorito Response DTO>>.
+     * Consulta list owns todo usando los filtros recibidos y devuelve el resultado solicitado.
      *
-     * @param authentication authentication of the caller used to scope this Response Entity&lt;List<Favorito Response DTO>>
-     * @return Response Entity&lt;List<Favorito Response DTO>> reflecting the state after the operation
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
-    public ResponseEntity<List<FavoriteResponseDTO>> listOwnsTodo(Authentication authentication) {
+    public ResponseEntity<List<FavoriteResponseDTO>> listOwnsAll(Authentication authentication) {
         return ResponseEntity.ok(favoriteService.listOwns(authentication));
     }
 }
