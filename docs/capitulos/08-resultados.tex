@@ -242,9 +242,10 @@ queda solo preparado arquitectónicamente: queda resuelto por completo
 (arquitectura, backend y despliegue verificado), el sexto y último de
 los 6 controles auditados en cerrar.
 
-Los tres reportes ZAP completos (JSON/HTML/MD, incluida la corrida más
-antigua contra producción) quedan versionados sin editar en
-\texttt{docs/mediciones/sec/zap/} como registro crudo de cada corrida.
+Los reportes ZAP quedan trazados en
+\texttt{docs/mediciones/sec/zap/} mediante artefactos livianos y
+regenerables; los HTML generados por la herramienta se excluyen del
+árbol evaluado para cumplir la higiene de repositorio.
 
 \section{Bloque 3 -- Cobertura de pruebas automatizadas (JaCoCo)}
 \label{sec:res-cobertura}
