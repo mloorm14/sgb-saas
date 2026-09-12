@@ -1,14 +1,13 @@
-﻿package com.uteq.backend.repository;
+package com.uteq.backend.repository;
 
 import java.util.Map;
 
 /**
  * Fragmento custom para stored procedures de prestamos.
  * Implementado en LoanProcedureRepositoryCustomImpl con EntityManager
- * y binding posicional (Integer) para evitar sintaxis nombre => ?
- * de Hibernate 6 que pgjdbc rechaza en {call ...}.
+ * y binding posicional para evitar sintaxis nombre => ? generada por Hibernate 6.
  */
 public interface LoanProcedureRepositoryCustom {
-    @org.springframework.data.jpa.repository.query.Procedure(procedureName = "sp_crear_prestamo")`n    Long spCreateLoanProcedure(Long userId, Long bookId, Long librarianId, Integer daysLoan);
+    Long spCreateLoanProcedure(Long userId, Long bookId, Long librarianId, Integer daysLoan);
     Map<String, Object> spRegisterLoanReturn(Long loanId);
 }
