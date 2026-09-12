@@ -63,10 +63,31 @@ class LoanFineProcedureIntegrationTest {
     // La función fn_auditoria_generica() solo vive en db/auditoria-triggers.sql
     // (fuera de Flyway): en BD fresca V40 fallaría sin ella. Se aporta vía
     // ubicación solo-test (src/test no se empaqueta: prod jamás la ve).
+    //
+    // NOTA CI: la ruta filesystem:../database/migrations era relativa al CWD
+    // del proceso Maven (backend-springboot/) en local, pero en el runner de
+    // GitHub Actions el CWD es la raíz del repo, lo que hacía fallar Flyway.
+    // Se resuelve la ruta absoluta desde la ubicación de esta clase compilada
+    // (target/test-classes/...) subiendo hasta la raíz del módulo y luego
+    // navegando a database/migrations -- funciona igual en ambos entornos.
     @DynamicPropertySource
     static void flywayTest(DynamicPropertyRegistry registry) {
+        // Resuelve: target/test-classes → target → backend-springboot → repo-root → database/migrations
+        java.net.URL classLocation = LoanFineProcedureIntegrationTest.class
+                .getProtectionDomain().getCodeSource().getLocation();
+        java.nio.file.Path migrationsDir;
+        try {
+            migrationsDir = java.nio.file.Paths.get(classLocation.toURI())
+                    .getParent()  // target/test-classes -> target
+                    .getParent()  // target -> backend-springboot
+                    .getParent()  // backend-springboot -> repo root
+                    .resolve("database/migrations");
+        } catch (java.net.URISyntaxException e) {
+            throw new IllegalStateException("No se pudo resolver la ruta de migraciones", e);
+        }
+        String migrationsPath = "filesystem:" + migrationsDir.toAbsolutePath();
         registry.add("spring.flyway.locations",
-                () -> "classpath:db/test-migrations,filesystem:../database/migrations");
+                () -> "classpath:db/test-migrations," + migrationsPath);
     }
 
     @Autowired JdbcTemplate jdbcTemplate;
