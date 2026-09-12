@@ -119,7 +119,6 @@ public class ReportPdfService {
      *
      * @param rows lista de ReportDelinquencyResponseDTO con la evidencia de multas.
      * @return bytes con el PDF generado
-     * @throws IOException si falla la generacion del archivo PDF
      */
     public byte[] generateReportDelinquency(List<ReportDelinquencyResponseDTO> rows) {
         return generatePdf(
@@ -143,7 +142,6 @@ public class ReportPdfService {
      *
      * @param rows lista de BookMostLoanedDetailedResponseDTO con los datos de prestamo.
      * @return bytes con el PDF generado
-     * @throws IOException si falla la generacion del archivo PDF
      */
     public byte[] generateReportBooksMostLoaned(List<BookMostLoanedDetailedResponseDTO> rows) {
         int[] contador = {1};
@@ -170,7 +168,6 @@ public class ReportPdfService {
      *
      * @param rows lista de ReportInventoryResponseDTO con los datos de stock.
      * @return bytes con el PDF generado
-     * @throws IOException si falla la generacion del archivo PDF
      */
     public byte[] generateReportInventory(List<ReportInventoryResponseDTO> rows) {
         return generatePdf(
@@ -196,7 +193,6 @@ public class ReportPdfService {
      *
      * @param rows lista de ReportOverduesResponseDTO con los datos de prestamos vencidos.
      * @return bytes con el PDF generado
-     * @throws IOException si falla la generacion del archivo PDF
      */
     public byte[] generateReportOverdues(List<ReportOverduesResponseDTO> rows) {
         return generatePdf(
@@ -223,7 +219,6 @@ public class ReportPdfService {
      *
      * @param rows lista de ReportUsageByPeriodResponseDTO con los datos de uso.
      * @return bytes con el PDF generado
-     * @throws IOException si falla la generacion del archivo PDF
      */
     public byte[] generateReportUsageByPeriod(List<ReportUsageByPeriodResponseDTO> rows) {
         return generatePdf(
@@ -246,7 +241,6 @@ public class ReportPdfService {
      *
      * @param dto SummaryFinancialFinesResponseDTO con los datos financieros.
      * @return bytes con el PDF generado
-     * @throws IOException si falla la generacion del archivo PDF
      */
     public byte[] generateReportSummaryFinancial(SummaryFinancialFinesResponseDTO dto) {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -287,7 +281,6 @@ public class ReportPdfService {
      *
      * @param rows lista de ReportCategoriesDemandedResponseDTO con los datos de categorias.
      * @return bytes con el PDF generado
-     * @throws IOException si falla la generacion del archivo PDF
      */
     public byte[] generateReportCategoriesDemanded(List<ReportCategoriesDemandedResponseDTO> rows) {
         int[] contador = {1};
@@ -311,7 +304,6 @@ public class ReportPdfService {
      *
      * @param rows lista de SuggestionGroupedDTO con los datos de solicitudes.
      * @return bytes con el PDF generado
-     * @throws IOException si falla la generacion del archivo PDF
      */
     public byte[] generateReportSuggestionsMostPedidas(List<SuggestionGroupedDTO> rows) {
         int[] contador = {1};

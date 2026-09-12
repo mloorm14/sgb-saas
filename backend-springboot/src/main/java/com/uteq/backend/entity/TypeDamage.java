@@ -44,7 +44,6 @@ public class TypeDamage {
     public BigDecimal getPrice() { return this.value; }
     /**
          * setPrice.
-     * @return resultado de la operacion
      */
     public void setPrice(BigDecimal price) { this.value = price; if (this.typeCost==null) this.typeCost="FIJO"; }
 }

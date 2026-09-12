@@ -12,17 +12,17 @@ Hay múltiples identidades Git por persona (variaciones de nombre/email
 por distintas máquinas/configuraciones). Para que la auditoría sea
 reproducible y no dependa de una suma manual, el repositorio incluye
 `.mailmap` con la unificación explícita de alias conocidos; el conteo se
-recalcula con `git shortlog -sne --no-merges --use-mailmap`.
+recalcula con `git -c log.mailmap=true shortlog -sne --no-merges HEAD`.
 
 | Persona | Alias Git considerados | Commits |
 |---|---|---|
-| Irvin Cajas Ibarra | `Theirvin1 <icajasi@msuteq.edu.ec>`, `TheIrvin <irvincajas72@gmail.com>`, `Irvin <icajasi@msuteq.edu.ec>`, `Irvin Cajas <icajasi@msuteq.edu.ec>` | **710** |
-| Marlon Loor Medranda | `Marlon Loor <mloorm14@uteq.edu.ec>`, `mloorm14 <mloorm14@uteq.edu.ec>`, `Loor Marlon <mloorm14@uteq.edu.ec>`, `Marlon Taylor Loor Medranda <mloorm14@uteq.edu.ec>` | **303** |
+| Irvin Cajas Ibarra | `Theirvin1 <icajasi@msuteq.edu.ec>`, `TheIrvin <irvincajas72@gmail.com>`, `Irvin <icajasi@msuteq.edu.ec>`, `Irvin Cajas <icajasi@msuteq.edu.ec>` | **711** |
+| Marlon Loor Medranda | `Marlon Loor <mloorm14@uteq.edu.ec>`, `mloorm14 <mloorm14@uteq.edu.ec>`, `Loor Marlon <mloorm14@uteq.edu.ec>`, `Marlon Taylor Loor Medranda <mloorm14@uteq.edu.ec>` | **326** |
 | Moises Panama Murillo | `MoisesPanama <mpanamam@uteq.edu.ec>`, `Moisés Panamá <mpanamam@uteq.edu.ec>`, `Moises Panama <mpanamam@uteq.edu.ec>` | **291** |
 
-710+303+291 = 1304, más 1 de `TeilorSuit` y 1 del bot = 1306. Para
+711+326+291 = 1328, más 1 de `TeilorSuit` y 1 del bot = 1330. Para
 re-sincronizar al cierre: `git rev-list --count --no-merges <rev>` y
-`git shortlog -sne --no-merges --use-mailmap <rev>`.
+`git -c log.mailmap=true shortlog -sne --no-merges <rev>`.
 
 Excluidos del conteo de autoría humana: `copilot-swe-agent[bot]` (1 commit,
 agente automatizado, no es una persona del equipo). El commit

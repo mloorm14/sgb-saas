@@ -78,7 +78,6 @@ public class TypeDamageController {
      * @param categoryId identificador del registro que se usa para ubicar el recurso en la base de datos
      * @param typeCost valor de entrada typeCost usado por la operacion para completar su regla de negocio
      * @param value clave o valor de configuracion que se valida antes de guardarse
-     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
 
     public record TypeDamageRequestDTO(

@@ -21,7 +21,6 @@ public record LoanReturnRequestDTO(
      * @param typeDamageId identificador del registro que se usa para ubicar el recurso en la base de datos
      * @param nameCustom valor de entrada nameCustom usado por la operacion para completar su regla de negocio
      * @param priceCobrado valor de entrada priceCobrado usado por la operacion para completar su regla de negocio
-     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public record DamageItemDTO(
             Integer typeDamageId,

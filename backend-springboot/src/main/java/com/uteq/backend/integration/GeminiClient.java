@@ -266,7 +266,6 @@ public class GeminiClient {
      * @param functionName valor de entrada functionName usado por la operacion para completar su regla de negocio
      * @param functionArgs valor de entrada functionArgs usado por la operacion para completar su regla de negocio
      * @param isFunctionCall valor de entrada isFunctionCall usado por la operacion para completar su regla de negocio
-     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public record GeminiResponse(
             String text,

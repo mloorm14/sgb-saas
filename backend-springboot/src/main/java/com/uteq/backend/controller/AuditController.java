@@ -43,7 +43,6 @@ public class AuditController {
      * @param module criterio de clasificacion usado para seleccionar la variante o filtro requerido
      * @param from fecha limite usada para acotar el rango temporal de la consulta
      * @param until fecha limite usada para acotar el rango temporal de la consulta
-     * @param cual valor de entrada cual usado por la operacion para completar su regla de negocio
      * @param pageable configuracion de pagina, tamano y orden usada para limitar la consulta
      * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */

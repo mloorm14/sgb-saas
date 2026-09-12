@@ -86,7 +86,6 @@ public class CategoryDamageController {
      * Procesa category request y devuelve el resultado calculado por el backend.
      *
      * @param name valor de entrada name usado por la operacion para completar su regla de negocio
-     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
 
     public record CategoryRequest(@NotBlank @JsonProperty("nombre") String name) {}
