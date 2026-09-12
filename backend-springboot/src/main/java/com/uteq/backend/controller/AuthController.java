@@ -1,13 +1,13 @@
 package com.uteq.backend.controller;
 
-import com.uteq.backend.dto.CodigoVerificacionRequestDTO;
+import com.uteq.backend.dto.CodeVerificationRequestDTO;
 import com.uteq.backend.dto.LoginRequestDTO;
-import com.uteq.backend.dto.ReenviarCodigoRequestDTO;
-import com.uteq.backend.dto.RegistroRequestDTO;
+import com.uteq.backend.dto.ResendCodeRequestDTO;
+import com.uteq.backend.dto.RegistrationRequestDTO;
 import com.uteq.backend.dto.ResetPasswordRequestDTO;
-import com.uteq.backend.dto.SolicitarResetRequestDTO;
+import com.uteq.backend.dto.RequestResetRequestDTO;
 import com.uteq.backend.dto.TokenResponseDTO;
-import com.uteq.backend.dto.UsuarioResponseDTO;
+import com.uteq.backend.dto.UserResponseDTO;
 import com.uteq.backend.security.JwtService;
 import com.uteq.backend.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,13 +39,14 @@ public class AuthController {
 
     @PostMapping("/registro")
     /**
-     * Executes the registro operation.
-     * @param dto value required by the operation
-     * @return operation result
+     * Procesa registration y devuelve el resultado calculado por el backend.
+     *
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
-    public ResponseEntity<UsuarioResponseDTO> registro(@Valid @RequestBody RegistroRequestDTO dto) {
-        UsuarioResponseDTO usuario = authService.registrar(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(usuario);
+    public ResponseEntity<UserResponseDTO> registration(@Valid @RequestBody RegistrationRequestDTO dto) {
+        UserResponseDTO user = authService.register(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(user);
     }
 
     // Sin JWT: el usuario aún no puede loguearse (PENDIENTE_VERIFICACION).
@@ -53,34 +54,39 @@ public class AuthController {
     // (TTL 10 min) y el usuario quedó bloqueado sin intervención de ADMIN.
     @PostMapping("/reenviar-codigo")
     /**
-     * Executes the reenviarCodigo operation.
-     * @param dto value required by the operation
-     * @return operation result
+         * Reenvia el codigo de verificacion para una cuenta pendiente.
+     * @param dto email de la cuenta
+     * @return ResponseEntity vacia
+     * @throws EntityNotFoundException si email no existe
+     * @throws IllegalArgumentException si ya verificado
      */
-    public ResponseEntity<Void> reenviarCodigo(@Valid @RequestBody ReenviarCodigoRequestDTO dto) {
-        authService.reenviarCodigo(dto.correo());
+    public ResponseEntity<Void> resendCode(@Valid @RequestBody ResendCodeRequestDTO dto) {
+        authService.resendCode(dto.email());
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/solicitar-reset")
     /**
-     * Executes the solicitarReset operation.
-     * @param dto value required by the operation
-     * @return operation result
+         * Inicia recuperacion de contrasena enviando codigo por email.
+     * @param dto email de la cuenta
+     * @return ResponseEntity vacia
+     * @throws EntityNotFoundException si email no existe
+     * @throws ServiceTemporalmenteNotAvailableException si Redis no disponible
      */
-    public ResponseEntity<Void> solicitarReset(@Valid @RequestBody SolicitarResetRequestDTO dto) {
-        authService.solicitarReset(dto.correo());
+    public ResponseEntity<Void> requestReset(@Valid @RequestBody RequestResetRequestDTO dto) {
+        authService.requestReset(dto.email());
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/reset")
     /**
-     * Executes the reset operation.
-     * @param dto value required by the operation
-     * @return operation result
+     * Procesa reset y devuelve el resultado calculado por el backend.
+     *
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<Void> reset(@Valid @RequestBody ResetPasswordRequestDTO dto) {
-        authService.resetPassword(dto.correo(), dto.codigo(), dto.nuevaPassword());
+        authService.resetPassword(dto.email(), dto.code(), dto.freshPassword());
         return ResponseEntity.noContent().build();
     }
 
@@ -88,36 +94,45 @@ public class AuthController {
     // La identidad se prueba con el código de un solo uso.
     @PostMapping("/verificar-correo")
     /**
-     * Executes the verificarCorreo operation.
-     * @param dto value required by the operation
-     * @param request value required by the operation
-     * @return operation result
+         * Verifica codigo de activacion y activa la cuenta.
+     * @param dto email y codigo de verificacion
+     * @param request HTTP request para IP
+     * @return ResponseEntity con UserResponseDTO activado
+     * @throws IllegalArgumentException si codigo invalido/expirado
      */
-    public ResponseEntity<UsuarioResponseDTO> verificarCorreo(
-            @Valid @RequestBody CodigoVerificacionRequestDTO dto, HttpServletRequest request) {
-        UsuarioResponseDTO usuario = authService.verificarCorreo(dto.correo(), dto.codigo(), obtenerIpOrigen(request));
-        return ResponseEntity.ok(usuario);
+    public ResponseEntity<UserResponseDTO> verifyEmail(
+            @Valid @RequestBody CodeVerificationRequestDTO dto, HttpServletRequest request) {
+        UserResponseDTO user = authService.verifyEmail(dto.email(), dto.code(), getIpSource(request));
+        return ResponseEntity.ok(user);
     }
 
     @PostMapping("/login")
     /**
-     * Executes the login operation.
-     * @param dto value required by the operation
-     * @param request value required by the operation
-     * @return operation result
+     * Procesa login y devuelve el resultado calculado por el backend.
+     *
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @param request datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
     public ResponseEntity<TokenResponseDTO> login(@Valid @RequestBody LoginRequestDTO dto, HttpServletRequest request) {
-        TokenResponseDTO tokens = authService.login(dto, obtenerIpOrigen(request));
+        TokenResponseDTO tokens = authService.login(dto, getIpSource(request));
         ResponseCookie cookie = buildRefreshCookie(tokens.refreshToken(), jwtService.getRefreshExpirationMs());
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(tokens);
     }
+    /**
+     * Procesa logout y devuelve el resultado calculado por el backend.
+     *
+     * @param authHeader token de seguridad recibido para validar o renovar la sesion del usuario
+     * @param request datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authHeader, HttpServletRequest request) {
         String token = authHeader.substring(BEARER_PREFIX.length());
-        authService.logout(token, obtenerIpOrigen(request));
+        authService.logout(token, getIpSource(request));
         ResponseCookie cookieLimpia = buildRefreshCookie("", 0);
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, cookieLimpia.toString())
@@ -126,7 +141,7 @@ public class AuthController {
 
     // IP real del cliente para rate limit y auditoría. Lee getRemoteAddr();
     // no usa X-Forwarded-For por ser falsificable sin proxy de confianza.
-    private String obtenerIpOrigen(HttpServletRequest request) {
+    private String getIpSource(HttpServletRequest request) {
         return request.getRemoteAddr();
     }
 
@@ -136,6 +151,12 @@ public class AuthController {
     // (en vez de required=true) para que la ausencia de cookie caiga en el
     // handler ya existente de IllegalArgumentException (400, RFC 7807) en
     // vez de en el mecanismo de error por defecto de Spring MVC.
+    /**
+     * Procesa refresh y devuelve el resultado calculado por el backend.
+     *
+     * @param refreshTokenCookie token de seguridad recibido para validar o renovar la sesion del usuario
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
+     */
     @PostMapping("/refresh")
     public ResponseEntity<TokenResponseDTO> refresh(
             @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshTokenCookie) {
@@ -154,8 +175,8 @@ public class AuthController {
     // autenticación (nunca viaja en llamadas a /api/v1/**). Ver
     // docs/adr/adr-007-cookies-jwt.md para el resto de decisiones de diseño
     // (por qué solo el refreshToken migra a cookie, no el accessToken).
-    private ResponseCookie buildRefreshCookie(String valor, long maxAgeMs) {
-        return ResponseCookie.from(REFRESH_COOKIE_NAME, valor)
+    private ResponseCookie buildRefreshCookie(String value, long maxAgeMs) {
+        return ResponseCookie.from(REFRESH_COOKIE_NAME, value)
                 .httpOnly(true)
                 .secure(true)
                 .sameSite("None")

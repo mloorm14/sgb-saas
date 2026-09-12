@@ -288,21 +288,25 @@ def generar_grafico_p95(por_escenario, output_path):
     width = 0.35
 
     fig, ax = plt.subplots(figsize=(8, 5))
+    label_map = {
+        "cache_caliente": "warm cache",
+        "cache_frio": "cold cache",
+    }
     ax.bar(
         [i - width / 2 for i in x], datos["cache_caliente"]["p95"], width,
         yerr=datos["cache_caliente"]["err"], capsize=4,
-        label="cache_caliente", color=COLOR_CALIENTE,
+        label=label_map["cache_caliente"], color=COLOR_CALIENTE,
     )
     ax.bar(
         [i + width / 2 for i in x], datos["cache_frio"]["p95"], width,
         yerr=datos["cache_frio"]["err"], capsize=4,
-        label="cache_frio", color=COLOR_FRIO,
+        label=label_map["cache_frio"], color=COLOR_FRIO,
     )
     ax.set_xticks(x)
     ax.set_xticklabels([f"Run {i}" for i in runs])
     ax.set_ylabel("p95 http_req_duration (ms)")
     ax.set_xlabel("Run")
-    ax.set_title("p95 per run — cache_caliente vs cache_frio (error bars: 95% bootstrap CI)")
+    ax.set_title("p95 per run - warm cache vs cold cache (error bars: 95% bootstrap CI)")
     ax.legend()
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)

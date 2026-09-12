@@ -76,8 +76,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 return;
             }
 
-            String correo = jwtService.extractCorreo(token);
-            UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(correo);
+            String email = jwtService.extractEmail(token);
+            UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(email);
 
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                     userDetails, null, userDetails.getAuthorities()

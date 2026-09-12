@@ -41,12 +41,12 @@ abstract class WebMvcControllerTestSupport {
      * Sin esto, los parámetros {@code Authentication} del controller llegan null.
      */
     @BeforeEach
-    void copiarContextoDeSeguridadDeTest() {
+    void copiarContextoSeguridadTest() {
         SecurityContextHolder.setContext(TestSecurityContextHolder.getContext());
     }
 
     @AfterEach
-    void limpiarContextoDeSeguridad() {
+    void limpiarContextoSeguridad() {
         SecurityContextHolder.clearContext();
     }
 }

@@ -29,19 +29,20 @@ public class BackupStorageService {
     private static final int GCM_TAG_LENGTH = 128;
     public BackupStorageService(@org.springframework.beans.factory.annotation.Autowired(required = false) S3Client s3Client) { this.s3Client = s3Client; }
     /**
-     * Executes the isR2Configured operation.
-     * @return operation result
+         * isR2Configured.
+     * @return resultado de la operacion
      */
     public boolean isR2Configured() { return s3Client != null && bucket != null && !bucket.isBlank(); }
     /**
-     * Executes the isEncryptionEnabled operation.
-     * @return operation result
+         * isEncryptionEnabled.
+     * @return resultado de la operacion
      */
     public boolean isEncryptionEnabled() { return encryptionKey != null && !encryptionKey.isBlank(); }
     /**
-     * Executes the upload operation.
-     * @param key value required by the operation
-     * @param data value required by the operation
+     * Ejecuta upload aplicando las validaciones necesarias del proceso.
+     *
+     * @param key clave o valor de configuracion que se valida antes de guardarse
+     * @param data valor de entrada data usado por la operacion para completar su regla de negocio
      */
     public void upload(String key, byte[] data) {
         byte[] toStore = isEncryptionEnabled() ? encrypt(data) : data;
@@ -54,9 +55,10 @@ public class BackupStorageService {
         }
     }
     /**
-     * Executes the download operation.
-     * @param key value required by the operation
-     * @return operation result
+     * Genera o entrega download a partir de los datos actuales del sistema.
+     *
+     * @param key clave o valor de configuracion que se valida antes de guardarse
+     * @return contenido binario generado o recuperado por la operacion
      */
     public byte[] download(String key) {
         byte[] stored;
@@ -65,8 +67,9 @@ public class BackupStorageService {
         return isEncryptionEnabled() ? decrypt(stored) : stored;
     }
     /**
-     * Executes the delete operation.
-     * @param key value required by the operation
+     * Elimina o anula delete despues de validar que la operacion sea permitida.
+     *
+     * @param key clave o valor de configuracion que se valida antes de guardarse
      */
     public void delete(String key) {
         if (isR2Configured()) s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());

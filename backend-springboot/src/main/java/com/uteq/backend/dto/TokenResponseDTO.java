@@ -1,5 +1,6 @@
 package com.uteq.backend.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 // refreshToken viaja SOLO como cookie HttpOnly+Secure+SameSite=Strict (ver

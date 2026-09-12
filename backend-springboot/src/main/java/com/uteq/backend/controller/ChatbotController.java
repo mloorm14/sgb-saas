@@ -1,9 +1,9 @@
 package com.uteq.backend.controller;
 
 import com.uteq.backend.chatbot.ChatbotOrchestrator;
-import com.uteq.backend.dto.MensajeChatHistorialDTO;
-import com.uteq.backend.dto.MensajeChatRequestDTO;
-import com.uteq.backend.dto.MensajeChatResponseDTO;
+import com.uteq.backend.dto.MessageChatHistoryDTO;
+import com.uteq.backend.dto.MessageChatRequestDTO;
+import com.uteq.backend.dto.MessageChatResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -54,14 +54,15 @@ public class ChatbotController {
             @ApiResponse(responseCode = "429", description = "Límite de mensajes por minuto excedido")
     })
     /**
-     * Executes the enviarMensaje operation.
-     * @param dto value required by the operation
-     * @param authentication value required by the operation
-     * @return operation result
+     * Envia send message usando los datos y destinatarios recibidos.
+     *
+     * @param dto datos validados de la peticion con la informacion necesaria para ejecutar la operacion
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
-    public ResponseEntity<MensajeChatResponseDTO> enviarMensaje(
-            @Valid @RequestBody MensajeChatRequestDTO dto, Authentication authentication) {
-        return ResponseEntity.ok(chatbotOrchestrator.enviarMensaje(dto, authentication));
+    public ResponseEntity<MessageChatResponseDTO> sendMessage(
+            @Valid @RequestBody MessageChatRequestDTO dto, Authentication authentication) {
+        return ResponseEntity.ok(chatbotOrchestrator.sendMessage(dto, authentication));
     }
 
     // ── GET /api/v1/chatbot/sesiones/{id}/historial ────────
@@ -76,13 +77,14 @@ public class ChatbotController {
             @ApiResponse(responseCode = "404", description = "Sesión no encontrada o de otro usuario")
     })
     /**
-     * Executes the historial operation.
-     * @param id value required by the operation
-     * @param authentication value required by the operation
-     * @return operation result
+     * Procesa history y devuelve el resultado calculado por el backend.
+     *
+     * @param id identificador del registro que se usa para ubicar el recurso en la base de datos
+     * @param authentication identidad autenticada usada para aplicar permisos y registrar autoria de la accion
+     * @return respuesta HTTP con el estado y el cuerpo definidos por la operacion
      */
-    public ResponseEntity<List<MensajeChatHistorialDTO>> historial(
+    public ResponseEntity<List<MessageChatHistoryDTO>> history(
             @PathVariable UUID id, Authentication authentication) {
-        return ResponseEntity.ok(chatbotOrchestrator.obtenerHistorial(id, authentication));
+        return ResponseEntity.ok(chatbotOrchestrator.getHistory(id, authentication));
     }
 }

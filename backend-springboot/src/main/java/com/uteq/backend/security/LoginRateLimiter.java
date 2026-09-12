@@ -32,81 +32,74 @@ public class LoginRateLimiter {
     private long rateLimitWindowSeconds;
 
     /**
-
-     * Executes the estaBloqueado operation.
-
-     * @param correo value required by the operation
-
-     * @param ip value required by the operation
-
-     * @return operation result
-
+     * Procesa esta blocked y devuelve el resultado calculado por el backend.
+     *
+     * @param email texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @param ip valor de entrada ip usado por la operacion para completar su regla de negocio
+     * @return true cuando la comprobacion se cumple; false en caso contrario
      */
 
-    public boolean estaBloqueado(String correo, String ip) {
+    public boolean estaBlocked(String email, String ip) {
         try {
-            String valor = redisTemplate.opsForValue().get(key(correo, ip));
-            return valor != null && Long.parseLong(valor) >= maxAttempts;
+            String value = redisTemplate.opsForValue().get(key(email, ip));
+            return value != null && Long.parseLong(value) >= maxAttempts;
         } catch (DataAccessException e) {
-            log.warn("Redis no disponible en estaBloqueado (fail-open, sin bloqueo): correo={}", correo, e);
+            log.warn("Redis no disponible en estaBloqueado (fail-open, sin bloqueo): correo={}", email, e);
             return false;
         }
     }
 
     /**
-     * Incrementa el contador. El TTL de la ventana se fija solo en el
-     * primer intento fallido (cuando el contador pasa de 0 a 1) -- así la
-     * ventana es una ventana fija desde el primer fallo, no se renueva en
-     * cada intento subsiguiente (evita que un atacante lento mantenga el
-     * bloqueo indefinidamente fallando un intento cada pocos minutos).
+     * Registra register failure validando los datos de entrada antes de persistir cambios.
+     *
+     * @param email texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @param ip valor de entrada ip usado por la operacion para completar su regla de negocio
      */
-    public void registrarFallo(String correo, String ip) {
+    public void registerFailure(String email, String ip) {
         try {
-            String llave = key(correo, ip);
-            Long nuevoValor = redisTemplate.opsForValue().increment(llave);
-            if (nuevoValor != null && nuevoValor == 1L) {
-                redisTemplate.expire(llave, Duration.ofSeconds(rateLimitWindowSeconds));
+            String key = key(email, ip);
+            Long freshValue = redisTemplate.opsForValue().increment(key);
+            if (freshValue != null && freshValue == 1L) {
+                redisTemplate.expire(key, Duration.ofSeconds(rateLimitWindowSeconds));
             }
         } catch (DataAccessException e) {
-            log.warn("Redis no disponible en registrarFallo (contador no incrementado): correo={}", correo, e);
+            log.warn("Redis no disponible en registrarFallo (contador no incrementado): correo={}", email, e);
         }
     }
 
     /**
-
-     * Executes the resetear operation.
-
-     * @param correo value required by the operation
-
-     * @param ip value required by the operation
-
+     * Ejecuta resetear aplicando las validaciones necesarias del proceso.
+     *
+     * @param email texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @param ip valor de entrada ip usado por la operacion para completar su regla de negocio
      */
 
-    public void resetear(String correo, String ip) {
+    public void resetear(String email, String ip) {
         try {
-            redisTemplate.delete(key(correo, ip));
+            redisTemplate.delete(key(email, ip));
         } catch (DataAccessException e) {
-            log.warn("Redis no disponible en resetear (contador no limpiado): correo={}", correo, e);
+            log.warn("Redis no disponible en resetear (contador no limpiado): correo={}", email, e);
         }
     }
 
     /**
-     * Segundos restantes de la ventana de bloqueo, para informar al
-     * usuario cuánto debe esperar. Devuelve el TTL de la ventana completa
-     * si por alguna razón Redis no expone un TTL preciso (ej. -1/-2 de
-     * {@code getExpire}), en vez de un número negativo confuso.
+     * Procesa seconds restantes y devuelve el resultado calculado por el backend.
+     *
+     * @param email texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @param ip valor de entrada ip usado por la operacion para completar su regla de negocio
+     * @return valor numerico calculado o recuperado por la operacion
      */
-    public long segundosRestantes(String correo, String ip) {
+    public long secondsRestantes(String email, String ip) {
         try {
-            Long ttl = redisTemplate.getExpire(key(correo, ip));
+            Long ttl = redisTemplate.getExpire(key(email, ip));
             return (ttl == null || ttl < 0) ? rateLimitWindowSeconds : ttl;
         } catch (DataAccessException e) {
-            log.warn("Redis no disponible en segundosRestantes (se informa ventana completa): correo={}", correo, e);
+            log.warn("Redis no disponible en segundosRestantes (se informa ventana completa): correo={}", email, e);
             return rateLimitWindowSeconds;
         }
     }
 
-    private String key(String correo, String ip) {
-        return KEY_PREFIX + correo + ":" + ip;
+    private String key(String email, String ip) {
+        return KEY_PREFIX + email + ":" + ip;
     }
 }

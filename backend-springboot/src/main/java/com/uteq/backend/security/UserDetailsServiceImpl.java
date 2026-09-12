@@ -1,8 +1,7 @@
 package com.uteq.backend.security;
 
-import com.uteq.backend.entity.Rol;
-import com.uteq.backend.entity.Usuario;
-import com.uteq.backend.repository.UsuarioRepository;
+import com.uteq.backend.entity.Role;
+import com.uteq.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -26,20 +25,21 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     private static final String ESTADO_BLOQUEADO_POR_MULTA = "BLOQUEADO_POR_MULTA";
     private static final Set<String> ESTADOS_DESHABILITADOS = Set.of("INACTIVO", "PENDIENTE_VERIFICACION");
 
-    private final UsuarioRepository usuarioRepository;
+    private final UserRepository userRepository;
 
     @Override
     /**
-     * Executes the loadUserByUsername operation.
-     * @param correo value required by the operation
-     * @return operation result
-     * @throws UsernameNotFoundException when the operation cannot be completed
+     * Procesa load user by username y devuelve el resultado calculado por el backend.
+     *
+     * @param email texto de busqueda o filtro usado para reducir los resultados devueltos
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
+     * @throws UsernameNotFoundException si la operacion no puede completarse por validacion, permisos o fallo del recurso asociado
      */
-    public UserDetails loadUserByUsername(String correo) throws UsernameNotFoundException {
-        Usuario usuario = usuarioRepository.findByCorreo(correo)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con correo: " + correo));
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        com.uteq.backend.entity.User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con correo: " + email));
 
-        String estadoNombre = usuario.getEstado().getNombre();
+        String statusName = user.getStatus().getName();
 
         // roles.nombre en la BD no lleva prefijo ("LECTOR", no "ROLE_LECTOR").
         // User.builder().roles(...) de Spring Security antepone "ROLE_"
@@ -47,16 +47,16 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         // ("hasAnyRole('LECTOR', ...)") ya existentes en LibroController,
         // que también comparan anteponiendo "ROLE_" a lo que reciben.
         // Ambos lados deben coincidir en anteponer el prefijo una sola vez.
-        String[] roles = usuario.getRoles().stream()
-                .map(Rol::getNombre)
+        String[] roles = user.getRoles().stream()
+                .map(Role::getName)
                 .toArray(String[]::new);
 
         return User.builder()
-                .username(usuario.getCorreo())
-                .password(usuario.getPasswordHash())
+                .username(user.getEmail())
+                .password(user.getPasswordHash())
                 .roles(roles)
-                .accountLocked(ESTADO_BLOQUEADO_POR_MULTA.equals(estadoNombre))
-                .disabled(ESTADOS_DESHABILITADOS.contains(estadoNombre))
+                .accountLocked(ESTADO_BLOQUEADO_POR_MULTA.equals(statusName))
+                .disabled(ESTADOS_DESHABILITADOS.contains(statusName))
                 .build();
     }
 }

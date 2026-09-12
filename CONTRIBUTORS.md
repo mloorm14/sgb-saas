@@ -9,8 +9,10 @@ que esa persona lo ejerció. Entrega Final.
 ## Conteo real de commits (identidades unificadas)
 
 Hay múltiples identidades Git por persona (variaciones de nombre/email
-por distintas máquinas/configuraciones). Conteo sobre `git log --no-merges`
-(1306 commits totales al cierre de esta revisión), unificando alias por persona:
+por distintas máquinas/configuraciones). Para que la auditoría sea
+reproducible y no dependa de una suma manual, el repositorio incluye
+`.mailmap` con la unificación explícita de alias conocidos; el conteo se
+recalcula con `git shortlog -sne --no-merges --use-mailmap`.
 
 | Persona | Alias Git considerados | Commits |
 |---|---|---|
@@ -19,8 +21,8 @@ por distintas máquinas/configuraciones). Conteo sobre `git log --no-merges`
 | Moises Panama Murillo | `MoisesPanama <mpanamam@uteq.edu.ec>`, `Moisés Panamá <mpanamam@uteq.edu.ec>`, `Moises Panama <mpanamam@uteq.edu.ec>` | **291** |
 
 710+303+291 = 1304, más 1 de `TeilorSuit` y 1 del bot = 1306. Para
-re-sincronizar al cierre: `git rev-list --count --no-merges <tag>` y
-`git shortlog -sne --no-merges <tag>`, unificando los alias de arriba.
+re-sincronizar al cierre: `git rev-list --count --no-merges <rev>` y
+`git shortlog -sne --no-merges --use-mailmap <rev>`.
 
 Excluidos del conteo de autoría humana: `copilot-swe-agent[bot]` (1 commit,
 agente automatizado, no es una persona del equipo). El commit
@@ -51,9 +53,10 @@ Rol nominal en el equipo: Tech Lead / DevOps / Seguridad.
 - **Validation** — verificación en vivo de cada cambio de seguridad/cache
   contra el stack Docker real, documentada en `docs/mediciones/sec/`.
 - **Data curation** — creación y mantenimiento de
-  `docs/mediciones/DATA-DICTIONARY.md` y `docs/mediciones/DATA-PROVENANCE.md`
-  (commits `14b941e`, `e6f6c6c`), incluida la corrección de hashes de
-  procedencia rotos (`3063f6d`).
+  `docs/mediciones/DATA-DICTIONARY.md` y `docs/mediciones/DATA-PROVENANCE.md`;
+  las referencias históricas a hashes no alcanzables tras la reescritura
+  del historial quedan declaradas como invalidadas, no reemplazadas por
+  hashes inventados.
 - **Formal analysis** — autoría exclusiva de `scripts/perf-analysis.py`
   (Wilcoxon pareado + Cliff's delta sobre p95 de k6); evaluación y
   documentación de por qué la corrección por comparaciones múltiples no
@@ -118,8 +121,8 @@ Rol nominal en el equipo: Frontend.
 - **Visualization** — 29 mockups HTML de referencia bajo
   `docs/mockups/` (dashboards, auditoría, configuración, credencial QR,
   chatbot); generación de los gráficos de SUS (`sus_boxplot.svg/png`,
-  `sus_items_breakdown.svg`, paleta accesible a daltonismo), commit
-  `d8b18ec`.
+  `sus_items_breakdown.svg`, paleta accesible a daltonismo), hash
+  histórico invalidado.
 - **Data curation** — creación del archivo SUS de validación
   (`docs/mediciones/sus/sus.csv`) y su posterior retiro declarado como
   evidencia empírica (N=0 en todo el
@@ -127,11 +130,13 @@ Rol nominal en el equipo: Frontend.
   sin commit de datos reales), eliminación de
   15 PDFs con PII del historial de Git por cumplimiento de protección de
   datos, actualización de `ETHICS.md`, `DATA-DICTIONARY.md` (sección SUS,
-  22 campos) y `DATA-PROVENANCE.md` (commit `d8b18ec`).
+  22 campos) y `DATA-PROVENANCE.md` (hash histórico invalidado por la
+  reescritura del historial).
 - **Formal analysis** — reescritura completa de
   `scripts/sus-analysis.ipynb`: estadística descriptiva, intervalo de
-  confianza al 95% y desglose por ítem del instrumento SUS (commit
-  `d8b18ec`).
+  confianza al 95% y desglose por ítem del instrumento SUS (evidencia
+  versionada en el cuaderno; hash histórico invalidado por la reescritura
+  del historial).
 - **Validation** — evidencia E2E del frontend contra el backend real
   para préstamos/reservaciones/multas (commit `84ffc30`); corrección de
   brechas de accesibilidad WCAG AA (modales, objetivos táctiles, ARIA,

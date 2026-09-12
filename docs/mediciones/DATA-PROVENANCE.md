@@ -8,7 +8,8 @@ por última vez. Requisito R2 de la guía. Complementa a
 crudo) sin repetirlo -- este archivo responde "de dónde viene", no "qué
 forma tiene".
 
-**Fecha**: 2026-08-31. **Commit base**: `39beb37`. **Método**: se
+**Fecha**: 2026-08-31. **Commit base histórico**: hash invalidado por
+reescritura del historial. **Método**: se
 recorrieron los 13 capítulos de `docs/capitulos/*.tex` buscando
 `\begin{table}`, `\begin{longtable}`, `\begin{tabularx}`,
 `\begin{tabular}` e `\includegraphics` (no solo los que tienen
@@ -17,7 +18,10 @@ corresponden a tablas reales sin `\label`, encontradas igual). El commit
 de cada archivo crudo se obtuvo con `git log -1 -- <archivo>` (o
 `git log -1 -L <líneas>:<archivo>` cuando hacía falta precisar qué
 commit tocó una tabla específica dentro de un capítulo con más de un
-commit en su historial), no se transcribió de memoria ni se asumió.
+commit en su historial), no se transcribió de memoria ni se asumió. Donde
+un hash histórico ya no existe en el repositorio actual, se declara como
+invalidado por reescritura de historia en vez de sustituirlo por otro sin
+trazabilidad.
 
 **Columna "Script"**: varias tablas se calcularon con un conteo manual
 verificado (p. ej. `python3` con `csv.DictReader` ejecutado durante la

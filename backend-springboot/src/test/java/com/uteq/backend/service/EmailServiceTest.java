@@ -43,13 +43,13 @@ class EmailServiceTest {
     }
 
     @Test
-    void enviarCorreo_smtpDisponible_retornaTrueYDespachaElMensaje() {
+    void sendEmail_smtpAvailable_retornaTrueYDespachaMessage() {
         MimeMessage mimeMessage = new MimeMessage((Session) null);
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
 
-        boolean resultado = emailService.enviarCorreo(DESTINATARIO, ASUNTO, CUERPO);
+        boolean result = emailService.sendEmail(DESTINATARIO, ASUNTO, CUERPO);
 
-        assertTrue(resultado);
+        assertTrue(result);
         verify(mailSender).send(mimeMessage);
     }
 
@@ -57,13 +57,13 @@ class EmailServiceTest {
     // EmailService: un préstamo/devolución/registro es válido con o sin
     // correo enviado.
     @Test
-    void enviarCorreo_smtpCaido_capturaLaExcepcionYRetornaFalse() {
+    void sendEmail_smtpCaido_capturaExceptionYRetornaFalse() {
         MimeMessage mimeMessage = new MimeMessage((Session) null);
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
         doThrow(new MailSendException("Connection refused")).when(mailSender).send(mimeMessage);
 
-        boolean resultado = emailService.enviarCorreo(DESTINATARIO, ASUNTO, CUERPO);
+        boolean result = emailService.sendEmail(DESTINATARIO, ASUNTO, CUERPO);
 
-        assertFalse(resultado);
+        assertFalse(result);
     }
 }

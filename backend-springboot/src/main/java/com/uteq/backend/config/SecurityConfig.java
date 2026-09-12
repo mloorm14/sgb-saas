@@ -34,8 +34,9 @@ public class SecurityConfig {
 
     @Bean
     /**
-     * Executes the passwordEncoder operation.
-     * @return operation result
+     * Handles password encoder.
+     *
+     * @return password encoder with the resulting state after the operation
      */
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12);
@@ -43,10 +44,11 @@ public class SecurityConfig {
 
     @Bean
     /**
-     * Executes the authenticationManager operation.
-     * @param config value required by the operation
-     * @return operation result
-     * @throws Exception when the operation cannot be completed
+     * Procesa authentication manager y devuelve el resultado calculado por el backend.
+     *
+     * @param config objeto del framework usado para integrar esta operacion con Spring o Jackson
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
+     * @throws Exception si la operacion no puede completarse por validacion, permisos o fallo del recurso asociado
      */
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
@@ -54,8 +56,9 @@ public class SecurityConfig {
 
     @Bean
     /**
-     * Executes the authenticationProvider operation.
-     * @return operation result
+     * Handles authentication provider.
+     *
+     * @return authentication provider with the resulting state after the operation
      */
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsServiceImpl);
@@ -65,10 +68,11 @@ public class SecurityConfig {
 
     @Bean
     /**
-     * Executes the filterChain operation.
-     * @param http value required by the operation
-     * @return operation result
-     * @throws Exception when the operation cannot be completed
+     * Procesa filter chain y devuelve el resultado calculado por el backend.
+     *
+     * @param http objeto del framework usado para integrar esta operacion con Spring o Jackson
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
+     * @throws Exception si la operacion no puede completarse por validacion, permisos o fallo del recurso asociado
      */
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http

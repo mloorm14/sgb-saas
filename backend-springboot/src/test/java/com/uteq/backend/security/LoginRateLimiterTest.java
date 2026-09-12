@@ -34,9 +34,9 @@ class LoginRateLimiterTest {
     @InjectMocks
     private LoginRateLimiter loginRateLimiter;
 
-    private void configurarLimites(int maxAttempts, long ventanaSegundos) {
+    private void configurarLimites(int maxAttempts, long ventanaSeconds) {
         ReflectionTestUtils.setField(loginRateLimiter, "maxAttempts", maxAttempts);
-        ReflectionTestUtils.setField(loginRateLimiter, "rateLimitWindowSeconds", ventanaSegundos);
+        ReflectionTestUtils.setField(loginRateLimiter, "rateLimitWindowSeconds", ventanaSeconds);
     }
 
     // Escenario del 6to intento de la auditoría OWASP A07: con
@@ -44,58 +44,58 @@ class LoginRateLimiterTest {
     // contador que ya vale "5" (5 fallos previos) debe reportar bloqueado
     // -- ese es exactamente el estado antes del 6to intento.
     @Test
-    void estaBloqueado_cuandoContadorIgualaElMaximo_retornaTrue() {
+    void estaBlocked_cuandoContadorIgualaMaximo_retornaTrue() {
         configurarLimites(5, 900);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get(KEY)).thenReturn("5");
 
-        assertTrue(loginRateLimiter.estaBloqueado(CORREO, IP));
+        assertTrue(loginRateLimiter.estaBlocked(CORREO, IP));
     }
 
     @Test
-    void estaBloqueado_cuandoContadorPorDebajoDelMaximo_retornaFalse() {
+    void estaBlocked_cuandoContadorByDebajoMaximo_retornaFalse() {
         configurarLimites(5, 900);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get(KEY)).thenReturn("4");
 
-        assertFalse(loginRateLimiter.estaBloqueado(CORREO, IP));
+        assertFalse(loginRateLimiter.estaBlocked(CORREO, IP));
     }
 
     @Test
-    void estaBloqueado_sinIntentosPrevios_retornaFalse() {
+    void estaBlocked_withoutAttemptsPrevios_retornaFalse() {
         configurarLimites(5, 900);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get(KEY)).thenReturn(null);
 
-        assertFalse(loginRateLimiter.estaBloqueado(CORREO, IP));
+        assertFalse(loginRateLimiter.estaBlocked(CORREO, IP));
     }
 
     // El TTL de la ventana se fija SOLO quando el contador pasa de 0 a 1
     // (primer fallo) -- no en cada incremento subsiguiente.
     @Test
-    void registrarFallo_primerIntento_fijaTtlDeLaVentana() {
+    void registerFailure_primerAttempt_fijaTtlVentana() {
         configurarLimites(5, 900);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.increment(KEY)).thenReturn(1L);
 
-        loginRateLimiter.registrarFallo(CORREO, IP);
+        loginRateLimiter.registerFailure(CORREO, IP);
 
         verify(redisTemplate).expire(KEY, Duration.ofSeconds(900));
     }
 
     @Test
-    void registrarFallo_intentoSubsiguiente_noRefijaElTtl() {
+    void registerFailure_attemptSubsiguiente_notRefijaTtl() {
         configurarLimites(5, 900);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.increment(KEY)).thenReturn(3L);
 
-        loginRateLimiter.registrarFallo(CORREO, IP);
+        loginRateLimiter.registerFailure(CORREO, IP);
 
         verify(redisTemplate, never()).expire(anyString(), org.mockito.ArgumentMatchers.any(Duration.class));
     }
 
     @Test
-    void resetear_borraLaClave() {
+    void resetear_borraKey() {
         loginRateLimiter.resetear(CORREO, IP);
 
         verify(redisTemplate).delete(KEY);

@@ -12,8 +12,9 @@ public class SchedulerConfig {
 
     @Bean
     /**
-     * Executes the taskScheduler operation.
-     * @return operation result
+     * Handles task scheduler.
+     *
+     * @return task scheduler with the resulting state after the operation
      */
     public TaskScheduler taskScheduler() {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();

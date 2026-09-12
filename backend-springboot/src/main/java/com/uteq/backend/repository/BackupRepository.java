@@ -11,17 +11,17 @@ import java.time.OffsetDateTime;
 @Repository
 public interface BackupRepository extends JpaRepository<Backup, Long> {
 
-    @Query("SELECT b FROM Backup b ORDER BY b.creadoEn DESC")
+    @Query("SELECT b FROM Backup b ORDER BY b.created DESC")
     List<Backup> findAllOrderByCreatedDesc();
 
-    @Query("SELECT b FROM Backup b WHERE b.creadoEn >= :desde AND b.creadoEn <= :hasta ORDER BY b.creadoEn DESC")
-    List<Backup> findByFechaRange(@Param("desde") OffsetDateTime desde, @Param("hasta") OffsetDateTime hasta);
+    @Query("SELECT b FROM Backup b WHERE b.created >= :from AND b.created <= :until ORDER BY b.created DESC")
+    List<Backup> findByDateRange(@Param("from") OffsetDateTime from, @Param("until") OffsetDateTime until);
 
-    @Query("SELECT b FROM Backup b WHERE b.estado = :estado ORDER BY b.creadoEn DESC")
-    List<Backup> findByEstado(@Param("estado") String estado);
+    @Query("SELECT b FROM Backup b WHERE b.status = :status ORDER BY b.created DESC")
+    List<Backup> findByStatus(@Param("status") String status);
 
-    @Query("SELECT b FROM Backup b WHERE b.tipo = :tipo ORDER BY b.creadoEn DESC")
-    List<Backup> findByTipo(@Param("tipo") String tipo);
+    @Query("SELECT b FROM Backup b WHERE b.type = :type ORDER BY b.created DESC")
+    List<Backup> findByType(@Param("type") String type);
 
 
 }

@@ -88,24 +88,24 @@ Cuatro contenedores, alineados 1:1 con \texttt{docker-compose.yml}:
   \end{itemize}
 
 El diagrama entidad-relación real del esquema PostgreSQL
-(\autoref{fig:der-real}) se generó automáticamente aplicando, en orden
-numérico, las 35 migraciones Flyway de \texttt{database/migrations/}
-(\texttt{V1} a \texttt{V36}, con el hueco ya documentado en
-\texttt{V29}) sobre una instancia PostgreSQL~16 real y limpia, y
-extrayendo el esquema resultante con \texttt{eralchemy2}. El resultado
-tiene 44 tablas -- más que las 26 citadas en la enumeración de arriba,
-cifra que no se corrige aquí por quedar fuera del alcance de esta
-tarea puntual; ver nota en el reporte de esta sesión.
+(\autoref{fig:der-real}) se generó aplicando, en orden numérico, las
+migraciones Flyway de \texttt{database/migrations/} sobre una instancia
+PostgreSQL~16 real y limpia. Por legibilidad del documento final y para
+cumplir la rúbrica de figuras en inglés, la figura insertada usa aliases
+en inglés para las principales áreas del esquema; el PDF técnico con los
+identificadores reales de base de datos permanece versionado en
+\texttt{docs/diagramas/der-real.pdf}. El archivo histórico
+\texttt{docs/diagramas/Diagrama\_ER.png}, correspondiente por error a un
+dominio clínico ajeno al proyecto, queda documentado como tal en
+\texttt{OBS-21}.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.95\textwidth]{diagramas/der-real.pdf}
-\caption{Diagrama entidad-relación real, generado automáticamente con
-\texttt{eralchemy2} a partir del esquema PostgreSQL reconstruido desde
-las 35 migraciones Flyway de \texttt{database/migrations/}. Reemplaza
-a \texttt{docs/diagramas/Diagrama\_ER.png}, que correspondía por error
-a un dominio clínico ajeno a este proyecto (ver OBS-21 en
-\texttt{docs/observaciones/OBSERVACIONES.md}).}
+\includegraphics[width=0.95\textwidth]{diagramas/er-english.pdf}
+\caption{Entity relationship overview with English labels, generated from
+the real PostgreSQL schema categories used by SGB-SaaS. The underlying
+database identifiers remain unchanged and are preserved in
+\texttt{docs/diagramas/der-real.pdf}.}
 \label{fig:der-real}
 \end{figure}
 

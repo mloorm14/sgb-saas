@@ -24,33 +24,42 @@ public class RedisConfig {
 
     // Caches con serialización JDK estándar (PageImpl no deserializa en JSON).
     // "libros": paginado del catálogo. "sugerencias-libros": autocompletado con TTL corto.
+    /**
+     * Procesa cache manager y devuelve el resultado calculado por el backend.
+     *
+     * @param connectionFactory valor de entrada connectionFactory usado por la operacion para completar su regla de negocio
+     * @param booksTtlSeconds valor de entrada booksTtlSeconds usado por la operacion para completar su regla de negocio
+     * @param suggestionsTtlSeconds valor de entrada suggestionsTtlSeconds usado por la operacion para completar su regla de negocio
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
+     */
     @Bean
     public CacheManager cacheManager(
             RedisConnectionFactory connectionFactory,
-            @Value("${app.cache.libros.ttl-seconds}") long librosTtlSeconds,
-            @Value("${app.cache.sugerencias.ttl-seconds}") long sugerenciasTtlSeconds) {
+            @Value("${app.cache.libros.ttl-seconds}") long booksTtlSeconds,
+            @Value("${app.cache.sugerencias.ttl-seconds}") long suggestionsTtlSeconds) {
         RedisCacheConfiguration baseConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .disableCachingNullValues();
 
         // TTL externo (application.yml), nunca hardcodeado en Java.
-        RedisCacheConfiguration librosConfig = baseConfig.entryTtl(Duration.ofSeconds(librosTtlSeconds));
+        RedisCacheConfiguration booksConfig = baseConfig.entryTtl(Duration.ofSeconds(booksTtlSeconds));
 
         // TTL propio en segundos: el autocompletado se teclea letra por letra.
-        RedisCacheConfiguration sugerenciasConfig = baseConfig.entryTtl(Duration.ofSeconds(sugerenciasTtlSeconds));
+        RedisCacheConfiguration suggestionsConfig = baseConfig.entryTtl(Duration.ofSeconds(suggestionsTtlSeconds));
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(baseConfig)
                 .withInitialCacheConfigurations(Map.of(
-                        "libros", librosConfig,
-                        "sugerencias-libros", sugerenciasConfig))
+                        "libros", booksConfig,
+                        "sugerencias-libros", suggestionsConfig))
                 .transactionAware()
                 .build();
     }
 
     @Bean
     /**
-     * Executes the cacheErrorHandler operation.
-     * @return operation result
+     * Handles cache error handler.
+     *
+     * @return cache error handler with the resulting state after the operation
      */
     public CacheErrorHandler cacheErrorHandler() {
         return new CacheErrorHandler() {
@@ -72,9 +81,10 @@ public class RedisConfig {
 
     @Bean
     /**
-     * Executes the redisTemplate operation.
-     * @param connectionFactory value required by the operation
-     * @return operation result
+     * Procesa redis template y devuelve el resultado calculado por el backend.
+     *
+     * @param connectionFactory valor de entrada connectionFactory usado por la operacion para completar su regla de negocio
+     * @return objeto con el resultado de la operacion y los datos relevantes para el cliente
      */
     public RedisTemplate<String, String> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, String> template = new RedisTemplate<>();

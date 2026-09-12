@@ -58,3 +58,8 @@ GUIA_ROLES_GUION/
 # versionan los artefactos crudos jacoco.xml/.csv/.exec — punto 14 higiene)
 docs/mediciones/jacoco/html/
 docs/mediciones/jacoco/*/html/
+
+# Reportes HTML generados por herramientas de seguridad (regenerables; se
+# conservan resúmenes/documentos livianos en Markdown cuando aplique)
+docs/mediciones/sec/zap/*.html
+docs/mediciones/sec/static-analysis/*.html
