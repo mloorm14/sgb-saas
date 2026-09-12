@@ -80,7 +80,7 @@ class LoanFineProcedureIntegrationTest {
     void registerLoanReturn_withAtraso_generaFineYBloqueaUser() {
         Long userId = createUserActive();
         Long bookId = createBookWithStock();
-        Long loanId = loanProcRepo.spCreateLoan(userId, bookId, userId, 7);
+        Long loanId = loanProcRepo.spCreateLoanProcedure(userId, bookId, userId, 7);
 
         forzarAtraso(loanId, 2);
 
@@ -104,7 +104,7 @@ class LoanFineProcedureIntegrationTest {
     void registerLoanReturn_withoutAtraso_notGeneraFine() {
         Long userId = createUserActive();
         Long bookId = createBookWithStock();
-        Long loanId = loanProcRepo.spCreateLoan(userId, bookId, userId, 7);
+        Long loanId = loanProcRepo.spCreateLoanProcedure(userId, bookId, userId, 7);
 
         Map<String, Object> result = loanProcRepo.spRegisterLoanReturn(loanId);
 
@@ -117,7 +117,7 @@ class LoanFineProcedureIntegrationTest {
     void registerLoanReturn_dosVeces_lanzaExceptionWithSqlStateLB409() {
         Long userId = createUserActive();
         Long bookId = createBookWithStock();
-        Long loanId = loanProcRepo.spCreateLoan(userId, bookId, userId, 7);
+        Long loanId = loanProcRepo.spCreateLoanProcedure(userId, bookId, userId, 7);
         loanProcRepo.spRegisterLoanReturn(loanId); // primera devolución, OK
 
         assertThatThrownBy(() -> loanProcRepo.spRegisterLoanReturn(loanId))
@@ -130,14 +130,14 @@ class LoanFineProcedureIntegrationTest {
     void payFine_unicaPending_desbloqueaUser() {
         Long userId = createUserActive();
         Long bookId = createBookWithStock();
-        Long loanId = loanProcRepo.spCreateLoan(userId, bookId, userId, 7);
+        Long loanId = loanProcRepo.spCreateLoanProcedure(userId, bookId, userId, 7);
         forzarAtraso(loanId, 2);
         loanProcRepo.spRegisterLoanReturn(loanId); // genera la multa PENDIENTE
 
         Long fineId = jdbcTemplate.queryForObject(
                 "SELECT id FROM multas WHERE prestamo_id = ?", Long.class, loanId);
 
-        Map<String, Object> result = fineProcRepo.spPayFine(fineId);
+        Map<String, Object> result = fineProcRepo.spPayFineProcedure(fineId);
 
         assertThat(result.get("o_multa_id")).isEqualTo(fineId);
         assertThat(result.get("o_usuario_desbloqueado")).isEqualTo(true);
@@ -153,14 +153,14 @@ class LoanFineProcedureIntegrationTest {
     void voidFine_withRoleManager_desbloqueaUserYRegistraAudit() {
         Long userId = createUserActive();
         Long bookId = createBookWithStock();
-        Long loanId = loanProcRepo.spCreateLoan(userId, bookId, userId, 7);
+        Long loanId = loanProcRepo.spCreateLoanProcedure(userId, bookId, userId, 7);
         forzarAtraso(loanId, 2);
         loanProcRepo.spRegisterLoanReturn(loanId);
 
         Long fineId = jdbcTemplate.queryForObject(
                 "SELECT id FROM multas WHERE prestamo_id = ?", Long.class, loanId);
 
-        Map<String, Object> result = fineProcRepo.spVoidFine(
+        Map<String, Object> result = fineProcRepo.spVoidFineProcedure(
                 fineId, "Motivo de prueba de integración", "GERENTE");
 
         assertThat(result.get("o_multa_id")).isEqualTo(fineId);
@@ -185,14 +185,14 @@ class LoanFineProcedureIntegrationTest {
     void voidFine_withRoleInvalid_lanzaExceptionWithSqlStateLB422() {
         Long userId = createUserActive();
         Long bookId = createBookWithStock();
-        Long loanId = loanProcRepo.spCreateLoan(userId, bookId, userId, 7);
+        Long loanId = loanProcRepo.spCreateLoanProcedure(userId, bookId, userId, 7);
         forzarAtraso(loanId, 2);
         loanProcRepo.spRegisterLoanReturn(loanId);
 
         Long fineId = jdbcTemplate.queryForObject(
                 "SELECT id FROM multas WHERE prestamo_id = ?", Long.class, loanId);
 
-        assertThatThrownBy(() -> fineProcRepo.spVoidFine(fineId, "motivo", "BIBLIOTECARIO"))
+        assertThatThrownBy(() -> fineProcRepo.spVoidFineProcedure(fineId, "motivo", "BIBLIOTECARIO"))
                 .isInstanceOf(DataAccessException.class)
                 .satisfies(ex -> assertThat(sqlState((Exception) ex)).isEqualTo("LB422"));
     }

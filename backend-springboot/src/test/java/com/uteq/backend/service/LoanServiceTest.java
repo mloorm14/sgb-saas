@@ -69,7 +69,7 @@ class LoanServiceTest {
         Authentication auth = authComoRole("biblio@correo.com", "BIBLIOTECARIO");
         given(userRepo.findByEmail("biblio@correo.com"))
                 .willReturn(Optional.of(userWithId(5L)));
-        given(loanProcRepo.spCreateLoan(1L, 2L, 5L, 7)).willReturn(99L);
+        given(loanProcRepo.spCreateLoanProcedure(1L, 2L, 5L, 7)).willReturn(99L);
         given(loanRepo.findById(99L)).willReturn(Optional.of(loanWithId(99L)));
 
         LoanResponseDTO result = loanService.create(
@@ -267,14 +267,14 @@ class LoanServiceTest {
         given(userRepo.findByEmail("biblio@correo.com"))
                 .willReturn(Optional.of(userWithId(5L)));
         given(credentialQrService.resolveByToken(token)).willReturn(userWithId(3L));
-        given(loanProcRepo.spCreateLoan(3L, 2L, 5L, 7)).willReturn(100L);
+        given(loanProcRepo.spCreateLoanProcedure(3L, 2L, 5L, 7)).willReturn(100L);
         given(loanRepo.findById(100L)).willReturn(Optional.of(loanWithId(100L)));
 
         LoanResponseDTO result = loanService.create(
                 new LoanRequestDTO(null, token, 2L, 7, null), auth);
 
         assertThat(result.id()).isEqualTo(100L);
-        verify(loanProcRepo).spCreateLoan(3L, 2L, 5L, 7);
+        verify(loanProcRepo).spCreateLoanProcedure(3L, 2L, 5L, 7);
     }
 
     // ── Test 13: credencial QR que no resuelve a ningún usuario ──
@@ -329,7 +329,7 @@ class LoanServiceTest {
                 .willReturn(Optional.of(statusReservation(2, "LISTA_PARA_RETIRO")));
         given(statusReservationRepo.findByName("RETIRADA"))
                 .willReturn(Optional.of(statusReservation(3, "RETIRADA")));
-        given(loanProcRepo.spCreateLoan(1L, 2L, 5L, 7)).willReturn(99L);
+        given(loanProcRepo.spCreateLoanProcedure(1L, 2L, 5L, 7)).willReturn(99L);
         given(loanRepo.findById(99L)).willReturn(Optional.of(loanCreated));
 
         LoanResponseDTO result = loanService.create(
