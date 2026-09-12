@@ -1,4 +1,4 @@
-package com.uteq.backend.repository;
+﻿package com.uteq.backend.repository;
 
 import java.util.Map;
 
@@ -9,6 +9,6 @@ import java.util.Map;
  * de Hibernate 6 que pgjdbc rechaza en {call ...}.
  */
 public interface LoanProcedureRepositoryCustom {
-    Long spCreateLoanProcedure(Long userId, Long bookId, Long librarianId, Integer daysLoan);
+    @org.springframework.data.jpa.repository.query.Procedure(procedureName = "sp_crear_prestamo")`n    Long spCreateLoanProcedure(Long userId, Long bookId, Long librarianId, Integer daysLoan);
     Map<String, Object> spRegisterLoanReturn(Long loanId);
 }
