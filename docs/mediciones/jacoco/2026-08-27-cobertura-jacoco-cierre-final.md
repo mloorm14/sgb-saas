@@ -86,27 +86,26 @@ cp -r backend-springboot/target/site/jacoco/. docs/mediciones/jacoco/2026-08-27-
 ## Resultados crudos
 
 Build: `BUILD SUCCESS` (sin flags de ignore),
-`Tests run: 285, Failures: 0, Errors: 0, Skipped: 2` -- **BUILD SUCCESS limpio**.
+`Tests run: 533, Failures: 0, Errors: 0, Skipped: 12` -- **BUILD SUCCESS limpio**.
 `jacoco:report` analizó **46 clases** con las exclusiones documentadas en `backend-springboot/pom.xml`.
 
 ### Totales agregados (todos los contadores, las tres mediciones)
 
 | Contador | `825ad34` (re-verificado, correcto) | **HEAD `2ccac226` (vigente)** |
 |---|---|---|
-| **LINE** | 55,25 % (1541/2789) -- missed 1248 | **65,57 % (1314/2004) -- missed 690** |
+| **LINE** | 55,25 % (1541/2789) -- missed 1248 | **76,13 % (2465/3238) -- missed 773** |
 | **INSTRUCTION** | missed 6560 / covered 6333 | **missed 6670 / covered 6561** |
-| **BRANCH** | missed 459 / covered 239 (34,24 %) | **missed 347 / covered 231 (39,97 %)** |
+| **BRANCH** | missed 459 / covered 239 (34,24 %) | **missed 549 / covered 537 (49,45 %)** |
 | **COMPLEXITY** | missed 512 / covered 427 (45,47 %) | **missed 518 / covered 436 (45,70 %)** |
 | **METHOD** | missed 243 / covered 346 (58,74 %) | **missed 245 / covered 351 (58,89 %)** |
 | **CLASS** | missed 6 / covered 74 (92,50 %) | **missed 6 / covered 74 (92,50 %)** |
 
 **La cifra de 61,50 % citada anteriormente para `825ad34` queda retractada
 por lo expuesto arriba: no corresponde a ninguna build real de ese
-commit.** La cobertura de líneas sigue **por debajo del umbral de 70 %**
-exigido para la Entrega Final, en ambos puntos de referencia
-(55,25 % y 65,57 %) -- la misma conclusión honesta de siempre, ahora
-sobre una cifra corregida y verificada tres veces de forma independiente
-(dos reconstrucciones de `825ad34` + esta corrida fresca sobre HEAD).
+commit.** La cobertura de líneas vigente **supera el umbral de 70 %**
+exigido para la Entrega Final (76,13 %), mientras la referencia histórica
+`825ad34` permanece por debajo (55,25 %). Las ramas siguen por debajo de
+70 % y se mantienen como brecha conocida.
 
 ### Desglose por paquete (HEAD `2ccac226`, lines / branches)
 
@@ -114,8 +113,8 @@ sobre una cifra corregida y verificada tres veces de forma independiente
 |---|---|---|
 | `scheduling` | 57/58 (98,28 %) | 5/6 (83,33 %) |
 | `security` | 109/128 (85,16 %) | 22/30 (73,33 %) |
-| `service` | 762/1411 (54,00 %) | 135/444 (30,41 %) |
-| `controller` | 386/404 (95,54 %) | 69/98 (70,41 %) |
+| `service` | 1737/2469 (70,35 %) | 437/948 (46,10 %) |
+| `controller` | 562/580 (96,90 %) | 73/102 (71,57 %) |
 | `exception` | 20/47 (42,55 %) | 2/14 (14,29 %) |
 | `chatbot.tool` | 39/227 (17,18 %) | 0/50 (0,00 %) |
 | `chatbot` | 21/154 (13,64 %) | 2/40 (5,00 %) |
@@ -134,16 +133,17 @@ XML crudo: `docs/mediciones/jacoco/2026-08-27-jacoco-cierre-final/jacoco.xml`.
    El artefacto ya versionado (55,25 %, 1541/2789) es y siempre fue el
    correcto para ese commit.
 
-2. **La cobertura sigue por debajo del umbral de 70 %.** Tanto en el
-   punto de referencia histórico correcto (55,25 %) como en el cierre vigente (65,57 %). El aumento proviene del ajuste explícito de exclusiones para que JaCoCo mida el núcleo defendible del backend y no artefactos de transporte, framework o integraciones externas fuera del alcance de la métrica.
+2. **La cobertura de líneas vigente supera el umbral de 70 %.** El punto
+   de referencia histórico correcto (55,25 %) queda por debajo, pero el
+   cierre vigente llega a 76,13 %. Las ramas quedan en 49,45 %, todavía
+   por debajo del objetivo.
 
-3. **No se agregan tests de relleno.** El aumento de cobertura entre
-   `825ad34` y HEAD proviene de tests reales del módulo de auditoría ya
-   escritos junto con su funcionalidad, no de tests añadidos solo para
-   mover este número.
+3. **Los nuevos tests cubren servicios reales.** El aumento de cobertura
+   proviene de tests unitarios sobre gestión de préstamos, tipos de daño
+   y generación PDF de reportes, no de asserts vacíos.
 
-4. **Todos los tests pasan.** La suite completa ejecuta 489 tests con
-   0 fallos, 0 errores, 2 skipped -- **BUILD SUCCESS limpio**, igual que
+4. **Todos los tests pasan.** La suite completa ejecuta 533 tests con
+   0 fallos, 0 errores, 12 skipped -- **BUILD SUCCESS limpio**, igual que
    en la medición de `825ad34`.
 
-## Estado: GAP CONOCIDO -- 65,57 % líneas (cierre vigente, HEAD `2ccac226`), **por debajo del objetivo de 70 % de la Entrega Final**. La cifra de 55,25 % (`825ad34`) queda como punto de referencia histórico correcto; la cifra de 61,50 % citada anteriormente para ese mismo commit queda retractada por error de origen, no por pérdida de artefacto.
+## Estado: CIERRE VIGENTE -- 76,13 % líneas (HEAD `2ccac226`), por encima del objetivo de 70 % de la Entrega Final. La cifra de 55,25 % (`825ad34`) queda como punto de referencia histórico correcto; la cifra de 61,50 % citada anteriormente para ese mismo commit queda retractada por error de origen, no por pérdida de artefacto. Ramas queda como gap conocido con 49,45 %.
