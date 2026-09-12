@@ -214,14 +214,13 @@ la cuenta `u@uteq.edu.ec` tenía asignados **dos roles a la vez** (`LECTOR` y
 en esa fila, así que un `GERENTE` preexistente en esa cuenta no se limpiaba
 solo. El login devolvía `GERENTE`, contradiciendo lo documentado arriba.
 
-Se corrigió con un script SQL aplicado directamente contra la base de
-producción (Neon, branch `production`) que deja esa cuenta con
-**únicamente** el rol `LECTOR`, tal como pretendían V11/V12. **Esta
-corrección no está reflejada como una migración Flyway versionada en
-`database/migrations/`** — es un parche puntual sobre producción para no
-bloquear la defensa; una base reprovisionada desde cero (`make up` /
-clonación limpia) no reproduce este estado hasta que se agregue una
-migración `V__` equivalente al repositorio.
+Se corrigió primero con un script SQL aplicado directamente contra la base
+de producción (Neon, branch `production`) para no bloquear la defensa, y
+después quedó versionado en Flyway mediante
+`database/migrations/V42__fix_usuario_demo_roles_unicos.sql`. Una base
+reprovisionada desde cero (`make up` / clonación limpia) reproduce hoy ese
+estado: la cuenta `u@uteq.edu.ec` queda **únicamente** con rol `LECTOR`,
+activa y verificada.
 
 Además, no existían credenciales demo públicas para el rol `BIBLIOTECARIO`
 ni para un `LECTOR` alternativo separado de `u@uteq.edu.ec`. Se crearon dos

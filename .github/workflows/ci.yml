@@ -116,7 +116,7 @@ jobs:
       # de entorno para este step.
       - name: Build and run tests
         working-directory: ./backend-springboot
-        run: ./mvnw -B clean verify
+        run: ./mvnw -B clean verify -Pintegration-tests
 
       # A.2.3 / criterio P3: `./mvnw verify` ya corrio spotbugs-maven-plugin
       # (con find-sec-bugs) como parte del step de arriba -- si aparecio un

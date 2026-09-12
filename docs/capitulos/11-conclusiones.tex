@@ -36,10 +36,10 @@ $4{,}7$\,\% híbrido, distribución medida sobre los 43 requisitos
 originales de \autoref{sec:matriz-resumen} -- la matriz creció a 46
 requisitos tras el cierre, ver \autoref{cap:ingenieria-requisitos}; el
 desglose porcentual no se recalculó para los 3 nuevos por alcance de
-esta corrección) ni la cobertura de pruebas ($82{,}97$\,\% de líneas),
-pero tuvo un costo real de implementación: una migración forzada de
-\texttt{@Procedure} a \texttt{@Query} nativa por un defecto documentado
-de Hibernate con procedimientos multi-\texttt{OUT}.
+esta corrección) ni la cobertura de pruebas ($78{,}34$\,\% de líneas),
+pero tuvo un costo real de implementación: validar cuidadosamente
+\texttt{@Procedure}/\texttt{@NamedStoredProcedureQuery} para las rutinas
+principales y acotar \texttt{@Query} nativa a las funciones tabulares.
 
 \section{Contribuciones -- recapituladas con evidencia del capítulo de resultados}
 
@@ -56,8 +56,8 @@ reunida, se sostienen así:
     concreto a cada uno de los 46.
   \item Evidencia empírica reproducible y versionada como código: 5
     corridas de k6 con análisis estadístico formal (Wilcoxon, Cliff's
-    delta), cobertura JaCoCo real ($82{,}97$\,\% de líneas, commit
-    \texttt{0d1474d}), y auditoría de accesibilidad/rendimiento con
+    delta), cobertura JaCoCo real ($78{,}34$\,\% de líneas, rama
+    \texttt{fix/errores-encontrados}), y auditoría de accesibilidad/rendimiento con
     Lighthouse -- las tres con datos crudos versionados en
     \texttt{docs/mediciones/}, no capturas de pantalla editadas a mano
     (\autoref{cap:resultados}).
@@ -85,8 +85,8 @@ verificación, catálogo avanzado, panel de administración, seguridad de
 transporte, asistente con IA generativa, e infraestructura de CI), sobre
 una base de 46 requisitos especificados y trazados, con el $100$\,\% de
 los requisitos \texttt{Must} verificados
-(\autoref{cap:ingenieria-requisitos}) y $82{,}97$\,\% de cobertura de
-línea en 247 pruebas automatizadas del backend
+(\autoref{cap:ingenieria-requisitos}) y $78{,}34$\,\% de cobertura de
+línea en 524 pruebas automatizadas del backend
 (\autoref{sec:res-cobertura}). De los cinco bloques de evaluación
 empírica exigidos por la guía, cuatro están completos con umbral
 cumplido (rendimiento, seguridad, cobertura, calidad web), y uno --

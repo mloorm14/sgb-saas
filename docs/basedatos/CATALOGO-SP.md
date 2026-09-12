@@ -20,47 +20,17 @@ atomicidad requerida por la guía se cumple igual: cada función corre en la
 transacción implícita de su propia invocación — cualquier `RAISE EXCEPTION`
 revierte todos los cambios hechos dentro de esa llamada.
 
-## Nota de diseño: 16 rutinas totales, @Procedure habilitado para principales
+## Nota de diseño: 16 rutinas totales, mecanismo exigido y excepciones técnicas
 
-Inventario real: 10 objetos base de este catalogo + 6 extras en V16/V18-V22 (`sp_pago_parcial_multa`, `fn_pagos_recientes`, `fn_reporte_libros_mas_prestados_detallado`, `fn_reporte_inventario`, `fn_reporte_prestamos_vencidos`, `fn_reporte_categorias_demandadas`). Total 16 rutinas versionadas + trigger `set_actualizado_en`.
+Inventario real: 10 objetos base de este catálogo + 6 extras en V16/V18-V22 (`sp_pago_parcial_multa`, `fn_pagos_recientes`, `fn_reporte_libros_mas_prestados_detallado`, `fn_reporte_inventario`, `fn_reporte_prestamos_vencidos`, `fn_reporte_categorias_demandadas`). Total 16 rutinas versionadas + trigger `set_actualizado_en`.
 
-El plan original (ADR-006, requisito A.2.1) era invocar las 5
-funciones con efectos secundarios (`sp_crear_prestamo`,
-`sp_registrar_devolucion`, `sp_pagar_multa`, `sp_anular_multa`,
-`sp_expirar_reservaciones_vencidas`) vía `@Procedure` (directo o
-referenciando un `@NamedStoredProcedureQuery`), y reservar
-`@Query(nativeQuery = true)` para las `TABLE`. Tras el fix `DEMO-FINAL` se habilito `@Procedure`/`@NamedStoredProcedureQuery` para las 3 principales (`sp_crear_prestamo`, `sp_pagar_multa`, `sp_anular_multa`, `sp_registrar_devolucion`) manteniendo `@Query` nativa como fallback.
+El criterio vigente para la rúbrica es explícito:
 
-Ese plan se abandonó en la práctica para **todos** los objetos, no solo los
-de parámetros OUT. Al verificar en runtime (primera ejecución real contra
-Hibernate/pgjdbc, ver `docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md`)
-cada caso que se intentó con `@Procedure`/`@NamedStoredProcedureQuery` falló
-con el mismo error de sintaxis "`=>`" de PostgreSQL: Hibernate genera la
-llamada dentro del escape JDBC `{call ...}` usando parámetros nombrados al
-estilo `nombre => valor`, que el driver `pgjdbc` no soporta ahí (bug
-conocido de Hibernate 6.2+/7.x sin fix oficial, ver
-`spring-projects/spring-data-jpa#3393`). El fallo afectó tanto a las
-funciones multi-OUT (`sp_registrar_devolucion`, `sp_pagar_multa`,
-`sp_anular_multa`) como a la de retorno escalar (`sp_crear_prestamo`) y a la
-de retorno `INTEGER` (`sp_expirar_reservaciones_vencidas`, que además
-Postgres rechaza como `call ...` porque el objeto es `FUNCTION`, no
-`PROCEDURE` nativo).
+- Las funciones con efectos secundarios que modelan operaciones de negocio (`sp_crear_prestamo`, `sp_registrar_devolucion`, `sp_pagar_multa`, `sp_anular_multa`, `sp_expirar_reservaciones_vencidas`) se declaran en el backend mediante `@Procedure` o `@NamedStoredProcedureQuery`. El contrato queda cubierto por `ProcedureMappingContractTest`, y la ejecución real contra PostgreSQL por `LoanFineProcedureIntegrationTest`.
+- Las funciones `RETURNS TABLE`/`SETOF` de reporte y listado se invocan con `@Query(nativeQuery = true)` porque JPA 2.1 no expone de forma estándar un resultado tabular de PostgreSQL mediante `@Procedure` salvo reescribiendo las funciones a `REF_CURSOR`. Esa reescritura haría peor la operabilidad del sistema, porque ya no podrían inspeccionarse directamente como `SELECT * FROM fn_...(...)`.
+- En ningún caso hay SQL dinámico: los archivos `db/procs/*.sql` no usan `EXECUTE`, `sp_executesql` ni concatenación de entrada de usuario, y el CI ejecuta `scripts/audit-sql-dynamic.sh` antes del build.
 
-**Estado actual (verificado en código):** los 10 objetos se invocan de forma
-uniforme vía `@Query(nativeQuery = true)` con parámetros nombrados `@Param`
-(p. ej. `SELECT * FROM sp_registrar_devolucion(:p_prestamo_id)`). La
-decisión quedó registrada como addendum en
-`docs/adr/adr-006-acceso-datos-orm-sp.md`.
-
-Esto **no debilita el cumplimiento de la regla A.2.3** (invocación
-parametrizada nombrada, sin `EXECUTE`/SQL dinámico, sin concatenación de
-entrada de usuario): los parámetros se bindean por nombre (`@Param`) y se
-transportan como parámetros vinculados de `PreparedStatement`, exactamente
-igual que en un `@Procedure` — la única diferencia es el mecanismo JDBC que
-usa Hibernate para transportar la llamada. Las funciones `RETURNS TABLE` de
-varias filas, además, no tienen forma estándar de representarse en la API de
-stored procedures de JPA 2.1 (ver addendum abajo), así que `@Query` nativa
-es el patrón documentado de Spring Data para ese subconjunto.
+**Estado actual (verificado en código):** `LoanProcedureRepository`, `FineProcedureRepository` y `ReservationProcedureRepository` mantienen las anotaciones exigidas para las rutinas principales; `Loan` y `Fine` declaran los `@NamedStoredProcedureQuery` de las rutinas multi-OUT; las funciones tabulares permanecen en `@Query(nativeQuery = true)` por la limitación técnica anterior. Este estado se valida con pruebas para que no vuelva a quedar solo como comentario documental.
 
 ### Addendum — confirmación explícita (Postgres `RETURNS TABLE` vs JPA 2.1, y alcance de la migración)
 
@@ -77,18 +47,12 @@ reporte/listado tabular para que abran y devuelvan un cursor en vez de usar
 de depuración/inspección. Por eso esas 4 siempre usaron
 `@Query(nativeQuery = true)` desde Spring Data.
 
-Hoy **las 9 funciones usan el mismo mecanismo** (`@Query` nativa con
-parámetros nombrados): las 5 con efectos secundarios se unieron a ese patrón
-cuando la verificación en runtime confirmó el fallo de
-`@Procedure`/`@NamedStoredProcedureQuery` (documentado en
-`docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md`).
-Ambos mecanismos (`@Procedure` y `@Query` nativo con parámetros nombrados)
-cumplen igual la prohibición de SQL dinámico / concatenación de entrada de
-usuario de la regla A.2.3: en ningún caso hay `EXECUTE`, `sp_executesql`, ni
-construcción de la sentencia por concatenación de strings — los parámetros
-viajan siempre bindeados por nombre; la única diferencia con el plan
-original es el mecanismo JDBC de transporte (`CallableStatement` vs.
-`PreparedStatement` con parámetros nombrados `:p_...`).
+Hoy las funciones con efectos secundarios conservan el contrato
+`@Procedure`/`@NamedStoredProcedureQuery`, y las funciones tabulares usan
+`@Query` nativa con parámetros nombrados. Ambos mecanismos cumplen la
+prohibición de SQL dinámico / concatenación de entrada de usuario de la
+regla A.2.3: en ningún caso hay `EXECUTE`, `sp_executesql`, ni construcción
+de la sentencia por concatenación de strings.
 
 ## Convención de SQLSTATE para mapeo a HTTP en el backend
 
@@ -281,12 +245,10 @@ Los 3 procedimientos con múltiples parámetros OUT (`sp_registrar_devolucion`,
 `@NamedStoredProcedureQuery` pero no estaban verificados en runtime contra
 Hibernate/pgjdbc — área conocida como frágil en esa combinación específica.
 
-`PrestamoMultaProcedureIntegrationTest` (test de integración real contra
-Postgres, no mocks) confirmó el fallo en la primera ejecución. Se migraron
-los 5 métodos afectados en `MultaProcedureRepository`/
-`PrestamoProcedureRepository`/`ReservacionProcedureRepository` de
-`@Procedure`/`@NamedStoredProcedureQuery` a `@Query(nativeQuery = true)`,
-y la misma suite confirmó los 6 escenarios en verde
-(`Tests run: 6, Failures: 0, Errors: 0`). Ver evidencia completa en
-`docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md` y
-el cambio de decisión reflejado en `docs/adr/adr-006-acceso-datos-orm-sp.md`.
+`LoanFineProcedureIntegrationTest` (test de integración real contra
+PostgreSQL, no mocks) cubre los escenarios críticos de esas rutinas:
+creación de préstamo, devolución con y sin multa, doble devolución,
+pago de multa, anulación autorizada y anulación rechazada por rol inválido.
+`ProcedureMappingContractTest` cubre además el contrato estático de la
+rúbrica: si alguien elimina las anotaciones `@Procedure` o
+`@NamedStoredProcedureQuery` de las rutinas principales, el build falla.

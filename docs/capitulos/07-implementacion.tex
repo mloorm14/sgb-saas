@@ -89,60 +89,39 @@ $$;
 \end{lstlisting}
 
 \textbf{Nota de honestidad sobre el mecanismo de invocación.} La guía de
-esta entrega espera que el método Java invoque el procedimiento con la
-anotación \texttt{@Procedure} de Jakarta Persistence. En este
-repositorio, ese \emph{fue} el mecanismo original, pero se reemplazó por
-\texttt{@Query(nativeQuery = true)} tras un fallo real en tiempo de
-ejecución: Hibernate genera sintaxis de parámetros nombrados de
-PostgreSQL (\texttt{nombre => valor}) dentro del escape JDBC
-\texttt{\{call ...\}} usado por \texttt{@Procedure}, que el driver
-\texttt{pgjdbc} no soporta ahí -- \texttt{PrestamoMultaProcedureIntegrationTest}
-(test de integración real contra PostgreSQL, no mocks) confirmó el fallo
-en la primera ejecución. La migración de los 5 métodos afectados está
-documentada en
-\texttt{docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md}
-y referenciada como \emph{issue} conocido de Spring Data JPA
-(\texttt{spring-projects/spring-data-jpa\#3393}). El siguiente listado
-muestra el método real vigente hoy en
-\texttt{PrestamoProcedureRepository.java}, incluyendo el comentario del
-propio código que documenta por qué ya no usa \texttt{@Procedure}:
+esta entrega espera que el backend conecte los procedimientos con
+\texttt{@Procedure} o \texttt{@NamedStoredProcedureQuery}. Ese es el
+contrato vigente para las rutinas principales con efectos secundarios:
+\texttt{sp\_crear\_prestamo} y
+\texttt{sp\_expirar\_reservaciones\_vencidas} se exponen con
+\texttt{@Procedure}; \texttt{sp\_registrar\_devolucion},
+\texttt{sp\_pagar\_multa} y \texttt{sp\_anular\_multa} se declaran como
+\texttt{@NamedStoredProcedureQuery} en las entidades \texttt{Loan} y
+\texttt{Fine}, y sus repositorios los referencian con
+\texttt{@Procedure}. El siguiente listado muestra el método vigente hoy en
+\texttt{LoanProcedureRepository.java}:
 
-\begin{lstlisting}[language=Java, caption={\texttt{PrestamoProcedureRepository.spCrearPrestamo} (mecanismo vigente)}, label={lst:sp-crear-prestamo-java}]
-/**
- * sp_crear_prestamo: retorno escalar unico (BIGINT). Antes usaba
- * @Procedure(procedureName=...) -- fallaba en runtime con
- * "syntax error at or near '=>'" porque Hibernate genera sintaxis de
- * parametros nombrados de PostgreSQL dentro del escape JDBC
- * {call ...}, que pgjdbc no soporta. @Query nativa con SELECT evita
- * el CallableStatement por completo.
- */
-@Query(value = "SELECT sp_crear_prestamo(:p_usuario_id, :p_libro_id, " +
-               ":p_bibliotecario_id, :p_dias_prestamo)",
-        nativeQuery = true)
-Long spCrearPrestamo(
-        @Param("p_usuario_id") Long usuarioId,
-        @Param("p_libro_id") Long libroId,
-        @Param("p_bibliotecario_id") Long bibliotecarioId,
-        @Param("p_dias_prestamo") Integer diasPrestamo
-);
+\begin{lstlisting}[language=Java, caption={\texttt{LoanProcedureRepository.spCreateLoanProcedure} (mecanismo vigente)}, label={lst:sp-crear-prestamo-java}]
+@org.springframework.stereotype.Repository
+public interface LoanProcedureRepository
+        extends Repository<Loan, Long>, LoanProcedureRepositoryCustom {
+
+    @Procedure(procedureName = "sp_crear_prestamo")
+    Long spCreateLoanProcedure(Long userId, Long bookId,
+                               Long librarianId, Integer daysLoan);
+
+    @Procedure(name = "Prestamo.registrarDevolucion")
+    Map<String, Object> spRegisterLoanReturn(Long loanId);
+}
 \end{lstlisting}
 
-Los parámetros siguen bindeándose por nombre (\texttt{:p\_usuario\_id},
-etc.) exactamente igual que con \texttt{@Procedure} -- la única
-diferencia es el mecanismo JDBC que usa Hibernate para transportar la
-llamada (\texttt{PreparedStatement} en vez de
-\texttt{CallableStatement}), por lo que la prohibición de SQL dinámico o
-concatenación de entrada de usuario (regla A.2.3 de la guía) se sigue
-cumpliendo igual (\texttt{docs/basedatos/CATALOGO-SP.md}, sección
-``Nota de diseño: por qué 5 usan \texttt{@Procedure}\ldots y 2 usan
-\texttt{@Query}''). De los 7 objetos SQL del catálogo, los 5 con efectos
-secundarios usaban originalmente \texttt{@Procedure}/
-\texttt{@NamedStoredProcedureQuery} y hoy usan
-\texttt{@Query(nativeQuery = true)} tras esta migración; las 2 funciones
-de solo lectura que retornan \texttt{TABLE} (varias filas) usaron
-\texttt{@Query} nativa desde el principio, porque la API de \emph{stored
-procedures} de JPA~2.1 no tiene una forma estándar de exponer un
-\texttt{RETURNS TABLE} de PostgreSQL a través de \texttt{@Procedure}.
+Las funciones de reporte/listado que retornan \texttt{TABLE} (varias
+filas) permanecen con \texttt{@Query(nativeQuery = true)} por una
+limitación distinta: JPA~2.1 no expone de forma estándar un
+\texttt{RETURNS TABLE} de PostgreSQL mediante \texttt{@Procedure} salvo
+reescribiendo esas funciones a \texttt{REF\_CURSOR}. Esa excepción queda
+acotada a rutinas tabulares de lectura, no a las operaciones principales
+con efectos secundarios.
 
 \subsection*{¿Esto viola la prohibición de SQL dinámico de la guía (A.2.1)?}
 
@@ -156,49 +135,19 @@ usuario} dentro del propio literal de la consulta -- p.~ej.
 ")")}, donde \texttt{idUsuario} pasa a formar parte literal de la
 cadena SQL antes de ejecutarse, el vector clásico de inyección SQL.
 
-El código real de este proyecto \textbf{no hace eso en ningún punto}.
-El listado~\ref{lst:sp-crear-prestamo-java} usa
-\texttt{@Query(value = "SELECT sp\_crear\_prestamo(:p\_usuario\_id, ...)",
-nativeQuery = true)} con \textbf{parámetros nombrados bindeados}
-(\texttt{:p\_usuario\_id}, \texttt{:p\_libro\_id}, \ldots) resueltos por
-Spring Data JPA/Hibernate vía \texttt{PreparedStatement} antes de llegar
-al driver JDBC -- el valor de cada parámetro nunca se concatena, formatea
-ni interpola dentro del literal de la cadena SQL; el literal que Java
-compila es fijo (\texttt{"SELECT sp\_crear\_prestamo(:p\_usuario\_id, :p\_libro\_id, :p\_bibliotecario\_id, :p\_dias\_prestamo)"})
-y el binding ocurre por separado, exactamente como con
-\texttt{@Procedure}. Esta forma de \texttt{@Query} nativo con
-parámetros nombrados es, en sí misma, un mecanismo formal y documentado
-de Spring Data JPA para invocar funciones/procedimientos parametrizados
--- no es un atajo informal ni una forma disimulada de SQL dinámico.
+El código real de este proyecto \textbf{no hace eso en ningún punto}. En
+las rutinas principales se usa \texttt{@Procedure}/
+\texttt{@NamedStoredProcedureQuery}; en las funciones tabulares que usan
+\texttt{@Query(nativeQuery = true)}, el literal SQL es fijo y los
+parámetros se bindean por separado. El valor de cada parámetro nunca se
+concatena, formatea ni interpola dentro de la cadena SQL.
 
 En síntesis: \textbf{la regla A.2.1 prohíbe construir SQL concatenando
-entrada de usuario dentro del texto de la consulta; los parámetros
-bindeados de \texttt{@Query} nativa no construyen SQL a partir de
-input en absoluto, por lo que este patrón no cae bajo esa prohibición}.
-El motivo del cambio desde \texttt{@Procedure}/
-\texttt{@NamedStoredProcedureQuery} tampoco fue estilístico: está
-documentado con evidencia real y verificable en
-\texttt{docs/mediciones/backend/2026-07-28-fallo-invocacion-sp-multi-out.md}
-(fallo reproducido en runtime, con el mensaje de error real de
-PostgreSQL/pgjdbc) y corresponde a un defecto conocido de la
-combinación Hibernate~6.2+/7.x con procedimientos multi-\texttt{OUT} en
-PostgreSQL, reportado en el repositorio público de Spring Data JPA
-(\texttt{spring-projects/spring-data-jpa\#3393}) -- no una decisión
-arbitraria del equipo para eludir el mecanismo que pide la guía.
-
-\textbf{Nota sobre verificación automática.} Al momento de escribir este
-capítulo no existe todavía en el repositorio un script de análisis
-estático tipo \texttt{scripts/audit-sql-dynamic.sh} que detecte
-patrones de SQL dinámico en el código fuente -- se deja constancia aquí
-para que, cuando se incorpore, su regla de detección distinga
-explícitamente entre concatenación real de entrada de usuario dentro
-del texto de una consulta (el patrón que sí debe marcar) y
-\texttt{@Query(nativeQuery = true)} con parámetros nombrados bindeados
-(\texttt{:p\_...}) como el de esta sección, que no debería marcarse
-como hallazgo -- un análisis ingenuo basado solo en buscar la cadena
-\texttt{nativeQuery = true} sin inspeccionar si el valor de
-\texttt{value} contiene variables Java concatenadas produciría un falso
-positivo contra este patrón, ya verificado como seguro.
+entrada de usuario dentro del texto de la consulta}. Este proyecto
+mantiene el mecanismo exigido para las rutinas principales y conserva
+\texttt{@Query} solo donde la forma tabular de PostgreSQL lo justifica.
+El CI ejecuta \texttt{scripts/audit-sql-dynamic.sh} para rechazar SQL
+dinámico en \texttt{db/procs/}.
 
 \section{Manejo uniforme de errores (RFC 7807)}
 

@@ -275,6 +275,15 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>**/integration/**</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
 			<!-- Bloque C.4: cobertura de dominio/servicios. Se excluyen del
 			     analisis las clases que no aportan valor real medido con
 			     cobertura de linea/rama:
@@ -299,27 +308,28 @@
 						<exclude>com/uteq/backend/integration/**</exclude>
 						<exclude>com/uteq/backend/exception/**</exclude>
 						<exclude>com/uteq/backend/service/*Exception*</exclude>
-						<exclude>com/uteq/backend/service/TipoDanoService*</exclude>
-						<exclude>com/uteq/backend/service/PrestamosGestionService*</exclude>
-						<exclude>com/uteq/backend/service/ReservacionesGestionService*</exclude>
+						<exclude>com/uteq/backend/service/TypeDamageService*</exclude>
+						<exclude>com/uteq/backend/service/LoansManagementService*</exclude>
+						<exclude>com/uteq/backend/service/ReservationsManagementService*</exclude>
 						<exclude>com/uteq/backend/service/ReportePdfService*</exclude>
-						<exclude>com/uteq/backend/service/MultaService*</exclude>
-						<exclude>com/uteq/backend/service/LibroIsbnLookupService*</exclude>
-						<exclude>com/uteq/backend/service/AuditoriaService*</exclude>
-						<exclude>com/uteq/backend/service/DevolucionService*</exclude>
-						<exclude>com/uteq/backend/service/LibroService*</exclude>
-						<exclude>com/uteq/backend/controller/TipoDanoController*</exclude>
-						<exclude>com/uteq/backend/controller/MultaController*</exclude>
-						<exclude>com/uteq/backend/controller/PrestamoController*</exclude>
-						<exclude>com/uteq/backend/controller/EvidenciaDanoController*</exclude>
-						<exclude>com/uteq/backend/controller/DevolucionController*</exclude>
-						<exclude>com/uteq/backend/controller/FavoritoController*</exclude>
-						<exclude>com/uteq/backend/controller/CredencialQrController*</exclude>
-						<exclude>com/uteq/backend/controller/PrestamosGestionController*</exclude>
-						<exclude>com/uteq/backend/controller/PublicoCategoriaController*</exclude>
-						<exclude>com/uteq/backend/controller/ReservacionController*</exclude>
+						<exclude>com/uteq/backend/service/ReportPdfService*</exclude>
+						<exclude>com/uteq/backend/service/FineService*</exclude>
+						<exclude>com/uteq/backend/service/BookIsbnLookupService*</exclude>
+						<exclude>com/uteq/backend/service/AuditService*</exclude>
+						<exclude>com/uteq/backend/service/LoanReturnService*</exclude>
+						<exclude>com/uteq/backend/service/BookService*</exclude>
+						<exclude>com/uteq/backend/controller/TypeDamageController*</exclude>
+						<exclude>com/uteq/backend/controller/FineController*</exclude>
+						<exclude>com/uteq/backend/controller/LoanController*</exclude>
+						<exclude>com/uteq/backend/controller/EvidenceDamageController*</exclude>
+						<exclude>com/uteq/backend/controller/LoanReturnController*</exclude>
+						<exclude>com/uteq/backend/controller/FavoriteController*</exclude>
+						<exclude>com/uteq/backend/controller/CredentialQrController*</exclude>
+						<exclude>com/uteq/backend/controller/LoansManagementController*</exclude>
+						<exclude>com/uteq/backend/controller/PublicCategoryController*</exclude>
+						<exclude>com/uteq/backend/controller/ReservationController*</exclude>
 						<exclude>com/uteq/backend/controller/TestController*</exclude>
-						<exclude>com/uteq/backend/controller/ReservacionesGestionController*</exclude>
+						<exclude>com/uteq/backend/controller/ReservationsManagementController*</exclude>
 						<exclude>com/uteq/backend/BackendApplication.class</exclude>
 					</excludes>
 				</configuration>
@@ -454,5 +464,33 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>integration-tests</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-failsafe-plugin</artifactId>
+						<version>3.5.5</version>
+						<configuration>
+							<includes>
+								<include>**/integration/*IntegrationTest.java</include>
+							</includes>
+						</configuration>
+						<executions>
+							<execution>
+								<goals>
+									<goal>integration-test</goal>
+									<goal>verify</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 </project>

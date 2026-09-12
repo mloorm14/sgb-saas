@@ -32,8 +32,21 @@ class DemoAccountMigrationIntegrationTest {
 
     @DynamicPropertySource
     static void flywayTest(DynamicPropertyRegistry registry) {
+        java.net.URL classLocation = DemoAccountMigrationIntegrationTest.class
+                .getProtectionDomain().getCodeSource().getLocation();
+        java.nio.file.Path migrationsDir;
+        try {
+            migrationsDir = java.nio.file.Paths.get(classLocation.toURI())
+                    .getParent()
+                    .getParent()
+                    .getParent()
+                    .resolve("database/migrations");
+        } catch (java.net.URISyntaxException e) {
+            throw new IllegalStateException("Could not resolve migrations path", e);
+        }
+        String migrationsPath = "filesystem:" + migrationsDir.toAbsolutePath();
         registry.add("spring.flyway.locations",
-                () -> "classpath:db/test-migrations,filesystem:../database/migrations");
+                () -> "classpath:db/test-migrations," + migrationsPath);
     }
 
     @Autowired

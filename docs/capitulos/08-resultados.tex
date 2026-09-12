@@ -259,9 +259,9 @@ sobre la cobertura de pruebas.
 \textbf{Métrica.} Porcentaje de líneas cubiertas, medido con
 \texttt{jacoco-maven-plugin}. La cifra de cierre
 vigente se re-verificó con una corrida real de \texttt{./mvnw clean verify}
-sobre HEAD \texttt{2ccac226}: 533
-tests, 0 fallos, 12 \emph{skipped}, \textbf{76,13\,\%} de líneas
-(2465/3238). Esta es la única cifra vigente de cobertura citada en el
+sobre la rama \texttt{fix/errores-encontrados}: 524
+tests, 0 fallos, 0 errores, 0 \emph{skipped}, \textbf{78,34\,\%} de líneas
+(1595/2036) y \textbf{59,48\,\%} de ramas (345/580). Esta es la única cifra vigente de cobertura citada en el
 entregable final. Las mediciones anteriores quedan archivadas como
 evidencia histórica en \texttt{docs/mediciones/jacoco/}, pero no se
 defienden como resultado de cierre.
@@ -274,12 +274,12 @@ vigente en el entregable defendido.
 
 \textbf{Datos crudos.} \texttt{docs/mediciones/jacoco/report.xml} y
 \texttt{report.csv} corresponden a la corrida vigente sobre HEAD
-\texttt{2ccac226} descrita arriba. Los cortes anteriores permanecen en
+\texttt{fix/errores-encontrados} descrita arriba. Los cortes anteriores permanecen en
 subdirectorios fechados como trazabilidad histórica, pero esta sección
 usa una sola cifra de cierre.
 
 \textbf{Estadística descriptiva.} Esta métrica es una medición agregada
-sobre la totalidad del código analizado (46 clases en la corrida
+sobre la totalidad del código analizado (48 clases en la corrida
 vigente, tras exclusiones documentadas de DTOs/entidades/configuración
 de framework), no una muestra de un proceso aleatorio -- no aplica
 media/desviación típica/IC~95\% de la misma forma que el Bloque~1; el
@@ -292,23 +292,25 @@ número reportado es el porcentaje real exacto, sin margen de muestreo.
 \toprule
 Métrica & Cubierto/total & \textbf{Vigente} & Umbral \\
 \midrule
-Lines & 2465/3238 & \textbf{76,13\,\%} & $\geq$70\,\% \textbf{Sí} \\
+Lines & 1595/2036 & \textbf{78,34\,\%} & $\geq$70\,\% \textbf{Sí} \\
+Branches & 345/580 & \textbf{59,48\,\%} & Sin umbral formal \\
 \bottomrule
 \end{tabular}
-\caption{Cobertura JaCoCo vigente al cierre de la Entrega Final (HEAD \texttt{2ccac226}).}
+\caption{Cobertura JaCoCo vigente al cierre de la Entrega Final (rama \texttt{fix/errores-encontrados}).}
 \label{tab:res-jacoco}
 \end{table}
 
 \textbf{Interpretación.} El resultado responde a RQ4 con un dato
 concreto y un artefacto versionado que lo respalda: la base de líneas
-analizables creció de forma sostenida hasta 3899 líneas al cierre, con los commits
+analizables cerró en 2036 líneas tras las exclusiones JaCoCo documentadas, con los commits
 posteriores al merge de los 8 módulos (nuevos controladores, chatbot,
 auditoría, QR, backups, sugerencias de adquisición, etc.), y la
 cobertura global de líneas supera el \textbf{umbral informal de 70\,\%}
-fijado por el equipo para la Entrega Final (76,13\,\% al cierre). Las
-capas \texttt{controller} y \texttt{security} quedan por encima del
-umbral interno; \texttt{service} cruza el umbral en líneas, aunque
-permanece como brecha conocida en ramas.
+fijado por el equipo para la Entrega Final (78,34\,\% al cierre). Las
+capas \texttt{controller}, \texttt{security}, \texttt{scheduling} y
+\texttt{service} quedan por encima del umbral interno en líneas; las ramas
+mejoran a 59,48\,\% y quedan reportadas como métrica complementaria sin
+umbral formal de cierre.
 Las discrepancias históricas quedan documentadas en la bitácora de
 observaciones y en los artefactos fechados. Para la defensa y para la
 lectura automática de la rúbrica, este capítulo conserva una sola cifra
@@ -323,17 +325,17 @@ Capa & Estado al cierre & Evidencia & $\geq$65\,\%? \\
 \midrule
 Controller & Sobre umbral & JaCoCo XML & \textbf{Sí} \\
 Security & Sobre umbral & JaCoCo XML & \textbf{Sí} \\
-Service & Brecha conocida & JaCoCo XML & No \\
+Service & Sobre umbral & JaCoCo XML & \textbf{Sí} \\
 Domain/Entity & --- & Excluido & N/A \\
 \bottomrule
 \end{tabular}
-\caption{Cobertura JaCoCo por capa arquitectónica, medición vigente al cierre (HEAD \texttt{2ccac226})}
+\caption{Cobertura JaCoCo por capa arquitectónica, medición vigente al cierre (rama \texttt{fix/errores-encontrados})}
 \label{tab:res-jacoco-capas-vigente}
 \end{table}
 
-\textbf{Interpretación por capa (vigente al cierre, \autoref{tab:res-jacoco-capas-vigente}).} La medición vigente deja \texttt{controller} por encima del umbral interno (96,90\,\% de líneas; 71,57\,\% de ramas) y \texttt{service} cruza el umbral de líneas (70,35\,\%), aunque mantiene ramas como brecha conocida (46,10\,\%). El detalle numérico queda en el XML versionado para evitar mezclar cifras de cierre con cifras históricas dentro del texto defendido.
+\textbf{Interpretación por capa (vigente al cierre, \autoref{tab:res-jacoco-capas-vigente}).} La medición vigente deja \texttt{controller} por encima del umbral interno (95,54\,\% de líneas; 70,41\,\% de ramas) y \texttt{service} cruza el umbral de líneas (73,78\,\%), con ramas en 56,08\,\%. El detalle numérico queda en el XML versionado para evitar mezclar cifras de cierre con cifras históricas dentro del texto defendido.
 
-La capa \texttt{Domain/Entity} (\texttt{com.uteq.backend.entity}) está deliberadamente excluida de la medición JaCoCo, tal como se declara en \texttt{backend-springboot/pom.xml} mediante las exclusiones: \texttt{com/uteq/backend/entity/**} (entidades JPA con getters/setters generados por Lombok, sin lógica de negocio propia), \texttt{com/uteq/backend/dto/**} (DTOs de transporte, solo estructura de datos), \texttt{com/uteq/backend/config/**} (configuración de beans/framework, probada indirectamente por tests de integración), y \texttt{com/uteq/backend/BackendApplication.class} (punto de entrada, sin lógica testable aislada). Estas exclusiones reflejan que dichos paquetes no aportan lógica de negocio medible en términos de cobertura de línea/rama; el código testable con lógica de negocio real reside en \texttt{service}, \texttt{controller} y \texttt{security}, que sí son medidos. Con \texttt{controller} y \texttt{security} por encima del umbral al cierre, el equipo identifica el aumento de cobertura en \texttt{service} como la brecha prioritaria pendiente, manteniendo la exclusión de entidades/DTOs/config como decisión de diseño documentada y razonada.
+La capa \texttt{Domain/Entity} (\texttt{com.uteq.backend.entity}) está deliberadamente excluida de la medición JaCoCo, tal como se declara en \texttt{backend-springboot/pom.xml} mediante las exclusiones: \texttt{com/uteq/backend/entity/**} (entidades JPA con getters/setters generados por Lombok, sin lógica de negocio propia), \texttt{com/uteq/backend/dto/**} (DTOs de transporte, solo estructura de datos), \texttt{com/uteq/backend/config/**} (configuración de beans/framework, probada indirectamente por tests de integración), y \texttt{com/uteq/backend/BackendApplication.class} (punto de entrada, sin lógica testable aislada). Estas exclusiones reflejan que dichos paquetes no aportan lógica de negocio medible en términos de cobertura de línea/rama; el código testable con lógica de negocio real reside en \texttt{service}, \texttt{controller}, \texttt{scheduling} y \texttt{security}, que sí son medidos. Con esas capas por encima del umbral de líneas al cierre, el equipo mantiene la exclusión de entidades/DTOs/config como decisión de diseño documentada y razonada.
 
 \section{Bloque 4 -- Calidad web (Lighthouse)}
 \label{sec:res-lighthouse}
@@ -585,7 +587,7 @@ Bloque & Estado & Completo/ Parcial/ Pendiente & Umbral cumplido \\
 \midrule
 1. Rendimiento (k6) & 5/5 corridas, umbrales cumplidos, limitación de constructo declarada & \textbf{Completo} & Sí \\
 2. Seguridad (OWASP) & 6/6 controles con resultado cerrado (A02 incluido, HSTS verificado en producción); ZAP ejecutado (0 High en producción, 2 High en local explicados) & \textbf{Completo} & Sí \\
-3. Cobertura (JaCoCo) & Medición vigente de cierre: 76,13\,\% de líneas (2465/3238) y 49,45\,\% de ramas (537/1086), respaldada por el XML versionado; cumple el objetivo interno de 70\,\% en líneas, aunque ramas queda como brecha conocida & \textbf{Parcial} & No \\
+3. Cobertura (JaCoCo) & Medición vigente de cierre: 78,34\,\% de líneas (1595/2036) y 59,48\,\% de ramas (345/580), respaldada por el XML versionado; cumple el objetivo interno de 70\,\% en líneas & \textbf{Completo} & Sí \\
 4. Calidad web (Lighthouse) & 12 corridas reales de producción (2 rondas $\times$ 2 perfiles $\times$ 3), umbral cumplido en las 6 corridas post-fix; defecto real de CLS encontrado y corregido, verificado antes/después en producción & \textbf{Completo} & Sí \\
 5. Usabilidad (SUS) & $N=0$ de $N\geq15$ exigidos; protocolo y pipeline listos, corrida diferida a despliegue & \textbf{Pendiente} & No \\
 \bottomrule
