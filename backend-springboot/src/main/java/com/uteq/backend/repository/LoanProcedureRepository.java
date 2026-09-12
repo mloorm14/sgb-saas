@@ -22,16 +22,17 @@ import java.util.List;
  * préstamos. No extiende JpaRepository a propósito: es un repositorio
  * "solo procedimientos" (patrón documentado de Spring Data JPA), por lo que
  * solo necesita el marcador {@link Repository}.
+ *
+ * <p>Los métodos {@code @Procedure} para sp_crear_prestamo y
+ * sp_registrar_devolucion viven en {@link LoanProcedureRepositoryCustom} /
+ * {@link LoanProcedureRepositoryCustomImpl}: usan {@code EntityManager} con
+ * binding posicional (Integer) para evitar la sintaxis {@code nombre => ?}
+ * que Hibernate 6 genera con nombres y que pgjdbc rechaza en
+ * {@code {call ...}} (spring-projects/spring-data-jpa#3393).</p>
  */
 @org.springframework.stereotype.Repository
-public interface LoanProcedureRepository extends Repository<Loan, Long> {
+public interface LoanProcedureRepository extends Repository<Loan, Long>, LoanProcedureRepositoryCustom {
 
-    // Mecanismo exigido {@code @Procedure} (habilitado para cumplir guía Cordero) — rutina principal sp_crear_prestamo
-    // NOTA: sin @Param en los argumentos — fuerza binding posicional ({call sp(?,?,?,?)}),
-    // evitando la sintaxis "nombre => ?" que Hibernate 6 genera con @Param y que pgjdbc rechaza
-    // dentro de escape JDBC {call ...} (bug documentado, spring-projects/spring-data-jpa#3393).
-    @Procedure(procedureName = "sp_crear_prestamo")
-    Long spCreateLoanProcedure(Long userId, Long bookId, Long librarianId, Integer daysLoan);
 
     /**
      * sp_crear_prestamo: retorno escalar único (BIGINT). Antes usaba
@@ -51,24 +52,14 @@ public interface LoanProcedureRepository extends Repository<Loan, Long> {
             @Param("p_days_loan") Integer daysLoan
     );
 
-    @Procedure(name = "Prestamo.registrarDevolucion")
-    java.util.Map<String, Object> spRegisterLoanReturnProcedure(@Param("p_loan_id") Long loanId);
 
     /**
      * sp_registrar_devolucion: función con 3 parámetros OUT (o_prestamo_id,
-     * o_hubo_multa, o_monto_multa). Antes resuelto vía
-     * {@code @NamedStoredProcedureQuery} en {@link Loan} (ver bloque comentado
-     * arriba y el {@code @NamedStoredProcedureQuery} comentado en Prestamo.java) --
-     * mismo fallo de sintaxis "=>" que sp_crear_prestamo. @Query nativa con
-     * "SELECT * FROM ..." expande el tipo compuesto de los OUT params en
-     * columnas, y {@code Map<String,Object>} como tipo de retorno de un @Query
-     * nativeQuery SÍ está soportado por Spring Data JPA ("native query
-     * returning raw column name/value pairs", docs.spring.io) -- las keys
-     * del Map son los nombres de columna (o_prestamo_id, o_hubo_multa,
-     * o_monto_multa), igual que antes.
+     * o_hubo_multa, o_monto_multa). La invocacion via @Procedure generaba la
+     * sintaxis "nombre => ?" de Hibernate 6 que pgjdbc rechaza.
+     * Movido a {@link LoanProcedureRepositoryCustom#spRegisterLoanReturn(Long)}
+     * con implementacion posicional en {@link LoanProcedureRepositoryCustomImpl}.
      */
-    @Query(value = "SELECT * FROM sp_registrar_devolucion(:p_loan_id)", nativeQuery = true)
-    java.util.Map<String, Object> spRegisterLoanReturn(@Param("p_loan_id") Long loanId);
 
     /**
      * fn_listar_prestamos_activos_por_usuario: función PostgreSQL con
