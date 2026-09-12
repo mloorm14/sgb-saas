@@ -1,7 +1,8 @@
 # Sistema de Gestión Bibliotecaria Web (SGB - SaaS) 📚
 
 [![CI](https://github.com/mloorm14/sgb-saas/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mloorm14/sgb-saas/actions/workflows/ci.yml)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22636466.svg)](https://doi.org/10.5281/zenodo.22636466)
+[![DOI Software](https://zenodo.org/badge/DOI/10.5281/zenodo.22728199.svg)](https://doi.org/10.5281/zenodo.22728199)
+[![DOI Dataset](https://zenodo.org/badge/DOI/10.5281/zenodo.22715710.svg)](https://doi.org/10.5281/zenodo.22715710)
 
 Plataforma 100% web diseñada para la modernización de bibliotecas institucionales y municipales, desarrollada como Proyecto Fin de Curso para la asignatura de Aplicaciones Web (2026-2027).
 
@@ -9,7 +10,7 @@ Plataforma 100% web diseñada para la modernización de bibliotecas instituciona
 
 Video demo del sistema (2-3 min): [ver en Google Drive](https://drive.google.com/file/d/19s7Ls2Ixz7wJ7RWzfJ-F2U18LknC7O_r/view?usp=drive_link)
 
-> ⚠️ **Pendiente de confirmación manual**: no es posible verificar desde aquí que el permiso de este enlace de Drive esté en modo "Cualquier usuario con el enlace puede ver". Antes de la entrega final, confirmar manualmente en Drive (botón "Compartir" → "Acceso general") que el enlace es público; si está restringido a cuentas específicas, un evaluador externo no podrá reproducirlo.
+> Enlace público para la evaluación del proyecto.
 
 ## 🚀 Despliegue y Acceso Demo
 
