@@ -118,7 +118,7 @@ public class LoanService {
 
         // Ventanilla: si nace de una reserva, se valida ANTES de tocar stock y se vincula DESPUÉS del SP.
         Reservation reservationSource = validateReservationSiAplica(dto, userId);
-        Long loanId = loanProcRepo.spCreateLoan(
+        Long loanId = loanProcRepo.spCreateLoanProcedure(
                 userId, dto.bookId(), librarianId, dto.daysLoan());
         Loan loan = loanRepo.findById(loanId)
                 .orElseThrow(() -> new EntityNotFoundException(PRESTAMO_NO_ENCONTRADO + loanId));

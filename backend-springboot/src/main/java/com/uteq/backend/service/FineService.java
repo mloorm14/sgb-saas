@@ -119,7 +119,7 @@ public class FineService {
      */
     @Transactional
     public FineActionResponseDTO pay(Long fineId) {
-        Map<String, Object> result = fineProcRepo.spPayFine(fineId);
+        Map<String, Object> result = fineProcRepo.spPayFineProcedure(fineId);
         return new FineActionResponseDTO(
                 (Long) result.get("o_multa_id"),
                 (Boolean) result.get("o_usuario_desbloqueado"));
@@ -139,7 +139,7 @@ public class FineService {
     @Transactional
     public FineActionResponseDTO annul(Long fineId, String reason, Authentication authentication) {
         String roleExecutor = resolveRoleCancellation(authentication);
-        Map<String, Object> result = fineProcRepo.spVoidFine(fineId, reason, roleExecutor);
+        Map<String, Object> result = fineProcRepo.spVoidFineProcedure(fineId, reason, roleExecutor);
         return new FineActionResponseDTO(
                 (Long) result.get("o_multa_id"),
                 (Boolean) result.get("o_usuario_desbloqueado"));
